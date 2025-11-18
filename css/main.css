@@ -485,18 +485,18 @@ pre code {
    Hero Section
    =================================== */
 .hero {
-    padding: var(--space-20) 0;
+    padding: var(--space-16) 0 var(--space-12);
     background: linear-gradient(135deg, var(--color-bg) 0%, rgba(18, 161, 22, 0.05) 100%);
 }
 
 .hero .container {
     display: grid;
-    gap: var(--space-12);
+    gap: var(--space-8);
 }
 
 .hero-title {
     font-size: var(--text-4xl);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-4);
     line-height: 1.1;
 }
 
@@ -509,7 +509,7 @@ pre code {
 .hero-description {
     font-size: var(--text-lg);
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
     max-width: 600px;
 }
 
@@ -517,7 +517,7 @@ pre code {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-4);
-    margin-bottom: var(--space-12);
+    margin-bottom: var(--space-8);
 }
 
 .hero-stats {
@@ -656,12 +656,12 @@ pre code {
    Sections
    =================================== */
 section {
-    padding: var(--space-20) 0;
+    padding: var(--space-12) 0;
 }
 
 .section-title {
     text-align: center;
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
     color: var(--color-text);
 }
 
@@ -669,7 +669,7 @@ section {
     text-align: center;
     font-size: var(--text-lg);
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-12);
+    margin-bottom: var(--space-8);
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
@@ -677,7 +677,7 @@ section {
 
 .section-cta {
     text-align: center;
-    margin-top: var(--space-12);
+    margin-top: var(--space-8);
 }
 
 /* ===================================
@@ -695,7 +695,7 @@ section {
 
 .feature-card {
     background-color: var(--color-bg);
-    padding: var(--space-8);
+    padding: var(--space-6);
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-border);
     transition: all var(--transition-base);
@@ -715,7 +715,7 @@ section {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-4);
     color: white;
 }
 
@@ -747,7 +747,7 @@ section {
 
 .step {
     text-align: center;
-    padding: var(--space-8);
+    padding: var(--space-6);
     background-color: var(--color-surface);
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-border);
@@ -764,7 +764,7 @@ section {
     justify-content: center;
     font-size: var(--text-3xl);
     font-weight: 700;
-    margin: 0 auto var(--space-6);
+    margin: 0 auto var(--space-4);
 }
 
 .step-title {
@@ -816,12 +816,12 @@ section {
 
 .cta-title {
     color: white;
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-4);
 }
 
 .cta-description {
     font-size: var(--text-lg);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
     opacity: 0.95;
 }
 
@@ -989,11 +989,11 @@ section {
     }
     
     .hero {
-        padding: var(--space-12) 0;
+        padding: var(--space-10) 0 var(--space-8);
     }
     
     section {
-        padding: var(--space-12) 0;
+        padding: var(--space-8) 0;
     }
 }
 
@@ -1098,7 +1098,7 @@ section {
    Plugin System Section
    =================================== */
 .plugin-system {
-    padding: var(--space-20) 0;
+    padding: var(--space-12) 0;
     background: var(--color-surface);
 }
 
@@ -1106,7 +1106,7 @@ section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--space-6);
-    margin-top: var(--space-12);
+    margin-top: var(--space-8);
 }
 
 .plugin-card {
@@ -1145,15 +1145,15 @@ section {
    Developer Features Section
    =================================== */
 .developer-features {
-    padding: var(--space-20) 0;
+    padding: var(--space-12) 0;
     background: var(--color-bg);
 }
 
 .dev-features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-8);
-    margin-top: var(--space-12);
+    gap: var(--space-6);
+    margin-top: var(--space-8);
 }
 
 .dev-feature {
@@ -1253,4 +1253,154 @@ section {
     .cta-links span {
         display: none;
     }
+}
+
+/* ===================================
+   Screenshot Container
+   =================================== */
+.screenshot-container {
+    text-align: center;
+    margin: var(--space-8) 0;
+}
+
+.screenshot-container img {
+    max-width: 100%;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    transition: transform var(--transition-base);
+}
+
+.screenshot-container img:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-2xl);
+}
+
+/* ===================================
+   Download Page Styles
+   =================================== */
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+}
+
+.download-card {
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.download-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--color-primary);
+}
+
+.download-card.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.download-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--space-4);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.download-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+.download-name {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+}
+
+.download-version {
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+}
+
+.download-btn {
+    width: 100%;
+}
+
+.install-steps {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    margin-top: var(--space-8);
+}
+
+.install-step {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    margin-bottom: var(--space-4);
+}
+
+.install-step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.install-step-content h3 {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-lg);
+}
+
+.install-step-content p {
+    margin: 0;
+    color: var(--color-text-secondary);
+}
+
+.system-requirements {
+    background-color: var(--color-bg);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-top: var(--space-6);
+}
+
+.system-requirements h3 {
+    margin-bottom: var(--space-4);
+}
+
+.requirements-list {
+    list-style: none;
+    padding: 0;
+}
+
+.requirements-list li {
+    padding: var(--space-2) 0;
+    padding-left: var(--space-8);
+    position: relative;
+}
+
+.requirements-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--color-primary);
+    font-weight: 700;
 }
