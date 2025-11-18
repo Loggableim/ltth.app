@@ -71,10 +71,10 @@
     --space-6: 1.5rem;       /* 24px */
     --space-8: 2rem;         /* 32px */
     --space-10: 2.5rem;      /* 40px */
-    --space-12: 3rem;        /* 48px */
-    --space-16: 4rem;        /* 64px */
-    --space-20: 5rem;        /* 80px */
-    --space-24: 6rem;        /* 96px */
+    --space-12: 2.5rem;      /* 40px - reduced from 48px */
+    --space-16: 3.5rem;      /* 56px - reduced from 64px */
+    --space-20: 4rem;        /* 64px - reduced from 80px */
+    --space-24: 5rem;        /* 80px - reduced from 96px */
     
     /* Border Radius */
     --radius-sm: 0.25rem;    /* 4px */
@@ -485,7 +485,7 @@ pre code {
    Hero Section
    =================================== */
 .hero {
-    padding: var(--space-16) 0 var(--space-12);
+    padding: var(--space-12) 0 var(--space-10);
     background: linear-gradient(135deg, var(--color-bg) 0%, rgba(18, 161, 22, 0.05) 100%);
 }
 
@@ -517,7 +517,7 @@ pre code {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-4);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
 }
 
 .hero-stats {
@@ -669,7 +669,7 @@ section {
     text-align: center;
     font-size: var(--text-lg);
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
@@ -677,7 +677,7 @@ section {
 
 .section-cta {
     text-align: center;
-    margin-top: var(--space-8);
+    margin-top: var(--space-6);
 }
 
 /* ===================================
@@ -858,14 +858,14 @@ section {
 .footer {
     background-color: var(--color-surface);
     border-top: 1px solid var(--color-border);
-    padding: var(--space-16) 0 var(--space-8);
+    padding: var(--space-12) 0 var(--space-6);
 }
 
 .footer-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-8);
-    margin-bottom: var(--space-12);
+    gap: var(--space-6);
+    margin-bottom: var(--space-8);
 }
 
 .footer-logo {
@@ -908,7 +908,7 @@ section {
 }
 
 .footer-bottom {
-    padding-top: var(--space-8);
+    padding-top: var(--space-6);
     border-top: 1px solid var(--color-border);
     text-align: center;
 }
@@ -989,11 +989,11 @@ section {
     }
     
     .hero {
-        padding: var(--space-10) 0 var(--space-8);
+        padding: var(--space-8) 0 var(--space-6);
     }
     
     section {
-        padding: var(--space-8) 0;
+        padding: var(--space-6) 0;
     }
 }
 
@@ -1106,7 +1106,7 @@ section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--space-6);
-    margin-top: var(--space-8);
+    margin-top: var(--space-6);
 }
 
 .plugin-card {
@@ -1153,7 +1153,7 @@ section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--space-6);
-    margin-top: var(--space-8);
+    margin-top: var(--space-6);
 }
 
 .dev-feature {
@@ -1260,7 +1260,7 @@ section {
    =================================== */
 .screenshot-container {
     text-align: center;
-    margin: var(--space-8) 0;
+    margin: var(--space-6) 0;
 }
 
 .screenshot-container img {
@@ -1282,7 +1282,7 @@ section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--space-6);
-    margin-top: var(--space-8);
+    margin-top: var(--space-6);
 }
 
 .download-card {
@@ -1341,8 +1341,8 @@ section {
 .install-steps {
     background-color: var(--color-surface);
     border-radius: var(--radius-xl);
-    padding: var(--space-8);
-    margin-top: var(--space-8);
+    padding: var(--space-6);
+    margin-top: var(--space-6);
 }
 
 .install-step {
