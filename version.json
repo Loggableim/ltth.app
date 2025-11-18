@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0-beta",
+  "releaseDate": "2024-11-18",
+  "status": "beta",
+  "changelog": {
+    "2.0.0-beta": {
+      "date": "2024-11-18",
+      "changes": [
+        "Complete website rework with modern design",
+        "New branding system with #12a116 primary color",
+        "Dark/Light/Monochrome theme support",
+        "Improved accessibility (WCAG 2.1 AA compliant)",
+        "120 FPS animation system",
+        "Responsive mobile-first design",
+        "Live search functionality",
+        "Scroll progress indicator",
+        "Mascot sprite sheet system",
+        "Enhanced SEO and performance"
+      ]
+    },
+    "1.0.0": {
+      "date": "2024-01-01",
+      "changes": [
+        "Initial website launch",
+        "Basic feature showcase",
+        "Documentation pages",
+        "Download section"
+      ]
+    }
+  }
+}
