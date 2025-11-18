@@ -2,21 +2,26 @@
 
 **PupCid's Little TikTok Helper** - Official Website
 
-> The ultimate tool to enhance your TikTok experience with powerful features and seamless integration.
+> The professional TikTok LIVE streaming solution with real-time events, TTS, alerts, soundboard, plugin system and OBS integration.
 
 [![Live Website](https://img.shields.io/badge/Live-ltth.app-12a116)](https://ltth.app)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Beta Status](https://img.shields.io/badge/Status-Beta-orange)](https://ltth.app)
 
 ## 🌟 About
 
-This repository contains the complete static website for **PupCid's Little TikTok Helper** (ltth.app), a browser extension and tool suite designed to supercharge your TikTok experience with features like:
+This repository contains the complete static website for **PupCid's Little TikTok Helper** (ltth.app), a professional streaming tool designed for TikTok LIVE streamers with features like:
 
-- 📥 One-click video downloads (no watermarks)
-- 🚫 Advanced ad-blocking
-- 🔒 Privacy & security protection
-- ⚡ Performance optimization
-- 🎨 Customization options
-- 🔌 Extensible plugin system
+- 📡 **Real-time TikTok LIVE connection** - Gifts, Chat, Follows, Shares, Likes, Subscriptions
+- 🎙️ **Text-to-Speech** - 75+ TikTok voices & 30+ Google Cloud voices
+- 🔔 **Customizable Alerts** - Sound + Text + Image/GIF support for all event types
+- 🎵 **Soundboard** - 100,000+ sounds via MyInstants integration
+- 🎯 **Goals & Overlays** - 4 separate goals with browser source overlays for OBS
+- ⚡ **Event Automation (Flows)** - "If-Then" automation without programming
+- 🎥 **OBS Integration** - Full-HD overlay & WebSocket v5 scene control
+- 🎮 **VRChat OSC Support** - Avatar control via OSC protocol
+- 🔌 **Plugin System** - 7+ pre-installed plugins, create your own with Plugin API
+- 💾 **100% Local** - No cloud services, no login required, fully transparent
 
 ## 🎨 Branding
 
@@ -33,7 +38,7 @@ The website features a complete brand identity built around our primary color pa
 
 ```
 ltth.app/
-├── index.html           # Landing page
+├── index.html           # Landing page with beta notice
 ├── features.html        # Feature showcase
 ├── plugins.html         # Plugin gallery
 ├── docs.html           # Documentation
@@ -49,17 +54,36 @@ ltth.app/
 │   ├── main.js         # Core interactivity
 │   └── docs.js         # Documentation features
 ├── assets/
-│   ├── logo.svg        # Brand logo
-│   ├── favicon.svg     # Favicon
+│   ├── ltthicon.png    # Brand icon
+│   ├── winken.png      # Mascot waving
+│   ├── zwinkern.png    # Mascot winking
 │   └── *.png           # Icon assets
+├── wiki/               # Complete wiki documentation
+│   ├── Home.md         # Wiki home
+│   ├── Architektur.md  # Architecture documentation
+│   ├── Plugin-Dokumentation.md
+│   └── ...             # More wiki files
 ├── manifest.json       # PWA manifest
 ├── sw.js              # Service worker
 └── CNAME              # Custom domain configuration
 ```
 
-## 🚀 Features
+## 🚀 Key Features
 
-### Complete Design System
+### TikTok LIVE Streaming Tool
+- ✅ Real-time event processing (Gifts, Chat, Follows, Shares, Likes, Subscriptions)
+- ✅ Text-to-Speech with 75+ TikTok voices and 30+ Google Cloud voices
+- ✅ Customizable alert system with templates and variable support
+- ✅ Soundboard with MyInstants integration (100,000+ sounds)
+- ✅ Goals & Progress Bars with OBS browser source overlays
+- ✅ Event Automation (Flows) - "If-Then" rules without coding
+- ✅ OBS Integration via WebSocket v5
+- ✅ VRChat OSC Integration for avatar control
+- ✅ Multi-Profile System for different streaming setups
+- ✅ Plugin System with 7+ pre-installed plugins
+
+### Website Features
+- ✅ Beta status notice with GitHub issue links
 - ✅ Responsive mobile-first design
 - ✅ Dark/Light mode with system preference detection
 - ✅ Smooth animations and transitions
@@ -125,10 +149,29 @@ This website is designed for GitHub Pages deployment:
 
 - ✅ Semantic HTML5 markup
 - ✅ Meta descriptions on all pages
+- ✅ Keywords optimized for TikTok LIVE streaming tools
 - ✅ Open Graph and Twitter Card tags
 - ✅ Structured data for search engines
 - ✅ Optimized images and assets
 - ✅ Fast load times (no external dependencies)
+
+## 🐛 Beta Status
+
+This tool is currently in **active development** (Beta). Bugs may occur and features are being actively improved. 
+
+**Report bugs:** [GitHub Issues](https://github.com/Loggableim/ltth.app/issues)  
+**Request features:** [GitHub Issue System](https://github.com/Loggableim/ltth.app/issues/new)
+
+## 📚 Documentation
+
+Comprehensive wiki documentation is available in the `/wiki` folder:
+
+- **[Home](wiki/Home.md)** - Wiki overview and navigation
+- **[Installation & Setup](wiki/Installation-&-Setup.md)** - Getting started guide
+- **[Architecture](wiki/Architektur.md)** - Technical architecture and system design
+- **[Plugin Documentation](wiki/Plugin-Dokumentation.md)** - Plugin system guide
+- **[API Reference](wiki/API-Reference.md)** - REST API and WebSocket events
+- **[FAQ & Troubleshooting](wiki/FAQ-&-Troubleshooting.md)** - Common issues and solutions
 
 ## 🌐 Browser Support
 
