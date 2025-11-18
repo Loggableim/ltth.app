@@ -73,170 +73,251 @@
     <div class="docs-layout">
         <aside class="docs-sidebar">
             <div class="docs-search">
-                <input type="text" placeholder="Search documentation..." class="search-input">
+                <input type="text" placeholder="Dokumentation durchsuchen..." class="search-input">
             </div>
             <nav class="docs-nav">
                 <div class="docs-nav-section">
-                    <h3>Getting Started</h3>
+                    <h3>Erste Schritte</h3>
                     <ul>
-                        <li><a href="#introduction" class="active">Introduction</a></li>
-                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="#introduction" class="active">Einführung</a></li>
+                        <li><a href="#installation">Installation & Setup</a></li>
                         <li><a href="#quick-start">Quick Start</a></li>
+                        <li><a href="#configuration">Konfiguration</a></li>
                     </ul>
                 </div>
                 <div class="docs-nav-section">
                     <h3>Features</h3>
                     <ul>
-                        <li><a href="#video-download">Video Downloads</a></li>
-                        <li><a href="#ad-blocking">Ad Blocking</a></li>
-                        <li><a href="#privacy">Privacy Settings</a></li>
-                        <li><a href="#customization">Customization</a></li>
+                        <li><a href="#tiktok-connection">TikTok LIVE Verbindung</a></li>
+                        <li><a href="#tts">Text-to-Speech</a></li>
+                        <li><a href="#alerts">Alert-System</a></li>
+                        <li><a href="#flows">Event-Automation (Flows)</a></li>
+                        <li><a href="#goals">Goals & Overlays</a></li>
+                        <li><a href="#soundboard">Soundboard</a></li>
                     </ul>
                 </div>
                 <div class="docs-nav-section">
-                    <h3>Advanced</h3>
+                    <h3>Integrationen</h3>
                     <ul>
-                        <li><a href="#api">API Reference</a></li>
-                        <li><a href="#plugins">Plugin Development</a></li>
+                        <li><a href="#obs">OBS Studio</a></li>
+                        <li><a href="#vrchat">VRChat OSC</a></li>
+                        <li><a href="#vdoninja">VDO.Ninja</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Entwickler</h3>
+                    <ul>
+                        <li><a href="#architecture">Architektur</a></li>
+                        <li><a href="#plugin-api">Plugin-API</a></li>
+                        <li><a href="#api-reference">REST-API</a></li>
                         <li><a href="#troubleshooting">Troubleshooting</a></li>
                     </ul>
                 </div>
             </nav>
-
-    <!-- Beta Notice -->
-    <section class="beta-notice">
-        <div class="container">
-            <div class="beta-content">
-                <div class="beta-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                        <line x1="12" y1="9" x2="12" y2="13"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                </div>
-                <div class="beta-text">
-                    <strong>⚠️ Beta-Version:</strong> Dieses Tool befindet sich aktuell in aktiver Entwicklung. 
-                    Es können Fehler auftreten. Wir freuen uns über Feedback! 
-                    Bitte melde Bugs auf <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">GitHub Issues</a> 
-                    und Feature-Requests über das <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">GitHub Issue-System</a>.
-                </div>
-            </div>
-        </div>
-    </section>
-
-
-
         </aside>
 
         <main class="docs-content">
             <article id="introduction">
-                <h1>Introduction</h1>
-                <p>Welcome to PupCid's Little TikTok Helper documentation. This guide will help you get started and make the most of all available features.</p>
+                <h1>Willkommen bei PupCid's Little TikTok Helper</h1>
+                <p>Diese Dokumentation hilft dir, das Tool optimal zu nutzen und alle Features kennenzulernen.</p>
                 
-                <h2>What is ltth.app?</h2>
-                <p>ltth.app is a powerful browser extension designed to enhance your TikTok experience. It provides features like video downloading, ad-blocking, privacy protection, and much more.</p>
+                <h2>Was ist ltth.app?</h2>
+                <p><strong>PupCid's Little TikTok Helper</strong> ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.</p>
                 
-                <h2>Key Features</h2>
+                <h2>Hauptfunktionen</h2>
                 <ul>
-                    <li>One-click video downloads without watermarks</li>
-                    <li>Advanced ad-blocking capabilities</li>
-                    <li>Enhanced privacy and security</li>
-                    <li>Customizable user interface</li>
-                    <li>Plugin system for extensibility</li>
+                    <li><strong>Echtzeit-TikTok LIVE Integration:</strong> Empfange Gifts, Comments, Follows, Shares und Likes in Echtzeit</li>
+                    <li><strong>Text-to-Speech:</strong> 75+ TikTok-Stimmen & 30+ Google Cloud-Stimmen</li>
+                    <li><strong>Alert-System:</strong> Anpassbare Alerts für alle Event-Typen</li>
+                    <li><strong>Soundboard:</strong> 100.000+ Sounds via MyInstants-Integration</li>
+                    <li><strong>Event-Automation (Flows):</strong> Wenn-Dann-Automatisierungen ohne Code</li>
+                    <li><strong>OBS-Integration:</strong> Transparentes Full-HD-Overlay für Streams</li>
+                    <li><strong>Plugin-System:</strong> 7+ vorinstallierte Plugins, erweiterbar</li>
+                    <li><strong>100% Lokal & Open Source:</strong> Keine Cloud, keine Login-Daten erforderlich</li>
+                </ul>
+
+                <h2>Für wen ist das Tool?</h2>
+                <ul>
+                    <li>TikTok LIVE Streamer - Professionelle Overlays und Alerts</li>
+                    <li>Content Creator - Event-Automatisierung und Interaktivität</li>
+                    <li>VRChat Streamer - OSC-Integration für Avatar-Steuerung</li>
+                    <li>Multi-Guest Streamer - VDO.Ninja Integration für Interviews</li>
+                    <li>Entwickler - Modulares Plugin-System zum Erweitern</li>
                 </ul>
             </article>
 
             <article id="installation">
-                <h1>Installation</h1>
-                <p>Installing ltth.app is quick and easy. Follow these steps based on your browser:</p>
+                <h1>Installation & Setup</h1>
+                <p>Die Installation von PupCid's Little TikTok Helper ist einfach und schnell.</p>
                 
-                <h2>Chrome/Edge Installation</h2>
-                <ol>
-                    <li>Download the extension from the <a href="/download.html">download page</a></li>
-                    <li>Open your browser's extension page (<code>chrome://extensions</code> or <code>edge://extensions</code>)</li>
-                    <li>Enable "Developer mode" in the top right</li>
-                    <li>Click "Load unpacked" and select the downloaded folder</li>
-                    <li>The extension is now installed and ready to use</li>
-                </ol>
+                <h2>Systemanforderungen</h2>
+                <ul>
+                    <li><strong>Betriebssystem:</strong> Windows 10/11 (64-bit)</li>
+                    <li><strong>Node.js:</strong> 18.0.0 - 23.x (wird automatisch installiert)</li>
+                    <li><strong>RAM:</strong> Mindestens 4 GB empfohlen</li>
+                    <li><strong>Festplatte:</strong> 500 MB freier Speicherplatz</li>
+                </ul>
                 
-                <h2>Firefox Installation</h2>
+                <h2>Installation</h2>
                 <ol>
-                    <li>Download the extension from the <a href="/download.html">download page</a></li>
-                    <li>Open Firefox and navigate to <code>about:addons</code></li>
-                    <li>Click the gear icon and select "Install Add-on From File"</li>
-                    <li>Select the downloaded file</li>
-                    <li>Click "Add" when prompted</li>
+                    <li><strong>Download:</strong> Lade <code>setup.exe</code> von <a href="/setup.exe">ltth.app/setup.exe</a> herunter</li>
+                    <li><strong>Installation ausführen:</strong> Doppelklick auf setup.exe und folge dem Installations-Assistenten</li>
+                    <li><strong>Node.js:</strong> Wird automatisch mitinstalliert falls nicht vorhanden</li>
+                    <li><strong>Server starten:</strong> Das Tool startet automatisch nach der Installation</li>
+                    <li><strong>Dashboard öffnen:</strong> Browser öffnet sich automatisch auf <code>http://localhost:3000</code></li>
                 </ol>
+
+                <h2>Manuelle Installation (für Entwickler)</h2>
+                <pre><code># Repository klonen
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
+
+# Dependencies installieren
+npm install
+
+# Server starten
+node launch.js
+
+# Oder mit Launcher-Skript:
+# Windows: start.bat
+# Linux/macOS: ./start.sh</code></pre>
             </article>
 
             <article id="quick-start">
                 <h1>Quick Start</h1>
-                <p>Get up and running with ltth.app in minutes.</p>
+                <p>In 3 Schritten zum professionellen TikTok LIVE Stream!</p>
                 
-                <h2>First Time Setup</h2>
-                <p>After installation, ltth.app will automatically activate on TikTok. You'll see a small icon in your browser toolbar indicating the extension is active.</p>
-                
-                <h2>Downloading Your First Video</h2>
-                <pre><code>1. Navigate to any TikTok video
-2. Look for the download button added by ltth.app
-3. Click the button and choose your preferred quality
-4. The video will be downloaded to your default downloads folder</code></pre>
-                
-                <h2>Accessing Settings</h2>
-                <p>Click the ltth.app icon in your browser toolbar to access settings and customize your experience.</p>
-            </article>
+                <h2>Schritt 1: Mit TikTok LIVE verbinden</h2>
+                <ol>
+                    <li>Öffne das Dashboard auf <code>http://localhost:3000</code></li>
+                    <li>Gib deinen TikTok-Username ein (ohne @)</li>
+                    <li>Klicke auf "Connect to TikTok LIVE"</li>
+                    <li>Warte auf grünen Status "Connected"</li>
+                </ol>
+                <p><strong>Wichtig:</strong> Du musst bereits LIVE sein auf TikTok, damit die Verbindung funktioniert.</p>
 
-            <article id="video-download">
-                <h1>Video Downloads</h1>
-                <p>The video download feature allows you to save TikTok videos to your device.</p>
-                
-                <h2>Download Options</h2>
+                <h2>Schritt 2: OBS einrichten</h2>
+                <ol>
+                    <li>Öffne OBS Studio</li>
+                    <li>Füge eine neue Browser-Source hinzu</li>
+                    <li>URL: <code>http://localhost:3000/overlay</code></li>
+                    <li>Breite: 1920, Höhe: 1080</li>
+                    <li>Aktiviere "Shutdown source when not visible" für Performance</li>
+                </ol>
+
+                <h2>Schritt 3: Features konfigurieren</h2>
                 <ul>
-                    <li><strong>Quality Selection:</strong> Choose from multiple quality options (HD, SD, etc.)</li>
-                    <li><strong>Format:</strong> Download as MP4 or other supported formats</li>
-                    <li><strong>Watermark Removal:</strong> Option to remove TikTok watermarks</li>
-                    <li><strong>Batch Download:</strong> Download multiple videos at once</li>
+                    <li><strong>TTS:</strong> Dashboard → TTS → Stimme auswählen → "Auto-TTS für Chat" aktivieren</li>
+                    <li><strong>Alerts:</strong> Dashboard → Alerts → Event-Typ auswählen → Sound und Text konfigurieren</li>
+                    <li><strong>Goals:</strong> Dashboard → Goals → Ziel setzen → Style anpassen</li>
+                    <li><strong>Flows:</strong> Dashboard → Flows → "New Flow" → Trigger und Actions definieren</li>
                 </ul>
-                
-                <h2>Usage Example</h2>
-                <pre><code>// Programmatic download (for plugin developers)
-ltth.downloadVideo({
-    url: 'https://tiktok.com/@user/video/123456',
-    quality: 'hd',
-    removeWatermark: true
-});</code></pre>
+
+                <p><strong>Fertig!</strong> 🎉 Dein Stream ist jetzt professionell aufgesetzt.</p>
             </article>
 
-            <article id="api">
-                <h1>API Reference</h1>
-                <p>For developers building plugins or integrations with ltth.app.</p>
-                
-                <h2>Core API</h2>
-                <pre><code>// Get extension version
-ltth.version()
-
-// Download video
-ltth.downloadVideo(options)
-
-// Get settings
-ltth.getSettings()
-
-// Update settings
-ltth.updateSettings(newSettings)
-
-// Register plugin
-ltth.registerPlugin(plugin)</code></pre>
+            <article id="tiktok-connection">
+                <h1>TikTok LIVE Verbindung</h1>
+                <p>Echtzeit-Verbindung zu deinem TikTok LIVE-Stream ohne Login-Daten.</p>
                 
                 <h2>Events</h2>
-                <pre><code>// Listen for video detection
-ltth.on('videoDetected', (video) => {
-    console.log('Video detected:', video);
-});
+                <ul>
+                    <li><strong>Gifts:</strong> Geschenke mit Coins, Combo-Tracking, Gift-Katalog</li>
+                    <li><strong>Chat:</strong> Nachrichten mit Profilbildern und Badges</li>
+                    <li><strong>Follows:</strong> Neue Follower mit Follow-Role-Tracking</li>
+                    <li><strong>Shares:</strong> Stream-Shares mit Nutzerinformationen</li>
+                    <li><strong>Likes:</strong> Like-Events mit Like-Counts</li>
+                    <li><strong>Subscriptions:</strong> Subscriber mit Tier-Levels</li>
+                </ul>
 
-// Listen for download completion
-ltth.on('downloadComplete', (result) => {
-    console.log('Download complete:', result);
-});</code></pre>
+                <h2>Auto-Reconnect</h2>
+                <p>Bei Verbindungsabbruch erfolgt automatischer Reconnect. Du kannst die Reconnect-Strategie in den Settings konfigurieren.</p>
+            </article>
+
+            <article id="architecture">
+                <h1>Architektur</h1>
+                <p>PupCid's Little TikTok Helper basiert auf einer Event-Driven Microservice-Architektur.</p>
+                
+                <h2>Technologie-Stack</h2>
+                <ul>
+                    <li><strong>Backend:</strong> Node.js 18-23, Express 4, Socket.io 4</li>
+                    <li><strong>Datenbank:</strong> SQLite (WAL Mode) mit better-sqlite3</li>
+                    <li><strong>TikTok-Integration:</strong> tiktok-live-connector 2.1.0</li>
+                    <li><strong>OBS-Integration:</strong> obs-websocket-js 5.0.6</li>
+                    <li><strong>OSC-Protokoll:</strong> osc 2.4.5</li>
+                    <li><strong>Frontend:</strong> Bootstrap 5, Vanilla JavaScript</li>
+                </ul>
+
+                <h2>Module</h2>
+                <ul>
+                    <li><code>server.js</code> - Haupt-Server mit Express und Socket.io</li>
+                    <li><code>modules/database.js</code> - SQLite-Manager mit WAL-Mode</li>
+                    <li><code>modules/tiktok.js</code> - TikTok LIVE Connector</li>
+                    <li><code>modules/plugin-loader.js</code> - Plugin-System mit Hot-Loading</li>
+                    <li><code>modules/flows.js</code> - Event-Automation Engine</li>
+                </ul>
+
+                <p>Weitere Details findest du im <a href="https://github.com/Loggableim/ltth.app/wiki/Architektur" target="_blank">GitHub Wiki</a>.</p>
+            </article>
+
+            <article id="plugin-api">
+                <h1>Plugin-API</h1>
+                <p>Erstelle eigene Plugins für ltth.app mit der Plugin-API.</p>
+                
+                <h2>Plugin-Struktur</h2>
+                <pre><code>plugins/my-plugin/
+├── plugin.json       # Metadata
+└── main.js           # Plugin-Klasse</code></pre>
+
+                <h2>Beispiel-Plugin</h2>
+                <pre><code>class MyPlugin {
+    constructor(api) {
+        this.api = api;
+    }
+
+    async init() {
+        // Express-Route registrieren
+        this.api.registerRoute('GET', '/status', (req, res) => {
+            res.json({ status: 'ok' });
+        });
+
+        // TikTok-Event abonnieren
+        this.api.registerTikTokEvent('gift', async (data) => {
+            this.api.log(`Gift: ${data.giftName} from ${data.username}`);
+        });
+    }
+
+    async destroy() {
+        this.api.log('Plugin stopped');
+    }
+}
+
+module.exports = MyPlugin;</code></pre>
+
+                <p>Vollständige Plugin-Dokumentation: <a href="/plugins.html">Plugin-System</a></p>
+            </article>
+
+            <article id="troubleshooting">
+                <h1>Troubleshooting</h1>
+                
+                <h2>TikTok-Verbindung schlägt fehl</h2>
+                <ul>
+                    <li>Stelle sicher, dass du bereits LIVE bist auf TikTok</li>
+                    <li>Username muss korrekt sein (ohne @)</li>
+                    <li>Firewall/Antivirus könnte Verbindung blockieren</li>
+                    <li>Port 3000 muss verfügbar sein</li>
+                </ul>
+
+                <h2>Overlay wird nicht angezeigt</h2>
+                <ul>
+                    <li>Überprüfe die Browser-Source-URL: <code>http://localhost:3000/overlay</code></li>
+                    <li>Breite: 1920, Höhe: 1080</li>
+                    <li>OBS muss auf demselben PC laufen</li>
+                    <li>Server muss laufen (localhost:3000 erreichbar)</li>
+                </ul>
+
+                <h2>Weitere Hilfe</h2>
+                <p>Besuche das <a href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&-Troubleshooting" target="_blank">FAQ & Troubleshooting Wiki</a> oder öffne ein <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank">GitHub Issue</a>.</p>
             </article>
         </main>
     </div>
@@ -244,7 +325,7 @@ ltth.on('downloadComplete', (result) => {
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
-                <p class="footer-copyright">&copy; 2024 ltth.app. All rights reserved.</p>
+                <p class="footer-copyright">&copy; 2025 ltth.app. All rights reserved.</p>
             </div>
         </div>
     </footer>

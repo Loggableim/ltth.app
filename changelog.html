@@ -46,51 +46,89 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.0</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.3 Beta</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 18, 2024</p>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 2025 (Beta)</p>
                 
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 New Features</h3>
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Features</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Initial release of ltth.app</li>
-                    <li>One-click video downloads</li>
-                    <li>Advanced ad-blocking system</li>
-                    <li>Privacy protection features</li>
-                    <li>Enhanced video player controls</li>
-                    <li>Content organization system</li>
-                    <li>Dark mode support</li>
-                    <li>Multi-browser compatibility</li>
-                    <li>Plugin system foundation</li>
+                    <li>✅ TikTok LIVE Integration mit Echtzeit-Events (Gifts, Chat, Follows, Shares, Likes, Subscriptions)</li>
+                    <li>✅ Text-to-Speech mit 75+ TikTok-Stimmen & 30+ Google Cloud-Stimmen</li>
+                    <li>✅ Anpassbares Alert-System für alle Event-Typen</li>
+                    <li>✅ Soundboard mit 100.000+ Sounds via MyInstants</li>
+                    <li>✅ Event-Automation (Flows) - Wenn-Dann-Regeln ohne Code</li>
+                    <li>✅ Goals-System (Likes, Followers, Subscriptions, Coins)</li>
+                    <li>✅ OBS-Integration mit transparentem Full-HD-Overlay (1920x1080)</li>
+                    <li>✅ Plugin-System mit 7+ vorinstallierten Plugins</li>
+                    <li>✅ Multi-Profile-System für verschiedene Stream-Setups</li>
+                    <li>✅ Leaderboard & Statistiken (Top Gifters, Streaks, Donors)</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔌 Plugins</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>TTS Plugin - 75+ Stimmen mit User-Voice-Mappings</li>
+                    <li>Soundboard Plugin - Gift-Mappings, Event-Sounds, Like-Threshold</li>
+                    <li>Multi-Cam Switcher - OBS WebSocket v5, Chat-Commands</li>
+                    <li>OSC-Bridge - VRChat-Integration, Avatar-Steuerung</li>
+                    <li>VDO.Ninja Plugin - Multi-Guest-Streaming, Room-Management</li>
+                    <li>Topboard Plugin - Top Gifters, Streaks, Recent Donors</li>
+                    <li>Emoji Rain - Emoji-Regen-Effekt bei Gifts</li>
                 </ul>
 
                 <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Improvements</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Optimized performance for faster loading</li>
-                    <li>Improved user interface design</li>
-                    <li>Enhanced accessibility features</li>
-                    <li>Better mobile responsiveness (website)</li>
+                    <li>Optimierte Performance für Echtzeit-Event-Verarbeitung</li>
+                    <li>WAL-Mode für SQLite-Datenbank (bessere Performance)</li>
+                    <li>Auto-Reconnect bei TikTok-Verbindungsabbruch</li>
+                    <li>Hot-Loading für Plugins (ohne Server-Neustart)</li>
+                    <li>ZIP-Upload für Plugins via Web-UI</li>
+                </ul>
+
+                <h3 style="color: var(--color-text-secondary); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Technical</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Node.js 18-23 Support</li>
+                    <li>Express 4 + Socket.io 4 Backend</li>
+                    <li>SQLite mit better-sqlite3 (WAL Mode)</li>
+                    <li>OBS WebSocket v5 Integration</li>
+                    <li>OSC-Protokoll 2.4.5 für VRChat</li>
                 </ul>
             </div>
 
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 0.9.0 Beta</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 1, 2024</p>
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Geplante Updates</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Kommende Features & Verbesserungen</p>
                 
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 New Features</h3>
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">⏳ In Entwicklung</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Beta release for testing</li>
-                    <li>Core download functionality</li>
-                    <li>Basic ad-blocking</li>
-                    <li>Settings panel</li>
+                    <li>Cloud-Sync für User-Configs (optional, opt-in)</li>
+                    <li>Erweiterte Analytics-Dashboard mit Deep-Dive-Statistiken</li>
+                    <li>Multi-Language-Support (Englisch, Spanisch, Französisch)</li>
+                    <li>Advanced HUD-Editor mit Drag & Drop und Live-Vorschau</li>
+                    <li>Minigames-System für Viewer-Engagement</li>
                 </ul>
 
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bug Fixes</h3>
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">📅 Geplant</h3>
                 <ul style="color: var(--color-text-secondary);">
-                    <li>Fixed download errors on certain video formats</li>
-                    <li>Resolved memory leak issues</li>
-                    <li>Fixed UI rendering problems</li>
+                    <li>Chat-Bot-Integration mit Auto-Antworten und Commands</li>
+                    <li>Stream-Scheduling für zeitgesteuerte Events</li>
+                    <li>Advanced OSC-Features für VRChat</li>
+                    <li>Multi-Stream-Support (Twitch/YouTube Integration)</li>
+                    <li>Custom Widgets (HTML/CSS/JS)</li>
+                    <li>Community Plugin Store</li>
                 </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
+                <h3 style="margin-bottom: var(--space-4); color: white;">⚠️ Beta-Hinweis</h3>
+                <p style="margin-bottom: var(--space-6); opacity: 0.9;">
+                    Dieses Tool befindet sich in aktiver Entwicklung. Features können sich ändern. 
+                    Bitte melde Bugs und Feature-Requests auf GitHub.
+                </p>
+                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" 
+                   style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    GitHub Issues
+                </a>
             </div>
         </div>
     </section>
@@ -98,7 +136,7 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
-                <p class="footer-copyright">&copy; 2024 ltth.app. All rights reserved.</p>
+                <p class="footer-copyright">&copy; 2025 ltth.app. All rights reserved.</p>
             </div>
         </div>
     </footer>

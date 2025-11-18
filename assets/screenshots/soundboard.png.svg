@@ -1,0 +1,23 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="50" rx="8" fill="#2a2a2a"/>
+  <text x="400" y="82" font-family="Arial, sans-serif" font-size="18" fill="#12a116" text-anchor="middle" font-weight="bold">Soundboard - 100.000+ Sounds</text>
+  <rect x="50" y="120" width="160" height="120" rx="8" fill="#2a2a2a"/>
+  <circle cx="130" cy="160" r="25" fill="#12a116"/>
+  <text x="130" y="168" font-family="Arial, sans-serif" font-size="24" fill="#fff" text-anchor="middle">🎁</text>
+  <text x="130" y="210" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Rose Sound</text>
+  <rect x="230" y="120" width="160" height="120" rx="8" fill="#2a2a2a"/>
+  <circle cx="310" cy="160" r="25" fill="#4ade80"/>
+  <text x="310" y="168" font-family="Arial, sans-serif" font-size="24" fill="#fff" text-anchor="middle">🎵</text>
+  <text x="310" y="210" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Follow Sound</text>
+  <rect x="410" y="120" width="160" height="120" rx="8" fill="#2a2a2a"/>
+  <circle cx="490" cy="160" r="25" fill="#fbbf24"/>
+  <text x="490" y="168" font-family="Arial, sans-serif" font-size="24" fill="#fff" text-anchor="middle">❤️</text>
+  <text x="490" y="210" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Like Sound</text>
+  <rect x="590" y="120" width="160" height="120" rx="8" fill="#2a2a2a"/>
+  <circle cx="670" cy="160" r="25" fill="#a78bfa"/>
+  <text x="670" y="168" font-family="Arial, sans-serif" font-size="24" fill="#fff" text-anchor="middle">⭐</text>
+  <text x="670" y="210" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Sub Sound</text>
+  <text x="400" y="330" font-family="Arial, sans-serif" font-size="24" fill="#666" text-anchor="middle">Soundboard Interface Screenshot</text>
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real soundboard.png</text>
+</svg>
