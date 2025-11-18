@@ -1,7 +1,8 @@
 {
     "name": "PupCid's Little TikTok Helper",
     "short_name": "ltth.app",
-    "description": "The ultimate tool to enhance your TikTok experience with powerful features and seamless integration.",
+    "description": "Professional TikTok LIVE streaming solution with real-time events, TTS, alerts, soundboard, plugin system and OBS integration. 100% free and open source.",
+    "version": "2.0.0-beta",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0e0f10",
@@ -21,9 +22,11 @@
             "purpose": "any maskable"
         }
     ],
-    "categories": ["productivity", "social", "utilities"],
+    "categories": ["productivity", "social", "utilities", "multimedia"],
     "lang": "en-US",
     "dir": "ltr",
     "scope": "/",
-    "prefer_related_applications": false
+    "prefer_related_applications": false,
+    "related_applications": [],
+    "screenshots": []
 }
