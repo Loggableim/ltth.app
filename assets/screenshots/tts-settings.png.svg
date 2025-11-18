@@ -1,0 +1,22 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="350" rx="8" fill="#2a2a2a"/>
+  <text x="400" y="90" font-family="Arial, sans-serif" font-size="24" fill="#12a116" text-anchor="middle" font-weight="bold">Text-to-Speech Settings</text>
+  <rect x="70" y="120" width="300" height="240" rx="6" fill="#333"/>
+  <text x="220" y="145" font-family="Arial, sans-serif" font-size="16" fill="#fff" text-anchor="middle">Available Voices</text>
+  <rect x="90" y="160" width="260" height="30" rx="4" fill="#12a116" fill-opacity="0.3"/>
+  <text x="220" y="182" font-family="Arial, sans-serif" font-size="12" fill="#fff" text-anchor="middle">de_001 (German Male)</text>
+  <rect x="90" y="200" width="260" height="30" rx="4" fill="#2a2a2a"/>
+  <text x="220" y="222" font-family="Arial, sans-serif" font-size="12" fill="#aaa" text-anchor="middle">en_us_001 (English Female)</text>
+  <rect x="90" y="240" width="260" height="30" rx="4" fill="#2a2a2a"/>
+  <text x="220" y="262" font-family="Arial, sans-serif" font-size="12" fill="#aaa" text-anchor="middle">en_us_002 (English Male)</text>
+  <rect x="400" y="120" width="330" height="240" rx="6" fill="#333"/>
+  <text x="565" y="145" font-family="Arial, sans-serif" font-size="16" fill="#fff" text-anchor="middle">Voice Settings</text>
+  <text x="420" y="175" font-family="Arial, sans-serif" font-size="12" fill="#aaa">Volume</text>
+  <rect x="420" y="185" width="290" height="8" rx="4" fill="#2a2a2a"/>
+  <rect x="420" y="185" width="217" height="8" rx="4" fill="#12a116"/>
+  <text x="420" y="215" font-family="Arial, sans-serif" font-size="12" fill="#aaa">Speed</text>
+  <rect x="420" y="225" width="290" height="8" rx="4" fill="#2a2a2a"/>
+  <rect x="420" y="225" width="145" height="8" rx="4" fill="#12a116"/>
+  <text x="400" y="395" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real tts-settings.png</text>
+</svg>

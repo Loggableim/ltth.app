@@ -1,0 +1,17 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="350" rx="8" fill="#2a2a2a"/>
+  <rect x="70" y="80" width="300" height="80" rx="6" fill="#12a116" fill-opacity="0.2"/>
+  <text x="220" y="105" font-family="Arial, sans-serif" font-size="16" fill="#12a116" text-anchor="middle" font-weight="bold">TRIGGER</text>
+  <text x="220" y="130" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Gift == "Rose"</text>
+  <path d="M 370 120 L 430 120" stroke="#12a116" stroke-width="3" fill="none"/>
+  <polygon points="430,120 420,115 420,125" fill="#12a116"/>
+  <rect x="430" y="80" width="300" height="80" rx="6" fill="#4ade80" fill-opacity="0.2"/>
+  <text x="580" y="105" font-family="Arial, sans-serif" font-size="16" fill="#4ade80" text-anchor="middle" font-weight="bold">ACTION</text>
+  <text x="580" y="130" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">TTS: "Thank you {username}"</text>
+  <rect x="70" y="200" width="660" height="60" rx="6" fill="#333"/>
+  <text x="400" y="225" font-family="Arial, sans-serif" font-size="14" fill="#aaa" text-anchor="middle">+ Add Trigger</text>
+  <rect x="70" y="280" width="660" height="60" rx="6" fill="#333"/>
+  <text x="400" y="305" font-family="Arial, sans-serif" font-size="14" fill="#aaa" text-anchor="middle">+ Add Action</text>
+  <text x="400" y="400" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real flows.png</text>
+</svg>

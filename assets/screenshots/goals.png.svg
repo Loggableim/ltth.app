@@ -1,0 +1,15 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="100" rx="8" fill="#2a2a2a"/>
+  <text x="400" y="85" font-family="Arial, sans-serif" font-size="18" fill="#12a116" text-anchor="middle" font-weight="bold">Likes Goal</text>
+  <rect x="70" y="100" width="660" height="30" rx="15" fill="#333"/>
+  <rect x="70" y="100" width="440" height="30" rx="15" fill="#12a116"/>
+  <text x="400" y="145" font-family="Arial, sans-serif" font-size="16" fill="#fff" text-anchor="middle">666 / 1000</text>
+  <rect x="50" y="180" width="700" height="100" rx="8" fill="#2a2a2a"/>
+  <text x="400" y="215" font-family="Arial, sans-serif" font-size="18" fill="#4ade80" text-anchor="middle" font-weight="bold">Followers Goal</text>
+  <rect x="70" y="230" width="660" height="30" rx="15" fill="#333"/>
+  <rect x="70" y="230" width="198" height="30" rx="15" fill="#4ade80"/>
+  <text x="400" y="275" font-family="Arial, sans-serif" font-size="16" fill="#fff" text-anchor="middle">150 / 500</text>
+  <text x="400" y="380" font-family="Arial, sans-serif" font-size="24" fill="#666" text-anchor="middle">Goals Configuration Screenshot</text>
+  <text x="400" y="410" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real goals.png</text>
+</svg>
