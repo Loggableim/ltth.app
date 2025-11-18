@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download PupCid's Little TikTok Helper for your browser or platform. Free, fast, and secure.">
+    <title>Download - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-top: var(--space-12);
+        }
+        
+        .download-card {
+            background-color: var(--color-surface);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-8);
+            text-align: center;
+            transition: all var(--transition-base);
+        }
+        
+        .download-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--color-primary);
+        }
+        
+        .download-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--space-6);
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .download-icon svg {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .download-name {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-3);
+        }
+        
+        .download-version {
+            color: var(--color-text-secondary);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-6);
+        }
+        
+        .download-btn {
+            width: 100%;
+        }
+        
+        .install-steps {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-xl);
+            padding: var(--space-8);
+            margin-top: var(--space-12);
+        }
+        
+        .install-step {
+            display: flex;
+            gap: var(--space-4);
+            padding: var(--space-6);
+            margin-bottom: var(--space-4);
+        }
+        
+        .install-step-number {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .install-step-content h3 {
+            margin-bottom: var(--space-2);
+        }
+        
+        .install-step-content p {
+            margin: 0;
+            color: var(--color-text-secondary);
+        }
+        
+        .system-requirements {
+            background-color: var(--color-bg);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            margin-top: var(--space-8);
+        }
+        
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .requirements-list li {
+            padding: var(--space-2) 0;
+            padding-left: var(--space-8);
+            position: relative;
+        }
+        
+        .requirements-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--color-primary);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <svg class="logo-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" fill="currentColor"/>
+                        <path d="M20 8 L28 20 L20 32 L12 20 Z" fill="#0e0f10"/>
+                    </svg>
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta active">Download</a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                Download <span class="hero-highlight">ltth.app</span>
+            </h1>
+            <p class="hero-description text-center" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+                Choose your platform and start enhancing your TikTok experience today. Free, fast, and secure.
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="download-grid">
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="6"/>
+                            <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="download-name">Chrome</h3>
+                    <p class="download-version">Version 1.0.0</p>
+                    <a href="https://github.com/Loggableim/ltth.app/releases" class="btn btn-primary download-btn">
+                        Download for Chrome
+                    </a>
+                </div>
+
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3 class="download-name">Firefox</h3>
+                    <p class="download-version">Version 1.0.0</p>
+                    <a href="https://github.com/Loggableim/ltth.app/releases" class="btn btn-primary download-btn">
+                        Download for Firefox
+                    </a>
+                </div>
+
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <h3 class="download-name">Edge</h3>
+                    <p class="download-version">Version 1.0.0</p>
+                    <a href="https://github.com/Loggableim/ltth.app/releases" class="btn btn-primary download-btn">
+                        Download for Edge
+                    </a>
+                </div>
+
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="download-name">Safari</h3>
+                    <p class="download-version">Version 1.0.0</p>
+                    <a href="https://github.com/Loggableim/ltth.app/releases" class="btn btn-primary download-btn">
+                        Download for Safari
+                    </a>
+                </div>
+            </div>
+
+            <div class="install-steps">
+                <h2 class="section-title">Installation Guide</h2>
+                
+                <div class="install-step">
+                    <div class="install-step-number">1</div>
+                    <div class="install-step-content">
+                        <h3>Download the Extension</h3>
+                        <p>Click the download button for your browser above to get the latest version of ltth.app.</p>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="install-step-number">2</div>
+                    <div class="install-step-content">
+                        <h3>Install the Extension</h3>
+                        <p>Follow your browser's prompts to install the extension. You may need to enable "Developer mode" for manual installations.</p>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="install-step-number">3</div>
+                    <div class="install-step-content">
+                        <h3>Start Using ltth.app</h3>
+                        <p>Navigate to TikTok and enjoy all the enhanced features immediately. No additional configuration needed!</p>
+                    </div>
+                </div>
+
+                <div class="system-requirements">
+                    <h3>System Requirements</h3>
+                    <ul class="requirements-list">
+                        <li>Modern web browser (Chrome 90+, Firefox 88+, Edge 90+, Safari 14+)</li>
+                        <li>Active internet connection</li>
+                        <li>At least 50MB of free disk space</li>
+                        <li>JavaScript enabled</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-cta" style="margin-top: var(--space-16);">
+                <h3 style="margin-bottom: var(--space-4);">Need Help?</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-6);">
+                    Check out our documentation or reach out to our support team.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/docs.html" class="btn btn-primary">View Documentation</a>
+                    <a href="/support.html" class="btn btn-secondary">Contact Support</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <svg class="logo-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="currentColor"/>
+                            <path d="M20 8 L28 20 L20 32 L12 20 Z" fill="#0e0f10"/>
+                        </svg>
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTok Helper - The ultimate tool to enhance your TikTok experience.
+                    </p>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features.html">Features</a></li>
+                        <li><a href="/plugins.html">Plugins</a></li>
+                        <li><a href="/changelog.html">Changelog</a></li>
+                        <li><a href="/roadmap.html">Roadmap</a></li>
+                        <li><a href="/download.html">Download</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs.html">Documentation</a></li>
+                        <li><a href="/faq.html">FAQ</a></li>
+                        <li><a href="/support.html">Support</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="/privacy.html">Privacy Policy</a></li>
+                        <li><a href="/terms.html">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2024 ltth.app - PupCid's Little TikTok Helper. All rights reserved.
+                </p>
+                <p class="footer-credits">
+                    Made with <span class="heart">♥</span> by Loggableim
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
