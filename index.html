@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PupCid's Little TikTok Helper - The ultimate tool to enhance your TikTok experience with powerful features and seamless integration.">
+    <meta name="keywords" content="TikTok, helper, tool, browser extension, video downloader, TikTok enhancement">
+    <meta name="author" content="Loggableim">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="PupCid's Little TikTok Helper">
+    <meta property="og:description" content="The ultimate tool to enhance your TikTok experience with powerful features and seamless integration.">
+    <meta property="og:url" content="https://ltth.app">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PupCid's Little TikTok Helper">
+    <meta name="twitter:description" content="The ultimate tool to enhance your TikTok experience with powerful features and seamless integration.">
+    <meta name="twitter:image" content="https://ltth.app/assets/og-image.png">
+    
+    <title>PupCid's Little TikTok Helper - Enhance Your TikTok Experience</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "PupCid's Little TikTok Helper",
+        "applicationCategory": "BrowserApplication",
+        "operatingSystem": "Cross-platform",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "description": "The ultimate tool to enhance your TikTok experience with powerful features and seamless integration."
+    }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link active">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="hero-highlight">Supercharge</span> Your TikTok Experience
+                </h1>
+                <p class="hero-description">
+                    PupCid's Little TikTok Helper is the ultimate companion for TikTok enthusiasts. 
+                    Download videos, enhance your feed, and unlock powerful features that transform 
+                    how you interact with TikTok.
+                </p>
+                <div class="hero-actions">
+                    <a href="/download.html" class="btn btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download Now
+                    </a>
+                    <a href="/features.html" class="btn btn-secondary btn-large">
+                        Explore Features
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Free & Open Source</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">Fast</div>
+                        <div class="stat-label">Lightning Quick</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">Secure</div>
+                        <div class="stat-label">Privacy First</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <img src="/assets/zwinkern.png" alt="PupCid mascot winking" class="hero-mascot" />
+                <div class="hero-visual-card card-1">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 7l-7 5 7 5V7z"/>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Video Downloads</div>
+                </div>
+                <div class="hero-visual-card card-2">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Real-time Sync</div>
+                </div>
+                <div class="hero-visual-card card-3">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Premium Features</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Preview -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Why Choose ltth.app?</h2>
+            <p class="section-subtitle">
+                Experience TikTok like never before with our powerful suite of tools
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Easy Downloads</h3>
+                    <p class="feature-description">
+                        Download your favorite TikTok videos with a single click. No watermarks, 
+                        full quality, and super fast.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Ad-Free Experience</h3>
+                    <p class="feature-description">
+                        Browse TikTok without interruptions. Our tool removes unwanted ads 
+                        for a cleaner, faster experience.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Privacy Protected</h3>
+                    <p class="feature-description">
+                        Your data stays yours. We don't track, store, or share any of your 
+                        personal information.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Developer Friendly</h3>
+                    <p class="feature-description">
+                        Built with modern technologies and extensible architecture. 
+                        Customize and extend with plugins.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Real-time Updates</h3>
+                    <p class="feature-description">
+                        Stay current with automatic updates. New features and improvements 
+                        delivered seamlessly.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Community Driven</h3>
+                    <p class="feature-description">
+                        Join thousands of users worldwide. Share feedback, request features, 
+                        and help shape the future.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section-cta">
+                <a href="/features.html" class="btn btn-primary">
+                    View All Features
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Get Started in Seconds</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Download</h3>
+                    <p class="step-description">
+                        Download the tool for your platform. Available for all major browsers 
+                        and operating systems.
+                    </p>
+                </div>
+                
+                <div class="step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Install</h3>
+                    <p class="step-description">
+                        Quick and easy installation process. Follow the simple setup wizard 
+                        and you're ready to go.
+                    </p>
+                </div>
+                
+                <div class="step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Enjoy</h3>
+                    <p class="step-description">
+                        Start using all the powerful features immediately. Enhance your 
+                        TikTok experience today!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <img src="/assets/winken.png" alt="PupCid mascot waving" class="cta-mascot" />
+                <h2 class="cta-title">Ready to Transform Your TikTok Experience?</h2>
+                <p class="cta-description">
+                    Join thousands of satisfied users who have already enhanced their TikTok 
+                    journey with PupCid's Little TikTok Helper.
+                </p>
+                <div class="cta-actions">
+                    <a href="/download.html" class="btn btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download Now - It's Free
+                    </a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">
+                        Read Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTok Helper - The ultimate tool to enhance your TikTok experience.
+                    </p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features.html">Features</a></li>
+                        <li><a href="/plugins.html">Plugins</a></li>
+                        <li><a href="/changelog.html">Changelog</a></li>
+                        <li><a href="/roadmap.html">Roadmap</a></li>
+                        <li><a href="/download.html">Download</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs.html">Documentation</a></li>
+                        <li><a href="/faq.html">FAQ</a></li>
+                        <li><a href="/support.html">Support</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="/privacy.html">Privacy Policy</a></li>
+                        <li><a href="/terms.html">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2024 ltth.app - PupCid's Little TikTok Helper. All rights reserved.
+                </p>
+                <p class="footer-credits">
+                    Made with <span class="heart">♥</span> by Loggableim
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

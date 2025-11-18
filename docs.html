@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete documentation for PupCid's Little TikTok Helper - guides, API reference, and tutorials.">
+    <title>Documentation - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link active">Docs</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <aside class="docs-sidebar">
+            <div class="docs-search">
+                <input type="text" placeholder="Search documentation..." class="search-input">
+            </div>
+            <nav class="docs-nav">
+                <div class="docs-nav-section">
+                    <h3>Getting Started</h3>
+                    <ul>
+                        <li><a href="#introduction" class="active">Introduction</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                        <li><a href="#quick-start">Quick Start</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Features</h3>
+                    <ul>
+                        <li><a href="#video-download">Video Downloads</a></li>
+                        <li><a href="#ad-blocking">Ad Blocking</a></li>
+                        <li><a href="#privacy">Privacy Settings</a></li>
+                        <li><a href="#customization">Customization</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Advanced</h3>
+                    <ul>
+                        <li><a href="#api">API Reference</a></li>
+                        <li><a href="#plugins">Plugin Development</a></li>
+                        <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article id="introduction">
+                <h1>Introduction</h1>
+                <p>Welcome to PupCid's Little TikTok Helper documentation. This guide will help you get started and make the most of all available features.</p>
+                
+                <h2>What is ltth.app?</h2>
+                <p>ltth.app is a powerful browser extension designed to enhance your TikTok experience. It provides features like video downloading, ad-blocking, privacy protection, and much more.</p>
+                
+                <h2>Key Features</h2>
+                <ul>
+                    <li>One-click video downloads without watermarks</li>
+                    <li>Advanced ad-blocking capabilities</li>
+                    <li>Enhanced privacy and security</li>
+                    <li>Customizable user interface</li>
+                    <li>Plugin system for extensibility</li>
+                </ul>
+            </article>
+
+            <article id="installation">
+                <h1>Installation</h1>
+                <p>Installing ltth.app is quick and easy. Follow these steps based on your browser:</p>
+                
+                <h2>Chrome/Edge Installation</h2>
+                <ol>
+                    <li>Download the extension from the <a href="/download.html">download page</a></li>
+                    <li>Open your browser's extension page (<code>chrome://extensions</code> or <code>edge://extensions</code>)</li>
+                    <li>Enable "Developer mode" in the top right</li>
+                    <li>Click "Load unpacked" and select the downloaded folder</li>
+                    <li>The extension is now installed and ready to use</li>
+                </ol>
+                
+                <h2>Firefox Installation</h2>
+                <ol>
+                    <li>Download the extension from the <a href="/download.html">download page</a></li>
+                    <li>Open Firefox and navigate to <code>about:addons</code></li>
+                    <li>Click the gear icon and select "Install Add-on From File"</li>
+                    <li>Select the downloaded file</li>
+                    <li>Click "Add" when prompted</li>
+                </ol>
+            </article>
+
+            <article id="quick-start">
+                <h1>Quick Start</h1>
+                <p>Get up and running with ltth.app in minutes.</p>
+                
+                <h2>First Time Setup</h2>
+                <p>After installation, ltth.app will automatically activate on TikTok. You'll see a small icon in your browser toolbar indicating the extension is active.</p>
+                
+                <h2>Downloading Your First Video</h2>
+                <pre><code>1. Navigate to any TikTok video
+2. Look for the download button added by ltth.app
+3. Click the button and choose your preferred quality
+4. The video will be downloaded to your default downloads folder</code></pre>
+                
+                <h2>Accessing Settings</h2>
+                <p>Click the ltth.app icon in your browser toolbar to access settings and customize your experience.</p>
+            </article>
+
+            <article id="video-download">
+                <h1>Video Downloads</h1>
+                <p>The video download feature allows you to save TikTok videos to your device.</p>
+                
+                <h2>Download Options</h2>
+                <ul>
+                    <li><strong>Quality Selection:</strong> Choose from multiple quality options (HD, SD, etc.)</li>
+                    <li><strong>Format:</strong> Download as MP4 or other supported formats</li>
+                    <li><strong>Watermark Removal:</strong> Option to remove TikTok watermarks</li>
+                    <li><strong>Batch Download:</strong> Download multiple videos at once</li>
+                </ul>
+                
+                <h2>Usage Example</h2>
+                <pre><code>// Programmatic download (for plugin developers)
+ltth.downloadVideo({
+    url: 'https://tiktok.com/@user/video/123456',
+    quality: 'hd',
+    removeWatermark: true
+});</code></pre>
+            </article>
+
+            <article id="api">
+                <h1>API Reference</h1>
+                <p>For developers building plugins or integrations with ltth.app.</p>
+                
+                <h2>Core API</h2>
+                <pre><code>// Get extension version
+ltth.version()
+
+// Download video
+ltth.downloadVideo(options)
+
+// Get settings
+ltth.getSettings()
+
+// Update settings
+ltth.updateSettings(newSettings)
+
+// Register plugin
+ltth.registerPlugin(plugin)</code></pre>
+                
+                <h2>Events</h2>
+                <pre><code>// Listen for video detection
+ltth.on('videoDetected', (video) => {
+    console.log('Video detected:', video);
+});
+
+// Listen for download completion
+ltth.on('downloadComplete', (result) => {
+    console.log('Download complete:', result);
+});</code></pre>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2024 ltth.app. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/docs.js"></script>
+</body>
+</html>
