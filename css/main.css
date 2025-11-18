@@ -485,19 +485,19 @@ pre code {
    Hero Section
    =================================== */
 .hero {
-    padding: var(--space-8) 0 var(--space-6);
+    padding: var(--space-6) 0 var(--space-5);
     background: linear-gradient(135deg, var(--color-bg) 0%, rgba(18, 161, 22, 0.05) 100%);
 }
 
 @media (min-width: 768px) {
     .hero {
-        padding: var(--space-10) 0 var(--space-8);
+        padding: var(--space-8) 0 var(--space-6);
     }
 }
 
 @media (min-width: 1024px) {
     .hero {
-        padding: var(--space-12) 0 var(--space-10);
+        padding: var(--space-10) 0 var(--space-8);
     }
 }
 
@@ -668,18 +668,18 @@ pre code {
    Sections
    =================================== */
 section {
-    padding: var(--space-8) 0;
+    padding: var(--space-6) 0;
 }
 
 @media (min-width: 768px) {
     section {
-        padding: var(--space-10) 0;
+        padding: var(--space-8) 0;
     }
 }
 
 @media (min-width: 1024px) {
     section {
-        padding: var(--space-12) 0;
+        padding: var(--space-10) 0;
     }
 }
 
