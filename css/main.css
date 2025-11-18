@@ -693,7 +693,7 @@ section {
     text-align: center;
     font-size: var(--text-lg);
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-8);
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
@@ -709,6 +709,19 @@ section {
    =================================== */
 .features-preview {
     background-color: var(--color-surface);
+    padding: var(--space-8) 0;
+}
+
+@media (min-width: 768px) {
+    .features-preview {
+        padding: var(--space-10) 0;
+    }
+}
+
+@media (min-width: 1024px) {
+    .features-preview {
+        padding: var(--space-12) 0;
+    }
 }
 
 .features-grid {
@@ -1296,9 +1309,9 @@ section {
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
     transition: transform var(--transition-base);
-    /* Verhindere große leere Bereiche wenn Bilder klein sind */
-    min-height: 200px;
-    object-fit: contain;
+    object-fit: cover;
+    width: 100%;
+    height: auto;
 }
 
 .screenshot-container img:hover {
