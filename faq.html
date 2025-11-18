@@ -47,43 +47,65 @@
     <section>
         <div class="container" style="max-width: 900px;">
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Is ltth.app free to use?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">Yes! ltth.app is completely free and open source. There are no hidden costs or premium tiers.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Ist PupCid's Little TikTok Helper kostenlos?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Ja! Das Tool ist komplett kostenlos und Open Source (MIT-Lizenz). Es gibt keine versteckten Kosten, Premium-Tiers oder Einschränkungen. Alle Features sind für jeden verfügbar.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Is it safe to use?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">Absolutely. ltth.app is built with security and privacy in mind. We don't collect, store, or share any of your personal data. All operations happen locally on your device.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Muss ich Login-Daten eingeben?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Nein! Du benötigst nur deinen TikTok-Username (ohne @). Keine Passwörter, keine OAuth, keine Login-Daten erforderlich. Alles läuft komplett lokal auf deinem PC.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Which browsers are supported?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">ltth.app supports Chrome, Firefox, Edge, and Safari. We recommend using the latest version of your browser for the best experience.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Welche Betriebssysteme werden unterstützt?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Aktuell wird <strong>Windows 10/11 (64-bit)</strong> offiziell unterstützt. Linux und macOS sollten funktionieren (mit manueller Installation via npm), sind aber noch nicht offiziell getestet. Native macOS/Linux-Installer sind auf der Roadmap.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Can I download videos without watermarks?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">Yes, ltth.app includes a watermark removal feature that allows you to download clean videos in high quality.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Funktioniert das Tool mit OBS?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Ja! Vollständige OBS-Integration mit Browser-Source-Overlays (1920x1080 transparent) und OBS WebSocket v5-Unterstützung für Szenen-Steuerung via Gifts/Chat.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Does ltth.app work on mobile devices?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">Currently, ltth.app is designed for desktop browsers. Mobile support is on our roadmap and will be available in future updates.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Brauche ich Node.js?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Node.js wird automatisch mit setup.exe installiert, falls nicht vorhanden. Version 18.0.0 - 23.x wird unterstützt. Du musst dich um nichts kümmern.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">How do I report a bug or request a feature?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">You can report bugs or request features through our <a href="https://github.com/Loggableim/ltth.app/issues" style="color: var(--color-primary);">GitHub Issues page</a> or contact us through our <a href="/support.html" style="color: var(--color-primary);">support page</a>.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">TikTok-Verbindung schlägt fehl - was tun?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">
+                    <strong>Häufige Lösungen:</strong><br>
+                    • Du musst bereits LIVE sein auf TikTok<br>
+                    • Username muss korrekt sein (ohne @)<br>
+                    • Firewall/Antivirus könnte Verbindung blockieren<br>
+                    • Port 3000 muss verfügbar sein<br>
+                    Mehr Infos: <a href="/docs.html#troubleshooting" style="color: var(--color-primary);">Troubleshooting-Sektion</a>
+                </p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Can I contribute to the project?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">Yes! ltth.app is open source and we welcome contributions. Check out our <a href="https://github.com/Loggableim/ltth.app" style="color: var(--color-primary);">GitHub repository</a> for contribution guidelines.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Kann ich eigene Plugins erstellen?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Ja! Das Plugin-System ist vollständig dokumentiert. Erstelle Plugins mit Express-Routes, Socket.io-Events und TikTok-Event-Callbacks. Siehe <a href="/plugins.html" style="color: var(--color-primary);">Plugin-Dokumentation</a> für Details.</p>
             </div>
 
             <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Will this get me banned from TikTok?</h3>
-                <p style="color: var(--color-text-secondary); margin: 0;">ltth.app operates within TikTok's publicly available features and doesn't violate their terms of service. However, use discretion and always respect content creators' rights.</p>
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Werden meine Daten in die Cloud hochgeladen?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Nein! Alle Daten bleiben auf deinem Computer. Keine Cloud-Anbindung, keine Datensammlung, keine Tracking. 100% lokal und privat. Optional ist Cloud-Sync für Configs geplant (opt-in).</p>
+            </div>
+
+            <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Wie kann ich Bugs melden oder Features vorschlagen?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Öffne ein Issue auf GitHub: <a href="https://github.com/Loggableim/ltth.app/issues" style="color: var(--color-primary);">GitHub Issues</a>. Wir freuen uns über Feedback! Das Tool ist in Beta und dein Input hilft bei der Entwicklung.</p>
+            </div>
+
+            <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Verstößt das Tool gegen TikTok's Terms of Service?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Nein. Das Tool nutzt nur öffentlich verfügbare TikTok LIVE-Daten ohne Login. Es ist vergleichbar mit StreamElements, Streamlabs etc. für Twitch. Keine Account-Manipulation, nur Lesen von öffentlichen Events.</p>
+            </div>
+
+            <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">Kann ich zum Projekt beitragen?</h3>
+                <p style="color: var(--color-text-secondary); margin: 0;">Ja! Pull Requests sind willkommen. Siehe <a href="https://github.com/Loggableim/ltth.app" style="color: var(--color-primary);">GitHub Repository</a> für Contribution-Guidelines. Auch Plugin-Entwicklung und Wiki-Dokumentation sind hilfreich!</p>
             </div>
         </div>
     </section>
