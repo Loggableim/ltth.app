@@ -31,3 +31,18 @@ yarn-error.log*
 # Temporary
 /tmp/
 .tmp/
+
+# Backup files
+*.backup
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
