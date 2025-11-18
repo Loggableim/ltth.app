@@ -842,6 +842,19 @@ section {
 .cta-section {
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
     color: white;
+    padding: var(--space-6) 0;
+}
+
+@media (min-width: 768px) {
+    .cta-section {
+        padding: var(--space-8) 0;
+    }
+}
+
+@media (min-width: 1024px) {
+    .cta-section {
+        padding: var(--space-8) 0;
+    }
 }
 
 .cta-content {
@@ -894,7 +907,7 @@ section {
 .footer {
     background-color: var(--color-surface);
     border-top: 1px solid var(--color-border);
-    padding: var(--space-12) 0 var(--space-6);
+    padding: var(--space-8) 0 var(--space-4);
 }
 
 .footer-grid {
