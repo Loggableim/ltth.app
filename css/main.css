@@ -262,7 +262,6 @@ pre code {
     padding: var(--space-4) 0;
     z-index: var(--z-sticky);
     backdrop-filter: blur(10px);
-    background-color: rgba(var(--color-surface), 0.9);
     transition: all var(--transition-base);
 }
 
