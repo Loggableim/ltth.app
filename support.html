@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Support - ltth.app</title>
+    <meta name="description" content="Support und Hilfe für PupCid's Little TikTok Helper. GitHub Issues, Dokumentation, FAQ und Community-Support für TikTok LIVE Streamer.">
+    <title>Support - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#12a116">
     <link rel="stylesheet" href="/css/main.css">
@@ -16,7 +20,11 @@
                     <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
                     <span class="logo-text">ltth.app</span>
                 </a>
-                <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
                 <div class="nav-menu" id="navMenu">
                     <a href="/" class="nav-link">Home</a>
                     <a href="/features.html" class="nav-link">Features</a>
@@ -27,7 +35,15 @@
                     <a href="/faq.html" class="nav-link">FAQ</a>
                     <a href="/support.html" class="nav-link active">Support</a>
                     <a href="/download.html" class="nav-link nav-cta">Download</a>
-                    <button class="theme-toggle" id="themeToggle"><svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
