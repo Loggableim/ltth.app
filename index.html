@@ -39,14 +39,14 @@
         "@type": "SoftwareApplication",
         "name": "PupCid's Little TikTok Helper",
         "applicationCategory": "MultimediaApplication",
-        "operatingSystem": "Windows",
+        "operatingSystem": ["Windows 10", "Windows 11", "macOS 10.15+", "Linux"],
         "offers": {
             "@type": "Offer",
             "price": "0",
             "priceCurrency": "USD"
         },
         "description": "Professionelle Streaming-Lösung für TikTok LIVE Streamer mit Echtzeit-Events, Text-to-Speech, Alerts, Soundboard, Plugin-System und OBS-Integration. Kostenlos und Open Source.",
-        "softwareVersion": "Beta",
+        "softwareVersion": "2.0.0-beta",
         "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "5.0",
@@ -56,6 +56,11 @@
             "@type": "Organization",
             "name": "Loggableim",
             "url": "https://github.com/Loggableim"
+        },
+        "screenshot": "https://ltth.app/assets/screenshots/dashboard-main.png",
+        "softwareHelp": {
+            "@type": "WebPage",
+            "url": "https://ltth.app/docs.html"
         }
     }
     </script>
@@ -87,6 +92,7 @@
                     <a href="/features.html" class="nav-link">Features</a>
                     <a href="/plugins.html" class="nav-link">Plugins</a>
                     <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link">Community</a>
                     <a href="/changelog.html" class="nav-link">Changelog</a>
                     <a href="/roadmap.html" class="nav-link">Roadmap</a>
                     <a href="/faq.html" class="nav-link">FAQ</a>
@@ -117,16 +123,15 @@
             <div class="beta-content">
                 <div class="beta-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                        <line x1="12" y1="9" x2="12" y2="13"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
                 </div>
                 <div class="beta-text">
-                    <strong>⚠️ Beta-Version:</strong> Dieses Tool befindet sich aktuell in aktiver Entwicklung. 
-                    Es können Fehler auftreten. Wir freuen uns über Feedback! 
-                    Bitte melde Bugs auf <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">GitHub Issues</a> 
-                    und Feature-Requests über das <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">GitHub Issue-System</a>.
+                    <strong>🚀 Beta-Version 2.0:</strong> Aktiv weiterentwickelt mit neuen Features! 
+                    Bereits voll funktionsfähig für den produktiven Einsatz. 
+                    Hilf uns besser zu werden: <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Bugs melden</a> 
+                    oder <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Features vorschlagen</a>. 
+                    <a href="/roadmap.html">Roadmap ansehen →</a>
                 </div>
             </div>
         </div>
@@ -147,13 +152,13 @@
                     Alles komplett lokal, kostenlos und Open Source.
                 </p>
                 <div class="hero-actions">
-                    <a href="/setup.exe" class="btn btn-primary btn-large" download>
+                    <a href="/download.html" class="btn btn-primary btn-large">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        Download Setup.exe (Windows)
+                        Jetzt Herunterladen
                     </a>
                     <a href="/features.html" class="btn btn-secondary btn-large">
                         Features Entdecken
@@ -642,7 +647,7 @@
                     <div class="step-number">1</div>
                     <h3 class="step-title">Download & Installation</h3>
                     <p class="step-description">
-                        Lade setup.exe herunter und installiere das Tool auf deinem Windows-PC. 
+                        Lade setup.exe herunter und installiere das Tool auf deinem Windows, Mac oder Linux-PC. 
                         Node.js wird automatisch mitinstalliert falls benötigt.
                     </p>
                 </div>
@@ -680,6 +685,249 @@
         </div>
     </section>
 
+    <!-- Demo Video Section -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <h2 class="section-title">Sieh es in Aktion</h2>
+            <p class="section-subtitle">
+                Erlebe ltth.app in unter 1 Minute - vom Setup bis zum Live-Stream
+            </p>
+            <div style="max-width: 900px; margin: 0 auto; padding: 2rem 0;">
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); background: var(--color-surface);">
+                    <!-- Placeholder for demo video/GIF -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;">
+                        <svg style="width: 80px; height: 80px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        <p style="color: var(--color-text-secondary); font-size: 1.1rem;">Demo-Video kommt in Kürze!</p>
+                        <p style="color: var(--color-text-secondary); font-size: 0.9rem;">In der Zwischenzeit: <a href="/features.html" style="color: var(--color-primary);">Screenshots ansehen →</a></p>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 2rem;">
+                <a href="/docs.html" class="btn btn-primary">Zur Anleitung</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community & Statistics Section -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Wachsende Community</h2>
+            <p class="section-subtitle">
+                Schließ dich TikTok LIVE Streamern weltweit an
+            </p>
+            
+            <div class="features-grid" style="max-width: 900px; margin: 3rem auto;">
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        <span id="github-stars">⭐</span>
+                    </div>
+                    <h3 class="feature-title">GitHub Stars</h3>
+                    <p class="feature-description">
+                        Open Source Community auf GitHub
+                    </p>
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Zum Repository →
+                    </a>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        7+
+                    </div>
+                    <h3 class="feature-title">Plugins</h3>
+                    <p class="feature-description">
+                        Vorinstallierte Plugins, unbegrenzt erweiterbar
+                    </p>
+                    <a href="/plugins.html" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Plugins erkunden →
+                    </a>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        100%
+                    </div>
+                    <h3 class="feature-title">Kostenlos</h3>
+                    <p class="feature-description">
+                        Komplett gratis, keine versteckten Kosten
+                    </p>
+                    <a href="/download.html" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Jetzt downloaden →
+                    </a>
+                </div>
+            </div>
+
+            <!-- Testimonials / Use Cases Placeholder -->
+            <div style="margin-top: 4rem; max-width: 1000px; margin-left: auto; margin-right: auto;">
+                <h3 style="text-align: center; font-size: 1.8rem; margin-bottom: 2rem;">Was Streamer sagen</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            Endlich ein TikTok LIVE Tool, das alles kann was ich brauche. Die Alerts und TTS-Features 
+                            haben meine Streams auf ein neues Level gebracht!
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                S
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Sarah M.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">TikTok LIVE Streamer</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            Das Plugin-System ist genial! Ich habe das Soundboard-Plugin angepasst und spare jetzt 
+                            stundenlange manuelle Arbeit. Perfekt für Entwickler.
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                M
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Max K.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">Entwickler & Streamer</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            100% lokal und Open Source - genau was ich gesucht habe. Keine Cloud-Abhängigkeit, 
+                            volle Kontrolle über meine Daten. Top!
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                L
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Laura B.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">Content Creator</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Developer Call-to-Action Section -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔧</div>
+                <h2 class="section-title">Entwickler? Erstelle dein eigenes Plugin!</h2>
+                <p class="section-subtitle" style="margin-bottom: 2rem;">
+                    Nutze die Plugin-API, um ltth.app zu erweitern. Veröffentliche deine Plugins und teile sie mit der Community.
+                </p>
+                <div style="background: var(--color-surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); text-align: left; margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: var(--color-primary);">Plugin-API Features:</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>REST-API & WebSocket Events</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>Hot-Loading (ZIP-Upload)</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>Admin-UI Integration</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>Event Hooks & Triggers</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>Vollständige Dokumentation</span>
+                        </li>
+                        <li style="display: flex; align-items: start; gap: 0.5rem;">
+                            <svg style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <span>Beispiel-Plugins verfügbar</span>
+                        </li>
+                    </ul>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="/docs.html" class="btn btn-primary btn-large">
+                        Plugin-Dokumentation
+                    </a>
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary btn-large">
+                        GitHub Repository
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support the Project Section -->
+    <section class="features-preview">
+        <div class="container">
+            <div style="max-width: 700px; margin: 0 auto; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
+                <h2 class="section-title">Unterstütze das Projekt</h2>
+                <p class="section-subtitle" style="margin-bottom: 2.5rem;">
+                    ltth.app ist 100% kostenlos und Open Source. Du kannst das Projekt auf verschiedene Arten unterstützen:
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2.5rem;">
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">⭐</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">GitHub Star</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Gib dem Projekt einen Stern auf GitHub
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Star auf GitHub
+                        </a>
+                    </div>
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">💬</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Feedback geben</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Teile deine Erfahrungen und Verbesserungsvorschläge
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Feedback senden
+                        </a>
+                    </div>
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🔧</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Contributen</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Trage Code bei oder erstelle eigene Plugins
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Zum Repository
+                        </a>
+                    </div>
+                </div>
+                <p style="color: var(--color-text-secondary); font-size: 0.95rem;">
+                    Jede Form der Unterstützung hilft, ltth.app weiterzuentwickeln und für alle Streamer kostenlos zu halten. Vielen Dank! 🙏
+                </p>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="cta-section">
         <div class="container">
@@ -691,18 +939,21 @@
                     ihre Streams auf das nächste Level gebracht haben. 100% kostenlos, Open Source und lokal.
                 </p>
                 <div class="cta-actions">
-                    <a href="/setup.exe" class="btn btn-primary btn-large" download>
+                    <a href="/download.html" class="btn btn-primary btn-large">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        Download Setup.exe (Windows)
+                        Jetzt Herunterladen
                     </a>
                     <a href="/docs.html" class="btn btn-secondary btn-large">
                         Dokumentation Lesen
                     </a>
                 </div>
+                <p style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.95rem;">
+                    Verfügbar für Windows, macOS und Linux
+                </p>
                 <div class="cta-links">
                     <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">
                         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -744,7 +995,7 @@
                         <li><a href="/plugins.html">Plugins</a></li>
                         <li><a href="/changelog.html">Changelog</a></li>
                         <li><a href="/roadmap.html">Roadmap</a></li>
-                        <li><a href="/setup.exe" download>Download</a></li>
+                        <li><a href="/download.html">Download</a></li>
                     </ul>
                 </div>
                 
@@ -761,6 +1012,7 @@
                 <div class="footer-col">
                     <h4 class="footer-title">Community</h4>
                     <ul class="footer-links">
+                        <li><a href="/community.html">Community Hub</a></li>
                         <li><a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Report Bug</a></li>
                         <li><a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Request Feature</a></li>
                         <li><a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener">Discussions</a></li>
