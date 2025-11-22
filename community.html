@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Werde Teil der ltth.app Community - Tausche dich mit anderen TikTok LIVE Streamern aus, teile Erfahrungen, beteilige dich an Entwicklung und entdecke die neuesten Updates.">
+    <meta name="keywords" content="ltth.app Community, TikTok LIVE Community, Streamer Community, ltth Support, GitHub Discussions, Discord, Telegram">
+    <title>Community - PupCid's Little TikTok Helper</title>
+    
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link active">Community</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    <span class="version-badge" data-version-badge>Loading...</span>
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                <span class="hero-highlight">Community</span> - Gemeinsam stärker streamen
+            </h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Werde Teil einer wachsenden Community von TikTok LIVE Streamern, Entwicklern und Content Creators. 
+                Tausche Erfahrungen aus, hole dir Tipps und trage zur Entwicklung von ltth.app bei.
+            </p>
+        </div>
+    </section>
+
+    <!-- Community Stats -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Community im Überblick</h2>
+            <div class="features-grid" style="max-width: 1000px; margin: 0 auto;">
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1rem;">
+                        <span id="github-stars">⭐</span>
+                    </div>
+                    <h3 class="feature-title">GitHub Stars</h3>
+                    <p class="feature-description">
+                        Open Source Community
+                    </p>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1rem;">
+                        100+
+                    </div>
+                    <h3 class="feature-title">Active Users</h3>
+                    <p class="feature-description">
+                        Aktive Streamer weltweit
+                    </p>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1rem;">
+                        7+
+                    </div>
+                    <h3 class="feature-title">Plugins</h3>
+                    <p class="feature-description">
+                        Verfügbare Erweiterungen
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Join the Community -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <h2 class="section-title">Werde Teil der Community</h2>
+            <p class="section-subtitle">
+                Verschiedene Wege, um mit anderen Streamern und Entwicklern in Kontakt zu treten
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1200px; margin: 3rem auto;">
+                <!-- GitHub -->
+                <div style="background: var(--color-surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <h3 style="font-size: 1.5rem; margin: 0;">GitHub</h3>
+                    </div>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+                        Trage zum Code bei, melde Bugs, schlage Features vor und diskutiere mit anderen Entwicklern über Verbesserungen.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-primary" style="width: 100%; text-align: center;">
+                            Repository besuchen
+                        </a>
+                        <a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                            Discussions
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Discord (Coming Soon) -->
+                <div style="background: var(--color-surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); position: relative; opacity: 0.8;">
+                    <div style="position: absolute; top: 1rem; right: 1rem; background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                        Kommt bald
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026 13.83 13.83 0 0 0 1.226-1.963.074.074 0 0 0-.041-.104 13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/>
+                        </svg>
+                        <h3 style="font-size: 1.5rem; margin: 0;">Discord Server</h3>
+                    </div>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+                        Chatte in Echtzeit mit anderen Streamern, erhalte schnelle Hilfe und teile deine Stream-Highlights.
+                    </p>
+                    <button class="btn btn-secondary" style="width: 100%; cursor: not-allowed;" disabled>
+                        Kommt in Kürze
+                    </button>
+                </div>
+
+                <!-- Streamer Spotlight -->
+                <div style="background: var(--color-surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        <h3 style="font-size: 1.5rem; margin: 0;">Streamer Spotlight</h3>
+                    </div>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; line-height: 1.6;">
+                        Teile deine Erfolgsgeschichte! Zeige der Community, wie du ltth.app nutzt und inspiriere andere Streamer.
+                    </p>
+                    <a href="https://github.com/Loggableim/ltth.app/discussions/categories/show-and-tell" target="_blank" rel="noopener" class="btn btn-primary" style="width: 100%; text-align: center;">
+                        Story teilen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contribute Section -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Trage zur Entwicklung bei</h2>
+            <p class="section-subtitle">
+                ltth.app ist Open Source - jeder kann mithelfen, das Tool besser zu machen
+            </p>
+            
+            <div style="max-width: 900px; margin: 3rem auto;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="width: 80px; height: 80px; background: var(--color-primary-alpha-10); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                <line x1="15" y1="9" x2="15.01" y2="9"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Bug melden</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                            Gefunden? Hilf uns, es zu beheben!
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Bug Report
+                        </a>
+                    </div>
+
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="width: 80px; height: 80px; background: var(--color-primary-alpha-10); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9"/>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Feature vorschlagen</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                            Deine Ideen sind gefragt!
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Feature Request
+                        </a>
+                    </div>
+
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="width: 80px; height: 80px; background: var(--color-primary-alpha-10); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Code beitragen</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                            Fork, Code, Pull Request - so einfach!
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Repository
+                        </a>
+                    </div>
+
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="width: 80px; height: 80px; background: var(--color-primary-alpha-10); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <svg style="width: 40px; height: 40px; color: var(--color-primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+                                <rect x="9" y="9" width="6" height="6"/>
+                                <line x1="9" y1="1" x2="9" y2="4"/>
+                                <line x1="15" y1="1" x2="15" y2="4"/>
+                                <line x1="9" y1="20" x2="9" y2="23"/>
+                                <line x1="15" y1="20" x2="15" y2="23"/>
+                                <line x1="20" y1="9" x2="23" y2="9"/>
+                                <line x1="20" y1="14" x2="23" y2="14"/>
+                                <line x1="1" y1="9" x2="4" y2="9"/>
+                                <line x1="1" y1="14" x2="4" y2="14"/>
+                            </svg>
+                        </div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Plugin entwickeln</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                            Erstelle eigene Erweiterungen!
+                        </p>
+                        <a href="/docs.html" class="btn btn-secondary">
+                            Plugin Docs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Guidelines -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h2 class="section-title">Community Guidelines</h2>
+                <p class="section-subtitle" style="margin-bottom: 2rem;">
+                    Für ein freundliches und produktives Miteinander
+                </p>
+                
+                <div style="background: var(--color-surface); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: start;">
+                            <svg style="width: 24px; height: 24px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <div>
+                                <strong>Sei respektvoll:</strong> Behandle andere so, wie du behandelt werden möchtest. Keine Beleidigungen oder Hassrede.
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: start;">
+                            <svg style="width: 24px; height: 24px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <div>
+                                <strong>Sei hilfsbereit:</strong> Teile dein Wissen und unterstütze andere bei Problemen.
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: start;">
+                            <svg style="width: 24px; height: 24px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <div>
+                                <strong>Bleib konstruktiv:</strong> Kritik ist willkommen, solange sie konstruktiv ist und zur Verbesserung beiträgt.
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: start;">
+                            <svg style="width: 24px; height: 24px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <div>
+                                <strong>Kein Spam:</strong> Halte Diskussionen relevant und vermeide wiederholte oder unpassende Posts.
+                            </div>
+                        </li>
+                        <li style="display: flex; gap: 1rem; align-items: start;">
+                            <svg style="width: 24px; height: 24px; color: var(--color-primary); flex-shrink: 0; margin-top: 0.2rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            <div>
+                                <strong>Respektiere Privatsphäre:</strong> Teile keine persönlichen Informationen anderer ohne deren Zustimmung.
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <img src="/assets/winken.png" alt="PupCid mascot waving" class="cta-mascot" />
+                <h2 class="cta-title">Bereit, Teil der Community zu werden?</h2>
+                <p class="cta-description">
+                    Trete bei, teile deine Erfahrungen und hilf mit, ltth.app noch besser zu machen!
+                </p>
+                <div class="cta-actions">
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-primary btn-large">
+                        Zur GitHub Community
+                    </a>
+                    <a href="/download.html" class="btn btn-secondary btn-large">
+                        ltth.app Herunterladen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTok Helper - Die professionelle TikTok LIVE Streaming-Lösung.
+                    </p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features.html">Features</a></li>
+                        <li><a href="/plugins.html">Plugins</a></li>
+                        <li><a href="/changelog.html">Changelog</a></li>
+                        <li><a href="/roadmap.html">Roadmap</a></li>
+                        <li><a href="/download.html">Download</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs.html">Documentation</a></li>
+                        <li><a href="/faq.html">FAQ</a></li>
+                        <li><a href="/support.html">Support</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Community</h4>
+                    <ul class="footer-links">
+                        <li><a href="/community.html">Community Hub</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Report Bug</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Request Feature</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2025 ltth.app - PupCid's Little TikTok Helper. All rights reserved.
+                </p>
+                <p class="footer-credits">
+                    Made with <span class="heart">♥</span> by Loggableim
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

@@ -458,6 +458,41 @@ pre code {
     display: block;
 }
 
+/* Language Toggle */
+.lang-toggle {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    height: 40px;
+    min-width: 60px;
+    transition: all var(--transition-fast);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.lang-toggle:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.lang-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+.lang-text {
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
 @media (min-width: 768px) {
     .nav-toggle {
         display: none;
