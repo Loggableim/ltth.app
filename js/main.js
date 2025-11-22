@@ -842,4 +842,249 @@
         initEnhanced();
     };
 
+    // ===================================
+    // Internationalization (i18n) System
+    // ===================================
+    class LanguageManager {
+        constructor() {
+            this.currentLang = this.getStoredLanguage() || this.getBrowserLanguage();
+            this.translations = this.getTranslations();
+            this.init();
+        }
+
+        init() {
+            this.setLanguage(this.currentLang);
+            this.setupEventListeners();
+            this.updatePageContent();
+        }
+
+        getStoredLanguage() {
+            return localStorage.getItem('language');
+        }
+
+        getBrowserLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            return browserLang.startsWith('de') ? 'de' : 'en';
+        }
+
+        setLanguage(lang) {
+            this.currentLang = lang;
+            document.documentElement.setAttribute('lang', lang);
+            localStorage.setItem('language', lang);
+            this.updatePageContent();
+        }
+
+        toggleLanguage() {
+            const newLang = this.currentLang === 'de' ? 'en' : 'de';
+            this.setLanguage(newLang);
+        }
+
+        setupEventListeners() {
+            const langToggle = document.getElementById('langToggle');
+            if (langToggle) {
+                langToggle.addEventListener('click', () => this.toggleLanguage());
+            }
+        }
+
+        updatePageContent() {
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = this.getTranslation(key);
+                if (translation) {
+                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                        element.placeholder = translation;
+                    } else {
+                        element.textContent = translation;
+                    }
+                }
+            });
+
+            // Update elements with data-i18n-html attribute (for HTML content)
+            document.querySelectorAll('[data-i18n-html]').forEach(element => {
+                const key = element.getAttribute('data-i18n-html');
+                const translation = this.getTranslation(key);
+                if (translation) {
+                    element.innerHTML = translation;
+                }
+            });
+
+            // Update aria-labels
+            document.querySelectorAll('[data-i18n-aria]').forEach(element => {
+                const key = element.getAttribute('data-i18n-aria');
+                const translation = this.getTranslation(key);
+                if (translation) {
+                    element.setAttribute('aria-label', translation);
+                }
+            });
+
+            // Update language toggle button
+            this.updateLanguageToggle();
+        }
+
+        updateLanguageToggle() {
+            const langToggle = document.getElementById('langToggle');
+            if (langToggle) {
+                const langText = langToggle.querySelector('.lang-text');
+                if (langText) {
+                    langText.textContent = this.currentLang === 'de' ? 'EN' : 'DE';
+                }
+            }
+        }
+
+        getTranslation(key) {
+            const keys = key.split('.');
+            let value = this.translations[this.currentLang];
+            for (const k of keys) {
+                if (value && value[k]) {
+                    value = value[k];
+                } else {
+                    return null;
+                }
+            }
+            return value;
+        }
+
+        getTranslations() {
+            return {
+                de: {
+                    nav: {
+                        home: 'Home',
+                        features: 'Features',
+                        plugins: 'Plugins',
+                        docs: 'Docs',
+                        community: 'Community',
+                        changelog: 'Changelog',
+                        roadmap: 'Roadmap',
+                        faq: 'FAQ',
+                        support: 'Support',
+                        download: 'Download'
+                    },
+                    hero: {
+                        title: '<span class="hero-highlight">Professionelle</span> TikTok LIVE Streaming-Lösung',
+                        subtitle: 'PupCid\'s Little TikTok Helper ist das ultimative Tool für TikTok LIVE Streamer. Verarbeite Echtzeit-Events, nutze Text-to-Speech mit 75+ Stimmen, erstelle anpassbare Alerts, spiele Sounds automatisch ab und automatisiere deinen Stream mit leistungsstarken Flows. Modulares Plugin-System, OBS-Integration, VRChat OSC-Support und vieles mehr. Alles komplett lokal, kostenlos und Open Source.',
+                        downloadBtn: 'Jetzt Herunterladen',
+                        featuresBtn: 'Features Entdecken'
+                    },
+                    beta: {
+                        title: '🚀 Beta-Version 2.0:',
+                        text: 'Aktiv weiterentwickelt mit neuen Features! Bereits voll funktionsfähig für den produktiven Einsatz. Hilf uns besser zu werden:',
+                        bugsLink: 'Bugs melden',
+                        featuresLink: 'Features vorschlagen',
+                        roadmapLink: 'Roadmap ansehen →'
+                    },
+                    stats: {
+                        free: '100% Kostenlos & Open Source',
+                        local: 'Lokal - Keine Cloud-Abhängigkeit',
+                        realtime: 'Echtzeit - Live Event-Verarbeitung'
+                    },
+                    sections: {
+                        whyUse: 'Warum ltth.app für deinen Stream?',
+                        whyUseSubtitle: 'Professionelle Streaming-Features speziell für TikTok LIVE entwickelt',
+                        pluginSystem: 'Erweiterbares Plugin-System',
+                        pluginSystemSubtitle: 'Modulare Architektur mit Hot-Loading und 7+ vorinstallierten Plugins',
+                        devFeatures: 'Für Entwickler & Power-User',
+                        devFeaturesSubtitle: 'Open Source, vollständig dokumentiert, erweiterbar',
+                        howItWorks: 'In 3 Schritten Starten',
+                        seeInAction: 'Sieh es in Aktion',
+                        seeInActionSubtitle: 'Erlebe ltth.app in unter 1 Minute - vom Setup bis zum Live-Stream',
+                        community: 'Wachsende Community',
+                        communitySubtitle: 'Schließ dich TikTok LIVE Streamern weltweit an',
+                        testimonials: 'Was Streamer sagen',
+                        devPitch: 'Entwickler? Erstelle dein eigenes Plugin!',
+                        devPitchSubtitle: 'Nutze die Plugin-API, um ltth.app zu erweitern. Veröffentliche deine Plugins und teile sie mit der Community.',
+                        support: 'Unterstütze das Projekt',
+                        supportSubtitle: 'ltth.app ist 100% kostenlos und Open Source. Du kannst das Projekt auf verschiedene Arten unterstützen:'
+                    },
+                    cta: {
+                        ready: 'Bereit für professionelles TikTok LIVE Streaming?',
+                        readyText: 'Schließe dich der wachsenden Community an, die bereits mit PupCid\'s Little TikTok Helper ihre Streams auf das nächste Level gebracht haben. 100% kostenlos, Open Source und lokal.',
+                        downloadNow: 'Jetzt Herunterladen',
+                        readDocs: 'Dokumentation Lesen',
+                        platformNote: 'Verfügbar für Windows, macOS und Linux'
+                    },
+                    footer: {
+                        product: 'Product',
+                        resources: 'Resources',
+                        community: 'Community',
+                        description: 'PupCid\'s Little TikTok Helper - Die professionelle TikTok LIVE Streaming-Lösung.',
+                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTok Helper. All rights reserved.',
+                        madeWith: 'Made with',
+                        by: 'by Loggableim'
+                    }
+                },
+                en: {
+                    nav: {
+                        home: 'Home',
+                        features: 'Features',
+                        plugins: 'Plugins',
+                        docs: 'Docs',
+                        community: 'Community',
+                        changelog: 'Changelog',
+                        roadmap: 'Roadmap',
+                        faq: 'FAQ',
+                        support: 'Support',
+                        download: 'Download'
+                    },
+                    hero: {
+                        title: '<span class="hero-highlight">Professional</span> TikTok LIVE Streaming Solution',
+                        subtitle: 'PupCid\'s Little TikTok Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically, and automate your stream with powerful Flows. Modular plugin system, OBS integration, VRChat OSC support, and much more. Everything completely local, free, and Open Source.',
+                        downloadBtn: 'Download Now',
+                        featuresBtn: 'Discover Features'
+                    },
+                    beta: {
+                        title: '🚀 Beta Version 2.0:',
+                        text: 'Actively developed with new features! Already fully functional for production use. Help us improve:',
+                        bugsLink: 'Report bugs',
+                        featuresLink: 'Suggest features',
+                        roadmapLink: 'View roadmap →'
+                    },
+                    stats: {
+                        free: '100% Free & Open Source',
+                        local: 'Local - No Cloud Dependency',
+                        realtime: 'Realtime - Live Event Processing'
+                    },
+                    sections: {
+                        whyUse: 'Why ltth.app for your stream?',
+                        whyUseSubtitle: 'Professional streaming features specifically developed for TikTok LIVE',
+                        pluginSystem: 'Extensible Plugin System',
+                        pluginSystemSubtitle: 'Modular architecture with hot-loading and 7+ pre-installed plugins',
+                        devFeatures: 'For Developers & Power Users',
+                        devFeaturesSubtitle: 'Open Source, fully documented, extensible',
+                        howItWorks: 'Get Started in 3 Steps',
+                        seeInAction: 'See it in Action',
+                        seeInActionSubtitle: 'Experience ltth.app in under 1 minute - from setup to live stream',
+                        community: 'Growing Community',
+                        communitySubtitle: 'Join TikTok LIVE streamers worldwide',
+                        testimonials: 'What Streamers Say',
+                        devPitch: 'Developer? Create your own plugin!',
+                        devPitchSubtitle: 'Use the Plugin API to extend ltth.app. Publish your plugins and share them with the community.',
+                        support: 'Support the Project',
+                        supportSubtitle: 'ltth.app is 100% free and Open Source. You can support the project in various ways:'
+                    },
+                    cta: {
+                        ready: 'Ready for professional TikTok LIVE streaming?',
+                        readyText: 'Join the growing community that has already taken their streams to the next level with PupCid\'s Little TikTok Helper. 100% free, Open Source, and local.',
+                        downloadNow: 'Download Now',
+                        readDocs: 'Read Documentation',
+                        platformNote: 'Available for Windows, macOS and Linux'
+                    },
+                    footer: {
+                        product: 'Product',
+                        resources: 'Resources',
+                        community: 'Community',
+                        description: 'PupCid\'s Little TikTok Helper - The professional TikTok LIVE streaming solution.',
+                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTok Helper. All rights reserved.',
+                        madeWith: 'Made with',
+                        by: 'by Loggableim'
+                    }
+                }
+            };
+        }
+    }
+
+    // Initialize Language Manager
+    window.ltth = window.ltth || {};
+    window.ltth.languageManager = new LanguageManager();
+
 })();
