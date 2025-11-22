@@ -30,21 +30,13 @@
                     <a href="/features.html" class="nav-link">Features</a>
                     <a href="/plugins.html" class="nav-link">Plugins</a>
                     <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link">Community</a>
                     <a href="/changelog.html" class="nav-link">Changelog</a>
                     <a href="/roadmap.html" class="nav-link">Roadmap</a>
                     <a href="/faq.html" class="nav-link active">FAQ</a>
                     <a href="/support.html" class="nav-link">Support</a>
                     <a href="/download.html" class="nav-link nav-cta">Download</a>
-                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5"/>
-                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                        </svg>
-                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                        </svg>
-                    </button>
-                </div>
+                    </div>
             </div>
         </div>
     </nav>
@@ -80,7 +72,11 @@
                         Welche Betriebssysteme werden unterstützt?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        Offiziell unterstützt wird <strong>Windows 10/11 (64-bit)</strong> mit setup.exe Installer. Linux und macOS funktionieren theoretisch (manuelle Installation via npm), sind aber noch nicht offiziell getestet. Native Installer für macOS/Linux sind geplant.
+                        <strong>Windows, macOS und Linux</strong> werden unterstützt:<br><br>
+                        <strong>Windows:</strong> Windows 10/11 (64-bit) mit setup.exe Installer - einfachste Installation<br>
+                        <strong>macOS:</strong> macOS 10.15+ - manuelle Installation via npm (Native Installer in Planung)<br>
+                        <strong>Linux:</strong> Ubuntu 20.04+, Debian 11+ - manuelle Installation via npm<br><br>
+                        Alle Plattformen benötigen Node.js 18.0.0 oder höher. Siehe <a href="/docs.html" style="color: var(--color-primary); text-decoration: underline;">Installationsanleitung</a> für Details.
                     </p>
                 </div>
 
@@ -103,6 +99,32 @@
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
                         <strong>Nein, keine Login-Daten erforderlich!</strong> Du benötigst nur deinen TikTok-Username (ohne @). Keine Passwörter, keine OAuth, keine Account-Verbindung. Das Tool liest nur öffentlich verfügbare LIVE-Stream-Daten.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🚀</span>
+                        Was bedeutet "Beta-Version"? Ist das Tool stabil?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, das Tool ist produktionsreif und voll funktionsfähig!</strong> "Beta" bedeutet, dass aktiv neue Features entwickelt werden und wir Feedback sammeln. Alle Hauptfunktionen (TTS, Alerts, Soundboard, Plugins, OBS-Integration) funktionieren zuverlässig. Gelegentliche Bugs können auftreten - melde sie einfach auf <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" style="color: var(--color-primary); text-decoration: underline;">GitHub</a> und wir beheben sie schnell!
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">👥</span>
+                        Wie kann ich zur Community beitragen?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Es gibt viele Möglichkeiten:<br>
+                        • <strong>GitHub Star</strong> geben und das Projekt weiterempfehlen<br>
+                        • <strong>Bugs melden</strong> und Features vorschlagen<br>
+                        • <strong>Code beitragen</strong> via Pull Requests<br>
+                        • <strong>Eigene Plugins</strong> entwickeln und teilen<br>
+                        • <strong>Anderen helfen</strong> in GitHub Discussions<br>
+                        Besuche die <a href="/community.html" style="color: var(--color-primary); text-decoration: underline;">Community-Seite</a> für mehr Infos!
                     </p>
                 </div>
             </div>
