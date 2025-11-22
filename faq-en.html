@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Frequently Asked Questions (FAQ) about PupCid's Little TikTok Helper. Installation, configuration, troubleshooting and support for TikTok LIVE streamers.">
+    <title>FAQ - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link">Community</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link active">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                Frequently Asked <span class="hero-highlight">Questions</span>
+            </h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Find answers to common questions about ltth.app
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container" style="max-width: 900px;">
+            <!-- Getting Started Section -->
+            <div style="margin-bottom: var(--space-12);">
+                <h2 style="color: var(--color-primary); margin-bottom: var(--space-6); text-align: center;">🚀 Erste Schritte</h2>
+                
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border); transition: all var(--transition-base);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">💰</span>
+                        Ist PupCid's Little TikTok Helper kostenlos?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, komplett kostenlos!</strong> Das Tool ist 100% kostenlos und Open Source (MIT-Lizenz). Es gibt keine versteckten Kosten, Premium-Tiers oder Feature-Einschränkungen. Alle Funktionen sind für jeden frei verfügbar.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">💻</span>
+                        Welche Betriebssysteme werden unterstützt?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Windows, macOS und Linux</strong> werden unterstützt:<br><br>
+                        <strong>Windows:</strong> Windows 10/11 (64-bit) mit setup.exe Installer - einfachste Installation<br>
+                        <strong>macOS:</strong> macOS 10.15+ - manuelle Installation via npm (Native Installer in Planung)<br>
+                        <strong>Linux:</strong> Ubuntu 20.04+, Debian 11+ - manuelle Installation via npm<br><br>
+                        Alle Plattformen benötigen Node.js 18.0.0 oder höher. Siehe <a href="/docs.html" style="color: var(--color-primary); text-decoration: underline;">Installationsanleitung</a> für Details.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">📦</span>
+                        Wie installiere ich das Tool?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Windows:</strong> Einfach <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">setup.exe</code> herunterladen und ausführen. Node.js wird automatisch installiert falls benötigt.<br><br>
+                        <strong>Linux/macOS:</strong> Manuell mit <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm install</code> und <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm start</code>.<br><br>
+                        Siehe <a href="/docs.html" style="color: var(--color-primary); text-decoration: underline;">Dokumentation</a> für detaillierte Anleitung.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🔑</span>
+                        Muss ich Login-Daten eingeben?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Nein, keine Login-Daten erforderlich!</strong> Du benötigst nur deinen TikTok-Username (ohne @). Keine Passwörter, keine OAuth, keine Account-Verbindung. Das Tool liest nur öffentlich verfügbare LIVE-Stream-Daten.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🚀</span>
+                        Was bedeutet "Beta-Version"? Ist das Tool stabil?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, das Tool ist produktionsreif und voll funktionsfähig!</strong> "Beta" bedeutet, dass aktiv neue Features entwickelt werden und wir Feedback sammeln. Alle Hauptfunktionen (TTS, Alerts, Soundboard, Plugins, OBS-Integration) funktionieren zuverlässig. Gelegentliche Bugs können auftreten - melde sie einfach auf <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" style="color: var(--color-primary); text-decoration: underline;">GitHub</a> und wir beheben sie schnell!
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">👥</span>
+                        Wie kann ich zur Community beitragen?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Es gibt viele Möglichkeiten:<br>
+                        • <strong>GitHub Star</strong> geben und das Projekt weiterempfehlen<br>
+                        • <strong>Report bugs</strong> und Suggest features<br>
+                        • <strong>Code beitragen</strong> via Pull Requests<br>
+                        • <strong>Eigene Plugins</strong> entwickeln und teilen<br>
+                        • <strong>Anderen helfen</strong> in GitHub Discussions<br>
+                        Besuche die <a href="/community.html" style="color: var(--color-primary); text-decoration: underline;">Community-Seite</a> für mehr Infos!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Technical Questions -->
+            <div style="margin-bottom: var(--space-12);">
+                <h2 style="color: var(--color-primary); margin-bottom: var(--space-6); text-align: center;">⚙️ Technisches</h2>
+                
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🎥</span>
+                        Funktioniert das Tool mit OBS?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, vollständige OBS-Integration!</strong><br>
+                        • Transparente Full-HD-Overlays (1920x1080) als Browser-Source<br>
+                        • OBS WebSocket v5 für Szenen-Steuerung via Gifts/Chat<br>
+                        • Separate Browser-Source-URLs für Goals<br>
+                        • HUD-Konfiguration mit Drag & Drop<br>
+                        Siehe <a href="/features.html#obs-integration" style="color: var(--color-primary); text-decoration: underline;">OBS-Integration Features</a>
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🔌</span>
+                        Brauche ich Node.js?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Node.js wird benötigt, wird aber automatisch mit setup.exe installiert falls nicht vorhanden. Unterstützte Versionen: <strong>Node.js 18.0.0 - 23.x</strong>. Du musst dich um nichts kümmern.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🔒</span>
+                        Werden meine Daten in die Cloud hochgeladen?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Nein, alles bleibt lokal!</strong> Alle Daten bleiben auf deinem Computer. Keine Cloud-Anbindung, keine Datensammlung, kein Tracking. 100% lokal und privat. Optional ist Cloud-Sync für Configs geplant (opt-in mit voller Kontrolle).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Troubleshooting -->
+            <div style="margin-bottom: var(--space-12);">
+                <h2 style="color: var(--color-primary); margin-bottom: var(--space-6); text-align: center;">🔧 Problemlösung</h2>
+                
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">❌</span>
+                        TikTok-Verbindung schlägt fehl - was tun?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Häufige Lösungen:</strong><br>
+                        ✅ Du musst bereits LIVE sein auf TikTok (nicht im Preview)<br>
+                        ✅ Username muss korrekt sein (ohne @)<br>
+                        ✅ Firewall/Antivirus könnte Verbindung blockieren<br>
+                        ✅ Port 3000 muss verfügbar sein<br>
+                        ✅ Probiere Auto-Reconnect (wird automatisch versucht)<br><br>
+                        Mehr Hilfe: <a href="/docs.html#troubleshooting" style="color: var(--color-primary); text-decoration: underline;">Troubleshooting-Guide</a>
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🔊</span>
+                        TTS funktioniert nicht - kein Ton?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Checkliste:</strong><br>
+                        ✅ TTS-Plugin aktiviert? (Dashboard → Plugins)<br>
+                        ✅ System-Lautstärke nicht auf Stumm?<br>
+                        ✅ Standard-Audiogerät korrekt eingestellt?<br>
+                        ✅ TTS-Volume im Dashboard hochgedreht?<br>
+                        ✅ Probiere Test-Button im TTS-Admin-Panel<br><br>
+                        Wenn nichts hilft: <a href="/support.html" style="color: var(--color-primary); text-decoration: underline;">Support kontaktieren</a>
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🚀</span>
+                        Wie aktualisiere ich das Tool?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Das Tool prüft automatisch alle 24 Stunden auf Updates. Wenn ein Update verfügbar ist, siehst du einen Banner im Dashboard.<br><br>
+                        <strong>Manuelles Update:</strong> Lade einfach die neue setup.exe und installiere über die alte Version. Deine Daten bleiben erhalten.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Features & Plugins -->
+            <div style="margin-bottom: var(--space-12);">
+                <h2 style="color: var(--color-primary); margin-bottom: var(--space-6); text-align: center;">🎨 Features & Plugins</h2>
+                
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🔌</span>
+                        Kann ich eigene Plugins erstellen?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, vollständig unterstützt!</strong> Das Plugin-System ist komplett dokumentiert. Du kannst Plugins erstellen mit:<br>
+                        • Express-Routes für APIs<br>
+                        • Socket.io-Events für Real-time-Kommunikation<br>
+                        • TikTok-Event-Callbacks<br>
+                        • Eigene Admin-UIs<br><br>
+                        Siehe <a href="/plugins.html" style="color: var(--color-primary); text-decoration: underline;">Plugin-Dokumentation</a> für Beispiele und API-Reference.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🎮</span>
+                        Funktioniert VRChat-Integration?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, via OSC-Bridge Plugin!</strong> Steuere deinen VRChat-Avatar mit TikTok-Events:<br>
+                        • Wave-Geste bei Gifts<br>
+                        • Celebrate-Animation bei großen Spenden<br>
+                        • Dance, Hearts, Confetti-Effekte<br>
+                        • Bidirektionale Kommunikation<br>
+                        • Latenz < 50ms<br><br>
+                        Siehe OSC-Bridge Plugin im Dashboard für Setup.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🎯</span>
+                        Wie funktioniert das Flow-System?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Flows = Automatisierung ohne Code!</strong> Erstelle "Wenn-Dann"-Regeln:<br>
+                        • <strong>Trigger:</strong> TikTok-Events (Gift, Follow, Chat, etc.)<br>
+                        • <strong>Bedingungen:</strong> Gift-Value, Username, Text-Match (mit Regex)<br>
+                        • <strong>Actions:</strong> TTS, Alerts, Sounds, OBS-Szenen, Webhooks<br><br>
+                        Beispiel: "Wenn Rose-Gift → TTS 'Danke für Rose' + OBS Szene wechseln"
+                    </p>
+                </div>
+            </div>
+
+            <!-- Legal & Community -->
+            <div style="margin-bottom: var(--space-8);">
+                <h2 style="color: var(--color-primary); margin-bottom: var(--space-6); text-align: center;">📜 Legal & Community</h2>
+                
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">⚖️</span>
+                        Verstößt das Tool gegen TikTok's Terms of Service?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Nein.</strong> Das Tool liest nur öffentlich verfügbare TikTok LIVE-Daten ohne Login. Es ist vergleichbar mit StreamElements, Streamlabs etc. für Twitch. Keine Account-Manipulation, nur Lesen von öffentlichen Events. Kein TOS-Verstoß.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🐛</span>
+                        Wie kann ich Report bugs oder Suggest features?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Öffne ein Issue auf GitHub: <a href="https://github.com/Loggableim/ltth.app/issues" style="color: var(--color-primary); text-decoration: underline;">GitHub Issues</a><br><br>
+                        <strong>Bug-Report:</strong> Beschreibe das Problem, Steps to Reproduce, Screenshots<br>
+                        <strong>Feature-Request:</strong> Erkläre den Use-Case und warum es hilfreich wäre<br><br>
+                        Wir freuen uns über Feedback! Das Tool ist in Beta und dein Input hilft enorm.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">💻</span>
+                        Kann ich zum Projekt beitragen?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        <strong>Ja, Contributions sind willkommen!</strong><br>
+                        • Pull Requests auf <a href="https://github.com/Loggableim/pupcidslittletiktokhelper" style="color: var(--color-primary); text-decoration: underline;">Main Repository</a><br>
+                        • Plugin-Entwicklung und Sharing<br>
+                        • Wiki-Dokumentation verbessern<br>
+                        • Bug-Reports und Testing<br>
+                        • Community-Support im Discord/GitHub<br><br>
+                        Siehe Contribution-Guidelines im Repository.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Still have questions? -->
+            <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
+                <h3 style="margin-bottom: var(--space-4); color: white;">Noch Fragen?</h3>
+                <p style="margin-bottom: var(--space-6); opacity: 0.95; line-height: 1.8;">
+                    Wenn du hier keine Antwort findest, schau in der <a href="/docs.html" style="color: white; text-decoration: underline;">Dokumentation</a> nach oder kontaktiere uns via <a href="/support.html" style="color: white; text-decoration: underline;">Support</a>.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/docs.html" style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        📖 Dokumentation
+                    </a>
+                    <a href="/support.html" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 2px solid white;">
+                        💬 Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 ltth.app. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

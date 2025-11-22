@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Changelog and version history of PupCid's Little TikTok Helper. All updates, new features, improvements and bug fixes for TikTok LIVE streamers.">
+    <title>Changelog - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link">Community</a>
+                    <a href="/changelog.html" class="nav-link active">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                <span class="hero-highlight">Changelog</span>
+            </h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                All updates and changes to ltth.app
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container" style="max-width: 900px;">
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.3</h2>
+                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neu</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Validators Module</strong> - Umfassende Input-Validierung für alle API-Endpoints</li>
+                    <li><strong>Template Engine</strong> - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)</li>
+                    <li><strong>Error Handler Module</strong> - Standardisierte Fehlerbehandlung im gesamten System</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>CORS-Policy verschärft - Whitelist-basiert statt Wildcard</li>
+                    <li>CSP mit Nonces gegen XSS-Angriffe implementiert</li>
+                    <li>DNS-basierte Webhook-Validierung gegen SSRF</li>
+                    <li>IP-Blacklist für private Netzwerke</li>
+                    <li>Sicherheit verbessert: 5/10 → 9/10 (+80%)</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)</li>
+                    <li>Template-Rendering mit RegExp-Cache (90% Verbesserung)</li>
+                    <li>Memory Leaks behoben - Plugin-Reload ohne Server-Neustart</li>
+                    <li>Performance: ~500 → ~800 Events/s (+60%)</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Socket Event Cleanup implementiert - keine Memory Leaks mehr</li>
+                    <li>Logging standardisiert - console.* durch strukturiertes Logging ersetzt</li>
+                    <li>Code-Duplikation eliminiert (~200 Zeilen reduziert)</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.2</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 9, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎮 OSC-Bridge Plugin</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>VRChat-Integration via OSC-Protokoll</li>
+                    <li>Bidirektionale Kommunikation (Senden & Empfangen)</li>
+                    <li>VRChat Helper-Methoden: wave(), celebrate(), dance(), hearts(), confetti()</li>
+                    <li>Flow-System-Integration mit 8 neuen Actions</li>
+                    <li>Latenz < 50ms</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Launcher & Update-System</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>Platform-agnostischer Launcher (Windows, Linux, macOS)</li>
+                    <li>TTY-sicheres Logging (keine "stdout is not a tty" Fehler)</li>
+                    <li>Git-basiertes Update mit automatischem Backup</li>
+                    <li>Rollback bei fehlgeschlagenen Updates</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔌 Plugin-System</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Plugin-Loader mit Lifecycle-Management</li>
+                    <li>Plugin-Manager UI (Upload, Enable, Disable, Delete, Reload)</li>
+                    <li>Hot-Loading ohne Server-Neustart</li>
+                    <li>Multi-Cam Switcher Plugin - OBS-Szenen via Gifts/Chat steuern</li>
+                </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
+                <h3 style="margin-bottom: var(--space-4); color: white;">⚠️ Beta-Hinweis</h3>
+                <p style="margin-bottom: var(--space-6); opacity: 0.9;">
+                    Dieses Tool befindet sich in aktiver Entwicklung. Features können sich ändern. 
+                    Bitte melde Bugs und Feature-Requests auf GitHub.
+                </p>
+                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" 
+                   style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    GitHub Issues
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 ltth.app. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

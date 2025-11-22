@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore the plugin system of PupCid's Little TikTok Helper: 7+ pre-installed plugins, hot-loading, plugin API, create your own extensions for TikTok LIVE streaming.">
+    <title>Plugins - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/" class="logo">
+                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/features.html" class="nav-link">Features</a>
+                    <a href="/plugins.html" class="nav-link active">Plugins</a>
+                    <a href="/docs.html" class="nav-link">Docs</a>
+                    <a href="/community.html" class="nav-link">Community</a>
+                    <a href="/changelog.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
+                    <a href="/faq.html" class="nav-link">FAQ</a>
+                    <a href="/support.html" class="nav-link">Support</a>
+                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Beta Notice -->
+    <section class="beta-notice">
+        <div class="container">
+            <div class="beta-content">
+                <div class="beta-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="beta-text">
+                    <strong>🚀 Beta Version 2.0:</strong> Actively developed with new features! 
+                    Already fully functional for production use. 
+                    Help us improve: <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Report bugs</a> 
+                    oder <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Suggest features</a>. 
+                    <a href="/roadmap.html">View roadmap →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                Extensible <span class="hero-highlight">Plugin System</span>
+            </h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Modular architecture with hot-loading and 7+ pre-installed plugins for TikTok LIVE streaming. Create your own plugins and extend ltth.app infinitely.
+            </p>
+        </div>
+    </section>
+
+    <!-- Plugin Manager Screenshot -->
+    <section class="features-preview" style="padding-top: 2rem;">
+        <div class="container">
+            <div class="screenshot-container" style="text-align: center; margin-bottom: 3rem;">
+                <img src="/assets/screenshots/plugins.png" alt="Plugin Manager Interface" 
+                     style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);" />
+            </div>
+        </div>
+    </section>
+
+    <!-- Installed Plugins -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Vorinstallierte Plugins</h2>
+            <p class="section-subtitle">7+ professionelle Plugins für erweiterte Streaming-Features</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">TTS Plugin</h3>
+                    <p class="feature-description">
+                        <strong>75+ TikTok-Stimmen & 30+ Google Cloud-Stimmen.</strong> User-spezifisches Voice-Mapping, 
+                        automatisches TTS für Chat-Nachrichten, Blacklist-Funktion für bestimmte User oder Wörter. 
+                        Anpassbare Volume-, Speed- und Pitch-Einstellungen. Queue-Management mit Prioritätssystem.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                            <line x1="6" y1="6" x2="6" y2="6"/>
+                            <line x1="6" y1="18" x2="6" y2="18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Soundboard Plugin</h3>
+                    <p class="feature-description">
+                        <strong>100.000+ Sounds via MyInstants-Integration.</strong> Gift-spezifische Sound-Mappings mit 
+                        automatischer Icon-Anzeige. Event-Sounds für Follow, Subscribe und Share. Like-Threshold-System 
+                        (z.B. Sound bei 100, 500, 1000 Likes). Sound-Picker mit Suche, Favoriten und Trending-Liste.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 7l-7 5 7 5V7z"/>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Multi-Cam Switcher</h3>
+                    <p class="feature-description">
+                        <strong>OBS-Szenen via Gifts oder Chat steuern.</strong> OBS WebSocket v5-Integration. 
+                        Chat-Commands wie <code>!cam 1-5</code> für Szenenwechsel. Gift-basierte Szenensteuerung 
+                        (z.B. Rose → Cam 2). Macro-System für komplexe Aktionen. Cooldown-System zur Spam-Prävention.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">OSC-Bridge Plugin</h3>
+                    <p class="feature-description">
+                        <strong>VRChat-Avatar-Steuerung via OSC-Protokoll.</strong> Wave-Geste bei Gifts, 
+                        Celebrate-Animation bei großen Spenden, Dance-Trigger, Hearts & Confetti-Effekte. 
+                        Bidirektionale Kommunikation mit VRChat. Latenz unter 50ms. Custom OSC-Parameter unterstützt.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">VDO.Ninja Plugin</h3>
+                    <p class="feature-description">
+                        <strong>Multi-Guest-Streaming für Interviews und Kollaborationen.</strong> Room-Management mit 
+                        QR-Code-Generierung, Guest-Verwaltung, Layout-Kontrolle (Grid, Spotlight, Custom). 
+                        Direktlinks für Gäste, individuelle Audio-Routing-Kontrolle. 20+ API-Endpunkte.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Topboard Plugin</h3>
+                    <p class="feature-description">
+                        <strong>Leaderboards für Top Gifters, Streaks und Spender.</strong> Top Gifters sortiert nach 
+                        Total Coins, Longest Gift-Streaks-Tracking, Recent Donors mit Zeitstempel. Echtzeit-Updates, 
+                        eigene Browser-Source-URL für OBS-Overlay. Anpassbare Styles und Rankings.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Emoji Rain Plugin</h3>
+                    <p class="feature-description">
+                        <strong>Emoji-Regen-Effekt bei Gifts im Overlay.</strong> Gift-zu-Emoji-Mappings konfigurierbar 
+                        (z.B. Rose → 🌹, Lion → 🦁). Anpassbare Animation-Speed und Emoji-Density. Integration ins 
+                        HUD-System. Perfekt für interaktive Viewer-Engagement-Visualisierung.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugin Screenshots Showcase -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <h2 class="section-title">Plugin-Benutzeroberflächen</h2>
+            <p class="section-subtitle">
+                Professionelle Admin-Panels für erweiterte Konfiguration
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">TTS Admin Panel</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Umfassende Konfiguration mit 75+ TikTok-Stimmen, Google Cloud-Integration, 
+                        User-Voice-Mappings und erweiterten Audio-Einstellungen.
+                    </p>
+                    <img src="/assets/screenshots/tts-admin.png" alt="TTS Admin Panel mit umfassenden Voice-Einstellungen" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Goals Plugin Admin</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Verwaltung mehrerer Goal-Overlays mit individuellen Einstellungen, 
+                        Styles und Auto-Modi bei Zielerreichung.
+                    </p>
+                    <img src="/assets/screenshots/plugin-goals.png" alt="Goals Plugin Admin Interface" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugin System Features -->
+    <section class="developer-features">
+        <div class="container">
+            <h2 class="section-title">Plugin-System Features</h2>
+            <p class="section-subtitle">Modulare Architektur für unbegrenzte Erweiterungen</p>
+            
+            <div class="dev-features-grid">
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <h3>Hot-Loading</h3>
+                    <p>Plugins ohne Server-Neustart laden, aktivieren und deaktivieren. Live-Updates während des Streams.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </div>
+                    <h3>ZIP-Upload</h3>
+                    <p>Plugins einfach via Web-UI als ZIP hochladen. Automatische Installation und Aktivierung.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>Plugin-API</h3>
+                    <p>Vollständige API für Express-Routes, Socket.io-Events, TikTok-Events und Datenbank-Zugriff.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3>Admin-UI</h3>
+                    <p>Plugins können eigene Web-Interfaces bereitstellen. Vollständig in Dashboard integriert.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3>Event-System</h3>
+                    <p>Registriere Callbacks für alle TikTok-Events (Gifts, Chat, Follows, etc.). Event-driven Architecture.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>Dokumentation</h3>
+                    <p>Umfassende Plugin-Dokumentation mit Beispiel-Code, API-Reference und Best Practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Build Your Own Plugin -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Erstelle dein eigenes Plugin</h2>
+                <p class="cta-description" style="max-width: 700px; margin: 0 auto 2rem;">
+                    Das Plugin-System von ltth.app ist vollständig dokumentiert und einfach zu nutzen. 
+                    Erstelle custom Funktionalität, teile sie mit der Community oder nutze sie privat 
+                    für deine speziellen Stream-Anforderungen.
+                </p>
+                <div class="cta-actions">
+                    <a href="/docs.html" class="btn btn-primary btn-large">Plugin-Dokumentation</a>
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary btn-large">
+                        GitHub Repository
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 ltth.app. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
