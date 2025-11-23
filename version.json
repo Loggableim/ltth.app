@@ -1,8 +1,29 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "releaseDate": "2025-11-23",
   "status": "beta",
   "changelog": {
+    "1.0.7": {
+      "date": "2025-11-23",
+      "changes": [
+        "NEW: Independent volume control for gift animation audio",
+        "NEW: Stream Alchemy extensible settings with custom prompts and item management",
+        "NEW: OBS password authentication and gift-to-scene mapping UI for Multicam plugin",
+        "FIXED: Emoji rain - bubble blop animation, pixel mode, color filters, and edge spawning",
+        "FIXED: Follow sounds not playing - improved event detection with multiple displayType patterns",
+        "FIXED: OpenShock pattern settings in mapping modal",
+        "FIXED: Sidebar layout - removed duplicate text spans in VDO.Ninja and Plugin Manager",
+        "FIXED: Gift Milestone Celebration - tier-specific media assignment",
+        "FIXED: Weather Control overlay animations in OBS Browser Source - GSAP library loading",
+        "FIXED: Resource monitor compact mode to display all content on one page",
+        "FIXED: Plugin initialization - all 23 plugins now load successfully with proper logger API",
+        "ENABLED: VDO.Ninja Multi-Guest and Emoji Rain v2.0 plugins by default",
+        "UI: Added comprehensive UI integration for Stream Alchemy, GCCE, and Thermal Printer plugins",
+        "UI: Added Leaderboard admin panel with session and all-time tracking",
+        "SECURITY: XSS protection and input validation for Stream Alchemy",
+        "DOCS: Reorganized documentation files into infos/ subdirectory"
+      ]
+    },
     "1.0.6": {
       "date": "2025-11-23",
       "changes": [

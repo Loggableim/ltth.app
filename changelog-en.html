@@ -88,9 +88,114 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.6</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.7</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ New Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Independent Volume Control for Gift Animations</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Separate volume control for gift animation audio in soundboard</li>
+                            <li>New animation volume control in soundboard configuration</li>
+                            <li>Standalone soundboard UI with animation volume control</li>
+                        </ul>
+                    </li>
+                    <li><strong>Stream Alchemy - Extensible Settings</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Customizable AI prompts for item generation</li>
+                            <li>Item management with edit and delete functionality</li>
+                            <li>Comprehensive settings UI with custom prompt support</li>
+                        </ul>
+                    </li>
+                    <li><strong>Multicam - OBS Password Authentication</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>OBS password support for secure WebSocket connection</li>
+                            <li>Gift-to-scene mapping UI with complete gift catalog</li>
+                            <li>German and English localization</li>
+                        </ul>
+                    </li>
+                    <li><strong>Plugin UI Integration</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Leaderboard admin panel with session and all-time tracking</li>
+                            <li>Stream Alchemy, GCCE, and Thermal Printer UI integration</li>
+                            <li>VDO.Ninja Multi-Guest and Emoji Rain v2.0 enabled by default</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bug Fixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Emoji Rain Completely Reworked</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Fixed bubble blop animation</li>
+                            <li>Fixed pixel mode rendering</li>
+                            <li>Added color filters for emojis</li>
+                            <li>Improved edge spawning for better distribution</li>
+                        </ul>
+                    </li>
+                    <li><strong>Follow Sounds Now Playing Reliably</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Improved event detection with multiple displayType patterns</li>
+                            <li>Fallback check for follow events</li>
+                            <li>Debug logging for unrecognized social events</li>
+                        </ul>
+                    </li>
+                    <li><strong>OpenShock Pattern Settings</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Implemented pattern settings functionality in mapping modal</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sidebar Layout Fixes</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Removed duplicate text spans in VDO.Ninja</li>
+                            <li>Fixed Plugin Manager layout</li>
+                        </ul>
+                    </li>
+                    <li><strong>Gift Milestone Celebration</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Fixed tier-specific media assignment</li>
+                            <li>Improved error handling</li>
+                        </ul>
+                    </li>
+                    <li><strong>Weather Control Overlay</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Fixed GSAP library loading issue in OBS Browser Source</li>
+                            <li>Animations now work correctly</li>
+                        </ul>
+                    </li>
+                    <li><strong>Resource Monitor</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Compact mode now displays all content on one page</li>
+                        </ul>
+                    </li>
+                    <li><strong>Plugin Initialization</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>All 23 plugins now load successfully</li>
+                            <li>Fixed logger API issues for GCCE and StreamAlchemy</li>
+                            <li>Enabled minecraft-connect, openshock, osc-bridge, resource-monitor</li>
+                            <li>Enabled api-bridge, hybridshock, multicam, viewer-xp</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Security</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>XSS protection and input validation for Stream Alchemy</li>
+                    <li>Refactored validation helpers for better maintainability</li>
+                    <li>Added accessibility improvements</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Documentation</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Reorganized documentation files into infos/ subdirectory</li>
+                    <li>Updated file path references</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.6</h2>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
                 
                 <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ New Plugins</h3>
