@@ -1189,7 +1189,8 @@ section {
 }
 
 .fade-in {
-    animation: fadeIn var(--transition-slow) ease-out;
+    animation: fadeIn var(--transition-slow) ease-out forwards;
+    opacity: 1 !important;
 }
 
 /* ===================================
