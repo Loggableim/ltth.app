@@ -36,7 +36,42 @@
                     <a href="/faq.html" class="nav-link">FAQ</a>
                     <a href="/support.html" class="nav-link">Support</a>
                     <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    
+                    <!-- Version Badge -->
+                    <span class="version-badge" data-version-badge>Loading...</span>
+                    
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
+                            <span class="lang-flag">🇩🇪</span>
+                            <span class="lang-text">DE</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/plugins.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/plugins-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                        </div>
                     </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -244,9 +279,10 @@
                 Professionelle Admin-Panels für erweiterte Konfiguration
             </p>
             
+            <!-- Primary Screenshots Grid -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
                 <div>
-                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">TTS Admin Panel</h3>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🎙️ TTS Admin Panel</h3>
                     <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
                         Umfassende Konfiguration mit 75+ TikTok-Stimmen, Google Cloud-Integration, 
                         User-Voice-Mappings und erweiterten Audio-Einstellungen.
@@ -255,7 +291,29 @@
                          style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
                 </div>
                 <div>
-                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Goals Plugin Admin</h3>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🎵 Soundboard Konfiguration</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Gift-zu-Sound-Mappings mit MyInstants-Integration. Über 100.000 Sounds sofort verfügbar 
+                        mit Vorschau, Favoriten und automatischer Icon-Anzeige.
+                    </p>
+                    <img src="/assets/screenshots/soundboard-detail.png" alt="Soundboard mit Gift-Mappings und MyInstants-Integration" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+
+            <!-- Secondary Screenshots Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">⚡ Flow-Editor (Event-Automation)</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Erstelle "Wenn-Dann"-Automatisierungen visuell ohne Code. Triggere TTS, Alerts, Sounds,
+                        OBS-Szenen und mehr basierend auf TikTok LIVE Events.
+                    </p>
+                    <img src="/assets/screenshots/flows-editor.png" alt="IFTTT Flow Editor für Event-Automatisierung" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🏆 Goals Plugin Admin</h3>
                     <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
                         Verwaltung mehrerer Goal-Overlays mit individuellen Einstellungen, 
                         Styles und Auto-Modi bei Zielerreichung.
@@ -263,6 +321,28 @@
                     <img src="/assets/screenshots/plugin-goals.png" alt="Goals Plugin Admin Interface" 
                          style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
                 </div>
+            </div>
+
+            <!-- Full Width Screenshots -->
+            <div style="margin-bottom: 3rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.5rem; text-align: center;">🎯 Goals Overlay für OBS</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    Transparente Progress-Bars für Coins, Followers, Likes und Subs. Anpassbar und OBS-ready 
+                    mit Live-Updates während des Streams.
+                </p>
+                <img src="/assets/screenshots/goals-overlay.png" alt="Goals Overlay mit Progress-Bars für OBS" 
+                     style="width: 100%; max-width: 900px; margin: 0 auto; display: block; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+            </div>
+
+            <!-- Plugin Manager Screenshot -->
+            <div style="text-align: center; padding: 2rem 0;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🔌 Plugin Manager</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    Zentrale Verwaltung aller Plugins mit Hot-Loading, ZIP-Upload, Enable/Disable und Reload-Funktionen.
+                    Einfache Installation neuer Plugins ohne Server-Neustart.
+                </p>
+                <img src="/assets/screenshots/plugins.png" alt="Plugin Manager Interface mit Hot-Loading" 
+                     style="width: 100%; max-width: 900px; margin: 0 auto; display: block; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
             </div>
         </div>
     </section>
