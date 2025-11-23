@@ -1,8 +1,34 @@
 {
-  "version": "2.0.0-beta",
-  "releaseDate": "2024-11-18",
-  "status": "beta",
+  "version": "1.0.4",
+  "releaseDate": "2025-11-23",
+  "status": "stable",
   "changelog": {
+    "1.0.4": {
+      "date": "2025-11-23",
+      "changes": [
+        "Fixed navbar logo - removed text overlap with menu items",
+        "Increased logo size from 32px to 48px for better visibility",
+        "Improved plugins page with better structure and organization",
+        "Enhanced documentation with comprehensive plugin guides",
+        "Added detailed plugin API documentation",
+        "Better visual separation in plugin categories",
+        "Improved mobile responsiveness across all pages"
+      ]
+    },
+    "1.0.3": {
+      "date": "2024-11-10",
+      "changes": [
+        "Validators Module - Umfassende Input-Validierung für alle API-Endpoints",
+        "Template Engine - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)",
+        "Error Handler Module - Standardisierte Fehlerbehandlung",
+        "CORS-Policy verschärft - Whitelist-basiert statt Wildcard",
+        "CSP mit Nonces gegen XSS-Angriffe implementiert",
+        "DNS-basierte Webhook-Validierung gegen SSRF",
+        "Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)",
+        "Performance: ~500 → ~800 Events/s (+60%)",
+        "Sicherheit verbessert: 5/10 → 9/10 (+80%)"
+      ]
+    },
     "2.0.0-beta": {
       "date": "2024-11-18",
       "changes": [

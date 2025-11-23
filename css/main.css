@@ -286,8 +286,8 @@ pre code {
 }
 
 .logo-icon {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     color: var(--color-primary);
     object-fit: contain;
 }
@@ -300,6 +300,7 @@ pre code {
 
 .logo-text {
     font-family: var(--font-display);
+    display: none; /* Hide logo text to show only icon */
 }
 
 /* Mascot Styles */
