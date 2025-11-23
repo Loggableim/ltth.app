@@ -94,10 +94,59 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.5</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.6</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">In Entwicklung</p>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Plugins</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>StreamAlchemy Plugin</strong> - RPG-Crafting-System mit KI
+                        <ul style="margin-top: 0.5rem;">
+                            <li>TikTok Gifts werden zu virtuellen RPG-Items transformiert</li>
+                            <li>KI-generierte isometrische Item-Icons mit DALL-E 3</li>
+                            <li>Echtzeit-Crafting: 2 Gifts innerhalb von 6 Sekunden kombinieren</li>
+                            <li>4 Seltenheitsstufen basierend auf Coin-Werten (Bronze, Silber, Gold, Lila)</li>
+                            <li>Persistente Inventarverwaltung pro User</li>
+                            <li>Chat-Commands: /inventory, /inspect, /merge, /alchemy</li>
+                        </ul>
+                    </li>
+                    <li><strong>Leaderboard Plugin</strong> - Top-Gifter Tracking
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Session-Leaderboard für aktuelle Stream-Session</li>
+                            <li>All-Time Champions für historische Top-Contributor</li>
+                            <li>WebSocket-basierte Live-Updates im Overlay</li>
+                            <li>Automatische Aktualisierung von Nicknamen und Profilbildern</li>
+                            <li>Moderne Neon/Dark-Theme UI mit CSS-Animationen</li>
+                            <li>Performance-optimiert mit debounced Database Writes</li>
+                        </ul>
+                    </li>
+                    <li><strong>Thermal Printer Plugin</strong> - Physische Event-Ausdrucke
+                        <ul style="margin-top: 0.5rem;">
+                            <li>ESC/POS Thermodrucker-Support (USB & Netzwerk)</li>
+                            <li>Druckt Chat-Nachrichten, Gifts, Follows und Shares</li>
+                            <li>Intelligente Filterung: Min. Coins, Bot-Command-Ignorierung</li>
+                            <li>Asynchrone Print-Queue verhindert Event-Loop-Blocking</li>
+                            <li>Auto-Reconnect bei Verbindungsverlust</li>
+                            <li>Konfigurierbare ESC/POS-Formatierung mit ASCII-Icons</li>
+                        </ul>
+                    </li>
+                    <li><strong>GCCE (Global Chat Command Engine)</strong> - Universelles Command-System
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Zentrales Command-Registry für alle Plugins</li>
+                            <li>Hierarchisches Permission-System (broadcaster → all)</li>
+                            <li>Automatische Syntax-Validierung und Error-Messaging</li>
+                            <li>Rate-Limiting (10 Commands/User/Minute, 100 Global/Minute)</li>
+                            <li>Unified Overlay-System für Command-Feedback</li>
+                            <li>Built-in Commands: /help, /commands, /inventory, /inspect, /merge</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.5</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
                 
                 <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">

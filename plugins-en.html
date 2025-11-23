@@ -83,7 +83,7 @@
                     </svg>
                 </div>
                 <div class="beta-text">
-                    <strong>🚀 Beta Version <span id="betaVersion">1.0.4</span>:</strong> Actively developed with new features! 
+                    <strong>🚀 Beta Version <span id="betaVersion">1.0.6</span>:</strong> Actively developed with new features! 
                     Already fully functional for production use. 
                     Help us improve:<br>
                     <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Report bugs</a> 
@@ -109,7 +109,9 @@
                 Extensible <span class="hero-highlight">Plugin System</span>
             </h1>
             <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
-                Modular architecture with hot-loading and 7+ pre-installed plugins for TikTok LIVE streaming. Create your own plugins and extend ltth.app infinitely.
+                Modular architecture with hot-loading and 20+ pre-installed plugins for TikTok LIVE streaming. 
+                Includes TTS, Soundboard, Multi-Cam Switching, VRChat integration, RPG crafting, leaderboards and more. 
+                Create your own plugins and extend ltth.app infinitely.
             </p>
         </div>
     </section>
@@ -127,8 +129,8 @@
     <!-- Installed Plugins -->
     <section class="features-preview">
         <div class="container">
-            <h2 class="section-title">Vorinstallierte Plugins</h2>
-            <p class="section-subtitle">7+ professionelle Plugins für erweiterte Streaming-Features</p>
+            <h2 class="section-title">Pre-installed Plugins</h2>
+            <p class="section-subtitle">20+ professional plugins for advanced streaming features</p>
             
             <div class="features-grid">
                 <div class="feature-card">
@@ -262,13 +264,100 @@
                     </div>
                     <h3 class="feature-title">Emoji Rain Plugin</h3>
                     <p class="feature-description">
-                        <strong>Emoji-Regen-Effekt bei Gifts im Overlay.</strong> Gift-zu-Emoji-Mappings konfigurierbar 
-                        (z.B. Rose → 🌹, Lion → 🦁). Anpassbare Animation-Speed und Emoji-Density. Integration ins 
-                        HUD-System. Perfekt für interaktive Viewer-Engagement-Visualisierung.
+                        <strong>Animated emoji rain effect for gifts in overlay.</strong> Configurable gift-to-emoji mappings 
+                        (e.g. Rose → 🌹, Lion → 🦁). Adjustable animation speed and emoji density. Integrated into 
+                        HUD system. Perfect for interactive viewer engagement visualization.
                     </p>
                     <div style="margin-top: var(--space-4);">
                         <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
-                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Vorinstalliert</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Pre-installed</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">StreamAlchemy Plugin <span style="background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">NEW</span></h3>
+                    <p class="feature-description">
+                        <strong>RPG crafting system with AI-generated items.</strong> TikTok gifts transform into virtual 
+                        RPG items with DALL-E 3 icons. Real-time crafting by combining 2 gifts within 6 seconds. 
+                        4 rarity tiers (Bronze, Silver, Gold, Purple). Persistent inventory management. 
+                        Chat commands: /inventory, /inspect, /merge, /alchemy.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Pre-installed</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                            <path d="M4 22h16"/>
+                            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Leaderboard Plugin <span style="background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">NEW</span></h3>
+                    <p class="feature-description">
+                        <strong>Real-time top gifter tracking.</strong> Session leaderboard for current stream session 
+                        and all-time champions. WebSocket-based live updates in overlay. Automatic updates 
+                        of nicknames and profile pictures. Modern neon/dark theme UI with CSS animations. 
+                        Performance-optimized with debounced database writes.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Pre-installed</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 6 2 18 2 18 9"/>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                            <rect x="6" y="14" width="12" height="8"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Thermal Printer Plugin <span style="background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">NEW</span></h3>
+                    <p class="feature-description">
+                        <strong>Physical event printouts on thermal printers.</strong> ESC/POS printer support (USB & network). 
+                        Prints chat messages, gifts, follows and shares. Smart filtering with min. coins and 
+                        bot command ignorance. Asynchronous print queue. Auto-reconnect on connection loss. 
+                        Configurable ESC/POS formatting with ASCII icons.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Pre-installed</span>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 7V4h16v3"/>
+                            <rect x="9" y="20" width="6" height="1"/>
+                            <rect x="8" y="14" width="8" height="6"/>
+                            <path d="M12 14V4M8 14l4-10 4 10"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">GCCE Plugin <span style="background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">NEW</span></h3>
+                    <p class="feature-description">
+                        <strong>Global Chat Command Engine.</strong> Universal command system for all plugins. 
+                        Centralized command registry with hierarchical permission system (broadcaster → all). 
+                        Automatic syntax validation and error messaging. Rate limiting (10/user/min, 100 global/min). 
+                        Unified overlay system. Built-in: /help, /commands, /inventory, /inspect, /merge.
+                    </p>
+                    <div style="margin-top: var(--space-4);">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px;">Official</span>
+                        <span style="background: #2a2a2a; color: #aaa; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Pre-installed</span>
                     </div>
                 </div>
             </div>
