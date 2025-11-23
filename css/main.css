@@ -841,13 +841,13 @@ section {
 
 @media (min-width: 768px) {
     .features-preview {
-        padding: var(--space-8) 0;
+        padding: var(--space-6) 0;
     }
 }
 
 @media (min-width: 1024px) {
     .features-preview {
-        padding: var(--space-10) 0;
+        padding: var(--space-8) 0;
     }
 }
 
