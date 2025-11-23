@@ -81,103 +81,68 @@
                 <div class="download-card">
                     <div class="download-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
-                            <rect x="8" y="6" width="8" height="2" rx="1" ry="1"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                            <line x1="8" y1="16" x2="16" y2="16"/>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </div>
-                    <h3 class="download-name">Windows</h3>
-                    <p class="download-version">Version 1.0.0</p>
-                    <a href="/setup.exe" class="btn btn-primary download-btn" download>
-                        Download für Windows
-                    </a>
-                </div>
-
-                <div class="download-card">
-                    <div class="download-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/>
-                        </svg>
-                    </div>
-                    <h3 class="download-name">macOS</h3>
-                    <p class="download-version">Manuelle Installation</p>
-                    <a href="/docs.html#installation-macos" class="btn btn-primary download-btn">
-                        Installationsanleitung
+                    <h3 class="download-name">All Platforms</h3>
+                    <p class="download-version">Windows, macOS, Linux</p>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/archive/refs/heads/main.zip" class="btn btn-primary download-btn" target="_blank" rel="noopener">
+                        Download ZIP
                     </a>
                     <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
-                        macOS 10.15+ via npm
-                    </p>
-                </div>
-
-                <div class="download-card">
-                    <div class="download-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                        </svg>
-                    </div>
-                    <h3 class="download-name">Linux</h3>
-                    <p class="download-version">Manuelle Installation</p>
-                    <a href="/docs.html#installation-linux" class="btn btn-primary download-btn">
-                        Installationsanleitung
-                    </a>
-                    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
-                        Ubuntu 20.04+, Debian 11+ via npm
+                        Extract and run start.exe (Windows) or start.sh (Linux/macOS)
                     </p>
                 </div>
             </div>
 
             <div class="install-steps">
-                <h2 class="section-title">Installations-Anleitung</h2>
+                <h2 class="section-title">Installation Guide</h2>
                 
                 <div class="install-step">
                     <div class="install-step-number">1</div>
                     <div class="install-step-content">
-                        <h3>Setup.exe herunterladen</h3>
-                        <p>Klicke auf den Download-Button oben, um die neueste Version von ltth.app für Windows herunterzuladen.</p>
+                        <h3>Download ZIP File</h3>
+                        <p>Click the download button above to get the latest version of PupCid's Little TikTok Helper.</p>
                     </div>
                 </div>
 
                 <div class="install-step">
                     <div class="install-step-number">2</div>
                     <div class="install-step-content">
-                        <h3>Installation ausführen</h3>
-                        <p>Öffne die heruntergeladene setup.exe und folge dem Installations-Assistenten. Node.js wird automatisch mitinstalliert falls erforderlich.</p>
+                        <h3>Extract and Start</h3>
+                        <p><strong>Windows:</strong> Double-click <code>start.exe</code><br>
+                        <strong>Linux:</strong> Double-click <code>start-linux</code> or in terminal: <code>./start-linux</code><br>
+                        <strong>macOS:</strong> Double-click <code>start-mac</code> or in terminal: <code>./start-mac</code><br>
+                        The tool automatically installs all required dependencies and starts itself.</p>
                     </div>
                 </div>
 
                 <div class="install-step">
                     <div class="install-step-number">3</div>
                     <div class="install-step-content">
-                        <h3>Mit TikTok verbinden</h3>
-                        <p>Starte das Tool, öffne das Dashboard und verbinde dich mit deinem TikTok LIVE Stream. Gib einfach deinen Username ein (ohne @) und du bist startklar!</p>
+                        <h3>Connect to TikTok</h3>
+                        <p>The dashboard opens automatically in your browser. Enter your TikTok username (without @) and connect to your LIVE stream. Make sure you are LIVE!</p>
                     </div>
                 </div>
 
                 <div class="system-requirements">
-                    <h3>System-Anforderungen</h3>
+                    <h3>System Requirements</h3>
                     <p style="margin-bottom: 1rem; color: var(--color-text-secondary);">
-                        <strong>Windows (setup.exe):</strong>
-                    </p>
-                    <ul class="requirements-list" style="margin-bottom: 1.5rem;">
-                        <li>Windows 10 oder neuer (64-bit)</li>
-                        <li>Node.js 18.0.0+ (wird automatisch installiert)</li>
-                        <li>Aktive Internetverbindung für TikTok LIVE</li>
-                        <li>Mindestens 512 MB RAM (1 GB empfohlen)</li>
-                        <li>200 MB freier Festplattenspeicher</li>
-                        <li>OBS Studio (empfohlen für Overlays)</li>
-                    </ul>
-                    <p style="margin-bottom: 1rem; color: var(--color-text-secondary);">
-                        <strong>macOS & Linux (manuelle Installation):</strong>
+                        <strong>All Platforms:</strong>
                     </p>
                     <ul class="requirements-list">
-                        <li>macOS 10.15+ oder Ubuntu 20.04+/Debian 11+</li>
-                        <li>Node.js 18.0.0 oder höher (manuell installieren)</li>
-                        <li>npm 8.0.0 oder höher</li>
-                        <li>Git (für Repository-Cloning)</li>
-                        <li>Details in der <a href="/docs.html" style="color: var(--color-primary);">Dokumentation</a></li>
+                        <li>Node.js 18.0.0 or higher (Download: <a href="https://nodejs.org" target="_blank" rel="noopener" style="color: var(--color-primary);">nodejs.org</a>)</li>
+                        <li>Windows 10+ (64-bit), macOS 10.15+, or Linux (Ubuntu 20.04+, Debian 11+)</li>
+                        <li>Active internet connection for TikTok LIVE</li>
+                        <li>At least 512 MB RAM (1 GB recommended)</li>
+                        <li>200 MB free disk space</li>
+                        <li>OBS Studio (recommended for overlays)</li>
                     </ul>
+                    <p style="margin-top: 1rem; color: var(--color-text-secondary);">
+                        <strong>⚠️ Important:</strong> If Node.js is not installed, an error message with a download link will appear.
+                    </p>
                 </div>
             </div>
 

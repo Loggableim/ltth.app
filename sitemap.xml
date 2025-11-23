@@ -57,9 +57,21 @@
   </url>
   <url>
     <loc>https://ltth.app/support.html</loc>
-    <lastmod>2024-11-22</lastmod>
+    <lastmod>2024-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ltth.app/support-the-developement.html</loc>
+    <lastmod>2024-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://ltth.app/thank-you.html</loc>
+    <lastmod>2024-11-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   
   <!-- English Pages -->
@@ -119,8 +131,20 @@
   </url>
   <url>
     <loc>https://ltth.app/support-en.html</loc>
-    <lastmod>2024-11-22</lastmod>
+    <lastmod>2024-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ltth.app/support-the-developement-en.html</loc>
+    <lastmod>2024-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://ltth.app/thank-you-en.html</loc>
+    <lastmod>2024-11-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>
