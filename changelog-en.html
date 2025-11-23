@@ -27,16 +27,51 @@
                 </button>
                 <div class="nav-menu" id="navMenu">
                     <a href="/" class="nav-link">Home</a>
-                    <a href="/features.html" class="nav-link">Features</a>
-                    <a href="/plugins.html" class="nav-link">Plugins</a>
-                    <a href="/docs.html" class="nav-link">Docs</a>
-                    <a href="/community.html" class="nav-link">Community</a>
-                    <a href="/changelog.html" class="nav-link active">Changelog</a>
-                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
-                    <a href="/faq.html" class="nav-link">FAQ</a>
-                    <a href="/support.html" class="nav-link">Support</a>
-                    <a href="/download.html" class="nav-link nav-cta">Download</a>
+                    <a href="/features-en.html" class="nav-link">Features</a>
+                    <a href="/plugins-en.html" class="nav-link">Plugins</a>
+                    <a href="/docs-en.html" class="nav-link">Docs</a>
+                    <a href="/community-en.html" class="nav-link">Community</a>
+                    <a href="/changelog-en.html" class="nav-link active">Changelog</a>
+                    <a href="/roadmap-en.html" class="nav-link">Roadmap</a>
+                    <a href="/faq-en.html" class="nav-link">FAQ</a>
+                    <a href="/support-en.html" class="nav-link">Support</a>
+                    <a href="/download-en.html" class="nav-link nav-cta">Download</a>
+                                        
+                    <!-- Version Badge -->
+                    <span class="version-badge" data-version-badge>Loading...</span>
+                    
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
+                            <span class="lang-flag">🇬🇧</span>
+                            <span class="lang-text">EN</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/changelog.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/changelog-en.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                        </div>
                     </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -56,40 +91,68 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.3</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.4</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
                 
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neu</h3>
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Website Improvements</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Validators Module</strong> - Umfassende Input-Validierung für alle API-Endpoints</li>
-                    <li><strong>Template Engine</strong> - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)</li>
-                    <li><strong>Error Handler Module</strong> - Standardisierte Fehlerbehandlung im gesamten System</li>
+                    <li><strong>Navbar Logo Fix</strong> - Resolved text overlap with menu items</li>
+                    <li><strong>Larger Logo</strong> - Increased logo icon from 32px to 48px for better visibility</li>
+                    <li><strong>Plugins Page Overhaul</strong> - Better structure and organization</li>
+                    <li><strong>Enhanced Documentation</strong> - Comprehensive plugin guides added</li>
                 </ul>
 
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Documentation</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>CORS-Policy verschärft - Whitelist-basiert statt Wildcard</li>
-                    <li>CSP mit Nonces gegen XSS-Angriffe implementiert</li>
-                    <li>DNS-basierte Webhook-Validierung gegen SSRF</li>
-                    <li>IP-Blacklist für private Netzwerke</li>
-                    <li>Sicherheit verbessert: 5/10 → 9/10 (+80%)</li>
+                    <li>Detailed plugin API documentation</li>
+                    <li>Plugin development guides with examples</li>
+                    <li>Screenshots for plugin configuration</li>
+                    <li>Improved navigation for plugin content</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎨 Design</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Improved visual separation in plugin categories</li>
+                    <li>Better mobile responsiveness across all pages</li>
+                    <li>Optimized readability and user experience</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.3</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ New Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Validators Module</strong> - Comprehensive input validation for all API endpoints</li>
+                    <li><strong>Template Engine</strong> - Centralized template processing with RegExp caching (10x performance)</li>
+                    <li><strong>Error Handler Module</strong> - Standardized error handling across the system</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Security</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>CORS policy tightened - Whitelist-based instead of wildcard</li>
+                    <li>CSP with nonces implemented against XSS attacks</li>
+                    <li>DNS-based webhook validation against SSRF</li>
+                    <li>IP blacklist for private networks</li>
+                    <li>Security improved: 5/10 → 9/10 (+80%)</li>
                 </ul>
 
                 <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance</h3>
                 <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)</li>
-                    <li>Template-Rendering mit RegExp-Cache (90% Verbesserung)</li>
-                    <li>Memory Leaks behoben - Plugin-Reload ohne Server-Neustart</li>
-                    <li>Performance: ~500 → ~800 Events/s (+60%)</li>
+                    <li>Database batching - Event logs are batched (50x faster inserts)</li>
+                    <li>Template rendering with RegExp cache (90% improvement)</li>
+                    <li>Memory leaks fixed - Plugin reload without server restart</li>
+                    <li>Performance: ~500 → ~800 events/s (+60%)</li>
                 </ul>
 
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bug Fixes</h3>
                 <ul style="color: var(--color-text-secondary);">
-                    <li>Socket Event Cleanup implementiert - keine Memory Leaks mehr</li>
-                    <li>Logging standardisiert - console.* durch strukturiertes Logging ersetzt</li>
-                    <li>Code-Duplikation eliminiert (~200 Zeilen reduziert)</li>
+                    <li>Socket event cleanup implemented - no more memory leaks</li>
+                    <li>Logging standardized - console.* replaced with structured logging</li>
+                    <li>Code duplication eliminated (~200 lines reduced)</li>
                 </ul>
             </div>
 

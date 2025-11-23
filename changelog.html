@@ -36,7 +36,42 @@
                     <a href="/faq.html" class="nav-link">FAQ</a>
                     <a href="/support.html" class="nav-link">Support</a>
                     <a href="/download.html" class="nav-link nav-cta">Download</a>
+                                        
+                    <!-- Version Badge -->
+                    <span class="version-badge" data-version-badge>Loading...</span>
+                    
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
+                            <span class="lang-flag">🇩🇪</span>
+                            <span class="lang-text">DE</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/changelog.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/changelog-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                        </div>
                     </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -62,9 +97,37 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.3</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.4</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Website-Verbesserungen</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Navbar-Logo Fix</strong> - Text-Überlappung mit Menü-Items behoben</li>
+                    <li><strong>Größeres Logo</strong> - Logo-Icon von 32px auf 48px vergrößert für bessere Sichtbarkeit</li>
+                    <li><strong>Plugins-Seite überarbeitet</strong> - Bessere Struktur und Organisation</li>
+                    <li><strong>Dokumentation erweitert</strong> - Umfassende Plugin-Anleitungen hinzugefügt</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li>Detaillierte Plugin-API-Dokumentation</li>
+                    <li>Plugin-Entwicklungsguides mit Beispielen</li>
+                    <li>Screenshots für Plugin-Konfiguration</li>
+                    <li>Verbesserte Navigation für Plugin-Inhalte</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎨 Design</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>Verbesserte visuelle Trennung in Plugin-Kategorien</li>
+                    <li>Bessere mobile Responsivität auf allen Seiten</li>
+                    <li>Optimierte Lesbarkeit und Benutzerfreundlichkeit</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.3</h2>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
                 
                 <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neu</h3>
