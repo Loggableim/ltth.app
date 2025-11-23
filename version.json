@@ -6,13 +6,13 @@
     "1.0.4": {
       "date": "2025-11-23",
       "changes": [
-        "Fixed navbar logo - removed text overlap with menu items",
-        "Increased logo size from 32px to 48px for better visibility",
-        "Improved plugins page with better structure and organization",
-        "Enhanced documentation with comprehensive plugin guides",
-        "Added detailed plugin API documentation",
-        "Better visual separation in plugin categories",
-        "Improved mobile responsiveness across all pages"
+        "Navbar-Logo-Fix - Text-Überlappung mit Menü-Items behoben",
+        "Logo-Größe von 32px auf 48px erhöht für bessere Sichtbarkeit",
+        "Plugins-Seite überarbeitet mit vollständigen Screenshots",
+        "Dokumentation erweitert mit umfassenden Plugin-Anleitungen",
+        "Sprach-Dropdown mit Flaggen implementiert (🇩🇪 🇬🇧)",
+        "Verbesserte visuelle Trennung in Plugin-Kategorien",
+        "Bessere mobile Responsivität auf allen Seiten"
       ]
     },
     "1.0.3": {
