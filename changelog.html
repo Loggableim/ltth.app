@@ -94,9 +94,63 @@
         <div class="container" style="max-width: 900px;">
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.4</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.5</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">In Entwicklung</p>
+                
+                <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Migration zu Eulerstream WebSocket SDK</strong> - Vollständiger Ersatz von tiktok-live-connector
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
+                            <li>Eulerstream API-Schlüssel ist jetzt ERFORDERLICH</li>
+                            <li>Rückwärtskompatibilität mit bestehenden Event-Handlern erhalten</li>
+                            <li>Siehe <a href="https://www.eulerstream.com" target="_blank" rel="noopener">eulerstream.com</a> für API-Schlüssel-Registrierung</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>TikTok TTS Engine 500 Fehler behoben</strong> - Komplette Neuimplementierung
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Hybrides Endpoint-System mit mehreren Fallback-Optionen</li>
+                            <li>Automatische Endpoint-Rotation bei Fehlern</li>
+                            <li>Unterstützung für mehrere Response-Formate</li>
+                            <li>Moderne User-Agent (Android 13)</li>
+                            <li>Text-Chunking für lange Nachrichten (>300 Zeichen)</li>
+                        </ul>
+                    </li>
+                    <li><strong>TikTok Connection 504 Timeout behoben</strong> - Euler Stream Optimierungen
+                        <ul style="margin-top: 0.5rem;">
+                            <li>fetchRoomInfoOnConnect auf false gesetzt zur Reduzierung von API-Calls</li>
+                            <li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
+                            <li>Verbesserte Error-Meldungen für Euler Stream Timeouts</li>
+                            <li>Hardcodierter Euler API-Schlüssel als Base64-Fallback integriert</li>
+                        </ul>
+                    </li>
+                    <li><strong>Invalid Option Error behoben</strong> - Nicht existierende enableWebsocketUpgrade Option entfernt</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li><strong>Weather Control Plugin</strong> - Professionelles Wetter-Effekt-System
+                        <ul style="margin-top: 0.5rem;">
+                            <li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
+                            <li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
+                            <li>Permission-basierte Zugriffskontrolle</li>
+                            <li>Konfigurierbare Rate-Limiting (10 Anfragen/Minute pro User)</li>
+                            <li>WebSocket Echtzeit-Event-Streaming zu Overlays</li>
+                            <li>Flow-Action-Support für IFTTT-Automatisierung</li>
+                            <li>Gift-basierte automatische Trigger (Coin-Schwellenwerte)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.4</h2>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
                 
                 <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Website-Verbesserungen</h3>
@@ -195,7 +249,7 @@
                     Dieses Tool befindet sich in aktiver Entwicklung. Features können sich ändern. 
                     Bitte melde Bugs und Feature-Requests auf GitHub.
                 </p>
-                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" 
+                <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener" 
                    style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                     GitHub Issues
                 </a>
