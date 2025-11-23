@@ -1,10 +1,23 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "releaseDate": "2025-11-23",
   "status": "beta",
   "changelog": {
+    "1.0.6": {
+      "date": "2025-11-23",
+      "changes": [
+        "NEW: StreamAlchemy Plugin - TikTok gift to RPG item alchemy with AI-powered crafting",
+        "NEW: Leaderboard Plugin - Session and all-time top gifter tracking with real-time overlay",
+        "NEW: Thermal Printer Plugin - Physical printout of TikTok Live events on ESC/POS printers",
+        "NEW: GCCE (Global Chat Command Engine) - Universal chat command system for all plugins",
+        "AI-generated isometric item icons with DALL-E 3 integration",
+        "Real-time crafting mechanics with 6-second gift combination window",
+        "Dual leaderboard tracking with WebSocket live updates",
+        "ESC/POS thermal printer support for USB and network printers"
+      ]
+    },
     "1.0.5": {
-      "date": "In Development",
+      "date": "2025-11-23",
       "changes": [
         "BREAKING: Migration to Eulerstream WebSocket SDK - Complete replacement of tiktok-live-connector",
         "CRITICAL: Fixed TikTok TTS Engine 500 errors - Complete rewrite with hybrid endpoint approach",
