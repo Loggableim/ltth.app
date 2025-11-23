@@ -1,8 +1,21 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "releaseDate": "2025-11-23",
-  "status": "stable",
+  "status": "beta",
   "changelog": {
+    "1.0.5": {
+      "date": "In Development",
+      "changes": [
+        "BREAKING: Migration to Eulerstream WebSocket SDK - Complete replacement of tiktok-live-connector",
+        "CRITICAL: Fixed TikTok TTS Engine 500 errors - Complete rewrite with hybrid endpoint approach",
+        "CRITICAL: Fixed TikTok Connection 504 timeout - Euler Stream optimizations",
+        "CRITICAL: Fixed Invalid Option error - Removed non-existent enableWebsocketUpgrade option",
+        "NEW: Weather Control Plugin - Professional weather effects system with 7 effects",
+        "GPU-accelerated Canvas 2D rendering with 60 FPS performance",
+        "Flow action support for IFTTT automation",
+        "Gift-based automatic triggers with coin thresholds"
+      ]
+    },
     "1.0.4": {
       "date": "2025-11-23",
       "changes": [
