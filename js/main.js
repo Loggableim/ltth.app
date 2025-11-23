@@ -1083,8 +1083,59 @@
         }
     }
 
+    // ===================================
+    // Beta Notice Manager
+    // ===================================
+    class BetaNoticeManager {
+        constructor() {
+            this.betaNotice = document.getElementById('betaNotice');
+            this.betaClose = document.getElementById('betaClose');
+            this.betaVersion = document.getElementById('betaVersion');
+            this.init();
+        }
+
+        init() {
+            // Check if beta notice was dismissed
+            if (localStorage.getItem('betaNoticeDismissed') === 'true') {
+                this.hideBetaNotice();
+            }
+
+            // Load version from version.json
+            this.loadVersion();
+
+            // Setup close button
+            if (this.betaClose) {
+                this.betaClose.addEventListener('click', () => this.dismissBetaNotice());
+            }
+        }
+
+        async loadVersion() {
+            try {
+                const response = await fetch('/version.json');
+                const data = await response.json();
+                if (this.betaVersion && data.version) {
+                    this.betaVersion.textContent = data.version;
+                }
+            } catch (error) {
+                console.error('Failed to load version:', error);
+            }
+        }
+
+        dismissBetaNotice() {
+            localStorage.setItem('betaNoticeDismissed', 'true');
+            this.hideBetaNotice();
+        }
+
+        hideBetaNotice() {
+            if (this.betaNotice) {
+                this.betaNotice.classList.add('hidden');
+            }
+        }
+    }
+
     // Initialize Language Manager
     window.ltth = window.ltth || {};
     window.ltth.languageManager = new LanguageManager();
+    window.ltth.betaNoticeManager = new BetaNoticeManager();
 
 })();

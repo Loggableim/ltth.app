@@ -136,7 +136,7 @@
     </nav>
 
     <!-- Beta Notice -->
-    <section class="beta-notice">
+    <section class="beta-notice" id="betaNotice">
         <div class="container">
             <div class="beta-content">
                 <div class="beta-icon">
@@ -145,12 +145,19 @@
                     </svg>
                 </div>
                 <div class="beta-text">
-                    <strong>🚀 Beta-Version 2.0:</strong> Aktiv weiterentwickelt mit neuen Features! 
+                    <strong>🚀 Beta-Version <span id="betaVersion">1.0.4</span>:</strong> Aktiv weiterentwickelt mit neuen Features! 
                     Bereits voll funktionsfähig für den produktiven Einsatz. 
-                    Hilf uns besser zu werden: <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Bugs melden</a> 
-                    oder <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Features vorschlagen</a>. 
+                    Hilf uns besser zu werden:<br>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Bugs melden</a> 
+                    oder <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Features vorschlagen</a>. 
                     <a href="/roadmap.html">Roadmap ansehen →</a>
                 </div>
+                <button class="beta-close" id="betaClose" aria-label="Beta-Hinweis schließen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
         </div>
     </section>
