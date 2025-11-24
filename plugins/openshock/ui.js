@@ -1399,9 +1399,9 @@ class CurveEditor {
             this.ctx.fillText(time + 'ms', x, height - 5);
         }
         
-        // Redraw curve if exists
+        // Draw curve if exists (without recursion)
         if (this.curvePoints.length > 0) {
-            this.redrawCurve();
+            this.drawCurve();
         }
     }
 
@@ -1460,9 +1460,7 @@ class CurveEditor {
         this.curvePoints.push({ x, y });
     }
 
-    redrawCurve() {
-        this.drawGrid();
-        
+    drawCurve() {
         if (this.curvePoints.length < 2) return;
         
         // Draw the curve
@@ -1487,6 +1485,11 @@ class CurveEditor {
             this.ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
             this.ctx.fill();
         }
+    }
+
+    redrawCurve() {
+        // Clear canvas and redraw grid, then curve on top
+        this.drawGrid();
     }
 
     getActionColor() {
