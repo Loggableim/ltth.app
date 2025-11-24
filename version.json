@@ -1,8 +1,29 @@
 {
-  "version": "1.0.7",
-  "releaseDate": "2025-11-23",
+  "version": "1.0.8",
+  "releaseDate": "2025-11-24",
   "status": "beta",
   "changelog": {
+    "1.0.8": {
+      "date": "2025-11-24",
+      "changes": [
+        "NEW: Configurable XP System - Level-up animations with advanced admin features for viewer engagement",
+        "NEW: Graphical Pattern Curve Generator - Visual interface for OpenShock pattern creation",
+        "NEW: OBS HUD for Command Overlays - Real-time command display integration",
+        "IMPROVED: Plugin Manager - Added compact mode switch for better space management",
+        "IMPROVED: Resource Monitor - Fixed compact mode 2x2 grid layout (CPU/GPU, RAM/Network)",
+        "IMPROVED: Leaderboard - Multiple overlay themes (Classic, Neon, Gradient) with preview mode",
+        "IMPROVED: Quiz Show - Integrated with application theme system for better readability",
+        "IMPROVED: Thermal Printer - Full theme integration using CSS variables",
+        "IMPROVED: VDO.Ninja Multi-Guest - Comprehensive UI refactoring with method aliases",
+        "IMPROVED: OSC-Bridge (VRChat) - Gift catalogue mappings and avatar switching support",
+        "FIXED: Windows path validation in config-import plugin",
+        "FIXED: OpenShock pattern engine - Removed duplicate wait causing duration bugs",
+        "FIXED: OpenShock custom pattern editor - Improved step configuration workflow",
+        "FIXED: OpenShock emergency stop - Added prominent button to main UI header",
+        "FIXED: Plugin update checking - Added changelog fallback mechanism",
+        "SECURITY: Enhanced input validation across all plugins"
+      ]
+    },
     "1.0.7": {
       "date": "2025-11-23",
       "changes": [
