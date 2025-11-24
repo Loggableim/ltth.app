@@ -92,11 +92,65 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.0.8 -->
+            <!-- Version 1.0.9 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.8</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.9</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>OpenAI-Integration für Quiz Show</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>GPT-5.1-gestützte Fragenpakete-Generierung (Nano, Mini, Standard Modelle)</li>
+                            <li>Automatische Erstellung thematischer Quizfragen mit KI</li>
+                            <li>Mehrsprachige Unterstützung (Deutsch und Englisch)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Inline Pattern-Editor</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Direkte Bearbeitung von OpenShock-Patterns im Event-Mapping-Modal</li>
+                            <li>Pattern-Details in der Mapping-Listenansicht sichtbar</li>
+                            <li>Verbesserte Benutzererfahrung bei der Pattern-Zuweisung</li>
+                        </ul>
+                    </li>
+                    <li><strong>Launcher.exe mit GUI</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Grafischer Launcher mit Hintergrundbild und Fortschrittsbalken</li>
+                            <li>Automatische Weiterleitung zum Dashboard nach Start</li>
+                            <li>Browser-basierte UI ohne externe GUI-Bibliotheken</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>OSC-Bridge (VRChat)</strong> - Gift-Katalog-Integration für einfachere Gift-Mapping-Einrichtung</li>
+                    <li><strong>VDO.Ninja Multi-Guest</strong> - Director URL Control Room Iframe-Tab im Raum-Management</li>
+                    <li><strong>Event-Mapping UI</strong> - Pattern-Auswahl mit updateMappingPatternList-Funktion</li>
+                    <li><strong>OpenShock</strong> - Pattern-Details jetzt in Event-Mapping-Liste sichtbar</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Emoji Rain v2.0</strong> - Bounce/Bubble-Animations-Trigger, Pixel-Modus-Rendering, defensive Positionierung</li>
+                    <li><strong>VDO.Ninja</strong> - Content Security Policy Verletzungen behoben (Inline-onclick-Handler entfernt)</li>
+                    <li><strong>OpenShock</strong> - Null-Checks behandeln Pattern-ID 0 nun korrekt als gültigen Wert</li>
+                </ul>
+
+                <h3 style="color: var(--color-text-secondary); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
+                <ul style="color: var(--color-text-secondary);">
+                    <li>JSDoc-Dokumentation für Inline-Pattern-Editor-Funktionen hinzugefügt</li>
+                    <li>Technische Dokumentation für launcher.exe im infos/-Verzeichnis</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.0.8 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.8</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
                 
