@@ -193,11 +193,16 @@
         for (let i = 0; i < files.length; i++) {
             state.currentFileIndex = i;
             const url = CONFIG.downloadsPath + folder + '/' + files[i];
-            const data = await downloadFile(url);
-            state.downloadedParts.push(new Uint8Array(data));
+            try {
+                const data = await downloadFile(url);
+                state.downloadedParts.push(new Uint8Array(data));
+            } catch (error) {
+                throw new Error(getLocalizedText('errorDownloadPart') + ' ' + (i + 1) + '/' + files.length + ': ' + error.message);
+            }
         }
 
         // Combine all parts into a single array
+        // Note: For very large files, this could use significant memory
         const totalLength = state.downloadedParts.reduce((sum, part) => sum + part.length, 0);
         const combined = new Uint8Array(totalLength);
         let offset = 0;
@@ -205,6 +210,9 @@
             combined.set(part, offset);
             offset += part.length;
         }
+
+        // Clear downloaded parts to free memory
+        state.downloadedParts = [];
 
         return combined.buffer;
     }
@@ -507,6 +515,7 @@
                 errorFetchVersions: 'Versionen konnten nicht geladen werden',
                 errorNoVersions: 'Keine Versionen verfügbar',
                 errorDownload: 'Download fehlgeschlagen',
+                errorDownloadPart: 'Fehler beim Herunterladen von Teil',
                 noVersionsAvailable: 'Keine Versionen verfügbar',
                 latest: 'Aktuell',
                 download: 'Download'
@@ -515,6 +524,7 @@
                 errorFetchVersions: 'Could not load versions',
                 errorNoVersions: 'No versions available',
                 errorDownload: 'Download failed',
+                errorDownloadPart: 'Error downloading part',
                 noVersionsAvailable: 'No versions available',
                 latest: 'Latest',
                 download: 'Download'
