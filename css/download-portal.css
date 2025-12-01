@@ -1,0 +1,544 @@
+/* ===================================
+   Download Portal Styles
+   PupCid's Little TikTok Helper
+   =================================== */
+
+/* Quick Download Section */
+.quick-download-section {
+    padding: var(--space-8) 0;
+}
+
+.quick-download-card {
+    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(18, 161, 22, 0.05) 100%);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-6);
+    box-shadow: var(--shadow-xl);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.quick-download-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.quick-download-icon svg {
+    width: 56px;
+    height: 56px;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(18, 161, 22, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 20px rgba(18, 161, 22, 0);
+    }
+}
+
+.quick-download-info h2 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-2);
+}
+
+.quick-download-info p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.version-highlight {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+/* Versions Section */
+.versions-section {
+    padding: var(--space-8) 0;
+    background-color: var(--color-surface);
+}
+
+.version-list {
+    margin-top: var(--space-6);
+}
+
+.version-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-4);
+}
+
+.version-item {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    transition: all var(--transition-base);
+}
+
+.version-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.version-item.latest {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-bg) 0%, rgba(18, 161, 22, 0.05) 100%);
+}
+
+.version-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.version-number {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.version-badge-latest {
+    background: var(--color-primary);
+    color: white;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.version-details {
+    display: flex;
+    gap: var(--space-4);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
+.version-platform,
+.version-size {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.version-download-btn {
+    margin-top: auto;
+}
+
+.loading-spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12);
+    gap: var(--space-4);
+}
+
+.loading-spinner-container p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.no-versions {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--color-text-secondary);
+}
+
+/* Download Modal */
+.download-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-4);
+}
+
+.download-modal.active {
+    display: flex;
+}
+
+.download-modal-content {
+    background: var(--color-surface);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8);
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+    box-shadow: var(--shadow-2xl);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.modal-close-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Download Phases */
+.download-phase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+}
+
+.download-phase.hidden {
+    display: none;
+}
+
+.download-phase h3 {
+    font-size: var(--text-2xl);
+    margin: 0;
+}
+
+.download-phase p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.phase-hint {
+    font-size: var(--text-sm);
+}
+
+/* Splash Animation */
+.splash-animation {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-logo {
+    width: 80px;
+    height: 80px;
+    animation: float 2s ease-in-out infinite;
+}
+
+.splash-loader {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Phase Icons */
+.phase-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.phase-icon svg {
+    width: 40px;
+    height: 40px;
+}
+
+.phase-icon.downloading {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: white;
+    animation: downloadBounce 1s ease-in-out infinite;
+}
+
+@keyframes downloadBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.phase-icon.extracting {
+    background: linear-gradient(135deg, var(--color-info), #1e88e5);
+    color: white;
+    animation: extractRotate 2s linear infinite;
+}
+
+@keyframes extractRotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.phase-icon.complete {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    color: white;
+    animation: completeScale 0.5s ease-out;
+}
+
+@keyframes completeScale {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.phase-icon.error {
+    background: linear-gradient(135deg, var(--color-error), #c62828);
+    color: white;
+}
+
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease-out;
+    width: 0%;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.progress-fill.extracting {
+    background: linear-gradient(90deg, var(--color-info), #42a5f5);
+}
+
+.progress-text {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* Install Guide Section */
+.install-guide-section {
+    padding: var(--space-8) 0;
+}
+
+/* Alternative Download Section */
+.alternative-download {
+    padding: var(--space-8) 0;
+    background-color: var(--color-surface);
+}
+
+/* Help Section */
+.help-section {
+    padding: var(--space-8) 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .quick-download-card {
+        padding: var(--space-6);
+    }
+
+    .quick-download-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .quick-download-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+
+    .version-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .download-modal-content {
+        padding: var(--space-6);
+    }
+
+    .phase-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .phase-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* File List for Split Archives */
+.file-list {
+    width: 100%;
+    max-width: 400px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.file-list-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+}
+
+.file-item:last-child {
+    border-bottom: none;
+}
+
+.file-name {
+    color: var(--color-text);
+}
+
+.file-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.file-status.pending {
+    color: var(--color-text-secondary);
+}
+
+.file-status.downloading {
+    color: var(--color-info);
+}
+
+.file-status.complete {
+    color: var(--color-primary);
+}
+
+.file-status-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .download-modal {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+[data-theme="dark"] .quick-download-card {
+    background: linear-gradient(135deg, var(--color-surface-dark) 0%, rgba(18, 161, 22, 0.1) 100%);
+}
+
+[data-theme="dark"] .version-item.latest {
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, rgba(18, 161, 22, 0.1) 100%);
+}

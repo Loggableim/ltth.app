@@ -1,6 +1,7 @@
 /**
  * PupCid's Little TikTok Helper - Download Portal
  * In-browser download and extraction system
+ * Supports split 7z archives (.7z.001, .7z.002, etc.)
  */
 
 (function() {
@@ -26,7 +27,10 @@
         downloadProgress: 0,
         extractProgress: 0,
         extractedFiles: [],
-        error: null
+        error: null,
+        currentFileIndex: 0,
+        totalFiles: 0,
+        downloadedParts: []
     };
 
     // ===================================
@@ -121,11 +125,11 @@
             // Find latest version
             if (state.versions.length > 0) {
                 const sortedVersions = [...state.versions].sort((a, b) => {
-                    const versionA = getVersionFromFolder(a.folder);
-                    const versionB = getVersionFromFolder(b.folder);
+                    const versionA = a.version || getVersionFromFolder(a.folder);
+                    const versionB = b.version || getVersionFromFolder(b.folder);
                     return compareVersions(versionB, versionA);
                 });
-                state.latestVersion = getVersionFromFolder(sortedVersions[0].folder);
+                state.latestVersion = sortedVersions[0].version || getVersionFromFolder(sortedVersions[0].folder);
             }
             
             return true;
@@ -149,7 +153,15 @@
 
             xhr.onprogress = (event) => {
                 if (event.lengthComputable) {
-                    state.downloadProgress = (event.loaded / event.total) * 100;
+                    // Calculate overall progress for multi-part downloads
+                    const partProgress = (event.loaded / event.total) * 100;
+                    if (state.totalFiles > 1) {
+                        const baseProgress = (state.currentFileIndex / state.totalFiles) * 100;
+                        const partContribution = (1 / state.totalFiles) * partProgress;
+                        state.downloadProgress = baseProgress + partContribution;
+                    } else {
+                        state.downloadProgress = partProgress;
+                    }
                     updateUI();
                 }
             };
@@ -168,6 +180,33 @@
 
             xhr.send();
         });
+    }
+
+    // ===================================
+    // Download Multiple Parts
+    // ===================================
+    async function downloadMultipleParts(folder, files) {
+        state.totalFiles = files.length;
+        state.currentFileIndex = 0;
+        state.downloadedParts = [];
+
+        for (let i = 0; i < files.length; i++) {
+            state.currentFileIndex = i;
+            const url = CONFIG.downloadsPath + folder + '/' + files[i];
+            const data = await downloadFile(url);
+            state.downloadedParts.push(new Uint8Array(data));
+        }
+
+        // Combine all parts into a single array
+        const totalLength = state.downloadedParts.reduce((sum, part) => sum + part.length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const part of state.downloadedParts) {
+            combined.set(part, offset);
+            offset += part.length;
+        }
+
+        return combined.buffer;
     }
 
     // ===================================
@@ -257,6 +296,10 @@
     // ===================================
     async function startDownload() {
         try {
+            // Show download modal
+            const modal = document.getElementById('downloadModal');
+            if (modal) modal.classList.add('active');
+
             // Phase 1: Loading
             state.currentPhase = 'loading';
             updateUI();
@@ -274,19 +317,29 @@
 
             // Get latest version info
             const sortedVersions = [...state.versions].sort((a, b) => {
-                const versionA = getVersionFromFolder(a.folder);
-                const versionB = getVersionFromFolder(b.folder);
+                const versionA = a.version || getVersionFromFolder(a.folder);
+                const versionB = b.version || getVersionFromFolder(b.folder);
                 return compareVersions(versionB, versionA);
             });
             const latestVersionInfo = sortedVersions[0];
-            const downloadUrl = CONFIG.downloadsPath + latestVersionInfo.folder + '/' + latestVersionInfo.file;
+            state.latestVersion = latestVersionInfo.version || getVersionFromFolder(latestVersionInfo.folder);
 
             // Phase 2: Downloading
             state.currentPhase = 'downloading';
             state.downloadProgress = 0;
             updateUI();
 
-            const fileData = await downloadFile(downloadUrl);
+            let fileData;
+            
+            // Check if we have multiple files (split archive)
+            if (latestVersionInfo.files && Array.isArray(latestVersionInfo.files)) {
+                fileData = await downloadMultipleParts(latestVersionInfo.folder, latestVersionInfo.files);
+            } else if (latestVersionInfo.file) {
+                const downloadUrl = CONFIG.downloadsPath + latestVersionInfo.folder + '/' + latestVersionInfo.file;
+                fileData = await downloadFile(downloadUrl);
+            } else {
+                throw new Error('No download files specified');
+            }
 
             // Phase 3: Extracting
             state.currentPhase = 'extracting';
@@ -340,15 +393,16 @@
 
         // Sort versions by version number (newest first)
         const sortedVersions = [...state.versions].sort((a, b) => {
-            const versionA = getVersionFromFolder(a.folder);
-            const versionB = getVersionFromFolder(b.folder);
+            const versionA = a.version || getVersionFromFolder(a.folder);
+            const versionB = b.version || getVersionFromFolder(b.folder);
             return compareVersions(versionB, versionA);
         });
 
         let html = '<div class="version-grid">';
         sortedVersions.forEach((version, index) => {
-            const versionNumber = getVersionFromFolder(version.folder);
+            const versionNumber = version.version || getVersionFromFolder(version.folder);
             const isLatest = index === 0;
+            const totalSize = version.totalSize || 0;
             html += `
                 <div class="version-item ${isLatest ? 'latest' : ''}">
                     <div class="version-info">
@@ -356,12 +410,12 @@
                         ${isLatest ? '<span class="version-badge-latest">' + getLocalizedText('latest') + '</span>' : ''}
                     </div>
                     <div class="version-details">
-                        <span class="version-platform">Windows x64</span>
-                        ${version.size ? '<span class="version-size">' + formatFileSize(version.size) + '</span>' : ''}
+                        <span class="version-platform">${version.platform || 'Windows x64'}</span>
+                        ${totalSize ? '<span class="version-size">' + formatFileSize(totalSize) + '</span>' : ''}
                     </div>
                     <button class="btn btn-primary version-download-btn" 
-                            data-folder="${version.folder}" 
-                            data-file="${version.file}">
+                            data-folder="${version.folder}"
+                            data-version="${versionNumber}">
                         ${getLocalizedText('download')}
                     </button>
                 </div>
@@ -375,8 +429,8 @@
         versionList.querySelectorAll('.version-download-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const folder = e.target.dataset.folder;
-                const file = e.target.dataset.file;
-                downloadSpecificVersion(folder, file);
+                const versionNum = e.target.dataset.version;
+                downloadSpecificVersion(folder, versionNum);
             });
         });
     }
@@ -384,9 +438,9 @@
     // ===================================
     // Download Specific Version
     // ===================================
-    async function downloadSpecificVersion(folder, file) {
+    async function downloadSpecificVersion(folder, versionNum) {
         try {
-            state.latestVersion = getVersionFromFolder(folder);
+            state.latestVersion = versionNum;
             state.currentPhase = 'downloading';
             state.downloadProgress = 0;
             updateUI();
@@ -395,8 +449,23 @@
             const modal = document.getElementById('downloadModal');
             if (modal) modal.classList.add('active');
 
-            const downloadUrl = CONFIG.downloadsPath + folder + '/' + file;
-            const fileData = await downloadFile(downloadUrl);
+            // Find the version info
+            const versionInfo = state.versions.find(v => v.folder === folder);
+            if (!versionInfo) {
+                throw new Error('Version not found');
+            }
+
+            let fileData;
+
+            // Check if we have multiple files (split archive)
+            if (versionInfo.files && Array.isArray(versionInfo.files)) {
+                fileData = await downloadMultipleParts(folder, versionInfo.files);
+            } else if (versionInfo.file) {
+                const downloadUrl = CONFIG.downloadsPath + folder + '/' + versionInfo.file;
+                fileData = await downloadFile(downloadUrl);
+            } else {
+                throw new Error('No download files specified');
+            }
 
             state.currentPhase = 'extracting';
             state.extractProgress = 0;
