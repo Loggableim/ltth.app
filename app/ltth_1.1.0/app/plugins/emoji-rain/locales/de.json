@@ -1,0 +1,46 @@
+{
+  "emoji_rain": {
+    "title": "Emoji-Regen Einstellungen",
+    "subtitle": "Interaktive Emoji-Overlays",
+    "config": {
+      "title": "Konfiguration",
+      "enabled": "Emoji-Regen aktivieren",
+      "trigger_on_gift": "Bei Geschenk auslösen",
+      "trigger_on_follow": "Bei Follow auslösen",
+      "trigger_on_like": "Bei Like-Meilenstein auslösen",
+      "like_threshold": "Like-Schwellenwert",
+      "duration": "Regen-Dauer (Sekunden)",
+      "intensity": "Regen-Intensität",
+      "emoji_size": "Emoji-Größe",
+      "custom_emojis": "Benutzerdefinierte Emojis",
+      "save": "Einstellungen speichern"
+    },
+    "toaster_mode": {
+      "title": "Toaster Modus (Schwache PCs)",
+      "description": "Reduziert CPU-Auslastung und Ressourcenverbrauch für schwache PCs",
+      "enabled": "Toaster Modus aktivieren",
+      "help": "Optimiert für maximale Performance auf schwachen Systemen",
+      "changes_title": "Was wird geändert:",
+      "max_emojis": "Max. Emojis: 200 → 50",
+      "target_fps": "Ziel-FPS: 60 → 30",
+      "rotation": "Rotation: Deaktiviert",
+      "wind": "Wind: Deaktiviert",
+      "effects": "Rainbow/Pixel/Glow: Deaktiviert",
+      "burst": "Burst Intensität: Reduziert",
+      "tip": "Nutze den Toaster Modus, wenn dein PC beim Streamen langsamer wird oder die CPU-Auslastung zu hoch ist."
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay-URL",
+      "obs_url": "OBS HUD-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen",
+      "test": "Regen testen"
+    },
+    "preview": {
+      "title": "Vorschau",
+      "start": "Vorschau starten",
+      "stop": "Vorschau stoppen"
+    }
+  }
+}

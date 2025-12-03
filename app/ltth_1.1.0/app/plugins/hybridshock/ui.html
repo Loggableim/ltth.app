@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HybridShock Integration - Admin Panel</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            font-weight: 500;
+            position: relative;
+            z-index: 10;
+        }
+
+        .tab-btn.active {
+            color: var(--color-accent-primary);
+            border-bottom-color: var(--color-accent-primary);
+        }
+
+        .tab-btn:hover {
+            color: var(--color-accent-primary);
+            background: var(--color-active-bg);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            background: var(--color-active-bg);
+            color: var(--color-accent-success);
+        }
+
+        .status-disconnected {
+            background: var(--color-active-bg);
+            color: var(--color-accent-danger);
+        }
+
+        .status-connecting {
+            background: var(--color-active-bg);
+            color: var(--color-accent-warning);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .mapping-card {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+            transition: all 0.2s;
+        }
+
+        .mapping-card:hover {
+            background: #374151;
+            transform: translateX(4px);
+        }
+
+        .mapping-card.disabled {
+            opacity: 0.5;
+            border-left-color: #6b7280;
+        }
+
+        .log-entry {
+            background: #1f2937;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry.success {
+            border-left: 3px solid #10b981;
+        }
+
+        .log-entry.failed {
+            border-left: 3px solid #ef4444;
+        }
+
+        .log-entry.info {
+            border-left: 3px solid #3b82f6;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #4b5563;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .input-field {
+            background: #374151;
+            border: 1px solid #4b5563;
+            color: var(--color-text-primary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            padding: 16px 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .queue-item {
+            background: #374151;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .queue-item.processing {
+            border-left: 3px solid #f59e0b;
+        }
+
+        .queue-item.success {
+            border-left: 3px solid #10b981;
+        }
+
+        .queue-item.failed {
+            border-left: 3px solid #ef4444;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #374151;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white">⚡ HybridShock Integration</h1>
+                <p class="text-gray-400 mt-2">Bridge zwischen TikTok Live Events und HybridShock API</p>
+            </div>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex gap-3">
+            <button id="btnStart" class="btn-success">▶️ Start</button>
+            <button id="btnStop" class="btn-danger">⏸️ Stop</button>
+            <button id="btnRestart" class="btn-secondary">🔄 Restart</button>
+            <button id="btnTestConnection" class="btn-primary">🔌 Test Connection</button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-gray-800 rounded-lg mb-6">
+        <div class="flex border-b border-gray-700">
+            <button class="tab-btn active" data-tab="connection">🔌 Connection</button>
+            <button class="tab-btn" data-tab="mappings">🔀 Event Mappings</button>
+            <button class="tab-btn" data-tab="queue">📦 Action Queue</button>
+            <button class="tab-btn" data-tab="logs">📋 Logs</button>
+            <button class="tab-btn" data-tab="stats">📊 Statistics</button>
+            <button class="tab-btn" data-tab="debug">🔧 Debug</button>
+        </div>
+
+        <!-- Tab: Connection -->
+        <div id="tab-connection" class="tab-content active p-6">
+            <h2 class="text-2xl font-bold mb-6">Connection Settings</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- HTTP Settings -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">HTTP API Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">HTTP Host</label>
+                            <input type="text" id="configHttpHost" class="input-field" value="127.0.0.1">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">HTTP Port</label>
+                            <input type="number" id="configHttpPort" class="input-field" value="8832">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WebSocket Settings -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">WebSocket Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">WebSocket Host</label>
+                            <input type="text" id="configWsHost" class="input-field" value="127.0.0.1">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">WebSocket Port</label>
+                            <input type="number" id="configWsPort" class="input-field" value="8833">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Queue Settings -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Queue & Rate-Limiting</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Max Actions/Second</label>
+                        <input type="number" id="configMaxActionsPerSecond" class="input-field" value="10">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Max Queue Size</label>
+                        <input type="number" id="configMaxQueueSize" class="input-field" value="1000">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Max Retries</label>
+                        <input type="number" id="configMaxRetries" class="input-field" value="3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Advanced Settings</h3>
+                <div class="space-y-4">
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="configAutoConnect" class="w-5 h-5">
+                        <span>Auto-Connect on Plugin Start</span>
+                    </label>
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="configAutoReconnect" class="w-5 h-5" checked>
+                        <span>Auto-Reconnect on Connection Loss</span>
+                    </label>
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="configUseWebSocketForActions" class="w-5 h-5">
+                        <span>Use WebSocket for Actions (instead of HTTP POST)</span>
+                    </label>
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="configPreferWebSocket" class="w-5 h-5">
+                        <span>Prefer WebSocket for Features (Categories/Actions/Events)</span>
+                    </label>
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="configEnableDebugMode" class="w-5 h-5">
+                        <span>Enable Debug Mode (Verbose Logging)</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="btnSaveConfig" class="btn-primary w-full">💾 Save Configuration</button>
+        </div>
+
+        <!-- Tab: Mappings -->
+        <div id="tab-mappings" class="tab-content p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Event Mappings</h2>
+                <div class="flex gap-3">
+                    <button id="btnCreateMapping" class="btn-success">➕ Create Mapping</button>
+                    <button id="btnExportMappings" class="btn-secondary">📤 Export</button>
+                    <button id="btnImportMappings" class="btn-secondary">📥 Import</button>
+                </div>
+            </div>
+
+            <div id="mappingsList"></div>
+        </div>
+
+        <!-- Tab: Queue -->
+        <div id="tab-queue" class="tab-content p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Action Queue Monitor</h2>
+                <button id="btnClearQueue" class="btn-danger">🗑️ Clear Queue</button>
+            </div>
+
+            <!-- Queue Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card">
+                    <div class="stat-label">Queue Size</div>
+                    <div class="stat-value" id="queueSize">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Current Rate</div>
+                    <div class="stat-value" id="queueRate">0/s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Processing</div>
+                    <div class="stat-value" id="queueProcessing">No</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg. Time</div>
+                    <div class="stat-value" id="queueAvgTime">0ms</div>
+                </div>
+            </div>
+
+            <!-- Dead Letter Queue -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Failed Actions (Dead Letter Queue)</h3>
+                <div id="deadLetterQueue"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Logs -->
+        <div id="tab-logs" class="tab-content p-6">
+            <h2 class="text-2xl font-bold mb-6">Event & Action Logs</h2>
+
+            <!-- Event Logs -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">TikTok Events</h3>
+                    <button id="btnRefreshEventLogs" class="btn-secondary">🔄 Refresh</button>
+                </div>
+                <div id="eventLogsList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+
+            <!-- Action Logs -->
+            <div class="bg-gray-900 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">HybridShock Actions</h3>
+                    <button id="btnRefreshActionLogs" class="btn-secondary">🔄 Refresh</button>
+                </div>
+                <div id="actionLogsList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Statistics -->
+        <div id="tab-stats" class="tab-content p-6">
+            <h2 class="text-2xl font-bold mb-6">Statistics Dashboard</h2>
+
+            <!-- Overall Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="stat-card">
+                    <div class="stat-icon">📥</div>
+                    <div class="stat-label">TikTok Events</div>
+                    <div class="stat-value" id="statTikTokEvents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📤</div>
+                    <div class="stat-label">Actions Triggered</div>
+                    <div class="stat-value" id="statActionsTriggered">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-label">Success Rate</div>
+                    <div class="stat-value" id="statSuccessRate">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-label">Uptime</div>
+                    <div class="stat-value" id="statUptime">0s</div>
+                </div>
+            </div>
+
+            <!-- Event Breakdown -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Event Breakdown</h3>
+                <div id="eventBreakdown"></div>
+            </div>
+
+            <!-- Action Breakdown -->
+            <div class="bg-gray-900 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Action Breakdown</h3>
+                <div id="actionBreakdown"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Debug -->
+        <div id="tab-debug" class="tab-content p-6">
+            <h2 class="text-2xl font-bold mb-6">Debug Tools</h2>
+
+            <!-- Manual Action Trigger -->
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Manual Action Trigger</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Category</label>
+                        <input type="text" id="debugCategory" class="input-field" placeholder="e.g. shock, message">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Action</label>
+                        <input type="text" id="debugAction" class="input-field" placeholder="e.g. pulse, hello">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2">Context (JSON)</label>
+                    <textarea id="debugContext" class="input-field" rows="5" placeholder='{"key": "value"}'></textarea>
+                </div>
+                <button id="btnTriggerAction" class="btn-primary">🚀 Trigger Action</button>
+            </div>
+
+            <!-- HybridShock Features -->
+            <div class="bg-gray-900 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">HybridShock API Features</h3>
+                    <button id="btnLoadFeatures" class="btn-secondary">🔄 Load Features</button>
+                </div>
+                <div id="featuresDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Create/Edit Mapping -->
+    <div id="mappingModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6" id="mappingModalTitle">Create Event Mapping</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Mapping Name</label>
+                    <input type="text" id="mappingName" class="input-field" placeholder="e.g. Rose Gift to Hello Message">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Description</label>
+                    <input type="text" id="mappingDescription" class="input-field" placeholder="Optional description">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">TikTok Event Type</label>
+                        <select id="mappingTikTokEvent" class="input-field">
+                            <option value="gift">Gift</option>
+                            <option value="chat">Chat</option>
+                            <option value="follow">Follow</option>
+                            <option value="share">Share</option>
+                            <option value="like">Like</option>
+                            <option value="subscribe">Subscribe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">HybridShock Category</label>
+                        <input type="text" id="mappingCategory" class="input-field" placeholder="e.g. shock, message">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">HybridShock Action</label>
+                        <input type="text" id="mappingAction" class="input-field" placeholder="e.g. pulse, hello">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Context Template (JSON)</label>
+                    <textarea id="mappingContextTemplate" class="input-field" rows="5" placeholder='{"username": "{username}", "message": "{giftName}"}'></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Available placeholders: {username}, {giftName}, {coins}, {message}, etc.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Delay (ms)</label>
+                        <input type="number" id="mappingDelay" class="input-field" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Cooldown (ms)</label>
+                        <input type="number" id="mappingCooldown" class="input-field" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Priority</label>
+                        <input type="number" id="mappingPriority" class="input-field" value="0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="flex items-center gap-3">
+                        <input type="checkbox" id="mappingEnabled" class="w-5 h-5" checked>
+                        <span>Enabled</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button id="btnSaveMapping" class="btn-primary flex-1">💾 Save Mapping</button>
+                <button id="btnCancelMapping" class="btn-secondary">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/plugins/hybridshock/ui.js"></script>
+</body>
+</html>

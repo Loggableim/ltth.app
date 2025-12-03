@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XP Leaderboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .leaderboard {
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      max-width: 600px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .header h1 {
+      color: #FFD700;
+      font-size: 32px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      margin-bottom: 5px;
+    }
+
+    .header .subtitle {
+      color: #AAA;
+      font-size: 14px;
+    }
+
+    .leaderboard-list {
+      list-style: none;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(5px);
+    }
+
+    .leaderboard-item.rank-1 {
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+      border-left-color: #FFD700;
+    }
+
+    .leaderboard-item.rank-2 {
+      background: linear-gradient(90deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.05));
+      border-left-color: #C0C0C0;
+    }
+
+    .leaderboard-item.rank-3 {
+      background: linear-gradient(90deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.05));
+      border-left-color: #CD7F32;
+    }
+
+    .rank {
+      font-size: 24px;
+      font-weight: bold;
+      width: 50px;
+      text-align: center;
+    }
+
+    .rank-1 .rank { color: #FFD700; }
+    .rank-2 .rank { color: #C0C0C0; }
+    .rank-3 .rank { color: #CD7F32; }
+
+    .rank-icon {
+      font-size: 28px;
+    }
+
+    .viewer-info {
+      flex: 1;
+      margin-left: 15px;
+    }
+
+    .viewer-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+
+    .viewer-title {
+      font-size: 12px;
+      color: #AAA;
+      font-style: italic;
+    }
+
+    .level-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 15px;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .xp-amount {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4CAF50;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: #AAA;
+      font-size: 16px;
+    }
+
+    .update-time {
+      text-align: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #666;
+      font-size: 12px;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .leaderboard-item {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .leaderboard-item:nth-child(1) { animation-delay: 0.1s; }
+    .leaderboard-item:nth-child(2) { animation-delay: 0.2s; }
+    .leaderboard-item:nth-child(3) { animation-delay: 0.3s; }
+    .leaderboard-item:nth-child(4) { animation-delay: 0.4s; }
+    .leaderboard-item:nth-child(5) { animation-delay: 0.5s; }
+  </style>
+</head>
+<body>
+  <div class="leaderboard">
+    <div class="header">
+      <h1>🏆 Top Viewers 🏆</h1>
+      <div class="subtitle" id="subtitle">All Time</div>
+    </div>
+    <ul class="leaderboard-list" id="leaderboardList">
+      <li class="no-data">Loading...</li>
+    </ul>
+    <div class="update-time" id="updateTime"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const limit = parseInt(urlParams.get('limit') || '10');
+    const days = urlParams.get('days') ? parseInt(urlParams.get('days')) : null;
+    const refreshInterval = parseInt(urlParams.get('refresh') || '30000');
+
+    // Update subtitle
+    if (days) {
+      document.getElementById('subtitle').textContent = `Last ${days} Days`;
+    }
+
+    // Format number with separators
+    function formatNumber(num) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    // Get rank icon
+    function getRankIcon(rank) {
+      switch(rank) {
+        case 1: return '🥇';
+        case 2: return '🥈';
+        case 3: return '🥉';
+        default: return rank;
+      }
+    }
+
+    // Update leaderboard display
+    function updateLeaderboard(data) {
+      const list = document.getElementById('leaderboardList');
+      
+      if (!data || data.length === 0) {
+        list.innerHTML = '<li class="no-data">No viewers yet</li>';
+        return;
+      }
+
+      list.innerHTML = '';
+      
+      data.forEach((viewer, index) => {
+        const rank = index + 1;
+        const item = document.createElement('li');
+        item.className = `leaderboard-item rank-${rank <= 3 ? rank : 'other'}`;
+        
+        const xpValue = days ? viewer.xp_period : viewer.xp;
+        
+        item.innerHTML = `
+          <div class="rank">
+            <span class="rank-icon">${getRankIcon(rank)}</span>
+          </div>
+          <div class="viewer-info">
+            <div class="viewer-name" style="color: ${viewer.name_color || '#FFFFFF'}">
+              ${viewer.username}
+            </div>
+            ${viewer.title ? `<div class="viewer-title">${viewer.title}</div>` : ''}
+          </div>
+          <div class="level-info">
+            <div class="level-badge">Lvl ${viewer.level}</div>
+            <div class="xp-amount">${formatNumber(xpValue)} XP</div>
+          </div>
+        `;
+        
+        list.appendChild(item);
+      });
+
+      // Update time
+      const now = new Date();
+      document.getElementById('updateTime').textContent = 
+        `Last updated: ${now.toLocaleTimeString()}`;
+    }
+
+    // Fetch leaderboard
+    function fetchLeaderboard() {
+      socket.emit('viewer-xp:get-leaderboard', { limit, days });
+    }
+
+    // Listen for leaderboard updates
+    socket.on('viewer-xp:leaderboard', (data) => {
+      updateLeaderboard(data);
+    });
+
+    // Listen for XP updates to refresh leaderboard
+    socket.on('viewer-xp:update', () => {
+      // Debounce refresh
+      clearTimeout(window.refreshDebounce);
+      window.refreshDebounce = setTimeout(fetchLeaderboard, 2000);
+    });
+
+    // Listen for level ups to refresh leaderboard
+    socket.on('viewer-xp:level-up', () => {
+      fetchLeaderboard();
+    });
+
+    // Initial fetch
+    fetchLeaderboard();
+
+    // Auto-refresh
+    setInterval(fetchLeaderboard, refreshInterval);
+  </script>
+</body>
+</html>

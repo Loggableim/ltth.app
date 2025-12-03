@@ -1,0 +1,114 @@
+# Dependencies
+app/node_modules/
+node_modules/
+app/package-lock.json
+package-lock.json
+
+# Database files
+app/database.db
+app/database.db-shm
+app/database.db-wal
+*.db
+*.db-shm
+*.db-wal
+
+# User profile management
+app/user_configs/.active_profile
+app/database.db.backup
+app/.config_path
+user_configs/.active_profile
+database.db.backup
+.config_path
+
+# Logs
+app/logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+app/.env
+app/.env.local
+app/.env.*.local
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test/debug files
+test-euler-debug.js
+test-*.js
+test-*.sh
+validate-*.js
+load-test-*.js
+
+# Plugin runtime data
+app/plugins/*/data/
+app/plugins/plugins_state.json
+plugins/*/data/
+plugins/plugins_state.json
+test-viewer-xp.js
+*.backup*
+
+# TikTok SessionID auto-extraction files
+app/plugins/tts/engines/.tiktok-cookies.json
+app/plugins/tts/engines/.tiktok-sessionid
+plugins/tts/engines/.tiktok-cookies.json
+plugins/tts/engines/.tiktok-sessionid
+test_endpoints.js
+
+# Electron Build Output
+dist/
+out/
+release/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.blockmap
+
+# Electron Cache
+.cache/
+.electron/
+electron-builder-cache/
+
+# Native module build artifacts
+build/
+*.node
+
+# Playwright test output
+test-results/
+playwright-report/
+
+# Sidecar binaries (built separately)
+sidecars/*.exe
+sidecars/ltth-ai-engine-*
+!sidecars/ai_engine/
+
+# macOS code signing
+*.p12
+*.pfx
+*.pem
+*.pyc
+__pycache__/
+dist/

@@ -1,0 +1,26 @@
+{
+  "id": "osc-bridge",
+  "name": "OSC-Bridge (VRChat)",
+  "version": "1.0.0",
+  "description": "Dauerhafte OSC-Brücke für VRChat-Integration. Ermöglicht bidirektionale Kommunikation zwischen TikTok-Events und VRChat-Avataren über standardisierte OSC-Parameter.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "settings": {
+    "enabled": false,
+    "sendHost": "127.0.0.1",
+    "sendPort": 9000,
+    "receivePort": 9001,
+    "verboseMode": false,
+    "allowedIPs": ["127.0.0.1", "::1"],
+    "autoRetryOnError": true,
+    "retryDelay": 5000,
+    "maxPacketSize": 65536
+  },
+  "permissions": [
+    "network",
+    "events",
+    "flows"
+  ],
+  "tags": ["vrchat", "osc", "automation", "avatar", "integration"]
+}

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="chatango.title">Chatango Settings</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .status-indicator.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-accent-success);
+            border: 1px solid var(--color-accent-success);
+        }
+
+        .status-indicator.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-accent-danger);
+            border: 1px solid var(--color-accent-danger);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active .status-dot {
+            background: var(--color-accent-success);
+        }
+
+        .status-indicator.inactive .status-dot {
+            background: var(--color-accent-danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--color-input-bg);
+            border: 1px solid var(--color-input-border);
+            border-radius: 6px;
+            color: var(--color-input-text);
+            font-size: 14px;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-input-focus);
+            box-shadow: 0 0 0 3px var(--color-active-bg);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-accent-primary);
+            filter: brightness(0.9);
+        }
+
+        .btn-secondary {
+            background: var(--color-btn-secondary-bg);
+            color: var(--color-btn-secondary-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-btn-secondary-hover);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-accent-primary);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            margin: 0 0 8px 0;
+            color: var(--color-accent-primary);
+        }
+
+        .info-box p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .preview-container {
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .embed-preview {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .code-block {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 24px 0 16px 0;
+            color: var(--color-text-primary);
+        }
+
+        .help-text {
+            font-size: 0.85em;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Status Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">💬 Chatango Integration</h2>
+                <div class="status-indicator" id="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Active</span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4>About Chatango Integration</h4>
+                <p>This plugin provides Chatango chat room integration for your stream. Configure your chat room settings, 
+                   theme appearance, and widget options. The chat will automatically sync with your application's theme 
+                   (day/night/high contrast mode).</p>
+            </div>
+        </div>
+
+        <!-- Configuration Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Configuration</h2>
+            </div>
+
+            <form id="config-form">
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enabled" name="enabled">
+                        <label for="enabled">Enable Chatango Integration</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="roomHandle">Chatango Room Handle</label>
+                    <input type="text" class="form-control" id="roomHandle" name="roomHandle" placeholder="your-room-name">
+                    <div class="help-text">The name of your Chatango room (e.g., "pupcidsltth")</div>
+                </div>
+
+                <h4 class="section-title">Appearance</h4>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="theme">Theme</label>
+                        <select class="form-control" id="theme" name="theme">
+                            <option value="night">Night (Dark)</option>
+                            <option value="day">Day (Light)</option>
+                            <option value="contrast">High Contrast</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fontSize">Font Size</label>
+                        <select class="form-control" id="fontSize" name="fontSize">
+                            <option value="8">Small (8px)</option>
+                            <option value="10">Normal (10px)</option>
+                            <option value="12">Large (12px)</option>
+                            <option value="14">Extra Large (14px)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="allowPM" name="allowPM">
+                            <label for="allowPM">Allow Private Messages</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="showTicker" name="showTicker">
+                            <label for="showTicker">Show Message Ticker</label>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="section-title">Dashboard Embed</h4>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="dashboardEnabled" name="dashboardEnabled">
+                        <label for="dashboardEnabled">Enable Dashboard Chat Panel</label>
+                    </div>
+                    <div class="help-text">Show Chatango in the dashboard shoutbox area</div>
+                </div>
+
+                <h4 class="section-title">Floating Widget</h4>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="widgetEnabled" name="widgetEnabled">
+                        <label for="widgetEnabled">Enable Floating Widget</label>
+                    </div>
+                    <div class="help-text">Show a collapsible Chatango widget on pages</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="widgetPosition">Widget Position</label>
+                        <select class="form-control" id="widgetPosition" name="widgetPosition">
+                            <option value="br">Bottom Right</option>
+                            <option value="bl">Bottom Left</option>
+                            <option value="tr">Top Right</option>
+                            <option value="tl">Top Left</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetWidth">Widget Width (px)</label>
+                        <input type="number" class="form-control" id="widgetWidth" name="widgetWidth" min="150" max="500" value="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="widgetHeight">Widget Height (px)</label>
+                        <input type="number" class="form-control" id="widgetHeight" name="widgetHeight" min="200" max="600" value="300">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="collapsedWidth">Collapsed Width (px)</label>
+                        <input type="number" class="form-control" id="collapsedWidth" name="collapsedWidth" min="50" max="200" value="75">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="collapsedHeight">Collapsed Height (px)</label>
+                        <input type="number" class="form-control" id="collapsedHeight" name="collapsedHeight" min="20" max="100" value="30">
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                    <button type="button" class="btn btn-secondary" id="btn-preview">Preview Embed</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Embed Code Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Embed Code</h2>
+            </div>
+
+            <div class="info-box">
+                <h4>Using Embed Codes</h4>
+                <p>Copy these embed codes to use Chatango on external pages or OBS browser sources. 
+                   The dashboard and widget embeds are automatically managed by this plugin.</p>
+            </div>
+
+            <h4 class="section-title">Dashboard Embed</h4>
+            <div class="code-block" id="dashboard-embed-code">Loading...</div>
+            <button class="btn btn-secondary copy-btn" onclick="copyEmbedCode('dashboard')">📋 Copy Code</button>
+
+            <h4 class="section-title">Widget Embed</h4>
+            <div class="code-block" id="widget-embed-code">Loading...</div>
+            <button class="btn btn-secondary copy-btn" onclick="copyEmbedCode('widget')">📋 Copy Code</button>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="card" id="preview-card" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title">Live Preview</h2>
+                <button class="btn btn-secondary" onclick="closePreview()">Close Preview</button>
+            </div>
+
+            <div class="embed-preview" id="embed-preview">
+                <span>Preview will appear here</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/theme-manager.js"></script>
+    <script>
+        const socket = io();
+        let currentConfig = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            setupEventListeners();
+        });
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/chatango/config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentConfig = data.config;
+                    populateForm(currentConfig);
+                    updateStatus(currentConfig.enabled);
+                    updateEmbedCodes();
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        function populateForm(config) {
+            document.getElementById('enabled').checked = config.enabled;
+            document.getElementById('roomHandle').value = config.roomHandle || '';
+            document.getElementById('theme').value = config.theme || 'night';
+            document.getElementById('fontSize').value = config.fontSize || '10';
+            document.getElementById('allowPM').checked = config.allowPM;
+            document.getElementById('showTicker').checked = config.showTicker;
+            document.getElementById('dashboardEnabled').checked = config.dashboardEnabled;
+            document.getElementById('widgetEnabled').checked = config.widgetEnabled;
+            document.getElementById('widgetPosition').value = config.widgetPosition || 'br';
+            document.getElementById('widgetWidth').value = config.widgetWidth || 200;
+            document.getElementById('widgetHeight').value = config.widgetHeight || 300;
+            document.getElementById('collapsedWidth').value = config.collapsedWidth || 75;
+            document.getElementById('collapsedHeight').value = config.collapsedHeight || 30;
+        }
+
+        function getFormData() {
+            return {
+                enabled: document.getElementById('enabled').checked,
+                roomHandle: document.getElementById('roomHandle').value,
+                theme: document.getElementById('theme').value,
+                fontSize: document.getElementById('fontSize').value,
+                allowPM: document.getElementById('allowPM').checked,
+                showTicker: document.getElementById('showTicker').checked,
+                dashboardEnabled: document.getElementById('dashboardEnabled').checked,
+                widgetEnabled: document.getElementById('widgetEnabled').checked,
+                widgetPosition: document.getElementById('widgetPosition').value,
+                widgetWidth: parseInt(document.getElementById('widgetWidth').value),
+                widgetHeight: parseInt(document.getElementById('widgetHeight').value),
+                collapsedWidth: parseInt(document.getElementById('collapsedWidth').value),
+                collapsedHeight: parseInt(document.getElementById('collapsedHeight').value)
+            };
+        }
+
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('config-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await saveConfig();
+            });
+
+            // Preview button
+            document.getElementById('btn-preview').addEventListener('click', showPreview);
+
+            // Theme change updates embed codes
+            document.getElementById('theme').addEventListener('change', updateEmbedCodes);
+            document.getElementById('roomHandle').addEventListener('input', updateEmbedCodes);
+        }
+
+        async function saveConfig() {
+            try {
+                const config = getFormData();
+                
+                const response = await fetch('/api/chatango/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentConfig = data.config;
+                    updateStatus(currentConfig.enabled);
+                    updateEmbedCodes();
+                    showNotification('Configuration saved successfully!', 'success');
+                } else {
+                    showNotification('Failed to save configuration: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save config:', error);
+                showNotification('Failed to save configuration', 'error');
+            }
+        }
+
+        function updateStatus(enabled) {
+            const indicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            if (enabled) {
+                indicator.className = 'status-indicator active';
+                statusText.textContent = 'Active';
+            } else {
+                indicator.className = 'status-indicator inactive';
+                statusText.textContent = 'Disabled';
+            }
+        }
+
+        async function updateEmbedCodes() {
+            try {
+                const theme = document.getElementById('theme').value;
+                const encodedTheme = encodeURIComponent(theme);
+                
+                // Dashboard embed
+                const dashboardResponse = await fetch(`/api/chatango/embed?type=dashboard&theme=${encodedTheme}`);
+                const dashboardData = await dashboardResponse.json();
+                if (dashboardData.success) {
+                    document.getElementById('dashboard-embed-code').textContent = generateScriptTag(dashboardData.embedCode, 'dashboard');
+                }
+
+                // Widget embed
+                const widgetResponse = await fetch(`/api/chatango/embed?type=widget&theme=${encodedTheme}`);
+                const widgetData = await widgetResponse.json();
+                if (widgetData.success) {
+                    document.getElementById('widget-embed-code').textContent = generateScriptTag(widgetData.embedCode, 'widget');
+                }
+            } catch (error) {
+                console.error('Failed to update embed codes:', error);
+            }
+        }
+
+        function generateScriptTag(config, type) {
+            const id = `cid${Date.now()}`;
+            
+            // Sanitize width and height - ensure they are valid numbers or percentages
+            const sanitizeSize = (val) => {
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string' && /^[\d]+(%|px)?$/.test(val)) return val;
+                return '100%';
+            };
+            
+            const width = type === 'widget' ? `${parseInt(config.width) || 200}px` : sanitizeSize(config.width);
+            const height = type === 'widget' ? `${parseInt(config.height) || 300}px` : sanitizeSize(config.height);
+            const styleAttr = `width: ${width};height: ${height};`;
+
+            // Sanitize the config object before JSON serialization
+            const sanitizedConfig = {
+                handle: String(config.handle || '').replace(/[<>'"]/g, ''),
+                arch: 'js', // Fixed value
+                styles: config.styles || {}
+            };
+            const jsonConfig = JSON.stringify(sanitizedConfig);
+
+            return `<script id="${id}" data-cfasync="false" async src="https://st.chatango.com/js/gz/emb.js" style="${styleAttr}">${jsonConfig}<\/script>`;
+        }
+
+        function copyEmbedCode(type) {
+            const elementId = type === 'dashboard' ? 'dashboard-embed-code' : 'widget-embed-code';
+            const code = document.getElementById(elementId).textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                showNotification('Embed code copied to clipboard!', 'success');
+            }).catch(() => {
+                showNotification('Failed to copy embed code', 'error');
+            });
+        }
+
+        function showPreview() {
+            const previewCard = document.getElementById('preview-card');
+            const previewContainer = document.getElementById('embed-preview');
+            
+            previewCard.style.display = 'block';
+            
+            // Generate live preview
+            const config = getFormData();
+            const theme = config.theme;
+            
+            // Create iframe preview (Chatango needs to be loaded fresh)
+            previewContainer.innerHTML = `
+                <div style="text-align: center; color: var(--color-text-muted);">
+                    <p>⚠️ Live preview requires the Chatango embed script to load.</p>
+                    <p>Save your configuration and refresh the dashboard to see changes.</p>
+                    <p style="margin-top: 12px;">Room: <strong>${config.roomHandle}</strong> | Theme: <strong>${theme}</strong></p>
+                </div>
+            `;
+
+            // Scroll to preview
+            previewCard.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closePreview() {
+            document.getElementById('preview-card').style.display = 'none';
+        }
+
+        function showNotification(message, type) {
+            // Emit to socket for global notification if available
+            socket.emit('notification', {
+                message,
+                type,
+                source: 'Chatango Plugin'
+            });
+
+            // Also log to console
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // Socket events
+        socket.on('chatango:config', (data) => {
+            if (data.config) {
+                currentConfig = data.config;
+                populateForm(currentConfig);
+                updateStatus(currentConfig.enabled);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+[
+  {
+    "name": "Rose Gift → Hello Message",
+    "description": "Trigger 'hello' message when user sends Rose gift",
+    "enabled": true,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "message",
+    "hybridshockAction": "hello",
+    "contextTemplate": {
+      "username": "{username}",
+      "nickname": "{nickname}",
+      "giftName": "{giftName}",
+      "count": "{repeatCount}",
+      "message": "{nickname} sent {repeatCount}x {giftName}!"
+    },
+    "conditions": {
+      "giftNames": ["Rose"]
+    },
+    "delay": 0,
+    "cooldown": 5000,
+    "priority": 1
+  },
+  {
+    "name": "Lion Gift → Pulse Shock",
+    "description": "Trigger pulse shock when user sends Lion gift",
+    "enabled": true,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "shock",
+    "hybridshockAction": "pulse",
+    "contextTemplate": {
+      "intensity": 50,
+      "duration": 500,
+      "username": "{username}",
+      "triggeredBy": "{giftName}"
+    },
+    "conditions": {
+      "giftNames": ["Lion"]
+    },
+    "delay": 0,
+    "cooldown": 10000,
+    "priority": 3
+  },
+  {
+    "name": "High Value Gift → Intensity Shock",
+    "description": "Trigger shock with intensity based on gift value (1000+ coins)",
+    "enabled": true,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "shock",
+    "hybridshockAction": "continuous",
+    "contextTemplate": {
+      "intensity": "${Math.min(coins / 100, 100)}",
+      "duration": "${Math.min(coins / 10, 5000)}",
+      "username": "{username}",
+      "giftValue": "{coins}"
+    },
+    "conditions": {
+      "minCoins": 1000
+    },
+    "delay": 0,
+    "cooldown": 15000,
+    "priority": 5
+  },
+  {
+    "name": "Chat Command !shock",
+    "description": "Trigger 3-second shock when user writes !shock in chat",
+    "enabled": true,
+    "tiktokEventType": "chat",
+    "hybridshockCategory": "shock",
+    "hybridshockAction": "continuous",
+    "contextTemplate": {
+      "duration": 3000,
+      "intensity": 50,
+      "triggeredBy": "{username}",
+      "message": "{message}"
+    },
+    "conditions": {
+      "messageContains": "!shock"
+    },
+    "delay": 500,
+    "cooldown": 30000,
+    "priority": 3
+  },
+  {
+    "name": "Chat Command !hello",
+    "description": "Trigger hello message when user writes !hello",
+    "enabled": true,
+    "tiktokEventType": "chat",
+    "hybridshockCategory": "message",
+    "hybridshockAction": "hello",
+    "contextTemplate": {
+      "username": "{username}",
+      "nickname": "{nickname}",
+      "customMessage": "Hello {nickname}! 👋"
+    },
+    "conditions": {
+      "messageContains": "!hello"
+    },
+    "delay": 0,
+    "cooldown": 10000,
+    "priority": 0
+  },
+  {
+    "name": "New Follower → Notification",
+    "description": "Show notification when someone follows",
+    "enabled": true,
+    "tiktokEventType": "follow",
+    "hybridshockCategory": "notification",
+    "hybridshockAction": "show",
+    "contextTemplate": {
+      "title": "New Follower! 🎉",
+      "message": "{nickname} (@{username}) just followed!",
+      "icon": "🎉",
+      "duration": 5000,
+      "timestamp": "{timestampISO}"
+    },
+    "conditions": null,
+    "delay": 0,
+    "cooldown": 0,
+    "priority": 0
+  },
+  {
+    "name": "Share Stream → Thank You",
+    "description": "Trigger thank you message when user shares stream",
+    "enabled": true,
+    "tiktokEventType": "share",
+    "hybridshockCategory": "message",
+    "hybridshockAction": "custom",
+    "contextTemplate": {
+      "text": "Thank you {nickname} for sharing! 💚",
+      "username": "{username}",
+      "action": "share"
+    },
+    "conditions": null,
+    "delay": 0,
+    "cooldown": 5000,
+    "priority": 1
+  },
+  {
+    "name": "100+ Likes → Celebration",
+    "description": "Trigger celebration effect when receiving 100+ likes at once",
+    "enabled": true,
+    "tiktokEventType": "like",
+    "hybridshockCategory": "effect",
+    "hybridshockAction": "celebration",
+    "contextTemplate": {
+      "likeCount": "{likeCount}",
+      "totalLikes": "{totalLikes}",
+      "username": "{username}",
+      "intensity": "${Math.min(likeCount / 10, 100)}"
+    },
+    "conditions": {
+      "customExpression": "likeCount >= 100"
+    },
+    "delay": 0,
+    "cooldown": 20000,
+    "priority": 2
+  },
+  {
+    "name": "Subscribe → VIP Welcome",
+    "description": "Special welcome for new subscribers",
+    "enabled": true,
+    "tiktokEventType": "subscribe",
+    "hybridshockCategory": "notification",
+    "hybridshockAction": "vip",
+    "contextTemplate": {
+      "title": "New Subscriber! ⭐",
+      "message": "Welcome VIP {nickname}!",
+      "username": "{username}",
+      "userId": "{userId}",
+      "specialEffect": true
+    },
+    "conditions": null,
+    "delay": 500,
+    "cooldown": 0,
+    "priority": 4
+  },
+  {
+    "name": "Gift Combo → Escalating Shock",
+    "description": "Escalating shock intensity for gift streaks (5+ gifts)",
+    "enabled": false,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "shock",
+    "hybridshockAction": "escalating",
+    "contextTemplate": {
+      "baseIntensity": 20,
+      "maxIntensity": "${Math.min(repeatCount * 10, 100)}",
+      "duration": "${repeatCount * 500}",
+      "giftName": "{giftName}",
+      "comboCount": "{repeatCount}"
+    },
+    "conditions": {
+      "customExpression": "repeatCount >= 5"
+    },
+    "delay": 0,
+    "cooldown": 10000,
+    "priority": 4
+  },
+  {
+    "name": "Moderator Command !stop",
+    "description": "Emergency stop for moderators only",
+    "enabled": true,
+    "tiktokEventType": "chat",
+    "hybridshockCategory": "control",
+    "hybridshockAction": "emergency_stop",
+    "contextTemplate": {
+      "triggeredBy": "{username}",
+      "reason": "Moderator emergency stop",
+      "timestamp": "{timestamp}"
+    },
+    "conditions": {
+      "messageContains": "!stop",
+      "customExpression": "isModerator === true"
+    },
+    "delay": 0,
+    "cooldown": 5000,
+    "priority": 10
+  },
+  {
+    "name": "Random Gift → Random Effect",
+    "description": "Random effect for any gift (demo)",
+    "enabled": false,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "effect",
+    "hybridshockAction": "random",
+    "contextTemplate": {
+      "effectType": "${Math.floor(Math.random() * 5) + 1}",
+      "intensity": "${Math.floor(Math.random() * 100)}",
+      "duration": "${Math.floor(Math.random() * 3000) + 1000}",
+      "giftName": "{giftName}",
+      "randomSeed": "{random}"
+    },
+    "conditions": null,
+    "delay": 0,
+    "cooldown": 3000,
+    "priority": 0
+  },
+  {
+    "name": "Specific User VIP Actions",
+    "description": "Special actions for specific VIP users only",
+    "enabled": false,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "vip",
+    "hybridshockAction": "exclusive",
+    "contextTemplate": {
+      "username": "{username}",
+      "giftName": "{giftName}",
+      "vipLevel": "platinum",
+      "specialEffect": true
+    },
+    "conditions": {
+      "usernames": ["vipuser1", "vipuser2", "vipuser3"]
+    },
+    "delay": 0,
+    "cooldown": 0,
+    "priority": 6
+  },
+  {
+    "name": "Night Mode Reduced Intensity",
+    "description": "Reduced shock intensity during night hours (example)",
+    "enabled": false,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "shock",
+    "hybridshockAction": "gentle",
+    "contextTemplate": {
+      "intensity": "${Math.min(coins / 200, 50)}",
+      "duration": 300,
+      "nightMode": true,
+      "giftName": "{giftName}"
+    },
+    "conditions": {
+      "minCoins": 500,
+      "customExpression": "new Date().getHours() >= 22 || new Date().getHours() <= 6"
+    },
+    "delay": 0,
+    "cooldown": 20000,
+    "priority": 1
+  },
+  {
+    "name": "Milestone Achievement → Special Effect",
+    "description": "Special effect for milestone gifts (10000+ coins)",
+    "enabled": true,
+    "tiktokEventType": "gift",
+    "hybridshockCategory": "achievement",
+    "hybridshockAction": "milestone",
+    "contextTemplate": {
+      "achievementType": "mega_gift",
+      "username": "{username}",
+      "nickname": "{nickname}",
+      "giftName": "{giftName}",
+      "giftValue": "{coins}",
+      "message": "{nickname} sent an EPIC {giftName} worth {coins} coins! 🔥"
+    },
+    "conditions": {
+      "minCoins": 10000
+    },
+    "delay": 1000,
+    "cooldown": 0,
+    "priority": 10
+  }
+]

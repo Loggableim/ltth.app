@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Rain Overlay - TikTok Stream Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .emoji-sprite {
+            position: absolute;
+            font-size: 48px;
+            pointer-events: none;
+            user-select: none;
+            transform-origin: center;
+            transition: opacity 0.5s ease;
+            will-change: transform, opacity;
+            /* Hardware acceleration */
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+
+        .emoji-sprite.fading {
+            opacity: 0;
+        }
+
+        /* Bubble Blop Animation - using scale only to preserve position/rotation */
+        @keyframes bubbleBlop {
+            0% {
+                scale: 1;
+            }
+            50% {
+                scale: 1.5;
+            }
+            100% {
+                scale: 1;
+            }
+        }
+
+        /* Custom image support */
+        .emoji-sprite img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Toaster Mode - Performance optimizations for low-end PCs */
+        body.toaster-mode .emoji-sprite {
+            /* Disable expensive transitions */
+            transition: none !important;
+            /* Disable filters */
+            filter: none !important;
+            /* Disable animations */
+            animation: none !important;
+            /* Reduce will-change to minimize GPU memory */
+            will-change: transform;
+        }
+
+        body.toaster-mode .emoji-sprite.fading {
+            /* Simple opacity change without transition */
+            opacity: 0;
+        }
+
+        /* Debug info (optional) */
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="debug-info"></div>
+
+    <!-- Matter.js (local) -->
+    <script src="/js/matter.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Use enhanced engine -->
+    <script src="/js/emoji-rain-engine.js"></script>
+</body>
+</html>

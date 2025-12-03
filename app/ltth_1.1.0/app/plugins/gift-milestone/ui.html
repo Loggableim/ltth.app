@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Milestone Celebration - TikTok Stream Tool</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--gradient-primary);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--color-text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .nav-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-button {
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background: var(--color-bg-hover);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            background: var(--color-bg-card);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 10px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--color-text-primary);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-border);
+            background: rgba(255,255,255,0.15);
+            color: var(--color-text-primary);
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input[type="number"]:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.6);
+            background: var(--color-bg-secondary);
+        }
+
+        .form-group select option {
+            background: #764ba2;
+            color: var(--color-text-primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .upload-section {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .upload-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-button {
+            background: rgba(76,175,80,0.8);
+            color: var(--color-text-primary);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .upload-button:hover {
+            background: rgba(76,175,80,1);
+            transform: translateY(-2px);
+        }
+
+        .delete-button {
+            background: rgba(244,67,54,0.8);
+            color: var(--color-text-primary);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .delete-button:hover {
+            background: rgba(244,67,54,1);
+            transform: translateY(-2px);
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            word-wrap: break-word;
+        }
+
+        .save-button {
+            background: rgba(33,150,243,0.8);
+            color: var(--color-text-primary);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .save-button:hover {
+            background: rgba(33,150,243,1);
+            transform: translateY(-2px);
+        }
+
+        .test-button {
+            background: rgba(255,193,7,0.8);
+            color: var(--color-text-primary);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .test-button:hover {
+            background: rgba(255,193,7,1);
+            transform: translateY(-2px);
+        }
+
+        .reset-button {
+            background: rgba(156,39,176,0.8);
+            color: var(--color-text-primary);
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .reset-button:hover {
+            background: rgba(156,39,176,1);
+            transform: translateY(-2px);
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76,175,80,0.95);
+            color: var(--color-text-primary);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.error {
+            background: rgba(244,67,54,0.95);
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .tier-item, .user-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tier-info, .user-info {
+            flex-grow: 1;
+        }
+
+        .tier-name, .user-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .tier-threshold, .user-coins {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+
+        .tier-actions, .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .small-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background: rgba(33,150,243,0.8);
+            color: var(--color-text-primary);
+        }
+
+        .edit-btn:hover {
+            background: rgba(33,150,243,1);
+        }
+
+        .delete-btn {
+            background: rgba(244,67,54,0.8);
+            color: var(--color-text-primary);
+        }
+
+        .delete-btn:hover {
+            background: rgba(244,67,54,1);
+        }
+
+        .test-tier-btn {
+            background: rgba(255,193,7,0.8);
+            color: var(--color-text-primary);
+        }
+
+        .test-tier-btn:hover {
+            background: rgba(255,193,7,1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .tier-level-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,193,7,0.8);
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .user-tier-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(76,175,80,0.8);
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Gift Milestone Celebration</h1>
+        <p class="subtitle">Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert</p>
+
+        <div class="nav-buttons">
+            <a href="/" class="nav-button" target="_blank">🏠 Dashboard</a>
+            <a href="/gift-milestone/overlay" class="nav-button" target="_blank">👁️ Overlay öffnen</a>
+        </div>
+
+        <!-- Enable/Disable Toggle -->
+        <div class="section">
+            <div class="toggle-container">
+                <span style="font-size: 1.2em; font-weight: 600;">Plugin Status:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enableToggle">
+                    <span class="slider"></span>
+                </label>
+                <span id="statusText" style="font-size: 1.2em; font-weight: 600;">Deaktiviert</span>
+            </div>
+        </div>
+
+        <!-- Tier Management -->
+        <div class="section">
+            <h2>🏆 Meilenstein-Stufen (Tiers)</h2>
+            <p class="help-text" style="margin-bottom: 15px;">
+                Definiere benutzerdefinierte Meilenstein-Stufen. Wenn Benutzer diese Coin-Schwellenwerte erreichen, wird eine Celebration ausgelöst.
+            </p>
+            
+            <div id="tiersList"></div>
+            
+            <button class="upload-button" id="addTierButton" style="margin-top: 15px;">➕ Neue Stufe hinzufügen</button>
+        </div>
+
+        <!-- User Statistics -->
+        <div class="section">
+            <h2>👥 Benutzer-Statistiken</h2>
+            <p class="help-text" style="margin-bottom: 15px;">
+                Zeigt an, welche Benutzer wie viele Coins ausgegeben haben (streamübergreifend). Die Zählung wird NICHT bei jedem Stream zurückgesetzt.
+            </p>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <button class="test-button" id="refreshUsersButton">🔄 Aktualisieren</button>
+                <button class="reset-button" id="resetAllUsersButton">🗑️ Alle Benutzer zurücksetzen</button>
+            </div>
+            
+            <div id="userStatsList" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="section">
+            <h2>⚙️ Konfiguration</h2>
+            <p class="help-text" style="margin-bottom: 15px;">
+                Globale Einstellungen für Meilenstein-Celebrations. Die Standard-Medien werden verwendet, wenn eine Stufe keine eigenen Medien hat.
+            </p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="playbackMode">Wiedergabe-Modus</label>
+                    <select id="playbackMode">
+                        <option value="exclusive">Exklusiv (pausiert andere Alerts)</option>
+                        <option value="parallel">Parallel (läuft gleichzeitig)</option>
+                    </select>
+                    <div class="help-text">Exklusiv pausiert TTS und andere Alerts während der Animation</div>
+                </div>
+                <div class="form-group">
+                    <label for="audioVolume">Audio-Lautstärke (%)</label>
+                    <input type="number" id="audioVolume" min="0" max="100" value="80">
+                    <div class="help-text">Lautstärke für Milestone-Audio (0-100%)</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="animationDuration">Animation-Dauer (ms)</label>
+                    <input type="number" id="animationDuration" min="0" step="1000" value="0">
+                    <div class="help-text">0 = Automatisch (Medienlänge), sonst Timeout in Millisekunden</div>
+                </div>
+            </div>
+
+            <!-- Hidden legacy fields for backward compatibility -->
+            <input type="hidden" id="threshold" value="1000">
+            <input type="hidden" id="incrementStep" value="1000">
+            <input type="hidden" id="mode" value="auto_increment">
+            <input type="hidden" id="sessionReset" value="0">
+        </div>
+
+        <!-- Media Upload -->
+        <div class="section">
+            <h2>🎬 Medien hochladen</h2>
+
+            <div class="upload-section">
+                <h3>🖼️ GIF/Bild Animation</h3>
+                <input type="file" id="gifInput" class="file-input" accept=".gif,.png,.jpg,.jpeg,.webp">
+                <button class="upload-button" id="select-gif-btn">📁 GIF auswählen</button>
+                <button class="delete-button" id="deleteGif" style="display: none;">🗑️ Löschen</button>
+                <div class="file-preview" id="gifPreview" style="display: none;"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>🎥 Video Animation</h3>
+                <input type="file" id="videoInput" class="file-input" accept=".mp4,.webm,.mov,.avi">
+                <button class="upload-button" id="select-video-btn">📁 Video auswählen</button>
+                <button class="delete-button" id="deleteVideo" style="display: none;">🗑️ Löschen</button>
+                <div class="file-preview" id="videoPreview" style="display: none;"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>🔊 Audio</h3>
+                <input type="file" id="audioInput" class="file-input" accept=".mp3,.wav,.ogg,.m4a">
+                <button class="upload-button" id="select-audio-btn">📁 Audio auswählen</button>
+                <button class="delete-button" id="deleteAudio" style="display: none;">🗑️ Löschen</button>
+                <div class="file-preview" id="audioPreview" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="section">
+            <h2>🎮 Aktionen</h2>
+            <div style="text-align: center;">
+                <button class="test-button" id="testButton">🧪 Celebration testen</button>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="section">
+            <button class="save-button" id="saveButton">💾 Konfiguration speichern</button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Tier Edit Modal -->
+    <div class="modal" id="tierModal">
+        <div class="modal-content">
+            <div class="modal-header" id="tierModalTitle">Neue Stufe hinzufügen</div>
+            <div class="form-group">
+                <label for="tierName">Stufen-Name</label>
+                <input type="text" id="tierName" placeholder="z.B. Bronze, Silber, Gold...">
+            </div>
+            <div class="form-group">
+                <label for="tierLevel">Stufen-Level (Reihenfolge)</label>
+                <input type="number" id="tierLevel" min="1" value="1">
+                <div class="help-text">Niedrigere Werte werden zuerst erreicht</div>
+            </div>
+            <div class="form-group">
+                <label for="tierThreshold">Coin-Schwellenwert</label>
+                <input type="number" id="tierThreshold" min="100" step="100" value="1000">
+                <div class="help-text">Anzahl der Coins, die benötigt werden, um diese Stufe zu erreichen</div>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="tierEnabled" checked>
+                    Stufe aktiviert
+                </label>
+            </div>
+            
+            <div class="upload-section">
+                <h3>🖼️ Stufen-spezifisches GIF (optional)</h3>
+                <input type="file" id="tierGifInput" class="file-input" accept=".gif,.png,.jpg,.jpeg,.webp">
+                <button class="upload-button" id="select-tier-gif-btn">📁 GIF auswählen</button>
+                <div class="file-preview" id="tierGifPreview" style="display: none;"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>🎥 Stufen-spezifisches Video (optional)</h3>
+                <input type="file" id="tierVideoInput" class="file-input" accept=".mp4,.webm,.mov,.avi">
+                <button class="upload-button" id="select-tier-video-btn">📁 Video auswählen</button>
+                <div class="file-preview" id="tierVideoPreview" style="display: none;"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>🔊 Stufen-spezifisches Audio (optional)</h3>
+                <input type="file" id="tierAudioInput" class="file-input" accept=".mp3,.wav,.ogg,.m4a">
+                <button class="upload-button" id="select-tier-audio-btn">📁 Audio auswählen</button>
+                <div class="file-preview" id="tierAudioPreview" style="display: none;"></div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="save-button" id="saveTierButton">💾 Speichern</button>
+                <button class="reset-button" id="cancelTierButton">❌ Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/plugins/gift-milestone/ui.js"></script>
+</body>
+</html>

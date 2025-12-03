@@ -1,0 +1,76 @@
+{
+  "goals": {
+    "title": "Ziele - Multi-Overlay System",
+    "plugin_title": "🎯 Ziele Plugin",
+    "subtitle": "Multi-Overlay System",
+    "create_button": "+ Neues Ziel erstellen",
+    "page_title": "Live-Ziele",
+    "page_description": "Jedes Ziel hat seine eigene Overlay-URL. Positionieren Sie sie in OBS.",
+    "empty_state": "Noch keine Ziele erstellt",
+    "create_first": "Erstelle dein erstes Ziel",
+    "modal": {
+      "create_title": "Neues Ziel erstellen",
+      "edit_title": "Ziel bearbeiten",
+      "name_label": "Zielname",
+      "name_placeholder": "z.B. Münzen-Ziel",
+      "type_label": "Ziel-Typ",
+      "types": {
+        "coin": "🪙 Münzen",
+        "likes": "❤️ Likes",
+        "follower": "👥 Follower",
+        "custom": "⭐ Benutzerdefiniert"
+      },
+      "template_label": "Vorlage",
+      "templates": {
+        "compact_bar": "Kompakte Leiste",
+        "full_width": "Volle Breite",
+        "minimal_counter": "Minimaler Zähler",
+        "circular_progress": "Kreisförmiger Fortschritt",
+        "floating_pill": "Schwebende Pille",
+        "vertical_meter": "Vertikaler Messer",
+        "neon_glow": "🌟 Neon-Glühen (NEU)",
+        "hexagon_progress": "⬡ Hexagon-Fortschritt (NEU)",
+        "glassy_card": "✨ Glasige Karte (NEU)"
+      },
+      "start_value_label": "Startwert",
+      "target_value_label": "Zielwert",
+      "animation_update_label": "Animation bei Update",
+      "animations": {
+        "smooth": "Sanfter Fortschritt",
+        "bounce": "Hüpfen",
+        "glow": "Leuchtimpuls"
+      },
+      "animation_reach_label": "Animation bei Erreichen",
+      "reach_animations": {
+        "celebration": "Feier",
+        "confetti": "Konfetti-Explosion",
+        "pulse": "Pulswelle",
+        "flash": "Blitz",
+        "rainbow": "Regenbogen"
+      },
+      "on_reach_label": "Wenn Ziel erreicht ist",
+      "on_reach_options": {
+        "hide": "Ziel ausblenden",
+        "reset": "Auf Start zurücksetzen",
+        "double": "Ziel verdoppeln",
+        "increment": "Ziel um Betrag erhöhen"
+      },
+      "increment_label": "Erhöhungsbetrag",
+      "width_label": "Overlay-Breite (px)",
+      "height_label": "Overlay-Höhe (px)",
+      "save_button": "Ziel speichern",
+      "cancel_button": "Abbrechen"
+    },
+    "card": {
+      "progress_label": "Fortschritt",
+      "current_label": "Aktuell",
+      "target_label": "Ziel",
+      "overlay_url": "Overlay-URL",
+      "copy_url": "URL kopieren",
+      "open_overlay": "Overlay öffnen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "reset": "Auf Start zurücksetzen"
+    }
+  }
+}

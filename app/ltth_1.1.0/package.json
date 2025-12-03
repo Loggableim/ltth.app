@@ -1,0 +1,66 @@
+{
+  "name": "ltth-electron",
+  "version": "1.1.0",
+  "description": "PupCid's Little TikTok Helper - Electron Desktop App",
+  "main": "main.js",
+  "author": {
+    "name": "PupCid",
+    "email": "pupcid@ltth.app"
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "cd app && node server.js",
+    "start:electron": "electron .",
+    "dev": "NODE_ENV=development electron .",
+    "dev:backend": "cd app && npm run dev",
+    "build": "npm run build:css && npm run build:electron",
+    "build:css": "cd app && npm run build:css",
+    "build:electron": "electron-builder --publish never",
+    "build:win": "electron-builder --win --publish never",
+    "build:mac": "electron-builder --mac --publish never",
+    "build:linux": "electron-builder --linux --publish never",
+    "build:all": "electron-builder -mwl --publish never",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish never",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "@electron/rebuild -f -w better-sqlite3",
+    "clean": "rimraf dist",
+    "test": "cd app && npm test",
+    "test:electron": "playwright test electron/test/",
+    "lint": "eslint electron/ --ext .js",
+    "prepare": "cd app && npm install"
+  },
+  "dependencies": {
+    "electron-log": "^5.2.0",
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "@electron/notarize": "^2.5.0",
+    "@electron/rebuild": "^3.7.0",
+    "@playwright/test": "^1.49.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "eslint": "^9.16.0",
+    "rimraf": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0 <25.0.0"
+  },
+  "build": {
+    "extends": "electron/electron-builder.yml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Loggableim/ltth_dev.git"
+  },
+  "keywords": [
+    "tiktok",
+    "streaming",
+    "obs",
+    "overlay",
+    "electron",
+    "desktop"
+  ]
+}

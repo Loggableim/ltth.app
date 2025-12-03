@@ -1,0 +1,3 @@
+# User Configuration Databases
+# Each user gets their own database file (username.db)
+# These files are automatically ignored by .gitignore (*.db pattern)

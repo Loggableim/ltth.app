@@ -1,0 +1,39 @@
+{
+  "hybridshock": {
+    "title": "HybridShock Einstellungen",
+    "subtitle": "Multi-Plattform Shock-Integration",
+    "config": {
+      "title": "Konfiguration",
+      "enabled": "HybridShock aktivieren",
+      "mode": "Modus",
+      "test": "Shock testen",
+      "save": "Einstellungen speichern"
+    },
+    "openshock": {
+      "title": "OpenShock API",
+      "api_key": "API-Schlüssel",
+      "api_url": "API-URL",
+      "shocker_id": "Shocker-ID"
+    },
+    "pishock": {
+      "title": "PiShock API",
+      "username": "Benutzername",
+      "api_key": "API-Schlüssel",
+      "share_code": "Freigabecode"
+    },
+    "triggers": {
+      "title": "Event-Trigger",
+      "gift": "Geschenk-Event",
+      "follow": "Follow-Event",
+      "subscribe": "Abo-Event",
+      "threshold": "Schwellenwert (Münzen)",
+      "intensity": "Intensität",
+      "duration": "Dauer (ms)"
+    },
+    "status": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt",
+      "testing": "Teste..."
+    }
+  }
+}

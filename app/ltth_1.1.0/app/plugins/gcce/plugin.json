@@ -1,0 +1,15 @@
+{
+  "id": "gcce",
+  "name": "Global Chat Command Engine",
+  "version": "1.0.0",
+  "description": "Universal chat command interpreter and framework for all plugins",
+  "author": "Pup Cid",
+  "entry": "index.js",
+  "enabled": false,
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ]
+}

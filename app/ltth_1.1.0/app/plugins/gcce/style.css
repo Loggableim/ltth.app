@@ -1,0 +1,373 @@
+/**
+ * GCCE Overlay Styles
+ * 
+ * Styles for the Global Chat Command Engine overlay
+ */
+
+/* ===== GLOBAL STYLES ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background: transparent;
+    color: white;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== COMMAND INPUT NOTIFICATIONS ===== */
+
+.command-input-notifications {
+    position: fixed;
+    top: 80px;
+    right: 80px;
+    width: 450px;
+    max-height: 600px;
+    overflow-y: auto;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.command-input-notification {
+    background: linear-gradient(135deg, rgba(30, 30, 45, 0.95), rgba(20, 20, 35, 0.95));
+    border: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(76, 175, 80, 0.3);
+    opacity: 0;
+    transform: translateX(100px);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.command-input-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.command-input-content {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    gap: 15px;
+}
+
+.command-input-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.command-input-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.command-input-user {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 4px;
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.command-input-text {
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    color: #E0E0E0;
+    font-weight: 600;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ===== COMMAND MESSAGES ===== */
+
+.command-messages {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.command-message {
+    padding: 15px 25px;
+    background: rgba(0, 0, 0, 0.85);
+    border-left: 4px solid #4CAF50;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    font-size: 18px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.command-message.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.command-message.success {
+    border-left-color: #4CAF50;
+}
+
+.command-message.info {
+    border-left-color: #2196F3;
+}
+
+.command-message.warning {
+    border-left-color: #FF9800;
+}
+
+/* ===== HELP PANEL ===== */
+
+.help-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 900px;
+    max-height: 700px;
+    background: rgba(20, 20, 30, 0.95);
+    border: 2px solid #4CAF50;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    z-index: 200;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.help-panel.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.help-content {
+    padding: 30px;
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.help-content h2 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    color: #4CAF50;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.help-category {
+    margin-bottom: 25px;
+}
+
+.help-category h3 {
+    font-size: 24px;
+    color: #2196F3;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #2196F3;
+    padding-bottom: 5px;
+}
+
+.help-category ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.help-category li {
+    padding: 8px 0;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.help-category li strong {
+    color: #4CAF50;
+    font-family: 'Courier New', monospace;
+}
+
+.command-detail {
+    padding: 20px;
+}
+
+.command-detail p {
+    margin: 15px 0;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.command-detail .description {
+    font-size: 20px;
+    color: #E0E0E0;
+}
+
+.command-detail .syntax {
+    font-family: 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 3px solid #4CAF50;
+}
+
+.command-detail .permission {
+    color: #FFC107;
+}
+
+.command-detail .plugin {
+    color: #9C27B0;
+}
+
+.help-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.help-footer p {
+    font-size: 14px;
+    color: #AAA;
+    font-style: italic;
+}
+
+/* ===== ERROR CONTAINER ===== */
+
+.error-container {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+.error-container.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.error-content {
+    background: rgba(244, 67, 54, 0.95);
+    border: 2px solid #D32F2F;
+    border-radius: 10px;
+    padding: 20px 30px;
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.error-content #errorIcon {
+    font-size: 32px;
+}
+
+.error-content #errorMessage {
+    font-size: 18px;
+    font-weight: bold;
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+
+.help-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.help-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.help-content::-webkit-scrollbar-thumb {
+    background: rgba(76, 175, 80, 0.6);
+    border-radius: 10px;
+}
+
+.help-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* ===== GPU ACCELERATION ===== */
+
+.help-panel,
+.error-container,
+.command-message,
+.command-input-notification {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}

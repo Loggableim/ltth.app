@@ -1,0 +1,38 @@
+{
+  "weather_control": {
+    "title": "Weather Control",
+    "subtitle": "Stream Weather Effects",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable Weather Effects",
+      "default_weather": "Default Weather",
+      "transition_duration": "Transition Duration (seconds)",
+      "save": "Save Settings"
+    },
+    "weather_types": {
+      "clear": "☀️ Clear",
+      "rain": "🌧️ Rain",
+      "snow": "❄️ Snow",
+      "storm": "⛈️ Storm",
+      "fog": "🌫️ Fog",
+      "wind": "💨 Wind"
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift_trigger": "Trigger on Gift",
+      "follow_trigger": "Trigger on Follow",
+      "weather_map": "Gift → Weather Mapping"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay URL",
+      "copy": "Copy URL",
+      "open": "Open Overlay",
+      "test": "Test Weather Effect"
+    },
+    "controls": {
+      "set_weather": "Set Weather",
+      "clear_weather": "Clear All Effects"
+    }
+  }
+}

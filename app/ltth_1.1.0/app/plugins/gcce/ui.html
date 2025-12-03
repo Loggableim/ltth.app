@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Chat Command Engine - Configuration</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+
+        .config-group {
+            margin-bottom: 20px;
+        }
+
+        .config-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+
+        .config-description {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+
+        .commands-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .commands-table th,
+        .commands-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .commands-table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+        }
+
+        .commands-table tr:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .command-name {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--color-accent-primary);
+        }
+
+        .command-plugin {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+        }
+
+        .permission-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .permission-viewer { background: #10b981; color: white; }
+        .permission-subscriber { background: #3b82f6; color: white; }
+        .permission-moderator { background: #8b5cf6; color: white; }
+        .permission-owner { background: #f59e0b; color: white; }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-bg-tertiary);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--color-accent-primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Global Chat Command Engine</h1>
+            <p>Universal chat command interpreter and framework for all plugins</p>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Statistics -->
+        <div class="card">
+            <div class="card-title">📊 Statistics</div>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Commands</div>
+                    <div class="stat-value" id="stat-total-commands">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Enabled Commands</div>
+                    <div class="stat-value" id="stat-enabled-commands">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Registered Plugins</div>
+                    <div class="stat-value" id="stat-plugins">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="card">
+            <div class="card-title">⚙️ Configuration</div>
+            <form id="config-form">
+                <div class="config-group">
+                    <label class="config-label" for="command-prefix">Command Prefix</label>
+                    <div class="config-description">Prefix used to identify chat commands (e.g., "!" for !help)</div>
+                    <input type="text" id="command-prefix" name="commandPrefix" maxlength="5" value="!">
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-built-in" name="enableBuiltInCommands" checked>
+                        <label class="config-label" for="enable-built-in" style="margin: 0;">Enable Built-in Commands</label>
+                    </div>
+                    <div class="config-description">Enable default commands like !help, !commands, etc.</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-overlay" name="enableOverlayMessages" checked>
+                        <label class="config-label" for="enable-overlay" style="margin: 0;">Enable Overlay Messages</label>
+                    </div>
+                    <div class="config-description">Show command responses on stream overlays</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-help" name="enableHelpCommand" checked>
+                        <label class="config-label" for="enable-help" style="margin: 0;">Enable Help Command</label>
+                    </div>
+                    <div class="config-description">Allow users to use !help command</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </form>
+        </div>
+
+        <!-- Registered Commands -->
+        <div class="card">
+            <div class="card-title">📝 Registered Commands</div>
+            <div id="commands-container" class="loading">Loading commands...</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let config = {};
+        let stats = {};
+        let commands = [];
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/gcce/config');
+                const data = await response.json();
+                if (data.success) {
+                    config = data.config;
+                    updateConfigForm();
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/gcce/stats');
+                const data = await response.json();
+                if (data.success) {
+                    stats = data.stats;
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load commands
+        async function loadCommands() {
+            try {
+                const response = await fetch('/api/gcce/commands');
+                const data = await response.json();
+                if (data.success) {
+                    commands = data.commands;
+                    displayCommands(commands);
+                }
+            } catch (error) {
+                console.error('Failed to load commands:', error);
+                document.getElementById('commands-container').innerHTML = '<div class="error">Failed to load commands</div>';
+            }
+        }
+
+        // Update config form
+        function updateConfigForm() {
+            document.getElementById('command-prefix').value = config.commandPrefix || '!';
+            document.getElementById('enable-built-in').checked = config.enableBuiltInCommands !== false;
+            document.getElementById('enable-overlay').checked = config.enableOverlayMessages !== false;
+            document.getElementById('enable-help').checked = config.enableHelpCommand !== false;
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('stat-total-commands').textContent = stats.totalCommands || 0;
+            document.getElementById('stat-enabled-commands').textContent = stats.enabledCommands || 0;
+            document.getElementById('stat-plugins').textContent = stats.plugins || 0;
+        }
+
+        // Display commands
+        function displayCommands(commandsList) {
+            const container = document.getElementById('commands-container');
+            
+            if (!commandsList || commandsList.length === 0) {
+                container.innerHTML = '<p class="loading">No commands registered yet.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'commands-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                        <th>Description</th>
+                        <th>Plugin</th>
+                        <th>Permission</th>
+                        <th>Enabled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${commandsList.map(cmd => `
+                        <tr>
+                            <td><span class="command-name">${cmd.name}</span></td>
+                            <td>${cmd.description || '-'}</td>
+                            <td><span class="command-plugin">${cmd.plugin || 'built-in'}</span></td>
+                            <td><span class="permission-badge permission-${cmd.permission || 'viewer'}">${cmd.permission || 'viewer'}</span></td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${cmd.enabled ? 'checked' : ''} onchange="toggleCommand('${cmd.name}', this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        // Toggle command
+        async function toggleCommand(commandName, enabled) {
+            try {
+                const response = await fetch(`/api/gcce/commands/${commandName}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(`Command ${commandName} ${enabled ? 'enabled' : 'disabled'}`, 'success');
+                    loadStats();
+                } else {
+                    showMessage('Failed to toggle command', 'error');
+                    loadCommands(); // Reload to reset checkbox
+                }
+            } catch (error) {
+                console.error('Failed to toggle command:', error);
+                showMessage('Failed to toggle command', 'error');
+                loadCommands(); // Reload to reset checkbox
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newConfig = {
+                commandPrefix: formData.get('commandPrefix'),
+                enableBuiltInCommands: formData.get('enableBuiltInCommands') === 'on',
+                enableOverlayMessages: formData.get('enableOverlayMessages') === 'on',
+                enableHelpCommand: formData.get('enableHelpCommand') === 'on'
+            };
+
+            try {
+                const response = await fetch('/api/gcce/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Configuration saved successfully!', 'success');
+                    config = data.config;
+                } else {
+                    showMessage('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save config:', error);
+                showMessage('Failed to save configuration', 'error');
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = type;
+            message.textContent = text;
+            container.appendChild(message);
+            
+            setTimeout(() => message.remove(), 5000);
+        }
+
+        // Make toggleCommand available globally
+        window.toggleCommand = toggleCommand;
+
+        // Initialize
+        loadConfig();
+        loadStats();
+        loadCommands();
+
+        // Refresh stats and commands periodically
+        setInterval(() => {
+            loadStats();
+            loadCommands();
+        }, 10000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{
+  "streamalchemy": {
+    "title": "Stream Alchemy - Advanced Settings",
+    "subtitle": "Comprehensive configuration for item generation, custom prompts and more",
+    "tabs": {
+      "general": "General",
+      "prompts": "Custom Prompts",
+      "items": "Item Management",
+      "rarity": "Rarity Tiers",
+      "animations": "Animations",
+      "advanced": "Advanced",
+      "stats": "Statistics"
+    },
+    "general": {
+      "title": "Basic Settings",
+      "enabled": "Plugin Enabled",
+      "enabled_label": "Enable Stream Alchemy",
+      "auto_crafting": "Auto-Crafting",
+      "auto_crafting_label": "Automatic crafting with 2 Gifts",
+      "item_generation_mode": "Item Generation Mode",
+      "item_generation_mode_desc": "Determine how items are created",
+      "mode_auto": "Auto (AI Generation)",
+      "mode_manual": "Manual (Upload)",
+      "mode_hybrid": "Hybrid (Both Modes)",
+      "crafting_window": "Crafting Time Window (Milliseconds)",
+      "crafting_window_desc": "Time in which 2 gifts must be sent to craft",
+      "openai_api_key": "OpenAI API Key",
+      "openai_api_key_desc": "Required for AI-generated Item Icons (DALL-E 3)",
+      "save": "Save Settings",
+      "reset": "Reset"
+    },
+    "prompts": {
+      "title": "Custom AI Prompts",
+      "info": "Define custom prompts for AI generation. Use placeholders for dynamic values.",
+      "base_template": "Base Item Prompt Template",
+      "base_template_desc": "Prompt for base items (from TikTok Gifts)",
+      "base_template_placeholder": "Leave empty for default prompt",
+      "crafted_template": "Crafted Item Prompt Template",
+      "crafted_template_desc": "Prompt for crafted items (combinations)",
+      "crafted_template_placeholder": "Leave empty for default prompt",
+      "available_placeholders": "Available Placeholders:",
+      "default_prompt": "Default Prompt:",
+      "save": "Save Prompts",
+      "reset_default": "Reset to Default"
+    },
+    "items": {
+      "title": "Item Management",
+      "create_new": "+ Create New Item",
+      "refresh_list": "🔄 Refresh List",
+      "all_items": "All Items",
+      "loading": "Loading items...",
+      "no_items": "No items found"
+    },
+    "rarity": {
+      "title": "Rarity Tier Configuration",
+      "info": "Customize thresholds and colors for rarity tiers.",
+      "common": "Common (Bronze)",
+      "rare": "Rare (Silver)",
+      "legendary": "Legendary (Gold)",
+      "mythic": "Mythic (Purple)",
+      "min_coins": "Min. Coins:",
+      "max_coins": "Max. Coins:",
+      "color": "Color:",
+      "save": "Save Rarity Tiers"
+    },
+    "animations": {
+      "title": "Animation Settings",
+      "discovery_popup": "Discovery Popup (ms)",
+      "discovery_popup_desc": "Display duration for new items",
+      "crafting_animation": "Crafting Animation (ms)",
+      "crafting_animation_desc": "Duration of crafting fusion",
+      "counter_bounce": "Counter Bounce (ms)",
+      "counter_bounce_desc": "Duration of inventory counter effect",
+      "save": "Save Animation Settings"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "overlay_url": "Overlay URL",
+      "overlay_url_desc": "Use this URL in OBS Browser Source",
+      "debug_mode": "Debug Mode",
+      "debug_mode_desc": "Show detailed logging in console"
+    },
+    "stats": {
+      "title": "Statistics",
+      "total_items": "Total Items",
+      "base_items": "Base Items",
+      "crafted_items": "Crafted Items",
+      "total_crafts": "Total Crafts"
+    },
+    "messages": {
+      "settings_saved": "Settings saved successfully!",
+      "settings_failed": "Failed to save settings",
+      "item_created": "Item created successfully!",
+      "item_deleted": "Item deleted successfully!",
+      "error": "An error occurred"
+    }
+  }
+}
