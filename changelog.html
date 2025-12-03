@@ -92,11 +92,93 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.0.9 -->
+            <!-- Version 1.1.0 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.9</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.0</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 1, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Das offizielle Release Version 1.1 von Pup Cid's Little TikTok Helper! Dieses Release enthält große Verbesserungen bei der TikTok-Konnektivität, neue Plugins und bedeutende Stabilitätsverbesserungen.
+                </p>
+
+                <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Migration zu Eulerstream WebSocket SDK</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Vollständiger Ersatz von tiktok-live-connector durch Eulerstream SDK</li>
+                            <li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
+                            <li>Eulerstream API-Schlüssel jetzt ERFORDERLICH (via EULER_API_KEY oder SIGN_API_KEY)</li>
+                            <li>Rückwärtskompatibilität mit bestehenden Event-Handlern und Plugins erhalten</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>TikTok TTS Engine 500 Fehler behoben</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Komplette Neuimplementierung mit hybridem Endpoint-Ansatz</li>
+                            <li>Automatische Endpoint-Rotation bei Fehlern</li>
+                            <li>Unterstützung für mehrere Response-Formate</li>
+                            <li>Moderner User-Agent (Android 13)</li>
+                        </ul>
+                    </li>
+                    <li><strong>TikTok Connection 504 Timeout behoben</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>fetchRoomInfoOnConnect auf false gesetzt</li>
+                            <li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
+                            <li>Verbesserte Error-Meldungen für Timeouts</li>
+                        </ul>
+                    </li>
+                    <li><strong>Quick Actions Menü nicht aktualisiert</strong> - Menü blieb ausgegraut nach Plugin-Aktivierung</li>
+                    <li><strong>Goals Modal Focus-Problem in Electron</strong> - Modal-Inputs nicht anklickbar behoben</li>
+                    <li><strong>TTS Admin Panel nicht anklickbar in Electron</strong> - Tabs und Buttons reagieren jetzt</li>
+                    <li><strong>Chatango Integration in Electron</strong> - Weißes Fenster-Problem behoben</li>
+                    <li><strong>Sprach-Selector Flaggen</strong> - Flaggen-Icons werden jetzt korrekt angezeigt</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Weather Control Plugin</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
+                            <li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
+                            <li>Permission-basierte Zugriffskontrolle</li>
+                            <li>Flow-Action-Support für IFTTT-Automatisierung</li>
+                            <li>Gift-basierte automatische Trigger</li>
+                        </ul>
+                    </li>
+                    <li><strong>Auto-Update System</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Launcher prüft beim Start auf Updates</li>
+                            <li>Zeigt aktuelle Version im Splash Screen</li>
+                            <li>Benachrichtigt bei verfügbaren Updates</li>
+                        </ul>
+                    </li>
+                    <li><strong>Direkter Download</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Download jetzt direkt über ltth.app/app/ltth_1.1.0.zip</li>
+                            <li>Keine GitHub-Abhängigkeit mehr für Downloads</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance-Verbesserungen</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>CSS Performance</strong> - will-change, contain, overscroll-behavior Optimierungen</li>
+                    <li><strong>Scroll Performance</strong> - Passive event listeners für besseres Scrollen</li>
+                    <li><strong>Rendering</strong> - Isolierte Rendering mit contain: layout style paint</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.0.9 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.9</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
                 
