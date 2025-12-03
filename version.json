@@ -1,30 +1,8 @@
 {
-  "version": "1.0.10",
-  "releaseDate": "2025-11-25",
+  "version": "1.0.9",
+  "releaseDate": "2025-11-24",
   "status": "beta",
   "changelog": {
-    "1.0.10": {
-      "date": "2025-11-25",
-      "changes": [
-        "NEW: Optional Emoji Stripping for TTS - stripEmojis config option with UI toggle",
-        "NEW: Toaster Mode for Emoji Rain - Performance optimization for low-end PCs",
-        "NEW: Chatango Plugin (WIP) - Integration of Chatango chat tool with settings UI",
-        "NEW: Visual Curve Editor with Color Coding - Color-coded action types for OpenShock patterns",
-        "IMPROVED: Connect Button - Loading state prevents double-clicks with visual feedback",
-        "IMPROVED: Config-Import Plugin - Now visible in UI sidebar with navigation translations",
-        "IMPROVED: Quiz Show - Data persisted to user directory for better management",
-        "IMPROVED: OpenAI Integration - GPT model configuration and TTS functionality improvements",
-        "FIXED: Emoji Rain - Freeze on rapid test button clicks resolved with rate limiting",
-        "FIXED: Visual Pattern Curve Editor - Canvas coordinate mismatch preventing drawing",
-        "FIXED: Visual Pattern Curve Editor - Color coding and recursion bug",
-        "FIXED: GPT-5 Temperature - Parameter error and quiz data persistence",
-        "FIXED: OSC-Bridge UI - CSP violations and i18n redeclaration error",
-        "FIXED: OpenShock Pattern Editor - DOCTYPE declaration to prevent Quirks Mode",
-        "FIXED: Curve Editor - Curve now shows correctly when switching action types",
-        "DOCS: Added Chatango plugin documentation",
-        "DOCS: Navigation translations for config-import (EN, DE, ES, FR)"
-      ]
-    },
     "1.0.9": {
       "date": "2025-11-24",
       "changes": [
