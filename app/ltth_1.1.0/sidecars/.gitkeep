@@ -1,8 +1,0 @@
-# This directory contains sidecar binaries
-# Binaries are built separately and placed here for packaging
-
-# Expected files:
-# - ltth-ai-engine-win32-x64.exe
-# - ltth-ai-engine-darwin-x64
-# - ltth-ai-engine-darwin-arm64
-# - ltth-ai-engine-linux-x64
