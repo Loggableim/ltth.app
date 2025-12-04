@@ -103,31 +103,31 @@
     <div class="docs-layout">
         <aside class="docs-sidebar">
             <div class="docs-search">
-                <input type="text" placeholder="Dokumentation durchsuchen..." class="search-input">
+                <input type="text" placeholder="Search documentation..." class="search-input">
             </div>
             <nav class="docs-nav">
                 <div class="docs-nav-section">
-                    <h3>Erste Schritte</h3>
+                    <h3>Getting Started</h3>
                     <ul>
-                        <li><a href="#introduction" class="active">Einführung</a></li>
+                        <li><a href="#introduction" class="active">Introduction</a></li>
                         <li><a href="#installation">Installation & Setup</a></li>
                         <li><a href="#quick-start">Quick Start</a></li>
-                        <li><a href="#configuration">Konfiguration</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
                     </ul>
                 </div>
                 <div class="docs-nav-section">
                     <h3>Features</h3>
                     <ul>
-                        <li><a href="#tiktok-connection">TikTok LIVE Verbindung</a></li>
+                        <li><a href="#tiktok-connection">TikTok LIVE Connection</a></li>
                         <li><a href="#tts">Text-to-Speech</a></li>
-                        <li><a href="#alerts">Alert-System</a></li>
+                        <li><a href="#alerts">Alert System</a></li>
                         <li><a href="#soundboard">Soundboard</a></li>
-                        <li><a href="#flows">Event-Automation (Flows)</a></li>
+                        <li><a href="#flows">Event Automation (Flows)</a></li>
                         <li><a href="#goals">Goals & Overlays</a></li>
                     </ul>
                 </div>
                 <div class="docs-nav-section">
-                    <h3>Integrationen</h3>
+                    <h3>Integrations</h3>
                     <ul>
                         <li><a href="#obs">OBS Studio</a></li>
                         <li><a href="#vrchat">VRChat OSC</a></li>
@@ -135,11 +135,11 @@
                     </ul>
                 </div>
                 <div class="docs-nav-section">
-                    <h3>Entwickler</h3>
+                    <h3>Developer</h3>
                     <ul>
-                        <li><a href="#architecture">Architektur</a></li>
-                        <li><a href="#plugin-api">Plugin-API</a></li>
-                        <li><a href="#api-reference">REST-API</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#plugin-api">Plugin API</a></li>
+                        <li><a href="#api-reference">REST API</a></li>
                         <li><a href="#troubleshooting">Troubleshooting</a></li>
                     </ul>
                 </div>
@@ -148,418 +148,418 @@
 
         <main class="docs-content">
             <article id="introduction">
-                <h1>Willkommen bei PupCid's Little TikTok Helper</h1>
-                <p>Diese Dokumentation hilft dir, das Tool optimal zu nutzen und alle Features kennenzulernen.</p>
+                <h1>Welcome to PupCid's Little TikTok Helper</h1>
+                <p>This documentation helps you get the most out of the tool and learn all its features.</p>
                 
-                <h2>Was ist ltth.app?</h2>
-                <p><strong>PupCid's Little TikTok Helper</strong> ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.</p>
+                <h2>What is ltth.app?</h2>
+                <p><strong>PupCid's Little TikTok Helper</strong> is a professional Open Source tool for TikTok LIVE streaming with extensive features for content creators. The tool provides complete integration of TikTok LIVE events into OBS Studio with overlays, alerts, Text-to-Speech, soundboard and event automation.</p>
                 
-                <h2>Hauptfunktionen</h2>
+                <h2>Main Features</h2>
                 <ul>
-                    <li><strong>Echtzeit-TikTok LIVE Integration:</strong> Empfange Gifts, Comments, Follows, Shares und Likes in Echtzeit</li>
-                    <li><strong>Text-to-Speech:</strong> 75+ TikTok-Stimmen & 30+ Google Cloud-Stimmen</li>
-                    <li><strong>Alert-System:</strong> Anpassbare Alerts für alle Event-Typen</li>
-                    <li><strong>Soundboard:</strong> 100.000+ Sounds via MyInstants-Integration</li>
-                    <li><strong>Event-Automation (Flows):</strong> Wenn-Dann-Automatisierungen ohne Code</li>
-                    <li><strong>OBS-Integration:</strong> Transparentes Full-HD-Overlay für Streams</li>
-                    <li><strong>Plugin-System:</strong> 7+ vorinstallierte Plugins, erweiterbar</li>
-                    <li><strong>100% Lokal & Open Source:</strong> Keine Cloud, keine Login-Daten erforderlich</li>
+                    <li><strong>Real-time TikTok LIVE Integration:</strong> Receive Gifts, Comments, Follows, Shares and Likes in real-time</li>
+                    <li><strong>Text-to-Speech:</strong> 75+ TikTok voices & 30+ Google Cloud voices</li>
+                    <li><strong>Alert System:</strong> Customizable alerts for all event types</li>
+                    <li><strong>Soundboard:</strong> 100,000+ sounds via MyInstants integration</li>
+                    <li><strong>Event Automation (Flows):</strong> If-Then automations without code</li>
+                    <li><strong>OBS Integration:</strong> Transparent Full-HD overlay for streams</li>
+                    <li><strong>Plugin System:</strong> 7+ pre-installed plugins, extensible</li>
+                    <li><strong>100% Local & Open Source:</strong> No cloud, no login credentials required</li>
                 </ul>
 
-                <h2>Für wen ist das Tool?</h2>
+                <h2>Who is this tool for?</h2>
                 <ul>
-                    <li>TikTok LIVE Streamer - Professionelle Overlays und Alerts</li>
-                    <li>Content Creator - Event-Automatisierung und Interaktivität</li>
-                    <li>VRChat Streamer - OSC-Integration für Avatar-Steuerung</li>
-                    <li>Multi-Guest Streamer - VDO.Ninja Integration für Interviews</li>
-                    <li>Entwickler - Modulares Plugin-System zum Erweitern</li>
+                    <li>TikTok LIVE Streamers - Professional overlays and alerts</li>
+                    <li>Content Creators - Event automation and interactivity</li>
+                    <li>VRChat Streamers - OSC integration for avatar control</li>
+                    <li>Multi-Guest Streamers - VDO.Ninja integration for interviews</li>
+                    <li>Developers - Modular plugin system for extending</li>
                 </ul>
             </article>
 
             <article id="installation">
                 <h1>Installation & Setup</h1>
-                <p>Die Installation von PupCid's Little TikTok Helper ist einfach und schnell.</p>
+                <p>Installing PupCid's Little TikTok Helper is simple and fast.</p>
                 
-                <h2>Systemanforderungen</h2>
+                <h2>System Requirements</h2>
                 <ul>
-                    <li><strong>Betriebssystem:</strong> Windows 10/11 (64-bit)</li>
-                    <li><strong>Node.js:</strong> 18.0.0 - 23.x (wird automatisch installiert)</li>
-                    <li><strong>RAM:</strong> Mindestens 4 GB empfohlen</li>
-                    <li><strong>Festplatte:</strong> 500 MB freier Speicherplatz</li>
+                    <li><strong>Operating System:</strong> Windows 10/11 (64-bit)</li>
+                    <li><strong>Node.js:</strong> 18.0.0 - 23.x (installed automatically)</li>
+                    <li><strong>RAM:</strong> At least 4 GB recommended</li>
+                    <li><strong>Disk Space:</strong> 500 MB free space</li>
                 </ul>
                 
                 <h2>Installation</h2>
                 <ol>
-                    <li><strong>Download:</strong> Lade <code>setup.exe</code> von <a href="/setup.exe">ltth.app/setup.exe</a> herunter</li>
-                    <li><strong>Installation ausführen:</strong> Doppelklick auf setup.exe und folge dem Installations-Assistenten</li>
-                    <li><strong>Node.js:</strong> Wird automatisch mitinstalliert falls nicht vorhanden</li>
-                    <li><strong>Server starten:</strong> Das Tool startet automatisch nach der Installation</li>
-                    <li><strong>Dashboard öffnen:</strong> Browser öffnet sich automatisch auf <code>http://localhost:3000</code></li>
+                    <li><strong>Download:</strong> Download <code>setup.exe</code> from <a href="/download-en.html">ltth.app/download</a></li>
+                    <li><strong>Run Installation:</strong> Double-click setup.exe and follow the installation wizard</li>
+                    <li><strong>Node.js:</strong> Is automatically installed if not present</li>
+                    <li><strong>Start Server:</strong> The tool starts automatically after installation</li>
+                    <li><strong>Open Dashboard:</strong> Browser opens automatically at <code>http://localhost:3000</code></li>
                 </ol>
 
-                <h2>Manuelle Installation (für Entwickler)</h2>
-                <pre><code># Repository klonen
+                <h2>Manual Installation (for Developers)</h2>
+                <pre><code># Clone repository
 git clone https://github.com/Loggableim/ltth.app.git
 cd ltth.app
 
-# Dependencies installieren
+# Install dependencies
 npm install
 
-# Server starten
+# Start server
 node launch.js
 
-# Oder mit Launcher-Skript:
+# Or with launcher script:
 # Windows: start.bat
 # Linux/macOS: ./start.sh</code></pre>
             </article>
 
             <article id="quick-start">
                 <h1>Quick Start</h1>
-                <p>In 3 Schritten zum professionellen TikTok LIVE Stream!</p>
+                <p>Get a professional TikTok LIVE stream in 3 steps!</p>
                 
-                <h2>Schritt 1: Mit TikTok LIVE verbinden</h2>
+                <h2>Step 1: Connect to TikTok LIVE</h2>
                 <ol>
-                    <li>Öffne das Dashboard auf <code>http://localhost:3000</code></li>
-                    <li>Gib deinen TikTok-Username ein (ohne @)</li>
-                    <li>Klicke auf "Connect to TikTok LIVE"</li>
-                    <li>Warte auf grünen Status "Connected"</li>
+                    <li>Open the Dashboard at <code>http://localhost:3000</code></li>
+                    <li>Enter your TikTok username (without @)</li>
+                    <li>Click "Connect to TikTok LIVE"</li>
+                    <li>Wait for green status "Connected"</li>
                 </ol>
-                <p><strong>Wichtig:</strong> Du musst bereits LIVE sein auf TikTok, damit die Verbindung funktioniert.</p>
+                <p><strong>Important:</strong> You must already be LIVE on TikTok for the connection to work.</p>
 
-                <h2>Schritt 2: OBS einrichten</h2>
+                <h2>Step 2: Set up OBS</h2>
                 <ol>
-                    <li>Öffne OBS Studio</li>
-                    <li>Füge eine neue Browser-Source hinzu</li>
+                    <li>Open OBS Studio</li>
+                    <li>Add a new Browser Source</li>
                     <li>URL: <code>http://localhost:3000/overlay</code></li>
-                    <li>Breite: 1920, Höhe: 1080</li>
-                    <li>Aktiviere "Shutdown source when not visible" für Performance</li>
+                    <li>Width: 1920, Height: 1080</li>
+                    <li>Enable "Shutdown source when not visible" for performance</li>
                 </ol>
 
-                <h2>Schritt 3: Features konfigurieren</h2>
+                <h2>Step 3: Configure Features</h2>
                 <ul>
-                    <li><strong>TTS:</strong> Dashboard → TTS → Stimme auswählen → "Auto-TTS für Chat" aktivieren</li>
-                    <li><strong>Alerts:</strong> Dashboard → Alerts → Event-Typ auswählen → Sound und Text konfigurieren</li>
-                    <li><strong>Goals:</strong> Dashboard → Goals → Ziel setzen → Style anpassen</li>
-                    <li><strong>Flows:</strong> Dashboard → Flows → "New Flow" → Trigger und Actions definieren</li>
+                    <li><strong>TTS:</strong> Dashboard → TTS → Select voice → Enable "Auto-TTS for Chat"</li>
+                    <li><strong>Alerts:</strong> Dashboard → Alerts → Select event type → Configure sound and text</li>
+                    <li><strong>Goals:</strong> Dashboard → Goals → Set goal → Customize style</li>
+                    <li><strong>Flows:</strong> Dashboard → Flows → "New Flow" → Define trigger and actions</li>
                 </ul>
 
-                <p><strong>Fertig!</strong> 🎉 Dein Stream ist jetzt professionell aufgesetzt.</p>
+                <p><strong>Done!</strong> 🎉 Your stream is now professionally set up.</p>
             </article>
 
             <article id="configuration">
-                <h1>Konfiguration</h1>
-                <p>Passe ltth.app an deine Bedürfnisse an mit umfangreichen Konfigurationsoptionen.</p>
+                <h1>Configuration</h1>
+                <p>Customize ltth.app to your needs with extensive configuration options.</p>
                 
-                <h2>Dashboard-Zugriff</h2>
-                <p>Nach dem Start öffnet sich das Dashboard automatisch unter:</p>
+                <h2>Dashboard Access</h2>
+                <p>After starting, the dashboard opens automatically at:</p>
                 <pre><code>http://localhost:3000</code></pre>
                 
-                <h2>Grundeinstellungen</h2>
+                <h2>Basic Settings</h2>
                 <ul>
-                    <li><strong>TikTok Username:</strong> Dein TikTok-Benutzername (ohne @)</li>
-                    <li><strong>Sprache:</strong> Deutsch oder Englisch</li>
-                    <li><strong>Theme:</strong> Hell, Dunkel oder System</li>
-                    <li><strong>Server Port:</strong> Standard 3000 (änderbar)</li>
+                    <li><strong>TikTok Username:</strong> Your TikTok username (without @)</li>
+                    <li><strong>Language:</strong> German or English</li>
+                    <li><strong>Theme:</strong> Light, Dark or System</li>
+                    <li><strong>Server Port:</strong> Default 3000 (changeable)</li>
                 </ul>
 
-                <h2>Profile</h2>
-                <p>Erstelle mehrere Profile für verschiedene Streaming-Setups:</p>
+                <h2>Profiles</h2>
+                <p>Create multiple profiles for different streaming setups:</p>
                 <ul>
-                    <li>Verschiedene TikTok-Accounts</li>
-                    <li>Unterschiedliche Alert-Konfigurationen</li>
-                    <li>Separate Soundboards</li>
-                    <li>Individuelle Flow-Automationen</li>
+                    <li>Different TikTok accounts</li>
+                    <li>Different alert configurations</li>
+                    <li>Separate soundboards</li>
+                    <li>Individual flow automations</li>
                 </ul>
 
                 <h2>Backup & Restore</h2>
-                <p>Sichere deine Konfiguration regelmäßig:</p>
+                <p>Regularly backup your configuration:</p>
                 <ol>
                     <li>Dashboard → Settings → Backup</li>
-                    <li>Klick auf "Create Backup"</li>
-                    <li>ZIP-Datei wird heruntergeladen</li>
-                    <li>Zum Wiederherstellen: "Restore from Backup"</li>
+                    <li>Click "Create Backup"</li>
+                    <li>ZIP file will be downloaded</li>
+                    <li>To restore: "Restore from Backup"</li>
                 </ol>
             </article>
 
             <article id="tiktok-connection">
-                <h1>TikTok LIVE Verbindung</h1>
-                <p>Echtzeit-Verbindung zu deinem TikTok LIVE-Stream ohne Login-Daten.</p>
+                <h1>TikTok LIVE Connection</h1>
+                <p>Real-time connection to your TikTok LIVE stream without login credentials.</p>
                 
-                <h2>Verbindung herstellen</h2>
+                <h2>Establishing Connection</h2>
                 <ol>
-                    <li>Öffne Dashboard auf <code>http://localhost:3000</code></li>
-                    <li>Gib deinen TikTok-Username ein (ohne @)</li>
-                    <li>Klicke "Connect to TikTok LIVE"</li>
-                    <li>Du musst bereits LIVE sein auf TikTok</li>
-                    <li>Warte auf grünen Status "Connected"</li>
+                    <li>Open Dashboard at <code>http://localhost:3000</code></li>
+                    <li>Enter your TikTok username (without @)</li>
+                    <li>Click "Connect to TikTok LIVE"</li>
+                    <li>You must already be LIVE on TikTok</li>
+                    <li>Wait for green status "Connected"</li>
                 </ol>
                 
-                <h2>Empfangene Events</h2>
+                <h2>Received Events</h2>
                 <ul>
-                    <li><strong>Gifts:</strong> Geschenke mit Coins, Combo-Tracking, Gift-Katalog</li>
-                    <li><strong>Chat:</strong> Nachrichten mit Profilbildern und Badges</li>
-                    <li><strong>Follows:</strong> Neue Follower mit Follow-Role-Tracking</li>
-                    <li><strong>Shares:</strong> Stream-Shares mit Nutzerinformationen</li>
-                    <li><strong>Likes:</strong> Like-Events mit Like-Counts</li>
-                    <li><strong>Subscriptions:</strong> Subscriber mit Tier-Levels</li>
+                    <li><strong>Gifts:</strong> Gifts with coins, combo tracking, gift catalog</li>
+                    <li><strong>Chat:</strong> Messages with profile pictures and badges</li>
+                    <li><strong>Follows:</strong> New followers with follow role tracking</li>
+                    <li><strong>Shares:</strong> Stream shares with user information</li>
+                    <li><strong>Likes:</strong> Like events with like counts</li>
+                    <li><strong>Subscriptions:</strong> Subscribers with tier levels</li>
                 </ul>
 
-                <h2>Event-Anzeige</h2>
-                <p>Alle Events werden in Echtzeit angezeigt:</p>
+                <h2>Event Display</h2>
+                <p>All events are displayed in real-time:</p>
                 <ul>
-                    <li><strong>Event Log:</strong> Chronologische Liste aller Events</li>
-                    <li><strong>Statistics:</strong> Live-Statistiken (Total Coins, Followers, etc.)</li>
-                    <li><strong>Top Gifters:</strong> Leaderboard der Top-Spender</li>
+                    <li><strong>Event Log:</strong> Chronological list of all events</li>
+                    <li><strong>Statistics:</strong> Live statistics (Total Coins, Followers, etc.)</li>
+                    <li><strong>Top Gifters:</strong> Leaderboard of top donors</li>
                 </ul>
 
                 <h2>Auto-Reconnect</h2>
-                <p>Bei Verbindungsabbruch erfolgt automatischer Reconnect:</p>
+                <p>Automatic reconnect on connection loss:</p>
                 <ul>
-                    <li>Maximale Reconnect-Versuche: 10</li>
-                    <li>Wartezeit zwischen Versuchen: 5 Sekunden</li>
-                    <li>Konfigurierbar in Settings</li>
+                    <li>Maximum reconnect attempts: 10</li>
+                    <li>Wait time between attempts: 5 seconds</li>
+                    <li>Configurable in Settings</li>
                 </ul>
 
                 <h2>Troubleshooting</h2>
-                <p><strong>Verbindung schlägt fehl:</strong></p>
+                <p><strong>Connection fails:</strong></p>
                 <ul>
-                    <li>Stelle sicher, dass du bereits LIVE bist</li>
-                    <li>Username muss korrekt sein (ohne @)</li>
-                    <li>Prüfe Firewall/Antivirus-Einstellungen</li>
-                    <li>Versuche es nach 30 Sekunden erneut</li>
+                    <li>Make sure you are already LIVE</li>
+                    <li>Username must be correct (without @)</li>
+                    <li>Check firewall/antivirus settings</li>
+                    <li>Try again after 30 seconds</li>
                 </ul>
             </article>
 
             <article id="tts">
                 <h1>Text-to-Speech (TTS)</h1>
-                <p>Professionelles TTS-System mit über 100 Stimmen für Chat-Nachrichten und Alerts.</p>
+                <p>Professional TTS system with over 100 voices for chat messages and alerts.</p>
                 
-                <h2>Verfügbare Stimmen</h2>
-                <h3>TikTok Voices (Kostenlos)</h3>
-                <p>75+ TikTok-Stimmen ohne API-Key:</p>
+                <h2>Available Voices</h2>
+                <h3>TikTok Voices (Free)</h3>
+                <p>75+ TikTok voices without API key:</p>
                 <ul>
-                    <li><strong>Englisch:</strong> US Female, US Male, UK Female, Australian, etc.</li>
-                    <li><strong>Deutsch:</strong> Männlich und Weiblich</li>
+                    <li><strong>English:</strong> US Female, US Male, UK Female, Australian, etc.</li>
+                    <li><strong>German:</strong> Male and Female</li>
                     <li><strong>Character Voices:</strong> Ghostface, C-3PO, Stitch, Chewbacca</li>
                     <li><strong>Singing Voices:</strong> Singing Female, Singing Male</li>
                 </ul>
 
                 <h3>Google Cloud Voices (Premium)</h3>
-                <p>30+ Google Cloud-Stimmen mit höchster Qualität (API-Key erforderlich)</p>
+                <p>30+ Google Cloud voices with highest quality (API key required)</p>
 
-                <h2>Auto-TTS für Chat</h2>
-                <p>Automatisches Vorlesen von Chat-Nachrichten:</p>
+                <h2>Auto-TTS for Chat</h2>
+                <p>Automatic reading of chat messages:</p>
                 <ol>
-                    <li>Dashboard → TTS → "Auto-TTS für Chat" aktivieren</li>
-                    <li>Standard-Stimme auswählen</li>
-                    <li>Optional: Blacklist für Wörter/User einrichten</li>
-                    <li>Lautstärke und Geschwindigkeit anpassen</li>
+                    <li>Dashboard → TTS → Enable "Auto-TTS for Chat"</li>
+                    <li>Select default voice</li>
+                    <li>Optional: Set up blacklist for words/users</li>
+                    <li>Adjust volume and speed</li>
                 </ol>
 
                 <h2>User Voice Mapping</h2>
-                <p>Weise bestimmten Usern eigene Stimmen zu:</p>
-                <pre><code>UserA → Ghostface (Horror-Stimme)
+                <p>Assign specific voices to certain users:</p>
+                <pre><code>UserA → Ghostface (Horror voice)
 UserB → German Female
 UserC → Singing Voice</code></pre>
 
-                <h2>Einstellungen</h2>
+                <h2>Settings</h2>
                 <ul>
-                    <li><strong>Lautstärke:</strong> 0% - 200% (Standard: 100%)</li>
-                    <li><strong>Geschwindigkeit:</strong> 0.5x - 2.0x (Standard: 1.0x)</li>
-                    <li><strong>Max. Länge:</strong> Überspringe Nachrichten über X Zeichen</li>
-                    <li><strong>Verzögerung:</strong> Pause zwischen TTS-Nachrichten</li>
+                    <li><strong>Volume:</strong> 0% - 200% (Default: 100%)</li>
+                    <li><strong>Speed:</strong> 0.5x - 2.0x (Default: 1.0x)</li>
+                    <li><strong>Max. Length:</strong> Skip messages over X characters</li>
+                    <li><strong>Delay:</strong> Pause between TTS messages</li>
                 </ul>
 
                 <h2>Blacklist</h2>
-                <p>Blockiere Wörter oder User:</p>
+                <p>Block words or users:</p>
                 <ul>
-                    <li><strong>Wort-Blacklist:</strong> Nachrichten mit bestimmten Wörtern überspringen</li>
-                    <li><strong>User-Blacklist:</strong> Bestimmte User komplett ignorieren</li>
+                    <li><strong>Word Blacklist:</strong> Skip messages with certain words</li>
+                    <li><strong>User Blacklist:</strong> Completely ignore certain users</li>
                 </ul>
 
                 <h2>TTS in Flows</h2>
-                <p>Verwende TTS in Event-Automationen:</p>
+                <p>Use TTS in event automations:</p>
                 <pre><code>Trigger: Gift (Rose)
-Action: TTS "Danke {username} für die Rose!"</code></pre>
+Action: TTS "Thanks {username} for the Rose!"</code></pre>
             </article>
 
             <article id="alerts">
-                <h1>Alert-System</h1>
-                <p>Visuelle und Audio-Benachrichtigungen für TikTok LIVE-Events in deinem OBS-Overlay.</p>
+                <h1>Alert System</h1>
+                <p>Visual and audio notifications for TikTok LIVE events in your OBS overlay.</p>
                 
-                <h2>Alert-Typen</h2>
+                <h2>Alert Types</h2>
                 <ul>
-                    <li><strong>Gift Alerts:</strong> Geschenk-Benachrichtigungen</li>
-                    <li><strong>Follow Alerts:</strong> Neue Follower</li>
-                    <li><strong>Share Alerts:</strong> Stream-Shares</li>
-                    <li><strong>Subscription Alerts:</strong> Neue Subscriber</li>
-                    <li><strong>Like Alerts:</strong> Like-Meilensteine (z.B. jede 100 Likes)</li>
+                    <li><strong>Gift Alerts:</strong> Gift notifications</li>
+                    <li><strong>Follow Alerts:</strong> New followers</li>
+                    <li><strong>Share Alerts:</strong> Stream shares</li>
+                    <li><strong>Subscription Alerts:</strong> New subscribers</li>
+                    <li><strong>Like Alerts:</strong> Like milestones (e.g., every 100 likes)</li>
                 </ul>
 
-                <h2>Alert-Konfiguration</h2>
-                <p>Jeder Alert kann individuell angepasst werden:</p>
+                <h2>Alert Configuration</h2>
+                <p>Each alert can be customized individually:</p>
                 <ul>
-                    <li><strong>Text:</strong> Nachricht mit Variablen wie {username}, {giftName}, {coins}</li>
-                    <li><strong>Sound:</strong> MP3/WAV-Datei oder MyInstants-Sound</li>
-                    <li><strong>Dauer:</strong> Anzeigedauer in Sekunden</li>
+                    <li><strong>Text:</strong> Message with variables like {username}, {giftName}, {coins}</li>
+                    <li><strong>Sound:</strong> MP3/WAV file or MyInstants sound</li>
+                    <li><strong>Duration:</strong> Display duration in seconds</li>
                     <li><strong>Animation:</strong> Slide, Fade, Bounce, etc.</li>
-                    <li><strong>Bild/GIF:</strong> Optional Custom Graphics</li>
+                    <li><strong>Image/GIF:</strong> Optional custom graphics</li>
                 </ul>
 
-                <h2>Template-Variablen</h2>
-                <p>Verwende Platzhalter in Alert-Texten:</p>
-                <pre><code>{username} - Benutzername
-{giftName} - Name des Geschenks
-{coins} - Coin-Wert
-{count} - Combo-Anzahl
-{total} - Gesamt-Coins vom User
-{likeCount} - Aktuelle Like-Anzahl</code></pre>
+                <h2>Template Variables</h2>
+                <p>Use placeholders in alert texts:</p>
+                <pre><code>{username} - Username
+{giftName} - Name of the gift
+{coins} - Coin value
+{count} - Combo count
+{total} - Total coins from user
+{likeCount} - Current like count</code></pre>
 
-                <h2>Beispiel-Konfigurationen</h2>
+                <h2>Example Configurations</h2>
                 <p><strong>Gift Alert:</strong></p>
-                <pre><code>Text: "Danke {username} für {giftName}!"
+                <pre><code>Text: "Thanks {username} for {giftName}!"
 Sound: celebration.mp3
-Dauer: 5 Sekunden
+Duration: 5 seconds
 Animation: Slide from bottom</code></pre>
 
                 <p><strong>Follow Alert:</strong></p>
-                <pre><code>Text: "Willkommen {username}! 🎉"
+                <pre><code>Text: "Welcome {username}! 🎉"
 Sound: welcome.mp3
-Dauer: 4 Sekunden
+Duration: 4 seconds
 Animation: Fade in</code></pre>
 
-                <h2>Alert-Queue</h2>
-                <p>Mehrere Alerts werden nacheinander angezeigt:</p>
+                <h2>Alert Queue</h2>
+                <p>Multiple alerts are displayed one after another:</p>
                 <ul>
-                    <li>Queue-Größe: 50 Alerts (Standard)</li>
-                    <li>Priorität: Subs > Gifts > Follows > Shares > Likes</li>
-                    <li>Ältere Alerts werden verworfen bei Overflow</li>
+                    <li>Queue size: 50 alerts (default)</li>
+                    <li>Priority: Subs > Gifts > Follows > Shares > Likes</li>
+                    <li>Older alerts are discarded on overflow</li>
                 </ul>
 
-                <h2>Test-Funktion</h2>
-                <p>Teste Alerts vor dem Stream:</p>
+                <h2>Test Function</h2>
+                <p>Test alerts before the stream:</p>
                 <ol>
                     <li>Dashboard → Alerts</li>
-                    <li>Event-Typ auswählen</li>
-                    <li>"Test Alert" klicken</li>
-                    <li>Alert erscheint im OBS-Overlay</li>
+                    <li>Select event type</li>
+                    <li>Click "Test Alert"</li>
+                    <li>Alert appears in OBS overlay</li>
                 </ol>
             </article>
 
             <article id="soundboard">
                 <h1>Soundboard</h1>
-                <p>100.000+ Sounds via MyInstants-Integration plus eigene Upload-Möglichkeit.</p>
+                <p>100,000+ sounds via MyInstants integration plus custom upload option.</p>
                 
-                <h2>MyInstants-Integration</h2>
-                <p>Zugriff auf riesige Sound-Library:</p>
+                <h2>MyInstants Integration</h2>
+                <p>Access to huge sound library:</p>
                 <ol>
                     <li>Dashboard → Soundboard → MyInstants</li>
-                    <li>Suchbegriff eingeben (z.B. "applause", "laugh")</li>
-                    <li>Sound-Vorschau mit Play-Button</li>
-                    <li>"Add to Soundboard" zum Importieren</li>
+                    <li>Enter search term (e.g., "applause", "laugh")</li>
+                    <li>Sound preview with play button</li>
+                    <li>"Add to Soundboard" to import</li>
                 </ol>
 
                 <h2>Custom Upload</h2>
-                <p>Eigene Sounds hochladen:</p>
+                <p>Upload your own sounds:</p>
                 <ul>
-                    <li><strong>Formate:</strong> MP3, WAV, OGG</li>
-                    <li><strong>Max. Größe:</strong> 10 MB pro Datei</li>
-                    <li><strong>Empfohlen:</strong> 1-30 Sekunden Dauer</li>
-                    <li><strong>Qualität:</strong> 128-320 kbps (MP3)</li>
+                    <li><strong>Formats:</strong> MP3, WAV, OGG</li>
+                    <li><strong>Max. Size:</strong> 10 MB per file</li>
+                    <li><strong>Recommended:</strong> 1-30 seconds duration</li>
+                    <li><strong>Quality:</strong> 128-320 kbps (MP3)</li>
                 </ul>
 
                 <h2>Gift-to-Sound Mapping</h2>
-                <p>Sounds automatisch bei Gifts abspielen:</p>
+                <p>Play sounds automatically on gifts:</p>
                 <pre><code>Rose → romantic-music.mp3
 Lion → lion-roar.mp3
 Galaxy → space-sound.mp3</code></pre>
 
-                <h2>Event-Sounds</h2>
-                <p>Sounds für verschiedene Events:</p>
+                <h2>Event Sounds</h2>
+                <p>Sounds for various events:</p>
                 <ul>
-                    <li><strong>Follow Sound:</strong> Bei neuem Follower</li>
-                    <li><strong>Subscribe Sound:</strong> Bei Subscriber</li>
-                    <li><strong>Share Sound:</strong> Bei Stream-Share</li>
-                    <li><strong>Like Milestone:</strong> Bei Like-Schwellenwert (z.B. jede 100)</li>
+                    <li><strong>Follow Sound:</strong> On new follower</li>
+                    <li><strong>Subscribe Sound:</strong> On subscriber</li>
+                    <li><strong>Share Sound:</strong> On stream share</li>
+                    <li><strong>Like Milestone:</strong> On like threshold (e.g., every 100)</li>
                 </ul>
 
-                <h2>Sound-Kategorien</h2>
-                <p>Organisiere Sounds in Kategorien:</p>
+                <h2>Sound Categories</h2>
+                <p>Organize sounds in categories:</p>
                 <ul>
-                    <li>Alerts - Benachrichtigungen</li>
-                    <li>Reactions - Reaktionen</li>
-                    <li>Memes - Lustige Sounds</li>
-                    <li>Music - Musikclips</li>
-                    <li>Effects - Soundeffekte</li>
-                    <li>Custom - Eigene Uploads</li>
+                    <li>Alerts - Notifications</li>
+                    <li>Reactions - Reactions</li>
+                    <li>Memes - Funny sounds</li>
+                    <li>Music - Music clips</li>
+                    <li>Effects - Sound effects</li>
+                    <li>Custom - Custom uploads</li>
                 </ul>
 
-                <h2>Favoriten</h2>
-                <p>Markiere häufig genutzte Sounds als Favoriten für schnellen Zugriff.</p>
+                <h2>Favorites</h2>
+                <p>Mark frequently used sounds as favorites for quick access.</p>
 
-                <h2>Lautstärke-Kontrolle</h2>
+                <h2>Volume Control</h2>
                 <ul>
-                    <li><strong>Master-Volume:</strong> 0% - 200% für alle Sounds</li>
-                    <li><strong>Per-Sound-Volume:</strong> Individuelle Lautstärke</li>
-                    <li><strong>Volume Ducking:</strong> Reduziere Sound während TTS</li>
+                    <li><strong>Master Volume:</strong> 0% - 200% for all sounds</li>
+                    <li><strong>Per-Sound Volume:</strong> Individual volume</li>
+                    <li><strong>Volume Ducking:</strong> Reduce sound during TTS</li>
                 </ul>
             </article>
 
             <article id="flows">
-                <h1>Event-Automation (Flows)</h1>
-                <p>"Wenn-Dann"-Automatisierungen ohne Code erstellen.</p>
+                <h1>Event Automation (Flows)</h1>
+                <p>Create "If-Then" automations without code.</p>
                 
-                <h2>Flow-Komponenten</h2>
+                <h2>Flow Components</h2>
                 <ul>
-                    <li><strong>Trigger:</strong> Event das den Flow startet (Gift, Chat, Follow, etc.)</li>
-                    <li><strong>Conditions:</strong> Optionale Bedingungen (z.B. coins >= 100)</li>
-                    <li><strong>Actions:</strong> Was ausgeführt wird (TTS, Alert, OBS, OSC, etc.)</li>
+                    <li><strong>Trigger:</strong> Event that starts the flow (Gift, Chat, Follow, etc.)</li>
+                    <li><strong>Conditions:</strong> Optional conditions (e.g., coins >= 100)</li>
+                    <li><strong>Actions:</strong> What gets executed (TTS, Alert, OBS, OSC, etc.)</li>
                 </ul>
 
-                <h2>Verfügbare Trigger</h2>
+                <h2>Available Triggers</h2>
                 <ul>
-                    <li><strong>Gift:</strong> Geschenk empfangen</li>
-                    <li><strong>Chat:</strong> Chat-Nachricht</li>
-                    <li><strong>Follow:</strong> Neuer Follower</li>
-                    <li><strong>Share:</strong> Stream geteilt</li>
-                    <li><strong>Subscribe:</strong> Neuer Subscriber</li>
-                    <li><strong>Like:</strong> Likes empfangen</li>
+                    <li><strong>Gift:</strong> Gift received</li>
+                    <li><strong>Chat:</strong> Chat message</li>
+                    <li><strong>Follow:</strong> New follower</li>
+                    <li><strong>Share:</strong> Stream shared</li>
+                    <li><strong>Subscribe:</strong> New subscriber</li>
+                    <li><strong>Like:</strong> Likes received</li>
                 </ul>
 
-                <h2>Bedingungen (Conditions)</h2>
-                <p>Operatoren für Bedingungen:</p>
-                <pre><code>== (gleich)
-!= (ungleich)
-> (größer als)
-< (kleiner als)
->= (größer gleich)
-<= (kleiner gleich)
-contains (enthält)
-startsWith (beginnt mit)
-endsWith (endet mit)</code></pre>
+                <h2>Conditions</h2>
+                <p>Operators for conditions:</p>
+                <pre><code>== (equal)
+!= (not equal)
+> (greater than)
+< (less than)
+>= (greater or equal)
+<= (less or equal)
+contains (contains)
+startsWith (starts with)
+endsWith (ends with)</code></pre>
 
-                <h2>Verfügbare Actions</h2>
+                <h2>Available Actions</h2>
                 <ul>
-                    <li><strong>TTS:</strong> Text-to-Speech abspielen</li>
-                    <li><strong>Alert:</strong> Alert anzeigen</li>
-                    <li><strong>Sound:</strong> Sound abspielen</li>
-                    <li><strong>OBS Scene:</strong> OBS-Szene wechseln</li>
-                    <li><strong>OBS Source:</strong> Source ein/ausblenden</li>
-                    <li><strong>VRChat OSC:</strong> Avatar-Steuerung</li>
-                    <li><strong>HTTP Request:</strong> Externe API aufrufen</li>
-                    <li><strong>Delay:</strong> Warten (für Action-Ketten)</li>
-                    <li><strong>Goal Increment:</strong> Ziel-Fortschritt erhöhen</li>
+                    <li><strong>TTS:</strong> Play Text-to-Speech</li>
+                    <li><strong>Alert:</strong> Show alert</li>
+                    <li><strong>Sound:</strong> Play sound</li>
+                    <li><strong>OBS Scene:</strong> Switch OBS scene</li>
+                    <li><strong>OBS Source:</strong> Show/hide source</li>
+                    <li><strong>VRChat OSC:</strong> Avatar control</li>
+                    <li><strong>HTTP Request:</strong> Call external API</li>
+                    <li><strong>Delay:</strong> Wait (for action chains)</li>
+                    <li><strong>Goal Increment:</strong> Increase goal progress</li>
                 </ul>
 
-                <h2>Beispiel-Flows</h2>
+                <h2>Example Flows</h2>
                 
                 <h3>Rose Gift → TTS + Scene Change</h3>
                 <pre><code>Trigger: Gift
 Condition: giftName == "Rose"
 Actions:
-  1. TTS: "Danke {username} für die Rose!"
+  1. TTS: "Thanks {username} for the Rose!"
   2. OBS Scene: "Cam2"
-  3. Delay: 5 Sekunden
+  3. Delay: 5 seconds
   4. OBS Scene: "Main"</code></pre>
 
                 <h3>High Value Gift → Special Alert</h3>
@@ -580,150 +580,150 @@ Actions:
                 <h3>New Follower → Welcome</h3>
                 <pre><code>Trigger: Follow
 Actions:
-  1. TTS: "Willkommen {username}!"
-  2. Alert: "Neuer Follower: {username}"
+  1. TTS: "Welcome {username}!"
+  2. Alert: "New follower: {username}"
   3. Goal: Followers +1</code></pre>
 
-                <h2>Flow-Verwaltung</h2>
+                <h2>Flow Management</h2>
                 <ul>
-                    <li><strong>Enable/Disable:</strong> Flows ein/ausschalten</li>
-                    <li><strong>Test Flow:</strong> Flow testen ohne Live zu sein</li>
-                    <li><strong>Export/Import:</strong> Flows als JSON sichern/teilen</li>
-                    <li><strong>Priorität:</strong> Flow-Reihenfolge festlegen</li>
+                    <li><strong>Enable/Disable:</strong> Turn flows on/off</li>
+                    <li><strong>Test Flow:</strong> Test flow without being live</li>
+                    <li><strong>Export/Import:</strong> Backup/share flows as JSON</li>
+                    <li><strong>Priority:</strong> Set flow order</li>
                 </ul>
 
                 <h2>Best Practices</h2>
                 <ul>
-                    <li>Teste Flows vor dem Stream</li>
-                    <li>Verwende beschreibende Namen</li>
-                    <li>Halte Conditions einfach</li>
-                    <li>Nutze Delays bei OBS-Szenen-Wechseln</li>
-                    <li>Verwende Variablen für dynamische Texte</li>
+                    <li>Test flows before the stream</li>
+                    <li>Use descriptive names</li>
+                    <li>Keep conditions simple</li>
+                    <li>Use delays for OBS scene changes</li>
+                    <li>Use variables for dynamic texts</li>
                 </ul>
             </article>
 
             <article id="goals">
                 <h1>Goals & Overlays</h1>
-                <p>Fortschrittsbalken für Likes, Follower, Subscriptions und Coins mit OBS-Integration.</p>
+                <p>Progress bars for Likes, Followers, Subscriptions and Coins with OBS integration.</p>
                 
-                <h2>Goal-Typen</h2>
+                <h2>Goal Types</h2>
                 <ul>
-                    <li><strong>Likes Goal:</strong> Ziel-Likes mit Echtzeit-Tracking</li>
-                    <li><strong>Followers Goal:</strong> Follower-Ziel</li>
-                    <li><strong>Subscriptions Goal:</strong> Subscriber-Ziel</li>
-                    <li><strong>Coins Goal:</strong> Coin-Spenden-Ziel</li>
-                    <li><strong>Custom Goal:</strong> Benutzerdefinierte Ziele (manuell)</li>
+                    <li><strong>Likes Goal:</strong> Target likes with real-time tracking</li>
+                    <li><strong>Followers Goal:</strong> Follower target</li>
+                    <li><strong>Subscriptions Goal:</strong> Subscriber target</li>
+                    <li><strong>Coins Goal:</strong> Coin donation target</li>
+                    <li><strong>Custom Goal:</strong> User-defined goals (manual)</li>
                 </ul>
 
-                <h2>Konfiguration</h2>
-                <p>Pro Goal einstellbar:</p>
+                <h2>Configuration</h2>
+                <p>Configurable per goal:</p>
                 <ul>
-                    <li><strong>Ziel-Wert:</strong> Anzahl zu erreichender Punkte</li>
-                    <li><strong>Aktueller Wert:</strong> Auto-Update oder manuell</li>
-                    <li><strong>Modus:</strong> Add, Set, Increment</li>
-                    <li><strong>Display-Text:</strong> Template mit {current}, {target}, {percentage}</li>
+                    <li><strong>Target Value:</strong> Number of points to reach</li>
+                    <li><strong>Current Value:</strong> Auto-update or manual</li>
+                    <li><strong>Mode:</strong> Add, Set, Increment</li>
+                    <li><strong>Display Text:</strong> Template with {current}, {target}, {percentage}</li>
                 </ul>
 
                 <h2>Styling</h2>
-                <p>Passe Progress Bars an:</p>
+                <p>Customize progress bars:</p>
                 <ul>
-                    <li><strong>Farben:</strong> Background, Progress, Text</li>
-                    <li><strong>Gradients:</strong> Linear-Gradient-Unterstützung</li>
-                    <li><strong>Größe:</strong> Breite, Höhe, Border-Radius</li>
-                    <li><strong>Animationen:</strong> Fill, Pulse, Shimmer</li>
+                    <li><strong>Colors:</strong> Background, Progress, Text</li>
+                    <li><strong>Gradients:</strong> Linear gradient support</li>
+                    <li><strong>Size:</strong> Width, Height, Border-Radius</li>
+                    <li><strong>Animations:</strong> Fill, Pulse, Shimmer</li>
                 </ul>
 
                 <h2>OBS Browser Source</h2>
-                <p>Zeige Goals in OBS:</p>
+                <p>Show Goals in OBS:</p>
                 <pre><code>URL: http://localhost:3000/overlay/goals
-Breite: 1920
-Höhe: 200
+Width: 1920
+Height: 200
 FPS: 30</code></pre>
 
-                <h2>Milestone-Benachrichtigungen</h2>
-                <p>Alerts bei bestimmten Fortschritts-Prozenten:</p>
-                <pre><code>25% → "Viertel geschafft!"
-50% → "Halbzeit!"
-75% → "Fast da!"
-100% → "🎉 Ziel erreicht!"</code></pre>
+                <h2>Milestone Notifications</h2>
+                <p>Alerts at certain progress percentages:</p>
+                <pre><code>25% → "Quarter done!"
+50% → "Halfway there!"
+75% → "Almost there!"
+100% → "🎉 Goal reached!"</code></pre>
 
-                <h2>Goal-Modi</h2>
+                <h2>Goal Modes</h2>
                 <ul>
-                    <li><strong>Add:</strong> Wert zum aktuellen Fortschritt addieren</li>
-                    <li><strong>Set:</strong> Fortschritt auf bestimmten Wert setzen</li>
-                    <li><strong>Increment:</strong> Um 1 erhöhen</li>
+                    <li><strong>Add:</strong> Add value to current progress</li>
+                    <li><strong>Set:</strong> Set progress to specific value</li>
+                    <li><strong>Increment:</strong> Increase by 1</li>
                 </ul>
 
                 <h2>Auto-Update</h2>
-                <p>Goals automatisch aktualisieren via Flows:</p>
+                <p>Automatically update goals via Flows:</p>
                 <pre><code>Trigger: Follow
 Action: Goal Increment: Followers +1</code></pre>
 
-                <h2>Reset-Optionen</h2>
+                <h2>Reset Options</h2>
                 <ul>
-                    <li><strong>Manueller Reset:</strong> Jederzeit zurücksetzen</li>
-                    <li><strong>Daily Reset:</strong> Täglich um Mitternacht</li>
-                    <li><strong>Stream Start:</strong> Bei Stream-Beginn</li>
-                    <li><strong>Stream End:</strong> Bei Stream-Ende</li>
+                    <li><strong>Manual Reset:</strong> Reset anytime</li>
+                    <li><strong>Daily Reset:</strong> Daily at midnight</li>
+                    <li><strong>Stream Start:</strong> At stream start</li>
+                    <li><strong>Stream End:</strong> At stream end</li>
                 </ul>
             </article>
-                <h1>Architektur</h1>
-                <p>PupCid's Little TikTok Helper basiert auf einer Event-Driven Microservice-Architektur.</p>
+                <h1>Architecture</h1>
+                <p>PupCid's Little TikTok Helper is based on an Event-Driven Microservice architecture.</p>
                 
-                <h2>Technologie-Stack</h2>
+                <h2>Technology Stack</h2>
                 <ul>
                     <li><strong>Backend:</strong> Node.js 18-23, Express 4, Socket.io 4</li>
-                    <li><strong>Datenbank:</strong> SQLite (WAL Mode) mit better-sqlite3</li>
-                    <li><strong>TikTok-Integration:</strong> tiktok-live-connector 2.1.0</li>
-                    <li><strong>OBS-Integration:</strong> obs-websocket-js 5.0.6</li>
-                    <li><strong>OSC-Protokoll:</strong> osc 2.4.5</li>
+                    <li><strong>Database:</strong> SQLite (WAL Mode) with better-sqlite3</li>
+                    <li><strong>TikTok Integration:</strong> tiktok-live-connector 2.1.0</li>
+                    <li><strong>OBS Integration:</strong> obs-websocket-js 5.0.6</li>
+                    <li><strong>OSC Protocol:</strong> osc 2.4.5</li>
                     <li><strong>Frontend:</strong> Bootstrap 5, Vanilla JavaScript</li>
                 </ul>
 
-                <h2>Module</h2>
+                <h2>Modules</h2>
                 <ul>
-                    <li><code>server.js</code> - Haupt-Server mit Express und Socket.io</li>
-                    <li><code>modules/database.js</code> - SQLite-Manager mit WAL-Mode</li>
+                    <li><code>server.js</code> - Main server with Express and Socket.io</li>
+                    <li><code>modules/database.js</code> - SQLite manager with WAL mode</li>
                     <li><code>modules/tiktok.js</code> - TikTok LIVE Connector</li>
-                    <li><code>modules/plugin-loader.js</code> - Plugin-System mit Hot-Loading</li>
-                    <li><code>modules/flows.js</code> - Event-Automation Engine</li>
+                    <li><code>modules/plugin-loader.js</code> - Plugin system with hot-loading</li>
+                    <li><code>modules/flows.js</code> - Event automation engine</li>
                 </ul>
 
-                <p>Weitere Details findest du im <a href="https://github.com/Loggableim/ltth.app/wiki/Architektur" target="_blank">GitHub Wiki</a>.</p>
+                <p>More details in the <a href="https://github.com/Loggableim/ltth.app/wiki/Architecture" target="_blank">GitHub Wiki</a>.</p>
             </article>
 
             <article id="obs">
                 <h1>OBS Studio Integration</h1>
-                <p>Vollständige OBS-Kontrolle mit WebSocket v5 für Szenen, Sources und Overlays.</p>
+                <p>Full OBS control with WebSocket v5 for scenes, sources and overlays.</p>
                 
-                <h2>Voraussetzungen</h2>
+                <h2>Requirements</h2>
                 <ul>
-                    <li><strong>OBS Studio 28.0+</strong> (WebSocket v5 integriert)</li>
-                    <li><strong>WebSocket aktiviert:</strong> Tools → WebSocket Server Settings</li>
-                    <li><strong>Port:</strong> 4455 (Standard)</li>
+                    <li><strong>OBS Studio 28.0+</strong> (WebSocket v5 integrated)</li>
+                    <li><strong>WebSocket enabled:</strong> Tools → WebSocket Server Settings</li>
+                    <li><strong>Port:</strong> 4455 (default)</li>
                 </ul>
 
-                <h2>Verbindung einrichten</h2>
+                <h2>Setting Up Connection</h2>
                 <ol>
-                    <li>OBS öffnen: Tools → WebSocket Server Settings</li>
-                    <li>Enable WebSocket Server aktivieren</li>
+                    <li>Open OBS: Tools → WebSocket Server Settings</li>
+                    <li>Enable WebSocket Server</li>
                     <li>Server Port: 4455</li>
-                    <li>Passwort setzen (optional aber empfohlen)</li>
+                    <li>Set password (optional but recommended)</li>
                     <li>ltth.app: Dashboard → Settings → OBS Integration</li>
                     <li>WebSocket URL: <code>ws://localhost:4455</code></li>
-                    <li>Passwort eingeben (falls gesetzt)</li>
-                    <li>Connect klicken</li>
+                    <li>Enter password (if set)</li>
+                    <li>Click Connect</li>
                 </ol>
 
                 <h2>Browser Source Overlays</h2>
-                <p><strong>Haupt-Overlay (Alle Features):</strong></p>
+                <p><strong>Main Overlay (All Features):</strong></p>
                 <pre><code>URL: http://localhost:3000/overlay
-Breite: 1920
-Höhe: 1080
+Width: 1920
+Height: 1080
 FPS: 30
 ☑ Shutdown source when not visible</code></pre>
 
-                <p><strong>Einzelne Overlays:</strong></p>
+                <p><strong>Individual Overlays:</strong></p>
                 <ul>
                     <li>Alerts: <code>/overlay/alerts</code> (1920x300)</li>
                     <li>Goals: <code>/overlay/goals</code> (1920x200)</li>
@@ -731,110 +731,110 @@ FPS: 30
                     <li>Chat: <code>/overlay/chat</code> (400x800)</li>
                 </ul>
 
-                <h2>Szenen-Steuerung</h2>
-                <p>Wechsle OBS-Szenen automatisch:</p>
+                <h2>Scene Control</h2>
+                <p>Switch OBS scenes automatically:</p>
                 <pre><code>Trigger: Gift (coins >= 1000)
 Actions:
   1. OBS Scene: "Celebration"
-  2. Delay: 5 Sekunden
+  2. Delay: 5 seconds
   3. OBS Scene: "Main"</code></pre>
 
-                <h2>Source-Kontrolle</h2>
-                <p>Zeige/Verstecke Sources:</p>
+                <h2>Source Control</h2>
+                <p>Show/Hide Sources:</p>
                 <pre><code>Trigger: Gift (Rose)
 Actions:
   1. OBS Source: Show "Heart Overlay"
-  2. Delay: 3 Sekunden
+  2. Delay: 3 seconds
   3. OBS Source: Hide "Heart Overlay"</code></pre>
 
-                <h2>Performance-Tipps</h2>
+                <h2>Performance Tips</h2>
                 <ul>
-                    <li>FPS: 30 statt 60 für Browser Sources</li>
-                    <li>"Shutdown when not visible" aktivieren</li>
-                    <li>"Refresh when scene active" aktivieren</li>
-                    <li>Hardware-Beschleunigung in OBS aktivieren</li>
+                    <li>FPS: 30 instead of 60 for browser sources</li>
+                    <li>Enable "Shutdown when not visible"</li>
+                    <li>Enable "Refresh when scene active"</li>
+                    <li>Enable hardware acceleration in OBS</li>
                 </ul>
             </article>
 
             <article id="vrchat">
                 <h1>VRChat OSC Integration</h1>
-                <p>Steuere deinen VRChat-Avatar mit TikTok LIVE-Events über OSC-Protokoll.</p>
+                <p>Control your VRChat avatar with TikTok LIVE events via OSC protocol.</p>
                 
-                <h2>VRChat OSC aktivieren</h2>
+                <h2>Enable VRChat OSC</h2>
                 <ol>
-                    <li>VRChat starten</li>
-                    <li>Action Menu öffnen (R-Taste)</li>
+                    <li>Start VRChat</li>
+                    <li>Open Action Menu (R key)</li>
                     <li>Options → OSC</li>
-                    <li>Enable OSC aktivieren</li>
-                    <li>Port notieren (Standard: 9000)</li>
+                    <li>Enable OSC</li>
+                    <li>Note the port (default: 9000)</li>
                 </ol>
 
-                <h2>ltth.app Konfiguration</h2>
+                <h2>ltth.app Configuration</h2>
                 <ol>
                     <li>Dashboard → Settings → VRChat OSC</li>
                     <li>OSC IP: <code>127.0.0.1</code> (localhost)</li>
                     <li>OSC Port: <code>9000</code></li>
                     <li>Enable VRChat OSC Integration</li>
-                    <li>Connect klicken</li>
+                    <li>Click Connect</li>
                 </ol>
 
-                <h2>Avatar-Parameter</h2>
-                <p>Häufige Avatar-Parameter:</p>
+                <h2>Avatar Parameters</h2>
+                <p>Common avatar parameters:</p>
                 <ul>
-                    <li><strong>Wave:</strong> Winken-Geste (bool/int)</li>
-                    <li><strong>Dance:</strong> Tanz-Animation (bool/int)</li>
-                    <li><strong>Celebrate:</strong> Freude-Animation (bool)</li>
-                    <li><strong>Hearts:</strong> Herz-Partikel spawnen (bool/trigger)</li>
-                    <li><strong>Confetti:</strong> Konfetti-Effekt (bool/trigger)</li>
+                    <li><strong>Wave:</strong> Wave gesture (bool/int)</li>
+                    <li><strong>Dance:</strong> Dance animation (bool/int)</li>
+                    <li><strong>Celebrate:</strong> Celebrate animation (bool)</li>
+                    <li><strong>Hearts:</strong> Spawn heart particles (bool/trigger)</li>
+                    <li><strong>Confetti:</strong> Confetti effect (bool/trigger)</li>
                 </ul>
 
                 <h2>Gift-to-Gesture Mapping</h2>
-                <p>Gifts triggern Avatar-Aktionen:</p>
-                <pre><code>Rose → Hearts-Partikel
-Lion → Dance-Animation
+                <p>Gifts trigger avatar actions:</p>
+                <pre><code>Rose → Heart particles
+Lion → Dance animation
 Galaxy → Celebrate + Fireworks</code></pre>
 
-                <h2>Beispiel-Flows</h2>
+                <h2>Example Flows</h2>
                 
                 <h3>Rose Gift → Hearts</h3>
                 <pre><code>Trigger: Gift
 Condition: giftName == "Rose"
 Actions:
   1. VRChat OSC: /avatar/parameters/Hearts = true
-  2. Delay: 2 Sekunden
+  2. Delay: 2 seconds
   3. VRChat OSC: /avatar/parameters/Hearts = false</code></pre>
 
                 <h3>Follower → Wave</h3>
                 <pre><code>Trigger: Follow
 Actions:
   1. VRChat OSC: /avatar/parameters/Wave = true
-  2. TTS: "Willkommen {username}!"
-  3. Delay: 2 Sekunden
+  2. TTS: "Welcome {username}!"
+  3. Delay: 2 seconds
   4. VRChat OSC: /avatar/parameters/Wave = false</code></pre>
             </article>
 
             <article id="plugin-api">
-                <h1>Plugin-API</h1>
-                <p>Erstelle eigene Plugins für ltth.app mit der Plugin-API.</p>
+                <h1>Plugin API</h1>
+                <p>Create your own plugins for ltth.app with the Plugin API.</p>
                 
-                <h2>Plugin-Struktur</h2>
+                <h2>Plugin Structure</h2>
                 <pre><code>plugins/my-plugin/
 ├── plugin.json       # Metadata
-└── main.js           # Plugin-Klasse</code></pre>
+└── main.js           # Plugin class</code></pre>
 
-                <h2>Beispiel-Plugin</h2>
+                <h2>Example Plugin</h2>
                 <pre><code>class MyPlugin {
     constructor(api) {
         this.api = api;
     }
 
     async init() {
-        // Express-Route registrieren
+        // Register Express route
         this.api.registerRoute('GET', '/status', (req, res) => {
             res.json({ status: 'ok' });
         });
 
-        // TikTok-Event abonnieren
+        // Subscribe to TikTok event
         this.api.registerTikTokEvent('gift', async (data) => {
             this.api.log(`Gift: ${data.giftName} from ${data.username}`);
         });
@@ -847,30 +847,30 @@ Actions:
 
 module.exports = MyPlugin;</code></pre>
 
-                <p>Vollständige Plugin-Dokumentation: <a href="/plugins-en.html">Plugin-System</a></p>
+                <p>Full plugin documentation: <a href="/plugins-en.html">Plugin System</a></p>
             </article>
 
             <article id="troubleshooting">
                 <h1>Troubleshooting</h1>
                 
-                <h2>TikTok-Verbindung schlägt fehl</h2>
+                <h2>TikTok Connection Fails</h2>
                 <ul>
-                    <li>Stelle sicher, dass du bereits LIVE bist auf TikTok</li>
-                    <li>Username muss korrekt sein (ohne @)</li>
-                    <li>Firewall/Antivirus könnte Verbindung blockieren</li>
-                    <li>Port 3000 muss verfügbar sein</li>
+                    <li>Make sure you are already LIVE on TikTok</li>
+                    <li>Username must be correct (without @)</li>
+                    <li>Firewall/Antivirus might be blocking the connection</li>
+                    <li>Port 3000 must be available</li>
                 </ul>
 
-                <h2>Overlay wird nicht angezeigt</h2>
+                <h2>Overlay Not Showing</h2>
                 <ul>
-                    <li>Überprüfe die Browser-Source-URL: <code>http://localhost:3000/overlay</code></li>
-                    <li>Breite: 1920, Höhe: 1080</li>
-                    <li>OBS muss auf demselben PC laufen</li>
-                    <li>Server muss laufen (localhost:3000 erreichbar)</li>
+                    <li>Check browser source URL: <code>http://localhost:3000/overlay</code></li>
+                    <li>Width: 1920, Height: 1080</li>
+                    <li>OBS must be running on the same PC</li>
+                    <li>Server must be running (localhost:3000 reachable)</li>
                 </ul>
 
-                <h2>Weitere Hilfe</h2>
-                <p>Besuche das <a href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&-Troubleshooting" target="_blank">FAQ & Troubleshooting Wiki</a> oder öffne ein <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank">GitHub Issue</a>.</p>
+                <h2>More Help</h2>
+                <p>Visit the <a href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&-Troubleshooting" target="_blank">FAQ & Troubleshooting Wiki</a> or open a <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank">GitHub Issue</a>.</p>
             </article>
         </main>
     </div>
