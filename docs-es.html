@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Documentación completa de PupCid's Little TikTok Helper: Instalación, configuración, referencia API, desarrollo de plugins, FAQ y solución de problemas para streamers de TikTok LIVE.">
+    <title>Documentación - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/docs.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/docs-en.html">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/docs-fr.html">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/docs-es.html">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/docs.html">
+    <link rel="canonical" href="https://ltth.app/docs-es.html">
+    
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/docs.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/index-es.html" class="logo">
+                    <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Alternar navegación">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/index-es.html" class="nav-link">Inicio</a>
+                    <a href="/features-es.html" class="nav-link">Funciones</a>
+                    <a href="/plugins-es.html" class="nav-link">Plugins</a>
+                    <a href="/docs-es.html" class="nav-link active">Docs</a>
+                    <a href="/community-es.html" class="nav-link">Comunidad</a>
+                    <a href="/changelog-es.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap-es.html" class="nav-link">Roadmap</a>
+                    <a href="/faq-es.html" class="nav-link">FAQ</a>
+                    <a href="/support-es.html" class="nav-link">Soporte</a>
+                    <a href="/download-es.html" class="nav-link nav-cta">Descargar</a>
+                                        
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Seleccionar idioma">
+                            <span class="lang-flag">🇪🇸</span>
+                            <span class="lang-text">ES</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/docs.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/docs-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                            <a href="/docs-fr.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇫🇷</span>
+                                <span>Français</span>
+                            </a>
+                            <a href="/docs-es.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇪🇸</span>
+                                <span>Español</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo oscuro">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Beta Notice -->
+    <section class="beta-notice" id="betaNotice">
+        <div class="container">
+            <div class="beta-content">
+                <div class="beta-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="beta-text">
+                    <strong>🚀 Versión <span id="betaVersion">1.1.1</span>:</strong> ¡En desarrollo activo con nuevas funciones! 
+                    Ya completamente funcional para uso en producción. 
+                    Ayúdanos a mejorar:<br>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Reportar bugs</a> 
+                    o <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Sugerir funciones</a>. 
+                    <a href="/roadmap-es.html">Ver roadmap →</a>
+                </div>
+                <button class="beta-close" id="betaClose" aria-label="Cerrar aviso beta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div class="docs-layout">
+        <aside class="docs-sidebar">
+            <div class="docs-search">
+                <input type="text" placeholder="Buscar en la documentación..." class="search-input">
+            </div>
+            <nav class="docs-nav">
+                <div class="docs-nav-section">
+                    <h3>Primeros pasos</h3>
+                    <ul>
+                        <li><a href="#introduction" class="active">Introducción</a></li>
+                        <li><a href="#installation">Instalación y configuración</a></li>
+                        <li><a href="#quick-start">Inicio rápido</a></li>
+                        <li><a href="#configuration">Configuración</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Funciones</h3>
+                    <ul>
+                        <li><a href="#tiktok-connection">Conexión TikTok LIVE</a></li>
+                        <li><a href="#tts">Text-to-Speech</a></li>
+                        <li><a href="#alerts">Sistema de alertas</a></li>
+                        <li><a href="#soundboard">Soundboard</a></li>
+                        <li><a href="#flows">Automatización de eventos (Flows)</a></li>
+                        <li><a href="#goals">Objetivos y Overlays</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Integraciones</h3>
+                    <ul>
+                        <li><a href="#obs">OBS Studio</a></li>
+                        <li><a href="#vrchat">VRChat OSC</a></li>
+                        <li><a href="#vdoninja">VDO.Ninja</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Desarrolladores</h3>
+                    <ul>
+                        <li><a href="#architecture">Arquitectura</a></li>
+                        <li><a href="#plugin-api">API de Plugins</a></li>
+                        <li><a href="#api-reference">REST API</a></li>
+                        <li><a href="#troubleshooting">Solución de problemas</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article id="introduction">
+                <h1>Bienvenido a PupCid's Little TikTok Helper</h1>
+                <p>Esta documentación te ayuda a aprovechar al máximo la herramienta y aprender todas sus funciones.</p>
+                
+                <h2>¿Qué es ltth.app?</h2>
+                <p><strong>PupCid's Little TikTok Helper</strong> es una herramienta profesional Open Source para streaming de TikTok LIVE con amplias funciones para creadores de contenido. La herramienta proporciona integración completa de eventos de TikTok LIVE en OBS Studio con overlays, alertas, Text-to-Speech, soundboard y automatización de eventos.</p>
+                
+                <h2>Funciones principales</h2>
+                <ul>
+                    <li><strong>Integración TikTok LIVE en tiempo real:</strong> Recibe Regalos, Comentarios, Follows, Shares y Likes en tiempo real</li>
+                    <li><strong>Text-to-Speech:</strong> Más de 75 voces TikTok y más de 30 voces Google Cloud</li>
+                    <li><strong>Sistema de alertas:</strong> Alertas personalizables para todos los tipos de eventos</li>
+                    <li><strong>Soundboard:</strong> Más de 100.000 sonidos vía integración MyInstants</li>
+                    <li><strong>Automatización de eventos (Flows):</strong> Automatizaciones Si-Entonces sin código</li>
+                    <li><strong>Integración OBS:</strong> Overlay Full-HD transparente para streams</li>
+                    <li><strong>Sistema de plugins:</strong> Más de 7 plugins preinstalados, extensible</li>
+                    <li><strong>100% Local y Open Source:</strong> Sin nube, sin credenciales de login requeridas</li>
+                </ul>
+
+                <h2>¿Para quién es esta herramienta?</h2>
+                <ul>
+                    <li>Streamers de TikTok LIVE - Overlays y alertas profesionales</li>
+                    <li>Creadores de contenido - Automatización de eventos e interactividad</li>
+                    <li>Streamers de VRChat - Integración OSC para control de avatar</li>
+                    <li>Streamers Multi-Invitado - Integración VDO.Ninja para entrevistas</li>
+                    <li>Desarrolladores - Sistema de plugins modular para extensiones</li>
+                </ul>
+            </article>
+
+            <article id="installation">
+                <h1>Instalación y configuración</h1>
+                <p>Instalar PupCid's Little TikTok Helper es simple y rápido.</p>
+                
+                <h2>Requisitos del sistema</h2>
+                <ul>
+                    <li><strong>Sistema operativo:</strong> Windows 10/11 (64-bit)</li>
+                    <li><strong>Node.js:</strong> 18.0.0 - 23.x (se instala automáticamente)</li>
+                    <li><strong>RAM:</strong> Al menos 4 GB recomendado</li>
+                    <li><strong>Espacio en disco:</strong> 500 MB de espacio libre</li>
+                </ul>
+                
+                <h2>Instalación</h2>
+                <ol>
+                    <li><strong>Descargar:</strong> Descarga <code>setup.exe</code> desde <a href="/download-es.html">ltth.app/download</a></li>
+                    <li><strong>Ejecutar instalación:</strong> Haz doble clic en setup.exe y sigue el asistente de instalación</li>
+                    <li><strong>Node.js:</strong> Se instala automáticamente si no está presente</li>
+                    <li><strong>Iniciar servidor:</strong> La herramienta se inicia automáticamente después de la instalación</li>
+                    <li><strong>Abrir Dashboard:</strong> El navegador se abre automáticamente en <code>http://localhost:3000</code></li>
+                </ol>
+
+                <h2>Instalación manual (para desarrolladores)</h2>
+                <pre><code># Clonar repositorio
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor
+node launch.js
+
+# O con script launcher:
+# Windows: start.bat
+# Linux/macOS: ./start.sh</code></pre>
+            </article>
+
+            <article id="quick-start">
+                <h1>Inicio rápido</h1>
+                <p>¡Consigue un stream de TikTok LIVE profesional en 3 pasos!</p>
+                
+                <h2>Paso 1: Conectar a TikTok LIVE</h2>
+                <ol>
+                    <li>Abre el Dashboard en <code>http://localhost:3000</code></li>
+                    <li>Introduce tu nombre de usuario de TikTok (sin @)</li>
+                    <li>Haz clic en "Conectar a TikTok LIVE"</li>
+                    <li>Espera al estado verde "Conectado"</li>
+                </ol>
+                <p><strong>Importante:</strong> Debes estar ya en LIVE en TikTok para que funcione la conexión.</p>
+
+                <h2>Paso 2: Configurar OBS</h2>
+                <ol>
+                    <li>Abre OBS Studio</li>
+                    <li>Añade una nueva fuente de navegador</li>
+                    <li>URL: <code>http://localhost:3000/overlay</code></li>
+                    <li>Ancho: 1920, Alto: 1080</li>
+                    <li>Activa "Cerrar fuente cuando no esté visible" para rendimiento</li>
+                </ol>
+
+                <h2>Paso 3: Configurar funciones</h2>
+                <ul>
+                    <li><strong>TTS:</strong> Dashboard → TTS → Seleccionar voz → Activar "Auto-TTS para Chat"</li>
+                    <li><strong>Alertas:</strong> Dashboard → Alertas → Seleccionar tipo de evento → Configurar sonido y texto</li>
+                    <li><strong>Objetivos:</strong> Dashboard → Objetivos → Establecer objetivo → Personalizar estilo</li>
+                    <li><strong>Flows:</strong> Dashboard → Flows → "Nuevo Flow" → Definir disparador y acciones</li>
+                </ul>
+
+                <p><strong>¡Listo!</strong> 🎉 Tu stream está ahora configurado profesionalmente.</p>
+            </article>
+
+            <article id="configuration">
+                <h1>Configuración</h1>
+                <p>Personaliza ltth.app según tus necesidades con amplias opciones de configuración.</p>
+                
+                <h2>Acceso al Dashboard</h2>
+                <p>Después de iniciar, el dashboard se abre automáticamente en:</p>
+                <pre><code>http://localhost:3000</code></pre>
+                
+                <h2>Configuración básica</h2>
+                <ul>
+                    <li><strong>Nombre de usuario TikTok:</strong> Tu nombre de usuario de TikTok (sin @)</li>
+                    <li><strong>Idioma:</strong> Alemán, Inglés, Francés o Español</li>
+                    <li><strong>Tema:</strong> Claro, Oscuro o Sistema</li>
+                    <li><strong>Puerto del servidor:</strong> Por defecto 3000 (modificable)</li>
+                </ul>
+
+                <h2>Perfiles</h2>
+                <p>Crea múltiples perfiles para diferentes configuraciones de streaming:</p>
+                <ul>
+                    <li>Diferentes cuentas de TikTok</li>
+                    <li>Diferentes configuraciones de alertas</li>
+                    <li>Soundboards separados</li>
+                    <li>Automatizaciones de flow individuales</li>
+                </ul>
+            </article>
+
+            <article id="tiktok-connection">
+                <h1>Conexión TikTok LIVE</h1>
+                <p>Conexión en tiempo real a tu stream de TikTok LIVE sin credenciales de login.</p>
+                
+                <h2>Establecer conexión</h2>
+                <ol>
+                    <li>Abre el Dashboard en <code>http://localhost:3000</code></li>
+                    <li>Introduce tu nombre de usuario de TikTok (sin @)</li>
+                    <li>Haz clic en "Conectar a TikTok LIVE"</li>
+                    <li>Debes estar ya en LIVE en TikTok</li>
+                    <li>Espera al estado verde "Conectado"</li>
+                </ol>
+                
+                <h2>Eventos recibidos</h2>
+                <ul>
+                    <li><strong>Regalos:</strong> Regalos con monedas, seguimiento de combos, catálogo de regalos</li>
+                    <li><strong>Chat:</strong> Mensajes con fotos de perfil e insignias</li>
+                    <li><strong>Follows:</strong> Nuevos seguidores con seguimiento de rol</li>
+                    <li><strong>Shares:</strong> Comparticiones del stream con información de usuario</li>
+                    <li><strong>Likes:</strong> Eventos de likes con contadores</li>
+                    <li><strong>Suscripciones:</strong> Suscriptores con niveles de tier</li>
+                </ul>
+            </article>
+
+            <article id="tts">
+                <h1>Text-to-Speech (TTS)</h1>
+                <p>Sistema TTS profesional con más de 100 voces para mensajes de chat y alertas.</p>
+                
+                <h2>Voces disponibles</h2>
+                <h3>Voces TikTok (Gratuitas)</h3>
+                <p>Más de 75 voces originales de TikTok incluyendo alemán, inglés, español, francés y muchos más idiomas.</p>
+                
+                <h3>Voces Google Cloud (Opcionales)</h3>
+                <p>Más de 30 voces Google Cloud premium con calidad superior y voces neurales.</p>
+
+                <h2>Configuración</h2>
+                <ol>
+                    <li>Dashboard → TTS</li>
+                    <li>Seleccionar voz predeterminada</li>
+                    <li>Ajustar volumen y velocidad</li>
+                    <li>Activar Auto-TTS para mensajes de chat</li>
+                </ol>
+            </article>
+
+            <article id="alerts">
+                <h1>Sistema de alertas</h1>
+                <p>Alertas visuales y de audio personalizables para todos los tipos de eventos.</p>
+                
+                <h2>Tipos de eventos</h2>
+                <ul>
+                    <li><strong>Regalos:</strong> Alertas para regalos con filtros de monedas</li>
+                    <li><strong>Follows:</strong> Alertas de nuevos seguidores</li>
+                    <li><strong>Shares:</strong> Alertas cuando alguien comparte tu stream</li>
+                    <li><strong>Suscripciones:</strong> Alertas de nuevos suscriptores</li>
+                </ul>
+
+                <h2>Personalización</h2>
+                <ul>
+                    <li>Sonido de alerta personalizado</li>
+                    <li>Imagen/GIF de alerta</li>
+                    <li>Texto con variables ({username}, {coins}, {giftName})</li>
+                    <li>Duración y animaciones</li>
+                </ul>
+            </article>
+
+            <article id="soundboard">
+                <h1>Soundboard</h1>
+                <p>Más de 100.000 sonidos vía integración con MyInstants.</p>
+                
+                <h2>Funciones</h2>
+                <ul>
+                    <li>Búsqueda en la base de datos de MyInstants</li>
+                    <li>Sonidos específicos para regalos</li>
+                    <li>Sonidos de eventos (Follow, Subscribe, Share)</li>
+                    <li>Sistema de umbral de Likes</li>
+                    <li>Favoritos y sonidos recientes</li>
+                </ul>
+            </article>
+
+            <article id="flows">
+                <h1>Automatización de eventos (Flows)</h1>
+                <p>Crea automatizaciones Si-Entonces sin conocimientos de programación.</p>
+                
+                <h2>Tipos de disparadores</h2>
+                <ul>
+                    <li><strong>Regalo:</strong> Cuando se recibe un regalo</li>
+                    <li><strong>Follow:</strong> Cuando alguien te sigue</li>
+                    <li><strong>Share:</strong> Cuando se comparte el stream</li>
+                    <li><strong>Umbral de Likes:</strong> Al alcanzar X likes</li>
+                    <li><strong>Subscribe:</strong> Nueva suscripción</li>
+                    <li><strong>Chat:</strong> Mensaje de chat específico</li>
+                </ul>
+
+                <h2>Tipos de acciones</h2>
+                <ul>
+                    <li><strong>TTS:</strong> Reproducir texto como voz</li>
+                    <li><strong>Alerta:</strong> Mostrar alerta visual</li>
+                    <li><strong>Sonido:</strong> Reproducir sonido</li>
+                    <li><strong>Webhook:</strong> Enviar solicitud HTTP</li>
+                    <li><strong>OBS:</strong> Cambiar escena</li>
+                    <li><strong>Delay:</strong> Esperar X segundos</li>
+                </ul>
+            </article>
+
+            <article id="goals">
+                <h1>Objetivos y Overlays</h1>
+                <p>4 objetivos separados con overlays de fuente de navegador individuales para OBS.</p>
+                
+                <h2>Tipos de objetivos</h2>
+                <ul>
+                    <li><strong>Objetivo de Likes:</strong> Meta de likes del stream</li>
+                    <li><strong>Objetivo de Followers:</strong> Meta de nuevos seguidores</li>
+                    <li><strong>Objetivo de Suscripciones:</strong> Meta de suscriptores</li>
+                    <li><strong>Objetivo de Coins:</strong> Meta de monedas de regalos</li>
+                </ul>
+
+                <h2>URLs de Overlay</h2>
+                <pre><code>Likes:         http://localhost:3000/overlay/goals/likes
+Followers:     http://localhost:3000/overlay/goals/followers
+Suscripciones: http://localhost:3000/overlay/goals/subscriptions
+Coins:         http://localhost:3000/overlay/goals/coins</code></pre>
+            </article>
+
+            <article id="obs">
+                <h1>Integración OBS Studio</h1>
+                <p>Control completo de OBS con WebSocket v5 para escenas, fuentes y overlays.</p>
+                
+                <h2>Requisitos</h2>
+                <ul>
+                    <li><strong>OBS Studio 28.0+</strong> (WebSocket v5 integrado)</li>
+                    <li><strong>WebSocket habilitado:</strong> Herramientas → Configuración del servidor WebSocket</li>
+                    <li><strong>Puerto:</strong> 4455 (por defecto)</li>
+                </ul>
+
+                <h2>Configuración de conexión</h2>
+                <ol>
+                    <li>Abrir OBS: Herramientas → Configuración del servidor WebSocket</li>
+                    <li>Habilitar servidor WebSocket</li>
+                    <li>Puerto del servidor: 4455</li>
+                    <li>Establecer contraseña (opcional pero recomendado)</li>
+                    <li>ltth.app: Dashboard → Configuración → Integración OBS</li>
+                    <li>URL WebSocket: <code>ws://localhost:4455</code></li>
+                    <li>Introducir contraseña (si está configurada)</li>
+                    <li>Hacer clic en Conectar</li>
+                </ol>
+
+                <h2>Overlays de fuente de navegador</h2>
+                <p><strong>Overlay principal (Todas las funciones):</strong></p>
+                <pre><code>URL: http://localhost:3000/overlay
+Ancho: 1920
+Alto: 1080
+FPS: 30
+☑ Cerrar fuente cuando no esté visible</code></pre>
+            </article>
+
+            <article id="vrchat">
+                <h1>Integración VRChat OSC</h1>
+                <p>Controla tu avatar de VRChat con eventos de TikTok LIVE vía protocolo OSC.</p>
+                
+                <h2>Habilitar VRChat OSC</h2>
+                <ol>
+                    <li>Iniciar VRChat</li>
+                    <li>Abrir Menú de Acción (tecla R)</li>
+                    <li>Opciones → OSC</li>
+                    <li>Habilitar OSC</li>
+                    <li>Anotar el puerto (por defecto: 9000)</li>
+                </ol>
+
+                <h2>Configuración ltth.app</h2>
+                <ol>
+                    <li>Dashboard → Configuración → VRChat OSC</li>
+                    <li>IP OSC: <code>127.0.0.1</code> (localhost)</li>
+                    <li>Puerto OSC: <code>9000</code></li>
+                    <li>Habilitar integración VRChat OSC</li>
+                    <li>Hacer clic en Conectar</li>
+                </ol>
+            </article>
+
+            <article id="vdoninja">
+                <h1>Integración VDO.Ninja</h1>
+                <p>Streaming multi-invitados para entrevistas y colaboraciones.</p>
+                
+                <h2>Funciones</h2>
+                <ul>
+                    <li>Gestión de salas con generación de códigos QR</li>
+                    <li>Administración de invitados</li>
+                    <li>Control de diseño (Grid, Spotlight, Custom)</li>
+                    <li>Enlaces directos para invitados</li>
+                </ul>
+            </article>
+
+            <article id="architecture">
+                <h1>Arquitectura</h1>
+                <p>PupCid's Little TikTok Helper está basado en una arquitectura de microservicios orientada a eventos.</p>
+                
+                <h2>Stack tecnológico</h2>
+                <ul>
+                    <li><strong>Backend:</strong> Node.js 18-23, Express 4, Socket.io 4</li>
+                    <li><strong>Base de datos:</strong> SQLite (Modo WAL) con better-sqlite3</li>
+                    <li><strong>Integración TikTok:</strong> tiktok-live-connector 2.1.0</li>
+                    <li><strong>Integración OBS:</strong> obs-websocket-js 5.0.6</li>
+                    <li><strong>Protocolo OSC:</strong> osc 2.4.5</li>
+                    <li><strong>Frontend:</strong> Bootstrap 5, Vanilla JavaScript</li>
+                </ul>
+            </article>
+
+            <article id="plugin-api">
+                <h1>API de Plugins</h1>
+                <p>Crea tus propios plugins para ltth.app con la API de Plugins.</p>
+                
+                <h2>Estructura de plugin</h2>
+                <pre><code>plugins/my-plugin/
+├── plugin.json       # Metadatos
+└── main.js           # Clase del plugin</code></pre>
+
+                <p>Documentación completa de plugins: <a href="/plugins-es.html">Sistema de Plugins</a></p>
+            </article>
+
+            <article id="api-reference">
+                <h1>Referencia REST API</h1>
+                <p>Endpoints API disponibles para integraciones externas.</p>
+                
+                <h2>Endpoints principales</h2>
+                <pre><code>GET  /api/status          - Estado del servidor
+GET  /api/stats           - Estadísticas del stream
+POST /api/tts             - Reproducir TTS
+POST /api/alert           - Activar alerta
+GET  /api/gifts           - Catálogo de regalos</code></pre>
+            </article>
+
+            <article id="troubleshooting">
+                <h1>Solución de problemas</h1>
+                
+                <h2>La conexión TikTok falla</h2>
+                <ul>
+                    <li>Asegúrate de estar ya en LIVE en TikTok</li>
+                    <li>El nombre de usuario debe ser correcto (sin @)</li>
+                    <li>El firewall/antivirus podría estar bloqueando la conexión</li>
+                    <li>El puerto 3000 debe estar disponible</li>
+                </ul>
+
+                <h2>El overlay no se muestra</h2>
+                <ul>
+                    <li>Verificar URL de fuente de navegador: <code>http://localhost:3000/overlay</code></li>
+                    <li>Ancho: 1920, Alto: 1080</li>
+                    <li>OBS debe estar ejecutándose en el mismo PC</li>
+                    <li>El servidor debe estar en ejecución (localhost:3000 accesible)</li>
+                </ul>
+
+                <h2>Más ayuda</h2>
+                <p>Visita el <a href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&-Troubleshooting" target="_blank">Wiki de FAQ y Solución de problemas</a> o abre un <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank">GitHub Issue</a>.</p>
+            </article>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 ltth.app. Todos los derechos reservados.</p>
+                <p class="footer-legal"><a href="/impressum-es.html">Aviso legal</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/docs.js"></script>
+</body>
+</html>
