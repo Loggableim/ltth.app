@@ -1,8 +1,29 @@
 {
-  "version": "1.1.0",
-  "releaseDate": "2025-12-01",
+  "version": "1.1.1",
+  "releaseDate": "2025-12-03",
   "status": "stable",
   "changelog": {
+    "1.1.1": {
+      "date": "2025-12-03",
+      "changes": [
+        "NEW: Leaderboard Plugin v1.2.0 - Multiple OBS Overlay Layouts (Bar, Sidebar, Popup)",
+        "NEW: Hype Mode System - WebSocket events for hype phases with visual effects",
+        "NEW: Progress Bar Visualization - Visual progress bars relative to #1 gifter",
+        "NEW: Auto-Hide Popup Functionality - Configurable auto-hide with smart detection",
+        "NEW: OpenShock Plugin - Gift Event Pipeline Debugging with comprehensive logging",
+        "NEW: OpenShock Plugin - Wildcard Gift Matching for catch-all mappings",
+        "NEW: OpenShock Plugin - Coin Range Mappings for precise event control",
+        "NEW: OpenShock Plugin - Configurable Like Threshold with accumulation",
+        "FIXED: Console Errors - Cloud Sync, Audio System, GPU Detection, Socket.IO timing",
+        "FIXED: Profile Pictures - Extraction helper for TikTok API object structure",
+        "FIXED: OpenShock Gift Event Pipeline - Complete repair of TikTok to OpenShock forwarding",
+        "FIXED: TikTok Diamond Count Extraction - Restored original priority order",
+        "FIXED: System initialization now completes in <400ms instead of 30s timeout",
+        "IMPROVED: OpenShock Pattern UI - Simplified workflow with edit functionality",
+        "IMPROVED: OpenShock Gift Matching - Case-insensitive matching",
+        "IMPROVED: OpenShock Debug Logging - Real-time event logging in UI"
+      ]
+    },
     "1.1.0": {
       "date": "2025-12-01",
       "changes": [
