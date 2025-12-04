@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PupCid's Little TikTok Helper - La solución profesional de streaming para streamers de TikTok LIVE. Eventos en tiempo real, Text-to-Speech con más de 75 voces, Alertas, Soundboard con más de 100.000 sonidos, Objetivos, Flows, sistema de plugins e integración con OBS. Gratuito y Open Source.">
+    <meta name="keywords" content="Herramienta TikTok LIVE, TikTok Helper, Analytics en directo, Herramientas de streaming, Software streamer TikTok, Overlay OBS, TTS TikTok, Alertas TikTok, Soundboard, Automatización de eventos, Plugins TikTok, VRChat OSC, Multi-Cam Switcher, Automatización TikTok LIVE">
+    <meta name="author" content="Loggableim">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="PupCid's Little TikTok Helper - Solución profesional de streaming TikTok LIVE">
+    <meta property="og:description" content="Eventos en tiempo real, Text-to-Speech con más de 75 voces, alertas personalizables, soundboard con más de 100.000 sonidos, sistema de plugins, integración OBS y automatización de eventos para streamers de TikTok LIVE. Gratuito, Open Source y completamente local.">
+    <meta property="og:url" content="https://ltth.app/index-es.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PupCid's Little TikTok Helper - Herramienta de streaming TikTok LIVE">
+    <meta name="twitter:description" content="La solución profesional de streaming para TikTok LIVE. Con eventos en tiempo real, TTS, Alertas, Soundboard, sistema de plugins y más. Gratuito y Open Source.">
+    <meta name="twitter:image" content="https://ltth.app/assets/og-image.png">
+    
+    <title>PupCid's Little TikTok Helper - Solución profesional de streaming TikTok LIVE</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/index-en.html">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/index-fr.html">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/index-es.html">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/">
+    <link rel="canonical" href="https://ltth.app/index-es.html">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "PupCid's Little TikTok Helper",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Windows 10, Windows 11, macOS 10.15, Linux",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+        },
+        "description": "Solución profesional de streaming para streamers de TikTok LIVE con eventos en tiempo real, Text-to-Speech, Alertas, Soundboard, sistema de plugins e integración OBS. Gratuito y Open Source.",
+        "softwareVersion": "2.0.0-beta",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "5.0",
+            "ratingCount": "1"
+        },
+        "creator": {
+            "@type": "Organization",
+            "name": "Loggableim",
+            "url": "https://github.com/Loggableim"
+        },
+        "screenshot": "https://ltth.app/assets/screenshots/dashboard-main.png",
+        "softwareHelp": {
+            "@type": "WebPage",
+            "url": "https://ltth.app/docs-es.html"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Skip to main content (Accessibility) -->
+    <a href="#main-content" class="skip-to-content">Ir al contenido principal</a>
+    
+    <!-- Scroll Progress Bar -->
+    <!-- Automatically created by JavaScript -->
+    
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/index-es.html" class="logo">
+                    <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                
+                <button class="nav-toggle" id="navToggle" aria-label="Alternar navegación">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                
+                <div class="nav-menu" id="navMenu">
+                    <a href="/index-es.html" class="nav-link active">Inicio</a>
+                    <a href="/features-es.html" class="nav-link">Funciones</a>
+                    <a href="/plugins-es.html" class="nav-link">Plugins</a>
+                    <a href="/docs-es.html" class="nav-link">Docs</a>
+                    <a href="/community-es.html" class="nav-link">Comunidad</a>
+                    <a href="/changelog-es.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap-es.html" class="nav-link">Roadmap</a>
+                    <a href="/faq-es.html" class="nav-link">FAQ</a>
+                    <a href="/support-es.html" class="nav-link">Soporte</a>
+                    <a href="/download-es.html" class="nav-link nav-cta">Descargar</a>
+                    
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Seleccionar idioma">
+                            <span class="lang-flag">🇪🇸</span>
+                            <span class="lang-text">ES</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/index.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/index-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                            <a href="/index-fr.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇫🇷</span>
+                                <span>Français</span>
+                            </a>
+                            <a href="/index-es.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇪🇸</span>
+                                <span>Español</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo oscuro">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Beta Notice -->
+    <section class="beta-notice" id="betaNotice">
+        <div class="container">
+            <div class="beta-content">
+                <div class="beta-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="beta-text">
+                    <strong>🚀 Versión <span id="betaVersion">1.1.1</span>:</strong> ¡En desarrollo activo con nuevas funciones! 
+                    Ya completamente funcional para uso en producción. 
+                    Ayúdanos a mejorar:<br>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Reportar bugs</a> 
+                    o <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Sugerir funciones</a>. 
+                    <a href="/roadmap-es.html">Ver roadmap →</a>
+                </div>
+                <button class="beta-close" id="betaClose" aria-label="Cerrar aviso beta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section class="hero" id="main-content">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Solución de streaming TikTok LIVE <span class="hero-highlight">profesional</span>
+                </h1>
+                <p class="hero-description">
+                    PupCid's Little TikTok Helper es la herramienta definitiva para streamers de TikTok LIVE. 
+                    Procesa eventos en tiempo real, utiliza Text-to-Speech con más de 75 voces, crea alertas personalizables, 
+                    reproduce sonidos automáticamente y automatiza tu stream con potentes Flows. 
+                    Sistema de plugins modular, integración OBS, soporte VRChat OSC y mucho más.
+                    Todo completamente local, gratuito y Open Source.
+                </p>
+                <div class="hero-actions">
+                    <a href="/download-es.html" class="btn btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Descargar ahora
+                    </a>
+                    <a href="/features-es.html" class="btn btn-secondary btn-large">
+                        Descubrir funciones
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Gratuito y Open Source</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">Local</div>
+                        <div class="stat-label">Sin dependencia de la nube</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">Tiempo real</div>
+                        <div class="stat-label">Procesamiento de eventos en directo</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <img src="/assets/zwinkern.png" alt="Mascota PupCid guiñando" class="hero-mascot" />
+                <div class="hero-visual-card card-1">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 7l-7 5 7 5V7z"/>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Eventos en tiempo real</div>
+                </div>
+                <div class="hero-visual-card card-2">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Sync en directo</div>
+                </div>
+                <div class="hero-visual-card card-3">
+                    <div class="visual-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
+                    <div class="visual-text">Funciones premium</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Preview -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">¿Por qué ltth.app para tu stream?</h2>
+            <p class="section-subtitle">
+                Funciones de streaming profesionales desarrolladas específicamente para TikTok LIVE
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Conexión TikTok LIVE en tiempo real</h3>
+                    <p class="feature-description">
+                        Conéctate en directo a tu stream de TikTok. Recibe Regalos, Comentarios, Follows, 
+                        Shares y Likes en tiempo real sin retraso. Reconexión automática en caso de pérdida de conexión.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Sistema Text-to-Speech</h3>
+                    <p class="feature-description">
+                        Más de 75 voces TikTok y más de 30 voces Google Cloud. Mapeo de voz específico por usuario, 
+                        TTS automático para el chat, función de lista negra y configuración de volumen/velocidad personalizable.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Sistema de alertas personalizables</h3>
+                    <p class="feature-description">
+                        Crea alertas individuales para todos los tipos de eventos. Soporte Sonido + Texto + Imagen/GIF, 
+                        sistema de plantillas con variables y filtro de monedas mínimas para presentaciones de stream profesionales.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                            <line x1="6" y1="6" x2="6" y2="6"/>
+                            <line x1="6" y1="18" x2="6" y2="18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Soundboard con más de 100.000 sonidos</h3>
+                    <p class="feature-description">
+                        Acceso a la base de datos MyInstants. Sonidos específicos para regalos con iconos, sonidos de eventos para 
+                        Follow/Subscribe/Share, sistema de umbral de Likes y selector de sonidos con búsqueda y favoritos.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Objetivos y Overlays</h3>
+                    <p class="feature-description">
+                        4 objetivos separados (Likes, Followers, Subs, Coins) con overlays de fuente de navegador individuales. 
+                        Estilos, colores, fuentes personalizables y modos automáticos al alcanzar los objetivos para tu integración OBS.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Automatización de eventos (Flows)</h3>
+                    <p class="feature-description">
+                        Automatizaciones Si-Entonces sin programación. 6 tipos de disparadores, 6 tipos de acciones, 
+                        condiciones complejas con 8 operadores. Activa TTS, Alertas, Sonidos, Webhooks y más.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Integración OBS</h3>
+                    <p class="feature-description">
+                        Overlay Full-HD transparente (1920x1080) para tus streams. Configuración HUD por 
+                        Drag & Drop, overlays de objetivos separados y compatibilidad completa con fuentes de navegador.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Sistema de perfiles de usuario</h3>
+                    <p class="feature-description">
+                        Múltiples bases de datos para diferentes configuraciones de streaming. Cambio de perfil, 
+                        función de respaldo y configuraciones separadas para diferentes formatos de stream.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">100% Local y Seguro</h3>
+                    <p class="feature-description">
+                        Todos los datos permanecen en tu ordenador. Sin conexión a la nube, sin login requerido, 
+                        sin recopilación de datos. Open Source y completamente transparente.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+                            <rect x="9" y="9" width="6" height="6"/>
+                            <line x1="9" y1="1" x2="9" y2="4"/>
+                            <line x1="15" y1="1" x2="15" y2="4"/>
+                            <line x1="9" y1="20" x2="9" y2="23"/>
+                            <line x1="15" y1="20" x2="15" y2="23"/>
+                            <line x1="20" y1="9" x2="23" y2="9"/>
+                            <line x1="20" y1="14" x2="23" y2="14"/>
+                            <line x1="1" y1="9" x2="4" y2="9"/>
+                            <line x1="1" y1="14" x2="4" y2="14"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Sistema de plugins</h3>
+                    <p class="feature-description">
+                        Sistema de extensión modular con hot-loading. Más de 7 plugins preinstalados (TTS, Soundboard, Multi-Cam, 
+                        OSC-Bridge, VDO.Ninja, Emoji Rain, Topboard). Crea tus propios plugins con la API Plugin.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Integración VRChat OSC</h3>
+                    <p class="feature-description">
+                        Controla tu avatar VRChat a través del protocolo OSC. Gesto de saludo con Regalos, animación de celebración, 
+                        disparador de baile, efectos Corazones y Confeti. Parámetros OSC personalizados soportados.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section-cta">
+                <a href="/features-es.html" class="btn btn-primary">
+                    Ver todas las funciones
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugin System Section -->
+    <section class="plugin-system">
+        <div class="container">
+            <h2 class="section-title">Sistema de plugins extensible</h2>
+            <p class="section-subtitle">
+                Arquitectura modular con hot-loading y más de 7 plugins preinstalados
+            </p>
+            
+            <div class="plugin-grid">
+                <div class="plugin-card">
+                    <div class="plugin-icon">🎙️</div>
+                    <h3 class="plugin-title">Plugin TTS</h3>
+                    <p class="plugin-description">
+                        Más de 75 voces TikTok y más de 30 voces Google Cloud. Mapeos de voz de usuario, Auto-TTS, filtro lista negra.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🎵</div>
+                    <h3 class="plugin-title">Plugin Soundboard</h3>
+                    <p class="plugin-description">
+                        Más de 100.000 sonidos vía MyInstants. Mapeos de regalos, Sonidos de eventos, sistema de umbral de Likes.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🎥</div>
+                    <h3 class="plugin-title">Multi-Cam Switcher</h3>
+                    <p class="plugin-description">
+                        Controla escenas OBS vía Regalos/Chat. WebSocket v5, comandos Chat, sistema de macros.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🎮</div>
+                    <h3 class="plugin-title">OSC-Bridge</h3>
+                    <p class="plugin-description">
+                        Integración VRChat vía OSC. Control de avatar, comunicación bidireccional, latencia < 50ms.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">👥</div>
+                    <h3 class="plugin-title">Plugin VDO.Ninja</h3>
+                    <p class="plugin-description">
+                        Streaming multi-invitados. Gestión de salas, administración de invitados, control de diseño.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🏆</div>
+                    <h3 class="plugin-title">Plugin Topboard</h3>
+                    <p class="plugin-description">
+                        Top Gifters, Rachas más largas, Donantes recientes con actualizaciones en tiempo real.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🎨</div>
+                    <h3 class="plugin-title">Emoji Rain</h3>
+                    <p class="plugin-description">
+                        Efecto de lluvia de emojis con Regalos. Mapeos Regalo-a-Emoji, velocidad/densidad de animación.
+                    </p>
+                </div>
+                
+                <div class="plugin-card">
+                    <div class="plugin-icon">🔧</div>
+                    <h3 class="plugin-title">Plugins personalizados</h3>
+                    <p class="plugin-description">
+                        Crea tus propios plugins con la API Plugin. Upload ZIP, hot-loading, interfaz Admin.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="section-cta">
+                <a href="/plugins-es.html" class="btn btn-primary">
+                    Explorar el sistema de plugins
+                </a>
+            </div>
+
+            <!-- Plugin Manager Screenshot -->
+            <div class="screenshot-container">
+                <img src="/assets/screenshots/plugins.png" alt="Interfaz del gestor de plugins" />
+            </div>
+        </div>
+    </section>
+
+    <!-- OBS Overlay Screenshot Section -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <h2 class="section-title">Integración Overlay OBS</h2>
+            <p class="section-subtitle">
+                Overlay Full-HD transparente (1920x1080) para streams profesionales
+            </p>
+            <div class="screenshot-container">
+                <img src="/assets/screenshots/overlay-preview.png" alt="Vista previa del overlay OBS" />
+            </div>
+        </div>
+    </section>
+
+    <!-- Developer Features Section -->
+    <section class="developer-features">
+        <div class="container">
+            <h2 class="section-title">Para desarrolladores y usuarios avanzados</h2>
+            <p class="section-subtitle">
+                Open Source, completamente documentado, extensible
+            </p>
+            
+            <div class="dev-features-grid">
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>REST-API y WebSocket</h3>
+                    <p>Documentación API completa. Rutas Express, eventos Socket.io, API Plugin.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <h3>Open Source (MIT)</h3>
+                    <p>Completamente Open Source. Código transparente, desarrollo comunitario, fork-friendly.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h3>Documentación completa</h3>
+                    <p>Wiki con arquitectura, docs plugins, referencia API, FAQ y solución de problemas.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <h3>Arquitectura moderna</h3>
+                    <p>Node.js, Express, Socket.io, SQLite. Event-driven, sistema de plugins modular.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                        </svg>
+                    </div>
+                    <h3>Comunidad GitHub</h3>
+                    <p>Reportes de bugs, solicitudes de funciones, contribuciones bienvenidas. GitHub Issues y Discussions.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                    </div>
+                    <h3>Branding personalizado</h3>
+                    <p>Configurador HUD, alertas personalizadas, sonidos personalizados, estilos, colores y fuentes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Comienza en 3 pasos</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Descarga e Instalación</h3>
+                    <p class="step-description">
+                        Descarga setup.exe e instala la herramienta en tu PC Windows, Mac o Linux. 
+                        Node.js se instala automáticamente si es necesario.
+                    </p>
+                </div>
+                
+                <div class="step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Conéctate a TikTok</h3>
+                    <p class="step-description">
+                        Abre el dashboard, introduce tu nombre de usuario de TikTok e inicia tu stream LIVE. 
+                        La conexión se establece automáticamente.
+                    </p>
+                </div>
+                
+                <div class="step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Configura OBS y Streamea</h3>
+                    <p class="step-description">
+                        Añade la URL de fuente de navegador a OBS y disfruta de funciones de stream 
+                        profesionales con Alertas, TTS y más en tiempo real!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community & Statistics Section -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Comunidad en crecimiento</h2>
+            <p class="section-subtitle">
+                Únete a los streamers de TikTok LIVE de todo el mundo
+            </p>
+            
+            <div class="features-grid" style="max-width: 900px; margin: 3rem auto;">
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        <span id="github-stars">⭐</span>
+                    </div>
+                    <h3 class="feature-title">Stars GitHub</h3>
+                    <p class="feature-description">
+                        Comunidad Open Source en GitHub
+                    </p>
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Ir al repositorio →
+                    </a>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        7+
+                    </div>
+                    <h3 class="feature-title">Plugins</h3>
+                    <p class="feature-description">
+                        Plugins preinstalados, extensibilidad ilimitada
+                    </p>
+                    <a href="/plugins-es.html" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Explorar plugins →
+                    </a>
+                </div>
+                
+                <div class="feature-card" style="text-align: center;">
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem;">
+                        100%
+                    </div>
+                    <h3 class="feature-title">Gratuito</h3>
+                    <p class="feature-description">
+                        Completamente gratuito, sin costes ocultos
+                    </p>
+                    <a href="/download-es.html" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
+                        Descargar ahora →
+                    </a>
+                </div>
+            </div>
+
+            <!-- Testimonials / Use Cases -->
+            <div style="margin-top: 4rem; max-width: 1000px; margin-left: auto; margin-right: auto;">
+                <h3 style="text-align: center; font-size: 1.8rem; margin-bottom: 2rem;">Lo que dicen los streamers</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            Por fin una herramienta de TikTok LIVE que puede hacer todo lo que necesito. ¡Las funciones de Alertas y TTS 
+                            han llevado mis streams a otro nivel!
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                S
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Sarah M.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">Streamer TikTok LIVE</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            ¡El sistema de plugins es brillante! Personalicé el plugin Soundboard y ahora ahorro 
+                            horas de trabajo manual. Perfecto para desarrolladores.
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                M
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Max K.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">Desarrollador y Streamer</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="color: var(--color-primary); font-size: 2rem; margin-bottom: 1rem;">"</div>
+                        <p style="font-style: italic; margin-bottom: 1.5rem; line-height: 1.6;">
+                            100% local y Open Source - exactamente lo que buscaba. Sin dependencia de la nube, 
+                            control total sobre mis datos. ¡Genial!
+                        </p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                                L
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">Laura B.</div>
+                                <div style="color: var(--color-text-secondary); font-size: 0.9rem;">Creadora de contenido</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support the Project Section -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <div style="max-width: 700px; margin: 0 auto; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">❤️</div>
+                <h2 class="section-title">Apoya el proyecto</h2>
+                <p class="section-subtitle" style="margin-bottom: 2.5rem;">
+                    ltth.app es 100% gratuito y Open Source. Puedes apoyar el proyecto de varias maneras:
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2.5rem;">
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">⭐</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Star GitHub</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Dale una estrella al proyecto en GitHub
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Star en GitHub
+                        </a>
+                    </div>
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">💬</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Da tu opinión</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Comparte tus experiencias y sugerencias de mejora
+                        </p>
+                        <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Enviar feedback
+                        </a>
+                    </div>
+                    <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🔧</div>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Contribuye</h3>
+                        <p style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">
+                            Contribuye código o crea tus propios plugins
+                        </p>
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary">
+                            Ir al repositorio
+                        </a>
+                    </div>
+                </div>
+                <p style="color: var(--color-text-secondary); font-size: 0.95rem;">
+                    Cada forma de apoyo ayuda a desarrollar ltth.app y mantenerlo gratuito para todos los streamers. ¡Gracias! 🙏
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <img src="/assets/winken.png" alt="Mascota PupCid saludando" class="cta-mascot" />
+                <h2 class="cta-title">¿Listo para streaming TikTok LIVE profesional?</h2>
+                <p class="cta-description">
+                    Únete a la comunidad creciente que ya ha llevado sus streams al siguiente nivel con PupCid's Little TikTok Helper. 
+                    100% gratuito, Open Source y local.
+                </p>
+                <div class="cta-actions">
+                    <a href="/download-es.html" class="btn btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Descargar ahora
+                    </a>
+                    <a href="/docs-es.html" class="btn btn-secondary btn-large">
+                        Leer la documentación
+                    </a>
+                </div>
+                <p style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.95rem;">
+                    Disponible para Windows, macOS y Linux
+                </p>
+                <div class="cta-links">
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        Repositorio GitHub
+                    </a>
+                    <span>•</span>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">
+                        Reportar un bug
+                    </a>
+                    <span>•</span>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">
+                        Sugerir una función
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTok Helper - La solución profesional de streaming TikTok LIVE.
+                    </p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Producto</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features-es.html">Funciones</a></li>
+                        <li><a href="/plugins-es.html">Plugins</a></li>
+                        <li><a href="/changelog-es.html">Changelog</a></li>
+                        <li><a href="/roadmap-es.html">Roadmap</a></li>
+                        <li><a href="/download-es.html">Descargar</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Recursos</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs-es.html">Documentación</a></li>
+                        <li><a href="/faq-es.html">FAQ</a></li>
+                        <li><a href="/support-es.html">Soporte</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Comunidad</h4>
+                    <ul class="footer-links">
+                        <li><a href="/community-es.html">Hub Comunidad</a></li>
+                        <li><a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Reportar un bug</a></li>
+                        <li><a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Solicitar una función</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2025 ltth.app - PupCid's Little TikTok Helper. Todos los derechos reservados.
+                </p>
+                <p class="footer-legal">
+                    <a href="/impressum-es.html">Aviso legal</a>
+                </p>
+                <p class="footer-credits">
+                    Hecho con <span class="heart">♥</span> por Loggableim
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
