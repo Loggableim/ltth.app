@@ -92,11 +92,116 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.1.0 -->
+            <!-- Version 1.1.1 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.0</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 3, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Dieses Release bringt große Verbesserungen für das Leaderboard Plugin mit neuen OBS Overlay-Layouts, ein umfassendes OpenShock Gift Event Debugging-System und zahlreiche kritische Bugfixes.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Leaderboard Plugin v1.2.0 - OBS Overlay System Extension</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Bar Layout - Horizontale Leiste für oben/unten im Stream (1920x80)</li>
+                            <li>Sidebar Layout - Vertikale Sidebar für rechte Seite (400x1080)</li>
+                            <li>Popup Layout - Temporäres Popup für Highlights (600x700)</li>
+                            <li>Umfangreiche Query-Parameter-Anpassung (Theme, maxEntries, showAvatars, etc.)</li>
+                            <li>Fortschrittsbalken-Visualisierung relativ zum #1 Gifter</li>
+                        </ul>
+                    </li>
+                    <li><strong>Hype Mode System</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Neue WebSocket-Events: leaderboard:hypeStart und leaderboard:hypeEnd</li>
+                            <li>Visuelle Effekte während Hype-Phasen in allen Overlay-Layouts</li>
+                            <li>Konfigurierbares Popup-Verhalten während Hype-Events</li>
+                        </ul>
+                    </li>
+                    <li><strong>Auto-Hide Popup Funktionalität</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Popup erscheint automatisch bei Rangänderungen</li>
+                            <li>Konfigurierbare Auto-Hide Verzögerung (Standard: 10 Sekunden)</li>
+                            <li>Intelligente Erkennung signifikanter Leaderboard-Änderungen</li>
+                        </ul>
+                    </li>
+                    <li><strong>OpenShock Plugin: Gift Event Pipeline Debugging</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Erweitertes Logging entlang der kompletten Event-Pipeline (TikTok → Mapping → OpenShock)</li>
+                            <li>Debug-Endpoint GET /api/openshock/debug/mappings für Mapping-Inspektion</li>
+                            <li>Test-Endpoint POST /api/openshock/test/simulate-gift für Gift-Event Simulation</li>
+                            <li>Vollständige Dokumentation in DEBUGGING_GIFT_EVENTS.md</li>
+                        </ul>
+                    </li>
+                    <li><strong>OpenShock Plugin: Wildcard Gift Matching</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Leerer String oder "*" als giftName matched JEDES Gift</li>
+                            <li>Perfekt für Catch-All Mappings die auf alle Geschenke reagieren</li>
+                            <li>Spezifische Geschenk-Namen haben automatisch Vorrang</li>
+                        </ul>
+                    </li>
+                    <li><strong>OpenShock Plugin: Coin Range Mappings</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Von-Bis Coin-Bereiche für präzise Event-Mappings</li>
+                            <li>Beispiel: 1-99 Coins → 20% Schock, 100-199 Coins → 50% Schock</li>
+                            <li>Verhindert Überlappungen zwischen verschiedenen Coin-Stufen</li>
+                        </ul>
+                    </li>
+                    <li><strong>OpenShock Plugin: Configurable Like Threshold</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Like-Events werden akkumuliert über konfigurierbares Zeitfenster</li>
+                            <li>Minimale Anzahl Likes einstellbar (Standard: 10)</li>
+                            <li>Zeitfenster einstellbar in Sekunden (Standard: 5s)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Console Errors behoben</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Cloud Sync: Unnötige Warnung entfernt wenn UI-Elemente nicht existieren</li>
+                            <li>Audio System: Korruptes MP3 durch valides WAV Format ersetzt</li>
+                            <li>GPU Detection: Auf moderne gl.RENDERER API aktualisiert</li>
+                            <li>Initialization: Socket.IO Ready State Timing korrigiert</li>
+                            <li>System initialisiert jetzt in weniger als 400ms statt 30s Timeout</li>
+                        </ul>
+                    </li>
+                    <li><strong>Profile Pictures</strong> - Extraktions-Helper für TikTok API Objektstruktur hinzugefügt</li>
+                    <li><strong>OpenShock Gift Event Pipeline komplett repariert</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Gift Events werden jetzt korrekt von TikTok → OpenShock weitergeleitet</li>
+                            <li>Mapping-Engine evaluiert Events korrekt</li>
+                            <li>Actions werden ausgeführt wenn Mappings matchen</li>
+                        </ul>
+                    </li>
+                    <li><strong>TikTok Diamond Count Extraction Priority Fixed</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Wiederherstellung der Original-Priorität: gift.diamond_count ZUERST</li>
+                            <li>Behebt "🪙 0" Anzeige-Problem nach vorherigen Updates</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>OpenShock Pattern UI vereinfacht</strong> - Nur noch Custom Patterns, kein komplexer Curve Editor</li>
+                    <li><strong>OpenShock Case-Insensitive Gift Name Matching</strong> - "Rose" matched auch "rose", "ROSE"</li>
+                    <li><strong>OpenShock Debug Log System</strong> - Real-time Event Logging im UI mit Socket.IO Broadcasting</li>
+                    <li><strong>OpenShock Edit Pattern Steps</strong> - Schritte können nachträglich bearbeitet werden</li>
+                    <li><strong>TikTok Gift Event Logging</strong> - Verbesserte Transparenz für Gift-Events während Streaks</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.1.0 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.0</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 1, 2025</p>
                 
