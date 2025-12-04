@@ -1,0 +1,969 @@
+# Changelog
+
+All notable changes to Pup Cid's Little TikTok Helper will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased] - 2025-12-03
+
+### Leaderboard Plugin - v1.2.0 - OBS Overlay System Extension
+
+#### Added
+- **Multiple Overlay Layouts for OBS Integration**
+  - Bar Layout (`/leaderboard/overlays/bar`): Horizontal bar for top/bottom of stream (1920x80)
+  - Sidebar Layout (`/leaderboard/overlays/sidebar`): Vertical sidebar for right side (400x1080)
+  - Popup Layout (`/leaderboard/overlays/popup`): Temporary popup for highlights (600x700)
+  
+- **Hype Mode System**
+  - New WebSocket events: `leaderboard:hypeStart` and `leaderboard:hypeEnd`
+  - API endpoints: `POST /api/plugins/leaderboard/hype-start` and `/hype-end`
+  - Visual effects during hype phase across all overlay layouts
+  - Configurable popup behavior during hype events
+  
+- **Extensive Query Parameter Customization**
+  - `theme`: Select visual theme (neon, elegant, gaming, royal, gradient)
+  - `maxEntries`: Control number of entries displayed
+  - `showAvatars`: Toggle avatar display
+  - `showDelta`: Show score change indicators
+  - `showProgress`: Display progress bars (sidebar only)
+  - `animationIntensity`: Control animation level (off, low, high)
+  - `autoHide`: Auto-hide popup after delay (popup only)
+  - `hideDelay`: Configure auto-hide duration in milliseconds
+  - `showOnHype`: Popup visibility during hype events
+  
+- **Auto-Hide Popup Functionality**
+  - Popup automatically shows on rank changes
+  - Configurable auto-hide delay (default: 10 seconds)
+  - Manual trigger via hype mode events
+  - Smart detection of significant leaderboard changes
+  
+- **Progress Bar Visualization** (Sidebar Layout)
+  - Visual progress bars relative to #1 gifter
+  - Percentage display showing relative contribution
+  - Smooth animations on progress updates
+  
+- **Enhanced Animation System**
+  - Rank change animations with green pulse effect
+  - Staggered entry animations for popup layout
+  - Gold glow animation for #1 position
+  - Theme-specific animation variations
+  
+- **Type Definitions and Documentation**
+  - New `types.js` file with comprehensive JSDoc type definitions
+  - `LeaderboardEntry`, `LeaderboardState`, `LeaderboardOverlayConfig` types
+  - Complete WebSocket event documentation
+  - REST API endpoint reference
+  
+#### Changed
+- Extended main plugin (`main.js`) with new overlay routes
+- Updated README with comprehensive overlay setup guides
+- Enhanced plugin description to highlight multiple layouts
+- Improved error handling and fallback states
+
+#### Technical Details
+- All new overlays use existing WebSocket infrastructure
+- Backward compatible with existing `leaderboard/overlay` route
+- Theme system applies across all layout variants
+- Performance-optimized animations with CSS transitions
+- Transparent backgrounds for perfect OBS integration
+- CSP-compliant implementation (no inline event handlers)
+
+#### Files Added
+- `/app/plugins/leaderboard/overlays/bar.html` - Bar layout HTML
+- `/app/plugins/leaderboard/overlays/bar.js` - Bar layout JavaScript
+- `/app/plugins/leaderboard/overlays/sidebar.html` - Sidebar layout HTML
+- `/app/plugins/leaderboard/overlays/sidebar.js` - Sidebar layout JavaScript
+- `/app/plugins/leaderboard/overlays/popup.html` - Popup layout HTML
+- `/app/plugins/leaderboard/overlays/popup.js` - Popup layout JavaScript
+- `/app/plugins/leaderboard/types.js` - Type definitions and API documentation
+
+#### Files Modified
+- `/app/plugins/leaderboard/main.js` - Added routes and hype event endpoints
+- `/app/plugins/leaderboard/plugin.json` - Updated version and description
+- `/app/plugins/leaderboard/README.md` - Comprehensive documentation update
+
+---
+
+## [Previous Releases]
+
+
+
+### Fixed
+- **Console Errors** - Fixed multiple console errors and warnings during startup
+  - Cloud Sync: Removed unnecessary warning when UI elements don't exist (graceful degradation)
+  - Audio System: Replaced corrupted MP3 with valid WAV format for audio unlock (fixes media decode error)
+  - GPU Detection: Updated to prefer modern gl.RENDERER API over deprecated WEBGL_debug_renderer_info extension
+  - Initialization: Fixed Socket.IO ready state timing to prevent 30s timeout on page load
+  - Profile Pictures: Added extraction helper for TikTok API object structure (fixes [object Object] in URLs)
+  - System now initializes in <400ms instead of timing out after 30s
+
+### Added
+- **OpenShock Plugin: Comprehensive Gift Event Pipeline Debugging** - Vollständiges Debugging-System für Gift-Events
+  - Enhanced logging entlang der kompletten Event-Pipeline (TikTok → Mapping → OpenShock)
+  - Detaillierte Gift-Event Logs mit Diamonds, Repeat Count, Coins und Streak-Status
+  - Mapping-Engine zeigt Step-by-Step Condition-Checks mit ✅/❌ Indikatoren
+  - Debug-Endpoint GET /api/openshock/debug/mappings für Mapping-Inspektion
+  - Test-Endpoint POST /api/openshock/test/simulate-gift für Gift-Event Simulation
+  - Standalone Test-Script test-gift-event-pipeline.js für Mapping-Engine Tests
+  - Vollständige Dokumentation in DEBUGGING_GIFT_EVENTS.md
+  - Logs zeigen exakte Gründe warum Mappings nicht matchen
+- **OpenShock Plugin: Wildcard Gift Matching** - Unterstützung für "Alle Geschenke" Mappings
+  - Leerer String oder "*" als giftName matched JEDES Gift
+  - Perfekt für Catch-All Mappings die auf alle Geschenke reagieren
+  - Spezifische Geschenk-Namen haben automatisch Vorrang vor Wildcards
+- **TikTok Module: Enhanced Gift Event Logging** - Verbesserte Gift-Event Transparenz
+  - Klare Warnungen wenn Gift-Events während Streaks gefiltert werden
+  - Logging zeigt ob Gift STREAKABLE oder NORMAL ist
+  - Erklärung warum Events nicht an Plugins emitted werden (Streak läuft noch)
+  - Finale Coin-Berechnung wird separat geloggt
+  - Gift Catalog Lookup wird transparent geloggt
+- **OpenShock Plugin: Gift Catalog Fallback** - Automatisches Nachladen fehlender Gift-Werte
+  - Wenn diamondCount im Event = 0, wird Gift-Katalog geprüft
+  - Automatische Wiederherstellung von diamond_count aus Katalog
+  - Klare Logs wenn Katalog-Werte verwendet werden
+  - Warnung wenn Gift neu ist und nicht im Katalog
+
+### Changed
+- **OpenShock Plugin: Case-Insensitive Gift Name Matching** - Groß-/Kleinschreibung ignoriert
+  - "Rose" matched jetzt auch "rose", "ROSE", "RoSe"
+  - Verhindert Probleme durch inkonsistente Schreibweise
+  - Mapping-Engine normalisiert Gift-Namen vor Vergleich
+- **OpenShock Plugin: Improved User ID Extraction** - Bessere Fallback-Kette
+  - Utility-Funktionen _extractUserId() und _extractUsername()
+  - Prüft userId, uniqueId, user.userId in korrekter Reihenfolge
+  - Reduziert Code-Duplikation
+  - Konsistente User-Daten-Extraktion über alle Event-Handler
+- **OpenShock Plugin: Enhanced Security for Debug Endpoints** - Sicherheit für Test-Endpoints
+  - Input-Validierung für /api/openshock/test/simulate-gift
+  - Sanitierung von Strings (max length limits)
+  - Numeric bounds checking für coins, diamonds, repeat count
+  - Debug-Endpoint maskiert sensitive Daten (Device IDs, Pattern IDs)
+  - Whitelist/Blacklist Counts statt echter Usernamen im Debug-Output
+- **Mapping Engine: Better Null Safety** - Sichere Null/Undefined Behandlung
+  - Wildcard-Check prüft auf null/undefined vor .trim()
+  - Verhindert "Cannot read property 'trim' of null" Fehler
+  - Defensive Programmierung für alle Condition-Checks
+- **TikTok Module: Gift Catalog Update Conditional** - Nur Gifts mit Wert speichern
+  - Gift Catalog wird nur aktualisiert wenn diamondCount > 0
+  - Verhindert Überschreiben von validen Katalog-Einträgen mit 0-Werten
+  - Bessere Katalog-Qualität durch Validierung
+
+### Fixed
+- **OpenShock Plugin: Gift Event Pipeline komplett repariert** - Hauptproblem gelöst
+  - Gift Events werden jetzt korrekt von TikTok → OpenShock weitergeleitet
+  - Mapping-Engine evaluiert Events korrekt
+  - Actions werden ausgeführt wenn Mappings matchen
+  - Root Cause: Mangelnde Transparenz, keine Debug-Tools (jetzt behoben)
+- **TikTok Module: Diamond Count Extraction Priority Fixed** - KRITISCHER FIX
+  - Wiederherstellung der Original-Priorität: gift.diamond_count ZUERST
+  - data.diamond_count nur als Fallback (nicht höhere Priorität)
+  - Behebt "🪙 0" Anzeige-Problem nach vorherigen Updates
+  - Gift-Coins werden jetzt wieder korrekt berechnet und angezeigt
+- **TikTok Module: Coin Calculation After Catalog Lookup** - Korrekte Wert-Berechnung
+  - Coins werden NACH Gift-Katalog-Lookup berechnet
+  - Verwendet finalen diamondCount (inklusive Katalog-Werte)
+  - Korrekte Werte in eventData für Plugins
+  - Diamond Count wird aus Katalog nachgeladen wenn im Event fehlend
+- **Mapping Engine: Condition Check Logging** - Debugging-Transparenz
+  - Jeder Condition-Check wird mit Ergebnis geloggt
+  - Mapping-Namen in allen Logs für Kontext
+  - Gift-Name Vergleiche zeigen Expected vs Received
+  - Coin-Range Checks zeigen Min/Max Limits
+  - Cooldown Status wird klar kommuniziert
+- **OpenShock Plugin: UI Debug Log Integration** - Real-time Event Logging im UI
+  - Socket.IO Broadcasting für Gift-Events an UI Debug Log
+  - Debug Log zeigt jetzt Gift-Events in Echtzeit (Name, User, Coins)
+  - Mapping-Matches/Mismatches werden im UI angezeigt
+  - Action-Execution wird geloggt
+  - Fehler werden im Debug Log sichtbar
+  - Neues Socket.IO Event: openshock:debug-log
+  - Like Events zeigen Akkumulations-Fortschritt
+- **OpenShock Plugin: Live Event Log Integration** - Nutzt EventEmitter für Event-Daten
+  - Verwendet registerTikTokEvent() für Event-Registrierung (EventEmitter-based)
+  - Garantiert identische Event-Daten wie Live Event Log im Automations-Dashboard
+  - Funktioniert zuverlässig für Geschenke, Likes und Abonnenten
+  - Einheitliche Event-Pipeline: TikTok → EventEmitter → Dashboard (Socket.IO) & OpenShock
+  - Korrekte Server-seitige Event-Behandlung
+  - Events werden erkannt und verarbeitet
+- **OpenShock Plugin: Configurable Like Threshold** - Einstellbare Like-Schwellenwerte
+  - Like-Events werden akkumuliert über konfigurierbares Zeitfenster
+  - Minimale Anzahl Likes einstellbar (Standard: 10)
+  - Zeitfenster einstellbar in Sekunden (Standard: 5s)
+  - Verhindert Spam durch einzelne Likes
+  - Ein Event wird getriggert wenn Schwellenwert erreicht
+  - UI zeigt Akkumulations-Fortschritt im Debug Log
+  - Settings UI für Konfiguration
+- **OpenShock Plugin: Bug Fixes** - Kritische Fehler behoben
+  - Fixed "saveConfig is not a function" Error in Like Threshold API Endpoint
+  - Korrigiert zu saveData() für korrekte Datenbank-Persistierung
+  - Enhanced Debug Logging für TikTok Event-Empfang
+  - Logs zeigen sofort wenn Events von TikTok empfangen werden
+  - Bessere Diagnostik für Event-Registrierungs-Probleme
+  - Hilft bei Troubleshooting wenn Events nicht ankommen
+  - API Endpoint: POST /api/openshock/config/like-threshold
+  - Auto-Reset Timer nach Zeitfenster-Ablauf
+
+### Removed
+- **OpenShock Plugin: Duplicate Debug Log in Advanced Tab** - UI Bereinigung
+  - Debug Log aus Advanced Tab entfernt (war nicht funktional)
+  - Dashboard Tab Debug Log funktioniert korrekt und zeigt alle Events
+  - Reduziert UI-Verwirrung durch doppelte, nicht-funktionierende Elemente
+  - Verbesserte UX durch Fokus auf funktionales Debug Log
+
+### Documentation
+- **OpenShock: Complete Gift Event Debugging Guide** - DEBUGGING_GIFT_EVENTS.md
+  - Event Pipeline Architektur-Diagramm
+  - Häufige Probleme & Lösungen
+  - Log-Analyse Patterns
+  - Troubleshooting Checkliste
+  - Best Practices für Mappings
+  - Test-Tools Dokumentation
+  
+### Added (Previous Entries)
+- **OpenShock Plugin: Coin Range Mappings** - Von-Bis Coin-Bereiche für präzise Event-Mappings
+  - Neue MaxCoins Bedingung hinzugefügt
+  - UI zeigt Min/Max Coin Felder nebeneinander
+  - Beispiel: 1-99 Coins → 20% Schock, 100-199 Coins → 50% Schock
+  - Verhindert Überlappungen zwischen verschiedenen Coin-Stufen
+  - Leer lassen für keine Obergrenze
+- **OpenShock Plugin: Enhanced Gift Event Logging** - Detailliertes Logging für Gift-Events
+  - Logging wenn Gift-Events empfangen werden
+  - Logging von Gift-Namen und Coin-Werten
+  - Logging von Mapping-Matches/Mismatches
+  - Hilft bei Debugging von nicht funktionierenden Mappings
+  - Gift-Name Vergleiche werden geloggt
+- **OpenShock Plugin: Edit Pattern Steps** - Schritte können bearbeitet werden
+  - Edit button (✏️) für jeden Schritt in der Liste
+  - Bearbeiten lädt Schritt-Werte zurück ins Formular
+  - Schritte können nachträglich angepasst werden
+  - Smooth scroll zum Formular beim Bearbeiten
+- **OpenShock Plugin: Event Mapping Logging** - Debugging für Mappings
+  - Client-side logging of mapping data before sending
+  - Server-side logging of received mapping data
+  - Mapping creation confirmation logging
+  - Full error stack traces in debug mode
+- **OpenShock Plugin: Smart Gift Mapping Priority** - Spezifische Mappings haben Vorrang
+  - Wenn ein Gift ein spezifisches Mapping hat, werden generische Mappings ignoriert
+  - Verhindert doppelte Ausführung (spezifisches Mapping + Catch-all Mapping)
+  - Nur das spezifischste Mapping wird getriggert
+  - Bessere Kontrolle über Gift-Reaktionen
+- **OpenShock Plugin: Debug Log System** - Comprehensive logging for troubleshooting
+  - New "Debug Log" section in Dashboard tab
+  - Real-time logging of pattern operations (save, execute, etc.)
+  - Color-coded log levels (error, warn, info, success, debug)
+  - Verbose mode toggle for detailed debugging
+  - Export debug logs to JSON
+  - Auto-scroll with newest entries first
+  - Logging for pattern save operations (client and server)
+  - Logging for pattern step additions
+  - Max 200 log entries (auto-cleanup)
+- **OpenShock Plugin: Enhanced Pattern Save Logging**
+  - Client-side logging of pattern data before sending
+  - Server-side logging of received pattern data
+  - Step count and step data validation logging
+  - Database save confirmation logging
+  - Full error stack traces in debug mode
+
+### Changed
+- **OpenShock Plugin: Simplified Pattern UI**
+  - Removed preset patterns section (only custom patterns now)
+  - Removed quick template buttons (simplified workflow)
+  - Removed 'sound' step type (not supported by OpenShock API)
+  - Only 3 step types: shock, vibrate, pause
+  - Cleaner, more focused pattern management
+- **OpenShock Plugin: Improved Pattern Save Response**
+  - Server now returns complete pattern object in response
+  - Includes generated ID and all pattern data for verification
+
+### Removed
+- **OpenShock Plugin: Preset Patterns removed**
+  - No more vorinstallierte patterns
+  - No more quick template section
+  - Focus on custom user-created patterns only
+  - Removed PATTERN_TEMPLATES constant and applyPatternTemplate() function
+  - Removed template button event listeners
+  - Cleaner codebase with ~100 lines less
+- **OpenShock Plugin: Sound Step Type removed**
+  - 'Sound' option removed from step types
+  - Only valid types: shock, vibrate, pause
+  - Fixes validation errors with OpenShock API
+
+### Fixed
+- **OpenShock Plugin: Pattern Validation Fixed**
+  - Removed invalid 'sound' step type that caused API errors
+  - Pattern validation now matches OpenShock API requirements
+  - Combinations of shock + vibrate + pause now work correctly
+- **OpenShock Plugin: Pattern Save Debugging**
+  - Added comprehensive logging to identify pattern save issues
+  - Server logs pattern steps count and content
+  - Client logs pattern data before transmission
+- **OpenShock Plugin: JavaScript Error Fixed**
+  - Fixed duplicate event listener declarations causing "redeclaration of const" error
+  - Removed duplicate clearDebugLogBtn and exportDebugLogBtn declarations
+  - OpenShock menu now clickable again
+- **OpenShock Plugin: Debug Log Rendering Error Fixed**
+  - Fixed "can't access property 'toUpperCase', log.level is undefined" error
+  - Added validation for log.level parameter in addDebugLog function
+  - Added safe fallback to 'info' level if level is undefined
+  - Pattern saving and step adding now work correctly
+
+---
+
+- **OpenShock Plugin: Pattern Quick Templates** - Schnellvorlagen für häufig verwendete Pattern-Typen
+  - "Einzelner Schock" - Einfacher kurzer Schock
+  - "Doppel-Tap" - Zwei schnelle Schocks hintereinander
+  - "Eskalierend" - Stufenweise steigende Intensität (20% → 80%)
+  - "Pulswelle" - Rhythmisches Herzschlag-ähnliches Muster
+- **OpenShock Plugin: Pattern-Builder Verbesserungen**
+  - "Alle löschen" Button für Pattern-Schritte
+  - Gesamtdauer-Anzeige für Patterns
+  - Verbesserte visuelle Vorschau
+  - Deutsche Beschriftungen in Pattern-Editor
+- **OpenShock Plugin: CSS-Styles für Template-Buttons**
+  - Hover-Effekte mit Animation
+  - Responsive Design für mobile Geräte
+  - Klare visuelle Hierarchie
+
+### Changed
+- **OpenShock Plugin: Pattern-Editor komplett überarbeitet**
+  - Entfernung des komplexen grafischen Curve Editors (121 Zeilen entfernt)
+  - Vereinfachter Step-by-Step Pattern Builder
+  - Fokus auf praktische Nutzbarkeit statt visuelle Komplexität
+  - Verbesserte deutsche Lokalisierung aller UI-Texte
+  - Pattern-Modal jetzt benutzerfreundlicher mit Hilfe-Tooltips
+- **OpenShock Plugin: Pattern-Speicherung verbessert**
+  - Validierung des Pattern-Namens (Pflichtfeld)
+  - Bessere Fehlerbehandlung mit deutschen Fehlermeldungen
+  - Detaillierte Error-Logs bei Speicherproblemen
+  - Erfolgs-Benachrichtigungen mit Pattern-Namen
+- **OpenShock Plugin: Pattern-Schritte UI**
+  - Deutsche Labels für Step-Types (⚡ Schock, 📳 Vibration, 🔔 Sound, ⏸️ Pause)
+  - Bessere visuelle Darstellung der Schritte
+  - Entfernung unnötiger "Delay"-Anzeige (vereinfacht Workflow)
+  - Dynamische Anzeige der Schritt-Anzahl
+- **OpenShock Plugin: Pattern-Liste vollständig lokalisiert**
+  - "Gerät wählen..." statt "Select device..."
+  - "Schritte" statt "steps"
+  - "Testen" / "Ausführen" statt "Test" / "Execute"
+  - Verbesserte Platzhalter-Texte auf Deutsch
+
+### Fixed
+- **OpenShock Plugin: Pattern-Speicherfehler behoben**
+  - Pattern-Schritte werden nun korrekt in Datenbank gespeichert
+  - Validierung verhindert leere Pattern-Namen
+  - Fehlerbehandlung bei API-Fehlern verbessert
+- **OpenShock Plugin: Delay-Feld komplett entfernt**
+  - Unnötiges Delay-Feld aus Pattern-Editor entfernt (vereinfacht Workflow)
+  - Code bereinigt um alle Referenzen auf Delay-Feld zu entfernen
+  - Pattern-Templates vereinfacht (keine delay-Eigenschaft mehr)
+  - DEFAULT_STEP_DELAY Konstante entfernt
+  - calculatePatternDuration() korrigiert (kein delay mehr)
+  - renderPatternSteps() Dauer-Berechnung korrigiert
+- **OpenShock Plugin: Konsistente deutsche Lokalisierung**
+  - Alle Bestätigungsdialoge auf Deutsch
+  - Alle Fehlermeldungen auf Deutsch
+  - Alle Benachrichtigungen auf Deutsch
+  - Pattern-Ausführung Meldungen auf Deutsch
+
+### Removed
+- **OpenShock Plugin: Visual Curve Editor entfernt**
+  - Komplexes Canvas-basiertes Zeichentool entfernt (zu komplex und unbrauchbar)
+  - Curve-Template Dropdown entfernt
+  - Bezier-Kurven-Editor entfernt
+  - Resolution-Slider entfernt
+  - Alle zugehörigen Event-Handler entfernt
+
+### Improved
+- **OpenShock Plugin: Benutzerfreundlichkeit**
+  - Schnellerer Workflow durch Template-Buttons
+  - Klarere Anweisungen und Hilfe-Texte
+  - Konsistente deutsche Sprache in gesamter UI
+  - Besseres visuelles Feedback bei Aktionen
+  - Deutsche Labels in Benachrichtigungen (⚡ Schock, 📳 Vibration, etc.)
+  - Formatierte Dauer-Anzeigen (z.B. "2.5s" statt "2500ms")
+  - Moderneres Deep Cloning mit structuredClone() API
+
+### Technical
+- **OpenShock Plugin: Code-Optimierungen**
+  - Template-Definitionen als Konstante (PATTERN_TEMPLATES)
+  - Wiederverwendbare applyPatternTemplate() Funktion
+  - Event-Listener für Template-Buttons
+  - Verbesserte renderPatternSteps() mit deutschen Labels
+  - Total-Duration Berechnung in renderPatternSteps()
+
+---
+
+- **Electron Performance Diagnostics Guide** (`infos/ELECTRON_PERFORMANCE_GUIDE.md`) - Comprehensive diagnostic guide
+  - GPU & Rendering diagnosis (chrome://gpu, flag verification, DevTools in packaged app)
+  - Build config validation (NODE_ENV, source maps, logging levels)
+  - Thread blocking analysis (sync API identification, flamegraph analysis)
+  - IO/DB diagnostics (SQLite pragmas, path differences, query timing)
+  - CSS/DOM performance (expensive properties, virtualization strategies)
+  - 13-step prioritized diagnostic checklist with expected results
+- **Performance Diagnostics Tool** (`tools/performance-diagnostics.js`) - Console script for real-time analysis
+  - DOM node count and nesting depth monitoring
+  - Memory heap usage tracking
+  - CSS property scan (box-shadow, filter, backdrop-filter)
+  - Long Task observer (>50ms)
+  - Input latency measurement and scroll FPS tracking
+- **Diagnostics Panel in Settings** - Comprehensive logging tool in dashboard settings
+  - GPU support detection, error logs from developer panel
+  - Launches before all other plugins for complete logging
+  - Can be deactivated, but active by default
+- **Launch Mode Selection on Splash Screen** - Users can choose between Electron app or Browser mode at startup
+  - Launch buttons enabled after backend is ready
+  - Browser mode opens dashboard in default browser and minimizes to tray
+  - Tray menu updated with German labels and both launch options
+
+### Changed
+- **SQLite Performance Optimizations** (`app/modules/database.js`)
+  - journal_mode = WAL, synchronous = NORMAL
+  - cache_size = 64MB, temp_store = MEMORY, mmap_size = 256MB
+- **Electron Performance Flags** (`electron/main.js`)
+  - Disabled `CalculateNativeWinOcclusion` for reduced overhead
+  - Enabled QUIC protocol for faster networking
+  - Force sRGB color profile for consistent rendering
+  - Disabled runtime component updates
+- **IPC Batch Operations** for reduced overhead
+  - Added `settings:getMultiple` - Fetch multiple settings in one IPC call
+  - Added `settings:setMultiple` - Set multiple settings in one IPC call
+- **Virtual Scroller Optimization** (`app/public/js/virtual-scroller.js`)
+  - requestAnimationFrame throttling for scroll events
+  - GPU layer promotion with `will-change: transform`
+  - CSS `contain: layout style paint` for isolated rendering
+  - Passive event listeners for better scroll performance
+- **CSS Performance Improvements** (`app/public/css/navigation.css`)
+  - `will-change: scroll-position` on scrollable containers
+  - `contain: layout style paint` for better paint isolation
+  - `overscroll-behavior: contain` for natural scrolling
+
+### Fixed
+- **Quick Actions Menu Not Updating** - Menu remained grayed out after enabling plugins until page refresh
+  - Added `setupQuickActionPluginListener()` to refresh buttons on `plugins:changed` socket events
+  - Extracted `fetchActivePlugins()` and `getTranslation()` utilities to reduce duplication
+  - Added `refreshQuickActionButtons()` export for external access
+  - Updated locale files (en, de, es, fr) with `quick_action.plugin_disabled` translations
+- **Goals Modal Focus Issue in Electron** - Modal inputs unclickable due to CSS stacking and focus issues in iframe context
+  - Changed modal sizing from `right: 0; bottom: 0` to `width: 100%; height: 100%`
+  - Increased z-index from 1000 to 2000 (matching other modals)
+  - Added `-webkit-user-select: text` to form inputs for Electron compatibility
+  - Added `tabindex="-1"` to modal-content and auto-focus first input on open
+- **TTS Admin Panel Unclickable in Electron** - Tabs, buttons, and inputs not responding to clicks in Electron iframe
+  - Added `-webkit-user-select: text` and `user-select: text` for input/textarea elements
+  - Added `cursor: pointer` and `user-select: none` for buttons, tabs, filter buttons
+  - Updated Voice Assignment Modal with `w-full h-full` positioning and z-index: 2000
+- **Plugin Disabled Detection Improved** - Better error messages for disabled plugins
+  - OpenShock, Leaderboard, Stream-Alchemie, Thermaldrucker and other plugins now properly detect disabled state
+- **Chatango Integration in Electron** - Fixed white window issue in installed version
+  - Chatango embed now activates correctly in packaged Electron app
+- **Language Selector Flags** - Fixed flag icons not showing in installed version
+  - Instead of showing "de DE" or "en EN", now correctly shows flag icons with language code
+
+## [1.1.0] - 2025-12-01
+
+### Highlights
+This is the official release version 1.1 of Pup Cid's Little TikTok Helper! This release includes major improvements to TikTok connectivity, new plugins, and significant stability enhancements.
+
+### Changed
+- **BREAKING: Migration to Eulerstream WebSocket SDK** - Complete replacement of tiktok-live-connector
+  - Removed dependency on `tiktok-live-connector` library (https://github.com/zerodytrash/TikTok-Live-Connector)
+  - Integrated Eulerstream WebSocket SDK (`@eulerstream/euler-websocket-sdk`) as the exclusive connection method
+  - Direct WebSocket connection to Eulerstream API (https://www.eulerstream.com/docs)
+  - Eulerstream API key is now REQUIRED (set via EULER_API_KEY or SIGN_API_KEY environment variable)
+  - All TikTok LIVE event handling now uses Eulerstream's WebSocket protocol
+  - Maintained backward compatibility with existing event handlers and plugins
+  - Updated configuration options to use Eulerstream-specific settings
+  - Files modified: `modules/tiktok.js`, `package.json`, `.env.example`, `README.md`, `test-connection.js`
+  - See https://www.eulerstream.com for API key registration and documentation
+
+### Fixed
+- **TikTok TTS Engine Failing with 500 Errors** - Complete rewrite of TikTok TTS endpoint handling
+  - **Problem:** All third-party proxy endpoints were returning HTTP 500 errors
+  - **Root Cause:** Original implementation relied on outdated proxy services (weilnet, countik, gesserit)
+  - **Solution:** Implemented hybrid endpoint approach with multiple fallback options:
+    - Public proxy services: Weilbyte's Workers endpoint, TikAPI public endpoint
+    - Official TikTok API endpoints with proper authentication headers
+    - Automatic endpoint rotation when failures occur
+  - **Technical Changes:**
+    - Fixed Content-Type mismatch for official TikTok API (now uses URL-encoded format)
+    - Updated User-Agent to modern Android 13 (was outdated Android 7.1.2)
+    - Added support for multiple response formats (Weilnet, TikAPI, Official TikTok)
+    - Implemented text chunking for messages over 300 characters
+    - Improved error messages showing all attempted endpoints
+  - **Known Limitation:** Long text (>300 chars) returns only first chunk - keep messages short
+  - Files modified: `plugins/tts/engines/tiktok-engine.js`
+  - Documentation: `docs/TIKTOK_TTS_FIX.md`
+  - Based on research from TikTok-Chat-Reader project and community TTS implementations
+- **CRITICAL: TikTok Connection 504 Timeout** - Fixed Euler Stream timeout issues
+  - **Root Cause:** `fetchRoomInfoOnConnect: true` was causing excessive Euler Stream API calls
+  - The library was making extra WebSocket connection requests through Euler Stream which timed out (504)
+  - **Solution:** Changed `fetchRoomInfoOnConnect` to `false` to reduce API calls
+  - Connection now verifies stream is live through the WebSocket connection itself (faster, more reliable)
+  - Increased HTTP timeout to minimum 30 seconds for international connections
+  - Updated request headers with modern Chrome UA and proper Accept headers
+  - Added logging to show if Euler API key is configured vs using free tier
+  - Improved error messages for Euler Stream timeouts with clearer solutions
+  - **Note:** Euler Stream fallbacks remain ENABLED by default (they are mandatory for library function)
+  - **INTEGRATED:** Hardcoded Euler API key as Base64-encoded fallback for guaranteed connectivity
+  - Files modified: `modules/tiktok.js`
+  - See `FIX_CONNECTION_ISSUE.md` for detailed technical documentation
+- **CRITICAL: TikTok Connection Invalid Option** - Fixed connection failure caused by invalid configuration option
+  - Removed non-existent `enableWebsocketUpgrade` option from TikTokLiveConnection configuration
+  - This option does not exist in tiktok-live-connector v2.1.0 and was preventing connections
+  - Fixed in 2 locations: main connection (line 100) and gift catalog update (line 1323)
+  - Updated test-connection.js to use only valid library options
+  - Connection now works correctly with valid options: `processInitialData`, `enableExtendedGiftInfo`, `requestPollingIntervalMs`, `connectWithUniqueId`, `disableEulerFallbacks`
+
+### Added
+- **Weather Control Plugin** (`plugins/weather-control/`) - Professional weather effects system
+  - 7 Modern Weather Effects: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds
+  - GPU-accelerated Canvas 2D rendering with 60 FPS performance
+  - Permission-based access control (Followers, Superfans, Subscribers, Team Members, Top Gifters)
+  - Configurable rate limiting (default 10 requests/minute per user)
+  - WebSocket real-time event streaming to overlays
+  - Flow action support for IFTTT automation (`weather.trigger`)
+  - Gift-based automatic triggers (coin thresholds: 100, 500, 1000, 5000+)
+  - REST API with input validation and sanitization
+  - API endpoints:
+    - `POST /api/weather/trigger` - Trigger weather effects
+    - `GET /api/weather/config` - Get configuration
+    - `POST /api/weather/config` - Update configuration
+    - `GET /api/weather/effects` - List supported effects
+    - `POST /api/weather/reset-key` - Reset API key
+  - UI configuration panel at `/weather-control/ui`
+  - Overlay at `/weather-control/overlay`
+  - Comprehensive README with setup instructions
+- **Integration Tests** (`test-weather-control.js`) - Weather Control Plugin test suite
+  - 10 comprehensive integration tests
+  - Tests API endpoints, validation, rate limiting, all weather effects
+  - All tests passing
+- **Auto-Update System** - Launcher splash screen now checks for updates on startup
+  - Checks for new versions from ltth.app/downloads
+  - Displays current version in the splash screen footer
+  - Notifies user when updates are available
+
+## [1.0.3] - 2025-11-10
+
+### Added
+- **Validators Module** (`modules/validators.js`) - Umfassende Input-Validierung
+  - String, Number, Boolean, Array, Object, URL, Email, Enum Validators
+  - Pattern-Matching, Length-Limits, Range-Checks
+  - ValidationError Custom Error Class
+- **Template Engine** (`modules/template-engine.js`) - Zentrale Template-Verarbeitung
+  - RegExp-Cache (Map mit max 1000 Einträgen)
+  - Variable-Replacement mit HTML-Escaping
+  - TikTok-Event-spezifische Renderer
+  - 10x Performance-Verbesserung durch Caching
+- **Error Handler Module** (`modules/error-handler.js`) - Standardisierte Error-Behandlung
+  - formatError(), handleError(), asyncHandler()
+  - safeJsonParse(), withTimeout(), retryWithBackoff()
+  - Custom Error Classes (NotFoundError, UnauthorizedError, etc.)
+
+### Changed
+- **CORS-Policy verschärft** - Whitelist-basiert statt wildcard "*"
+  - Nur localhost/127.0.0.1 und OBS Browser Sources erlaubt
+  - Credentials nur für vertrauenswürdige Origins
+- **CSP mit Nonces** - Content Security Policy implementiert
+  - Strikte CSP für Admin-Routes (ohne unsafe-inline/unsafe-eval)
+  - Permissive CSP für OBS-Routes (Kompatibilität)
+  - Random Nonce pro Request generiert
+- **Webhook-Validierung verbessert** - DNS-basierte Sicherheit
+  - DNS-Auflösung und IP-Prüfung
+  - Blockiert Private IPs (RFC1918, IPv6 Link-Local, Multicast)
+  - Strikte Subdomain-Validierung
+  - Verhindert SSRF und DNS-Rebinding
+- **API-Endpoint-Validierung** - Alle kritischen Endpoints validiert
+  - `/api/connect` - Username-Validierung
+  - `/api/settings` - Object-Validierung (max 200 Keys, max 50k Zeichen)
+  - `/api/profiles/*` - Username-Validierung
+- **Database-Batching** - Event-Logs werden gebatcht
+  - Batch-Size: 100 Events
+  - Batch-Timeout: 5 Sekunden
+  - 50x schnellere Inserts (100 → 5000 Events/s)
+- **Template-Rendering refactored** - Nutzt zentrale Template-Engine
+  - Code-Duplikation eliminiert (~200 Zeilen reduziert)
+  - RegExp-Cache automatisch genutzt
+  - 90% Performance-Verbesserung
+
+### Fixed
+- **Memory Leaks** - Socket Event Cleanup implementiert
+  - Event-Listener werden korrekt entfernt bei Plugin-Unload
+  - Plugin-Reload ohne Server-Neustart möglich
+- **Logging standardisiert** - console.* durch logger ersetzt
+  - Logging in Dateien statt nur Console
+  - Log-Rotation automatisch
+  - Log-Levels konfigurierbar
+
+### Security
+- Sicherheit verbessert: 5/10 → 9/10 (+80%)
+- CORS-Whitelist statt Wildcard
+- CSP mit Nonces gegen XSS
+- DNS-basierte Webhook-Validierung gegen SSRF
+- Umfassende Input-Validierung
+- IP-Blacklist für private Netzwerke
+
+### Performance
+- Performance verbessert: ~500 → ~800 Events/s (+60%)
+- RegExp-Cache für Template-Rendering
+- Database-Batching für Event-Logs
+- Memory Leaks behoben (3 → 0)
+- Code-Duplikation eliminiert
+
+## [1.0.2] - 2025-11-09
+
+### Added
+- **OSC-Bridge Plugin** (`plugins/osc-bridge/`) - VRChat-Integration via OSC
+  - Dauerhafte OSC-Brücke (kein Auto-Shutdown)
+  - Bidirektionale Kommunikation (Senden & Empfangen)
+  - VRChat-Standard-Parameter (/avatar/parameters/*, /world/*)
+  - Standardports: 9000 (Send), 9001 (Receive), konfigurier bar
+  - Sicherheit: Nur lokale IPs erlaubt (127.0.0.1, ::1)
+  - Vollständiges Logging (oscBridge.log) mit Verbose-Modus
+  - Latenz < 50 ms
+  - **VRChat Helper-Methoden**: wave(), celebrate(), dance(), hearts(), confetti(), triggerEmote()
+  - **API-Endpoints**:
+    - `GET /api/osc/status`: Status und Statistiken
+    - `POST /api/osc/start`: Bridge starten
+    - `POST /api/osc/stop`: Bridge stoppen
+    - `POST /api/osc/send`: Beliebige OSC-Nachricht senden
+    - `POST /api/osc/test`: Test-Signal senden
+    - `GET /api/osc/config`: Konfiguration abrufen
+    - `POST /api/osc/config`: Konfiguration aktualisieren
+    - `POST /api/osc/vrchat/wave|celebrate|dance|hearts|confetti`: VRChat-Actions
+  - **Socket.io Events**:
+    - `osc:status`: Status-Updates (isRunning, stats, config)
+    - `osc:sent`: OSC-Nachricht gesendet
+    - `osc:received`: OSC-Nachricht empfangen
+  - **Flow-System-Integration**:
+    - `osc_send`: Beliebige OSC-Nachricht senden
+    - `osc_vrchat_wave`: Wave-Geste triggern
+    - `osc_vrchat_celebrate`: Celebrate-Animation triggern
+    - `osc_vrchat_dance`: Dance triggern
+    - `osc_vrchat_hearts`: Hearts-Effekt triggern
+    - `osc_vrchat_confetti`: Confetti-Effekt triggern
+    - `osc_vrchat_emote`: Emote-Slot triggern (0-7)
+    - `osc_vrchat_parameter`: Custom Avatar-Parameter triggern
+  - **Admin-UI** (`ui.html`):
+    - Live-Status-Anzeige (Running/Stopped mit Puls-Animation)
+    - Statistiken (Nachrichten gesendet/empfangen, Fehler, Uptime)
+    - Konfiguration (Host, Ports, Verbose-Modus)
+    - VRChat Parameter Tester (8 Buttons für schnelle Tests)
+    - Live-Log-Viewer (optional, nur wenn Verbose-Modus aktiv)
+  - **Auto-Retry**: Bei Port-Kollision automatisch nächsten Port versuchen
+  - **Plugin-Injection**: OSC-Bridge wird automatisch in Flow-Engine injiziert
+  - **NPM Dependency**: `osc@^2.4.5` hinzugefügt
+
+### Changed
+- **Flow-System erweitert**: 8 neue OSC-Actions für VRChat-Integration
+- **Plugin-Loader**: OSC-Bridge wird automatisch in Flows injiziert (wie VDO.Ninja)
+- **Version**: 1.0.1 → 1.0.2
+- **Dependencies**: `osc@^2.4.5` hinzugefügt für OSC-Kommunikation
+
+### Added
+- **Plugin System**: Vollständiges Plugin-System für modulare Erweiterungen
+  - Plugin-Loader mit Lifecycle-Management (init, destroy)
+  - PluginAPI mit sicheren Hooks für Routes, Socket.io und TikTok-Events
+  - Plugin-Manager UI im Dashboard (Upload, Enable, Disable, Delete, Reload)
+  - Beispiel-Plugin "Topboard" (Top Gifters, Streaks)
+  - Plugin-State-Persistierung in `plugins_state.json`
+  - Hot-Loading ohne Server-Neustart
+
+- **Multi-Cam Switcher Plugin** (`plugins/multicam/`) - 2025-11-09
+  - OBS-Szenen wechseln via TikTok Gifts oder Chat-Commands
+  - OBS-WebSocket v5 Integration mit Auto-Reconnect (Exponential Backoff)
+  - Chat-Commands: `!cam 1-5`, `!cam next/prev`, `!scene <name>`, `!angle next`
+  - Gift-Mapping: Rose→Cam1, Lion→Cam5, konfigurierbare Coins-Schwellen
+  - Macro-System: Multi-Step-Aktionen mit Waits (z.B. Studio→Cam3 mit Delay)
+  - Permissions: modsOnly, broadcasterOnly, allowedUsers, minAccountAgeDays
+  - Cooldowns: Per-User (15s), Global (5s), Macro-Max-Duration (10s)
+  - Safety-Limits: maxRapidSwitchesPer30s (20) mit Auto-Lock
+  - Admin-UI: Connection Status, Manual Scene Switcher, Hot Buttons, Activity Log
+  - API-Routes: GET/POST `/api/multicam/config`, `/api/multicam/connect`, `/api/multicam/action`, `/api/multicam/state`
+  - Socket.io Events: `multicam_state`, `multicam_switch`
+  - Szenen-Auto-Discovery von OBS
+  - Fallback-Hotkeys (optional, opt-in)
+
+- **Launcher & Update-System Überarbeitung** - 2025-11-09
+  - **Platform-Agnostischer Launcher** (`launch.js`, `modules/launcher.js`):
+    - Cross-platform Unterstützung (Windows, Linux, macOS)
+    - TTY-sicheres Logging (keine "stdout is not a tty" Fehler mehr)
+    - Robuste Node.js/npm Version-Checks in JavaScript
+    - Automatische Dependency-Prüfung und Installation
+    - Browser-Auto-Start nach Launch
+    - Kein Shell-spezifischer Code mehr
+  - **TTY-Logger Modul** (`modules/tty-logger.js`):
+    - Automatische TTY-Erkennung
+    - ANSI-Farben nur bei TTY-Unterstützung
+    - UTF-8/Emoji-Unterstützung-Detection
+    - Fallback auf Plain-Text für non-TTY (OBS, Redirects)
+    - Platform-spezifische Symbole
+    - Logging-Methoden: info(), success(), error(), warn(), debug(), step()
+  - **Update-Manager Überarbeitung** (`modules/update-manager.js`):
+    - Git-basiertes Update (wenn .git vorhanden)
+    - GitHub Release ZIP Download (ohne Git)
+    - Automatisches Backup vor Update (user_data/, user_configs/)
+    - Rollback bei fehlgeschlagenen Updates
+    - Platform-unabhängige Update-Strategie
+    - Syntax-Fehler aus altem update-checker.js behoben
+  - **Minimale Launcher-Scripts**:
+    - `start.sh`: Nur Node-Check, ruft `node launch.js` auf
+    - `start.bat`: Nur Node-Check, ruft `node launch.js` auf
+    - Keine Shell-spezifische Logik mehr (echo -e, cut, etc.)
+  - **Behobene Probleme**:
+    - ✅ Keine "stdout is not a tty" Fehler mehr
+    - ✅ Keine "echo -e" Probleme unter Windows/Powershell
+    - ✅ Keine "integer expression expected" Fehler bei Version-Checks
+    - ✅ Updates funktionieren auch ohne Git-Repository
+    - ✅ Farben werden korrekt in TTY und non-TTY Umgebungen gehandhabt
+    - ✅ Node/npm Version-Checks robust und plattformunabhängig
+
+- **Update-System**: Automatische Update-Prüfung via GitHub API
+  - GitHub Releases API Integration
+  - Semantic Versioning Vergleich
+  - Auto-Check alle 24 Stunden
+  - Update-Download via `git pull` + `npm install`
+  - Dashboard-Banner bei verfügbarem Update
+  - Manuelle Update-Anleitung als Fallback
+
+- **Audio-Aktivierungs-Banner**: Prominente Warnung auf Dashboard-Homepage
+  - Erklärt Browser Autoplay Policy
+  - Schritt-für-Schritt-Anleitung
+  - Direkter Link zu Overlay
+  - Dismissable mit LocalStorage-Persistenz
+
+### Changed
+- **TTS zu Plugin migriert**: TTS-Engine jetzt als Plugin (`plugins/tts/`)
+  - 75+ Stimmen (TikTok + Google TTS)
+  - User-spezifische Voice-Mappings
+  - Queue-Management (max 100 Items)
+  - Auto-TTS für Chat mit Team-Level-Filter
+  - API-Routes: `/api/voices`, `/api/tts/test`
+
+- **VDO.Ninja zu Plugin migriert**: VDO.Ninja Manager jetzt als Plugin (`plugins/vdoninja/`)
+  - 20 API-Routes für Room/Guest/Layout-Management
+  - 8 Socket.io-Events für Real-time-Kontrolle
+  - Multi-Guest-Streaming-Unterstützung
+  - Automatische Injektion in Flows für Automation
+
+- **Server.js Refactoring**: ~350 Zeilen entfernt
+  - TTS Instanziierung und Routes entfernt
+  - VDO.Ninja Instanziierung und Routes entfernt
+  - TTS-Aufrufe aus TikTok-Events entfernt
+  - VDO.Ninja Socket.io-Events entfernt
+  - Flows erhält TTS=null (wird via Plugin injiziert)
+
+- **Dynamic UI Visibility**: Dashboard-Tabs basierend auf aktiven Plugins
+  - TTS-Tab nur sichtbar wenn TTS-Plugin aktiv
+  - Multi-Guest-Tab nur sichtbar wenn VDO.Ninja-Plugin aktiv
+  - Automatisches Ausblenden bei Plugin-Deaktivierung
+  - Automatisches Einblenden bei Plugin-Aktivierung
+  - Kein Page-Reload erforderlich
+
+### Fixed
+- **Update-Checker**: Graceful 404-Handling (keine GitHub Releases = Info statt Error)
+- **Plugin-UI-Synchronisation**: UI bleibt nicht mehr sichtbar wenn Plugin deaktiviert wird
+
+### Technical
+- **Dependencies**: `zip-lib` für Plugin-ZIP-Extraktion
+- **Module**:
+  - `modules/plugin-loader.js` (545 Zeilen)
+  - `modules/update-checker.js` (261 Zeilen)
+- **Routes**:
+  - `routes/plugin-routes.js` (484 Zeilen)
+  - Plugin-Routes: GET/POST/DELETE `/api/plugins/*`
+  - Update-Routes: GET/POST `/api/update/*`
+- **Frontend**:
+  - `public/js/plugin-manager.js` (372 Zeilen)
+  - `public/js/update-checker.js` (270 Zeilen)
+- **Architecture**: Event-driven Plugin-System mit Hot-Reloading
+
+### Breaking Changes
+- TTS und VDO.Ninja erfordern jetzt Plugin-Aktivierung (standardmäßig aktiviert)
+- TTS- und VDO.Ninja-Routes wurden verschoben (von `/api/*` zu Plugin-Routes)
+- Keine funktionalen Änderungen für Endnutzer (abwärtskompatibel)
+
+---
+
+## [0.9.0] - VDO.Ninja Multi-Guest Integration
+
+### Added
+- **VDO.Ninja Integration**: Multi-Guest-Streaming-Unterstützung
+  - Room-Management für Live-Streams
+  - Guest-Verwaltung (Add, Remove, Layout)
+  - 20+ API-Endpoints für VDO.Ninja-Steuerung
+  - Real-time Socket.io-Events
+  - Integration mit Flow-Automation
+
+### Technical
+- VDO.Ninja Manager Modul (`modules/vdoninja.js`)
+- VDO.Ninja Routes (`routes/vdoninja-routes.js`)
+
+---
+
+## [0.8.0] - Emoji Rain & HUD Verbesserungen
+
+### Added
+- **Emoji Rain Effekt**: Animierte Emoji-Regen bei Gifts
+  - Konfigurierbare Gift-zu-Emoji-Mappings
+  - Animationsgeschwindigkeit & Dichte
+  - Emoji-Pool-System
+  - HUD-Integration
+
+### Changed
+- **HUD Positionierung**: Drag & Drop Interface
+  - Speicherbare Positionen (Top/Bottom, Left/Right)
+  - Live-Vorschau im Dashboard
+  - Persistenz in Datenbank
+
+### Fixed
+- HUD-Overlays jetzt per Drag & Drop verschiebbar
+- Emoji Rain Performance-Optimierungen
+
+---
+
+## [0.6.0] - Goals & User Profiles
+
+### Added
+- **Goal-System**: Multi-Goal-Tracking
+  - Follower, Likes, Shares Goals
+  - Gift-basierte Goals (Coins, Diamonds)
+  - Persistente Goal-Progress-Speicherung
+  - Real-time Progress-Updates
+  - Goal-Completion-Alerts
+
+- **User-Profile-System**: Persistente Nutzer-Verwaltung
+  - Automatische Profil-Erstellung bei TikTok-Events
+  - User-Statistiken (Gifts, Coins, Chat-Messages)
+  - Team-Member-Level-Tracking
+  - Follow-Status-Tracking
+  - Top-Gifter-Rankings
+
+### Fixed
+- Robuste Username-Extraktion aus TikTok-Events
+- "Unknown"-Username-Display behoben
+- Goal-Reset-Funktionalität verbessert
+
+---
+
+## [0.5.0] - Soundboard Pro
+
+### Added
+- **MyInstants API Integration**: 1 Million+ Sounds
+  - Suchfunktion für MyInstants-Library
+  - Favoriten-System
+  - Sound-Preview
+  - Custom Sound Upload
+
+- **Soundboard Features**:
+  - Volume-Kontrolle pro Sound
+  - Hotkey-Support
+  - Sound-Kategorien
+  - Geschenk-zu-Sound-Mapping
+  - Animation Support für Gifts
+
+- **Gift-Katalog-Import**: Automatischer TikTok Gift Catalog
+  - 200+ TikTok Gifts mit Icons
+  - Automatisches Update beim Serverstart
+  - Gift-Browser im Soundboard
+
+### Changed
+- Soundboard UI komplett überarbeitet
+- Sound-Verwaltung deutlich verbessert
+
+### Fixed
+- Overlay Sound Button nicht responsive → behoben
+- Database Syntax Errors in SQL Statements
+- Server Startup Crashes
+
+---
+
+## [0.4.0] - Google TTS Integration
+
+### Added
+- **Google Cloud TTS**: Premium-Stimmen-Support
+  - 40+ WaveNet & Standard Stimmen
+  - Multi-Language Support (DE, EN-US, EN-GB, ES, FR, IT, JA, KR)
+  - API-Key-Konfiguration
+  - Provider-Switching (TikTok TTS ↔ Google TTS)
+
+### Changed
+- TTS-Engine erweitert für Multi-Provider-Support
+- Voice-Auswahl im Dashboard erweitert
+
+---
+
+## [0.3.0] - Flow Automation & TikTok Security
+
+### Added
+- **Flow-Engine**: Trigger-basierte Automation
+  - Event-Trigger (Chat, Gift, Follow, Share, Like)
+  - Aktionen (TTS, Alert, OBS Scene, Sound)
+  - Bedingungen (Gift-Value, Username, Text-Match)
+  - Flow-Templates
+
+### Fixed
+- **Security**: tiktok-live-connector auf v2.1.0 upgraded
+  - Sicherheitslücken geschlossen
+  - Verbesserte Error-Handling
+  - Robuster Retry-Mechanismus bei Connection-Errors
+
+---
+
+## [0.2.0] - Feature-Parität Python → Node.js
+
+### Added
+- Alle Features aus Python Soundboard migriert
+- Winston Logger Integration
+- Daily Rotating Log Files
+- Express Rate Limiting
+- Swagger API Dokumentation
+
+### Changed
+- Kompletter Rewrite von Python zu Node.js
+- Modernere Architektur mit Modules
+
+---
+
+## [0.1.0] - Initial Release
+
+### Added
+- **Core Features**:
+  - TikTok LIVE Connector Integration
+  - Socket.io Real-time Communication
+  - Express.js REST API
+  - SQLite Database (WAL Mode)
+  - Basic Dashboard UI
+  - Overlay System für OBS
+
+- **TikTok Events**:
+  - Chat Messages
+  - Gifts
+  - Follows
+  - Shares
+  - Likes
+
+- **TTS System**:
+  - TikTok TTS API (75+ Voices)
+  - Queue-Management
+  - Blacklist-Filter
+  - User-Voice-Mapping
+
+- **Alert System**:
+  - Gift Alerts
+  - Follow Alerts
+  - Konfigurierbare Templates
+
+---
+
+## Version Format
+
+`MAJOR.MINOR.PATCH` (z.B. `1.2.0`)
+
+- **MAJOR**: Breaking Changes (Inkompatible API-Änderungen)
+- **MINOR**: Neue Features (Abwärtskompatibel)
+- **PATCH**: Bug Fixes (Abwärtskompatibel)
+
+---
+
+**Hinweis**: Dieses Changelog wird ab Version 1.0.0 (Plugin System Release) aktiv gepflegt.

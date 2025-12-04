@@ -1,0 +1,101 @@
+name: New Soundboard CI
+
+on:
+  push:
+    paths:
+      - 'plugins/new-soundboard/**'
+      - '.github/workflows/soundboard-ci.yml'
+  pull_request:
+    paths:
+      - 'plugins/new-soundboard/**'
+      - '.github/workflows/soundboard-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=true npm ci
+      
+      - name: Run validator tests
+        run: |
+          node plugins/new-soundboard/test/validators.test.js
+      
+      - name: Check file permissions
+        run: |
+          find plugins/new-soundboard -type f -name "*.js" -executable && exit 1 || exit 0
+      
+      - name: Verify plugin structure
+        run: |
+          test -f plugins/new-soundboard/plugin.json
+          test -f plugins/new-soundboard/main.js
+          test -f plugins/new-soundboard/README.md
+          test -d plugins/new-soundboard/src
+          test -d plugins/new-soundboard/test
+  
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          PUPPETEER_SKIP_DOWNLOAD=true npm ci
+      
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate || true
+      
+      - name: Check for secrets
+        run: |
+          ! grep -r "api.*key.*=" plugins/new-soundboard/src/ || exit 1
+          ! grep -r "password.*=" plugins/new-soundboard/src/ || exit 1
+  
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Check code style
+        run: |
+          # Check for console.log in production code (allow in tests)
+          ! find plugins/new-soundboard/src -name "*.js" -exec grep -l "console\.log" {} \; | grep -v test || echo "Warning: console.log found in source files"
+      
+      - name: Check file sizes
+        run: |
+          find plugins/new-soundboard/src -name "*.js" -size +100k && exit 1 || echo "All files under 100KB"
+      
+      - name: Verify no TODO/FIXME
+        run: |
+          ! grep -r "TODO\|FIXME" plugins/new-soundboard/src/ || echo "Warning: TODO/FIXME found"

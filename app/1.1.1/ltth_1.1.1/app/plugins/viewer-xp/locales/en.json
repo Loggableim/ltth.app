@@ -1,0 +1,38 @@
+{
+  "viewer_xp": {
+    "title": "Viewer XP System",
+    "subtitle": "Gamification & Rewards",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable XP System",
+      "xp_per_minute": "XP per Minute Watched",
+      "xp_on_chat": "XP on Chat Message",
+      "xp_on_gift": "XP on Gift",
+      "xp_on_follow": "XP on Follow",
+      "level_curve": "Level Curve",
+      "save": "Save Settings"
+    },
+    "leaderboard": {
+      "title": "Leaderboard",
+      "rank": "Rank",
+      "username": "Username",
+      "level": "Level",
+      "xp": "XP",
+      "reset": "Reset Leaderboard"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay URL",
+      "copy": "Copy URL",
+      "open": "Open Overlay",
+      "show_top": "Show Top",
+      "users": "Users"
+    },
+    "rewards": {
+      "title": "Level Rewards",
+      "add": "Add Reward",
+      "level": "Level",
+      "reward": "Reward Description"
+    }
+  }
+}

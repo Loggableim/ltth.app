@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Configuration</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .leaderboard-table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+        }
+
+        .leaderboard-table tr:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 700;
+        }
+
+        .rank-1 { background: gold; color: #000; }
+        .rank-2 { background: silver; color: #000; }
+        .rank-3 { background: #cd7f32; color: #000; }
+        .rank-other { background: var(--color-bg-tertiary); }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-tertiary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .form-label input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .form-input, select.form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--color-text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--color-accent-primary);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-accent-primary);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        /* OBS Overlay Cards */
+        .overlay-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .overlay-card {
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .overlay-card:hover {
+            border-color: var(--color-accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .overlay-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .overlay-card .dimensions {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 12px;
+        }
+
+        .overlay-card .description {
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .url-group {
+            margin-bottom: 12px;
+        }
+
+        .url-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .url-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-primary);
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+
+        .btn-icon {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-icon:hover {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-accent-primary);
+        }
+
+        .btn-preview {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-preview:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Preview Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--color-bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: var(--color-text-primary);
+        }
+
+        .preview-frame {
+            width: 100%;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-box h3 {
+            color: #3b82f6;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Leaderboard Configuration</h1>
+            <p>Manage and display top gifters on your stream</p>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Statistics -->
+        <div class="card">
+            <div class="card-title">📊 Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Session Gifters</div>
+                    <div class="stat-value" id="stat-session-gifters">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">All-Time Gifters</div>
+                    <div class="stat-value" id="stat-alltime-gifters">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Session Total Coins</div>
+                    <div class="stat-value" id="stat-session-coins">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">All-Time Total Coins</div>
+                    <div class="stat-value" id="stat-alltime-coins">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="session">Current Session</button>
+            <button class="tab-btn" data-tab="alltime">All-Time</button>
+            <button class="tab-btn" data-tab="obs">OBS Integration</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- Session Tab -->
+        <div class="tab-panel active" id="session-tab">
+            <div class="card">
+                <div class="card-title">
+                    🔥 Current Session Leaderboard
+                    <div style="margin-left: auto;">
+                        <button class="btn btn-secondary" id="reset-session-btn">Reset Session</button>
+                    </div>
+                </div>
+                <div id="session-start-info" style="margin-bottom: 16px; color: var(--color-text-secondary);"></div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>User</th>
+                            <th>Coins</th>
+                            <th>Gifts Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="session-leaderboard">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div class="empty-icon">🎁</div>
+                                <p>Waiting for gifts in this session...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All-Time Tab -->
+        <div class="tab-panel" id="alltime-tab">
+            <div class="card">
+                <div class="card-title">👑 All-Time Champions</div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>User</th>
+                            <th>Total Coins</th>
+                            <th>Total Gifts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alltime-leaderboard">
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <div class="empty-icon">🏆</div>
+                                <p>No champions yet...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- OBS Integration Tab -->
+        <div class="tab-panel" id="obs-tab">
+            <div class="info-box">
+                <h3>📺 How to Add to OBS</h3>
+                <ul>
+                    <li>In OBS Studio, add a new <strong>Browser Source</strong></li>
+                    <li>Copy the URL from one of the overlays below</li>
+                    <li>Paste the URL into the OBS Browser Source settings</li>
+                    <li>Set the recommended dimensions for each overlay</li>
+                    <li>Click "Preview" to test the overlay before adding to OBS</li>
+                </ul>
+            </div>
+
+            <div class="overlay-grid">
+                <!-- Original Overlay -->
+                <div class="overlay-card">
+                    <h3>📊 Original Overlay</h3>
+                    <div class="dimensions">Recommended: 450x800px</div>
+                    <div class="description">
+                        Tabbed view showing both session and all-time leaderboards. Perfect for side placement.
+                    </div>
+                    <div class="url-group">
+                        <label>Overlay URL</label>
+                        <div class="url-container">
+                            <input type="text" class="url-input" id="url-original" readonly>
+                            <button class="btn-icon btn-copy" data-target="url-original">📋</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-icon btn-preview" data-type="original" data-width="450" data-height="800">👁️ Preview</button>
+                    </div>
+                </div>
+
+                <!-- Bar Overlay -->
+                <div class="overlay-card">
+                    <h3>📏 Bar Overlay</h3>
+                    <div class="dimensions">Recommended: 1920x80px</div>
+                    <div class="description">
+                        Horizontal bar for top/bottom of stream. Compact and sleek design.
+                    </div>
+                    <div class="url-group">
+                        <label>Overlay URL</label>
+                        <div class="url-container">
+                            <input type="text" class="url-input" id="url-bar" readonly>
+                            <button class="btn-icon btn-copy" data-target="url-bar">📋</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-icon btn-preview" data-type="bar" data-width="1920" data-height="80">👁️ Preview</button>
+                    </div>
+                </div>
+
+                <!-- Sidebar Overlay -->
+                <div class="overlay-card">
+                    <h3>📐 Sidebar Overlay</h3>
+                    <div class="dimensions">Recommended: 400x1080px</div>
+                    <div class="description">
+                        Vertical sidebar for right side of stream. Shows progress bars and detailed stats.
+                    </div>
+                    <div class="url-group">
+                        <label>Overlay URL</label>
+                        <div class="url-container">
+                            <input type="text" class="url-input" id="url-sidebar" readonly>
+                            <button class="btn-icon btn-copy" data-target="url-sidebar">📋</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-icon btn-preview" data-type="sidebar" data-width="400" data-height="1080">👁️ Preview</button>
+                    </div>
+                </div>
+
+                <!-- Popup Overlay -->
+                <div class="overlay-card">
+                    <h3>💫 Popup Overlay</h3>
+                    <div class="dimensions">Recommended: 600x700px</div>
+                    <div class="description">
+                        Temporary popup for highlights. Auto-shows on rank changes and hype events.
+                    </div>
+                    <div class="url-group">
+                        <label>Overlay URL</label>
+                        <div class="url-container">
+                            <input type="text" class="url-input" id="url-popup" readonly>
+                            <button class="btn-icon btn-copy" data-target="url-popup">📋</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-icon btn-preview" data-type="popup" data-width="600" data-height="700">👁️ Preview</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎨 Customization Options</div>
+                <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+                    You can customize overlays by adding query parameters to the URL. The theme selected in Settings is applied by default.
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Available Themes</label>
+                    <select class="form-input" id="obs-theme-select">
+                        <option value="neon">Neon/Cyberpunk (Cyan & Magenta)</option>
+                        <option value="elegant">Elegant/Minimalist (Clean White)</option>
+                        <option value="gaming">Gaming/Esports (Red & Orange)</option>
+                        <option value="royal">Royal/Crown (Purple & Gold)</option>
+                        <option value="gradient">Modern Gradient (Blue & Teal)</option>
+                    </select>
+                    <small style="color: var(--color-text-secondary);">Select a theme to update preview URLs</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Entries</label>
+                    <input type="number" class="form-input" id="obs-max-entries" min="1" max="20" value="5">
+                    <small style="color: var(--color-text-secondary);">Number of top users to show (recommended: 3-5 for bar, 5-10 for sidebar)</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="obs-show-avatars" checked>
+                        Show Profile Avatars
+                    </label>
+                </div>
+                <button class="btn btn-primary" id="update-obs-urls-btn">Update Preview URLs</button>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-panel" id="settings-tab">
+            <div class="card">
+                <div class="card-title">⚙️ Leaderboard Settings</div>
+                <form id="config-form">
+                    <div class="form-group">
+                        <label class="form-label" for="display-limit">Display Limit</label>
+                        <input type="number" class="form-input" id="display-limit" name="displayLimit" min="1" max="50" value="10">
+                        <small style="color: var(--color-text-secondary);">Number of top users to display on overlay</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="min-coins">Minimum Coins</label>
+                        <input type="number" class="form-input" id="min-coins" name="minCoins" min="0" value="0">
+                        <small style="color: var(--color-text-secondary);">Minimum coins required to appear on leaderboard</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="theme-select">Overlay Theme</label>
+                        <select class="form-input" id="theme-select" name="theme">
+                            <option value="neon">Neon/Cyberpunk (Cyan & Magenta)</option>
+                            <option value="elegant">Elegant/Minimalist (Clean White)</option>
+                            <option value="gaming">Gaming/Esports (Red & Orange)</option>
+                            <option value="royal">Royal/Crown (Purple & Gold)</option>
+                            <option value="gradient">Modern Gradient (Blue & Teal)</option>
+                        </select>
+                        <small style="color: var(--color-text-secondary);">Choose the visual style for your overlay</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="show-animations" name="showAnimations" checked>
+                            Enable Overtake Animations
+                        </label>
+                        <small style="color: var(--color-text-secondary);">Show special effects when someone moves up in rank</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Overlay URL</label>
+                        <input type="text" class="form-input" id="overlay-url" readonly>
+                        <small style="color: var(--color-text-secondary);">Use this URL in OBS Browser Source</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Preview URL (Test Mode with Mock Data)</label>
+                        <input type="text" class="form-input" id="preview-url" readonly>
+                        <small style="color: var(--color-text-secondary);">Use this URL to preview different themes with test data</small>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <button type="button" class="btn btn-secondary" id="preview-btn">Preview Overlay</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Preview: <span id="preview-title"></span></h2>
+                <button class="close-modal" id="close-preview-modal">&times;</button>
+            </div>
+            <iframe id="preview-frame" class="preview-frame" src=""></iframe>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let config = {};
+        let sessionData = [];
+        let alltimeData = [];
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(`${tab}-tab`).classList.add('active');
+            });
+        });
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/plugins/leaderboard/config');
+                const data = await response.json();
+                if (data.success) {
+                    config = data.config;
+                    updateConfigForm();
+                    initializeObsTab();
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Load leaderboards
+        async function loadLeaderboards() {
+            try {
+                const response = await fetch('/api/plugins/leaderboard/combined?limit=50');
+                const data = await response.json();
+                
+                if (data.success) {
+                    sessionData = data.session.data || [];
+                    alltimeData = data.alltime.data || [];
+                    
+                    updateSessionLeaderboard();
+                    updateAlltimeLeaderboard();
+                    updateStats();
+                    
+                    if (data.session.startTime) {
+                        const startDate = new Date(data.session.startTime);
+                        document.getElementById('session-start-info').textContent = 
+                            `Session started: ${startDate.toLocaleString()}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load leaderboards:', error);
+            }
+        }
+
+        // Update session leaderboard
+        function updateSessionLeaderboard() {
+            const tbody = document.getElementById('session-leaderboard');
+            
+            if (!sessionData || sessionData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
+                    <div class="empty-icon">🎁</div>
+                    <p>Waiting for gifts in this session...</p>
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sessionData.map((user, index) => `
+                <tr>
+                    <td><span class="rank-badge ${getRankClass(index + 1)}">${index + 1}</span></td>
+                    <td>${user.nickname || user.uniqueId}</td>
+                    <td>${user.coins.toLocaleString()}</td>
+                    <td>${user.giftCount || 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Update all-time leaderboard
+        function updateAlltimeLeaderboard() {
+            const tbody = document.getElementById('alltime-leaderboard');
+            
+            if (!alltimeData || alltimeData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
+                    <div class="empty-icon">🏆</div>
+                    <p>No champions yet...</p>
+                </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = alltimeData.map((user, index) => `
+                <tr>
+                    <td><span class="rank-badge ${getRankClass(index + 1)}">${index + 1}</span></td>
+                    <td>${user.nickname || user.uniqueId}</td>
+                    <td>${user.totalCoins.toLocaleString()}</td>
+                    <td>${user.totalGifts || 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const sessionCoins = sessionData.reduce((sum, u) => sum + u.coins, 0);
+            const alltimeCoins = alltimeData.reduce((sum, u) => sum + u.totalCoins, 0);
+            
+            document.getElementById('stat-session-gifters').textContent = sessionData.length;
+            document.getElementById('stat-alltime-gifters').textContent = alltimeData.length;
+            document.getElementById('stat-session-coins').textContent = sessionCoins.toLocaleString();
+            document.getElementById('stat-alltime-coins').textContent = alltimeCoins.toLocaleString();
+        }
+
+        // Get rank class for styling
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-other';
+        }
+
+        // Update config form
+        function updateConfigForm() {
+            document.getElementById('display-limit').value = config.displayLimit || config.top_count || 10;
+            document.getElementById('min-coins').value = config.minCoins || config.min_coins_to_show || 0;
+            document.getElementById('theme-select').value = config.theme || 'neon';
+            document.getElementById('show-animations').checked = config.showAnimations !== undefined ? config.showAnimations : (config.show_animations !== 0);
+            
+            // Set overlay URL dynamically
+            const overlayUrl = `${window.location.protocol}//${window.location.host}/leaderboard/overlay`;
+            document.getElementById('overlay-url').value = overlayUrl;
+            
+            // Set preview URL
+            const previewUrl = `${window.location.protocol}//${window.location.host}/leaderboard/overlay?preview=true&theme=${config.theme || 'neon'}`;
+            document.getElementById('preview-url').value = previewUrl;
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newConfig = {
+                displayLimit: parseInt(formData.get('displayLimit')),
+                minCoins: parseInt(formData.get('minCoins')),
+                top_count: parseInt(formData.get('displayLimit')),
+                min_coins_to_show: parseInt(formData.get('minCoins')),
+                theme: formData.get('theme'),
+                showAnimations: document.getElementById('show-animations').checked,
+                show_animations: document.getElementById('show-animations').checked ? 1 : 0
+            };
+
+            try {
+                const response = await fetch('/api/plugins/leaderboard/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Configuration saved successfully!', 'success');
+                    config = newConfig;
+                    updateConfigForm();
+                } else {
+                    showMessage('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save config:', error);
+                showMessage('Failed to save configuration', 'error');
+            }
+        });
+
+        // Preview button handler
+        document.getElementById('preview-btn').addEventListener('click', () => {
+            const theme = document.getElementById('theme-select').value;
+            const previewUrl = `${window.location.protocol}//${window.location.host}/leaderboard/overlay?preview=true&theme=${theme}`;
+            window.open(previewUrl, '_blank', 'width=500,height=850');
+        });
+
+        // Reset session
+        document.getElementById('reset-session-btn').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to reset the current session? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/plugins/leaderboard/reset-session', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Session reset successfully!', 'success');
+                    loadLeaderboards();
+                } else {
+                    showMessage('Failed to reset session', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to reset session:', error);
+                showMessage('Failed to reset session', 'error');
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            container.appendChild(message);
+            
+            setTimeout(() => message.remove(), 5000);
+        }
+
+        // Socket.io events
+        socket.on('leaderboard:update', (data) => {
+            if (data.session) {
+                sessionData = data.session.data || [];
+                updateSessionLeaderboard();
+            }
+            if (data.alltime) {
+                alltimeData = data.alltime.data || [];
+                updateAlltimeLeaderboard();
+            }
+            updateStats();
+        });
+
+        // OBS Integration Functions
+        function updateObsUrls() {
+            const theme = document.getElementById('obs-theme-select').value;
+            const maxEntries = document.getElementById('obs-max-entries').value;
+            const showAvatars = document.getElementById('obs-show-avatars').checked;
+            
+            const baseUrl = `${window.location.protocol}//${window.location.host}`;
+            const params = `theme=${theme}&maxEntries=${maxEntries}&showAvatars=${showAvatars}`;
+            
+            document.getElementById('url-original').value = `${baseUrl}/leaderboard/overlay?${params}`;
+            document.getElementById('url-bar').value = `${baseUrl}/leaderboard/overlays/bar?${params}`;
+            document.getElementById('url-sidebar').value = `${baseUrl}/leaderboard/overlays/sidebar?${params}&showProgress=true`;
+            document.getElementById('url-popup').value = `${baseUrl}/leaderboard/overlays/popup?${params}&autoHide=true`;
+        }
+
+        function initializeObsTab() {
+            // Set initial OBS theme to match main theme
+            document.getElementById('obs-theme-select').value = config.theme || 'neon';
+            updateObsUrls();
+        }
+
+        function copyUrl(elementId) {
+            const input = document.getElementById(elementId);
+            input.select();
+            input.setSelectionRange(0, input.value.length);
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(input.value)
+                    .then(() => {
+                        showMessage('URL copied to clipboard!', 'success');
+                    })
+                    .catch(() => {
+                        showMessage('Failed to copy URL. Please copy manually.', 'error');
+                    });
+            } else {
+                showMessage('Clipboard not available. Please copy manually.', 'error');
+            }
+        }
+
+        function previewOverlay(type, width, height) {
+            const theme = document.getElementById('obs-theme-select').value;
+            const maxEntries = document.getElementById('obs-max-entries').value;
+            const showAvatars = document.getElementById('obs-show-avatars').checked;
+            
+            const baseUrl = `${window.location.protocol}//${window.location.host}`;
+            let url;
+            let title;
+            
+            switch(type) {
+                case 'original':
+                    url = `${baseUrl}/leaderboard/overlay?theme=${theme}&maxEntries=${maxEntries}&showAvatars=${showAvatars}`;
+                    title = 'Original Overlay';
+                    break;
+                case 'bar':
+                    url = `${baseUrl}/leaderboard/overlays/bar?theme=${theme}&maxEntries=${maxEntries}&showAvatars=${showAvatars}`;
+                    title = 'Bar Overlay';
+                    break;
+                case 'sidebar':
+                    url = `${baseUrl}/leaderboard/overlays/sidebar?theme=${theme}&maxEntries=${maxEntries}&showAvatars=${showAvatars}&showProgress=true`;
+                    title = 'Sidebar Overlay';
+                    break;
+                case 'popup':
+                    url = `${baseUrl}/leaderboard/overlays/popup?theme=${theme}&maxEntries=${maxEntries}&showAvatars=${showAvatars}&autoHide=true`;
+                    title = 'Popup Overlay';
+                    break;
+            }
+            
+            document.getElementById('preview-title').textContent = title;
+            const iframe = document.getElementById('preview-frame');
+            iframe.style.width = width + 'px';
+            iframe.style.height = height + 'px';
+            iframe.src = url;
+            
+            document.getElementById('preview-modal').classList.add('active');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.remove('active');
+            document.getElementById('preview-frame').src = '';
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('preview-modal');
+            if (event.target === modal) {
+                closePreviewModal();
+            }
+        });
+
+        // Event listeners for OBS Integration tab
+        document.querySelectorAll('.btn-copy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.target;
+                copyUrl(targetId);
+            });
+        });
+
+        document.querySelectorAll('.btn-preview').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                const width = parseInt(btn.dataset.width);
+                const height = parseInt(btn.dataset.height);
+                previewOverlay(type, width, height);
+            });
+        });
+
+        document.getElementById('update-obs-urls-btn').addEventListener('click', updateObsUrls);
+        document.getElementById('close-preview-modal').addEventListener('click', closePreviewModal);
+
+        // Initialize
+        loadConfig();
+        loadLeaderboards();
+
+        // Refresh every 10 seconds
+        setInterval(loadLeaderboards, 10000);
+    </script>
+</body>
+</html>

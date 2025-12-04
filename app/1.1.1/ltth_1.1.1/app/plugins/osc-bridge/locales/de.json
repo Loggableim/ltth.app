@@ -1,0 +1,94 @@
+{
+  "osc_bridge": {
+    "title": "OSC-Bridge Einstellungen",
+    "status": {
+      "title": "OSC-Bridge Status",
+      "running": "Läuft",
+      "stopped": "Gestoppt",
+      "messages_sent": "Nachrichten gesendet",
+      "messages_received": "Nachrichten empfangen",
+      "errors": "Fehler",
+      "uptime": "Laufzeit"
+    },
+    "config": {
+      "title": "Konfiguration",
+      "info_title": "VRChat OSC-Integration",
+      "info_text": "Diese Bridge ermöglicht die direkte Kommunikation mit VRChat-Avataren über OSC (Open Sound Control). Aktivieren Sie die Bridge, um TikTok-Events automatisch an VRChat zu senden.",
+      "enable": "OSC-Bridge aktivieren (VRChat-Integration)",
+      "target_host": "Ziel-Host (VRChat IP)",
+      "send_port": "Sende-Port (VRChat empfängt)",
+      "receive_port": "Empfangs-Port (lokaler Port)",
+      "verbose_mode": "Verbose-Modus (alle OSC-Pakete live anzeigen)",
+      "save": "Konfiguration speichern",
+      "start": "Bridge starten",
+      "stop": "Bridge stoppen",
+      "test": "Test-Signal senden"
+    },
+    "parameter_tester": {
+      "title": "VRChat Parameter Tester",
+      "description": "Klicken Sie auf einen Button, um den entsprechenden VRChat-Parameter zu triggern:",
+      "wave": "👋 Wave",
+      "celebrate": "🎉 Celebrate",
+      "dance": "💃 Dance",
+      "hearts": "❤️ Hearts",
+      "confetti": "🎊 Confetti",
+      "emote0": "😀 Emote 0",
+      "emote1": "😎 Emote 1",
+      "emote2": "😂 Emote 2"
+    },
+    "custom_actions": {
+      "title": "Eigene OSC-Aktionen",
+      "subtitle": "Benutzerdefinierte OSC-Nachrichten",
+      "description": "Senden Sie eigene OSC-Nachrichten an VRChat oder andere OSC-kompatible Anwendungen. Die Nachrichten werden an die konfigurierte Zieladresse gesendet.",
+      "address_label": "OSC-Adresse",
+      "address_help": "Muss mit / beginnen, z.B. /avatar/parameters/MyCustomParam",
+      "value_label": "Wert",
+      "value_help": "Zahl (z.B. 1, 0.5, 100), Text (z.B. \"Hallo\") oder Boolean (true/false)",
+      "reset_label": "Auto-Reset nach (ms, optional)",
+      "reset_help": "Wenn gesetzt, wird der Wert nach der angegebenen Zeit auf 0 zurückgesetzt",
+      "send": "Senden"
+    },
+    "log": {
+      "title": "OSC-Nachrichten-Log",
+      "clear": "Log löschen"
+    },
+    "gift_mappings": {
+      "title": "🎁 Gift Catalogue Mappings",
+      "save": "Mappings speichern",
+      "info_title": "Gift-to-Action Mapping",
+      "info_text": "Verknüpfen Sie TikTok-Geschenke mit VRChat OSC-Aktionen. Wenn ein Zuschauer ein bestimmtes Geschenk sendet, wird die zugeordnete Aktion automatisch ausgelöst.",
+      "add_new": "Neue Gift-Verknüpfung hinzufügen",
+      "select_from_catalogue": "Aus Gift-Katalog auswählen",
+      "refresh_catalogue": "🔄 Katalog aktualisieren",
+      "select_gift_or_manual": "-- Geschenk aus Katalog wählen oder unten manuell eingeben --",
+      "catalogue_helper_text": "Wählen Sie ein Geschenk aus dem Katalog, um ID und Name automatisch auszufüllen, oder geben Sie eigene Werte ein",
+      "no_gifts_in_catalogue": "(Keine Geschenke im Katalog - Katalog im Haupt-Dashboard aktualisieren)",
+      "gift_id": "Gift ID",
+      "gift_id_manual": "Gift ID (Manuelle Eingabe)",
+      "gift_name": "Gift Name",
+      "gift_name_manual": "Gift Name (Manuelle Eingabe)",
+      "action": "Aktion",
+      "parameters": "Parameter",
+      "duration_ms": "Dauer (ms)",
+      "emote_slot": "Emote Slot (0-7)",
+      "avatar_id_param": "Avatar ID / Parameter Name",
+      "add_mapping": "Mapping hinzufügen",
+      "remove": "Entfernen",
+      "no_mappings": "Noch keine Gift-Mappings konfiguriert. Fügen Sie unten eines hinzu."
+    },
+    "avatar_management": {
+      "title": "👤 Avatar Management",
+      "save": "Avatare speichern",
+      "info_title": "VRChat Avatar Liste",
+      "info_text": "Verwalten Sie Ihre VRChat-Avatare. Avatar-IDs können in VRChat-Logs oder mit Tools wie VRCLens gefunden werden.",
+      "add_new": "Neuen Avatar hinzufügen",
+      "avatar_name": "Avatar Name",
+      "avatar_id": "Avatar ID",
+      "description": "Beschreibung (optional)",
+      "add_avatar": "Avatar hinzufügen",
+      "switch": "Wechseln",
+      "remove": "Entfernen",
+      "no_avatars": "Noch keine Avatare konfiguriert. Fügen Sie unten einen hinzu."
+    }
+  }
+}
