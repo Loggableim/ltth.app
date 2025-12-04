@@ -69,10 +69,11 @@ type ChangelogEntry struct {
 
 // Global variables
 var (
-	config     LauncherConfig
-	configPath string
-	logFile    *os.File
-	w          webview.WebView
+	config       LauncherConfig
+	configPath   string
+	logFile      *os.File
+	w            webview.WebView
+	encodedHTML  string // Pre-processed HTML for faster loading
 )
 
 func main() {
@@ -81,6 +82,9 @@ func main() {
 	defer logFile.Close()
 
 	log.Println("Starting LTTH Launcher v" + AppVersion)
+
+	// Pre-process HTML once at startup for better performance
+	encodedHTML = strings.ReplaceAll(htmlUI, "\n", " ")
 
 	// Load or create configuration
 	loadConfig()
@@ -399,11 +403,24 @@ func bindFunctions(w webview.WebView) {
 
 		appDir := filepath.Join(config.InstallPath, config.LastVersion)
 		
+		// Validate that appDir is within installPath (prevent path traversal)
+		cleanAppDir := filepath.Clean(appDir)
+		cleanInstallPath := filepath.Clean(config.InstallPath)
+		relPath, err := filepath.Rel(cleanInstallPath, cleanAppDir)
+		if err != nil || strings.HasPrefix(relPath, "..") {
+			return `{"success": false, "error": "Invalid installation path"}`
+		}
+		
 		// Look for index.html to open in browser
-		indexPath := filepath.Join(appDir, "index.html")
-		if _, err := os.Stat(indexPath); err == nil {
-			// Open in default browser
-			cmd := exec.Command("cmd", "/c", "start", "", indexPath)
+		indexPath := filepath.Join(cleanAppDir, "index.html")
+		if info, err := os.Stat(indexPath); err == nil && !info.IsDir() {
+			// Validate file extension for security
+			if !strings.HasSuffix(strings.ToLower(indexPath), ".html") {
+				return `{"success": false, "error": "Invalid file type"}`
+			}
+			// Open in default browser using file:// URL
+			fileURL := "file:///" + strings.ReplaceAll(indexPath, "\\", "/")
+			cmd := exec.Command("cmd", "/c", "start", "", fileURL)
 			if err := cmd.Start(); err != nil {
 				return fmt.Sprintf(`{"success": false, "error": "%s"}`, err.Error())
 			}
@@ -412,10 +429,10 @@ func bindFunctions(w webview.WebView) {
 		}
 
 		// Look for launch.js (Node.js app)
-		launchJS := filepath.Join(appDir, "launch.js")
-		if _, err := os.Stat(launchJS); err == nil {
+		launchJS := filepath.Join(cleanAppDir, "launch.js")
+		if info, err := os.Stat(launchJS); err == nil && !info.IsDir() {
 			cmd := exec.Command("node", launchJS)
-			cmd.Dir = appDir
+			cmd.Dir = cleanAppDir
 			if err := cmd.Start(); err != nil {
 				return fmt.Sprintf(`{"success": false, "error": "%s"}`, err.Error())
 			}
@@ -478,10 +495,16 @@ func compareVersions(v1, v2 string) int {
 	for i := 0; i < 3; i++ {
 		var p1, p2 int
 		if i < len(v1Parts) {
-			fmt.Sscanf(v1Parts[i], "%d", &p1)
+			// Parse version part, ignore errors (default to 0)
+			if _, err := fmt.Sscanf(v1Parts[i], "%d", &p1); err != nil {
+				p1 = 0
+			}
 		}
 		if i < len(v2Parts) {
-			fmt.Sscanf(v2Parts[i], "%d", &p2)
+			// Parse version part, ignore errors (default to 0)
+			if _, err := fmt.Sscanf(v2Parts[i], "%d", &p2); err != nil {
+				p2 = 0
+			}
 		}
 		if p1 > p2 {
 			return 1
@@ -523,13 +546,22 @@ func extractZip(src, dest string) error {
 	}
 	defer r.Close()
 
-	os.MkdirAll(dest, 0755)
+	// Clean and normalize destination path
+	cleanDest := filepath.Clean(dest)
+	os.MkdirAll(cleanDest, 0755)
 
 	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
+		// Clean the file name to prevent directory traversal
+		cleanName := filepath.Clean(f.Name)
+		if strings.HasPrefix(cleanName, "..") {
+			return fmt.Errorf("invalid file path in archive: %s", f.Name)
+		}
+		
+		fpath := filepath.Join(cleanDest, cleanName)
 
-		// Security check for zip slip vulnerability
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+		// Security check for zip slip vulnerability using filepath.Rel
+		relPath, err := filepath.Rel(cleanDest, fpath)
+		if err != nil || strings.HasPrefix(relPath, "..") {
 			return fmt.Errorf("invalid file path: %s", fpath)
 		}
 
@@ -618,9 +650,9 @@ func calculateSHA256(filepath string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// getEncodedHTML returns the HTML UI (embedded)
+// getEncodedHTML returns the pre-processed HTML UI
 func getEncodedHTML() string {
-	return strings.ReplaceAll(htmlUI, "\n", " ")
+	return encodedHTML
 }
 
 // Embedded HTML UI
