@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Changelog de PupCid's Little TikTok Helper. Todas las actualizaciones, mejoras y correcciones de bugs de un vistazo.">
+    <title>Changelog - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/changelog.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/changelog-en.html">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/changelog-fr.html">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/changelog-es.html">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/changelog.html">
+    <link rel="canonical" href="https://ltth.app/changelog-es.html">
+    
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/index-es.html" class="logo">
+                    <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Alternar navegación">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/index-es.html" class="nav-link">Inicio</a>
+                    <a href="/features-es.html" class="nav-link">Funciones</a>
+                    <a href="/plugins-es.html" class="nav-link">Plugins</a>
+                    <a href="/docs-es.html" class="nav-link">Docs</a>
+                    <a href="/community-es.html" class="nav-link">Comunidad</a>
+                    <a href="/changelog-es.html" class="nav-link active">Changelog</a>
+                    <a href="/roadmap-es.html" class="nav-link">Roadmap</a>
+                    <a href="/faq-es.html" class="nav-link">FAQ</a>
+                    <a href="/support-es.html" class="nav-link">Soporte</a>
+                    <a href="/download-es.html" class="nav-link nav-cta">Descargar</a>
+                                        
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Seleccionar idioma">
+                            <span class="lang-flag">🇪🇸</span>
+                            <span class="lang-text">ES</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/changelog.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/changelog-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                            <a href="/changelog-fr.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇫🇷</span>
+                                <span>Français</span>
+                            </a>
+                            <a href="/changelog-es.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇪🇸</span>
+                                <span>Español</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo oscuro">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center"><span class="hero-highlight">Changelog</span></h1>
+            <p class="hero-description text-center" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+                Todas las actualizaciones, mejoras y correcciones de bugs de un vistazo
+            </p>
+            <div style="text-align: center; margin-top: var(--space-6);">
+                <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/blob/main/app/CHANGELOG.md" target="_blank" rel="noopener" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                    Changelog completo en GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container" style="max-width: 900px;">
+            <!-- Version 1.1.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Versión 1.1.1</h2>
+                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Última</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Lanzamiento: 3 de diciembre de 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Destacados</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Esta versión trae grandes mejoras para el Plugin Leaderboard con nuevos diseños de Overlay OBS, un sistema completo de depuración de eventos Gift de OpenShock y numerosas correcciones de bugs críticos.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Nuevas funciones</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Plugin Leaderboard v1.2.0 - Extensión del sistema de Overlay OBS</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Diseño de barra - Barra horizontal para arriba/abajo del stream (1920x80)</li>
+                            <li>Diseño de barra lateral - Barra lateral vertical para el lado derecho (400x1080)</li>
+                            <li>Diseño de popup - Popup temporal para highlights (600x700)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sistema Hype Mode</strong> - Nuevos eventos WebSocket y efectos visuales</li>
+                    <li><strong>Funcionalidad Auto-Hide Popup</strong> - Popup aparece automáticamente con cambios de ranking</li>
+                    <li><strong>Plugin OpenShock: Depuración de pipeline de eventos Gift</strong></li>
+                    <li><strong>Plugin OpenShock: Coincidencia de Gifts con comodín</strong></li>
+                    <li><strong>Plugin OpenShock: Mapeos por rango de Coins</strong></li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Correcciones de bugs críticos</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Errores de consola corregidos</strong> - Cloud Sync, Sistema de audio, Detección de GPU</li>
+                    <li><strong>Imágenes de perfil</strong> - Helper de extracción para estructura de objeto de API TikTok</li>
+                    <li><strong>Pipeline de eventos Gift de OpenShock completamente reparado</strong></li>
+                </ul>
+            </div>
+
+            <!-- Version 1.1.0 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Versión 1.1.0</h2>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Lanzamiento: 1 de diciembre de 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Destacados</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    ¡El lanzamiento oficial de la versión 1.1 de Pup Cid's Little TikTok Helper! Esta versión contiene grandes mejoras en la conectividad con TikTok, nuevos plugins y mejoras significativas de estabilidad.
+                </p>
+
+                <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 CAMBIOS IMPORTANTES</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Migración a Eulerstream WebSocket SDK</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Reemplazo completo de tiktok-live-connector por Eulerstream SDK</li>
+                            <li>Clave API de Eulerstream ahora REQUERIDA</li>
+                            <li>Compatibilidad hacia atrás con handlers de eventos existentes</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Nuevas funciones</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Plugin Weather Control</strong> - 7 efectos meteorológicos modernos</li>
+                    <li><strong>Sistema de auto-actualización</strong> - Comprobación automática de actualizaciones</li>
+                    <li><strong>Descarga directa</strong> - Descarga ahora directamente vía ltth.app</li>
+                </ul>
+            </div>
+
+            <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
+                <h3 style="margin-bottom: var(--space-4); color: white;">⚠️ Aviso Beta</h3>
+                <p style="margin-bottom: var(--space-6); opacity: 0.9;">
+                    Esta herramienta está en desarrollo activo. Las funciones pueden cambiar. 
+                    Por favor, reporta bugs y solicitudes de funciones en GitHub.
+                </p>
+                <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener" 
+                   style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    GitHub Issues
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2025 ltth.app. Todos los derechos reservados.</p>
+                <p class="footer-legal"><a href="/impressum-es.html">Aviso legal</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
