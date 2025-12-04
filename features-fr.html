@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Découvrez toutes les fonctionnalités de PupCid's Little TikTok Helper : Événements temps réel, plus de 75 voix TTS, plus de 100 000 sons, Alertes personnalisables, Objectifs, Automatisation d'événements et plus encore pour les streamers TikTok LIVE.">
+    <title>Fonctionnalités - PupCid's Little TikTok Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/features.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/features-en.html">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/features-fr.html">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/features.html">
+    <link rel="canonical" href="https://ltth.app/features-fr.html">
+    
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <a href="/index-fr.html" class="logo">
+                    <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                    <span class="logo-text">ltth.app</span>
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Basculer la navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="nav-menu" id="navMenu">
+                    <a href="/index-fr.html" class="nav-link">Accueil</a>
+                    <a href="/features-fr.html" class="nav-link active">Fonctionnalités</a>
+                    <a href="/plugins-fr.html" class="nav-link">Plugins</a>
+                    <a href="/docs-fr.html" class="nav-link">Docs</a>
+                    <a href="/community-fr.html" class="nav-link">Communauté</a>
+                    <a href="/changelog-fr.html" class="nav-link">Changelog</a>
+                    <a href="/roadmap-fr.html" class="nav-link">Roadmap</a>
+                    <a href="/faq-fr.html" class="nav-link">FAQ</a>
+                    <a href="/support-fr.html" class="nav-link">Support</a>
+                    <a href="/download-fr.html" class="nav-link nav-cta">Télécharger</a>
+                                        
+                    <!-- Language Dropdown -->
+                    <div class="lang-dropdown">
+                        <a href="#" class="lang-dropdown-toggle" aria-label="Sélectionner la langue">
+                            <span class="lang-flag">🇫🇷</span>
+                            <span class="lang-text">FR</span>
+                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </a>
+                        <div class="lang-dropdown-menu">
+                            <a href="/features.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇩🇪</span>
+                                <span>Deutsch</span>
+                            </a>
+                            <a href="/features-en.html" class="lang-dropdown-item">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </a>
+                            <a href="/features-fr.html" class="lang-dropdown-item active">
+                                <span class="lang-flag">🇫🇷</span>
+                                <span>Français</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Toggle -->
+                    <button class="theme-toggle" id="themeToggle" aria-label="Basculer le mode sombre">
+                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Beta Notice -->
+    <section class="beta-notice" id="betaNotice">
+        <div class="container">
+            <div class="beta-content">
+                <div class="beta-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="beta-text">
+                    <strong>🚀 Version <span id="betaVersion">1.1.1</span> :</strong> En développement actif avec de nouvelles fonctionnalités ! 
+                    Déjà entièrement fonctionnel pour une utilisation en production. 
+                    Aidez-nous à nous améliorer :<br>
+                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Signaler des bugs</a> 
+                    ou <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Suggérer des fonctionnalités</a>. 
+                    <a href="/roadmap-fr.html">Voir la roadmap →</a>
+                </div>
+                <button class="beta-close" id="betaClose" aria-label="Fermer l'avis beta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title text-center">
+                Fonctionnalités puissantes pour les <span class="hero-highlight">Streamers TikTok LIVE</span>
+            </h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Découvrez toutes les fonctionnalités qui font de PupCid's Little TikTok Helper la solution de streaming ultime 
+                pour les streamers TikTok LIVE professionnels, les agences et les créateurs de contenu.
+            </p>
+        </div>
+    </section>
+
+    <!-- Dashboard Screenshot -->
+    <section class="features-preview">
+        <div class="container">
+            <div class="screenshot-container">
+                <img src="/assets/screenshots/dashboard-main.png" alt="Interface du tableau de bord - Statistiques en direct, état de connexion TikTok et actions rapides" 
+                     style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);" />
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Fonctionnalités principales</h2>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Intégration TikTok LIVE</h3>
+                    <p class="feature-description">
+                        Connexion en direct via nom d'utilisateur sans identifiants. Recevez les Cadeaux, Commentaires, Follows, Partages, 
+                        Likes et Abonnements en temps réel. Reconnexion automatique en cas de perte de connexion. Statistiques en direct 
+                        et catalogue complet des cadeaux avec tous les cadeaux TikTok actuels.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Text-to-Speech avec plus de 75 voix</h3>
+                    <p class="feature-description">
+                        Plus de 75 voix TikTok originales incluant l'allemand, l'anglais, l'espagnol et bien d'autres 
+                        langues. En option, plus de 30 voix Google Cloud. Mapping de voix spécifique par utilisateur, TTS automatique 
+                        pour les messages du chat, fonction de liste noire, paramètres de volume et vitesse personnalisables.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Système d'alertes</h3>
+                    <p class="feature-description">
+                        Alertes personnalisables pour tous les types d'événements (Cadeaux, Follows, Partages, Likes, Abonnements). 
+                        Combinaison de son, texte et image/GIF. Système de templates avec variables comme {username}, 
+                        {coins}, {message}. Filtre de coins minimum pour les alertes premium.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                            <line x1="6" y1="6" x2="6" y2="6"/>
+                            <line x1="6" y1="18" x2="6" y2="18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Soundboard : Plus de 100 000 sons</h3>
+                    <p class="feature-description">
+                        Accès direct à la base de données MyInstants avec plus de 100 000 sons. Sons spécifiques aux cadeaux 
+                        avec affichage automatique des icônes. Sons d'événements pour Follow, Subscribe et Share. Système de seuil de Likes 
+                        (ex. son à 100, 500, 1000 Likes). Sélecteur de sons avec recherche, favoris et sons tendance.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Système d'objectifs</h3>
+                    <p class="feature-description">
+                        4 objectifs séparés : Likes, Followers, Abonnements et Coins. Chaque objectif a sa propre 
+                        URL de source navigateur pour OBS. Styles entièrement personnalisables (couleurs, polices, animations, 
+                        positions). Modes automatiques à l'atteinte de l'objectif : Add (ajouter nouvel objectif), Double (doubler) 
+                        ou Hide (masquer).
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Automatisation d'événements (Flows)</h3>
+                    <p class="feature-description">
+                        Automatisations Si-Alors sans connaissances en programmation. 6 types de déclencheurs (Cadeau, Follow, 
+                        Partage, Seuil de Likes, Abonnement, Chat). 6 types d'actions (TTS, Alerte, Son, Webhook, 
+                        Write_File, Délai). Conditions complexes avec 8 opérateurs (==, !=, >, <, >=, <=, contains, 
+                        regex).
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Intégration OBS</h3>
+                    <p class="feature-description">
+                        Overlay Full-HD transparent (1920x1080) comme source navigateur. Configuration HUD via 
+                        Drag & Drop : Flux d'événements, Spotlight dernier événement, Top Gifters, Stats et plus. URLs de sources navigateur 
+                        séparées pour chaque objectif. Le flux d'événements affiche les derniers événements avec icônes, noms d'utilisateur 
+                        et valeurs.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Système de profils utilisateur</h3>
+                    <p class="feature-description">
+                        Gérez plusieurs bases de données pour différentes configurations de streaming. Changement rapide de profil, 
+                        fonction de sauvegarde complète, configurations séparées pour streams gaming, streams IRL, 
+                        événements spéciaux, etc. Chaque profil a ses propres paramètres, flows, soundboard et objectifs.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Intégration Webhook</h3>
+                    <p class="feature-description">
+                        Envoyez des événements à des services externes via webhooks HTTP. Déclenchez IFTTT, Zapier, Discord, 
+                        Slack et plus. Définissez des payloads personnalisés avec des variables d'événements. Parfait pour les automatisations 
+                        avancées et les intégrations multi-plateformes.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Statistiques en direct</h3>
+                    <p class="feature-description">
+                        Stats en temps réel dans le tableau de bord : Durée du stream, Viewers totaux, Pic de viewers, Likes totaux, 
+                        Partages totaux, Follows totaux, Abonnements totaux, Coins totaux. Classement Top Gifters, 
+                        graphique de distribution des cadeaux et timeline des événements.
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">100% Local & Open Source</h3>
+                    <p class="feature-description">
+                        Toutes les données restent sur votre ordinateur. Pas de connexion cloud requise. Pas 
+                        d'identifiants de connexion, pas de collecte de données, pas de tracking. Entièrement Open Source sur GitHub. 
+                        Licence MIT. Transparent, sécurisé et piloté par la communauté.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section: Flows & Goals -->
+    <section style="background: var(--color-bg); padding: 4rem 0;">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 4rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Automatisation d'événements (Flows)</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Créez des automatisations "Si-Alors" sans programmation. Déclenchez TTS, Alertes, 
+                        scènes OBS, actions OSC et plus basé sur les événements TikTok.
+                    </p>
+                    <img src="/assets/screenshots/flows-editor.png" alt="Éditeur de Flow IFTTT - Constructeur d'automatisation visuel avec déclencheurs, conditions et actions" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Objectifs & Barres de progression</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        4 objectifs séparés pour Likes, Followers, Abonnements et Coins. Chaque objectif avec 
+                        sa propre URL de source navigateur pour OBS.
+                    </p>
+                    <img src="/assets/screenshots/goals-overlay.png" alt="Overlay d'objectifs - Source navigateur OBS avec barres de progression en temps réel" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Paramètres Text-to-Speech</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Plus de 75 voix TikTok et plus de 30 voix Google Cloud. Mappings de voix utilisateur, Auto-TTS, 
+                        contrôle volume/vitesse et système de liste noire.
+                    </p>
+                    <img src="/assets/screenshots/tts-admin.png" alt="Panneau d'administration TTS - Configuration complète des voix avec plus de 75 voix TikTok et moteurs premium" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">Interface Soundboard</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Plus de 100 000 sons via MyInstants. Mappings spécifiques aux cadeaux, sons d'événements, 
+                        système de seuil de Likes et uploads personnalisés.
+                    </p>
+                    <img src="/assets/screenshots/soundboard-detail.png" alt="Configuration Soundboard - Mapping cadeau-vers-son et intégration MyInstants" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- OBS Integration Screenshot -->
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Intégration OBS Studio</h2>
+            <p class="section-subtitle" style="margin-bottom: 3rem;">
+                Intégration complète avec OBS WebSocket v5 pour le contrôle des scènes et les overlays de source navigateur
+            </p>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Prêt à utiliser toutes les fonctionnalités ?</h2>
+                <p class="cta-description">
+                    Téléchargez PupCid's Little TikTok Helper maintenant et transformez vos streams TikTok LIVE 
+                    avec des fonctionnalités professionnelles dès aujourd'hui.
+                </p>
+                <div class="cta-actions">
+                    <a href="/download-fr.html" class="btn btn-primary btn-large">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Télécharger maintenant
+                    </a>
+                    <a href="/docs-fr.html" class="btn btn-secondary btn-large">
+                        Lire la documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTok Helper - La solution de streaming TikTok LIVE professionnelle.
+                    </p>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Produit</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features-fr.html">Fonctionnalités</a></li>
+                        <li><a href="/plugins-fr.html">Plugins</a></li>
+                        <li><a href="/changelog-fr.html">Changelog</a></li>
+                        <li><a href="/roadmap-fr.html">Roadmap</a></li>
+                        <li><a href="/download-fr.html">Télécharger</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Ressources</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs-fr.html">Documentation</a></li>
+                        <li><a href="/faq-fr.html">FAQ</a></li>
+                        <li><a href="/support-fr.html">Support</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-col">
+                    <h4 class="footer-title">Communauté</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener">Signaler un bug</a></li>
+                        <li><a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues/new" target="_blank" rel="noopener">Demander une fonctionnalité</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2025 ltth.app - PupCid's Little TikTok Helper. Tous droits réservés.
+                </p>
+                <p class="footer-legal">
+                    <a href="/impressum-fr.html">Mentions légales</a>
+                </p>
+                <p class="footer-credits">
+                    Fait avec <span class="heart">♥</span> par Loggableim
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
