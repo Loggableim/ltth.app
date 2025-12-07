@@ -1,0 +1,6 @@
+# Ignore all version directories in new_patch
+# Only commit .gitkeep to maintain directory structure
+ltth_*/
+
+# Allow .gitkeep
+!.gitkeep
