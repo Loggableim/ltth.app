@@ -1,9 +1,9 @@
-# TikTok Helper - Screenshot Documentation
+# TikTool Helper - Screenshot Documentation
 
 **Generated:** 2025-11-18T04:03:56.527Z
 **Last Updated:** 2025-11-18T04:15:00.000Z
 
-This directory contains comprehensive screenshots of the TikTok Helper application's user interfaces. These screenshots are intended for documentation, LLM training, and understanding the application's functionality.
+This directory contains comprehensive screenshots of the TikTool Helper application's user interfaces. These screenshots are intended for documentation, LLM training, and understanding the application's functionality.
 
 ## Current Status
 

@@ -269,4 +269,4 @@ Logs all goal events for analytics and debugging.
 
 ## 📝 License
 
-Part of PupCid's TikTok Helper Tool
+Part of PupCid's TikTool Helper Tool

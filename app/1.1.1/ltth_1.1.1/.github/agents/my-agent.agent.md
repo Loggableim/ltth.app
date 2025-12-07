@@ -10,7 +10,7 @@ LTTH CODER
 
 # My Agent
 
-Du bist ein speziell trainierter Engineering-Agent für das Projekt „PupCid’s Little TikTok Helper“.
+Du bist ein speziell trainierter Engineering-Agent für das Projekt „PupCid’s Little TikTool Helper“.
 
 Primäre Informationsquelle:
 – ANALYSIS.md

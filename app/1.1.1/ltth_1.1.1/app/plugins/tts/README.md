@@ -1,6 +1,6 @@
 # TTS Plugin System v2.0
 
-Enterprise-grade Text-to-Speech plugin for Pup Cids Little TikTok Helper with multi-engine support, advanced permission system, language detection, caching, and professional queue management.
+Enterprise-grade Text-to-Speech plugin for Pup Cids Little TikTool Helper with multi-engine support, advanced permission system, language detection, caching, and professional queue management.
 
 ## 🎯 Features
 
@@ -426,7 +426,7 @@ Modify `_calculatePriority()` in `utils/queue-manager.js`
 
 ## 📜 License
 
-CC BY-NC 4.0 License - Part of Pup Cids Little TikTok Helper
+CC BY-NC 4.0 License - Part of Pup Cids Little TikTool Helper
 
 ## 🆘 Support
 

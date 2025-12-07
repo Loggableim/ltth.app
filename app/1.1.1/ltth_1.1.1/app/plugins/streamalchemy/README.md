@@ -4,7 +4,7 @@ Transform TikTok gifts into virtual RPG items with AI-powered crafting mechanics
 
 ## Overview
 
-StreamAlchemy is a comprehensive plugin for "Pup Cid's Little TikTok Helper" that creates an immersive RPG-style item collection and crafting system. When viewers send TikTok gifts, those gifts are transformed into unique virtual items with AI-generated icons. When viewers send two gifts within 6 seconds, those items automatically combine into more powerful crafted items.
+StreamAlchemy is a comprehensive plugin for "Pup Cid's Little TikTool Helper" that creates an immersive RPG-style item collection and crafting system. When viewers send TikTok gifts, those gifts are transformed into unique virtual items with AI-generated icons. When viewers send two gifts within 6 seconds, those items automatically combine into more powerful crafted items.
 
 ## Features
 

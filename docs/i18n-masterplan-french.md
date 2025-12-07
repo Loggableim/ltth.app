@@ -84,7 +84,7 @@
 
 #### Keywords (Französisch)
 - Outil TikTok LIVE
-- TikTok Helper
+- TikTool Helper
 - Analytics en direct
 - Outils de streaming
 - Logiciel streamer TikTok

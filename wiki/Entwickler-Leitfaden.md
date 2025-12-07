@@ -510,7 +510,7 @@ Erstelle `postman_collection.json`:
 ```json
 {
   "info": {
-    "name": "TikTok Helper API",
+    "name": "TikTool Helper API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

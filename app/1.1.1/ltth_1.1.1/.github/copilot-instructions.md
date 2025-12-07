@@ -1,10 +1,10 @@
-# GitHub Copilot Instructions for Pup Cid's Little TikTok Helper
+# GitHub Copilot Instructions for Pup Cid's Little TikTool Helper
 
 This file provides custom instructions to GitHub Copilot for working with this repository.
 
 ## 📋 Project Overview
 
-**Name:** Pup Cid's Little TikTok Helper (LTTH)  
+**Name:** Pup Cid's Little TikTool Helper (LTTH)  
 **Stack:** Node.js + Express.js + Socket.io + SQLite + TikTok LIVE Connector  
 **Architecture:** Plugin-based system with modular core modules  
 **License:** CC-BY-NC-4.0

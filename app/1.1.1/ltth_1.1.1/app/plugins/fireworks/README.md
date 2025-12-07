@@ -163,4 +163,4 @@ Parameters:
 
 ## License
 
-CC BY-NC 4.0 License - Part of PupCid's Little TikTok Helper
+CC BY-NC 4.0 License - Part of PupCid's Little TikTool Helper

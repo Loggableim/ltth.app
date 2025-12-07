@@ -45,7 +45,7 @@ Open your new translation file and translate all values while keeping the keys u
 ```json
 {
   "app": {
-    "name": "Pup Cid's Little TikTok Helper",
+    "name": "Pup Cid's Little TikTool Helper",
     "tagline": "Your translated tagline here"
   },
   "dashboard": {

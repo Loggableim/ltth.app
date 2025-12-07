@@ -3,7 +3,7 @@
   "name": "Quiz Show",
   "version": "1.0.0",
   "description": "Interactive quiz show plugin in the style of 'Who Wants to Be a Millionaire' for TikTok livestreams with chat integration, jokers, and leaderboard",
-  "author": "TikTok Helper",
+  "author": "TikTool Helper",
   "entry": "main.js",
   "enabled": true,
   "type": "module",

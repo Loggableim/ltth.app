@@ -1,4 +1,4 @@
-# Pup Cids Little TikTok Helper - Wiki
+# Pup Cids Little TikTool Helper - Wiki
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
@@ -43,7 +43,7 @@
 
 ## 🎯 Über das Projekt
 
-**Pup Cids Little TikTok Helper** ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.
+**Pup Cids Little TikTool Helper** ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.
 
 ### ✨ Besonderheiten
 
@@ -452,7 +452,7 @@ Dieses Projekt ist unter der **MIT-Lizenz** lizenziert.
 ```
 MIT License
 
-Copyright (c) 2024 Pup Cids Little TikTok Helper Contributors
+Copyright (c) 2024 Pup Cids Little TikTool Helper Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

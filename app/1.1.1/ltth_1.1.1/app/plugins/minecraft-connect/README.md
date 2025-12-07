@@ -17,14 +17,14 @@ The Minecraft Connect plugin enables streamers to create interactive experiences
 
 The plugin consists of three components:
 
-1. **Dashboard Plugin** (Node.js/Express) - Configuration UI in the TikTok Helper dashboard
-2. **WebSocket Bridge** (Node.js) - Secure communication bridge running in the TikTok Helper
+1. **Dashboard Plugin** (Node.js/Express) - Configuration UI in the TikTool Helper dashboard
+2. **WebSocket Bridge** (Node.js) - Secure communication bridge running in the TikTool Helper
 3. **Minecraft Mod** (Java/Fabric) - Fabric mod that receives and executes actions in-game
 
 ```
 TikTok Live Event
     ↓
-TikTok Helper (Dashboard + Bridge)
+TikTool Helper (Dashboard + Bridge)
     ↓ (WebSocket)
 Minecraft Fabric Mod
     ↓
@@ -69,7 +69,7 @@ Minecraft Game Actions
 
 ### 1. Plugin Installation (Already Installed)
 
-This plugin is automatically loaded by the TikTok Helper when the server starts.
+This plugin is automatically loaded by the TikTool Helper when the server starts.
 
 ### 2. Minecraft Mod Installation
 
@@ -87,7 +87,7 @@ See [Minecraft Mod Documentation](docs/MINECRAFT_MOD.md) for detailed instructio
 
 ### Dashboard Configuration
 
-1. Open the TikTok Helper dashboard
+1. Open the TikTool Helper dashboard
 2. Navigate to the "Minecraft Connect" plugin
 3. Go to the "Settings" tab
 4. Configure:
@@ -219,7 +219,7 @@ Executes a Minecraft command.
 - Verify mod is installed correctly
 - Check Minecraft logs for errors
 - Ensure WebSocket port (25560) is not blocked
-- Try restarting both Minecraft and TikTok Helper
+- Try restarting both Minecraft and TikTool Helper
 
 ### Actions Not Triggering
 
@@ -244,7 +244,7 @@ See [Build Instructions](docs/BUILD_INSTRUCTIONS.md) for detailed information.
 
 ### Testing
 
-1. Start the TikTok Helper server
+1. Start the TikTool Helper server
 2. Launch Minecraft with the mod
 3. Check connection status in dashboard
 4. Use "Test Action" button to verify functionality
@@ -294,7 +294,7 @@ For issues or questions:
 
 ## Credits
 
-- Built for the TikTok Helper streaming tool
+- Built for the TikTool Helper streaming tool
 - Uses Fabric for Minecraft modding
 - WebSocket communication via ws library
 - UI styling with custom CSS

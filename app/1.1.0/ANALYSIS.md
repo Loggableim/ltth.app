@@ -1,4 +1,4 @@
-# Repository Analysis: Pup Cid's Little TikTok Helper
+# Repository Analysis: Pup Cid's Little TikTool Helper
 
 **Analysis Date:** 2025-11-26  
 **Repository:** Loggableim/ltth_dev  
@@ -9,7 +9,7 @@
 
 ## Repository Overview
 
-**Pup Cid's Little TikTok Helper** is a professional Node.js-based TikTok LIVE streaming tool that provides overlays, alerts, text-to-speech, soundboard, and event automation capabilities for TikTok streamers.
+**Pup Cid's Little TikTool Helper** is a professional Node.js-based TikTok LIVE streaming tool that provides overlays, alerts, text-to-speech, soundboard, and event automation capabilities for TikTok streamers.
 
 ### Tech Stack
 | Component | Technology | Version |
@@ -246,7 +246,7 @@ ltth_dev/
 
 ## Summary
 
-**Pup Cid's Little TikTok Helper** is a mature, feature-rich TikTok streaming tool with:
+**Pup Cid's Little TikTool Helper** is a mature, feature-rich TikTok streaming tool with:
 - ✅ Comprehensive plugin ecosystem (24 plugins)
 - ✅ Solid architecture (event-driven, modular)
 - ✅ Cross-platform support

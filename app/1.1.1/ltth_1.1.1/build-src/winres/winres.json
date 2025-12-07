@@ -13,7 +13,7 @@
           "name": "TikTok Stream Tool Launcher",
           "version": "1.0.0.0"
         },
-        "description": "Pup Cid's Little TikTok Helper - Launcher",
+        "description": "Pup Cid's Little TikTool Helper - Launcher",
         "minimum-os": "win7",
         "execution-level": "as invoker",
         "ui-access": false,
@@ -42,14 +42,14 @@
           "0409": {
             "Comments": "TikTok Stream Tool Launcher",
             "CompanyName": "",
-            "FileDescription": "Pup Cid's Little TikTok Helper - Launcher",
+            "FileDescription": "Pup Cid's Little TikTool Helper - Launcher",
             "FileVersion": "1.0.0.0",
             "InternalName": "launcher",
             "LegalCopyright": "",
             "LegalTrademarks": "",
             "OriginalFilename": "launcher.exe",
             "PrivateBuild": "",
-            "ProductName": "Pup Cid's Little TikTok Helper",
+            "ProductName": "Pup Cid's Little TikTool Helper",
             "ProductVersion": "1.0.0.0",
             "SpecialBuild": ""
           }

@@ -1,4 +1,4 @@
-# LLM Start Here - Pup Cid's Little TikTok Helper
+# LLM Start Here - Pup Cid's Little TikTool Helper
 
 **Entwickler-Leitfaden für KI-Assistenten**
 
@@ -8,7 +8,7 @@ Diese Datei dient als zentraler Einstiegspunkt für LLMs, die an diesem Projekt 
 
 ## 📋 Projektübersicht
 
-**Name:** Pup Cid's Little TikTok Helper
+**Name:** Pup Cid's Little TikTool Helper
 **Stack:** Node.js + Express + Socket.io + SQLite + TikTok LIVE Connector
 **Version:** 1.0.3
 **Letzte Aktualisierung:** 2025-11-15

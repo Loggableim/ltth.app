@@ -1,6 +1,6 @@
 # API Bridge Plugin
 
-Ermöglicht externen Anwendungen die Steuerung des TikTok Helper Tools via HTTP REST API und WebSocket.
+Ermöglicht externen Anwendungen die Steuerung des TikTool Helper Tools via HTTP REST API und WebSocket.
 
 ## Features
 
@@ -28,7 +28,7 @@ Gibt Informationen über die Anwendung zurück.
 {
   "success": true,
   "data": {
-    "name": "PupCids Little TikTok Helper",
+    "name": "PupCids Little TikTool Helper",
     "author": "Python.72",
     "version": "1.0.0",
     "plugin": "api-bridge",

@@ -6,9 +6,9 @@
 
 ### Meldeprozess / Reporting Process
 
-Wenn du eine Sicherheitslücke in PupCid's Little TikTok Helper gefunden hast, melde sie bitte **vertraulich**:
+Wenn du eine Sicherheitslücke in PupCid's Little TikTool Helper gefunden hast, melde sie bitte **vertraulich**:
 
-If you have discovered a security vulnerability in PupCid's Little TikTok Helper, please report it **confidentially**:
+If you have discovered a security vulnerability in PupCid's Little TikTool Helper, please report it **confidentially**:
 
 1. **E-Mail:** [loggableim@gmail.com](mailto:loggableim@gmail.com)
 2. **Betreff / Subject:** `[SECURITY] Kurze Beschreibung / Brief description`

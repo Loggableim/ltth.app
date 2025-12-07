@@ -387,7 +387,7 @@ Um einen einfachen Flow zu erstellen:
 
 2. **Neue Browser Source erstellen**
    - Rechtsklick in Sources → Add → Browser
-   - Name: "TikTok Helper Overlay"
+   - Name: "TikTool Helper Overlay"
 
 3. **URL eingeben**
    ```
@@ -434,7 +434,7 @@ Für separate Goal-Overlays:
 5. **Server Password:** (optional, leer lassen oder Passwort setzen)
 6. **Apply** → **OK**
 
-Dann im TikTok Helper:
+Dann im TikTool Helper:
 1. Gehe zu **Plugins** → **Multi-Cam Switcher**
 2. OBS WebSocket konfigurieren:
    - Host: `localhost`
@@ -457,7 +457,7 @@ Das Tool nutzt **Port 3000** für das Web-Dashboard.
 4. Typ: **Port**
 5. Port: `3000`
 6. Aktion: **Verbindung zulassen**
-7. Name: `TikTok Helper`
+7. Name: `TikTool Helper`
 8. Fertigstellen
 
 **Linux (ufw):**

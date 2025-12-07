@@ -1,4 +1,4 @@
-# Pup Cids Little TikTok Helper
+# Pup Cids Little TikTool Helper
 
 Ein einfach zu bedienendes Tool für TikTok LIVE Streaming mit Overlays, Alerts, Text-to-Speech und mehr.
 

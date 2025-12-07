@@ -21,7 +21,7 @@
 
 ## 🔍 Übersicht
 
-Das Plugin-System ermöglicht es, die Funktionalität des TikTok Helpers zu erweitern, ohne den Core-Code zu modifizieren. Plugins können:
+Das Plugin-System ermöglicht es, die Funktionalität des TikTool Helpers zu erweitern, ohne den Core-Code zu modifizieren. Plugins können:
 
 - **Express-Routes** registrieren (REST-API-Endpunkte)
 - **Socket.io-Events** abonnieren und emittieren

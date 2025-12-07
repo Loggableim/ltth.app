@@ -1,6 +1,6 @@
 # Leaderboard Plugin
 
-A real-time leaderboard plugin for "Pup Cid's Little TikTok Helper" that tracks top gifters for both the current session and all-time.
+A real-time leaderboard plugin for "Pup Cid's Little TikTool Helper" that tracks top gifters for both the current session and all-time.
 
 ## Features
 
@@ -471,5 +471,5 @@ Tabs will rotate every 30 seconds.
 
 ## Credits
 
-Created for "Pup Cid's Little TikTok Helper"
+Created for "Pup Cid's Little TikTool Helper"
 Author: Pup Cid
