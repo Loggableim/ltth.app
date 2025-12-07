@@ -1,5 +1,5 @@
 # Tool-Grundscan: Executive Summary
-## PupCid's Little TikTok Helper - Website Optimization Analysis
+## PupCid's Little TikTool Helper - Website Optimization Analysis
 
 **Datum:** 22. November 2024  
 **Version:** 2.0.0-beta  
@@ -9,7 +9,7 @@
 
 ## 📊 Zusammenfassung
 
-Dieser Grundscan analysiert **PupCid's Little TikTok Helper** (ltth.app), ein professionelles Open-Source-Tool für TikTok LIVE Streamer. Die Analyse umfasst Funktionsumfang, technische Basis, Usability, Plattform-Support und Optimierungspotenziale für die Website.
+Dieser Grundscan analysiert **PupCid's Little TikTool Helper** (ltth.app), ein professionelles Open-Source-Tool für TikTok LIVE Streamer. Die Analyse umfasst Funktionsumfang, technische Basis, Usability, Plattform-Support und Optimierungspotenziale für die Website.
 
 ---
 
@@ -380,7 +380,7 @@ Dieser Grundscan analysiert **PupCid's Little TikTok Helper** (ltth.app), ein pr
 
 ## 🎬 Fazit
 
-**PupCid's Little TikTok Helper** ist ein **exzellentes Open-Source-Tool** mit professionellem Funktionsumfang, solider technischer Basis und starkem Datenschutz-Fokus. Die Website wurde erfolgreich optimiert, um:
+**PupCid's Little TikTool Helper** ist ein **exzellentes Open-Source-Tool** mit professionellem Funktionsumfang, solider technischer Basis und starkem Datenschutz-Fokus. Die Website wurde erfolgreich optimiert, um:
 
 1. **Vertrauen aufzubauen** (positive Beta-Botschaft, Social Proof)
 2. **Multi-Plattform-Support zu betonen** (Windows/macOS/Linux)

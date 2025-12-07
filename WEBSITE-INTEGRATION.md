@@ -4,7 +4,7 @@ This document describes the integration between ltth.app (the website) and pupci
 
 ## Overview
 
-The ltth.app website serves as the main landing page and documentation hub for PupCid's Little TikTok Helper tool. The website is designed to automatically reflect updates and changes from the tool repository.
+The ltth.app website serves as the main landing page and documentation hub for PupCid's Little TikTool Helper tool. The website is designed to automatically reflect updates and changes from the tool repository.
 
 ## Tool Repository
 

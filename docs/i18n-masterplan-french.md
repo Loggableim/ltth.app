@@ -79,7 +79,7 @@
 
 #### Meta-Beschreibungen (Beispiel Homepage)
 ```html
-<meta name="description" content="PupCid's Little TikTok Helper - La solution de streaming professionnelle pour les streamers TikTok LIVE. Événements en temps réel, Text-to-Speech avec plus de 75 voix, Alertes, Soundboard avec plus de 100 000 sons, Objectifs, Flows, système de plugins et intégration OBS. Gratuit et Open Source.">
+<meta name="description" content="PupCid's Little TikTool Helper - La solution de streaming professionnelle pour les streamers TikTok LIVE. Événements en temps réel, Text-to-Speech avec plus de 75 voix, Alertes, Soundboard avec plus de 100 000 sons, Objectifs, Flows, système de plugins et intégration OBS. Gratuit et Open Source.">
 ```
 
 #### Keywords (Französisch)

@@ -1,6 +1,6 @@
 # LTTH Download Structure Documentation
 
-This document describes the download and versioning structure for PupCid's Little TikTok Helper (LTTH).
+This document describes the download and versioning structure for PupCid's Little TikTool Helper (LTTH).
 
 ## Download URLs
 

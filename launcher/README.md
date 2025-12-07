@@ -1,6 +1,6 @@
 # LTTH Launcher
 
-Leichtgewichtiger Windows Launcher für PupCid's Little TikTok Helper.
+Leichtgewichtiger Windows Launcher für PupCid's Little TikTool Helper.
 
 **Technologie:** Go + WebView2 (nur ~5-10 MB statt ~150 MB bei Electron)
 

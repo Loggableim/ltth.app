@@ -1,5 +1,5 @@
 /* ===================================
-   PupCid's Little TikTok Helper - ltth.app
+   PupCid's Little TikTool Helper - ltth.app
    Complete Branding & Design System
    =================================== */
 
@@ -2319,6 +2319,139 @@ section {
 [data-theme="dark"] .loading-spinner {
     border-color: var(--color-surface-dark);
     border-top-color: var(--color-primary-hover);
+}
+
+/* ===================================
+   Logo Showcase - Theme Aware
+   =================================== */
+.logo-showcase {
+    padding: var(--space-8) 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.logo-showcase-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.showcase-logo {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    display: none;
+}
+
+/* Show daymode logo in light theme */
+.showcase-logo.logo-light {
+    display: block;
+}
+
+.showcase-logo.logo-dark {
+    display: none;
+}
+
+/* Show nightmode logo in dark theme */
+[data-theme="dark"] .showcase-logo.logo-light {
+    display: none;
+}
+
+[data-theme="dark"] .showcase-logo.logo-dark {
+    display: block;
+}
+
+/* Show nightmode logo in high-contrast mode (if implemented) */
+[data-theme="high-contrast"] .showcase-logo.logo-light {
+    display: none;
+}
+
+[data-theme="high-contrast"] .showcase-logo.logo-dark {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .logo-showcase {
+        padding: var(--space-6) 0;
+    }
+    
+    .logo-showcase-wrapper {
+        max-width: 90%;
+    }
+}
+
+/* ===================================
+   Disclaimer Section
+   =================================== */
+.disclaimer-notice {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 4px solid #1976d2;
+    padding: var(--space-6) 0;
+    margin: var(--space-8) 0;
+}
+
+[data-theme="dark"] .disclaimer-notice {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    border-left: 4px solid #42a5f5;
+}
+
+[data-theme="high-contrast"] .disclaimer-notice {
+    background: linear-gradient(135deg, #000033 0%, #000066 100%);
+    border-left: 4px solid #ffff00;
+}
+
+.disclaimer-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+}
+
+.disclaimer-icon {
+    width: 32px;
+    height: 32px;
+    color: #1976d2;
+    margin-bottom: var(--space-3);
+}
+
+[data-theme="dark"] .disclaimer-icon {
+    color: #42a5f5;
+}
+
+[data-theme="high-contrast"] .disclaimer-icon {
+    color: #ffff00;
+}
+
+.disclaimer-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: #0d47a1;
+    margin-bottom: var(--space-3);
+}
+
+[data-theme="dark"] .disclaimer-title {
+    color: #90caf9;
+}
+
+[data-theme="high-contrast"] .disclaimer-title {
+    color: #ffff00;
+}
+
+.disclaimer-text {
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: #1565c0;
+}
+
+[data-theme="dark"] .disclaimer-text {
+    color: #bbdefb;
+}
+
+[data-theme="high-contrast"] .disclaimer-text {
+    color: #ffffff;
+}
+
+.disclaimer-text strong {
+    font-weight: 600;
 }
 
 /* ===================================
