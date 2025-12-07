@@ -225,7 +225,9 @@
             try {
                 const response = await fetch('/app/CURRENT_RELEASE.json');
                 if (!response.ok) {
-                    console.warn('CURRENT_RELEASE.json not found, using fallback values');
+                    console.warn('CURRENT_RELEASE.json not found (status: ' + response.status + '). ' +
+                                'Using default values. The page will display the hardcoded version until ' +
+                                'the first release is deployed via the release script.');
                     return;
                 }
                 

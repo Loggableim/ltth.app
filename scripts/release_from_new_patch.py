@@ -20,6 +20,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Tuple, List
 
+# Configuration constants
+MAX_CHANGELOG_CHARS = 2000  # Maximum characters for changelog notes
+MAX_CHANGELOG_LINES = 50    # Maximum lines for changelog notes
+
 
 class SemVer:
     """Semantic version parser and comparator"""
@@ -257,12 +261,12 @@ class ReleaseManager:
         try:
             changelog_content = changelog_file.read_text(encoding='utf-8')
             
-            # Limit notes to reasonable length (first 2000 chars or 50 lines)
+            # Limit notes to reasonable length
             lines = changelog_content.split('\n')
-            if len(lines) > 50:
-                notes = '\n'.join(lines[:50]) + '\n...'
-            elif len(changelog_content) > 2000:
-                notes = changelog_content[:2000] + '...'
+            if len(lines) > MAX_CHANGELOG_LINES:
+                notes = '\n'.join(lines[:MAX_CHANGELOG_LINES]) + '\n...'
+            elif len(changelog_content) > MAX_CHANGELOG_CHARS:
+                notes = changelog_content[:MAX_CHANGELOG_CHARS] + '...'
             else:
                 notes = changelog_content
             
@@ -315,11 +319,12 @@ class ReleaseManager:
     
     def _format_size(self, size_bytes: int) -> str:
         """Format file size in human-readable format"""
+        size = float(size_bytes)
         for unit in ['B', 'KB', 'MB', 'GB']:
-            if size_bytes < 1024.0:
-                return f"{size_bytes:.1f} {unit}"
-            size_bytes /= 1024.0
-        return f"{size_bytes:.1f} TB"
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
     
     def run_release(self) -> bool:
         """
