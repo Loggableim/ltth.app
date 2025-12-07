@@ -101,10 +101,13 @@
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </div>
-                    <h3 class="download-name">Aktuelle Version: 1.1.1</h3>
+                    <h3 class="download-name" id="versionTitle">Aktuelle Version: <span id="currentVersion">1.1.1</span></h3>
                     <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Stabile Version</p>
-                    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">
                         ltth_latest.zip zeigt immer auf die neueste Version
+                    </p>
+                    <p style="font-size: 0.75rem; color: var(--color-text-secondary); margin-bottom: 1.5rem;" id="updateDate">
+                        Letztes Update: <span id="releaseDate">wird geladen...</span>
                     </p>
                     <a href="https://ltth.app/app/ltth_latest.zip" class="btn btn-primary download-btn" style="width: 100%; text-align: center;">
                         Download LTTH (Windows)
@@ -126,6 +129,13 @@
                         <li><strong>Version-Erkennung:</strong> Der zukünftige Launcher erkennt Updates anhand der Dateigröße</li>
                         <li><strong>Archiv:</strong> Ältere Versionen werden zukünftig im Archiv verfügbar sein</li>
                     </ul>
+                </div>
+
+                <div style="background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6); max-width: 800px; margin-left: auto; margin-right: auto;" id="releaseNotesSection">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-4);">Release-Notizen</h3>
+                    <div id="releaseNotes" style="color: var(--color-text-secondary); white-space: pre-line; line-height: 1.6;">
+                        Wird geladen...
+                    </div>
                 </div>
 
                 <div style="background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6); max-width: 800px; margin-left: auto; margin-right: auto;">
@@ -209,5 +219,56 @@
     </footer>
 
     <script src="/js/main.js"></script>
+    <script>
+        // Fetch and display current release information
+        async function loadReleaseInfo() {
+            try {
+                const response = await fetch('/app/CURRENT_RELEASE.json');
+                if (!response.ok) {
+                    console.warn('CURRENT_RELEASE.json not found, using fallback values');
+                    return;
+                }
+                
+                const release = await response.json();
+                
+                // Update version number
+                const versionElement = document.getElementById('currentVersion');
+                if (versionElement && release.version) {
+                    versionElement.textContent = release.version;
+                }
+                
+                // Update release date
+                const dateElement = document.getElementById('releaseDate');
+                if (dateElement && release.updated_at) {
+                    const date = new Date(release.updated_at);
+                    const formattedDate = date.toLocaleDateString('de-DE', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    dateElement.textContent = formattedDate;
+                }
+                
+                // Update release notes
+                const notesElement = document.getElementById('releaseNotes');
+                if (notesElement && release.notes) {
+                    notesElement.textContent = release.notes;
+                }
+                
+            } catch (error) {
+                console.error('Error loading release info:', error);
+                // Keep default values if fetch fails
+            }
+        }
+        
+        // Load release info when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadReleaseInfo);
+        } else {
+            loadReleaseInfo();
+        }
+    </script>
 </body>
 </html>
