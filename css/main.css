@@ -2322,6 +2322,65 @@ section {
 }
 
 /* ===================================
+   Logo Showcase - Theme Aware
+   =================================== */
+.logo-showcase {
+    padding: var(--space-8) 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.logo-showcase-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.showcase-logo {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    display: none;
+}
+
+/* Show daymode logo in light theme */
+.showcase-logo.logo-light {
+    display: block;
+}
+
+.showcase-logo.logo-dark {
+    display: none;
+}
+
+/* Show nightmode logo in dark theme */
+[data-theme="dark"] .showcase-logo.logo-light {
+    display: none;
+}
+
+[data-theme="dark"] .showcase-logo.logo-dark {
+    display: block;
+}
+
+/* Show nightmode logo in high-contrast mode (if implemented) */
+[data-theme="high-contrast"] .showcase-logo.logo-light {
+    display: none;
+}
+
+[data-theme="high-contrast"] .showcase-logo.logo-dark {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .logo-showcase {
+        padding: var(--space-6) 0;
+    }
+    
+    .logo-showcase-wrapper {
+        max-width: 90%;
+    }
+}
+
+/* ===================================
    Disclaimer Section
    =================================== */
 .disclaimer-notice {
