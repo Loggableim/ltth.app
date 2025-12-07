@@ -8,7 +8,7 @@
 
 ## 🎨 Brand Overview
 
-**PupCid's Little TikTok Helper (ltth.app)** is a professional TikTok LIVE streaming solution. Our brand identity reflects **modernity, friendliness, technical excellence, and accessibility**.
+**PupCid's Little TikTool Helper (ltth.app)** is a professional TikTok LIVE streaming solution. Our brand identity reflects **modernity, friendliness, technical excellence, and accessibility**.
 
 ### Brand Values
 - **Professional** - Reliable, high-quality streaming tools

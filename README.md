@@ -1,6 +1,6 @@
 # ltth.app
 
-**PupCid's Little TikTok Helper** - Official Website  
+**PupCid's Little TikTool Helper** - Official Website  
 **Version 2.0 - Complete Rework**
 
 > The professional TikTok LIVE streaming solution with real-time events, TTS, alerts, soundboard, plugin system and OBS integration.
@@ -28,7 +28,7 @@
 
 ## 🌟 About
 
-This repository contains the complete static website for **PupCid's Little TikTok Helper** (ltth.app), a professional streaming tool designed for TikTok LIVE streamers with features like:
+This repository contains the complete static website for **PupCid's Little TikTool Helper** (ltth.app), a professional streaming tool designed for TikTok LIVE streamers with features like:
 
 - 📡 **Real-time TikTok LIVE connection** - Gifts, Chat, Follows, Shares, Likes, Subscriptions
 - 🎙️ **Text-to-Speech** - 75+ TikTok voices & 30+ Google Cloud voices

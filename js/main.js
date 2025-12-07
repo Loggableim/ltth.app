@@ -1,5 +1,5 @@
 /**
- * PupCid's Little TikTok Helper - ltth.app
+ * PupCid's Little TikTool Helper - ltth.app
  * Main JavaScript for Website Interactivity
  */
 
@@ -960,7 +960,7 @@
                     },
                     hero: {
                         title: '<span class="hero-highlight">Professionelle</span> TikTok LIVE Streaming-Lösung',
-                        subtitle: 'PupCid\'s Little TikTok Helper ist das ultimative Tool für TikTok LIVE Streamer. Verarbeite Echtzeit-Events, nutze Text-to-Speech mit 75+ Stimmen, erstelle anpassbare Alerts, spiele Sounds automatisch ab und automatisiere deinen Stream mit leistungsstarken Flows. Modulares Plugin-System, OBS-Integration, VRChat OSC-Support und vieles mehr. Alles komplett lokal, kostenlos und Open Source.',
+                        subtitle: 'PupCid\'s Little TikTool Helper ist das ultimative Tool für TikTok LIVE Streamer. Verarbeite Echtzeit-Events, nutze Text-to-Speech mit 75+ Stimmen, erstelle anpassbare Alerts, spiele Sounds automatisch ab und automatisiere deinen Stream mit leistungsstarken Flows. Modulares Plugin-System, OBS-Integration, VRChat OSC-Support und vieles mehr. Alles komplett lokal, kostenlos und Open Source.',
                         downloadBtn: 'Jetzt Herunterladen',
                         featuresBtn: 'Features Entdecken'
                     },
@@ -996,7 +996,7 @@
                     },
                     cta: {
                         ready: 'Bereit für professionelles TikTok LIVE Streaming?',
-                        readyText: 'Schließe dich der wachsenden Community an, die bereits mit PupCid\'s Little TikTok Helper ihre Streams auf das nächste Level gebracht haben. 100% kostenlos, Open Source und lokal.',
+                        readyText: 'Schließe dich der wachsenden Community an, die bereits mit PupCid\'s Little TikTool Helper ihre Streams auf das nächste Level gebracht haben. 100% kostenlos, Open Source und lokal.',
                         downloadNow: 'Jetzt Herunterladen',
                         readDocs: 'Dokumentation Lesen',
                         platformNote: 'Verfügbar für Windows, macOS und Linux'
@@ -1005,8 +1005,8 @@
                         product: 'Product',
                         resources: 'Resources',
                         community: 'Community',
-                        description: 'PupCid\'s Little TikTok Helper - Die professionelle TikTok LIVE Streaming-Lösung.',
-                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTok Helper. All rights reserved.',
+                        description: 'PupCid\'s Little TikTool Helper - Die professionelle TikTok LIVE Streaming-Lösung.',
+                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
                         madeWith: 'Made with',
                         by: 'by Loggableim'
                     }
@@ -1026,7 +1026,7 @@
                     },
                     hero: {
                         title: '<span class="hero-highlight">Professional</span> TikTok LIVE Streaming Solution',
-                        subtitle: 'PupCid\'s Little TikTok Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically, and automate your stream with powerful Flows. Modular plugin system, OBS integration, VRChat OSC support, and much more. Everything completely local, free, and Open Source.',
+                        subtitle: 'PupCid\'s Little TikTool Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically, and automate your stream with powerful Flows. Modular plugin system, OBS integration, VRChat OSC support, and much more. Everything completely local, free, and Open Source.',
                         downloadBtn: 'Download Now',
                         featuresBtn: 'Discover Features'
                     },
@@ -1062,7 +1062,7 @@
                     },
                     cta: {
                         ready: 'Ready for professional TikTok LIVE streaming?',
-                        readyText: 'Join the growing community that has already taken their streams to the next level with PupCid\'s Little TikTok Helper. 100% free, Open Source, and local.',
+                        readyText: 'Join the growing community that has already taken their streams to the next level with PupCid\'s Little TikTool Helper. 100% free, Open Source, and local.',
                         downloadNow: 'Download Now',
                         readDocs: 'Read Documentation',
                         platformNote: 'Available for Windows, macOS and Linux'
@@ -1071,8 +1071,8 @@
                         product: 'Product',
                         resources: 'Resources',
                         community: 'Community',
-                        description: 'PupCid\'s Little TikTok Helper - The professional TikTok LIVE streaming solution.',
-                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTok Helper. All rights reserved.',
+                        description: 'PupCid\'s Little TikTool Helper - The professional TikTok LIVE streaming solution.',
+                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
                         madeWith: 'Made with',
                         by: 'by Loggableim'
                     }
