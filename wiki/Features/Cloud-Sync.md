@@ -204,7 +204,7 @@ Alle Sync-Operationen werden im Terminal protokolliert:
 
 ## 💡 Best Practices
 
-1. **Dedizierter Ordner**: Erstelle einen separaten Ordner für TikTok Helper
+1. **Dedizierter Ordner**: Erstelle einen separaten Ordner für TikTool Helper
 2. **Regelmäßige Backups**: Cloud-Sync ersetzt keine Backups
 3. **Teste zuerst**: Aktiviere Sync erst nach erfolgreicher Konfiguration
 4. **Überwache Statistiken**: Behalte Sync-Stats im Auge

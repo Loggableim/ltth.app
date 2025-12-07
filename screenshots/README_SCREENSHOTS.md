@@ -1,23 +1,19 @@
-# TikTok Helper - Screenshot Documentation
+# TikTool Helper - Screenshot Documentation
 
-**Generated:** 2025-11-18T04:03:56.527Z
-**Last Updated:** 2025-11-18T04:15:00.000Z
+**Generated:** 2025-12-07T01:50:00.000Z
+**Last Updated:** 2025-12-07T01:50:00.000Z
 
-This directory contains comprehensive screenshots of the TikTok Helper application's user interfaces. These screenshots are intended for documentation, LLM training, and understanding the application's functionality.
+This directory contains comprehensive screenshots of the TikTool Helper website. These screenshots are intended for documentation, marketing, and showcasing the updated branding with "TikTool Helper" naming.
 
 ## Current Status
 
-✅ **9 screenshots captured** covering the main application areas and key plugins.
+✅ **4 screenshots captured** covering the main website pages with updated branding.
 
 The following screenshots demonstrate:
-- Main Dashboard with TikTok connection interface
-- Soundboard configuration with gift-to-sound mapping  
-- Goals overlay system for OBS integration
-- IFTTT Flow Editor for automation
-- Tauri desktop integration test interface
-- Goals Plugin administration UI
-- TTS (Text-to-Speech) admin panel with 75+ voice options
-- ClarityHUD chat overlay for VR streaming
+- Homepage with hero section and feature overview
+- Features page showcasing all capabilities
+- Plugins page with extensible plugin system
+- Download page with installation instructions
 - LastEvent Spotlight gifter overlay
 
 ## Directory Structure
@@ -26,142 +22,40 @@ The following screenshots demonstrate:
 screenshots/
 ├── README_SCREENSHOTS.md          # This file
 ├── screenshot_urls.json           # Complete list of all URLs for screenshots
-├── 01_dashboard_main.png          # ✅ Captured
-├── 02_soundboard.png              # ✅ Captured
-├── 03_goals_overlay.png           # ✅ Captured
-├── 04_ifttt_flow_editor.png       # ✅ Captured
-├── 05_tauri_test.png              # ✅ Captured
-├── 06_plugin_goals_ui.png         # ✅ Captured
-├── 07_plugin_goals_overlay.png    # 📋 Can be captured on demand
-├── 08_plugin_tts_admin.png        # ✅ Captured
-├── 09_plugin_osc_bridge.png       # 📋 Can be captured on demand
-├── 10_plugin_clarityhud_main.png  # 📋 Can be captured on demand
-├── 11_plugin_clarityhud_chat_overlay.png  # ✅ Captured
-├── 12_plugin_clarityhud_full_overlay.png  # 📋 Can be captured on demand
-├── 13_plugin_lastevent_main.png   # 📋 Can be captured on demand
-├── 14_plugin_lastevent_gifter.png # ✅ Captured
-├── 15_plugin_lastevent_follower.png   # 📋 Can be captured on demand
-├── 16_plugin_lastevent_chatter.png    # 📋 Can be captured on demand
-├── 17_plugin_lastevent_subscriber.png # 📋 Can be captured on demand
-├── 18_plugin_lastevent_like.png       # 📋 Can be captured on demand
-├── 19_plugin_lastevent_share.png      # 📋 Can be captured on demand
-├── 20_plugin_hybridshock.png      # 📋 Can be captured on demand
-├── 21_plugin_openshock.png        # 📋 Can be captured on demand
-├── 22_plugin_openshock_overlay.png    # 📋 Can be captured on demand
-├── 23_plugin_resource_monitor.png # 📋 Can be captured on demand
-├── 24_plugin_viewer_xp.png        # 📋 Can be captured on demand
+├── 01_homepage_hero.png           # ✅ Captured - English homepage
+├── 02_features_page.png           # ✅ Captured - Features overview
+├── 03_plugins_page.png            # ✅ Captured - Plugin system
+├── 04_download_page.png           # ✅ Captured - Download instructions
 ```
 
 ## Screenshot Index
 
-### Main Application Pages
+### Website Pages (English Version - Used for All Languages)
 
-#### 01_dashboard_main.png
-**URL:** http://localhost:3000/dashboard.html
-**Description:** Main Dashboard - The central control panel showing TikTok connection status, live statistics, and quick access to all features
+#### 01_homepage_hero.png
+**URL:** http://localhost:8080/index-en.html
+**Description:** Homepage - Professional TikTok LIVE streaming solution with hero section, feature highlights, plugin overview, and complete product showcase. Shows the updated "PupCid's Little TikTool Helper" branding.
 
-#### 02_soundboard.png
-**URL:** http://localhost:3000/soundboard.html
-**Description:** Soundboard Interface - Gift-to-sound mapping configuration with MyInstants integration for custom sound effects
+#### 02_features_page.png
+**URL:** http://localhost:8080/features-en.html
+**Description:** Features Page - Comprehensive overview of all core features including TikTok LIVE integration, Text-to-Speech with 75+ voices, Alert System, Soundboard, Goals, Event Automation, and OBS Integration.
 
-#### 03_goals_overlay.png
-**URL:** http://localhost:3000/goals-overlay.html
-**Description:** Goals Overlay - Browser source overlay for OBS showing follower/likes/coins/subs goal progress with customizable styles
+#### 03_plugins_page.png
+**URL:** http://localhost:8080/plugins-en.html
+**Description:** Plugins Page - Extensible plugin system with 20+ pre-installed plugins including TTS, Soundboard, Multi-Cam Switcher, OSC-Bridge, VDO.Ninja, StreamAlchemy, Leaderboard, and more.
 
-#### 04_ifttt_flow_editor.png
-**URL:** http://localhost:3000/ifttt-flow-editor.html
-**Description:** IFTTT Flow Editor - Visual automation editor for creating "when-then" event-based automations without coding
-
-#### 05_tauri_test.png
-**URL:** http://localhost:3000/tauri-test.html
-**Description:** Tauri Test Page - Desktop app integration test interface for the Tauri-based standalone version
-
-### Plugin User Interfaces
-
-#### 06_plugin_goals_ui.png
-**URL:** http://localhost:3000/plugins/goals/ui.html
-**Description:** Goals Plugin Admin UI - Configuration panel for goal settings, templates, and behavior customization
-
-#### 07_plugin_goals_overlay.png
-**URL:** http://localhost:3000/plugins/goals/overlay/index.html
-**Description:** Goals Plugin Overlay - Individual goal overlay for OBS with real-time progress tracking and animations
-
-#### 08_plugin_tts_admin.png
-**URL:** http://localhost:3000/plugins/tts/ui/admin-panel.html
-**Description:** TTS Admin Panel - Text-to-Speech configuration with 75+ voices, user voice mapping, and queue management
-
-#### 09_plugin_osc_bridge.png
-**URL:** http://localhost:3000/plugins/osc-bridge/ui.html
-**Description:** OSC Bridge Plugin - VRChat integration panel for bidirectional OSC communication with avatar parameters
-
-#### 10_plugin_clarityhud_main.png
-**URL:** http://localhost:3000/plugins/clarityhud/ui/main.html
-**Description:** ClarityHUD Main UI - VR-optimized dual overlay configuration for VRChat streaming
-
-#### 11_plugin_clarityhud_chat_overlay.png
-**URL:** http://localhost:3000/plugins/clarityhud/overlays/chat.html
-**Description:** ClarityHUD Chat Overlay - VR-optimized chat overlay with clean, readable design for VRChat
-
-#### 12_plugin_clarityhud_full_overlay.png
-**URL:** http://localhost:3000/plugins/clarityhud/overlays/full.html
-**Description:** ClarityHUD Full Overlay - Complete HUD overlay with stats, events, and goals for VRChat
-
-#### 13_plugin_lastevent_main.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/ui/main.html
-**Description:** LastEvent Spotlight Admin - Configuration for six separate event spotlight overlays (gifter, follower, chatter, etc.)
-
-#### 14_plugin_lastevent_gifter.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/gifter.html
-**Description:** LastEvent Gifter Spotlight - Overlay highlighting the most recent gift sender with animation
-
-#### 15_plugin_lastevent_follower.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/follower.html
-**Description:** LastEvent Follower Spotlight - Overlay highlighting the most recent follower with animation
-
-#### 16_plugin_lastevent_chatter.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/chatter.html
-**Description:** LastEvent Chatter Spotlight - Overlay showing the most recent chat message with username
-
-#### 17_plugin_lastevent_subscriber.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/subscriber.html
-**Description:** LastEvent Subscriber Spotlight - Overlay highlighting the most recent subscriber
-
-#### 18_plugin_lastevent_like.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/like.html
-**Description:** LastEvent Like Spotlight - Overlay showing the most recent like with user info
-
-#### 19_plugin_lastevent_share.png
-**URL:** http://localhost:3000/plugins/lastevent-spotlight/overlays/share.html
-**Description:** LastEvent Share Spotlight - Overlay highlighting the most recent share event
-
-#### 20_plugin_hybridshock.png
-**URL:** http://localhost:3000/plugins/hybridshock/ui.html
-**Description:** HybridShock Plugin - OpenShock integration panel for haptic feedback triggers based on TikTok events
-
-#### 21_plugin_openshock.png
-**URL:** http://localhost:3000/plugins/openshock/openshock.html
-**Description:** OpenShock Plugin Main UI - Configuration interface for OpenShock device integration
-
-#### 22_plugin_openshock_overlay.png
-**URL:** http://localhost:3000/plugins/openshock/overlay/openshock_overlay.html
-**Description:** OpenShock Overlay - Visual feedback overlay for OpenShock events during stream
-
-#### 23_plugin_resource_monitor.png
-**URL:** http://localhost:3000/plugins/resource-monitor/ui.html
-**Description:** Resource Monitor Plugin - System resource monitoring (CPU, RAM, Network) with real-time graphs
-
-#### 24_plugin_viewer_xp.png
-**URL:** http://localhost:3000/plugins/viewer-xp/ui/admin.html
-**Description:** Viewer XP Admin - Gamification system for viewer engagement with levels and rewards
+#### 04_download_page.png
+**URL:** http://localhost:8080/download-en.html
+**Description:** Download Page - Installation guide for Windows, macOS, and Linux with system requirements, step-by-step instructions, and support links.
 
 ## Usage Guide
 
 ### For Developers
 These screenshots provide a visual reference for:
-- UI layout and design patterns
-- Feature locations and organization
-- Plugin architecture and integration points
-- Overlay configurations for OBS
+- Updated website branding with "TikTool Helper" naming
+- Professional landing page design
+- Feature showcase and marketing materials
+- Installation and download flow
 
 ### For LLMs
 When analyzing these screenshots:

@@ -1,122 +1,22 @@
 [
   {
-    "name": "01_dashboard_main",
-    "url": "http://localhost:3000/dashboard.html",
-    "description": "Main Dashboard - The central control panel showing TikTok connection status, live statistics, and quick access to all features"
+    "name": "01_homepage_hero",
+    "url": "http://localhost:8080/index-en.html",
+    "description": "Homepage - Professional TikTok LIVE streaming solution with hero section, feature highlights, plugin overview, and complete product showcase showing the updated PupCid's Little TikTool Helper branding"
   },
   {
-    "name": "02_soundboard",
-    "url": "http://localhost:3000/soundboard.html",
-    "description": "Soundboard Interface - Gift-to-sound mapping configuration with MyInstants integration for custom sound effects"
+    "name": "02_features_page",
+    "url": "http://localhost:8080/features-en.html",
+    "description": "Features Page - Comprehensive overview of all core features including TikTok LIVE integration, Text-to-Speech with 75+ voices, Alert System, Soundboard, Goals, Event Automation, and OBS Integration"
   },
   {
-    "name": "03_goals_overlay",
-    "url": "http://localhost:3000/goals-overlay.html",
-    "description": "Goals Overlay - Browser source overlay for OBS showing follower/likes/coins/subs goal progress with customizable styles"
+    "name": "03_plugins_page",
+    "url": "http://localhost:8080/plugins-en.html",
+    "description": "Plugins Page - Extensible plugin system with 20+ pre-installed plugins including TTS, Soundboard, Multi-Cam Switcher, OSC-Bridge, VDO.Ninja, StreamAlchemy, Leaderboard, and more"
   },
   {
-    "name": "04_ifttt_flow_editor",
-    "url": "http://localhost:3000/ifttt-flow-editor.html",
-    "description": "IFTTT Flow Editor - Visual automation editor for creating \"when-then\" event-based automations without coding"
-  },
-  {
-    "name": "05_tauri_test",
-    "url": "http://localhost:3000/tauri-test.html",
-    "description": "Tauri Test Page - Desktop app integration test interface for the Tauri-based standalone version"
-  },
-  {
-    "name": "06_plugin_goals_ui",
-    "url": "http://localhost:3000/plugins/goals/ui.html",
-    "description": "Goals Plugin Admin UI - Configuration panel for goal settings, templates, and behavior customization"
-  },
-  {
-    "name": "07_plugin_goals_overlay",
-    "url": "http://localhost:3000/plugins/goals/overlay/index.html",
-    "description": "Goals Plugin Overlay - Individual goal overlay for OBS with real-time progress tracking and animations"
-  },
-  {
-    "name": "08_plugin_tts_admin",
-    "url": "http://localhost:3000/plugins/tts/ui/admin-panel.html",
-    "description": "TTS Admin Panel - Text-to-Speech configuration with 75+ voices, user voice mapping, and queue management"
-  },
-  {
-    "name": "09_plugin_osc_bridge",
-    "url": "http://localhost:3000/plugins/osc-bridge/ui.html",
-    "description": "OSC Bridge Plugin - VRChat integration panel for bidirectional OSC communication with avatar parameters"
-  },
-  {
-    "name": "10_plugin_clarityhud_main",
-    "url": "http://localhost:3000/plugins/clarityhud/ui/main.html",
-    "description": "ClarityHUD Main UI - VR-optimized dual overlay configuration for VRChat streaming"
-  },
-  {
-    "name": "11_plugin_clarityhud_chat_overlay",
-    "url": "http://localhost:3000/plugins/clarityhud/overlays/chat.html",
-    "description": "ClarityHUD Chat Overlay - VR-optimized chat overlay with clean, readable design for VRChat"
-  },
-  {
-    "name": "12_plugin_clarityhud_full_overlay",
-    "url": "http://localhost:3000/plugins/clarityhud/overlays/full.html",
-    "description": "ClarityHUD Full Overlay - Complete HUD overlay with stats, events, and goals for VRChat"
-  },
-  {
-    "name": "13_plugin_lastevent_main",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/ui/main.html",
-    "description": "LastEvent Spotlight Admin - Configuration for six separate event spotlight overlays (gifter, follower, chatter, etc.)"
-  },
-  {
-    "name": "14_plugin_lastevent_gifter",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/gifter.html",
-    "description": "LastEvent Gifter Spotlight - Overlay highlighting the most recent gift sender with animation"
-  },
-  {
-    "name": "15_plugin_lastevent_follower",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/follower.html",
-    "description": "LastEvent Follower Spotlight - Overlay highlighting the most recent follower with animation"
-  },
-  {
-    "name": "16_plugin_lastevent_chatter",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/chatter.html",
-    "description": "LastEvent Chatter Spotlight - Overlay showing the most recent chat message with username"
-  },
-  {
-    "name": "17_plugin_lastevent_subscriber",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/subscriber.html",
-    "description": "LastEvent Subscriber Spotlight - Overlay highlighting the most recent subscriber"
-  },
-  {
-    "name": "18_plugin_lastevent_like",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/like.html",
-    "description": "LastEvent Like Spotlight - Overlay showing the most recent like with user info"
-  },
-  {
-    "name": "19_plugin_lastevent_share",
-    "url": "http://localhost:3000/plugins/lastevent-spotlight/overlays/share.html",
-    "description": "LastEvent Share Spotlight - Overlay highlighting the most recent share event"
-  },
-  {
-    "name": "20_plugin_hybridshock",
-    "url": "http://localhost:3000/plugins/hybridshock/ui.html",
-    "description": "HybridShock Plugin - OpenShock integration panel for haptic feedback triggers based on TikTok events"
-  },
-  {
-    "name": "21_plugin_openshock",
-    "url": "http://localhost:3000/plugins/openshock/openshock.html",
-    "description": "OpenShock Plugin Main UI - Configuration interface for OpenShock device integration"
-  },
-  {
-    "name": "22_plugin_openshock_overlay",
-    "url": "http://localhost:3000/plugins/openshock/overlay/openshock_overlay.html",
-    "description": "OpenShock Overlay - Visual feedback overlay for OpenShock events during stream"
-  },
-  {
-    "name": "23_plugin_resource_monitor",
-    "url": "http://localhost:3000/plugins/resource-monitor/ui.html",
-    "description": "Resource Monitor Plugin - System resource monitoring (CPU, RAM, Network) with real-time graphs"
-  },
-  {
-    "name": "24_plugin_viewer_xp",
-    "url": "http://localhost:3000/plugins/viewer-xp/ui/admin.html",
-    "description": "Viewer XP Admin - Gamification system for viewer engagement with levels and rewards"
+    "name": "04_download_page",
+    "url": "http://localhost:8080/download-en.html",
+    "description": "Download Page - Installation guide for Windows, macOS, and Linux with system requirements, step-by-step instructions, and support links"
   }
 ]

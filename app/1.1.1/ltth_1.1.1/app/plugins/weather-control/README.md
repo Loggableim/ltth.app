@@ -382,7 +382,7 @@ Example structure:
 
 ## 📄 License
 
-Part of Pup Cid's Little TikTok Helper.
+Part of Pup Cid's Little TikTool Helper.
 Licensed under CC BY-NC 4.0 License.
 
 ## 🤝 Contributing

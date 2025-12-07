@@ -1,6 +1,6 @@
 # LTTH Version Archive
 
-This directory stores older versions of PupCid's Little TikTok Helper for archival purposes.
+This directory stores older versions of PupCid's Little TikTool Helper for archival purposes.
 
 ## Purpose
 

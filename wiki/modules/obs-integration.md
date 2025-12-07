@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OBS Integration module enables full control of OBS Studio from PupCid's Little TikTok Helper. Switch scenes, control sources, adjust filters, and automate camera switching - all triggered by TikTok LIVE events or automation flows.
+The OBS Integration module enables full control of OBS Studio from PupCid's Little TikTool Helper. Switch scenes, control sources, adjust filters, and automate camera switching - all triggered by TikTok LIVE events or automation flows.
 
 ## Features
 

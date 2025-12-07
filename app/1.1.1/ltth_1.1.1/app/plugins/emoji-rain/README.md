@@ -174,7 +174,7 @@ fetch('/api/emoji-rain/test', {
 ```
 
 ## 📄 License
-Part of Pup Cid's TikTok Helper Suite
+Part of Pup Cid's TikTool Helper Suite
 
 ## 🙏 Credits
 - Matter.js for Physics Engine

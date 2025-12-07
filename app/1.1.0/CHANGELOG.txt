@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Pup Cid's Little TikTok Helper will be documented in this file.
+All notable changes to Pup Cid's Little TikTool Helper will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2025-12-01
 
 ### Highlights
-This is the official release version 1.1 of Pup Cid's Little TikTok Helper! This release includes major improvements to TikTok connectivity, new plugins, and significant stability enhancements.
+This is the official release version 1.1 of Pup Cid's Little TikTool Helper! This release includes major improvements to TikTok connectivity, new plugins, and significant stability enhancements.
 
 ### Changed
 - **BREAKING: Migration to Eulerstream WebSocket SDK** - Complete replacement of tiktok-live-connector

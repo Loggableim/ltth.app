@@ -2,7 +2,7 @@
 
 **Version**: 1.0.0  
 **Erstellt**: 2025-12-01  
-**Für**: PupCid's Little TikTok Helper (LTTH)
+**Für**: PupCid's Little TikTool Helper (LTTH)
 
 ---
 

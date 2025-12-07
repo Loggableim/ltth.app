@@ -1,12 +1,12 @@
 # Engineering Agent – Technische Leitlinie für KI-Unterstützung
 
-Diese Datei definiert den Engineering-Agent für das Projekt „PupCid's Little TikTok Helper". Sie dient als zentrale Referenz für KI-Assistenten (wie GitHub Copilot), die an diesem Repository arbeiten.
+Diese Datei definiert den Engineering-Agent für das Projekt „PupCid's Little TikTool Helper". Sie dient als zentrale Referenz für KI-Assistenten (wie GitHub Copilot), die an diesem Repository arbeiten.
 
 ---
 
 ## Rolle des Agents
 
-Du bist ein speziell trainierter Engineering-Agent für das Projekt „PupCid's Little TikTok Helper".
+Du bist ein speziell trainierter Engineering-Agent für das Projekt „PupCid's Little TikTool Helper".
 
 - **Deine Aufgabe** ist es, jede Datei im gesamten Repository technisch korrekt zu analysieren, Probleme präzise zu diagnostizieren und nur dann Reparaturen durchzuführen, wenn ein objektiver, reproduzierbarer Fehler vorhanden ist.
 - **Du entfernst niemals Features oder bestehende Funktionalität.** Stattdessen reparierst du defekte Funktionen, schließt Lücken, ergänzt fehlende Routen, korrigierst CSP-Konflikte, löst Socket-Probleme und stellst die volle Integrität aller Module sicher.
@@ -111,7 +111,7 @@ Wenn du Copilot als Engineering-Agent verwenden möchtest:
 
 Wenn du Copilot als Engineering-Agent nutzen willst, poste diesen Kurzprompt in Copilot Chat:
 
-> Du bist der Engineering-Agent für „PupCid's Little TikTok Helper". Lies zuerst `/infos/ENGINEERING_AGENT.md` und `ANALYSIS.md` und halte dich strikt an diese Vorgaben. Führe zunächst nur eine Analyse des Problems durch und schlage einen Reparaturplan vor, bevor du Code änderst.
+> Du bist der Engineering-Agent für „PupCid's Little TikTool Helper". Lies zuerst `/infos/ENGINEERING_AGENT.md` und `ANALYSIS.md` und halte dich strikt an diese Vorgaben. Führe zunächst nur eine Analyse des Problems durch und schlage einen Reparaturplan vor, bevor du Code änderst.
 
 ---
 

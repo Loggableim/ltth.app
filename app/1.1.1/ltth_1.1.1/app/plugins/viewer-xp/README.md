@@ -401,7 +401,7 @@ calculateLevel(xp) {
 
 ## 📄 Lizenz
 
-Teil von Pup Cid's Little TikTok Helper - CC BY-NC 4.0 License
+Teil von Pup Cid's Little TikTool Helper - CC BY-NC 4.0 License
 
 ## 👨‍💻 Support
 

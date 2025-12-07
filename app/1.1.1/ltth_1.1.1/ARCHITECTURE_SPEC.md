@@ -2,7 +2,7 @@
 
 **Erstellt:** 2025-11-27  
 **Version:** 1.0.0  
-**Projekt:** PupCid's Little TikTok Helper (LTTH)  
+**Projekt:** PupCid's Little TikTool Helper (LTTH)  
 **Ziel:** Production-Ready Electron Desktop App
 
 ---
@@ -710,7 +710,7 @@ module.exports = UpdaterManager;
 ```yaml
 # electron/electron-builder.yml
 appId: com.pupcid.ltth
-productName: "PupCid's Little TikTok Helper"
+productName: "PupCid's Little TikTool Helper"
 copyright: "Copyright © 2025 PupCid"
 
 directories:

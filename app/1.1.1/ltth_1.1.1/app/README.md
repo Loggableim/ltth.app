@@ -1,4 +1,4 @@
-# Pup Cids Little TikTok Helper
+# Pup Cids Little TikTool Helper
 
 Open-Source-Tool für TikTok LIVE Streaming mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.
 

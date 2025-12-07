@@ -1,7 +1,7 @@
 {
   "name": "ltth-electron",
   "version": "1.1.0",
-  "description": "PupCid's Little TikTok Helper - Electron Desktop App",
+  "description": "PupCid's Little TikTool Helper - Electron Desktop App",
   "main": "main.js",
   "author": {
     "name": "PupCid",

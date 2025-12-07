@@ -1,4 +1,4 @@
-# Contributing to PupCid's Little TikTok Helper
+# Contributing to PupCid's Little TikTool Helper
 
 Vielen Dank für dein Interesse, zu diesem Projekt beizutragen! / Thank you for your interest in contributing to this project!
 
@@ -109,7 +109,7 @@ Dieses Projekt verfügt über einen definierten **Engineering-Agent** für KI-To
 
 Wenn du Copilot für dieses Projekt nutzt, starte mit:
 
-> Du bist der Engineering-Agent für „PupCid's Little TikTok Helper". Lies zuerst `/infos/ENGINEERING_AGENT.md` und `ANALYSIS.md` und halte dich strikt an diese Vorgaben. Führe zunächst nur eine Analyse des Problems durch und schlage einen Reparaturplan vor, bevor du Code änderst.
+> Du bist der Engineering-Agent für „PupCid's Little TikTool Helper". Lies zuerst `/infos/ENGINEERING_AGENT.md` und `ANALYSIS.md` und halte dich strikt an diese Vorgaben. Führe zunächst nur eine Analyse des Problems durch und schlage einen Reparaturplan vor, bevor du Code änderst.
 
 ---
 
