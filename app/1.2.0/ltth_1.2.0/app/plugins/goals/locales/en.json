@@ -1,0 +1,76 @@
+{
+  "goals": {
+    "title": "Goals - Multi-Overlay System",
+    "plugin_title": "🎯 Goals Plugin",
+    "subtitle": "Multi-Overlay System",
+    "create_button": "+ Create New Goal",
+    "page_title": "Live Goals",
+    "page_description": "Each goal has its own overlay URL. Position them in OBS.",
+    "empty_state": "No goals created yet",
+    "create_first": "Create Your First Goal",
+    "modal": {
+      "create_title": "Create New Goal",
+      "edit_title": "Edit Goal",
+      "name_label": "Goal Name",
+      "name_placeholder": "e.g., Coin Goal",
+      "type_label": "Goal Type",
+      "types": {
+        "coin": "🪙 Coins",
+        "likes": "❤️ Likes",
+        "follower": "👥 Followers",
+        "custom": "⭐ Custom"
+      },
+      "template_label": "Template",
+      "templates": {
+        "compact_bar": "Compact Bar",
+        "full_width": "Full Width",
+        "minimal_counter": "Minimal Counter",
+        "circular_progress": "Circular Progress",
+        "floating_pill": "Floating Pill",
+        "vertical_meter": "Vertical Meter",
+        "neon_glow": "🌟 Neon Glow (NEW)",
+        "hexagon_progress": "⬡ Hexagon Progress (NEW)",
+        "glassy_card": "✨ Glassy Card (NEW)"
+      },
+      "start_value_label": "Start Value",
+      "target_value_label": "Target Value",
+      "animation_update_label": "Animation on Update",
+      "animations": {
+        "smooth": "Smooth Progress",
+        "bounce": "Bounce",
+        "glow": "Glow Pulse"
+      },
+      "animation_reach_label": "Animation on Reach",
+      "reach_animations": {
+        "celebration": "Celebration",
+        "confetti": "Confetti Burst",
+        "pulse": "Pulse Wave",
+        "flash": "Flash",
+        "rainbow": "Rainbow"
+      },
+      "on_reach_label": "When Goal is Reached",
+      "on_reach_options": {
+        "hide": "Hide Goal",
+        "reset": "Reset to Start",
+        "double": "Double Target",
+        "increment": "Increase Target by Amount"
+      },
+      "increment_label": "Increment Amount",
+      "width_label": "Overlay Width (px)",
+      "height_label": "Overlay Height (px)",
+      "save_button": "Save Goal",
+      "cancel_button": "Cancel"
+    },
+    "card": {
+      "progress_label": "Progress",
+      "current_label": "Current",
+      "target_label": "Target",
+      "overlay_url": "Overlay URL",
+      "copy_url": "Copy URL",
+      "open_overlay": "Open Overlay",
+      "edit": "Edit",
+      "delete": "Delete",
+      "reset": "Reset to Start"
+    }
+  }
+}

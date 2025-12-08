@@ -109,13 +109,103 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.1.1 -->
+            <!-- Version 1.2.0 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
                 </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 3, 2025</p>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 8. Dezember 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Dieses Major-Release bringt ein vollständiges Plugin-System mit Hot-Reloading, plattformübergreifenden Launcher-Verbesserungen, einen neuen Multi-Cam Switcher und umfassende Performance-Optimierungen für Datenbank und Module.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Plugin-System mit Hot-Reloading</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Plugins hochladen, aktivieren, deaktivieren und löschen ohne Server-Neustart</li>
+                            <li>Plugin-State-Persistierung in plugins_state.json</li>
+                            <li>Beispiel-Plugin "Topboard" für Top Gifters und Streaks</li>
+                            <li>UI-Integration im Dashboard für Plugin-Verwaltung</li>
+                        </ul>
+                    </li>
+                    <li><strong>Multi-Cam Switcher Plugin</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>OBS-Szenen wechseln via TikTok Gifts oder Chat-Commands</li>
+                            <li>OBS-WebSocket v5 Integration mit Auto-Reconnect</li>
+                            <li>Chat-Commands: !cam 1-5, !cam next/prev, !scene &lt;name&gt;, !angle next</li>
+                            <li>Gift-Mapping mit konfigurierbaren Coins-Schwellen</li>
+                            <li>Macro-System für Multi-Step-Aktionen mit Delays</li>
+                            <li>Permissions: modsOnly, broadcasterOnly, allowedUsers, minAccountAgeDays</li>
+                            <li>Cooldowns: Per-User (15s), Global (5s), Macro-Max-Duration (10s)</li>
+                            <li>Safety-Limits mit Auto-Lock bei Rapid Switching</li>
+                        </ul>
+                    </li>
+                    <li><strong>Plattformunabhängiger Launcher</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Cross-platform Unterstützung (Windows, Linux, macOS)</li>
+                            <li>TTY-sicheres Logging ohne "stdout is not a tty" Fehler</li>
+                            <li>Robuste Node.js/npm Version-Checks in JavaScript</li>
+                            <li>Automatische Dependency-Prüfung und Installation</li>
+                            <li>Browser-Auto-Start nach Launch</li>
+                        </ul>
+                    </li>
+                    <li><strong>TTY-Logger Modul</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Automatische TTY-Erkennung</li>
+                            <li>ANSI-Farben nur bei TTY-Unterstützung</li>
+                            <li>UTF-8/Emoji-Unterstützung-Detection</li>
+                            <li>Fallback auf Plain-Text für non-TTY (OBS, Redirects)</li>
+                            <li>Platform-spezifische Symbole</li>
+                        </ul>
+                    </li>
+                    <li><strong>Git-basiertes Update-System</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Git-basiertes Update wenn .git vorhanden</li>
+                            <li>GitHub Release ZIP Download ohne Git</li>
+                            <li>Automatisches Backup vor Update (user_data/, user_configs/)</li>
+                            <li>Rollback bei fehlgeschlagenen Updates</li>
+                            <li>Platform-unabhängige Update-Strategie</li>
+                        </ul>
+                    </li>
+                    <li><strong>Launch Mode Selection auf Splash Screen</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Wahl zwischen Electron App oder Browser Modus beim Start</li>
+                            <li>Launch-Buttons aktiviert nach Backend-Bereitschaft</li>
+                            <li>Browser-Modus öffnet Dashboard im Standard-Browser und minimiert zu Tray</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Datenbank Performance-Optimierungen</strong> - SQLite mit WAL Mode, 64MB Cache, Memory Temp Store</li>
+                    <li><strong>Plugin-Loader erweitert</strong> - Von 827 auf 1043 Zeilen für besseres State-Management</li>
+                    <li><strong>Leaderboard Modul</strong> - Von 362 auf 480 Zeilen mit erweiterten Tracking-Features</li>
+                    <li><strong>Rate-Limiter</strong> - Fast verdoppelt (80 auf 150 Zeilen) mit verbessertem Request-Handling</li>
+                    <li><strong>TikTok Modul</strong> - Erweitert von 83KB auf 85KB mit besserer Event-Verarbeitung</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>TTS Migration zu Plugin</strong> - TTS-Engine jetzt vollständig als Plugin mit 75+ Stimmen integriert</li>
+                    <li><strong>VDO.Ninja Plugin Migration</strong> - Multi-Guest-Streaming vollständig plugin-basiert mit 20+ API Routes</li>
+                    <li><strong>Dynamische UI-Sichtbarkeit</strong> - Dashboard-Tabs zeigen/verstecken sich basierend auf aktiven Plugins ohne Page-Reload</li>
+                    <li><strong>Update-Checker</strong> - Graceful 404-Handling wenn GitHub Releases nicht verfügbar sind</li>
+                    <li><strong>Keine "echo -e" Probleme</strong> - Unter Windows/Powershell behoben</li>
+                    <li><strong>Keine "integer expression expected" Fehler</strong> - Bei Version-Checks behoben</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.1.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 3. Dezember 2025</p>
                 
                 <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">

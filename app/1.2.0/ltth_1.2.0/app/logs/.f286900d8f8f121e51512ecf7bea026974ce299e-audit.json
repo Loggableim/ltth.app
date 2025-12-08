@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/home/runner/work/pupcidslittletiktokhelper/pupcidslittletiktokhelper/app/logs/.f286900d8f8f121e51512ecf7bea026974ce299e-audit.json",
+    "files": [
+        {
+            "date": 1764979835468,
+            "name": "/home/runner/work/pupcidslittletiktokhelper/pupcidslittletiktokhelper/app/logs/error-2025-12-06.log",
+            "hash": "c3765ce738c3fbb788a9172359cf007328315f96a00faabedd5e059b02c9ac6f"
+        },
+        {
+            "date": 1765071232143,
+            "name": "/home/runner/work/pupcidslittletiktokhelper/pupcidslittletiktokhelper/app/logs/error-2025-12-07.log",
+            "hash": "1310e9162d89e35e04b768d47c052bcae5a1c61b694bbb0d2dd03141b3565963"
+        }
+    ],
+    "hashType": "sha256"
+}

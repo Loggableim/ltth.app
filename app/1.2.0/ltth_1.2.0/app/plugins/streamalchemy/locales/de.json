@@ -1,0 +1,98 @@
+{
+  "streamalchemy": {
+    "title": "Stream Alchemy - Erweiterte Einstellungen",
+    "subtitle": "Umfangreiche Konfiguration für Item-Generierung, Custom Prompts und mehr",
+    "tabs": {
+      "general": "Allgemein",
+      "prompts": "Custom Prompts",
+      "items": "Item Management",
+      "rarity": "Seltenheitsstufen",
+      "animations": "Animationen",
+      "advanced": "Erweitert",
+      "stats": "Statistiken"
+    },
+    "general": {
+      "title": "Grundeinstellungen",
+      "enabled": "Plugin Aktiviert",
+      "enabled_label": "Stream Alchemy aktivieren",
+      "auto_crafting": "Auto-Crafting",
+      "auto_crafting_label": "Automatisches Crafting bei 2 Gifts",
+      "item_generation_mode": "Item Generierungs-Modus",
+      "item_generation_mode_desc": "Bestimme, wie Items erstellt werden",
+      "mode_auto": "Auto (KI-Generierung)",
+      "mode_manual": "Manuell (Upload)",
+      "mode_hybrid": "Hybrid (Beide Modi)",
+      "crafting_window": "Crafting Zeitfenster (Millisekunden)",
+      "crafting_window_desc": "Zeit, in der 2 Gifts gesendet werden müssen, um zu craften",
+      "openai_api_key": "OpenAI API Key",
+      "openai_api_key_desc": "Benötigt für KI-generierte Item Icons (DALL-E 3)",
+      "save": "Einstellungen speichern",
+      "reset": "Zurücksetzen"
+    },
+    "prompts": {
+      "title": "Custom AI Prompts",
+      "info": "Definiere eigene Prompts für die KI-Generierung. Verwende Platzhalter für dynamische Werte.",
+      "base_template": "Base Item Prompt Template",
+      "base_template_desc": "Prompt für Basis-Items (von TikTok Gifts)",
+      "base_template_placeholder": "Leer lassen für Standard-Prompt",
+      "crafted_template": "Crafted Item Prompt Template",
+      "crafted_template_desc": "Prompt für gecraftete Items (Kombinationen)",
+      "crafted_template_placeholder": "Leer lassen für Standard-Prompt",
+      "available_placeholders": "Verfügbare Platzhalter:",
+      "default_prompt": "Standard-Prompt:",
+      "save": "Prompts speichern",
+      "reset_default": "Auf Standard zurücksetzen"
+    },
+    "items": {
+      "title": "Item Management",
+      "create_new": "+ Neues Item erstellen",
+      "refresh_list": "🔄 Liste aktualisieren",
+      "all_items": "Alle Items",
+      "loading": "Lade Items...",
+      "no_items": "Keine Items gefunden"
+    },
+    "rarity": {
+      "title": "Seltenheitsstufen Konfiguration",
+      "info": "Passe die Schwellenwerte und Farben für Seltenheitsstufen an.",
+      "common": "Common (Bronze)",
+      "rare": "Rare (Silver)",
+      "legendary": "Legendary (Gold)",
+      "mythic": "Mythic (Lila)",
+      "min_coins": "Min. Coins:",
+      "max_coins": "Max. Coins:",
+      "color": "Farbe:",
+      "save": "Seltenheitsstufen speichern"
+    },
+    "animations": {
+      "title": "Animations-Einstellungen",
+      "discovery_popup": "Discovery Popup (ms)",
+      "discovery_popup_desc": "Dauer der Anzeige für neue Items",
+      "crafting_animation": "Crafting Animation (ms)",
+      "crafting_animation_desc": "Dauer der Crafting-Fusion",
+      "counter_bounce": "Counter Bounce (ms)",
+      "counter_bounce_desc": "Dauer des Inventory-Counter-Effekts",
+      "save": "Animations-Einstellungen speichern"
+    },
+    "advanced": {
+      "title": "Erweiterte Einstellungen",
+      "overlay_url": "Overlay-URL",
+      "overlay_url_desc": "Verwende diese URL in OBS Browser-Quelle",
+      "debug_mode": "Debug-Modus",
+      "debug_mode_desc": "Zeige detailliertes Logging in der Konsole"
+    },
+    "stats": {
+      "title": "Statistiken",
+      "total_items": "Items gesamt",
+      "base_items": "Basis-Items",
+      "crafted_items": "Gecraftete Items",
+      "total_crafts": "Crafts gesamt"
+    },
+    "messages": {
+      "settings_saved": "Einstellungen erfolgreich gespeichert!",
+      "settings_failed": "Einstellungen konnten nicht gespeichert werden",
+      "item_created": "Item erfolgreich erstellt!",
+      "item_deleted": "Item erfolgreich gelöscht!",
+      "error": "Ein Fehler ist aufgetreten"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "multicam": {
+    "title": "Multi-Cam Umschalter",
+    "subtitle": "Stream-Kamera-Verwaltung",
+    "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
+    "current_scene": "Aktuelle Szene:",
+    "status": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt"
+    },
+    "connection": {
+      "title": "Verbindung",
+      "connect": "OBS verbinden",
+      "disconnect": "OBS trennen"
+    },
+    "switcher": {
+      "title": "Szenen-Umschalter",
+      "select_scene": "Szene auswählen...",
+      "switch": "Umschalten"
+    },
+    "hot_buttons": {
+      "title": "Schnell-Tasten"
+    },
+    "log": {
+      "title": "Aktivitätsprotokoll",
+      "waiting": "Warte auf Ereignisse..."
+    },
+    "cameras": {
+      "title": "Kameraquellen",
+      "add": "Kamera hinzufügen",
+      "name": "Kameraname",
+      "url": "Quell-URL",
+      "active": "Aktiv",
+      "preview": "Vorschau"
+    },
+    "overlay": {
+      "title": "Overlay-Einstellungen",
+      "url": "Overlay-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen"
+    },
+    "settings": {
+      "save": "Einstellungen speichern",
+      "reset": "Auf Standard zurücksetzen"
+    }
+  }
+}

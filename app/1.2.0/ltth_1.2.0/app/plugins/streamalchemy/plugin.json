@@ -1,0 +1,18 @@
+{
+  "id": "streamalchemy",
+  "name": "StreamAlchemy",
+  "version": "1.0.0",
+  "description": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons",
+  "author": "Pup Cid",
+  "entry": "index.js",
+  "enabled": false,
+  "dependencies": {
+    "optional": ["gcce"]
+  },
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ]
+}

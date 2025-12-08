@@ -1,0 +1,2834 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 Viewer XP & Leaderboard - Admin Panel</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <link href="/css/vendor/bootstrap.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+    }
+
+    /* Modern App Layout */
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background: var(--color-bg-secondary);
+      border-right: 1px solid var(--color-border);
+      padding: 24px 20px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-subtitle {
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 32px;
+    }
+
+    .nav-section {
+      margin-bottom: 24px;
+    }
+
+    .nav-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      margin-bottom: 12px;
+      padding: 0 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--color-bg-hover);
+      color: var(--color-text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--color-active-bg);
+      border-color: var(--color-active-border);
+      color: var(--color-accent-primary);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .page-description {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .stat-card-icon {
+      font-size: 2rem;
+      opacity: 0.8;
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-card-label {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+    }
+
+    .stat-card-change {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .stat-card-change.positive {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-accent-success);
+    }
+
+    /* Card Component */
+    .card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: var(--color-bg-secondary);
+      border-bottom: 1px solid var(--color-border);
+      padding: 16px 24px;
+      font-weight: 600;
+      font-size: 1.125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header-icon {
+      margin-right: 8px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Modern Table */
+    .modern-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .modern-table thead th {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 2px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .modern-table tbody td {
+      padding: 16px;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+    }
+
+    .modern-table tbody tr {
+      transition: all 0.2s;
+    }
+
+    .modern-table tbody tr:hover {
+      background: var(--color-bg-hover);
+    }
+
+    /* Badge */
+    .badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-primary {
+      background: var(--color-active-bg);
+      color: var(--color-accent-primary);
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--color-accent-success);
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--color-accent-warning);
+    }
+
+    .badge-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-accent-danger);
+    }
+
+    .badge-level {
+      background: var(--gradient-primary);
+      color: white;
+      font-weight: 700;
+    }
+
+    /* Modern Forms */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .form-control, .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--color-input-border);
+      background: var(--color-input-bg);
+      color: var(--color-input-text);
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--color-accent-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control::placeholder {
+      color: var(--color-input-placeholder);
+    }
+
+    .form-text {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-top: 4px;
+      display: block;
+    }
+
+    .form-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .form-check-input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .form-check-label {
+      cursor: pointer;
+      color: var(--color-text-primary);
+    }
+
+    /* Modern Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9375rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: var(--color-accent-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-success {
+      background: var(--color-accent-success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-warning {
+      background: var(--color-accent-warning);
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--color-accent-danger);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--color-btn-secondary-bg);
+      color: var(--color-btn-secondary-text);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.875rem;
+    }
+
+    /* XP Progress Bar */
+    .xp-progress {
+      height: 12px;
+      background: var(--color-bg-tertiary);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .xp-progress-fill {
+      height: 100%;
+      background: var(--gradient-primary);
+      transition: width 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .xp-progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, .2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, .2) 50%,
+        rgba(255, 255, 255, .2) 75%,
+        transparent 75%,
+        transparent
+      );
+      background-size: 20px 20px;
+      animation: progress-animation 1s linear infinite;
+    }
+
+    @keyframes progress-animation {
+      0% { background-position: 0 0; }
+      100% { background-position: 20px 20px; }
+    }
+
+    /* OBS Panel Specific Styles */
+    .obs-panel {
+      background: var(--color-bg-secondary);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--color-border);
+    }
+
+    .overlay-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .overlay-card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .overlay-url-box {
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      color: var(--color-accent-success);
+      word-break: break-all;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .url-text {
+      flex: 1;
+      user-select: all;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    .overlay-preview {
+      background: #000;
+      border: 2px dashed var(--color-border);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+      margin-top: 16px;
+    }
+
+    .overlay-settings {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    /* Alert Messages */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--color-accent-success);
+      color: var(--color-accent-success);
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--color-accent-warning);
+      color: var(--color-accent-warning);
+    }
+
+    .alert-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--color-accent-danger);
+      color: var(--color-accent-danger);
+    }
+
+    .alert-info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--color-accent-primary);
+      color: var(--color-accent-primary);
+    }
+
+    /* Search Box */
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      padding-left: 40px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    /* Modal */
+    .modal-content {
+      background: var(--color-modal-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid var(--color-border);
+      padding: 20px 24px;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--color-border);
+      padding: 16px 24px;
+    }
+
+    .btn-close-white {
+      filter: invert(1);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--color-text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 1.125rem;
+      margin-bottom: 8px;
+    }
+
+    .empty-state-description {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .main-content {
+        padding: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-accent-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--color-bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-text-muted);
+    }
+
+    /* Tab Pane */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Rank Indicators */
+    .rank-indicator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+
+    .rank-1 {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #000;
+    }
+
+    .rank-2 {
+      background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+      color: #000;
+    }
+
+    .rank-3 {
+      background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+      color: #fff;
+    }
+
+    .rank-default {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        🎮 XP System
+      </div>
+      <div class="sidebar-subtitle">Viewer Gamification & Leaderboards</div>
+
+      <nav>
+        <div class="nav-section">
+          <div class="nav-section-title">Overview</div>
+          <a href="#" class="nav-item active" data-page="dashboard">
+            <span class="nav-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item" data-page="leaderboard">
+            <span class="nav-icon">🏆</span>
+            <span>Leaderboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">OBS Overlays</div>
+          <a href="#" class="nav-item" data-page="obs-panel">
+            <span class="nav-icon">🎬</span>
+            <span>OBS Panel</span>
+          </a>
+          <a href="#" class="nav-item" data-page="overlay-preview">
+            <span class="nav-icon">👁️</span>
+            <span>Live Preview</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Configuration</div>
+          <a href="#" class="nav-item" data-page="xp-settings">
+            <span class="nav-icon">⚙️</span>
+            <span>XP Settings</span>
+          </a>
+          <a href="#" class="nav-item" data-page="level-config">
+            <span class="nav-icon">📈</span>
+            <span>Level Config</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="#" class="nav-item" data-page="manual-award">
+            <span class="nav-icon">🎁</span>
+            <span>Manual Award</span>
+          </a>
+          <a href="#" class="nav-item" data-page="import-export">
+            <span class="nav-icon">💾</span>
+            <span>Import/Export</span>
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="tab-content active">
+        <div class="page-header">
+          <h1 class="page-title">📊 Dashboard</h1>
+          <p class="page-description">Overview of viewer engagement and XP statistics</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-card-icon">👥</span>
+            </div>
+            <div class="stat-card-value" id="totalViewers">-</div>
+            <div class="stat-card-label">Total Viewers</div>
+            <div class="stat-card-change positive" id="viewersChange" style="display:none;">
+              +0 this week
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-card-icon">⭐</span>
+            </div>
+            <div class="stat-card-value" id="totalXP">-</div>
+            <div class="stat-card-label">Total XP Earned</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-card-icon">📊</span>
+            </div>
+            <div class="stat-card-value" id="avgLevel">-</div>
+            <div class="stat-card-label">Average Level</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-card-icon">🔥</span>
+            </div>
+            <div class="stat-card-value" id="activeToday">-</div>
+            <div class="stat-card-label">Active Today</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">⚡</span>Quick Actions</span>
+          </div>
+          <div class="card-body">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="navigateTo('manual-award')">
+                🎁 Award XP
+              </button>
+              <button class="btn btn-success" onclick="navigateTo('obs-panel')">
+                🎬 Setup OBS Overlays
+              </button>
+              <button class="btn btn-secondary" onclick="navigateTo('import-export')">
+                💾 Export Data
+              </button>
+              <button class="btn btn-secondary" onclick="refreshData()">
+                🔄 Refresh Stats
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">📈</span>Recent Activity</span>
+            <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="activityFilter">
+              <option value="all">All Activity</option>
+              <option value="chat">Chat Messages</option>
+              <option value="gift">Gifts</option>
+              <option value="follow">Follows</option>
+              <option value="level_up">Level Ups</option>
+            </select>
+          </div>
+          <div class="card-body">
+            <div id="recentActivityContainer">
+              <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-text">No recent activity</div>
+                <div class="empty-state-description">Activity will appear here as viewers interact</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard Page -->
+      <div id="page-leaderboard" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">🏆 Leaderboard</h1>
+          <p class="page-description">Top viewers ranked by XP and engagement</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Top Viewers</span>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="leaderboardFilter">
+                <option value="">All Time</option>
+                <option value="7">Last 7 Days</option>
+                <option value="30">Last 30 Days</option>
+              </select>
+              <button class="btn btn-sm btn-secondary" onclick="refreshLeaderboard()">
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers...">
+            </div>
+            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">Rank</th>
+                    <th>Username</th>
+                    <th>Level</th>
+                    <th>Title</th>
+                    <th>XP</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardTable">
+                  <tr>
+                    <td colspan="7">
+                      <div class="empty-state">
+                        <div class="empty-state-icon">🏆</div>
+                        <div class="empty-state-text">Loading leaderboard...</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBS Panel Page -->
+      <div id="page-obs-panel" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">🎬 OBS Overlay Panel</h1>
+          <p class="page-description">Setup and manage OBS Browser Source overlays</p>
+        </div>
+
+        <div class="alert alert-info">
+          <span>💡</span>
+          <div>
+            <strong>Quick Setup:</strong> Copy the URL below and add it as a Browser Source in OBS Studio. 
+            Set width to 1920 and height according to your needs. Check "Shutdown source when not visible" for better performance.
+          </div>
+        </div>
+
+        <!-- XP Bar Overlay -->
+        <div class="overlay-card">
+          <div class="overlay-card-title">
+            ⭐ XP Bar Overlay
+          </div>
+          <p class="form-text" style="margin-bottom: 12px;">
+            Displays real-time XP progress with animated level-ups and badges. Perfect for showing individual viewer progress.
+          </p>
+          
+          <div class="overlay-url-box">
+            <span class="url-text" id="xpBarUrl">http://localhost:3000/overlay/viewer-xp/xp-bar</span>
+            <button class="btn btn-sm btn-primary copy-btn" onclick="copyToClipboard('xpBarUrl')">
+              📋 Copy
+            </button>
+          </div>
+
+          <div class="overlay-settings">
+            <div class="form-group">
+              <label class="form-label">Auto-Hide After (ms)</label>
+              <input type="number" class="form-control" id="xpBarDuration" value="5000" min="1000" step="1000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Show Profile Picture</label>
+              <select class="form-select" id="xpBarShowPic">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-sm btn-success" onclick="updateOverlayUrl('xpBar')">
+              ✅ Update URL
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="testOverlay('xp-bar')">
+              👁️ Test Overlay
+            </button>
+          </div>
+        </div>
+
+        <!-- Leaderboard Overlay -->
+        <div class="overlay-card">
+          <div class="overlay-card-title">
+            🏆 Leaderboard Overlay
+          </div>
+          <p class="form-text" style="margin-bottom: 12px;">
+            Shows top viewers ranked by XP. Combines session and all-time stats with smooth animations.
+          </p>
+          
+          <div class="overlay-url-box">
+            <span class="url-text" id="leaderboardOverlayUrl">http://localhost:3000/overlay/viewer-xp/leaderboard</span>
+            <button class="btn btn-sm btn-primary copy-btn" onclick="copyToClipboard('leaderboardOverlayUrl')">
+              📋 Copy
+            </button>
+          </div>
+
+          <div class="overlay-settings">
+            <div class="form-group">
+              <label class="form-label">Number of Entries</label>
+              <input type="number" class="form-control" id="leaderboardLimit" value="10" min="3" max="50">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Time Period</label>
+              <select class="form-select" id="leaderboardDays">
+                <option value="">All Time</option>
+                <option value="7">Last 7 Days</option>
+                <option value="30">Last 30 Days</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Refresh Interval (ms)</label>
+              <input type="number" class="form-control" id="leaderboardRefresh" value="30000" min="5000" step="5000">
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-sm btn-success" onclick="updateOverlayUrl('leaderboard')">
+              ✅ Update URL
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="testOverlay('leaderboard')">
+              👁️ Test Overlay
+            </button>
+          </div>
+        </div>
+
+        <!-- Level-Up Animation Overlay -->
+        <div class="overlay-card">
+          <div class="overlay-card-title">
+            🎉 Level-Up Animation Overlay
+          </div>
+          <p class="form-text" style="margin-bottom: 12px;">
+            Celebration animation when viewers level up. Shows confetti, new level, and unlocked rewards.
+          </p>
+          
+          <div class="overlay-url-box">
+            <span class="url-text" id="levelUpUrl">http://localhost:3000/overlay/viewer-xp/level-up</span>
+            <button class="btn btn-sm btn-primary copy-btn" onclick="copyToClipboard('levelUpUrl')">
+              📋 Copy
+            </button>
+          </div>
+
+          <div class="overlay-settings">
+            <div class="form-group">
+              <label class="form-label">Animation Duration (ms)</label>
+              <input type="number" class="form-control" id="levelUpDuration" value="5000" min="2000" step="1000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Enable Sound</label>
+              <select class="form-select" id="levelUpSound">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-sm btn-success" onclick="updateOverlayUrl('levelUp')">
+              ✅ Update URL
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="testOverlay('level-up')">
+              👁️ Test Overlay
+            </button>
+          </div>
+        </div>
+
+        <!-- OBS Setup Guide -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-header-icon">📖</span> OBS Setup Guide
+          </div>
+          <div class="card-body">
+            <ol style="line-height: 1.8; color: var(--color-text-secondary);">
+              <li>Open OBS Studio</li>
+              <li>Click the <strong>+</strong> button in the Sources panel</li>
+              <li>Select <strong>Browser</strong> from the list</li>
+              <li>Give it a name (e.g., "XP Bar", "Leaderboard")</li>
+              <li>Paste the URL from above into the <strong>URL</strong> field</li>
+              <li>Set <strong>Width</strong> to 1920 and <strong>Height</strong> according to your overlay needs</li>
+              <li>Check <strong>"Shutdown source when not visible"</strong> for better performance</li>
+              <li>Click <strong>OK</strong> to add the overlay to your scene</li>
+              <li>Resize and position as needed in your scene</li>
+            </ol>
+            <div class="alert alert-warning" style="margin-top: 16px;">
+              <span>⚠️</span>
+              <div>
+                <strong>Important:</strong> The overlays require an active connection to the server. 
+                Make sure the server is running before starting your stream.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional pages will be loaded here -->
+      <div id="page-overlay-preview" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">👁️ Live Preview</h1>
+          <p class="page-description">Preview how overlays look before adding them to OBS</p>
+        </div>
+
+        <!-- Overlay Selection -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">🎨</span>Select Overlay</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="max-width: 500px;">
+              <label class="form-label">Choose Overlay to Preview</label>
+              <select class="form-control" id="overlaySelect" onchange="loadOverlayPreview()">
+                <option value="">-- Select an Overlay --</option>
+                <option value="xp-bar">XP Bar - Shows current viewer's XP progress</option>
+                <option value="leaderboard">Leaderboard - Top viewers ranking</option>
+                <option value="level-up">Level Up - Level up celebration animation</option>
+                <option value="user-profile">User Profile - Detailed viewer stats card</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="max-width: 300px; margin-top: 16px;">
+              <label class="form-label">Preview Scale</label>
+              <select class="form-control" id="previewScale" onchange="updatePreviewScale()">
+                <option value="0.5">50% (Small)</option>
+                <option value="0.75">75% (Medium)</option>
+                <option value="1" selected>100% (Full Size)</option>
+              </select>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn btn-success" onclick="refreshPreview()">
+                🔄 Refresh Preview
+              </button>
+              <button class="btn btn-secondary" onclick="copyOverlayURL()">
+                📋 Copy OBS URL
+              </button>
+            </div>
+
+            <div id="overlayURL" style="margin-top: 12px; display: none;">
+              <label class="form-label">OBS Browser Source URL:</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" class="form-control" id="overlayURLInput" readonly 
+                  style="font-family: monospace; font-size: 0.9rem;">
+                <button class="btn btn-sm btn-secondary" onclick="copyToClipboard(document.getElementById('overlayURLInput').value)">
+                  📋 Copy
+                </button>
+              </div>
+              <small class="form-text">Add this URL as a Browser Source in OBS</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Container -->
+        <div class="card" id="previewCard" style="display: none;">
+          <div class="card-header">
+            <span><span class="card-header-icon">👁️</span>Live Preview</span>
+          </div>
+          <div class="card-body" style="background: #1a1a1a; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+            <div id="previewContainer" style="width: 100%; height: 100%; position: relative; transform-origin: top left;">
+              <iframe id="previewFrame" style="width: 100%; height: 600px; border: none; background: transparent;"></iframe>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="card" id="testControls" style="display: none;">
+          <div class="card-header">
+            <span><span class="card-header-icon">🎮</span>Test Controls</span>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <button class="btn btn-primary" onclick="testLevelUp()">
+                ⬆️ Test Level Up
+              </button>
+              <button class="btn btn-primary" onclick="testXPGain()">
+                ⭐ Test XP Gain
+              </button>
+              <button class="btn btn-primary" onclick="refreshLeaderboardPreview()">
+                📊 Refresh Leaderboard
+              </button>
+              <button class="btn btn-primary" onclick="testUserProfile()">
+                👤 Test User Profile
+              </button>
+            </div>
+            <div style="margin-top: 16px;">
+              <label class="form-label">Test Username</label>
+              <input type="text" class="form-control" id="testUsername" placeholder="Enter username for testing" 
+                style="max-width: 300px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-xp-settings" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">⚙️ XP Settings</h1>
+          <p class="page-description">Configure XP rewards for viewer actions</p>
+        </div>
+
+        <!-- XP Actions Configuration -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">⚡</span>XP Action Configuration</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Action Type</th>
+                    <th>XP Amount</th>
+                    <th>Cooldown (seconds)</th>
+                    <th>Enabled</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="actionsTable">
+                  <tr>
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <div class="empty-state-icon">⚙️</div>
+                        <div class="empty-state-text">Loading actions...</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- General Settings -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">🎛️</span>General Settings</span>
+          </div>
+          <div class="card-body">
+            <form id="generalSettingsForm">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                <div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="enableDailyBonus" checked>
+                    <label class="form-check-label" for="enableDailyBonus">
+                      <strong>Enable Daily Bonus</strong>
+                      <div class="form-text">Award XP to viewers on their first visit each day</div>
+                    </label>
+                  </div>
+                  
+                  <div class="form-check" style="margin-top: 16px;">
+                    <input type="checkbox" class="form-check-input" id="enableStreaks" checked>
+                    <label class="form-check-label" for="enableStreaks">
+                      <strong>Enable Streaks</strong>
+                      <div class="form-text">Reward viewers for consecutive daily visits</div>
+                    </label>
+                  </div>
+                  
+                  <div class="form-check" style="margin-top: 16px;">
+                    <input type="checkbox" class="form-check-input" id="enableWatchTime" checked>
+                    <label class="form-check-label" for="enableWatchTime">
+                      <strong>Enable Watch Time XP</strong>
+                      <div class="form-text">Award XP based on viewing duration</div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="form-group">
+                    <label class="form-label">Watch Time Interval (minutes)</label>
+                    <input type="number" class="form-control" id="watchTimeInterval" min="1" max="60" value="5">
+                    <small class="form-text">Award XP every X minutes of watching</small>
+                  </div>
+                  
+                  <div class="form-check" style="margin-top: 16px;">
+                    <input type="checkbox" class="form-check-input" id="announceLevelUps" checked>
+                    <label class="form-check-label" for="announceLevelUps">
+                      <strong>Announce Level Ups</strong>
+                      <div class="form-text">Show notifications when viewers level up</div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top: 24px;">
+                <button type="submit" class="btn btn-success">
+                  💾 Save Settings
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetSettings()">
+                  🔄 Reset to Defaults
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-level-config" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">📈 Level Configuration</h1>
+          <p class="page-description">Customize level progression and rewards</p>
+        </div>
+
+        <!-- Progression Type Selection -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">⚙️</span>Progression Type</span>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+              <div class="form-check">
+                <input type="radio" class="form-check-input" name="levelType" id="levelTypeExponential" 
+                  value="exponential" checked onchange="updateLevelTypeSettings()">
+                <label class="form-check-label" for="levelTypeExponential">
+                  <strong>Exponential</strong>
+                  <div class="form-text">XP required increases exponentially (Level 1: 0 XP, Level 2: 100 XP, Level 3: 400 XP, Level 4: 900 XP)</div>
+                </label>
+              </div>
+              
+              <div class="form-check">
+                <input type="radio" class="form-check-input" name="levelType" id="levelTypeLinear" 
+                  value="linear" onchange="updateLevelTypeSettings()">
+                <label class="form-check-label" for="levelTypeLinear">
+                  <strong>Linear</strong>
+                  <div class="form-text">Fixed XP per level (e.g., 1000 XP per level)</div>
+                </label>
+              </div>
+              
+              <div class="form-check">
+                <input type="radio" class="form-check-input" name="levelType" id="levelTypeCustom" 
+                  value="custom" onchange="updateLevelTypeSettings()">
+                <label class="form-check-label" for="levelTypeCustom">
+                  <strong>Custom</strong>
+                  <div class="form-text">Define custom XP requirements for each level</div>
+                </label>
+              </div>
+            </div>
+
+            <div id="linearSettings" style="display: none; margin-top: 16px; max-width: 400px;">
+              <div class="form-group">
+                <label class="form-label">XP Per Level</label>
+                <input type="number" class="form-control" id="xpPerLevel" value="1000" min="100">
+                <small class="form-text">XP required to advance one level</small>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn btn-success" onclick="saveLevelTypeSettings()">
+                💾 Save Progression Settings
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level Generator -->
+        <div class="card" id="levelGeneratorCard">
+          <div class="card-header">
+            <span><span class="card-header-icon">🔧</span>Level Generator</span>
+          </div>
+          <div class="card-body">
+            <p style="margin-bottom: 16px;">Generate custom level configurations with automatic rewards</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label class="form-label">Number of Levels</label>
+                <input type="number" class="form-control" id="genLevelCount" value="100" min="10" max="999">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Starting XP</label>
+                <input type="number" class="form-control" id="genStartXP" value="100" min="0">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Growth Rate</label>
+                <select class="form-control" id="genGrowthRate">
+                  <option value="slow">Slow (1.1x per level)</option>
+                  <option value="medium" selected>Medium (1.2x per level)</option>
+                  <option value="fast">Fast (1.5x per level)</option>
+                  <option value="extreme">Extreme (2.0x per level)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="generateLevelConfigs()">
+                🎲 Generate Levels
+              </button>
+              <button class="btn btn-secondary" onclick="previewLevelProgression()">
+                📊 Preview Progression
+              </button>
+            </div>
+
+            <div id="levelProgressionPreview" style="display: none; margin-top: 16px; max-height: 300px; overflow-y: auto;">
+              <h4 style="font-size: 1rem; margin-bottom: 12px;">Progression Preview</h4>
+              <div class="table-responsive">
+                <table class="modern-table" style="font-size: 0.85rem;">
+                  <thead>
+                    <tr>
+                      <th>Level</th>
+                      <th>Total XP Required</th>
+                      <th>XP for Next Level</th>
+                      <th>Growth</th>
+                    </tr>
+                  </thead>
+                  <tbody id="progressionPreviewTable">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level Rewards Configuration -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">🎁</span>Level Rewards</span>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom: 16px;">
+              <button class="btn btn-primary" onclick="addLevelReward()">
+                ➕ Add Reward Tier
+              </button>
+              <button class="btn btn-secondary" onclick="loadLevelRewards()">
+                🔄 Refresh
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Level</th>
+                    <th>Title/Badge</th>
+                    <th>Name Color</th>
+                    <th>Custom Emote</th>
+                    <th>Announcement</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="levelRewardsTable">
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <div class="empty-state-icon">🎁</div>
+                        <div class="empty-state-text">No rewards configured yet</div>
+                        <div class="empty-state-description">Add milestone rewards for reaching specific levels</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Level Distribution -->
+        <div class="card">
+          <div class="card-header">
+            <span><span class="card-header-icon">📊</span>Level Distribution</span>
+          </div>
+          <div class="card-body">
+            <div id="levelDistributionChart" style="min-height: 200px;">
+              <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-text">Level distribution chart</div>
+                <div class="empty-state-description">Shows how many viewers are at each level range</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-manual-award" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">🎁 Manual Award</h1>
+          <p class="page-description">Manually award XP to viewers for special events or achievements</p>
+        </div>
+
+        <div class="card" style="max-width: 600px;">
+          <div class="card-header">
+            <span><span class="card-header-icon">🎁</span>Award XP</span>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info">
+              <span>💡</span>
+              <div>
+                <strong>Tip:</strong> Use this to reward viewers for special contributions, milestones, or community events.
+                The XP will be added immediately and a level-up animation will trigger if they reach a new level.
+              </div>
+            </div>
+
+            <form id="manualAwardForm">
+              <div class="form-group">
+                <label class="form-label">Username *</label>
+                <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" required>
+                <small class="form-text">The TikTok username of the viewer to award XP</small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">XP Amount *</label>
+                <input type="number" class="form-control" id="awardAmount" min="1" placeholder="100" required>
+                <small class="form-text">Amount of XP to award (minimum: 1)</small>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Reason (Optional)</label>
+                <textarea class="form-control" id="awardReason" rows="3" placeholder="e.g., Winner of community event, Milestone celebration, etc."></textarea>
+                <small class="form-text">Optional note about why this XP was awarded (for your records)</small>
+              </div>
+
+              <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn btn-success">
+                  ✅ Award XP
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="clearAwardForm()">
+                  🔄 Clear Form
+                </button>
+              </div>
+
+              <div id="awardResult" style="margin-top: 16px;"></div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Recent Manual Awards -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <span><span class="card-header-icon">📜</span>Recent Manual Awards</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Date/Time</th>
+                    <th>Username</th>
+                    <th>XP Amount</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="recentAwardsTable">
+                  <tr>
+                    <td colspan="4">
+                      <div class="empty-state">
+                        <div class="empty-state-icon">📜</div>
+                        <div class="empty-state-text">No manual awards yet</div>
+                        <div class="empty-state-description">Recent manual XP awards will appear here</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-import-export" class="tab-content">
+        <div class="page-header">
+          <h1 class="page-title">💾 Import/Export</h1>
+          <p class="page-description">Backup and restore viewer data</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+          <!-- Export Section -->
+          <div class="card">
+            <div class="card-header">
+              <span><span class="card-header-icon">📤</span>Export Data</span>
+            </div>
+            <div class="card-body">
+              <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+                Export all viewer XP data including profiles, transactions, and configuration settings.
+                This creates a JSON backup file you can use to restore data later.
+              </p>
+              
+              <div class="alert alert-info">
+                <span>💡</span>
+                <div>
+                  <strong>What's included:</strong>
+                  <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+                    <li>All viewer profiles and XP data</li>
+                    <li>Transaction history</li>
+                    <li>Level configuration</li>
+                    <li>XP action settings</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-success" id="exportDataBtn" onclick="exportData()">
+                📥 Download Export File
+              </button>
+              <div id="exportStatus" style="margin-top: 16px;"></div>
+            </div>
+          </div>
+
+          <!-- Import Section -->
+          <div class="card">
+            <div class="card-header">
+              <span><span class="card-header-icon">📥</span>Import Data</span>
+            </div>
+            <div class="card-body">
+              <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
+                Import viewer XP data from a previously exported file. 
+                Existing data will be merged with imported data.
+              </p>
+
+              <div class="alert alert-warning">
+                <span>⚠️</span>
+                <div>
+                  <strong>Warning:</strong> Importing data will update existing viewer profiles with the same username.
+                  Make sure to back up your current data before importing.
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Select Export File</label>
+                <input type="file" class="form-control" id="importFile" accept=".json">
+                <small class="form-text">Choose a JSON file exported from this system</small>
+              </div>
+
+              <button type="button" class="btn btn-warning" id="importDataBtn" onclick="importData()">
+                📤 Import Data
+              </button>
+              <div id="importStatus" style="margin-top: 16px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewer History Lookup -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <span><span class="card-header-icon">📊</span>Viewer XP History</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="max-width: 500px;">
+              <label class="form-label">Search Viewer</label>
+              <div style="display: flex; gap: 12px;">
+                <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
+                <button class="btn btn-primary" onclick="loadViewerHistory()" style="white-space: nowrap;">
+                  🔍 Load History
+                </button>
+              </div>
+            </div>
+
+            <div id="historyContainer" style="display:none; margin-top: 24px;">
+              <h3 style="font-size: 1.125rem; margin-bottom: 16px;">
+                Transaction History for <strong id="historyViewerName"></strong>
+              </h3>
+              <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="modern-table">
+                  <thead>
+                    <tr>
+                      <th>Date/Time</th>
+                      <th>Action Type</th>
+                      <th>XP Amount</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTable">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="/js/vendor/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <script>
+    // Navigation System
+    function navigateTo(pageName) {
+      // Hide all pages
+      document.querySelectorAll('.tab-content').forEach(page => {
+        page.classList.remove('active');
+      });
+
+      // Remove active class from all nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Show selected page
+      const targetPage = document.getElementById(`page-${pageName}`);
+      if (targetPage) {
+        targetPage.classList.add('active');
+      }
+
+      // Activate nav item
+      const navItem = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+      if (navItem) {
+        navItem.classList.add('active');
+      }
+
+      // Load page-specific data
+      loadPageData(pageName);
+    }
+
+    // Setup nav click handlers
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pageName = item.getAttribute('data-page');
+        navigateTo(pageName);
+      });
+    });
+
+    // Copy to clipboard
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        // Show success feedback
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        btn.style.background = 'var(--color-accent-success)';
+        
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '';
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard');
+      });
+    }
+
+    // Update overlay URL with parameters
+    function updateOverlayUrl(overlayType) {
+      const baseUrls = {
+        xpBar: '/overlay/viewer-xp/xp-bar',
+        leaderboard: '/overlay/viewer-xp/leaderboard',
+        levelUp: '/overlay/viewer-xp/level-up'
+      };
+
+      const params = {};
+      
+      if (overlayType === 'xpBar') {
+        params.duration = document.getElementById('xpBarDuration').value;
+        params.showPic = document.getElementById('xpBarShowPic').value;
+        params.autoHide = 'true';
+      } else if (overlayType === 'leaderboard') {
+        const limit = document.getElementById('leaderboardLimit').value;
+        const days = document.getElementById('leaderboardDays').value;
+        const refresh = document.getElementById('leaderboardRefresh').value;
+        
+        if (limit) params.limit = limit;
+        if (days) params.days = days;
+        if (refresh) params.refresh = refresh;
+      } else if (overlayType === 'levelUp') {
+        params.duration = document.getElementById('levelUpDuration').value;
+        params.sound = document.getElementById('levelUpSound').value;
+      }
+
+      const urlBase = window.location.origin + baseUrls[overlayType];
+      const queryString = Object.keys(params).length > 0 
+        ? '?' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')
+        : '';
+      
+      const fullUrl = urlBase + queryString;
+      
+      const urlElementIds = {
+        xpBar: 'xpBarUrl',
+        leaderboard: 'leaderboardOverlayUrl',
+        levelUp: 'levelUpUrl'
+      };
+      
+      document.getElementById(urlElementIds[overlayType]).textContent = fullUrl;
+      
+      // Show success message
+      alert('✅ URL updated! Copy it to use in OBS.');
+    }
+
+    // Test overlay in new window
+    function testOverlay(overlayName) {
+      const url = window.location.origin + `/overlay/viewer-xp/${overlayName}?test=true`;
+      window.open(url, '_blank', 'width=1920,height=1080');
+    }
+
+    // Refresh data functions
+    function refreshData() {
+      loadPageData('dashboard');
+    }
+
+    function refreshLeaderboard() {
+      loadPageData('leaderboard');
+    }
+
+    // Load page-specific data
+    async function loadPageData(pageName) {
+      if (pageName === 'dashboard') {
+        loadDashboardStats();
+      } else if (pageName === 'leaderboard') {
+        loadLeaderboard();
+      } else if (pageName === 'xp-settings') {
+        loadXPSettings();
+      } else if (pageName === 'level-config') {
+        loadLevelConfig();
+      }
+    }
+
+    // Load dashboard statistics
+    async function loadDashboardStats() {
+      try {
+        const response = await fetch('/api/viewer-xp/stats');
+        const data = await response.json();
+        
+        document.getElementById('totalViewers').textContent = data.total_viewers || '0';
+        document.getElementById('totalXP').textContent = formatNumber(data.total_xp || 0);
+        document.getElementById('avgLevel').textContent = data.average_level ? data.average_level.toFixed(1) : '0.0';
+        document.getElementById('activeToday').textContent = data.active_today || '0';
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    // Load leaderboard
+    async function loadLeaderboard() {
+      try {
+        const filter = document.getElementById('leaderboardFilter').value;
+        const url = filter 
+          ? `/api/viewer-xp/leaderboard?limit=50&days=${filter}`
+          : '/api/viewer-xp/leaderboard?limit=50';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const tbody = document.getElementById('leaderboardTable');
+        
+        if (!data.leaderboard || data.leaderboard.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <div class="empty-state-icon">🏆</div>
+                  <div class="empty-state-text">No viewers yet</div>
+                  <div class="empty-state-description">Viewers will appear here as they earn XP</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        tbody.innerHTML = data.leaderboard.map((viewer, index) => {
+          const rank = index + 1;
+          const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-default';
+          const rankIcon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+          
+          const progress = viewer.xp_progress || 0;
+          
+          return `
+            <tr>
+              <td>
+                <div class="rank-indicator ${rankClass}">${rankIcon}</div>
+              </td>
+              <td><strong>${escapeHtml(viewer.username)}</strong></td>
+              <td><span class="badge badge-level">Lvl ${viewer.level}</span></td>
+              <td><span class="badge badge-primary">${escapeHtml(viewer.title || 'Newcomer')}</span></td>
+              <td><strong>${formatNumber(viewer.xp)}</strong> XP</td>
+              <td style="min-width: 200px;">
+                <div class="xp-progress">
+                  <div class="xp-progress-fill" style="width: ${progress}%"></div>
+                </div>
+                <small class="form-text">${progress.toFixed(1)}% to next level</small>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="viewUserDetails('${escapeHtml(viewer.username)}')">
+                  View
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      }
+    }
+
+    // View user details
+    function viewUserDetails(username) {
+      // TODO: Implement user details modal
+      // For now, show a friendly message
+      const message = document.createElement('div');
+      message.className = 'alert alert-info';
+      message.style.position = 'fixed';
+      message.style.top = '20px';
+      message.style.right = '20px';
+      message.style.zIndex = '9999';
+      message.style.maxWidth = '400px';
+      message.innerHTML = `
+        <span>💡</span>
+        <div>
+          <strong>Coming Soon!</strong><br>
+          Detailed viewer profile for ${escapeHtml(username)} will be available in the next update.
+        </div>
+      `;
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        message.style.transition = 'opacity 0.3s';
+        message.style.opacity = '0';
+        setTimeout(() => message.remove(), 300);
+      }, 3000);
+    }
+
+    // Utility functions
+    function formatNumber(num) {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+      } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+      }
+      return num.toString();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPageData('dashboard');
+      
+      // Setup leaderboard filter
+      document.getElementById('leaderboardFilter')?.addEventListener('change', refreshLeaderboard);
+      
+      // Setup search
+      document.getElementById('leaderboardSearch')?.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#leaderboardTable tr');
+        
+        rows.forEach(row => {
+          const username = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+          row.style.display = username.includes(searchTerm) ? '' : 'none';
+        });
+      });
+    });
+
+    // Socket.io connection for live updates
+    const socket = io();
+    
+    socket.on('viewer-xp:update', (data) => {
+      // Refresh dashboard when XP is updated
+      if (document.getElementById('page-dashboard').classList.contains('active')) {
+        refreshData();
+      }
+    });
+
+    socket.on('viewer-xp:level-up', (data) => {
+      // Show toast notification for level ups
+      if (data && data.username && data.newLevel) {
+        showToast(`🎉 ${data.username} leveled up to Level ${data.newLevel}!`, 'success');
+      }
+    });
+
+    // Load XP Settings
+    async function loadXPSettings() {
+      try {
+        // Load XP actions
+        const actionsResponse = await fetch('/api/viewer-xp/actions');
+        const actions = await actionsResponse.json();
+        
+        const tbody = document.getElementById('actionsTable');
+        if (actions && actions.length > 0) {
+          tbody.innerHTML = actions.map(action => {
+            const actionName = action.action_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `
+              <tr>
+                <td><strong>${actionName}</strong></td>
+                <td>
+                  <input type="number" class="form-control" id="xp_${action.action_type}" 
+                         value="${action.xp_amount}" min="0" style="width: 100px;">
+                </td>
+                <td>
+                  <input type="number" class="form-control" id="cooldown_${action.action_type}" 
+                         value="${action.cooldown_seconds}" min="0" style="width: 120px;">
+                </td>
+                <td>
+                  <input type="checkbox" class="form-check-input" id="enabled_${action.action_type}" 
+                         ${action.enabled ? 'checked' : ''}>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-primary" onclick="updateAction('${action.action_type}')">
+                    💾 Save
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        } else {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5">
+                <div class="empty-state">
+                  <div class="empty-state-icon">⚙️</div>
+                  <div class="empty-state-text">No actions configured</div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+
+        // Load general settings
+        const settingsResponse = await fetch('/api/viewer-xp/settings');
+        const settings = await settingsResponse.json();
+        
+        if (settings) {
+          document.getElementById('enableDailyBonus').checked = settings.enableDailyBonus !== false;
+          document.getElementById('enableStreaks').checked = settings.enableStreaks !== false;
+          document.getElementById('enableWatchTime').checked = settings.enableWatchTime !== false;
+          document.getElementById('watchTimeInterval').value = settings.watchTimeInterval || 5;
+          document.getElementById('announceLevelUps').checked = settings.announceLevel !== false;
+        }
+      } catch (error) {
+        console.error('Error loading XP settings:', error);
+        showToast('Failed to load XP settings', 'danger');
+      }
+    }
+
+    // Update individual action
+    async function updateAction(actionType) {
+      try {
+        const xpAmount = parseInt(document.getElementById(`xp_${actionType}`).value);
+        const cooldown = parseInt(document.getElementById(`cooldown_${actionType}`).value);
+        const enabled = document.getElementById(`enabled_${actionType}`).checked;
+
+        // Validate parsed numbers
+        if (isNaN(xpAmount) || xpAmount < 0) {
+          showToast('Invalid XP amount - must be a positive number', 'danger');
+          return;
+        }
+        
+        if (isNaN(cooldown) || cooldown < 0) {
+          showToast('Invalid cooldown - must be a positive number', 'danger');
+          return;
+        }
+
+        const response = await fetch(`/api/viewer-xp/actions/${actionType}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            xp_amount: xpAmount,
+            cooldown_seconds: cooldown,
+            enabled: enabled
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showToast('Action updated successfully!', 'success');
+        } else {
+          showToast('Failed to update action', 'danger');
+        }
+      } catch (error) {
+        console.error('Error updating action:', error);
+        showToast('Failed to update action', 'danger');
+      }
+    }
+
+    // Load Level Configuration
+    async function loadLevelConfig() {
+      try {
+        const response = await fetch('/api/viewer-xp/level-config');
+        const configs = await response.json();
+        
+        // For now, show a message that it's functional but basic
+        const page = document.getElementById('page-level-config');
+        const description = page.querySelector('.page-description');
+        
+        if (configs && configs.length > 0) {
+          description.textContent = 'Level configuration is loaded. Advanced editing coming soon.';
+          
+          // Add a basic preview table
+          let configHtml = `
+            <div class="card">
+              <div class="card-header">
+                <span><span class="card-header-icon">📊</span>Current Level Configuration</span>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Level</th>
+                        <th>XP Required</th>
+                        <th>Title</th>
+                        <th>Color</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+          `;
+          
+          configs.slice(0, 20).forEach(config => {
+            configHtml += `
+              <tr>
+                <td><strong>${config.level}</strong></td>
+                <td>${config.xp_required.toLocaleString()} XP</td>
+                <td>${config.title || 'N/A'}</td>
+                <td><span style="color: ${config.name_color || '#FFFFFF'}">●</span> ${config.name_color || 'Default'}</td>
+              </tr>
+            `;
+          });
+          
+          configHtml += `
+                    </tbody>
+                  </table>
+                </div>
+                <p class="form-text" style="margin-top: 16px;">
+                  Showing first 20 levels. Advanced level configuration editor coming in a future update.
+                </p>
+              </div>
+            </div>
+          `;
+          
+          // Find existing content and replace or append
+          const existingContent = page.querySelector('.card');
+          if (existingContent) {
+            existingContent.remove();
+          }
+          page.insertAdjacentHTML('beforeend', configHtml);
+        }
+      } catch (error) {
+        console.error('Error loading level config:', error);
+        const page = document.getElementById('page-level-config');
+        page.innerHTML = `
+          <div class="page-header">
+            <h1 class="page-title">📈 Level Configuration</h1>
+            <p class="page-description">Customize level progression and rewards</p>
+          </div>
+          <div class="alert alert-warning">
+            <span>⚠️</span>
+            <div>
+              <strong>Loading Error:</strong> Could not load level configuration data.
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // XP Settings Functions
+    function resetSettings() {
+      if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        document.getElementById('enableDailyBonus').checked = true;
+        document.getElementById('enableStreaks').checked = true;
+        document.getElementById('enableWatchTime').checked = true;
+        document.getElementById('watchTimeInterval').value = 5;
+        document.getElementById('announceLevelUps').checked = true;
+        alert('Settings reset to defaults. Click "Save Settings" to apply.');
+      }
+    }
+
+    // Manual Award Functions
+    function clearAwardForm() {
+      document.getElementById('manualAwardForm').reset();
+      document.getElementById('awardResult').innerHTML = '';
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `alert alert-${type}`;
+      toast.style.position = 'fixed';
+      toast.style.top = '20px';
+      toast.style.right = '20px';
+      toast.style.zIndex = '9999';
+      toast.style.maxWidth = '400px';
+      toast.style.boxShadow = 'var(--shadow-lg)';
+      
+      const icon = type === 'success' ? '✅' : type === 'danger' ? '❌' : '💡';
+      toast.innerHTML = `
+        <span>${icon}</span>
+        <div>${message}</div>
+      `;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    document.getElementById('manualAwardForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('awardUsername').value;
+      const amount = parseInt(document.getElementById('awardAmount').value);
+      const reason = document.getElementById('awardReason').value;
+      
+      const resultDiv = document.getElementById('awardResult');
+      resultDiv.innerHTML = '<div class="spinner"></div> Awarding XP...';
+      
+      try {
+        const response = await fetch('/api/viewer-xp/award', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, amount, reason })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <div class="alert alert-success">
+              <span>✅</span>
+              <div>
+                <strong>Success!</strong> Awarded ${amount} XP to ${username}.
+                ${result.leveledUp ? ` They leveled up to Level ${result.newLevel}!` : ''}
+              </div>
+            </div>
+          `;
+          clearAwardForm();
+          loadRecentAwards();
+          showToast(`Successfully awarded ${amount} XP to ${username}!`);
+        } else {
+          throw new Error(result.error || 'Failed to award XP');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="alert alert-danger">
+            <span>❌</span>
+            <div><strong>Error:</strong> ${error.message}</div>
+          </div>
+        `;
+      }
+    });
+
+    // General Settings Form Handler
+    document.getElementById('generalSettingsForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const watchTimeInterval = parseInt(document.getElementById('watchTimeInterval').value);
+      
+      // Validate watch time interval
+      if (isNaN(watchTimeInterval) || watchTimeInterval < 1 || watchTimeInterval > 60) {
+        showToast('Watch time interval must be between 1 and 60 minutes', 'danger');
+        return;
+      }
+      
+      const settings = {
+        enableDailyBonus: document.getElementById('enableDailyBonus').checked,
+        enableStreaks: document.getElementById('enableStreaks').checked,
+        enableWatchTime: document.getElementById('enableWatchTime').checked,
+        watchTimeInterval: watchTimeInterval,
+        announceLevel: document.getElementById('announceLevelUps').checked
+      };
+      
+      try {
+        const response = await fetch('/api/viewer-xp/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showToast('Settings saved successfully!', 'success');
+        } else {
+          throw new Error(result.error || 'Failed to save settings');
+        }
+      } catch (error) {
+        showToast(`Error saving settings: ${error.message}`, 'danger');
+      }
+    });
+
+    async function loadRecentAwards() {
+      try {
+        const response = await fetch('/api/viewer-xp/manual-awards?limit=10');
+        const awards = await response.json();
+        
+        const tbody = document.getElementById('recentAwardsTable');
+        
+        if (!awards || awards.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4">
+                <div class="empty-state">
+                  <div class="empty-state-icon">📜</div>
+                  <div class="empty-state-text">No manual awards yet</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        
+        tbody.innerHTML = awards.map(award => `
+          <tr>
+            <td>${new Date(award.timestamp).toLocaleString()}</td>
+            <td><strong>${escapeHtml(award.username)}</strong></td>
+            <td><span class="badge badge-success">+${award.amount} XP</span></td>
+            <td>${escapeHtml(award.reason || '-')}</td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading recent awards:', error);
+      }
+    }
+
+    // Import/Export Functions
+    async function exportData() {
+      const btn = document.getElementById('exportDataBtn');
+      const status = document.getElementById('exportStatus');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Exporting...';
+      status.innerHTML = '';
+      
+      try {
+        const response = await fetch('/api/viewer-xp/export');
+        const data = await response.json();
+        
+        // Create download
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `viewer-xp-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        status.innerHTML = `
+          <div class="alert alert-success">
+            <span>✅</span>
+            <div><strong>Success!</strong> Export file downloaded. Exported ${data.stats.totalViewers} viewers.</div>
+          </div>
+        `;
+      } catch (error) {
+        status.innerHTML = `
+          <div class="alert alert-danger">
+            <span>❌</span>
+            <div><strong>Error:</strong> ${error.message}</div>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📥 Download Export File';
+      }
+    }
+
+    async function importData() {
+      const fileInput = document.getElementById('importFile');
+      const btn = document.getElementById('importDataBtn');
+      const status = document.getElementById('importStatus');
+      
+      if (!fileInput.files || !fileInput.files[0]) {
+        status.innerHTML = `
+          <div class="alert alert-warning">
+            <span>⚠️</span>
+            <div>Please select a file to import.</div>
+          </div>
+        `;
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Importing...';
+      status.innerHTML = '';
+      
+      try {
+        const file = fileInput.files[0];
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        const response = await fetch('/api/viewer-xp/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          status.innerHTML = `
+            <div class="alert alert-success">
+              <span>✅</span>
+              <div>
+                <strong>Success!</strong> Imported ${result.imported} viewers.
+                ${result.updated ? ` Updated ${result.updated} existing profiles.` : ''}
+              </div>
+            </div>
+          `;
+          fileInput.value = '';
+          refreshData();
+        } else {
+          throw new Error(result.error || 'Import failed');
+        }
+      } catch (error) {
+        status.innerHTML = `
+          <div class="alert alert-danger">
+            <span>❌</span>
+            <div><strong>Error:</strong> ${error.message}</div>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📤 Import Data';
+      }
+    }
+
+    async function loadViewerHistory() {
+      const username = document.getElementById('historyUsername').value.trim();
+      const container = document.getElementById('historyContainer');
+      const tbody = document.getElementById('historyTable');
+      const viewerNameEl = document.getElementById('historyViewerName');
+      
+      if (!username) {
+        // Show inline error message instead of alert
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4">
+              <div class="alert alert-warning">
+                <span>⚠️</span>
+                <div>Please enter a username to search</div>
+              </div>
+            </td>
+          </tr>
+        `;
+        container.style.display = 'block';
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/viewer-xp/history/${encodeURIComponent(username)}`);
+        const history = await response.json();
+        
+        if (!history || history.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4">
+                <div class="empty-state">
+                  <div class="empty-state-icon">📊</div>
+                  <div class="empty-state-text">No history found</div>
+                  <div class="empty-state-description">No XP transactions for this viewer</div>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          tbody.innerHTML = history.map(item => {
+            // Parse details if JSON string
+            let detailsHtml = '-';
+            if (item.details) {
+              try {
+                const details = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
+                detailsHtml = Object.entries(details)
+                  .map(([key, value]) => `${key}: ${escapeHtml(String(value))}`)
+                  .join(', ');
+              } catch (e) {
+                console.warn('Failed to parse transaction details:', e, item.details);
+                detailsHtml = escapeHtml(String(item.details));
+              }
+            }
+            
+            return `
+              <tr>
+                <td>${new Date(item.timestamp).toLocaleString()}</td>
+                <td><span class="badge badge-primary">${escapeHtml(item.action_type)}</span></td>
+                <td><strong>+${item.amount} XP</strong></td>
+                <td style="font-size: 0.85rem; color: var(--color-text-muted);">${detailsHtml}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+        
+        viewerNameEl.textContent = username;
+        container.style.display = 'block';
+      } catch (error) {
+        console.error('Error loading history:', error);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4">
+              <div class="alert alert-danger">
+                <span>❌</span>
+                <div><strong>Error:</strong> Failed to load viewer history. ${error.message}</div>
+              </div>
+            </td>
+          </tr>
+        `;
+        container.style.display = 'block';
+      }
+    }
+
+    // ========== OVERLAY PREVIEW FUNCTIONS ==========
+    
+    function loadOverlayPreview() {
+      const select = document.getElementById('overlaySelect');
+      const overlayType = select.value;
+      const previewCard = document.getElementById('previewCard');
+      const testControls = document.getElementById('testControls');
+      const overlayURL = document.getElementById('overlayURL');
+      const overlayURLInput = document.getElementById('overlayURLInput');
+      
+      if (!overlayType) {
+        previewCard.style.display = 'none';
+        testControls.style.display = 'none';
+        overlayURL.style.display = 'none';
+        return;
+      }
+      
+      const baseURL = window.location.origin;
+      const url = `${baseURL}/overlay/viewer-xp/${overlayType}`;
+      
+      overlayURLInput.value = url;
+      overlayURL.style.display = 'block';
+      previewCard.style.display = 'block';
+      testControls.style.display = 'block';
+      
+      document.getElementById('previewFrame').src = url;
+      updatePreviewScale();
+    }
+    
+    function updatePreviewScale() {
+      const scale = document.getElementById('previewScale').value;
+      const container = document.getElementById('previewContainer');
+      container.style.transform = `scale(${scale})`;
+    }
+    
+    function refreshPreview() {
+      const frame = document.getElementById('previewFrame');
+      if (frame.src) {
+        frame.src = frame.src; // Reload iframe
+      }
+    }
+    
+    function copyOverlayURL() {
+      const input = document.getElementById('overlayURLInput');
+      copyToClipboard(input.value);
+    }
+    
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('✅ URL copied to clipboard!');
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          fallbackCopyToClipboard(text);
+        });
+      } else {
+        fallbackCopyToClipboard(text);
+      }
+    }
+    
+    function fallbackCopyToClipboard(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('✅ URL copied to clipboard!');
+        } else {
+          showToast('❌ Failed to copy URL - please copy manually');
+        }
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showToast('❌ Failed to copy URL - please copy manually');
+      }
+      
+      document.body.removeChild(textArea);
+    }
+    
+    function testLevelUp() {
+      const username = document.getElementById('testUsername').value || 'TestUser';
+      socket.emit('viewer-xp:level-up', {
+        username,
+        oldLevel: 5,
+        newLevel: 6,
+        rewards: {
+          title: 'Rising Star',
+          badge: '⭐',
+          announcement_message: `Congratulations ${username}! You've reached Level 6!`
+        }
+      });
+    }
+    
+    function testXPGain() {
+      const username = document.getElementById('testUsername').value || 'TestUser';
+      socket.emit('viewer-xp:update', {
+        username,
+        amount: 50,
+        actionType: 'chat_message',
+        profile: {
+          username,
+          level: 5,
+          xp: 1250,
+          total_xp_earned: 2500
+        }
+      });
+    }
+    
+    function refreshLeaderboardPreview() {
+      socket.emit('viewer-xp:show-leaderboard', {
+        limit: 10,
+        leaderboard: [],
+        requestedBy: 'Preview'
+      });
+    }
+    
+    function testUserProfile() {
+      const username = document.getElementById('testUsername').value || 'TestUser';
+      socket.emit('viewer-xp:show-user-profile', {
+        username,
+        level: 5,
+        xp: 1250,
+        total_xp_earned: 2500,
+        rank: 42,
+        title: 'Rising Star'
+      });
+    }
+
+    // ========== LEVEL CONFIGURATION FUNCTIONS ==========
+    
+    function updateLevelTypeSettings() {
+      const type = document.querySelector('input[name="levelType"]:checked').value;
+      const linearSettings = document.getElementById('linearSettings');
+      const levelGeneratorCard = document.getElementById('levelGeneratorCard');
+      
+      linearSettings.style.display = type === 'linear' ? 'block' : 'none';
+      levelGeneratorCard.style.display = type === 'custom' ? 'block' : 'none';
+    }
+    
+    async function saveLevelTypeSettings() {
+      try {
+        const type = document.querySelector('input[name="levelType"]:checked').value;
+        const settings = { levelType: type };
+        
+        if (type === 'linear') {
+          settings.xpPerLevel = document.getElementById('xpPerLevel').value;
+        }
+        
+        const response = await fetch('/api/viewer-xp/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+        
+        if (response.ok) {
+          showToast('✅ Progression settings saved!');
+        } else {
+          throw new Error('Failed to save settings');
+        }
+      } catch (error) {
+        console.error('Error saving level type:', error);
+        showToast('❌ Failed to save settings');
+      }
+    }
+    
+    function previewLevelProgression() {
+      const count = parseInt(document.getElementById('genLevelCount').value);
+      const startXP = parseInt(document.getElementById('genStartXP').value);
+      const growthRate = document.getElementById('genGrowthRate').value;
+      
+      const rates = {
+        slow: 1.1,
+        medium: 1.2,
+        fast: 1.5,
+        extreme: 2.0
+      };
+      const rate = rates[growthRate];
+      
+      const tbody = document.getElementById('progressionPreviewTable');
+      tbody.innerHTML = '';
+      
+      let totalXP = 0;
+      let xpForNext = startXP;
+      
+      // Show first 10, middle 10, and last 10 levels
+      const levelsToShow = [];
+      for (let i = 1; i <= Math.min(10, count); i++) levelsToShow.push(i);
+      if (count > 30) {
+        for (let i = Math.floor(count / 2) - 4; i <= Math.floor(count / 2) + 5; i++) {
+          if (i > 10 && i < count - 9) levelsToShow.push(i);
+        }
+      }
+      for (let i = Math.max(count - 9, 11); i <= count; i++) {
+        if (!levelsToShow.includes(i)) levelsToShow.push(i);
+      }
+      
+      let prevXPForNext = startXP;
+      for (let i = 1; i <= count; i++) {
+        if (i > 1) {
+          totalXP += xpForNext;
+          xpForNext = Math.floor(xpForNext * rate);
+        }
+        
+        if (levelsToShow.includes(i)) {
+          const growth = i === 1 ? '-' : `${((xpForNext / prevXPForNext - 1) * 100).toFixed(1)}%`;
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>Level ${i}</strong></td>
+              <td>${totalXP.toLocaleString()} XP</td>
+              <td>+${xpForNext.toLocaleString()} XP</td>
+              <td>${growth}</td>
+            </tr>
+          `;
+        } else if (levelsToShow.includes(i - 1) && !levelsToShow.includes(i + 1)) {
+          tbody.innerHTML += `
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--color-text-muted); font-style: italic;">
+                ... ${count - 20} more levels ...
+              </td>
+            </tr>
+          `;
+        }
+        
+        prevXPForNext = xpForNext;
+      }
+      
+      document.getElementById('levelProgressionPreview').style.display = 'block';
+    }
+    
+    async function generateLevelConfigs() {
+      const count = parseInt(document.getElementById('genLevelCount').value);
+      const startXP = parseInt(document.getElementById('genStartXP').value);
+      const growthRate = document.getElementById('genGrowthRate').value;
+      
+      try {
+        const response = await fetch('/api/viewer-xp/level-config/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: growthRate,
+            settings: {
+              count,
+              startXP
+            }
+          })
+        });
+        
+        if (response.ok) {
+          const configs = await response.json();
+          showToast(`✅ Generated ${configs.length} level configurations!`);
+          previewLevelProgression();
+        } else {
+          throw new Error('Failed to generate configs');
+        }
+      } catch (error) {
+        console.error('Error generating levels:', error);
+        showToast('❌ Failed to generate level configurations');
+      }
+    }
+    
+    function addLevelReward() {
+      showToast('ℹ️ Level reward editor coming in next update');
+    }
+    
+    async function loadLevelRewards() {
+      // Placeholder for loading rewards
+      showToast('ℹ️ Loading level rewards...');
+    }
+
+    // ========== UTILITY FUNCTIONS ==========
+    
+    function showToast(message) {
+      // Simple toast notification
+      const toast = document.createElement('div');
+      toast.className = 'toast-notification';
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--color-bg-secondary);
+        color: var(--color-text-primary);
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--color-border);
+        z-index: 10000;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+      `;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
+    // Add CSS animations for toast
+    if (!document.getElementById('toastAnimations')) {
+      const style = document.createElement('style');
+      style.id = 'toastAnimations';
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  </script>
+</body>
+</html>

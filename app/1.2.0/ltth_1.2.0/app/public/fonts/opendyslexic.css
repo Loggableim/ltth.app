@@ -1,0 +1,30 @@
+/* OpenDyslexic Font Replacement with Web-Safe Alternatives */
+/* CSP-compliant alternative to Google Fonts - Accessibility-focused */
+/* OpenDyslexic is specialized for dyslexia - using highly readable alternatives */
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  /* Fonts with distinct letter shapes that help with dyslexia */
+  src: local('Comic Sans MS'), local('Verdana'), local('Tahoma'), local('Trebuchet MS'), local('Arial');
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Comic Sans MS Bold'), local('Verdana Bold'), local('Tahoma Bold'), local('Arial Bold');
+}
+
+/* Enhanced fallback font stack for OpenDyslexic */
+/* Comic Sans MS is recommended for dyslexia due to its distinct letter shapes */
+/* Additional spacing and line-height for better readability */
+body.dyslexia-font {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', 'Tahoma', 'Arial', sans-serif;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  word-spacing: 0.1em;
+}

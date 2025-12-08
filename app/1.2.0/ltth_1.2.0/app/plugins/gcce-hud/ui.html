@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCCE HUD Overlay - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #999;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #ccc;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+        }
+
+        .btn-secondary {
+            background: #444;
+            color: #fff;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+
+        .alert-success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+        }
+
+        .alert-error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        code {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .commands-list {
+            background: #222;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .commands-list li {
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .commands-list code {
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GCCE HUD Overlay</h1>
+        <p class="subtitle">Configure the HUD overlay system for displaying text and images via chat commands</p>
+
+        <div class="alert alert-info">
+            <strong>Note:</strong> This plugin requires the Global Chat Command Engine (GCCE) to be enabled.
+            Add the overlay to OBS: <code>/plugins/gcce-hud/overlay.html</code>
+        </div>
+
+        <div id="successAlert" class="alert alert-success hidden">
+            Configuration saved successfully!
+        </div>
+
+        <div id="errorAlert" class="alert alert-error hidden">
+            Error saving configuration. Please try again.
+        </div>
+
+        <div class="section">
+            <div class="section-title">Chat Commands</div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="chatCommandsEnabled">
+                    <span>Enable Chat Commands</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="allowText">
+                    <span>Allow Text Display</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="allowImages">
+                    <span>Allow Image Display</span>
+                </label>
+            </div>
+
+            <div class="commands-list">
+                <strong>Available Commands:</strong>
+                <ul>
+                    <li><code>/hudtext [duration] &lt;text&gt;</code> - Display text on overlay</li>
+                    <li><code>/hudimage [duration] &lt;url&gt;</code> - Display image on overlay</li>
+                    <li><code>/hudclear</code> - Clear all HUD elements (moderator only)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Default Settings</div>
+            
+            <div class="form-group">
+                <label for="textDuration">Default Text Duration (seconds)</label>
+                <input type="number" id="textDuration" min="3" max="60" value="10">
+            </div>
+
+            <div class="form-group">
+                <label for="imageDuration">Default Image Duration (seconds)</label>
+                <input type="number" id="imageDuration" min="3" max="60" value="10">
+            </div>
+
+            <div class="form-group">
+                <label for="fontSize">Default Font Size (px)</label>
+                <input type="number" id="fontSize" min="12" max="128" value="48">
+            </div>
+
+            <div class="form-group">
+                <label for="position">Default Position</label>
+                <select id="position">
+                    <option value="top-left">Top Left</option>
+                    <option value="top-center">Top Center</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="center">Center</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-center">Bottom Center</option>
+                    <option value="bottom-right">Bottom Right</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Permissions</div>
+            
+            <div class="form-group">
+                <label for="permText">Text Display Permission</label>
+                <select id="permText">
+                    <option value="all">All Viewers</option>
+                    <option value="subscriber">Subscribers</option>
+                    <option value="moderator">Moderators</option>
+                    <option value="broadcaster">Broadcaster Only</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="permImage">Image Display Permission</label>
+                <select id="permImage">
+                    <option value="all">All Viewers</option>
+                    <option value="subscriber">Subscribers</option>
+                    <option value="moderator">Moderators</option>
+                    <option value="broadcaster">Broadcaster Only</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
+            <button class="btn btn-secondary" onclick="loadConfig()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let config = null;
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/gcce-hud/config');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    config = data.config;
+                    updateUI();
+                } else {
+                    throw new Error('Configuration load failed');
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+                const alert = document.getElementById('errorAlert');
+                if (alert) {
+                    alert.textContent = 'Failed to load configuration. Please refresh the page.';
+                    alert.classList.remove('hidden');
+                }
+            }
+        }
+
+        function updateUI() {
+            if (!config) return;
+
+            document.getElementById('chatCommandsEnabled').checked = config.chatCommands?.enabled || false;
+            document.getElementById('allowText').checked = config.chatCommands?.allowText || false;
+            document.getElementById('allowImages').checked = config.chatCommands?.allowImages || false;
+            
+            document.getElementById('textDuration').value = config.defaults?.textDuration || 10;
+            document.getElementById('imageDuration').value = config.defaults?.imageDuration || 10;
+            document.getElementById('fontSize').value = config.defaults?.fontSize || 48;
+            document.getElementById('position').value = config.defaults?.position || 'top-center';
+            
+            document.getElementById('permText').value = config.permissions?.text || 'all';
+            document.getElementById('permImage').value = config.permissions?.image || 'subscriber';
+        }
+
+        async function saveConfig() {
+            try {
+                const updatedConfig = {
+                    chatCommands: {
+                        enabled: document.getElementById('chatCommandsEnabled').checked,
+                        allowText: document.getElementById('allowText').checked,
+                        allowImages: document.getElementById('allowImages').checked
+                    },
+                    defaults: {
+                        textDuration: parseInt(document.getElementById('textDuration').value),
+                        imageDuration: parseInt(document.getElementById('imageDuration').value),
+                        fontSize: parseInt(document.getElementById('fontSize').value),
+                        position: document.getElementById('position').value
+                    },
+                    permissions: {
+                        text: document.getElementById('permText').value,
+                        image: document.getElementById('permImage').value
+                    }
+                };
+
+                const response = await fetch('/api/gcce-hud/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedConfig)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess();
+                } else {
+                    throw new Error('Configuration save failed');
+                }
+            } catch (error) {
+                console.error('Error saving config:', error);
+                showError();
+            }
+        }
+
+        function showSuccess() {
+            const alert = document.getElementById('successAlert');
+            alert.classList.remove('hidden');
+            setTimeout(() => alert.classList.add('hidden'), 3000);
+        }
+
+        function showError() {
+            const alert = document.getElementById('errorAlert');
+            alert.classList.remove('hidden');
+            setTimeout(() => alert.classList.add('hidden'), 3000);
+        }
+
+        // Load config on page load
+        loadConfig();
+    </script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile - Viewer XP</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .profile-card {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 40, 0.95));
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+      border: 2px solid;
+      border-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%) 1;
+      opacity: 0;
+      transform: translateY(-30px) scale(0.9);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .profile-card.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+      50% {
+        box-shadow: 0 5px 25px rgba(102, 126, 234, 0.8);
+      }
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-username {
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      margin-bottom: 5px;
+    }
+
+    .profile-title {
+      font-size: 16px;
+      color: #FFD700;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+
+    .profile-level {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #AAA;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+
+    .stat-icon {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+
+    .xp-progress {
+      margin-bottom: 20px;
+    }
+
+    .xp-progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #CCC;
+    }
+
+    .xp-progress-bar {
+      height: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .xp-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 15px;
+      transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .xp-progress-fill::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      100% {
+        left: 100%;
+      }
+    }
+
+    .xp-progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      font-size: 14px;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      z-index: 1;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .badge {
+      background: rgba(255, 215, 0, 0.2);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      color: #FFD700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+
+    .rank-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #000;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5);
+      animation: bounce 1s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #888;
+      font-size: 12px;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+      }
+    }
+
+    .profile-card.hide {
+      animation: fadeOut 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="profileCard" class="profile-card">
+    <div class="rank-badge" id="rankBadge" style="display: none;">
+      🏆 Rank #<span id="rankNumber">1</span>
+    </div>
+
+    <div class="profile-header">
+      <div class="profile-avatar" id="avatar">
+        👤
+      </div>
+      <div class="profile-info">
+        <div class="profile-username" id="username">Username</div>
+        <div class="profile-title" id="title">Newcomer</div>
+      </div>
+      <div class="profile-level" id="level">Level 1</div>
+    </div>
+
+    <div class="xp-progress">
+      <div class="xp-progress-label">
+        <span>XP Progress</span>
+        <span id="xpLabel">0 / 100 XP</span>
+      </div>
+      <div class="xp-progress-bar">
+        <div class="xp-progress-fill" id="xpFill" style="width: 0%">
+          <div class="xp-progress-text" id="xpPercent">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-label">
+          <span class="stat-icon">⭐</span>Total XP
+        </div>
+        <div class="stat-value" id="totalXP">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">
+          <span class="stat-icon">🔥</span>Streak
+        </div>
+        <div class="stat-value" id="streak">0 days</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">
+          <span class="stat-icon">⏱️</span>Watch Time
+        </div>
+        <div class="stat-value" id="watchTime">0h</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">
+          <span class="stat-icon">📅</span>Last Seen
+        </div>
+        <div class="stat-value" id="lastSeen">Today</div>
+      </div>
+    </div>
+
+    <div class="badges" id="badgesContainer">
+      <!-- Badges will be dynamically added -->
+    </div>
+
+    <div class="footer">
+      Viewer XP System • Keep engaging to level up!
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let socket;
+    
+    try {
+      socket = io();
+    } catch (error) {
+      console.error('Failed to initialize socket.io:', error);
+      // Display error message
+      document.body.innerHTML = '<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h2>⚠️ Connection Error</h2><p>Failed to connect to server. Please refresh the page.</p></div>';
+    }
+    
+    const profileCard = document.getElementById('profileCard');
+    let hideTimeout;
+
+    // Listen for user profile events
+    if (socket) {
+      socket.on('viewer-xp:show-user-profile', (data) => {
+        showUserProfile(data);
+      });
+
+      // Also listen for the profile data from commands
+      socket.on('viewer-xp:profile', (data) => {
+        if (data) {
+          showUserProfile(data);
+        }
+      });
+    }
+
+    function formatWatchTime(minutes) {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
+    }
+
+    function showUserProfile(data) {
+      console.log('Showing user profile:', data);
+
+      // Clear any existing hide timeout
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+
+      // Update username and color
+      const usernameEl = document.getElementById('username');
+      usernameEl.textContent = data.username || 'Unknown';
+      if (data.name_color) {
+        usernameEl.style.color = data.name_color;
+      }
+
+      // Update title
+      document.getElementById('title').textContent = data.title || 'Newcomer';
+
+      // Update level
+      document.getElementById('level').textContent = `Level ${data.level || 1}`;
+
+      // Update rank if available
+      if (data.rank) {
+        document.getElementById('rankNumber').textContent = data.rank;
+        document.getElementById('rankBadge').style.display = 'block';
+      } else {
+        document.getElementById('rankBadge').style.display = 'none';
+      }
+
+      // Update XP progress
+      const xpProgress = data.xp_progress || 0;
+      const xpForNext = data.xp_for_next_level || 100;
+      const xpPercent = data.xp_progress_percent || 0;
+      
+      document.getElementById('xpLabel').textContent = `${xpProgress.toLocaleString()} / ${xpForNext.toLocaleString()} XP`;
+      document.getElementById('xpPercent').textContent = `${Math.round(xpPercent)}%`;
+      
+      setTimeout(() => {
+        document.getElementById('xpFill').style.width = `${Math.min(xpPercent, 100)}%`;
+      }, 300);
+
+      // Update stats
+      document.getElementById('totalXP').textContent = (data.total_xp_earned || 0).toLocaleString();
+      document.getElementById('streak').textContent = `${data.streak_days || 0} days`;
+      
+      // Calculate watch time in hours using shared function
+      const watchMinutes = data.watch_time_minutes || 0;
+      document.getElementById('watchTime').textContent = formatWatchTime(watchMinutes);
+
+      // Format last seen
+      if (data.last_seen) {
+        const lastSeen = new Date(data.last_seen);
+        const now = new Date();
+        const diffMs = now - lastSeen;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        let lastSeenText = 'Now';
+        if (diffMins < 1) lastSeenText = 'Now';
+        else if (diffMins < 60) lastSeenText = `${diffMins}m ago`;
+        else if (diffHours < 24) lastSeenText = `${diffHours}h ago`;
+        else lastSeenText = `${diffDays}d ago`;
+        
+        document.getElementById('lastSeen').textContent = lastSeenText;
+      }
+
+      // Update badges
+      const badgesContainer = document.getElementById('badgesContainer');
+      badgesContainer.innerHTML = '';
+      
+      if (data.badges && data.badges.length > 0) {
+        data.badges.forEach(badge => {
+          const badgeEl = document.createElement('div');
+          badgeEl.className = 'badge';
+          badgeEl.textContent = badge;
+          badgesContainer.appendChild(badgeEl);
+        });
+      } else {
+        badgesContainer.innerHTML = '<div class="badge">🆕 Newcomer</div>';
+      }
+
+      // Update avatar emoji based on level
+      let avatarEmoji = '👤';
+      const level = data.level || 1;
+      if (level >= 50) avatarEmoji = '👑';
+      else if (level >= 30) avatarEmoji = '💎';
+      else if (level >= 20) avatarEmoji = '⭐';
+      else if (level >= 10) avatarEmoji = '✨';
+      
+      document.getElementById('avatar').textContent = avatarEmoji;
+
+      // Show the card
+      profileCard.classList.remove('hide');
+      profileCard.classList.add('show');
+
+      // Auto-hide after 10 seconds
+      hideTimeout = setTimeout(() => {
+        hideProfile();
+      }, 10000);
+    }
+
+    function hideProfile() {
+      profileCard.classList.remove('show');
+      profileCard.classList.add('hide');
+    }
+
+    // Test data for development
+    if (window.location.search.includes('test=1')) {
+      setTimeout(() => {
+        showUserProfile({
+          username: 'TestUser',
+          name_color: '#FF6B6B',
+          title: 'Rising Star',
+          level: 15,
+          rank: 42,
+          xp: 1250,
+          xp_progress: 250,
+          xp_for_next_level: 1000,
+          xp_progress_percent: 25,
+          total_xp_earned: 12500,
+          streak_days: 7,
+          watch_time_minutes: 245,
+          last_seen: new Date().toISOString(),
+          badges: ['🔥 Week Streak', '💬 Chatterbox', '⭐ Top 50']
+        });
+      }, 500);
+    }
+  </script>
+</body>
+</html>

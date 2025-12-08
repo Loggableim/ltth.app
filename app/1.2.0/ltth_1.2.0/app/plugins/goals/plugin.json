@@ -1,0 +1,16 @@
+{
+  "id": "goals",
+  "name": "Live Goals",
+  "version": "1.0.0",
+  "description": "Complete Live Goals system with Coin, Likes, Follower, and Custom goal types. Real-time tracking with Event API and customizable overlays.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "websocket-client"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "gcce-hud",
+  "name": "GCCE HUD Overlay",
+  "version": "1.0.0",
+  "description": "Customizable HUD overlay system with text and image display via chat commands. Integrated with Global Chat Command Engine.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ]
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCCE HUD Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #hud-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .hud-element {
+            position: absolute;
+            pointer-events: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .hud-element.fade-out {
+            animation: fadeOut 0.3s ease-in-out forwards;
+        }
+
+        .hud-text {
+            padding: 15px 30px;
+            border-radius: 8px;
+            max-width: 800px;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        .hud-image {
+            max-width: 400px;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .hud-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Position classes */
+        .position-top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        .position-top-center {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-top-right {
+            top: 20px;
+            right: 20px;
+        }
+
+        .position-center {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .position-bottom-left {
+            bottom: 20px;
+            left: 20px;
+        }
+
+        .position-bottom-center {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="hud-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Socket.io connection with error handling
+        let socket;
+        try {
+            socket = io();
+        } catch (error) {
+            console.error('Failed to connect to socket.io server:', error);
+        }
+        
+        if (!socket) {
+            console.error('GCCE HUD Overlay: Socket.io is not available');
+        } else {
+            const container = document.getElementById('hud-container');
+            const activeElements = new Map();
+
+            // Listen for show event
+            socket.on('gcce-hud:show', (data) => {
+                console.log('HUD Show:', data);
+                showElement(data);
+            });
+
+            // Listen for clear event
+            socket.on('gcce-hud:clear', () => {
+                console.log('HUD Clear all');
+                clearAll();
+            });
+
+            // Listen for cleanup event
+            socket.on('gcce-hud:cleanup', (data) => {
+                console.log('HUD Cleanup:', data);
+            });
+
+            function showElement(element) {
+            const { id, type, content, duration, style } = element;
+
+            // Remove old element if it exists
+            if (activeElements.has(id)) {
+                removeElement(id);
+            }
+
+            // Create element
+            const el = document.createElement('div');
+            el.id = `hud-${id}`;
+            el.className = `hud-element hud-${type} position-${style.position || 'top-center'}`;
+
+            if (type === 'text') {
+                el.classList.add('hud-text');
+                el.textContent = content;
+                el.style.fontSize = (style.fontSize || 48) + 'px';
+                el.style.color = style.color || '#FFFFFF';
+                el.style.backgroundColor = style.backgroundColor || 'rgba(0, 0, 0, 0.7)';
+                el.style.fontFamily = style.fontFamily || 'Arial, sans-serif';
+                el.style.maxWidth = (style.maxWidth || 800) + 'px';
+            } else if (type === 'image') {
+                el.classList.add('hud-image');
+                const img = document.createElement('img');
+                img.src = content;
+                img.style.maxWidth = (style.maxWidth || 400) + 'px';
+                img.style.maxHeight = (style.maxHeight || 400) + 'px';
+                el.appendChild(img);
+            }
+
+            container.appendChild(el);
+            activeElements.set(id, el);
+
+            // Auto-remove after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    removeElement(id);
+                }, duration * 1000);
+            }
+        }
+
+        function removeElement(id) {
+            const el = activeElements.get(id);
+            if (el) {
+                el.classList.add('fade-out');
+                setTimeout(() => {
+                    el.remove();
+                    activeElements.delete(id);
+                }, 300);
+            }
+        }
+
+        function clearAll() {
+            activeElements.forEach((el, id) => {
+                removeElement(id);
+            });
+            }
+
+            // Connection status
+            socket.on('connect', () => {
+                console.log('GCCE HUD Overlay connected');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('GCCE HUD Overlay disconnected');
+            });
+        }
+    </script>
+</body>
+</html>
