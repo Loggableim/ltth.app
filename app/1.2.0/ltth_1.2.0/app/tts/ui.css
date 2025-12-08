@@ -1,0 +1,120 @@
+/* TTS UI Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: transparent;
+    overflow: hidden;
+}
+
+#tts-container {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    font-size: 24px;
+    max-width: 80%;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+#tts-container p {
+    margin: 0;
+}
+
+#tts-container strong {
+    color: #4CAF50;
+}
+
+#admin-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    z-index: 2000;
+}
+
+#controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#controls label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#controls input[type="range"],
+#controls select,
+#controls input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#controls button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+#controls button:hover {
+    background-color: #45a049;
+}
+
+#test-controls {
+    display: flex;
+    gap: 10px;
+}
+
+#test-controls input {
+    flex: 1;
+}
+
+#test-controls button {
+    flex-shrink: 0;
+}
+
+#skip-button {
+    background-color: #ff9800;
+}
+
+#skip-button:hover {
+    background-color: #e68900;
+}
+
+#pause-button,
+#resume-button {
+    background-color: #2196F3;
+}
+
+#pause-button:hover,
+#resume-button:hover {
+    background-color: #0b7dda;
+}
+
+#clear-button {
+    background-color: #f44336;
+}
+
+#clear-button:hover {
+    background-color: #da190b;
+}

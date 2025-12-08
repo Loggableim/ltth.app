@@ -1,0 +1,16 @@
+{
+  "id": "advanced-timer",
+  "name": "Advanced Timer",
+  "version": "1.0.0",
+  "description": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "websocket-client"
+  ]
+}

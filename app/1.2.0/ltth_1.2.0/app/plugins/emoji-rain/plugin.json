@@ -1,0 +1,16 @@
+{
+  "id": "emoji-rain",
+  "name": "Emoji Rain",
+  "version": "2.0.0",
+  "description": "Enhanced physics-based emoji rain with OBS HUD support, Game-Quality graphics, and 60 FPS performance",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ]
+}

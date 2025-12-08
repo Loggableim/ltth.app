@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Show Leaderboard Overlay</title>
+    <link rel="stylesheet" href="/quiz-show/quiz_show_overlay.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .leaderboard-standalone {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .leaderboard-container {
+            background: linear-gradient(135deg, rgba(30, 30, 60, 0.95), rgba(20, 20, 40, 0.95));
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+
+        .leaderboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .leaderboard-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .leaderboard-type {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .leaderboard-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .leaderboard-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .leaderboard-list::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 10px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease backwards;
+        }
+
+        .leaderboard-item:nth-child(1) {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+
+        .leaderboard-item:nth-child(2) {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(169, 169, 169, 0.1));
+            border-color: rgba(192, 192, 192, 0.4);
+        }
+
+        .leaderboard-item:nth-child(3) {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(184, 115, 51, 0.1));
+            border-color: rgba(205, 127, 50, 0.4);
+        }
+
+        .leaderboard-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .rank {
+            font-size: 1.8rem;
+            font-weight: bold;
+            width: 50px;
+            text-align: center;
+            color: #3b82f6;
+        }
+
+        .rank-1 { color: #ffd700; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+
+        .player-info {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .player-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .player-stats {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+
+        .points {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #10b981;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 40px 20px;
+            font-size: 1.2rem;
+        }
+
+        /* Fade animation */
+        .fade-enter {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .fade-exit {
+            animation: fadeOut 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Portrait orientation support */
+        @media (orientation: portrait) {
+            .leaderboard-container {
+                max-width: 90%;
+                padding: 20px;
+            }
+
+            .leaderboard-title {
+                font-size: 2rem;
+            }
+
+            .leaderboard-item {
+                padding: 12px;
+            }
+
+            .rank {
+                font-size: 1.5rem;
+                width: 40px;
+            }
+
+            .player-name {
+                font-size: 1.1rem;
+            }
+
+            .points {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="leaderboard-standalone">
+        <div class="leaderboard-container" id="leaderboardContainer">
+            <div class="leaderboard-header">
+                <div class="leaderboard-title">🏆 Leaderboard</div>
+                <div class="leaderboard-type" id="leaderboardType">Season</div>
+            </div>
+            <ul class="leaderboard-list" id="leaderboardList">
+                <li class="no-data">Keine Einträge vorhanden</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const socket = io();
+            let currentType = 'season';
+
+            // Listen for leaderboard updates
+            socket.on('quiz-show:leaderboard-show', (data) => {
+                updateLeaderboard(data.leaderboard, data.type || 'season');
+            });
+
+            socket.on('quiz-show:leaderboard-update', (data) => {
+                updateLeaderboard(data.leaderboard, data.type || currentType);
+            });
+
+            socket.on('quiz-show:leaderboard-hide', () => {
+                const container = document.getElementById('leaderboardContainer');
+                container.classList.add('fade-exit');
+                setTimeout(() => {
+                    container.classList.add('hidden');
+                    container.classList.remove('fade-exit');
+                }, 500);
+            });
+
+            function updateLeaderboard(leaderboard, type) {
+                currentType = type;
+                const typeDisplay = document.getElementById('leaderboardType');
+                const listElement = document.getElementById('leaderboardList');
+                const container = document.getElementById('leaderboardContainer');
+
+                // Update type display
+                typeDisplay.textContent = type === 'round' ? 'Diese Runde' : 'Season';
+
+                // Show container
+                if (container.classList.contains('hidden')) {
+                    container.classList.remove('hidden');
+                    container.classList.add('fade-enter');
+                    setTimeout(() => container.classList.remove('fade-enter'), 500);
+                }
+
+                // Render leaderboard
+                if (!leaderboard || leaderboard.length === 0) {
+                    listElement.innerHTML = '<li class="no-data">Keine Einträge vorhanden</li>';
+                    return;
+                }
+
+                listElement.innerHTML = leaderboard.map((entry, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+                    
+                    return `
+                        <li class="leaderboard-item" style="animation-delay: ${index * 0.1}s">
+                            <div class="rank ${rankClass}">${medal || rank}</div>
+                            <div class="player-info">
+                                <div class="player-name">${escapeHtml(entry.username)}</div>
+                                ${entry.round_points !== undefined ? 
+                                    `<div class="player-stats">Runden-Punkte: ${entry.round_points}</div>` : ''}
+                            </div>
+                            <div class="points">${entry.points || entry.round_points || 0} 🎯</div>
+                        </li>
+                    `;
+                }).join('');
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Load initial leaderboard
+            async function loadInitialLeaderboard() {
+                try {
+                    const response = await fetch('/api/quiz-show/leaderboard');
+                    const data = await response.json();
+                    
+                    if (data.success && data.leaderboard) {
+                        updateLeaderboard(data.leaderboard, 'season');
+                    }
+                } catch (error) {
+                    console.error('Error loading leaderboard:', error);
+                }
+            }
+
+            // Load on page load
+            loadInitialLeaderboard();
+        })();
+    </script>
+</body>
+</html>

@@ -1,8 +1,28 @@
 {
-  "version": "1.1.1",
-  "releaseDate": "2025-12-03",
+  "version": "1.2.0",
+  "releaseDate": "2025-12-08",
   "status": "stable",
   "changelog": {
+    "1.2.0": {
+      "date": "2025-12-08",
+      "changes": [
+        "NEW: Plugin System with Hot-Reloading - Upload, enable, disable, and delete plugins without server restart",
+        "NEW: Multi-Cam Switcher Plugin - OBS scene switching via TikTok gifts and chat commands",
+        "NEW: Platform-Agnostic Launcher - Cross-platform support (Windows, Linux, macOS) with TTY-safe logging",
+        "NEW: TTY-Logger Module - Automatic TTY detection with ANSI color fallback for non-TTY environments",
+        "NEW: Git-based Update System - Automatic updates via Git pull or GitHub Release ZIP download",
+        "NEW: Launch Mode Selection - Choose between Electron app or Browser mode on splash screen",
+        "IMPROVED: Database Performance - SQLite optimizations with WAL mode, 64MB cache, and memory temp store",
+        "IMPROVED: Plugin-Loader - Enhanced from 827 to 1043 lines with better plugin state management",
+        "IMPROVED: Leaderboard Module - Expanded from 362 to 480 lines with enhanced tracking features",
+        "IMPROVED: Rate-Limiter - Nearly doubled in size (80 to 150 lines) with improved request handling",
+        "IMPROVED: TikTok Module - Enhanced from 83,233 to 85,413 bytes with better event processing",
+        "FIXED: TTS Migration to Plugin - TTS engine now properly integrated as plugin with 75+ voices",
+        "FIXED: VDO.Ninja Plugin Migration - Multi-guest streaming now fully plugin-based with 20+ API routes",
+        "FIXED: Dynamic UI Visibility - Dashboard tabs now show/hide based on active plugins without page reload",
+        "FIXED: Update-Checker - Graceful 404 handling when GitHub Releases are not available"
+      ]
+    },
     "1.1.1": {
       "date": "2025-12-03",
       "changes": [

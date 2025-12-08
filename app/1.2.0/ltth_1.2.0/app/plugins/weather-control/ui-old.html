@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Control - Configuration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #1a1a2e;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+
+        .card {
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background: #0f3460;
+            border-bottom: 1px solid #1a1a2e;
+            font-weight: bold;
+            padding: 1rem;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn-secondary {
+            background: #607d8b;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #546e7a;
+        }
+
+        .form-control, .form-select {
+            background: #0f3460;
+            border: 1px solid #1a1a2e;
+            color: #eee;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: #16213e;
+            border-color: #4CAF50;
+            color: #eee;
+        }
+
+        .form-check-input {
+            background: #0f3460;
+            border: 1px solid #1a1a2e;
+        }
+
+        .form-check-input:checked {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .weather-preview {
+            background: #000;
+            border: 2px solid #0f3460;
+            border-radius: 8px;
+            height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weather-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .effect-card {
+            background: #0f3460;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+
+        .status-enabled {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-disabled {
+            background: #f44336;
+            color: white;
+        }
+
+        .alert {
+            border-radius: 8px;
+        }
+
+        .alert-success {
+            background: #4CAF50;
+            border: none;
+        }
+
+        .alert-danger {
+            background: #f44336;
+            border: none;
+        }
+
+        .alert-info {
+            background: #2196F3;
+            border: none;
+        }
+
+        h1, h2, h3, h4 {
+            color: #fff;
+        }
+
+        .weather-icon {
+            font-size: 2rem;
+            margin-right: 0.5rem;
+        }
+
+        .range-value {
+            display: inline-block;
+            min-width: 50px;
+            text-align: right;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>🌦️ Weather Control Configuration</h1>
+            <a href="/dashboard.html" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+
+        <div id="status-alert" class="alert alert-info" style="display: none;"></div>
+
+        <!-- Main Enable/Disable -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">🎛️ Main Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="enabled">
+                            <label class="form-check-label" for="enabled">
+                                <strong>Enable Weather Control Plugin</strong>
+                            </label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="rateLimitPerMinute" class="form-label">
+                                Rate Limit (requests per minute):
+                                <span class="range-value" id="rateLimitValue">10</span>
+                            </label>
+                            <input type="range" class="form-range" id="rateLimitPerMinute" min="1" max="100" value="10">
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="useGlobalAuth" checked>
+                            <label class="form-check-label" for="useGlobalAuth">
+                                Use Global Authentication
+                            </label>
+                            <small class="form-text text-muted d-block">
+                                When enabled, uses the global auth system. Disable to use separate API key.
+                            </small>
+                        </div>
+
+                        <div id="apiKeySection" style="display: none;">
+                            <label class="form-label">API Key:</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="apiKey" readonly>
+                                <button class="btn btn-danger" type="button" id="resetApiKey">Reset Key</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>📊 Quick Stats</h5>
+                        <p><strong>Total Weather Effects:</strong> 7</p>
+                        <p><strong>Overlay URL:</strong></p>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="overlayUrl" readonly>
+                            <button class="btn btn-secondary" type="button" onclick="copyOverlayUrl()">Copy</button>
+                        </div>
+                        <small class="text-muted">Use this URL in OBS Browser Source</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">🔒 Permission Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="permissionsEnabled">
+                    <label class="form-check-label" for="permissionsEnabled">
+                        <strong>Enable Permission System</strong>
+                    </label>
+                </div>
+
+                <div id="permissionDetails">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="allowAll">
+                        <label class="form-check-label" for="allowAll">
+                            Allow All Users
+                        </label>
+                        <small class="form-text text-muted d-block">
+                            When enabled, all users can trigger weather effects (not recommended for large streams)
+                        </small>
+                    </div>
+
+                    <h5>Allowed User Groups:</h5>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="allowFollowers">
+                        <label class="form-check-label" for="allowFollowers">
+                            Followers
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="allowSuperfans">
+                        <label class="form-check-label" for="allowSuperfans">
+                            Superfans (50+ gifts sent)
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="allowSubscribers">
+                        <label class="form-check-label" for="allowSubscribers">
+                            Subscribers
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="allowTeamMembers">
+                        <label class="form-check-label" for="allowTeamMembers">
+                            Team Members (Level <input type="number" id="minTeamLevel" class="form-control d-inline-block" style="width: 80px;" min="1" max="100" value="1">+)
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="topGifterThreshold" class="form-label">
+                            Top Gifters (Top <span class="range-value" id="topGifterValue">10</span>):
+                        </label>
+                        <input type="range" class="form-range" id="topGifterThreshold" min="0" max="100" value="10">
+                        <small class="text-muted">Set to 0 to disable</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="minPoints" class="form-label">
+                            Minimum Points/Coins Required:
+                        </label>
+                        <input type="number" class="form-control" id="minPoints" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Effects -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">🌈 Weather Effects Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Rain -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>🌧️ Rain</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-rain-enabled">
+                                <label class="form-check-label" for="effect-rain-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-rain-intensity-val">0.5</span></label>
+                                <input type="range" class="form-range" id="effect-rain-intensity" min="0" max="1" step="0.1" value="0.5">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-rain-duration" value="10000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('rain')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Snow -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>❄️ Snow</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-snow-enabled">
+                                <label class="form-check-label" for="effect-snow-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-snow-intensity-val">0.5</span></label>
+                                <input type="range" class="form-range" id="effect-snow-intensity" min="0" max="1" step="0.1" value="0.5">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-snow-duration" value="10000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('snow')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Storm -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>⛈️ Storm</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-storm-enabled">
+                                <label class="form-check-label" for="effect-storm-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-storm-intensity-val">0.7</span></label>
+                                <input type="range" class="form-range" id="effect-storm-intensity" min="0" max="1" step="0.1" value="0.7">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-storm-duration" value="8000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('storm')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Fog -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>🌫️ Fog</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-fog-enabled">
+                                <label class="form-check-label" for="effect-fog-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-fog-intensity-val">0.4</span></label>
+                                <input type="range" class="form-range" id="effect-fog-intensity" min="0" max="1" step="0.1" value="0.4">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-fog-duration" value="15000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('fog')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Thunder -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>⚡ Thunder</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-thunder-enabled">
+                                <label class="form-check-label" for="effect-thunder-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-thunder-intensity-val">0.8</span></label>
+                                <input type="range" class="form-range" id="effect-thunder-intensity" min="0" max="1" step="0.1" value="0.8">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-thunder-duration" value="5000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('thunder')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Sunbeam -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>☀️ Sunbeam</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-sunbeam-enabled">
+                                <label class="form-check-label" for="effect-sunbeam-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-sunbeam-intensity-val">0.6</span></label>
+                                <input type="range" class="form-range" id="effect-sunbeam-intensity" min="0" max="1" step="0.1" value="0.6">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-sunbeam-duration" value="12000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('sunbeam')">Test Effect</button>
+                        </div>
+                    </div>
+
+                    <!-- Glitch Clouds -->
+                    <div class="col-md-6">
+                        <div class="effect-card">
+                            <h5>☁️ Glitch Clouds</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="effect-glitchclouds-enabled">
+                                <label class="form-check-label" for="effect-glitchclouds-enabled">Enabled</label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Intensity: <span class="range-value" id="effect-glitchclouds-intensity-val">0.7</span></label>
+                                <input type="range" class="form-range" id="effect-glitchclouds-intensity" min="0" max="1" step="0.1" value="0.7">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Duration (ms):</label>
+                                <input type="number" class="form-control" id="effect-glitchclouds-duration" value="8000" min="1000" max="60000">
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="testEffect('glitchclouds')">Test Effect</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="text-center mb-4">
+            <button class="btn btn-primary btn-lg" id="saveConfig">💾 Save Configuration</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const effects = ['rain', 'snow', 'storm', 'fog', 'thunder', 'sunbeam', 'glitchclouds'];
+        let socket;
+
+        // Initialize Socket.IO
+        function initSocket() {
+            socket = io();
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+        }
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/weather/config');
+                const data = await response.json();
+
+                if (data.success) {
+                    const config = data.config;
+
+                    // Main settings
+                    document.getElementById('enabled').checked = config.enabled;
+                    document.getElementById('rateLimitPerMinute').value = config.rateLimitPerMinute || 10;
+                    document.getElementById('rateLimitValue').textContent = config.rateLimitPerMinute || 10;
+                    document.getElementById('useGlobalAuth').checked = config.useGlobalAuth !== false;
+                    
+                    if (config.apiKey && config.apiKey !== '***hidden***') {
+                        document.getElementById('apiKey').value = config.apiKey;
+                    }
+
+                    toggleApiKeySection();
+
+                    // Permissions
+                    document.getElementById('permissionsEnabled').checked = config.permissions.enabled;
+                    document.getElementById('allowAll').checked = config.permissions.allowAll;
+                    document.getElementById('allowFollowers').checked = config.permissions.allowedGroups.followers;
+                    document.getElementById('allowSuperfans').checked = config.permissions.allowedGroups.superfans;
+                    document.getElementById('allowSubscribers').checked = config.permissions.allowedGroups.subscribers;
+                    document.getElementById('allowTeamMembers').checked = config.permissions.allowedGroups.teamMembers;
+                    document.getElementById('minTeamLevel').value = config.permissions.allowedGroups.minTeamLevel;
+                    document.getElementById('topGifterThreshold').value = config.permissions.topGifterThreshold;
+                    document.getElementById('topGifterValue').textContent = config.permissions.topGifterThreshold;
+                    document.getElementById('minPoints').value = config.permissions.minPoints;
+
+                    // Effects
+                    effects.forEach(effect => {
+                        const effectConfig = config.effects[effect];
+                        document.getElementById(`effect-${effect}-enabled`).checked = effectConfig.enabled;
+                        document.getElementById(`effect-${effect}-intensity`).value = effectConfig.defaultIntensity;
+                        document.getElementById(`effect-${effect}-intensity-val`).textContent = effectConfig.defaultIntensity.toFixed(1);
+                        document.getElementById(`effect-${effect}-duration`).value = effectConfig.defaultDuration;
+                    });
+
+                    showStatus('Configuration loaded successfully', 'success');
+                }
+            } catch (error) {
+                showStatus('Error loading configuration: ' + error.message, 'danger');
+            }
+        }
+
+        // Save configuration
+        async function saveConfig() {
+            try {
+                const config = {
+                    enabled: document.getElementById('enabled').checked,
+                    rateLimitPerMinute: parseInt(document.getElementById('rateLimitPerMinute').value),
+                    useGlobalAuth: document.getElementById('useGlobalAuth').checked,
+                    permissions: {
+                        enabled: document.getElementById('permissionsEnabled').checked,
+                        allowAll: document.getElementById('allowAll').checked,
+                        allowedGroups: {
+                            followers: document.getElementById('allowFollowers').checked,
+                            superfans: document.getElementById('allowSuperfans').checked,
+                            subscribers: document.getElementById('allowSubscribers').checked,
+                            teamMembers: document.getElementById('allowTeamMembers').checked,
+                            minTeamLevel: parseInt(document.getElementById('minTeamLevel').value)
+                        },
+                        topGifterThreshold: parseInt(document.getElementById('topGifterThreshold').value),
+                        minPoints: parseInt(document.getElementById('minPoints').value)
+                    },
+                    effects: {}
+                };
+
+                effects.forEach(effect => {
+                    config.effects[effect] = {
+                        enabled: document.getElementById(`effect-${effect}-enabled`).checked,
+                        defaultIntensity: parseFloat(document.getElementById(`effect-${effect}-intensity`).value),
+                        defaultDuration: parseInt(document.getElementById(`effect-${effect}-duration`).value)
+                    };
+                });
+
+                const response = await fetch('/api/weather/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('Configuration saved successfully!', 'success');
+                } else {
+                    showStatus('Error saving configuration: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                showStatus('Error saving configuration: ' + error.message, 'danger');
+            }
+        }
+
+        // Test effect
+        async function testEffect(action) {
+            try {
+                const intensity = parseFloat(document.getElementById(`effect-${action}-intensity`).value);
+                const duration = parseInt(document.getElementById(`effect-${action}-duration`).value);
+
+                const response = await fetch('/api/weather/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, intensity, duration, username: 'test-user' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`${action} effect triggered successfully!`, 'success');
+                } else {
+                    showStatus('Error triggering effect: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                showStatus('Error triggering effect: ' + error.message, 'danger');
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const alert = document.getElementById('status-alert');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Copy overlay URL
+        function copyOverlayUrl() {
+            const input = document.getElementById('overlayUrl');
+            input.select();
+            document.execCommand('copy');
+            showStatus('Overlay URL copied to clipboard!', 'success');
+        }
+
+        // Toggle API key section
+        function toggleApiKeySection() {
+            const useGlobalAuth = document.getElementById('useGlobalAuth').checked;
+            document.getElementById('apiKeySection').style.display = useGlobalAuth ? 'none' : 'block';
+        }
+
+        // Reset API key
+        async function resetApiKey() {
+            if (!confirm('Are you sure you want to reset the API key? The old key will no longer work.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/weather/reset-key', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('apiKey').value = data.apiKey;
+                    showStatus('API key reset successfully!', 'success');
+                } else {
+                    showStatus('Error resetting API key: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                showStatus('Error resetting API key: ' + error.message, 'danger');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('saveConfig').addEventListener('click', saveConfig);
+        document.getElementById('resetApiKey').addEventListener('click', resetApiKey);
+        document.getElementById('useGlobalAuth').addEventListener('change', toggleApiKeySection);
+
+        // Range input updates
+        document.getElementById('rateLimitPerMinute').addEventListener('input', (e) => {
+            document.getElementById('rateLimitValue').textContent = e.target.value;
+        });
+
+        document.getElementById('topGifterThreshold').addEventListener('input', (e) => {
+            document.getElementById('topGifterValue').textContent = e.target.value;
+        });
+
+        effects.forEach(effect => {
+            document.getElementById(`effect-${effect}-intensity`).addEventListener('input', (e) => {
+                document.getElementById(`effect-${effect}-intensity-val`).textContent = parseFloat(e.target.value).toFixed(1);
+            });
+        });
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            loadConfig();
+            initSocket();
+
+            // Set overlay URL
+            const overlayUrl = `${window.location.origin}/weather-control/overlay`;
+            document.getElementById('overlayUrl').value = overlayUrl;
+        });
+    </script>
+</body>
+</html>

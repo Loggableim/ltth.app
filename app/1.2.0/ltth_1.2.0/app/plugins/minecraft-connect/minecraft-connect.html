@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Connect</title>
+    <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css">
+</head>
+<body>
+    <div class="minecraft-connect-container">
+        <!-- Header with Connection Status -->
+        <div class="mc-header">
+            <div class="mc-header-left">
+                <h2>
+                    <svg class="mc-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+                    </svg>
+                    Minecraft Connect
+                </h2>
+            </div>
+            <div class="mc-header-right">
+                <div class="mc-status-indicator">
+                    <div class="mc-status-dot" id="statusDot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mc-tabs">
+            <button class="mc-tab active" data-tab="mappings">Action Mappings</button>
+            <button class="mc-tab" data-tab="actions">Available Actions</button>
+            <button class="mc-tab" data-tab="events">Event Log</button>
+            <button class="mc-tab" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="mc-tab-content">
+            <!-- Mappings Tab -->
+            <div id="mappings-tab" class="mc-tab-panel active">
+                <div class="mc-section-header">
+                    <h3>Action Mappings</h3>
+                    <button class="mc-btn mc-btn-primary" id="addMappingBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Mapping
+                    </button>
+                </div>
+
+                <div class="mc-mappings-list" id="mappingsList">
+                    <div class="mc-empty-state">
+                        <p>No action mappings configured yet.</p>
+                        <p class="mc-text-muted">Click "Add Mapping" to create your first TikTok → Minecraft action mapping.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Tab -->
+            <div id="actions-tab" class="mc-tab-panel">
+                <div class="mc-section-header">
+                    <h3>Available Minecraft Actions</h3>
+                    <button class="mc-btn mc-btn-secondary" id="testActionBtn" disabled>Test Action</button>
+                </div>
+
+                <div class="mc-actions-grid" id="actionsList">
+                    <div class="mc-empty-state">
+                        <p>No Minecraft connection detected.</p>
+                        <p class="mc-text-muted">Install and run the TikStreamLink Fabric mod to see available actions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Tab -->
+            <div id="events-tab" class="mc-tab-panel">
+                <div class="mc-section-header">
+                    <h3>Event Log</h3>
+                    <button class="mc-btn mc-btn-secondary" id="clearEventsBtn">Clear Log</button>
+                </div>
+
+                <div class="mc-events-list" id="eventsList">
+                    <div class="mc-empty-state">
+                        <p>No events yet.</p>
+                        <p class="mc-text-muted">Events will appear here when TikTok events trigger Minecraft actions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="mc-tab-panel">
+                <div class="mc-section-header">
+                    <h3>Settings</h3>
+                    <button class="mc-btn mc-btn-primary" id="saveSettingsBtn">Save Settings</button>
+                </div>
+
+                <div class="mc-settings-grid">
+                    <!-- WebSocket Settings -->
+                    <div class="mc-settings-section">
+                        <h4>WebSocket Server</h4>
+                        <div class="mc-form-group">
+                            <label>Port</label>
+                            <input type="number" id="wsPort" class="mc-input" min="1024" max="65535" value="25560">
+                            <small>Port for WebSocket server (default: 25560)</small>
+                        </div>
+                        <div class="mc-form-group">
+                            <label>Heartbeat Interval (ms)</label>
+                            <input type="number" id="wsHeartbeat" class="mc-input" min="5000" max="120000" value="30000">
+                        </div>
+                    </div>
+
+                    <!-- Rate Limits -->
+                    <div class="mc-settings-section">
+                        <h4>Rate Limits</h4>
+                        <div class="mc-form-group">
+                            <label>Max Actions per Minute</label>
+                            <input type="number" id="maxActionsPerMin" class="mc-input" min="1" max="100" value="30">
+                        </div>
+                        <div class="mc-form-group">
+                            <label>Command Cooldown (ms)</label>
+                            <input type="number" id="commandCooldown" class="mc-input" min="0" max="10000" value="1000">
+                        </div>
+                        <div class="mc-form-group">
+                            <label>Max Queue Size</label>
+                            <input type="number" id="maxQueueSize" class="mc-input" min="10" max="500" value="100">
+                        </div>
+                    </div>
+
+                    <!-- Overlay Settings -->
+                    <div class="mc-settings-section">
+                        <h4>Overlay</h4>
+                        <div class="mc-form-group">
+                            <label class="mc-checkbox-label">
+                                <input type="checkbox" id="overlayEnabled" checked>
+                                Enable Overlay
+                            </label>
+                        </div>
+                        <div class="mc-form-group">
+                            <label class="mc-checkbox-label">
+                                <input type="checkbox" id="overlayShowUsername" checked>
+                                Show Username
+                            </label>
+                        </div>
+                        <div class="mc-form-group">
+                            <label class="mc-checkbox-label">
+                                <input type="checkbox" id="overlayShowAction" checked>
+                                Show Action Name
+                            </label>
+                        </div>
+                        <div class="mc-form-group">
+                            <label>Animation Duration (ms)</label>
+                            <input type="number" id="overlayDuration" class="mc-input" min="1000" max="10000" value="3000">
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="mc-settings-section">
+                        <h4>Statistics</h4>
+                        <div class="mc-stats-grid">
+                            <div class="mc-stat">
+                                <span class="mc-stat-label">Total Events</span>
+                                <span class="mc-stat-value" id="statTotalEvents">0</span>
+                            </div>
+                            <div class="mc-stat">
+                                <span class="mc-stat-label">Total Actions</span>
+                                <span class="mc-stat-value" id="statTotalActions">0</span>
+                            </div>
+                            <div class="mc-stat">
+                                <span class="mc-stat-label">Successful</span>
+                                <span class="mc-stat-value" id="statSuccessful">0</span>
+                            </div>
+                            <div class="mc-stat">
+                                <span class="mc-stat-label">Failed</span>
+                                <span class="mc-stat-value" id="statFailed">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapping Editor Modal -->
+    <div id="mappingModal" class="mc-modal">
+        <div class="mc-modal-content">
+            <div class="mc-modal-header">
+                <h3 id="modalTitle">Add Action Mapping</h3>
+                <button class="mc-modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="mc-modal-body">
+                <div class="mc-form-group">
+                    <label>TikTok Event Trigger</label>
+                    <select id="mappingTrigger" class="mc-input">
+                        <option value="">Select trigger...</option>
+                        <option value="gift">Gift</option>
+                        <option value="follow">Follow</option>
+                        <option value="like">Like</option>
+                        <option value="share">Share</option>
+                        <option value="chat">Chat</option>
+                        <option value="subscribe">Subscribe</option>
+                    </select>
+                </div>
+
+                <div class="mc-form-group">
+                    <label>Conditions (optional)</label>
+                    <div id="conditionsList"></div>
+                    <button class="mc-btn mc-btn-secondary mc-btn-small" id="addConditionBtn">Add Condition</button>
+                </div>
+
+                <div class="mc-form-group">
+                    <label>Minecraft Action</label>
+                    <select id="mappingAction" class="mc-input">
+                        <option value="">Select action...</option>
+                    </select>
+                </div>
+
+                <div class="mc-form-group" id="parametersGroup" style="display: none;">
+                    <label>Parameters</label>
+                    <div id="parametersList"></div>
+                    <small class="mc-text-muted">
+                        Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values
+                    </small>
+                </div>
+
+                <div class="mc-form-group">
+                    <label class="mc-checkbox-label">
+                        <input type="checkbox" id="mappingEnabled" checked>
+                        Enabled
+                    </label>
+                </div>
+            </div>
+            <div class="mc-modal-footer">
+                <button class="mc-btn mc-btn-secondary" id="modalCancel">Cancel</button>
+                <button class="mc-btn mc-btn-primary" id="modalSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/plugins/minecraft-connect/minecraft-connect.js"></script>
+</body>
+</html>

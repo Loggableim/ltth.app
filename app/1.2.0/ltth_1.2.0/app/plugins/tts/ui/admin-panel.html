@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="tts.admin_panel.title">TTS Admin Panel</title>
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        /* Custom animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Electron iframe compatibility fixes */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            cursor: text;
+        }
+        select, button, .tab-button, .filter-btn, .log-filter-btn {
+            -webkit-user-select: none;
+            user-select: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
+    <!-- Debug Info (will be hidden once JS loads) -->
+    <div id="debug-info" class="fixed top-0 left-0 right-0 bg-yellow-600 text-black p-2 text-center z-50">
+        ⚠️ Loading TTS Admin Panel... If this message persists, check browser console (F12)
+    </div>
+
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold mb-2" data-i18n="tts.admin_panel.title">🔊 TTS Admin Panel</h1>
+            <p class="text-gray-400" data-i18n="tts.admin_panel.subtitle">Text-to-Speech System v2.0</p>
+            <div id="init-status" class="text-sm text-gray-500 mt-2" data-i18n="tts.admin_panel.initializing">Initializing...</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-700">
+            <nav class="flex space-x-4">
+                <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="tts.admin_panel.tabs.config">Configuration</button>
+                <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.users">User Management</button>
+                <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</button>
+                <button data-tab="voice-clones" id="tab-voice-clones" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.voice_clones">🎙️ Voice Clones</button>
+                <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.stats">Statistics</button>
+                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">🐛 Debug Logs</button>
+            </nav>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="content-config" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Engine Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎙️ Engine Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Default Engine (Main)</label>
+                            <select id="defaultEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <!-- TikTok TTS removed - no longer supported -->
+                                <option value="google">Google Cloud TTS</option>
+                                <option value="speechify">Speechify TTS (Premium)</option>
+                                <option value="elevenlabs">ElevenLabs TTS (Premium)</option>
+                                <option value="openai">OpenAI TTS</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">The primary TTS engine to use. API key must be configured in the API Keys section below.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Default Voice</label>
+                            <select id="defaultVoice" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Fallback Engines Activation -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <label class="block text-sm font-medium mb-3">🔄 Enabled Fallback Engines</label>
+                            <p class="text-xs text-gray-400 mb-3">Select which engines should be available as fallbacks when the main engine fails. Only enabled engines will be loaded (saves system resources).</p>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableGoogleFallback" class="w-4 h-4">
+                                    <label for="enableGoogleFallback" class="text-sm flex-1">
+                                        <span class="font-medium">Google Cloud TTS</span>
+                                        <span class="text-xs text-gray-400 block">Neural voices, high quality</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableSpeechifyFallback" class="w-4 h-4">
+                                    <label for="enableSpeechifyFallback" class="text-sm flex-1">
+                                        <span class="font-medium">Speechify</span>
+                                        <span class="text-xs text-gray-400 block">1000+ voices, 60+ languages</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableElevenlabsFallback" class="w-4 h-4">
+                                    <label for="enableElevenlabsFallback" class="text-sm flex-1">
+                                        <span class="font-medium">ElevenLabs</span>
+                                        <span class="text-xs text-gray-400 block">Ultra-realistic AI voices</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableOpenAIFallback" class="w-4 h-4">
+                                    <label for="enableOpenAIFallback" class="text-sm flex-1">
+                                        <span class="font-medium">OpenAI TTS</span>
+                                        <span class="text-xs text-gray-400 block">TTS-1 and TTS-1-HD models</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="text-xs text-yellow-500 mt-2">⚠️ Each enabled engine requires its corresponding API key to be configured in the API Keys section.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Performance Mode</label>
+                            <select id="performanceMode" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="fast">🚀 Fast (Low-Resource / Toaster PCs)</option>
+                                <option value="balanced">⚖️ Balanced (Default)</option>
+                                <option value="quality">🎯 Quality (High-Resource)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Fast mode is optimized for low-end PCs with faster timeouts (5s) and fewer retries (1). 
+                                Balanced mode is recommended for most users (10s timeout, 2 retries). 
+                                Quality mode provides maximum reliability for high-end PCs (20s timeout, 3 retries).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎚️ Audio Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Volume: <span id="volumeValue">80</span>%</label>
+                            <input type="range" id="volume" min="0" max="100" value="80" class="w-full">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Speed: <span id="speedValue">1.0</span>x</label>
+                            <input type="range" id="speed" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="duckOtherAudio" class="w-4 h-4">
+                            <label for="duckOtherAudio" class="text-sm">Duck other audio during TTS</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Duck Volume: <span id="duckVolumeValue">30</span>%</label>
+                            <input type="range" id="duckVolume" min="0" max="100" value="30" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permission Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🔒 Permission Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Minimum Team Level</label>
+                            <input type="number" id="teamMinLevel" min="0" max="10" value="0" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <p class="text-xs text-gray-400 mt-1">Team level equals the number of team hearts sent to the streamer (0 = Anyone can use TTS, 1+ = Only users who have sent team hearts)</p>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="enabledForChat" checked class="w-4 h-4">
+                            <label for="enabledForChat" class="text-sm">Enable TTS for chat messages</label>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="autoLanguageDetection" checked class="w-4 h-4">
+                            <label for="autoLanguageDetection" class="text-sm">Auto-detect language</label>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="enableAutoFallback" checked class="w-4 h-4">
+                            <label for="enableAutoFallback" class="text-sm">Enable automatic fallback to other engines</label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">When disabled, only the selected engine will be used. If it fails, TTS will not work instead of falling back to another engine.</p>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="stripEmojis" class="w-4 h-4">
+                            <label for="stripEmojis" class="text-sm" data-i18n="tts.admin_panel.config.strip_emojis">Strip emojis from TTS text</label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1" data-i18n="tts.admin_panel.config.strip_emojis_desc">When enabled, emojis will be removed from messages before they are spoken, preventing the TTS engine from reading emoji names aloud.</p>
+                    </div>
+                </div>
+
+                <!-- Language Detection Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🌍 Language Detection</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Fallback Language (Default if Detection Uncertain)</label>
+                            <select id="fallbackLanguage" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="de">Deutsch (German)</option>
+                                <option value="en">English</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="zh">中文 (Chinese)</option>
+                                <option value="ru">Русский (Russian)</option>
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="tr">Türkçe (Turkish)</option>
+                                <option value="nl">Nederlands (Dutch)</option>
+                                <option value="pl">Polski (Polish)</option>
+                                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                <option value="th">ภาษาไทย (Thai)</option>
+                                <option value="id">Bahasa Indonesia (Indonesian)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Used when language detection confidence is below threshold or text is too short</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Confidence Threshold: <span id="confidenceThresholdValue">90</span>%</label>
+                            <input type="range" id="languageConfidenceThreshold" min="0.5" max="1.0" step="0.05" value="0.90" class="w-full">
+                            <p class="text-xs text-gray-400 mt-1">Minimum confidence required to use detected language (recommended: 90%)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Minimum Text Length for Detection</label>
+                            <input type="number" id="languageMinTextLength" min="5" max="50" value="10" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <p class="text-xs text-gray-400 mt-1">Short texts (e.g., "ok", "lol", "hi") will use fallback language</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Limiting & Queue -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">⏱️ Rate Limiting & Queue</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Messages per User</label>
+                            <input type="number" id="rateLimit" min="1" max="20" value="3" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Time Window (seconds)</label>
+                            <input type="number" id="rateLimitWindow" min="10" max="300" value="60" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Max Queue Size</label>
+                            <input type="number" id="maxQueueSize" min="10" max="500" value="100" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Max Text Length</label>
+                            <input type="number" id="maxTextLength" min="50" max="1000" value="300" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profanity Filter -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🚫 Profanity Filter</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Filter Mode</label>
+                            <select id="profanityFilter" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                                <option value="off">Off - No filtering</option>
+                                <option value="moderate">Moderate - Replace profanity</option>
+                                <option value="strict">Strict - Drop messages with profanity</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Keys Section -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl lg:col-span-2">
+                    <h2 class="text-2xl font-bold mb-4">🔑 API Keys</h2>
+                    <p class="text-gray-400 text-sm mb-4">Configure API keys for each TTS engine. Only engines with valid API keys can be used.</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div id="google-api-key-section">
+                            <label class="block text-sm font-medium mb-2">Google Cloud API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="googleApiKey" placeholder="Enter API key..." class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <button type="button" id="toggle-google-key" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Get your API key from <a href="https://console.cloud.google.com" target="_blank" class="text-blue-400 hover:text-blue-300">Google Cloud Console</a>. Enable the Cloud Text-to-Speech API.</p>
+                        </div>
+
+                        <div id="speechify-api-key-section">
+                            <label class="block text-sm font-medium mb-2">Speechify API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="speechifyApiKey" placeholder="Enter API key..." class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <button type="button" id="toggle-speechify-key" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Get from <a href="https://speechify.com/api" target="_blank" class="text-blue-400 hover:text-blue-300">speechify.com/api</a>. $10 per 1M characters. 1000+ voices.</p>
+                        </div>
+
+                        <div id="elevenlabs-api-key-section">
+                            <label class="block text-sm font-medium mb-2">ElevenLabs API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="elevenlabsApiKey" placeholder="Enter API key..." class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <button type="button" id="toggle-elevenlabs-key" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Get from <a href="https://elevenlabs.io/docs/quickstart" target="_blank" class="text-blue-400 hover:text-blue-300">elevenlabs.io</a>. Ultra-realistic AI voices.</p>
+                        </div>
+
+                        <div id="openai-api-key-section">
+                            <label class="block text-sm font-medium mb-2">OpenAI API Key</label>
+                            <div class="flex gap-2">
+                                <input type="password" id="openaiApiKey" placeholder="Enter API key..." class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <button type="button" id="toggle-openai-key" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Get from <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-400 hover:text-blue-300">OpenAI Platform</a>. TTS-1 and TTS-1-HD models.</p>
+                        </div>
+                    </div>
+
+                    <!-- TikTok SessionID section temporarily hidden - TikTok TTS API endpoints not working -->
+                    <div id="tiktok-session-id-section" class="border-t border-gray-700 pt-4 mt-4" style="display: none;">
+                        <label class="block text-sm font-medium mb-2">🔑 TikTok SessionID (Required for TikTok TTS)</label>
+                        <div class="flex gap-2">
+                            <input type="password" id="tiktokSessionId" placeholder="Enter SessionID..." class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <button type="button" id="toggle-tiktok-session" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6">
+                <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                    💾 Save Configuration
+                </button>
+            </div>
+        </div>
+
+        <!-- User Management Tab -->
+        <div id="content-users" class="tab-content hidden">
+            <!-- Manual Voice Assignment -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <h2 class="text-2xl font-bold mb-4">🎤 Manual Voice Assignment</h2>
+                <p class="text-gray-400 text-sm mb-4">Assign a voice to a user directly by entering their username</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Username (TikTok uniqueId)</label>
+                        <input type="text" id="manualUsername" list="recentUsersList" placeholder="Enter TikTok username..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                        <datalist id="recentUsersList">
+                            <!-- Populated dynamically with recent chat users -->
+                        </datalist>
+                        <p class="text-xs text-gray-400 mt-1">Enter the exact TikTok username (case-sensitive) or select from recent chat users</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Engine</label>
+                        <select id="manualEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <!-- TikTok TTS removed - no longer supported -->
+                            <option value="google">Google Cloud TTS</option>
+                            <option value="speechify">Speechify TTS</option>
+                            <option value="elevenlabs">ElevenLabs TTS</option>
+                            <option value="openai">OpenAI TTS</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Voice</label>
+                        <select id="manualVoice" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="flex items-end">
+                        <button id="assignManualVoiceBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition">
+                            Assign Voice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User List -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">👥 User Management</h2>
+                    <div class="space-x-2">
+                        <button data-filter="all" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">All</button>
+                        <button data-filter="whitelisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Whitelisted</button>
+                        <button data-filter="blacklisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Blacklisted</button>
+                        <button data-filter="voice_assigned" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Voice Assigned</button>
+                    </div>
+                </div>
+
+                <div id="userList" class="space-y-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Tab -->
+        <div id="content-queue" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">📋 Current Queue</h2>
+                        <button id="clearQueueBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Clear Queue</button>
+                    </div>
+
+                    <div id="queueList" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎵 Now Playing</h2>
+
+                    <div id="nowPlaying" class="text-center text-gray-400">
+                        No audio playing
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="skipCurrentBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+                            ⏭️ Skip Current
+                        </button>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="text-xl font-bold mb-2">🎤 Test TTS</h3>
+                        <input type="text" id="testText" placeholder="Enter test text..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            🔊 Speak
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voice Clones Tab -->
+        <div id="content-voice-clones" class="tab-content hidden">
+            <div class="mb-6 bg-blue-900 border-l-4 border-blue-500 p-4 rounded">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-bold text-blue-100" data-i18n="tts.voice_clones.info_title">Voice Cloning Information</h3>
+                        <p class="text-sm text-blue-200 mt-1" data-i18n="tts.voice_clones.info_text">
+                            Create custom AI voices using Speechify's voice cloning technology. Upload a 10-30 second audio sample to generate a unique voice clone for your TTS system.
+                        </p>
+                        <p class="text-xs text-blue-300 mt-2" data-i18n="tts.voice_clones.info_requirements">
+                            <strong>Requirements:</strong> Clear audio, minimal background noise, 10-30 seconds duration, less than 5MB file size. Supported formats: MP3, WAV, OGG.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Check if Speechify is configured -->
+            <div id="speechify-not-configured-warning" class="mb-6 bg-yellow-900 border-l-4 border-yellow-500 p-4 rounded hidden">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-bold text-yellow-100" data-i18n="tts.voice_clones.warning_title">Speechify API Key Required</h3>
+                        <p class="text-sm text-yellow-200 mt-1" data-i18n="tts.voice_clones.warning_text">
+                            Voice cloning requires a Speechify API key. Please configure your API key in the Configuration tab to use this feature.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Create Voice Clone Card -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4" data-i18n="tts.voice_clones.create_title">🎙️ Create Voice Clone</h2>
+                    
+                    <form id="voiceCloneForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" data-i18n="tts.voice_clones.voice_name">Voice Name</label>
+                            <input 
+                                type="text" 
+                                id="voiceCloneName" 
+                                placeholder="e.g., John's Voice, My Custom Voice" 
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                                required
+                                maxlength="50"
+                            >
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="tts.voice_clones.voice_name_hint">Choose a descriptive name to identify this voice clone</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" data-i18n="tts.voice_clones.language">Language</label>
+                            <select id="voiceCloneLanguage" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="en">English</option>
+                                <option value="de">Deutsch (German)</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="zh">中文 (Chinese)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="tts.voice_clones.language_hint">Select the language of the voice sample</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2" data-i18n="tts.voice_clones.audio_sample">Audio Sample</label>
+                            <div class="flex flex-col space-y-2">
+                                <input 
+                                    type="file" 
+                                    id="voiceCloneAudio" 
+                                    accept="audio/mp3,audio/wav,audio/ogg,audio/mpeg"
+                                    class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                                    required
+                                >
+                                <div id="audioPreview" class="hidden">
+                                    <audio id="audioPlayer" controls class="w-full"></audio>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        <span id="audioFileName"></span> 
+                                        (<span id="audioFileSize"></span>)
+                                    </p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1" data-i18n="tts.voice_clones.audio_hint">
+                                Upload a clear 10-30 second audio sample (max 5MB). Speak naturally with minimal background noise.
+                            </p>
+                        </div>
+
+                        <div class="border-t border-gray-700 pt-4">
+                            <div class="flex items-start space-x-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="voiceCloneConsent" 
+                                    class="mt-1 w-4 h-4"
+                                    required
+                                >
+                                <label for="voiceCloneConsent" class="text-sm" data-i18n="tts.voice_clones.consent">
+                                    I confirm this is my voice or I have explicit permission to use and clone this voice
+                                </label>
+                            </div>
+                            <p class="text-xs text-yellow-400 mt-2" data-i18n="tts.voice_clones.consent_warning">
+                                ⚠️ Creating voice clones without proper consent may violate laws and terms of service.
+                            </p>
+                        </div>
+
+                        <div class="pt-4">
+                            <button 
+                                type="submit" 
+                                id="createVoiceCloneBtn" 
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:bg-gray-600 disabled:cursor-not-allowed"
+                                data-i18n="tts.voice_clones.create_button"
+                            >
+                                🚀 Create Voice Clone
+                            </button>
+                            <div id="voiceCloneProgress" class="hidden mt-4">
+                                <div class="bg-gray-700 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-blue-500 h-2 animate-pulse" style="width: 100%"></div>
+                                </div>
+                                <p class="text-sm text-center text-gray-400 mt-2" data-i18n="tts.voice_clones.creating">Creating voice clone... This may take a minute.</p>
+                            </div>
+                            <div id="voiceCloneResult" class="hidden mt-4"></div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Manage Voice Clones Card -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold" data-i18n="tts.voice_clones.manage_title">📚 My Voice Clones</h2>
+                        <button 
+                            id="refreshVoiceClonesBtn" 
+                            class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+                            data-i18n="tts.voice_clones.refresh"
+                        >
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <div id="voiceClonesList" class="space-y-3">
+                        <!-- Populated dynamically -->
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-microphone text-4xl mb-2 opacity-50"></i>
+                            <p data-i18n="tts.voice_clones.no_clones">No voice clones yet. Create your first one!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sample Text Guide -->
+            <div class="mt-6 bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-3" data-i18n="tts.voice_clones.sample_guide_title">📝 Sample Recording Guide</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-green-400 mb-2" data-i18n="tts.voice_clones.best_practices">✅ Best Practices</h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Use a high-quality microphone</li>
+                            <li>• Record in a quiet environment</li>
+                            <li>• Speak naturally and clearly</li>
+                            <li>• Maintain consistent volume</li>
+                            <li>• Include varied intonation</li>
+                            <li>• Duration: 10-30 seconds</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-red-400 mb-2" data-i18n="tts.voice_clones.avoid">❌ Avoid</h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            <li>• Background noise or music</li>
+                            <li>• Speaking too fast or slow</li>
+                            <li>• Inconsistent distance from mic</li>
+                            <li>• Audio distortion or clipping</li>
+                            <li>• Very short samples (< 10s)</li>
+                            <li>• Large file sizes (> 5MB)</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded">
+                    <strong class="text-blue-400" data-i18n="tts.voice_clones.sample_text_title">💡 Sample Text Suggestion:</strong>
+                    <p class="text-sm text-gray-300 mt-2" data-i18n="tts.voice_clones.sample_text">
+                        "Hello, my name is [Your Name]. I'm creating a custom voice for text-to-speech. 
+                        This technology is amazing and will help make interactions more personal and engaging. 
+                        I can use this voice for streaming, content creation, and accessibility features."
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="content-stats" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Queue Stats -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">📊 Queue Statistics</h3>
+                    <div id="queueStats" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Permission Stats -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">🔒 Permission Statistics</h3>
+                    <div id="permissionStats" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Debug Logs Tab -->
+        <div id="content-debug" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">🐛 Debug Logs - Live TTS Pipeline Tracking</h2>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="autoScrollLogs" checked class="w-4 h-4">
+                            <span class="text-sm">Auto-scroll</span>
+                        </label>
+                        <button id="clearLogsBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Clear Logs</button>
+                        <button id="toggleDebugBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <span id="debugToggleText">Disable Debug</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="mb-4 flex flex-wrap gap-2">
+                    <button data-category="all" class="log-filter-btn px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium">All</button>
+                    <button data-category="INIT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">INIT</button>
+                    <button data-category="TIKTOK_EVENT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">TikTok Events</button>
+                    <button data-category="SPEAK_START" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Speak Start</button>
+                    <button data-category="SPEAK_STEP" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Pipeline Steps</button>
+                    <button data-category="SPEAK_SUCCESS" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Success</button>
+                    <button data-category="SPEAK_DENIED" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Denied</button>
+                    <button data-category="SPEAK_ERROR" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Errors</button>
+                    <button data-category="PLAYBACK" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Playback</button>
+                </div>
+
+                <!-- Status Info -->
+                <div class="mb-4 p-4 bg-gray-900 rounded">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-400">Total Logs:</span>
+                            <span id="totalLogsCount" class="ml-2 font-bold text-white">0</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Displayed:</span>
+                            <span id="displayedLogsCount" class="ml-2 font-bold text-white">0</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Debug Mode:</span>
+                            <span id="debugModeStatus" class="ml-2 font-bold text-green-500">Enabled</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Live Updates:</span>
+                            <span id="liveUpdateStatus" class="ml-2 font-bold text-green-500 pulse">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Display -->
+                <div id="debugLogsContainer" class="bg-gray-900 rounded p-4 h-96 overflow-y-auto font-mono text-sm">
+                    <div id="debugLogsList">
+                        <div class="text-gray-500 text-center py-8">Waiting for logs... Try triggering TTS events</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-3">📖 Debug Log Categories</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong class="text-blue-400">INIT:</strong> Plugin initialization events
+                    </div>
+                    <div>
+                        <strong class="text-purple-400">TIKTOK_EVENT:</strong> TikTok chat messages received
+                    </div>
+                    <div>
+                        <strong class="text-green-400">SPEAK_START:</strong> speak() method called
+                    </div>
+                    <div>
+                        <strong class="text-yellow-400">SPEAK_STEP1-6:</strong> Each pipeline step (permissions, profanity, validation, voice selection, synthesis, queue)
+                    </div>
+                    <div>
+                        <strong class="text-green-500">SPEAK_SUCCESS:</strong> TTS successfully queued
+                    </div>
+                    <div>
+                        <strong class="text-red-400">SPEAK_DENIED:</strong> TTS request denied (permissions/rate limit)
+                    </div>
+                    <div>
+                        <strong class="text-red-600">SPEAK_ERROR:</strong> Errors during processing
+                    </div>
+                    <div>
+                        <strong class="text-cyan-400">PLAYBACK:</strong> Audio playback events
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded">
+                    <strong class="text-yellow-500">💡 Tip:</strong> If TTS works in test mode but not live, check for TIKTOK_EVENT logs. If missing, the TikTok integration isn't receiving events. If present but no SPEAK_START, permission checks may be blocking.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Assignment Modal -->
+    <div id="voiceAssignmentModal" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center hidden" style="z-index: 2000;">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto relative" tabindex="-1">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">🎤 Assign Voice</h2>
+                <button id="modalCloseX" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-gray-300">Assigning voice for: <span id="modalUsername" class="font-bold text-blue-400"></span></p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Engine</label>
+                <select id="modalEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                    <!-- TikTok TTS removed - no longer supported -->
+                    <option value="google">Google Cloud TTS (Premium)</option>
+                    <option value="speechify">Speechify (Premium)</option>
+                    <option value="elevenlabs">ElevenLabs (Premium)</option>
+                    <option value="openai">OpenAI TTS (Premium)</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Search Voice</label>
+                <input type="text" id="modalVoiceSearch" placeholder="Search voices..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Select Voice</label>
+                <div id="modalVoiceList" class="bg-gray-700 rounded p-4 max-h-64 overflow-y-auto space-y-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Cancel
+                </button>
+                <button id="confirmVoiceAssignment" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Assign Voice
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load i18n and theme support -->
+    <script src="/js/i18n-client.js"></script>
+    <script src="/js/theme-manager.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Initialize i18n before loading TTS admin
+        (async () => {
+            if (typeof I18nClient !== 'undefined') {
+                window.i18n = new I18nClient();
+                await window.i18n.init();
+                
+                // Apply translations to elements with data-i18n attributes
+                const applyTranslations = () => {
+                    document.querySelectorAll('[data-i18n]').forEach(el => {
+                        const key = el.getAttribute('data-i18n');
+                        const translation = window.i18n.t(key);
+                        if (translation !== key) {
+                            // For input placeholders
+                            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                                el.setAttribute('placeholder', translation);
+                            } else {
+                                // For text content - preserve emojis at the start
+                                const emojiMatch = el.textContent.match(/^([\u{1F300}-\u{1F9FF}]+\s*)/u);
+                                el.textContent = emojiMatch ? emojiMatch[1] + translation : translation;
+                            }
+                        }
+                    });
+                };
+                
+                // Apply translations initially
+                applyTranslations();
+                
+                // Re-apply when language changes
+                window.i18n.onLanguageChange(() => {
+                    applyTranslations();
+                });
+                
+                console.log('✅ TTS Admin Panel: i18n initialized');
+            }
+        })();
+    </script>
+    <script src="/plugins/tts/ui/tts-admin-production.js"></script>
+</body>
+</html>

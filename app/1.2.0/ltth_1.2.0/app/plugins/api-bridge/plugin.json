@@ -1,0 +1,16 @@
+{
+  "id": "api-bridge",
+  "name": "API Bridge",
+  "version": "1.0.0",
+  "description": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket",
+  "author": "copilot",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "core",
+  "permissions": [
+    "routes",
+    "socket.io",
+    "tiktok-events",
+    "database"
+  ]
+}

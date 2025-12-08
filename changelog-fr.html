@@ -60,11 +60,101 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.1.1 -->
+            <!-- Version 1.2.0 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Dernière</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 8 décembre 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Cette version majeure introduit un système de plugins complet avec rechargement à chaud, des améliorations du lanceur multi-plateforme, un nouveau Multi-Cam Switcher, et des optimisations de performance complètes pour la base de données et les modules principaux.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Nouvelles fonctionnalités</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Système de plugins avec rechargement à chaud</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Télécharger, activer, désactiver et supprimer des plugins sans redémarrage du serveur</li>
+                            <li>Persistance de l'état des plugins dans plugins_state.json</li>
+                            <li>Plugin exemple "Topboard" pour les meilleurs donateurs et séries</li>
+                            <li>Intégration de l'interface utilisateur du tableau de bord pour la gestion des plugins</li>
+                        </ul>
+                    </li>
+                    <li><strong>Plugin Multi-Cam Switcher</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Changer les scènes OBS via les cadeaux TikTok ou les commandes de chat</li>
+                            <li>Intégration OBS-WebSocket v5 avec reconnexion automatique</li>
+                            <li>Commandes de chat : !cam 1-5, !cam next/prev, !scene &lt;name&gt;, !angle next</li>
+                            <li>Mappage de cadeaux avec seuils de pièces configurables</li>
+                            <li>Système de macros pour actions multi-étapes avec délais</li>
+                            <li>Permissions : modsOnly, broadcasterOnly, allowedUsers, minAccountAgeDays</li>
+                            <li>Cooldowns : Par utilisateur (15s), Global (5s), Durée max de macro (10s)</li>
+                            <li>Limites de sécurité avec verrouillage automatique en cas de changement rapide</li>
+                        </ul>
+                    </li>
+                    <li><strong>Lanceur indépendant de la plateforme</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Support multi-plateforme (Windows, Linux, macOS)</li>
+                            <li>Journalisation sécurisée TTY sans erreurs "stdout is not a tty"</li>
+                            <li>Vérifications robustes des versions Node.js/npm en JavaScript</li>
+                            <li>Vérification et installation automatiques des dépendances</li>
+                            <li>Démarrage automatique du navigateur après le lancement</li>
+                        </ul>
+                    </li>
+                    <li><strong>Module TTY-Logger</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Détection automatique du TTY</li>
+                            <li>Couleurs ANSI uniquement lorsque TTY est pris en charge</li>
+                            <li>Détection du support UTF-8/Emoji</li>
+                            <li>Repli sur texte brut pour non-TTY (OBS, redirections)</li>
+                            <li>Symboles spécifiques à la plateforme</li>
+                        </ul>
+                    </li>
+                    <li><strong>Système de mise à jour basé sur Git</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Mises à jour basées sur Git lorsque .git est présent</li>
+                            <li>Téléchargement ZIP de GitHub Release sans Git</li>
+                            <li>Sauvegarde automatique avant les mises à jour (user_data/, user_configs/)</li>
+                            <li>Restauration en cas d'échec de mise à jour</li>
+                            <li>Stratégie de mise à jour indépendante de la plateforme</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sélection du mode de lancement sur l'écran de démarrage</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Choisir entre l'application Electron ou le mode Navigateur au démarrage</li>
+                            <li>Boutons de lancement activés après que le backend est prêt</li>
+                            <li>Le mode navigateur ouvre le tableau de bord dans le navigateur par défaut et se réduit dans la barre des tâches</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Améliorations</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Optimisations de performance de la base de données</strong> - SQLite avec mode WAL, cache de 64 Mo, stockage temporaire en mémoire</li>
+                    <li><strong>Plugin-Loader étendu</strong> - De 827 à 1043 lignes pour une meilleure gestion de l'état</li>
+                    <li><strong>Module Leaderboard</strong> - De 362 à 480 lignes avec des fonctionnalités de suivi améliorées</li>
+                    <li><strong>Rate-Limiter</strong> - Presque doublé (80 à 150 lignes) avec une meilleure gestion des requêtes</li>
+                    <li><strong>Module TikTok</strong> - Amélioré de 83 Ko à 85 Ko avec un meilleur traitement des événements</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Corrections de bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Migration TTS vers Plugin</strong> - Moteur TTS maintenant entièrement intégré en tant que plugin avec plus de 75 voix</li>
+                    <li><strong>Migration du plugin VDO.Ninja</strong> - Streaming multi-invités entièrement basé sur des plugins avec plus de 20 routes API</li>
+                    <li><strong>Visibilité dynamique de l'interface utilisateur</strong> - Les onglets du tableau de bord s'affichent/se cachent en fonction des plugins actifs sans rechargement de page</li>
+                    <li><strong>Update-Checker</strong> - Gestion gracieuse du code 404 lorsque les releases GitHub ne sont pas disponibles</li>
+                    <li><strong>Pas de problèmes "echo -e"</strong> - Corrigé sous Windows/Powershell</li>
+                    <li><strong>Pas d'erreurs "integer expression expected"</strong> - Corrigé dans les vérifications de version</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.1.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 3 décembre 2025</p>
                 

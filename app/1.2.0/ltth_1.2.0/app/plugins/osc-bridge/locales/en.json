@@ -1,0 +1,179 @@
+{
+  "osc_bridge": {
+    "title": "OSC-Bridge Settings",
+    "status": {
+      "title": "OSC-Bridge Status",
+      "running": "Running",
+      "stopped": "Stopped",
+      "messages_sent": "Messages Sent",
+      "messages_received": "Messages Received",
+      "errors": "Errors",
+      "uptime": "Uptime"
+    },
+    "config": {
+      "title": "Configuration",
+      "info_title": "VRChat OSC Integration",
+      "info_text": "This bridge enables direct communication with VRChat avatars via OSC (Open Sound Control). Enable the bridge to automatically send TikTok events to VRChat.",
+      "enable": "Enable OSC-Bridge (VRChat Integration)",
+      "target_host": "Target Host (VRChat IP)",
+      "send_port": "Send Port (VRChat receives)",
+      "receive_port": "Receive Port (local port)",
+      "verbose_mode": "Verbose mode (show all OSC packets live)",
+      "save": "Save Configuration",
+      "start": "Start Bridge",
+      "stop": "Stop Bridge",
+      "test": "Send Test Signal"
+    },
+    "chat_commands": {
+      "title": "Chat Commands (GCCE Integration)",
+      "enabled": "Enable chat commands",
+      "require_osc_connection": "Require OSC connection",
+      "cooldown": "Cooldown (seconds)",
+      "rate_limit": "Rate limit (per minute)",
+      "description": "Allow viewers to trigger VRChat actions via chat commands",
+      "info_text": "When enabled, viewers can control VRChat actions directly through chat commands. All commands are processed through the Global Chat Command Engine (GCCE)."
+    },
+    "commands": {
+      "wave": {
+        "description": "Trigger wave animation in VRChat",
+        "syntax": "/wave"
+      },
+      "celebrate": {
+        "description": "Trigger celebrate animation in VRChat",
+        "syntax": "/celebrate"
+      },
+      "dance": {
+        "description": "Trigger dance animation in VRChat (Subscriber)",
+        "syntax": "/dance"
+      },
+      "hearts": {
+        "description": "Trigger hearts effect in VRChat",
+        "syntax": "/hearts"
+      },
+      "confetti": {
+        "description": "Trigger confetti effect in VRChat",
+        "syntax": "/confetti"
+      },
+      "emote": {
+        "description": "Trigger VRChat emote slot (Subscriber)",
+        "syntax": "/emote <0-7>",
+        "examples": "/emote 0, /emote 3"
+      }
+    },
+    "parameter_tester": {
+      "title": "VRChat Parameter Tester",
+      "description": "Click a button to trigger the corresponding VRChat parameter:",
+      "wave": "👋 Wave",
+      "celebrate": "🎉 Celebrate",
+      "dance": "💃 Dance",
+      "hearts": "❤️ Hearts",
+      "confetti": "🎊 Confetti",
+      "emote0": "😀 Emote 0",
+      "emote1": "😎 Emote 1",
+      "emote2": "😂 Emote 2"
+    },
+    "custom_actions": {
+      "title": "Custom OSC Actions",
+      "subtitle": "Custom OSC Messages",
+      "description": "Send custom OSC messages to VRChat or other OSC-compatible applications. Messages will be sent to the configured target address.",
+      "address_label": "OSC Address",
+      "address_help": "Must start with /, e.g. /avatar/parameters/MyCustomParam",
+      "value_label": "Value",
+      "value_help": "Number (e.g. 1, 0.5, 100), text (e.g. \"Hello\"), or boolean (true/false)",
+      "reset_label": "Auto-reset after (ms, optional)",
+      "reset_help": "If set, the value will be reset to 0 after the specified time",
+      "send": "Send"
+    },
+    "log": {
+      "title": "OSC Message Log",
+      "clear": "Clear Log"
+    },
+    "gift_mappings": {
+      "title": "🎁 Gift Catalogue Mappings",
+      "save": "Save Mappings",
+      "info_title": "Gift-to-Action Mapping",
+      "info_text": "Link TikTok gifts to VRChat OSC actions. When a viewer sends a specific gift, the mapped action will be triggered automatically.",
+      "add_new": "Add New Gift Mapping",
+      "select_from_catalogue": "Select from Gift Catalogue",
+      "refresh_catalogue": "🔄 Refresh Catalogue",
+      "select_gift_or_manual": "-- Select a gift from catalogue or enter manually below --",
+      "catalogue_helper_text": "Select a gift from the catalogue to auto-fill ID and name, or manually enter custom values below",
+      "no_gifts_in_catalogue": "(No gifts in catalogue - update catalogue from main dashboard)",
+      "gift_id": "Gift ID",
+      "gift_id_manual": "Gift ID (Manual Entry)",
+      "gift_name": "Gift Name",
+      "gift_name_manual": "Gift Name (Manual Entry)",
+      "action": "Action",
+      "parameters": "Parameters",
+      "duration_ms": "Duration (ms)",
+      "emote_slot": "Emote Slot (0-7)",
+      "avatar_id_param": "Avatar ID / Parameter Name",
+      "add_mapping": "Add Mapping",
+      "remove": "Remove",
+      "no_mappings": "No gift mappings configured yet. Add one below."
+    },
+    "avatar_management": {
+      "title": "👤 Avatar Management",
+      "save": "Save Avatars",
+      "info_title": "VRChat Avatar List",
+      "info_text": "Manage your VRChat avatars. Avatar IDs can be found in VRChat logs or using tools like VRCLens.",
+      "add_new": "Add New Avatar",
+      "avatar_name": "Avatar Name",
+      "avatar_id": "Avatar ID",
+      "description": "Description (optional)",
+      "add_avatar": "Add Avatar",
+      "switch": "Switch",
+      "remove": "Remove",
+      "no_avatars": "No avatars configured yet. Add one below."
+    },
+    "avatar_switch": {
+      "title": "Avatar Switching via Chat Commands",
+      "info_title": "Avatar Chat Command",
+      "info_text": "Allow viewers to switch your VRChat avatar via the /avatar <name> command. Configure cooldowns to prevent spam.",
+      "enabled": "Enable /avatar command",
+      "permission_level": "Permission Level",
+      "permission_all": "All Viewers",
+      "permission_subscriber": "Subscribers Only",
+      "permission_moderator": "Moderators Only",
+      "cooldown_type": "Cooldown Type",
+      "cooldown_global": "Global (applies to all users)",
+      "cooldown_per_user": "Per User (each user has own cooldown)",
+      "cooldown_duration": "Cooldown Duration (seconds)",
+      "cooldown_help": "Minimum time between avatar switches (0 = no cooldown)",
+      "save": "Save Avatar Switch Settings"
+    },
+    "command_management": {
+      "title": "⚙️ Command Management",
+      "info_title": "Configure Available Commands",
+      "info_text": "Enable or disable individual commands, change permissions, and add custom commands. Changes will be registered with GCCE automatically.",
+      "enabled": "Enabled",
+      "command": "Command",
+      "description": "Description",
+      "permission": "Permission",
+      "type": "Type",
+      "actions": "Actions",
+      "type_predefined": "Predefined",
+      "type_custom": "Custom",
+      "save": "Save Commands",
+      "add_custom": "Add Custom Command",
+      "remove": "Remove",
+      "loading": "Loading commands...",
+      "no_commands": "No commands configured yet."
+    },
+    "custom_command": {
+      "title": "Add Custom Command",
+      "command_name": "Command Name",
+      "command_preview": "Users will type: /",
+      "description": "Description",
+      "permission": "Permission",
+      "osc_address": "OSC Address",
+      "osc_address_help": "VRChat OSC parameter path",
+      "osc_value": "OSC Value",
+      "osc_value_help": "Value to send (number, true, false, or text)",
+      "duration": "Duration (ms)",
+      "duration_help": "Auto-reset to 0 after duration (0 = no reset)",
+      "add": "Add Command",
+      "cancel": "Cancel"
+    }
+  }
+}
