@@ -97,12 +97,22 @@ WebView2 nutzt den bereits installierten Edge-Browser, daher keine zusätzliche 
 
 ## Update-Mechanismus
 
-1. **Version prüfen**: Launcher lädt `version.json` von GitHub
-2. **Vergleich**: Aktuelle Version wird mit installierter verglichen
-3. **Download**: Bei Update wird ZIP von `ltth.app/app/ltth_X.X.X.zip` geladen
-4. **Backup**: Bestehende Konfiguration wird gesichert
-5. **Extraktion**: ZIP wird in Versionsverzeichnis entpackt
-6. **Rollback**: Bei Fehlern kann zur vorherigen Version zurückgekehrt werden
+Der Launcher verwendet einen **Cloud-Update-Mechanismus**, der immer die neueste Version vom Repository holt:
+
+1. **Version prüfen**: Launcher lädt `version.json` von `https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json`
+2. **Vergleich**: Aktuelle Version wird mit installierter Version verglichen
+3. **Download**: Bei Update wird immer `ltth_latest.zip` von `https://ltth.app/app/ltth_latest.zip` geladen
+4. **Backup**: Bestehende Konfiguration wird automatisch gesichert
+5. **Extraktion**: ZIP wird in versionsspezifisches Verzeichnis entpackt
+6. **Rollback**: Bei Problemen kann zur vorherigen Version zurückgekehrt werden
+
+### Cloud Launcher Vorteile
+
+- **Immer aktuell**: Lädt automatisch die neueste Version vom Repository
+- **Kein Versionsnamen-Handling**: Nutzt `ltth_latest.zip` statt versionsspezifischer URLs
+- **Einfache Distribution**: Eine einzige signierte EXE-Datei
+- **Automatische Updates**: Prüft beim Start auf neue Versionen
+- **Sichere Updates**: Base64-encodierte HTML-UI verhindert White-Screen-Probleme
 
 ## Speicherorte
 
@@ -158,6 +168,26 @@ WebView2 ist auf Windows 10/11 normalerweise vorinstalliert. Falls nicht:
 1. Prüfe, ob Node.js installiert ist (falls die App Node.js benötigt)
 2. Prüfe die Berechtigungen im Installationsverzeichnis
 3. Versuche einen Rollback zur vorherigen Version
+
+### Weißes Fenster beim Start (White Screen)
+
+Dieses Problem wurde in Version 1.0.1+ behoben:
+- **Ursache**: HTML wurde nicht korrekt URL-encodiert im data URL scheme
+- **Lösung**: Verwendung von Base64-Encoding für HTML-Content (`data:text/html;base64,`)
+- **Update**: Lade die neueste Version von `https://ltth.app/launcher.exe` herunter
+
+## Changelog
+
+### Version 1.0.1 (2025-12-10)
+- **FIXED**: White screen issue - HTML now uses base64 encoding in data URL
+- **IMPROVED**: Always downloads `ltth_latest.zip` from repository
+- **IMPROVED**: Better webview2 package integration
+
+### Version 1.0.0 (Initial Release)
+- Launch LTTH with automatic update checking
+- Modern WebView2-based UI
+- Configuration management
+- Rollback functionality
 
 ## Lizenz
 

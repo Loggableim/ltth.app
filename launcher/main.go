@@ -13,6 +13,7 @@ package main
 import (
 	"archive/zip"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,13 +28,13 @@ import (
 	"strings"
 	"time"
 
-	webview "github.com/jchv/go-webview2"
+	"github.com/jchv/go-webview2"
 )
 
 // Configuration constants
 const (
 	AppName       = "LTTH Launcher"
-	AppVersion    = "1.0.0"
+	AppVersion    = "1.0.1"
 	GitHubOwner   = "Loggableim"
 	GitHubRepo    = "ltth.app"
 	VersionURL    = "https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json"
@@ -69,11 +70,10 @@ type ChangelogEntry struct {
 
 // Global variables
 var (
-	config       LauncherConfig
-	configPath   string
-	logFile      *os.File
-	w            webview.WebView
-	encodedHTML  string // Pre-processed HTML for faster loading
+	config     LauncherConfig
+	configPath string
+	logFile    *os.File
+	w          webview2.WebView
 )
 
 func main() {
@@ -83,17 +83,14 @@ func main() {
 
 	log.Println("Starting LTTH Launcher v" + AppVersion)
 
-	// Pre-process HTML once at startup for better performance
-	encodedHTML = strings.ReplaceAll(htmlUI, "\n", " ")
-
 	// Load or create configuration
 	loadConfig()
 
 	// Create WebView window
-	w = webview.NewWithOptions(webview.WebViewOptions{
+	w = webview2.NewWithOptions(webview2.WebViewOptions{
 		Debug:     false,
 		AutoFocus: true,
-		WindowOptions: webview.WindowOptions{
+		WindowOptions: webview2.WindowOptions{
 			Title:  AppName,
 			Width:  WindowWidth,
 			Height: WindowHeight,
@@ -109,8 +106,9 @@ func main() {
 	// Bind Go functions to JavaScript
 	bindFunctions(w)
 
-	// Load UI
-	w.Navigate("data:text/html," + getEncodedHTML())
+	// Load UI using base64 encoding to avoid URL encoding issues
+	encodedHTML := base64.StdEncoding.EncodeToString([]byte(htmlUI))
+	w.Navigate("data:text/html;base64," + encodedHTML)
 
 	// Run the event loop
 	w.Run()
@@ -200,7 +198,7 @@ func saveConfig() error {
 }
 
 // bindFunctions binds Go functions to JavaScript
-func bindFunctions(w webview.WebView) {
+func bindFunctions(w webview2.WebView) {
 	// Get configuration
 	w.Bind("getConfig", func() string {
 		data, _ := json.Marshal(map[string]interface{}{
@@ -345,18 +343,18 @@ func bindFunctions(w webview.WebView) {
 			log.Printf("Config backup warning: %v", err)
 		}
 
-		// Download ZIP
-		zipURL := fmt.Sprintf("%sltth_%s.zip", AppZIPBaseURL, version)
+		// Download ZIP - always use ltth_latest.zip from the repo
+		zipURL := AppZIPBaseURL + "ltth_latest.zip"
 		tempDir := filepath.Join(config.InstallPath, ".temp")
 		os.MkdirAll(tempDir, 0755)
-		zipPath := filepath.Join(tempDir, fmt.Sprintf("ltth_%s.zip", version))
+		zipPath := filepath.Join(tempDir, "ltth_latest.zip")
 
 		log.Printf("Downloading from: %s", zipURL)
 		if err := downloadFile(zipPath, zipURL); err != nil {
 			return fmt.Sprintf(`{"success": false, "error": "Download failed: %s"}`, err.Error())
 		}
 
-		// Extract ZIP
+		// Extract ZIP to version-specific directory
 		versionDir := filepath.Join(config.InstallPath, version)
 		log.Printf("Extracting to: %s", versionDir)
 		if err := extractZip(zipPath, versionDir); err != nil {
@@ -650,10 +648,7 @@ func calculateSHA256(filepath string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// getEncodedHTML returns the pre-processed HTML UI
-func getEncodedHTML() string {
-	return encodedHTML
-}
+
 
 // Embedded HTML UI
 var htmlUI = `<!DOCTYPE html>
