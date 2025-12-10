@@ -16,6 +16,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Check Go
+# Note: Requires Bash for &> redirection syntax
 echo -e "${YELLOW}[1/4] Checking Go installation...${NC}"
 if ! command -v go &> /dev/null; then
     echo "Error: Go not installed"

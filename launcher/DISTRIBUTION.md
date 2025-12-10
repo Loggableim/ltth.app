@@ -271,7 +271,6 @@ SELECT COUNT(*) FROM downloads WHERE file = 'launcher.exe';
 
 Bei Fragen oder Problemen:
 - **GitHub Issues**: https://github.com/Loggableim/ltth.app/issues
-- **Email**: support@ltth.app
 - **Dokumentation**: https://ltth.app/docs.html
 
 ## Lizenz
