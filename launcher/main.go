@@ -34,7 +34,7 @@ import (
 // Configuration constants
 const (
 	AppName       = "LTTH Launcher"
-	AppVersion    = "1.0.0"
+	AppVersion    = "1.0.1"
 	GitHubOwner   = "Loggableim"
 	GitHubRepo    = "ltth.app"
 	VersionURL    = "https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json"
