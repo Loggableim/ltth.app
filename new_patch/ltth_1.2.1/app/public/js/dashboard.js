@@ -2102,6 +2102,9 @@ async function loadSoundboardSettings() {
 
         const playMode = document.getElementById('soundboard-play-mode');
         if (playMode) playMode.value = settings.soundboard_play_mode || 'overlap';
+        
+        // Set the play mode for soundboard queue management
+        setSoundboardPlayMode(settings.soundboard_play_mode || 'overlap');
 
         const maxQueue = document.getElementById('soundboard-max-queue');
         if (maxQueue) maxQueue.value = settings.soundboard_max_queue_length || '10';
@@ -2193,6 +2196,8 @@ async function saveSoundboardSettings() {
 
         const result = await response.json();
         if (result.success) {
+            // Update the play mode immediately after saving
+            setSoundboardPlayMode(newSettings.soundboard_play_mode);
             alert('✅ Soundboard settings saved!');
         }
     } catch (error) {
@@ -3370,10 +3375,33 @@ function playDashboardTTS(data) {
 }
 
 /**
- * Soundboard-Audio im Dashboard abspielen
+ * Soundboard queue management
  */
-function playDashboardSoundboard(data) {
-    console.log('🔊 [Dashboard] Playing soundboard:', data.label);
+let soundboardQueue = [];
+let isSoundboardPlaying = false;
+let soundboardPlayMode = 'overlap'; // Default mode
+
+/**
+ * Update soundboard play mode when settings change
+ */
+function setSoundboardPlayMode(mode) {
+    soundboardPlayMode = mode || 'overlap';
+    console.log('🔊 [Dashboard] Soundboard play mode set to:', soundboardPlayMode);
+}
+
+/**
+ * Process next sound in queue (for sequential mode)
+ */
+function processNextSoundboardSound() {
+    if (soundboardQueue.length === 0) {
+        isSoundboardPlaying = false;
+        return;
+    }
+
+    isSoundboardPlaying = true;
+    const data = soundboardQueue.shift();
+    
+    console.log('🔊 [Dashboard] Processing queued soundboard:', data.label);
 
     // Create new audio element
     const audio = document.createElement('audio');
@@ -3389,18 +3417,69 @@ function playDashboardSoundboard(data) {
         console.log('✅ [Dashboard] Soundboard started playing:', data.label);
     }).catch(err => {
         console.error('❌ [Dashboard] Soundboard playback error:', err);
+        // On error, process next sound
+        processNextSoundboardSound();
     });
 
-    // Remove after playback
+    // Remove after playback and process next
     audio.onended = () => {
         console.log('✅ [Dashboard] Soundboard finished:', data.label);
         audio.remove();
+        // Process next sound in queue
+        processNextSoundboardSound();
     };
 
     audio.onerror = (e) => {
         console.error('❌ [Dashboard] Error playing soundboard:', data.label, e);
         audio.remove();
+        // On error, process next sound
+        processNextSoundboardSound();
     };
+}
+
+/**
+ * Soundboard-Audio im Dashboard abspielen
+ */
+function playDashboardSoundboard(data) {
+    console.log('🔊 [Dashboard] Playing soundboard:', data.label, '(mode:', soundboardPlayMode + ')');
+
+    if (soundboardPlayMode === 'sequential') {
+        // Queue mode: add to queue
+        soundboardQueue.push(data);
+        console.log('📋 [Dashboard] Added to queue, queue length:', soundboardQueue.length);
+        
+        // Start processing if not already playing
+        if (!isSoundboardPlaying) {
+            processNextSoundboardSound();
+        }
+    } else {
+        // Overlap mode: play immediately (original behavior)
+        const audio = document.createElement('audio');
+        audio.src = data.url;
+        audio.volume = data.volume || 1.0;
+
+        // Add to pool
+        const pool = document.getElementById('dashboard-soundboard-pool');
+        pool.appendChild(audio);
+
+        // Play
+        audio.play().then(() => {
+            console.log('✅ [Dashboard] Soundboard started playing:', data.label);
+        }).catch(err => {
+            console.error('❌ [Dashboard] Soundboard playback error:', err);
+        });
+
+        // Remove after playback
+        audio.onended = () => {
+            console.log('✅ [Dashboard] Soundboard finished:', data.label);
+            audio.remove();
+        };
+
+        audio.onerror = (e) => {
+            console.error('❌ [Dashboard] Error playing soundboard:', data.label, e);
+            audio.remove();
+        };
+    }
 }
 
 /**
