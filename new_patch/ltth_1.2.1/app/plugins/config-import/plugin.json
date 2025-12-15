@@ -1,0 +1,21 @@
+{
+  "id": "config-import",
+  "name": "Config Import",
+  "version": "1.0.0",
+  "description": "Import settings from old installation paths to the current config location",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "utility",
+  "devStatus": "working-beta",
+  "permissions": [
+    "routes",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Import settings from old installation paths to the current config location. Utility for migrating configurations during updates or reinstallations.",
+    "de": "Importiert Einstellungen von alten Installationspfaden zum aktuellen Konfigurationsspeicherort. Dienstprogramm für die Migration von Konfigurationen bei Updates oder Neuinstallationen.",
+    "es": "Importa configuraciones desde rutas de instalación antiguas a la ubicación de configuración actual. Utilidad para migrar configuraciones durante actualizaciones o reinstalaciones.",
+    "fr": "Importe les paramètres depuis d'anciens chemins d'installation vers l'emplacement de configuration actuel. Utilitaire pour migrer les configurations lors de mises à jour ou réinstallations."
+  }
+}

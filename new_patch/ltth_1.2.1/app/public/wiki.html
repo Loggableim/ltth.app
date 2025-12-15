@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki & Documentation - PupCid's Little TikTool Helper</title>
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <link rel="stylesheet" href="/css/wiki.css">
+    <style>
+        :root {
+            --color-bg-primary: #111827;
+            --color-bg-secondary: #1f2937;
+            --color-bg-tertiary: #374151;
+            --color-bg-card: #1f2937;
+            --color-bg-hover: rgba(255, 255, 255, 0.05);
+            --color-border: #374151;
+            --color-text-primary: #f9fafb;
+            --color-text-secondary: #d1d5db;
+            --color-text-muted: #9ca3af;
+            --color-accent-primary: #3b82f6;
+            --color-accent-secondary: #8b5cf6;
+            --color-accent-danger: #ef4444;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            overflow: hidden;
+        }
+
+        .wiki-standalone-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header Bar */
+        .wiki-standalone-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .wiki-standalone-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .wiki-standalone-header h1 i {
+            width: 24px;
+            height: 24px;
+            color: var(--color-accent-primary);
+        }
+
+        /* Main content area adjusted for header */
+        .wiki-standalone-main {
+            display: flex;
+            height: 100vh;
+            padding-top: 60px;
+            width: 100%;
+        }
+
+        /* Override wiki-container to work in standalone mode */
+        .wiki-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Ensure proper scrolling */
+        .wiki-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .wiki-sidebar {
+            height: 100%;
+            overflow-y: auto;
+        }
+    </style>
+    <script src="/js/lucide.min.js"></script>
+</head>
+<body>
+    <div class="wiki-standalone-container">
+        <!-- Header -->
+        <header class="wiki-standalone-header">
+            <h1>
+                <i data-lucide="book-open"></i>
+                Wiki & Documentation
+            </h1>
+            <!-- Language Selector -->
+            <div class="language-selector" style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
+                <i data-lucide="globe" style="width: 18px; height: 18px;"></i>
+                <select id="wiki-language-selector" style="background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer;">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="fr">🇫🇷 Français</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="wiki-standalone-main">
+            <div class="wiki-container">
+                <!-- Wiki Sidebar -->
+                <aside class="wiki-sidebar">
+                    <!-- Search -->
+                    <div class="wiki-search-container">
+                        <div class="wiki-search-input-wrapper">
+                            <i data-lucide="search"></i>
+                            <input 
+                                type="text" 
+                                id="wiki-search" 
+                                class="wiki-search-input" 
+                                placeholder="Search documentation..."
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <nav id="wiki-nav" class="wiki-nav">
+                        <!-- Navigation will be populated by wiki.js -->
+                    </nav>
+                </aside>
+                
+                <!-- Wiki Content Area -->
+                <main class="wiki-content">
+                    <div id="wiki-article" class="wiki-article">
+                        <!-- Article content will be loaded by wiki.js -->
+                        <div class="wiki-loading">
+                            <i data-lucide="loader"></i>
+                            <span>Loading documentation...</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load wiki system -->
+    <script src="/js/wiki.js"></script>
+    <script>
+        // Language selector handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const languageSelector = document.getElementById('wiki-language-selector');
+            if (languageSelector && window.WikiSystem) {
+                // Set initial value from current language
+                setTimeout(() => {
+                    const currentLang = window.WikiSystem.getCurrentLanguage();
+                    languageSelector.value = currentLang;
+                }, 500);
+                
+                // Handle language changes
+                languageSelector.addEventListener('change', (e) => {
+                    window.WikiSystem.setLanguage(e.target.value);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

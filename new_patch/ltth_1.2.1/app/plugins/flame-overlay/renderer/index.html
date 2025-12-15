@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flame Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        body {
+            background: transparent;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #flameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="flameCanvas"></canvas>
+    
+    <!-- Socket.io for live config updates -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Vertex Shader -->
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 aPosition;
+        attribute vec2 aTexCoord;
+        
+        uniform mat4 uProjectionMatrix;
+        uniform mat4 uModelViewMatrix;
+        
+        varying vec2 vTexCoord;
+        varying vec3 vPosition;
+        
+        void main() {
+            gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aPosition, 1.0);
+            vTexCoord = aTexCoord;
+            vPosition = aPosition;
+        }
+    </script>
+
+    <!-- Fragment Shader -->
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision highp float;
+        
+        // Uniforms
+        uniform float uTime;
+        uniform sampler2D uNoiseTexture;
+        uniform sampler2D uFireProfile;
+        uniform vec3 uFlameColor;
+        uniform float uFlameSpeed;
+        uniform float uFlameIntensity;
+        uniform float uFlameBrightness;
+        uniform vec2 uResolution;
+        uniform float uFrameThickness;
+        uniform int uFrameMode; // 0=bottom, 1=top, 2=sides, 3=all
+        uniform bool uMaskEdges;
+        
+        varying vec2 vTexCoord;
+        varying vec3 vPosition;
+        
+        const float modulus = 61.0;
+        
+        // Modified Blum Blum Shub pseudo-random number generator
+        vec2 mBBS(vec2 val, float modulus) {
+            val = mod(val, modulus);
+            return mod(val * val, modulus);
+        }
+        
+        // Modified noise function
+        float mnoise(vec3 pos) {
+            float intArg = floor(pos.z);
+            float fracArg = fract(pos.z);
+            vec2 hash = mBBS(intArg * 3.0 + vec2(0.0, 3.0), modulus);
+            vec4 g = vec4(
+                texture2D(uNoiseTexture, vec2(pos.x, pos.y + hash.x) / modulus).xy,
+                texture2D(uNoiseTexture, vec2(pos.x, pos.y + hash.y) / modulus).xy
+            ) * 2.0 - 1.0;
+            return mix(
+                g.x + g.y * fracArg,
+                g.z + g.w * (fracArg - 1.0),
+                smoothstep(0.0, 1.0, fracArg)
+            );
+        }
+        
+        // Turbulence - adds multiple octaves of noise
+        float turbulence(vec3 pos) {
+            float sum = 0.0;
+            float freq = 1.0;
+            float amp = 1.0;
+            const float lacunarity = 2.0;
+            const float gain = 0.5;
+            
+            for(int i = 0; i < 4; i++) {
+                sum += abs(mnoise(pos * freq)) * amp;
+                freq *= lacunarity;
+                amp *= gain;
+            }
+            return sum;
+        }
+        
+        // Sample fire effect
+        vec4 sampleFire(vec3 loc, vec4 scale) {
+            // Convert to [-1, 1] range
+            loc.xz = loc.xz * 2.0 - 1.0;
+            
+            // Convert to (radius, height) for fire profile
+            vec2 st = vec2(sqrt(dot(loc.xz, loc.xz)), loc.y);
+            
+            // Scroll noise upwards over time
+            loc.y -= uTime * scale.w * uFlameSpeed;
+            loc *= scale.xyz;
+            
+            // Add turbulence offset
+            float offset = sqrt(st.y) * uFlameIntensity * turbulence(loc);
+            st.y += offset;
+            
+            // Clamp
+            if (st.y > 1.0) {
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            }
+            
+            vec4 result = texture2D(uFireProfile, st);
+            
+            // Fade bottom
+            if (st.y < 0.1) {
+                result *= st.y / 0.1;
+            }
+            
+            // Apply custom flame color
+            result.rgb *= uFlameColor;
+            
+            return result;
+        }
+        
+        void main() {
+            vec2 uv = vTexCoord;
+            vec2 pixelPos = gl_FragCoord.xy;
+            
+            // Determine if we're in a frame area
+            bool inFrame = false;
+            float edgeDist = 0.0;
+            
+            if (uFrameMode == 0) {
+                // Bottom only
+                if (pixelPos.y < uFrameThickness) {
+                    inFrame = true;
+                    edgeDist = pixelPos.y / uFrameThickness;
+                }
+            } else if (uFrameMode == 1) {
+                // Top only
+                if (pixelPos.y > uResolution.y - uFrameThickness) {
+                    inFrame = true;
+                    edgeDist = (uResolution.y - pixelPos.y) / uFrameThickness;
+                }
+            } else if (uFrameMode == 2) {
+                // Sides only
+                if (pixelPos.x < uFrameThickness || pixelPos.x > uResolution.x - uFrameThickness) {
+                    inFrame = true;
+                    if (pixelPos.x < uFrameThickness) {
+                        edgeDist = pixelPos.x / uFrameThickness;
+                    } else {
+                        edgeDist = (uResolution.x - pixelPos.x) / uFrameThickness;
+                    }
+                }
+            } else {
+                // All edges
+                float distFromLeft = pixelPos.x;
+                float distFromRight = uResolution.x - pixelPos.x;
+                float distFromBottom = pixelPos.y;
+                float distFromTop = uResolution.y - pixelPos.y;
+                
+                float minDist = min(min(distFromLeft, distFromRight), min(distFromBottom, distFromTop));
+                
+                if (minDist < uFrameThickness) {
+                    inFrame = true;
+                    edgeDist = minDist / uFrameThickness;
+                }
+            }
+            
+            if (!inFrame) {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                return;
+            }
+            
+            // Sample fire
+            vec3 samplePos = vec3(uv.x, edgeDist, uv.y);
+            vec4 fireColor = sampleFire(samplePos, vec4(1.0, 2.0, 1.0, 0.5));
+            
+            // Apply brightness
+            fireColor.rgb *= uFlameBrightness;
+            
+            // Apply edge masking if enabled
+            if (uMaskEdges) {
+                fireColor.a *= smoothstep(0.0, 0.3, edgeDist);
+            }
+            
+            gl_FragColor = fireColor;
+        }
+    </script>
+
+    <script src="effects-engine.js"></script>
+</body>
+</html>

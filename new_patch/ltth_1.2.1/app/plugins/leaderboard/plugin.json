@@ -1,0 +1,23 @@
+{
+  "id": "leaderboard",
+  "name": "Leaderboard",
+  "version": "1.1.0",
+  "description": "Real-time leaderboard for top gifters with 5 theme designs, session and all-time tracking, and preview mode. Displays top contributors as an OBS overlay with overtake animations.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "overlay",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Real-time leaderboard for top gifters with 5 theme designs, session and all-time tracking, and preview mode. Displays top contributors as an OBS overlay with overtake animations.",
+    "de": "Echtzeit-Bestenliste für Top-Gifter mit 5 Theme-Designs, Sitzungs- und All-Time-Tracking und Vorschaumodus. Zeigt Top-Beitragende als OBS-Overlay mit Überholungsanimationen an.",
+    "es": "Tabla de clasificación en tiempo real para los principales donantes con 5 diseños de temas, seguimiento de sesión y de todos los tiempos, y modo de vista previa. Muestra los principales contribuyentes como overlay de OBS con animaciones de adelantamiento.",
+    "fr": "Classement en temps réel pour les meilleurs donateurs avec 5 designs de thèmes, suivi de session et de tous les temps, et mode aperçu. Affiche les principaux contributeurs comme overlay OBS avec animations de dépassement."
+  }
+}

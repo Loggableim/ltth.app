@@ -1,0 +1,104 @@
+{
+  "quiz_show": {
+    "title": "Pup Cid´s Little Quiz Show Plugin",
+    "subtitle": "Interaktives Quiz-Spiel",
+    "config": {
+      "title": "Konfiguration",
+      "enabled": "Quiz-Show aktivieren",
+      "time_limit": "Zeitlimit (Sekunden)",
+      "points_correct": "Punkte für richtige Antwort",
+      "points_wrong": "Punkte für falsche Antwort",
+      "save": "Einstellungen speichern"
+    },
+    "game": {
+      "title": "Spielsteuerung",
+      "start": "Quiz starten",
+      "stop": "Quiz stoppen",
+      "next_question": "Nächste Frage",
+      "show_leaderboard": "Bestenliste anzeigen"
+    },
+    "questions": {
+      "title": "Fragen",
+      "add": "Frage hinzufügen",
+      "edit": "Frage bearbeiten",
+      "delete": "Frage löschen",
+      "question_text": "Frage",
+      "answer_a": "Antwort A",
+      "answer_b": "Antwort B",
+      "answer_c": "Antwort C",
+      "answer_d": "Antwort D",
+      "correct_answer": "Richtige Antwort",
+      "import": "Fragen importieren",
+      "export": "Fragen exportieren"
+    },
+    "ai_packages": {
+      "title": "AI Fragenpakete",
+      "subtitle": "Generiere Fragenpakete mit OpenAI",
+      "config": {
+        "title": "OpenAI Konfiguration",
+        "api_key": "API-Schlüssel",
+        "api_key_placeholder": "sk-...",
+        "api_key_hint": "Ihr OpenAI API-Schlüssel wird sicher gespeichert",
+        "api_key_status_configured": "Konfiguriert",
+        "api_key_status_not_configured": "Nicht konfiguriert",
+        "model": "Modell",
+        "default_package_size": "Standard Paketgröße",
+        "save": "Konfiguration Speichern",
+        "test": "API-Schlüssel Testen",
+        "test_success": "API-Schlüssel ist gültig!",
+        "test_error": "Ungültiger API-Schlüssel",
+        "save_success": "Konfiguration erfolgreich gespeichert",
+        "save_error": "Fehler beim Speichern"
+      },
+      "generate": {
+        "title": "Neues Fragenpaket Generieren",
+        "warning": "Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel oben.",
+        "category": "Kategorie",
+        "category_placeholder": "z.B. Geographie, Geschichte, Sport",
+        "package_size": "Anzahl Fragen",
+        "package_name": "Paketname (optional)",
+        "package_name_placeholder": "Automatisch generiert",
+        "button": "Fragenpaket Generieren",
+        "button_generating": "Generiere...",
+        "difficulty_info": "Schwierigkeitsverteilung",
+        "difficulty_easy": "50% Einfach",
+        "difficulty_medium": "~17% Mittel",
+        "difficulty_hard": "~17% Schwer",
+        "difficulty_expert": "~16% Expert",
+        "duplicate_info": "Vorhandene Fragen in der Kategorie werden automatisch erkannt, um Duplikate zu vermeiden.",
+        "success": "Paket erfolgreich generiert mit {count} Fragen!",
+        "error": "Fehler bei der Generierung",
+        "progress_generating": "Generiere Fragen mit OpenAI...",
+        "progress_processing": "Verarbeite Antworten...",
+        "progress_done": "Fertig!"
+      },
+      "list": {
+        "title": "Verfügbare Fragenpakete",
+        "count": "Pakete",
+        "no_packages": "Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!",
+        "tip": "Wählen Sie ein oder mehrere Pakete aus, um nur Fragen aus diesen Paketen im Quiz zu verwenden. Wenn keine Pakete ausgewählt sind, werden alle Fragen verwendet.",
+        "questions": "Fragen",
+        "created": "Erstellt",
+        "view": "Anzeigen",
+        "delete": "Löschen",
+        "delete_confirm": "Dieses Paket und alle seine Fragen wirklich löschen?",
+        "delete_success": "Paket erfolgreich gelöscht",
+        "delete_error": "Fehler beim Löschen"
+      }
+    },
+    "overlay": {
+      "title": "Overlay",
+      "quiz_url": "Quiz-Overlay-URL",
+      "leaderboard_url": "Bestenlisten-Overlay-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen"
+    },
+    "leaderboard": {
+      "title": "Bestenliste",
+      "rank": "Rang",
+      "player": "Spieler",
+      "score": "Punkte",
+      "reset": "Punkte zurücksetzen"
+    }
+  }
+}

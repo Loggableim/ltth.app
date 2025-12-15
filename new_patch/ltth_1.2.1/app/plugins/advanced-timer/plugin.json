@@ -1,0 +1,23 @@
+{
+  "id": "advanced-timer",
+  "name": "Advanced Timer",
+  "version": "1.0.0",
+  "description": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "devStatus": "early-version",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "websocket-client"
+  ],
+  "descriptions": {
+    "en": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
+    "de": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt für Subathons, Challenges, Stream-Zeitpläne und Ziele.",
+    "es": "Sistema profesional de múltiples temporizadores con activadores de eventos, automatización, interacción con espectadores y overlays personalizables. Perfecto para subathons, desafíos, horarios de transmisión y objetivos.",
+    "fr": "Système professionnel de minuteries multiples avec déclencheurs d'événements, automatisation, interaction avec les spectateurs et overlays personnalisables. Parfait pour les subathons, défis, plannings de stream et objectifs."
+  }
+}

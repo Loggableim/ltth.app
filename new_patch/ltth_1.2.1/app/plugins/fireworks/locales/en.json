@@ -1,0 +1,52 @@
+{
+  "fireworks": {
+    "title": "Fireworks Superplugin Settings",
+    "subtitle": "GPU-Accelerated Fireworks Effects",
+    "tab_settings": "Settings",
+    "tab_presets": "Presets",
+    "tab_benchmark": "Benchmark",
+    "toaster_mode": {
+      "title": "🍞 Toaster Mode (Low-End PCs)",
+      "description": "Uses Canvas 2D rendering instead of WebGL for maximum compatibility",
+      "enabled": "Enable Toaster Mode",
+      "help": "Optimized for weak systems and maximum compatibility",
+      "changes_title": "🔧 What changes:",
+      "renderer": "Renderer: WebGL → Canvas 2D",
+      "gpu": "GPU Acceleration: Disabled",
+      "compatibility": "Compatibility: Maximum",
+      "performance": "Performance: Reduced but stable",
+      "effects": "Visual Effects: All maintained",
+      "tip_title": "Tip:",
+      "tip": "Use Toaster Mode if your PC slows down during fireworks or if you experience rendering issues in OBS."
+    },
+    "presets": {
+      "title": "Presets",
+      "description": "Choose a preset based on your system's performance. Use the Benchmark to find the optimal settings.",
+      "apply": "Apply",
+      "tip": "Tip:",
+      "tip_text": "Use the Benchmark tab to automatically determine the best 2 presets for your system.",
+      "not_found": "Preset not found",
+      "applied": "Preset applied!",
+      "warning_title": "Warning: This preset might lag on your system!",
+      "warning_fps": "The benchmark measured an average FPS of {fps}.",
+      "warning_confirm": "Do you want to use this setting anyway?"
+    },
+    "benchmark": {
+      "title": "Performance Benchmark",
+      "description": "Run an automatic performance test to find the optimal settings for your system.",
+      "start": "Start Benchmark",
+      "stop": "Stop",
+      "running": "Benchmark running...",
+      "current_test": "Current test:",
+      "results": "Benchmark Results",
+      "recommendations": "Recommendations",
+      "info": "Note:",
+      "info_text": "The benchmark opens the OBS overlay window and runs various scenarios. This takes about 1-2 minutes. Do not close the window during the test.",
+      "popup_blocked": "Could not open benchmark window. Please allow pop-ups.",
+      "cancelled": "Benchmark cancelled",
+      "no_good_presets": "No preset reaches 30 FPS. We recommend the \"Potato\" preset for your system.",
+      "best_choice": "Best Choice",
+      "alternative": "Alternative"
+    }
+  }
+}

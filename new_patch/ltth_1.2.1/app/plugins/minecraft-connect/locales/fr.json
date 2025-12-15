@@ -1,0 +1,117 @@
+{
+  "minecraft_connect": {
+    "title": "Minecraft Connect",
+    "subtitle": "TikTok Live to Minecraft Integration",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "waiting": "Waiting for Minecraft"
+    },
+    "tabs": {
+      "mappings": "Action Mappings",
+      "actions": "Available Actions",
+      "events": "Event Log",
+      "settings": "Paramètres"
+    },
+    "mappings": {
+      "title": "Action Mappings",
+      "add": "Add Mapping",
+      "edit": "Edit",
+      "delete": "Delete",
+      "empty": "No action mappings configured yet.",
+      "empty_hint": "Click 'Add Mapping' to create your first TikTok → Minecraft action mapping.",
+      "trigger": "TikTok Event Trigger",
+      "conditions": "Conditions (optional)",
+      "action": "Minecraft Action",
+      "parameters": "Parameters",
+      "enabled": "Activé",
+      "triggers": {
+        "gift": "Gift",
+        "follow": "Follow",
+        "like": "Like",
+        "share": "Share",
+        "chat": "Chat",
+        "subscribe": "Subscribe"
+      },
+      "add_condition": "Add Condition",
+      "condition_field": "Field",
+      "condition_operator": "Operator",
+      "condition_value": "Value",
+      "operators": {
+        "equals": "Equals",
+        "not_equals": "Not Equals",
+        "greater_than": "Greater Than",
+        "less_than": "Less Than",
+        "contains": "Contains"
+      },
+      "placeholder_hint": "Use placeholders like {uniqueId}, {giftName}, {giftCount}, {comment} for dynamic values"
+    },
+    "actions": {
+      "title": "Available Minecraft Actions",
+      "test": "Test Action",
+      "empty": "No Minecraft connection detected.",
+      "empty_hint": "Install and run the TikStreamLink Fabric mod to see available actions.",
+      "spawn_entity": "Spawn Entity",
+      "give_item": "Give Item",
+      "set_time": "Set Time",
+      "apply_potion_effect": "Apply Potion Effect",
+      "post_chat_message": "Post Chat Message",
+      "change_weather": "Change Weather",
+      "execute_command": "Execute Command"
+    },
+    "events": {
+      "title": "Event Log",
+      "clear": "Clear Log",
+      "empty": "No events yet.",
+      "empty_hint": "Events will appear here when TikTok events trigger Minecraft actions.",
+      "triggered_by": "Triggered by",
+      "actions_count": "action(s) triggered"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "save": "Enregistrer les Paramètres",
+      "saved": "Settings saved successfully! Please restart the server to apply WebSocket changes.",
+      "websocket": {
+        "title": "WebSocket Server",
+        "port": "Port",
+        "port_hint": "Port for WebSocket server (default: 25560)",
+        "heartbeat": "Heartbeat Interval (ms)"
+      },
+      "limits": {
+        "title": "Rate Limits",
+        "max_per_minute": "Max Actions per Minute",
+        "cooldown": "Command Cooldown (ms)",
+        "queue_size": "Max Queue Size"
+      },
+      "overlay": {
+        "title": "Overlay",
+        "enabled": "Enable Overlay",
+        "show_username": "Show Username",
+        "show_action": "Show Action Name",
+        "duration": "Animation Duration (ms)"
+      },
+      "stats": {
+        "title": "Statistics",
+        "total_events": "Total Events",
+        "total_actions": "Total Actions",
+        "successful": "Successful",
+        "failed": "Failed"
+      }
+    },
+    "modal": {
+      "add_title": "Add Action Mapping",
+      "edit_title": "Edit Action Mapping",
+      "cancel": "Cancel",
+      "save": "Enregistrer"
+    },
+    "messages": {
+      "select_trigger_action": "Please select a trigger and action",
+      "save_failed": "Failed to save mapping",
+      "delete_confirm": "Are you sure you want to delete this mapping?",
+      "delete_failed": "Failed to delete mapping",
+      "test_success": "Action queued successfully",
+      "test_failed": "Failed to queue action",
+      "not_connected": "Minecraft mod not connected"
+    }
+  }
+}

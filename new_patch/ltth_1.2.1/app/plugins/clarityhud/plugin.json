@@ -1,0 +1,24 @@
+{
+  "id": "clarityhud",
+  "name": "ClarityHUD",
+  "version": "1.0.0",
+  "description": "Ultra-minimalistic, VR-optimized and accessible HUD overlays for chat and activity feeds",
+  "author": "Plugin System",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "overlay",
+  "uiPath": "/clarityhud/ui",
+  "devStatus": "working-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Ultra-minimalistic, VR-optimized and accessible HUD overlays for chat and activity feeds. Designed for clarity and readability in virtual reality environments.",
+    "de": "Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen.",
+    "es": "Overlays HUD ultra minimalistas, optimizados para VR y accesibles para chat y feeds de actividad. Diseñados para claridad y legibilidad en entornos de realidad virtual.",
+    "fr": "Overlays HUD ultra-minimalistes, optimisés VR et accessibles pour chat et flux d'activité. Conçus pour la clarté et la lisibilité dans les environnements de réalité virtuelle."
+  }
+}

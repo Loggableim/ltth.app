@@ -1,0 +1,46 @@
+{
+  "webgpu_emoji_rain": {
+    "title": "Emoji Rain Settings",
+    "subtitle": "Interactive Emoji Overlays",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable Emoji Rain",
+      "trigger_on_gift": "Trigger on Gift",
+      "trigger_on_follow": "Trigger on Follow",
+      "trigger_on_like": "Trigger on Like Milestone",
+      "like_threshold": "Like Threshold",
+      "duration": "Rain Duration (seconds)",
+      "intensity": "Rain Intensity",
+      "emoji_size": "Emoji Size",
+      "custom_emojis": "Custom Emojis",
+      "save": "Save Settings"
+    },
+    "toaster_mode": {
+      "title": "Toaster Mode (Low-End PCs)",
+      "description": "Reduces CPU usage and resource consumption for weak PCs",
+      "enabled": "Enable Toaster Mode",
+      "help": "Optimized for maximum performance on weak systems",
+      "changes_title": "What changes:",
+      "max_emojis": "Max Emojis: 200 → 50",
+      "target_fps": "Target FPS: 60 → 30",
+      "rotation": "Rotation: Disabled",
+      "wind": "Wind: Disabled",
+      "effects": "Rainbow/Pixel/Glow: Disabled",
+      "burst": "Burst Intensity: Reduced",
+      "tip": "Use Toaster Mode if your PC slows down during streaming or CPU usage is too high."
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay URL",
+      "obs_url": "OBS HUD URL",
+      "copy": "Copy URL",
+      "open": "Open Overlay",
+      "test": "Test Rain"
+    },
+    "preview": {
+      "title": "Preview",
+      "start": "Start Preview",
+      "stop": "Stop Preview"
+    }
+  }
+}

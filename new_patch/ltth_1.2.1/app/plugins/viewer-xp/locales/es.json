@@ -1,0 +1,62 @@
+{
+  "viewer_xp": {
+    "title": "Viewer XP System",
+    "subtitle": "Gamification & Rewards",
+    "config": {
+      "title": "Configuración",
+      "enabled": "Enable XP System",
+      "xp_per_minute": "XP per Minute Watched",
+      "xp_on_chat": "XP on Chat Message",
+      "xp_on_gift": "XP on Gift",
+      "xp_on_follow": "XP on Follow",
+      "level_curve": "Level Curve",
+      "save": "Guardar Configuración"
+    },
+    "leaderboard": {
+      "title": "Leaderboard",
+      "rank": "Rank",
+      "username": "Username",
+      "level": "Level",
+      "xp": "XP",
+      "reset": "Reset Leaderboard"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "URL del Overlay",
+      "copy": "Copiar URL",
+      "open": "Abrir Overlay",
+      "show_top": "Show Top",
+      "users": "Users"
+    },
+    "rewards": {
+      "title": "Level Rewards",
+      "add": "Add Reward",
+      "level": "Level",
+      "reward": "Reward Description"
+    },
+    "chat_commands": {
+      "enabled": "Enable Chat Commands",
+      "description": "Allow chat commands via GCCE for XP queries",
+      "xp": {
+        "name": "xp",
+        "description": "Check your current XP, level, and progress",
+        "syntax": "/xp [username]"
+      },
+      "rank": {
+        "name": "rank",
+        "description": "Check your rank on the leaderboard",
+        "syntax": "/rank [username]"
+      },
+      "top": {
+        "name": "top",
+        "description": "Show top viewers on the leaderboard",
+        "syntax": "/top [limit]"
+      },
+      "leaderboard": {
+        "name": "leaderboard",
+        "description": "Display the full leaderboard in HUD overlay",
+        "syntax": "/leaderboard [limit]"
+      }
+    }
+  }
+}

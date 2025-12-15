@@ -1,0 +1,26 @@
+{
+  "id": "multicam",
+  "name": "Multi-Cam Switcher",
+  "description": "Wechselt OBS-Szenen über Gifts oder Chat-Commands; unterstützt Spout-Feeds, Kamera 1–5.",
+  "version": "1.0.0",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "utility",
+  "devStatus": "development-beta",
+  "dependencies": [
+    "express",
+    "socket.io",
+    "obs-websocket-js"
+  ],
+  "permissions": [
+    "tiktok-events",
+    "obs-control"
+  ],
+  "descriptions": {
+    "en": "Switches OBS scenes via gifts or chat commands; supports Spout feeds, cameras 1-5. Perfect for dynamic multi-camera setups with automated scene switching.",
+    "de": "Wechselt OBS-Szenen über Geschenke oder Chat-Befehle; unterstützt Spout-Feeds, Kameras 1-5. Perfekt für dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel.",
+    "es": "Cambia escenas de OBS mediante regalos o comandos de chat; admite feeds Spout, cámaras 1-5. Perfecto para configuraciones dinámicas de múltiples cámaras con cambio de escena automatizado.",
+    "fr": "Change les scènes OBS via cadeaux ou commandes de chat; prend en charge les flux Spout, caméras 1-5. Parfait pour les configurations multi-caméras dynamiques avec changement de scène automatisé."
+  }
+}

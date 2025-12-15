@@ -1,0 +1,126 @@
+{
+  "plugin": {
+    "name": "Advanced Timer",
+    "description": "Professional multi-timer system with event automation and customizable overlays"
+  },
+  "ui": {
+    "title": "Advanced Timer - Multi-Timer System",
+    "tabs": {
+      "timers": "Timers",
+      "create": "Create Timer",
+      "profiles": "Profiles",
+      "help": "Help"
+    },
+    "buttons": {
+      "newTimer": "New Timer",
+      "start": "Start",
+      "pause": "Pause",
+      "stop": "Stop",
+      "reset": "Reset",
+      "settings": "Settings",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "create": "Create Timer",
+      "export": "Export",
+      "copy": "Copy URL"
+    },
+    "labels": {
+      "timerName": "Timer Name",
+      "timerMode": "Timer Mode",
+      "initialDuration": "Initial Duration (seconds)",
+      "targetValue": "Target Value (seconds)",
+      "overlayUrl": "Overlay URL",
+      "activityLog": "Activity Log"
+    },
+    "modes": {
+      "countdown": "Countdown - Count down from a time",
+      "countup": "Count Up - Count up to a target",
+      "stopwatch": "Stopwatch - Count up indefinitely",
+      "loop": "Loop - Repeat countdown continuously",
+      "interval": "Interval - Repeat up to target"
+    },
+    "states": {
+      "running": "Running",
+      "paused": "Paused",
+      "stopped": "Stopped",
+      "completed": "Completed"
+    },
+    "messages": {
+      "noTimers": "No timers yet",
+      "createFirst": "Create Your First Timer",
+      "timerCreated": "Timer created successfully!",
+      "timerUpdated": "Timer updated successfully!",
+      "timerDeleted": "Timer deleted successfully!",
+      "confirmDelete": "Are you sure you want to delete this timer?",
+      "urlCopied": "URL copied to clipboard!",
+      "noActivity": "No activity yet",
+      "quickStart": "Create a timer and configure events in the timer settings to add time based on TikTok events (gifts, likes, follows, etc.)"
+    },
+    "help": {
+      "modesTitle": "Timer Modes",
+      "modesCountdown": "Countdown: Counts down from a starting time to zero",
+      "modesCountup": "Count Up: Counts up from zero to a target value",
+      "modesStopwatch": "Stopwatch: Counts up indefinitely",
+      "modesLoop": "Loop: Continuously repeats countdown",
+      "modesInterval": "Interval: Counts up to target, resets and repeats",
+      "eventAutomationTitle": "Event Automation",
+      "eventAutomationDesc": "Configure timers to respond to TikTok events:",
+      "eventGifts": "Gifts - Add/remove time based on gift type and value",
+      "eventLikes": "Likes - Modify timer based on likes received",
+      "eventFollows": "Follows - Reward new followers",
+      "eventShares": "Shares - Encourage sharing",
+      "eventChat": "Chat Commands - Allow viewers to interact",
+      "timerChainsTitle": "Timer Chains",
+      "timerChainsDesc": "Link timers together - when Timer A completes, automatically start/stop/reset Timer B",
+      "overlaysTitle": "Overlays",
+      "overlaysDesc": "Each timer has its own overlay URL that can be added as a Browser Source in OBS"
+    },
+    "settings": {
+      "tabs": {
+        "basic": "Basic",
+        "events": "Events",
+        "overlay": "Overlay",
+        "logs": "Logs"
+      },
+      "eventsDesc": "Configure how TikTok events affect this timer",
+      "addEventRule": "+ Add Event Rule",
+      "overlayInfo": "Add this URL as a Browser Source in OBS to display this timer"
+    }
+  },
+  "events": {
+    "types": {
+      "gift": "Gift",
+      "like": "Like",
+      "follow": "Follow",
+      "share": "Share",
+      "subscribe": "Subscribe",
+      "chat": "Chat"
+    },
+    "actions": {
+      "addTime": "Add Time",
+      "removeTime": "Remove Time",
+      "setValue": "Set Value"
+    }
+  },
+  "logs": {
+    "events": {
+      "started": "Started",
+      "paused": "Paused",
+      "stopped": "Stopped",
+      "reset": "Reset",
+      "completed": "Completed",
+      "time_added": "Time Added",
+      "time_removed": "Time Removed",
+      "gift": "Gift",
+      "like": "Like",
+      "follow": "Follow",
+      "share": "Share",
+      "subscribe": "Subscribe",
+      "chat": "Chat",
+      "chain_triggered": "Chain Triggered",
+      "threshold_reached": "Threshold Reached",
+      "flow": "Flow"
+    }
+  }
+}

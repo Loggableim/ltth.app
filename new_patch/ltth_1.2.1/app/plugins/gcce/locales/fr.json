@@ -1,0 +1,51 @@
+{
+  "gcce": {
+    "title": "Global Chat Command Engine",
+    "subtitle": "Universal chat command interpreter and framework for all plugins",
+    "statistics": {
+      "title": "Statistics",
+      "total_commands": "Total Commands",
+      "enabled_commands": "Enabled Commands",
+      "registered_plugins": "Registered Plugins"
+    },
+    "config": {
+      "title": "Configuration",
+      "command_prefix": "Command Prefix",
+      "command_prefix_desc": "Prefix used to identify chat commands (e.g., \"!\" for !help)",
+      "enable_built_in": "Enable Built-in Commands",
+      "enable_built_in_desc": "Enable default commands like !help, !commands, etc.",
+      "enable_overlay": "Enable Overlay Messages",
+      "enable_overlay_desc": "Show command responses on stream overlays",
+      "enable_help": "Enable Help Command",
+      "enable_help_desc": "Allow users to use !help command",
+      "save": "Save Configuration"
+    },
+    "commands": {
+      "title": "Registered Commands",
+      "loading": "Loading commands...",
+      "no_commands": "No commands registered yet.",
+      "failed_load": "Failed to load commands",
+      "table": {
+        "command": "Command",
+        "description": "Description",
+        "plugin": "Plugin",
+        "permission": "Permission",
+        "enabled": "Activé"
+      },
+      "built_in": "built-in"
+    },
+    "permissions": {
+      "viewer": "viewer",
+      "subscriber": "subscriber",
+      "moderator": "moderator",
+      "owner": "owner"
+    },
+    "messages": {
+      "config_saved": "Configuration saved successfully!",
+      "config_failed": "Failed to save configuration",
+      "command_enabled": "Command {name} enabled",
+      "command_disabled": "Command {name} disabled",
+      "toggle_failed": "Failed to toggle command"
+    }
+  }
+}

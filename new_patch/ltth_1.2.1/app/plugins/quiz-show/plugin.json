@@ -1,0 +1,48 @@
+{
+  "id": "quiz-show",
+  "name": "Pup Cid´s Little Quiz Show Plugin",
+  "version": "1.0.0",
+  "description": "Interactive quiz show plugin for TikTok livestreams with chat integration, jokers, and leaderboard",
+  "author": "TikTok Helper",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "module",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "features": [
+    "Question database management (upload & manual creation)",
+    "Interactive quiz rounds with countdown timer",
+    "TikTok chat integration for answers",
+    "Superfan jokers (50:50, Info, Time Boost)",
+    "Persistent leaderboard with points",
+    "Configurable game settings",
+    "High-end overlay with animations",
+    "Import/Export questions and leaderboard"
+  ],
+  "config": {
+    "roundDuration": 30,
+    "pointsFirstCorrect": 100,
+    "pointsOtherCorrect": 50,
+    "showAnswersAfterTime": true,
+    "multipleWinners": true,
+    "shuffleAnswers": false,
+    "randomQuestions": true,
+    "joker50Enabled": true,
+    "jokerInfoEnabled": true,
+    "jokerTimeEnabled": true,
+    "jokerTimeBoost": 15,
+    "jokersPerRound": 3
+  },
+  "descriptions": {
+    "en": "Interactive quiz show plugin for TikTok livestreams with chat integration, jokers, and leaderboard. Features question database management, Superfan jokers, and high-end overlay animations.",
+    "de": "Interaktives Quiz-Show-Plugin für TikTok-Livestreams mit Chat-Integration, Jokern und Bestenliste. Bietet Fragendatenbank-Verwaltung, Superfan-Joker und hochwertige Overlay-Animationen.",
+    "es": "Plugin de programa de concursos interactivo para transmisiones en vivo de TikTok con integración de chat, comodines y tabla de clasificación. Presenta gestión de base de datos de preguntas, comodines Superfan y animaciones de overlay de alta gama.",
+    "fr": "Plugin de jeu-questionnaire interactif pour livestreams TikTok avec intégration de chat, jokers et classement. Comprend gestion de base de données de questions, jokers Superfan et animations d'overlay haut de gamme."
+  }
+}

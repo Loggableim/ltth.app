@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Control - Modern Configuration</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/js/i18n-client.js"></script>
+    
+    <style>
+
+        /* CSS-based icon system to replace Font Awesome */
+        .icon-text {
+            font-style: normal;
+            display: inline-block;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding: 1.5rem;
+            background: var(--color-bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-title .icon {
+            font-size: 2.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            background: var(--color-bg-tertiary);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .btn-danger {
+            background: var(--color-accent-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-lg {
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.813rem;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-bg-tertiary);
+            transition: 0.3s;
+            border-radius: 24px;
+            border: 1px solid var(--color-border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: var(--gradient-primary);
+            border-color: var(--color-accent-primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Range Slider */
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .range-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--color-bg-tertiary);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-accent-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-accent-primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .range-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--color-accent-primary);
+            font-size: 1rem;
+        }
+
+        /* Effect Card */
+        .effect-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .effect-card:hover {
+            border-color: var(--color-accent-primary);
+            transform: translateX(4px);
+        }
+
+        .effect-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .effect-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .effect-title i {
+            font-size: 1.5rem;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        /* Alert */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert.show {
+            display: flex;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--color-accent-success);
+            color: var(--color-accent-success);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-accent-danger);
+            color: var(--color-accent-danger);
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--color-accent-primary);
+            color: var(--color-accent-primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Stats Card */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-accent-primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* URL Copy Section */
+        .url-copy {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .url-copy input {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header-title h1 {
+                font-size: 1.5rem;
+            }
+
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header fade-in">
+            <div class="header-title">
+                <span class="icon">🌤️</span>
+                <h1 data-i18n-key="header.title">Weather Control</h1>
+            </div>
+            <a href="/dashboard.html" class="btn btn-secondary" id="backButton" data-i18n-key="header.back">
+                <span>←</span>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Status Alert -->
+        <div id="statusAlert" class="alert"></div>
+
+        <!-- Stats -->
+        <div class="stats-grid fade-in">
+            <div class="stat-card">
+                <div class="stat-value">7</div>
+                <div class="stat-label" data-i18n-key="stats.effects">Weather Effects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeEffectsCount">0</div>
+                <div class="stat-label" data-i18n-key="stats.active">Active Effects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="eventsTriggered">0</div>
+                <div class="stat-label" data-i18n-key="stats.events">Events Triggered</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="connectionStatus">⚪</div>
+                <div class="stat-label" data-i18n-key="stats.connection">Connection</div>
+            </div>
+        </div>
+
+        <!-- Main Settings -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <span>⚙️</span>
+                <h3 data-i18n-key="cards.main.title">Main Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; justify-content: space-between; align-items: center;">
+                                <span data-i18n-key="cards.main.enable">Enable Weather Control Plugin</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="enabled" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; justify-content: space-between; align-items: center;">
+                                <span data-i18n-key="cards.main.use_global">Use Global Authentication</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="useGlobalAuth" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span data-i18n-key="cards.main.rate_limit">Rate Limit (requests/min)</span>
+                            <span class="range-value" id="rateLimitValue">10</span>
+                        </label>
+                        <div class="range-container">
+                            <input type="range" class="range-slider" id="rateLimitPerMinute" min="1" max="100" value="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" data-i18n-key="cards.main.overlay_url">Overlay URL</label>
+                        <div class="url-copy">
+                            <input type="text" class="form-control" id="overlayUrl" readonly>
+                            <button class="btn btn-primary" id="copyOverlayUrlBtn" data-i18n-key="buttons.copy">
+                                <span>📋</span>
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Commands Settings -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <i class="fas fa-comments"></i>
+                <h3 data-i18n-key="cards.chat.title">Chat Commands (GCCE Integration)</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-box" style="margin-bottom: 1rem;">
+                    <i class="fas fa-info-circle"></i>
+                    <p data-i18n-key="cards.chat.info">Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <span style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-i18n-key="cards.chat.enable">Enable Chat Commands</span>
+                            <label class="switch">
+                                <input type="checkbox" id="chatCommandsEnabled">
+                                <span class="slider"></span>
+                            </label>
+                        </span>
+                    </label>
+                    <small class="form-text" data-i18n-key="cards.chat.enable_help">Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.</small>
+                </div>
+
+                <div id="chatCommandsDetails">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; justify-content: space-between; align-items: center;">
+                                <span data-i18n-key="cards.chat.require_permission">Require Permissions</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="chatCommandsRequirePermission">
+                                    <span class="slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                        <small class="form-text" data-i18n-key="cards.chat.require_permission_help">Use the permission system below to control who can use weather commands.</small>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.chat.allow_intensity"><i class="fas fa-sliders-h"></i> Allow Intensity Control</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chatCommandsAllowIntensity">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="cards.chat.allow_intensity_help">Allow users to specify effect intensity (0.0-1.0).</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.chat.allow_duration"><i class="fas fa-clock"></i> Allow Duration Control</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chatCommandsAllowDuration">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="cards.chat.allow_duration_help">Allow users to specify effect duration (1-60 seconds).</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--color-text-primary);">
+                            <i class="fas fa-terminal"></i> <span data-i18n-key="cards.chat.command_names_title">Custom Command Names</span>
+                        </h4>
+                        <div class="grid grid-3">
+                            <div class="form-group">
+                                <label class="form-label" data-i18n-key="cards.chat.command_weather">Weather Command</label>
+                                <input type="text" id="cmdNameWeather" class="form-input" placeholder="weather" maxlength="32" data-i18n-key="cards.chat.command_weather_placeholder">
+                                <small class="form-text" data-i18n-key="cards.chat.command_weather_help">Trigger effects command</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" data-i18n-key="cards.chat.command_list">List Command</label>
+                                <input type="text" id="cmdNameWeatherlist" class="form-input" placeholder="weatherlist" maxlength="32" data-i18n-key="cards.chat.command_list_placeholder">
+                                <small class="form-text" data-i18n-key="cards.chat.command_list_help">List available effects</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" data-i18n-key="cards.chat.command_stop">Stop Command</label>
+                                <input type="text" id="cmdNameWeatherstop" class="form-input" placeholder="weatherstop" maxlength="32" data-i18n-key="cards.chat.command_stop_placeholder">
+                                <small class="form-text" data-i18n-key="cards.chat.command_stop_help">Stop all effects</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i class="fas fa-terminal"></i>
+                        <div>
+                            <strong data-i18n-key="cards.chat.command_usage_title">Command Usage:</strong>
+                            <ul style="margin: 0.5rem 0 0 1.5rem;">
+                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_weather"><code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect</li>
+                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_list"><code>/<span id="displayCmdList">weatherlist</span></code> - List all available effects</li>
+                                <li data-i18n-html="true" data-i18n-key="cards.chat.command_usage_stop"><code>/<span id="displayCmdStop">weatherstop</span></code> - Stop all effects (subscribers only)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Settings -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <span>🛡️</span>
+                <h3 data-i18n-key="cards.permissions.title">Permission Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">
+                        <span style="display: flex; justify-content: space-between; align-items: center;">
+                            <span data-i18n-key="cards.permissions.enable">Enable Permission System</span>
+                            <label class="switch">
+                                <input type="checkbox" id="permissionsEnabled">
+                                <span class="slider"></span>
+                            </label>
+                        </span>
+                    </label>
+                </div>
+
+                <div id="permissionDetails">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; justify-content: space-between; align-items: center;">
+                                <span data-i18n-key="cards.permissions.allow_all">Allow All Users</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="allowAll">
+                                    <span class="slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.permissions.followers"><span>❤️</span> Followers</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="allowFollowers">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.permissions.superfans"><span>⭐</span> Superfans</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="allowSuperfans">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.permissions.subscribers"><span>👑</span> Subscribers</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="allowSubscribers">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="cards.permissions.team_members"><span>👥</span> Team Members</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="allowTeamMembers">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="cards.permissions.min_team_level">Min Team Level</span>
+                                <span class="range-value" id="minTeamLevelValue">1</span>
+                            </label>
+                            <input type="range" class="range-slider" id="minTeamLevel" min="1" max="10" value="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="cards.permissions.top_gifters">Top Gifters (Top N)</span>
+                                <span class="range-value" id="topGifterValue">10</span>
+                            </label>
+                            <input type="range" class="range-slider" id="topGifterThreshold" min="0" max="100" value="10">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="cards.permissions.min_points">Minimum Points Required</label>
+                            <input type="number" class="form-control" id="minPoints" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Effects -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <span>🌈</span>
+                <h3 data-i18n-key="cards.effects.title">Weather Effects Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2">
+                    <!-- Rain Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #60a5fa; font-size: 1.5rem;">🌧️</span>
+                                <span data-i18n-key="effects.names.rain">Rain</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-rain-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-rain-intensity-val">0.5</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-rain-intensity" min="0" max="1" step="0.1" value="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-rain-duration" value="10000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-rain-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="rain">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Snow Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #93c5fd; font-size: 1.5rem;">❄️</span>
+                                <span data-i18n-key="effects.names.snow">Snow</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-snow-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-snow-intensity-val">0.5</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-snow-intensity" min="0" max="1" step="0.1" value="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-snow-duration" value="10000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-snow-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="snow">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Storm Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #818cf8; font-size: 1.5rem;">⛈️</span>
+                                <span data-i18n-key="effects.names.storm">Storm</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-storm-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-storm-intensity-val">0.7</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-storm-intensity" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-storm-duration" value="8000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-storm-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="storm">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Fog Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #94a3b8; font-size: 1.5rem;">🌫️</span>
+                                <span data-i18n-key="effects.names.fog">Fog</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-fog-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-fog-intensity-val">0.4</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-fog-intensity" min="0" max="1" step="0.1" value="0.4">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-fog-duration" value="15000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-fog-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="fog">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Thunder Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #fbbf24; font-size: 1.5rem;">⚡</span>
+                                <span data-i18n-key="effects.names.thunder">Thunder</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-thunder-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-thunder-intensity-val">0.8</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-thunder-intensity" min="0" max="1" step="0.1" value="0.8">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-thunder-duration" value="5000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-thunder-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="thunder">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Sunbeam Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #fcd34d; font-size: 1.5rem;">☀️</span>
+                                <span data-i18n-key="effects.names.sunbeam">Sunbeam</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-sunbeam-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-sunbeam-intensity-val">0.6</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-sunbeam-intensity" min="0" max="1" step="0.1" value="0.6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-sunbeam-duration" value="12000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-sunbeam-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="sunbeam">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+
+                    <!-- Glitch Clouds Effect -->
+                    <div class="effect-card">
+                        <div class="effect-header">
+                            <div class="effect-title">
+                                <span style="color: #c084fc; font-size: 1.5rem;">☁️</span>
+                                <span data-i18n-key="effects.names.glitchclouds">Glitch Clouds</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="effect-glitchclouds-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span data-i18n-key="effects.intensity">Intensity</span>
+                                <span class="range-value" id="effect-glitchclouds-intensity-val">0.7</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-glitchclouds-intensity" min="0" max="1" step="0.1" value="0.7">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" data-i18n-key="effects.duration_ms">Duration (ms)</label>
+                            <input type="number" class="form-control" id="effect-glitchclouds-duration" value="8000" min="1000" max="60000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span data-i18n-key="effects.permanent_label">Permanent</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="effect-glitchclouds-permanent">
+                                        <span class="slider"></span>
+                                    </label>
+                                </span>
+                            </label>
+                            <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm w-100" data-test-effect="glitchclouds">
+                            <span>▶️</span>
+                            <span data-i18n-key="effects.test_button">Test Effect</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gift-to-Weather Mappings -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <span>🎁</span>
+                <h3 data-i18n-key="cards.gifts.title">Gift-to-Weather Mappings</h3>
+            </div>
+            <div class="card-body">
+                <p class="help-text" style="margin-bottom: 1.5rem;" data-i18n-key="cards.gifts.description">
+                    Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.
+                </p>
+
+                <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                    <button class="btn btn-primary" id="loadGiftCatalog" data-i18n-key="buttons.load_catalog">
+                        <span>🔄</span>
+                        Load Gift Catalog
+                    </button>
+                    <button class="btn btn-secondary" id="updateGiftCatalog" data-i18n-key="buttons.update_catalog">
+                        <span>⟳</span>
+                        Update Gift Catalog
+                    </button>
+                    <button class="btn btn-secondary" id="refreshGiftMappings" data-i18n-key="buttons.refresh_mappings">
+                        <span>🔄</span>
+                        Refresh Mappings
+                    </button>
+                    <span id="giftCatalogStatus" class="help-text"></span>
+                </div>
+
+                <!-- Gift Mapping List -->
+                <div id="giftMappingList" style="margin-top: 1.5rem;">
+                    <p class="help-text" data-i18n-key="cards.gifts.load_prompt">Click "Load Gift Catalog" to see available gifts</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
+            <button class="btn btn-success btn-lg" id="saveConfig" data-i18n-key="buttons.save_config">
+                <span>💾</span>
+                Save Configuration
+            </button>
+        </div>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Main Script -->
+    <script>
+        const effects = ['rain', 'snow', 'storm', 'fog', 'thunder', 'sunbeam', 'glitchclouds'];
+        let socket;
+        let eventsTriggered = 0;
+
+        const translations = {
+            en: {
+                'header.title': 'Weather Control',
+                'header.back': 'Back to Dashboard',
+                'stats.effects': 'Weather Effects',
+                'stats.active': 'Active Effects',
+                'stats.events': 'Events Triggered',
+                'stats.connection': 'Connection',
+                'cards.main.title': 'Main Settings',
+                'cards.main.enable': 'Enable Weather Control Plugin',
+                'cards.main.use_global': 'Use Global Authentication',
+                'cards.main.rate_limit': 'Rate Limit (requests/min)',
+                'cards.main.overlay_url': 'Overlay URL',
+                'buttons.copy': 'Copy',
+                'cards.chat.title': 'Chat Commands (GCCE Integration)',
+                'cards.chat.info': 'Requires Global Chat Command Engine (GCCE) plugin to be enabled. Viewers can trigger weather effects via chat commands.',
+                'cards.chat.enable': 'Enable Chat Commands',
+                'cards.chat.enable_help': 'Allow viewers to trigger weather effects using /weather, /weatherlist, and /weatherstop commands.',
+                'cards.chat.require_permission': 'Require Permissions',
+                'cards.chat.require_permission_help': 'Use the permission system below to control who can use weather commands.',
+                'cards.chat.allow_intensity': 'Allow Intensity Control',
+                'cards.chat.allow_intensity_help': 'Allow users to specify effect intensity (0.0-1.0).',
+                'cards.chat.allow_duration': 'Allow Duration Control',
+                'cards.chat.allow_duration_help': 'Allow users to specify effect duration (1-60 seconds).',
+                'cards.chat.command_names_title': 'Custom Command Names',
+                'cards.chat.command_weather': 'Weather Command',
+                'cards.chat.command_weather_placeholder': 'weather',
+                'cards.chat.command_weather_help': 'Trigger effects command',
+                'cards.chat.command_list': 'List Command',
+                'cards.chat.command_list_placeholder': 'weatherlist',
+                'cards.chat.command_list_help': 'List available effects',
+                'cards.chat.command_stop': 'Stop Command',
+                'cards.chat.command_stop_placeholder': 'weatherstop',
+                'cards.chat.command_stop_help': 'Stop all effects',
+                'cards.chat.command_usage_title': 'Command Usage:',
+                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Trigger a weather effect',
+                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList">weatherlist</span></code> - List all available effects',
+                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop">weatherstop</span></code> - Stop all effects (subscribers only)',
+                'cards.permissions.title': 'Permission Settings',
+                'cards.permissions.enable': 'Enable Permission System',
+                'cards.permissions.allow_all': 'Allow All Users',
+                'cards.permissions.followers': '❤️ Followers',
+                'cards.permissions.superfans': '⭐ Superfans',
+                'cards.permissions.subscribers': '👑 Subscribers',
+                'cards.permissions.team_members': '👥 Team Members',
+                'cards.permissions.min_team_level': 'Min Team Level',
+                'cards.permissions.top_gifters': 'Top Gifters (Top N)',
+                'cards.permissions.min_points': 'Minimum Points Required',
+                'cards.effects.title': 'Weather Effects Configuration',
+                'effects.names.rain': 'Rain',
+                'effects.names.snow': 'Snow',
+                'effects.names.storm': 'Storm',
+                'effects.names.fog': 'Fog',
+                'effects.names.thunder': 'Thunder',
+                'effects.names.sunbeam': 'Sunbeam',
+                'effects.names.glitchclouds': 'Glitch Clouds',
+                'effects.intensity': 'Intensity',
+                'effects.duration_ms': 'Duration (ms)',
+                'effects.permanent_label': 'Permanent',
+                'effects.permanent_help': 'Keep this effect running until manually stopped.',
+                'effects.test_button': 'Test Effect',
+                'cards.gifts.title': 'Gift-to-Weather Mappings',
+                'cards.gifts.description': 'Map specific TikTok gifts to weather effects. When a mapped gift is received, it will trigger the configured weather effect.',
+                'cards.gifts.load_prompt': 'Click "Load Gift Catalog" to see available gifts',
+                'cards.gifts.effect_label': 'Weather Effect',
+                'cards.gifts.no_mapping': 'No Mapping',
+                'cards.gifts.save': 'Save',
+                'cards.gifts.delete': 'Delete',
+                'cards.gifts.enabled': 'Enabled',
+                'cards.gifts.delete_confirm': 'Are you sure you want to delete this gift mapping?',
+                'buttons.load_catalog': 'Load Gift Catalog',
+                'buttons.update_catalog': 'Update Gift Catalog',
+                'buttons.refresh_mappings': 'Refresh Mappings',
+                'buttons.save_config': 'Save Configuration',
+                'status.config_loaded': 'Configuration loaded successfully',
+                'status.error_loading_config': 'Error loading configuration: {{error}}',
+                'status.config_saved': 'Configuration saved successfully!',
+                'status.error_saving_config': 'Error saving configuration: {{error}}',
+                'status.saving_config': 'Saving...',
+                'status.overlay_copied': 'Overlay URL copied to clipboard!',
+                'status.effect_triggered': '{{effect}} effect triggered!',
+                'status.effect_trigger_error': 'Error triggering effect: {{error}}',
+                'status.gift_catalog_loading': 'Loading gift catalog...',
+                'status.gift_catalog_empty': 'No gifts in catalog. Connect to a TikTok stream first.',
+                'status.gift_catalog_loaded': 'Gift catalog loaded: {{count}} gifts',
+                'status.gift_catalog_error': 'Error loading gift catalog: {{error}}',
+                'status.gift_catalog_updating': 'Updating gift catalog...',
+                'status.gift_catalog_updated': 'Gift catalog updated successfully',
+                'status.gift_mappings_refreshed': 'Gift mappings refreshed',
+                'status.gift_mapping_saved': 'Gift mapping saved successfully!',
+                'status.gift_mapping_deleted': 'Gift mapping deleted successfully!',
+                'status.gift_mapping_error': 'Error saving mapping: {{error}}',
+                'status.select_effect': 'Please select a weather effect'
+            },
+            de: {
+                'header.title': 'Wetterkontrolle',
+                'header.back': 'Zurück zum Dashboard',
+                'stats.effects': 'Wetter-Effekte',
+                'stats.active': 'Aktive Effekte',
+                'stats.events': 'Ausgelöste Events',
+                'stats.connection': 'Verbindung',
+                'cards.main.title': 'Haupteinstellungen',
+                'cards.main.enable': 'Weather Control Plugin aktivieren',
+                'cards.main.use_global': 'Globale Authentifizierung verwenden',
+                'cards.main.rate_limit': 'Rate Limit (Anfragen/Min)',
+                'cards.main.overlay_url': 'Overlay-URL',
+                'buttons.copy': 'Kopieren',
+                'cards.chat.title': 'Chatbefehle (GCCE-Integration)',
+                'cards.chat.info': 'Benötigt das Global Chat Command Engine (GCCE) Plugin. Zuschauer können Wettereffects per Chat auslösen.',
+                'cards.chat.enable': 'Chatbefehle aktivieren',
+                'cards.chat.enable_help': 'Erlaube Zuschauern, Wettereffects per /weather, /weatherlist und /weatherstop zu triggern.',
+                'cards.chat.require_permission': 'Berechtigungen erforderlich',
+                'cards.chat.require_permission_help': 'Nutze das Berechtigungssystem unten, um zu steuern, wer Wetterbefehle verwenden darf.',
+                'cards.chat.allow_intensity': 'Intensität steuerbar',
+                'cards.chat.allow_intensity_help': 'Nutzer dürfen die Effektintensität angeben (0.0-1.0).',
+                'cards.chat.allow_duration': 'Dauer steuerbar',
+                'cards.chat.allow_duration_help': 'Nutzer dürfen die Effektdauer angeben (1-60 Sekunden).',
+                'cards.chat.command_names_title': 'Eigene Befehlsnamen',
+                'cards.chat.command_weather': 'Weather-Befehl',
+                'cards.chat.command_weather_placeholder': 'weather',
+                'cards.chat.command_weather_help': 'Befehl zum Auslösen von Effekten',
+                'cards.chat.command_list': 'Listen-Befehl',
+                'cards.chat.command_list_placeholder': 'weatherlist',
+                'cards.chat.command_list_help': 'Verfügbare Effekte auflisten',
+                'cards.chat.command_stop': 'Stopp-Befehl',
+                'cards.chat.command_stop_placeholder': 'weatherstop',
+                'cards.chat.command_stop_help': 'Alle Effekte stoppen',
+                'cards.chat.command_usage_title': 'Befehlsnutzung:',
+                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather">weather</span> &lt;effect&gt;</code> - Wettereffekt auslösen',
+                'cards.chat.command_usage_list': '<code>/<span id="displayCmdList">weatherlist</span></code> - Alle Effekte auflisten',
+                'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop">weatherstop</span></code> - Alle Effekte stoppen (nur Abonnenten)',
+                'cards.permissions.title': 'Berechtigungseinstellungen',
+                'cards.permissions.enable': 'Berechtigungssystem aktivieren',
+                'cards.permissions.allow_all': 'Alle Nutzer erlauben',
+                'cards.permissions.followers': '❤️ Follower',
+                'cards.permissions.superfans': '⭐ Superfans',
+                'cards.permissions.subscribers': '👑 Abonnenten',
+                'cards.permissions.team_members': '👥 Team-Mitglieder',
+                'cards.permissions.min_team_level': 'Min. Team-Level',
+                'cards.permissions.top_gifters': 'Top-Gifter (Top N)',
+                'cards.permissions.min_points': 'Mindestpunkte erforderlich',
+                'cards.effects.title': 'Wettereinstellungen',
+                'effects.names.rain': 'Regen',
+                'effects.names.snow': 'Schnee',
+                'effects.names.storm': 'Sturm',
+                'effects.names.fog': 'Nebel',
+                'effects.names.thunder': 'Donner',
+                'effects.names.sunbeam': 'Sonnenstrahlen',
+                'effects.names.glitchclouds': 'Glitch-Wolken',
+                'effects.intensity': 'Intensität',
+                'effects.duration_ms': 'Dauer (ms)',
+                'effects.permanent_label': 'Permanent',
+                'effects.permanent_help': 'Effekt läuft dauerhaft, bis er gestoppt wird.',
+                'effects.test_button': 'Effekt testen',
+                'cards.gifts.title': 'Geschenk-zu-Wetter-Zuordnung',
+                'cards.gifts.description': 'Verknüpfe TikTok-Geschenke mit Wettereffekten. Bei einem verknüpften Geschenk wird der konfigurierte Effekt ausgelöst.',
+                'cards.gifts.load_prompt': 'Klicke auf „Geschenkkatalog laden“, um verfügbare Geschenke zu sehen',
+                'cards.gifts.effect_label': 'Wettereffekt',
+                'cards.gifts.no_mapping': 'Keine Zuordnung',
+                'cards.gifts.save': 'Speichern',
+                'cards.gifts.delete': 'Löschen',
+                'cards.gifts.enabled': 'Aktiv',
+                'cards.gifts.delete_confirm': 'Möchtest du diese Geschenkzuordnung wirklich löschen?',
+                'buttons.load_catalog': 'Geschenkkatalog laden',
+                'buttons.update_catalog': 'Geschenkkatalog aktualisieren',
+                'buttons.refresh_mappings': 'Zuordnungen aktualisieren',
+                'buttons.save_config': 'Konfiguration speichern',
+                'status.config_loaded': 'Konfiguration erfolgreich geladen',
+                'status.error_loading_config': 'Fehler beim Laden der Konfiguration: {{error}}',
+                'status.config_saved': 'Konfiguration erfolgreich gespeichert!',
+                'status.error_saving_config': 'Fehler beim Speichern der Konfiguration: {{error}}',
+                'status.saving_config': 'Speichere...',
+                'status.overlay_copied': 'Overlay-URL kopiert!',
+                'status.effect_triggered': '{{effect}}-Effekt ausgelöst!',
+                'status.effect_trigger_error': 'Fehler beim Auslösen des Effekts: {{error}}',
+                'status.gift_catalog_loading': 'Geschenkkatalog wird geladen...',
+                'status.gift_catalog_empty': 'Kein Geschenkkatalog vorhanden. Verbinde zuerst einen TikTok-Stream.',
+                'status.gift_catalog_loaded': 'Geschenkkatalog geladen: {{count}} Geschenke',
+                'status.gift_catalog_error': 'Fehler beim Laden des Geschenkkatalogs: {{error}}',
+                'status.gift_catalog_updating': 'Geschenkkatalog wird aktualisiert...',
+                'status.gift_catalog_updated': 'Geschenkkatalog erfolgreich aktualisiert',
+                'status.gift_mappings_refreshed': 'Geschenkzuordnungen aktualisiert',
+                'status.gift_mapping_saved': 'Geschenkzuordnung gespeichert!',
+                'status.gift_mapping_deleted': 'Geschenkzuordnung gelöscht!',
+                'status.gift_mapping_error': 'Fehler beim Speichern der Zuordnung: {{error}}',
+                'status.select_effect': 'Bitte wähle einen Wettereffekt'
+            }
+        };
+
+        function translate(key, params = {}) {
+            const locale = window.i18n?.currentLocale || localStorage.getItem('app_locale') || 'en';
+            const fallbackLocale = 'en';
+            const localeTexts = translations[locale] || translations[fallbackLocale] || {};
+            let text = localeTexts[key] || translations[fallbackLocale]?.[key] || key;
+
+            Object.keys(params).forEach((param) => {
+                text = text.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
+            });
+
+            return text;
+        }
+
+        function refreshCommandDisplay() {
+            const weatherCmd = document.getElementById('cmdNameWeather')?.value || 'weather';
+            const listCmd = document.getElementById('cmdNameWeatherlist')?.value || 'weatherlist';
+            const stopCmd = document.getElementById('cmdNameWeatherstop')?.value || 'weatherstop';
+
+            const weatherDisplay = document.getElementById('displayCmdWeather');
+            const listDisplay = document.getElementById('displayCmdList');
+            const stopDisplay = document.getElementById('displayCmdStop');
+
+            if (weatherDisplay) weatherDisplay.textContent = weatherCmd;
+            if (listDisplay) listDisplay.textContent = listCmd;
+            if (stopDisplay) stopDisplay.textContent = stopCmd;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n-key]').forEach((el) => {
+                const key = el.getAttribute('data-i18n-key');
+                const translation = translate(key);
+                if (!translation) return;
+
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.placeholder = translation;
+                } else if (el.dataset.i18nHtml === 'true') {
+                    el.innerHTML = translation;
+                } else {
+                    el.textContent = translation;
+                }
+            });
+
+            if (window.i18n?.currentLocale) {
+                document.documentElement.lang = window.i18n.currentLocale;
+            }
+
+            refreshCommandDisplay();
+        }
+
+        async function initI18n() {
+            try {
+                if (window.I18nClient && !window.i18n) {
+                    window.i18n = new I18nClient();
+                }
+
+                if (window.i18n && !window.i18n.initialized) {
+                    await window.i18n.init();
+                }
+
+                applyTranslations();
+
+                if (window.i18n) {
+                    window.i18n.onLanguageChange(() => {
+                        applyTranslations();
+                    });
+                }
+            } catch (error) {
+                // Fallback to defaults if i18n fails
+                applyTranslations();
+            }
+        }
+
+        // Initialize Socket.IO
+        function initSocket() {
+            socket = io();
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                updateConnectionStatus(true);
+            });
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+                updateConnectionStatus(false);
+            });
+            socket.on('weather:trigger', () => {
+                eventsTriggered++;
+                document.getElementById('eventsTriggered').textContent = eventsTriggered;
+            });
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = connected ? '🟢' : '🔴';
+        }
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/weather/config');
+                const data = await response.json();
+
+                if (data.success) {
+                    const config = data.config;
+
+                    // Main settings
+                    document.getElementById('enabled').checked = config.enabled;
+                    document.getElementById('rateLimitPerMinute').value = config.rateLimitPerMinute || 10;
+                    document.getElementById('rateLimitValue').textContent = config.rateLimitPerMinute || 10;
+                    document.getElementById('useGlobalAuth').checked = config.useGlobalAuth !== false;
+
+                    // Chat Commands
+                    if (config.chatCommands) {
+                        document.getElementById('chatCommandsEnabled').checked = config.chatCommands.enabled === true;
+                        document.getElementById('chatCommandsRequirePermission').checked = config.chatCommands.requirePermission === true;
+                        document.getElementById('chatCommandsAllowIntensity').checked = config.chatCommands.allowIntensityControl === true;
+                        document.getElementById('chatCommandsAllowDuration').checked = config.chatCommands.allowDurationControl === true;
+                        
+                        // Load custom command names
+                        if (config.chatCommands.commandNames) {
+                            document.getElementById('cmdNameWeather').value = config.chatCommands.commandNames.weather || 'weather';
+                            document.getElementById('cmdNameWeatherlist').value = config.chatCommands.commandNames.weatherlist || 'weatherlist';
+                            document.getElementById('cmdNameWeatherstop').value = config.chatCommands.commandNames.weatherstop || 'weatherstop';
+                            
+                            // Update display
+                            document.getElementById('displayCmdWeather').textContent = config.chatCommands.commandNames.weather || 'weather';
+                            document.getElementById('displayCmdList').textContent = config.chatCommands.commandNames.weatherlist || 'weatherlist';
+                            document.getElementById('displayCmdStop').textContent = config.chatCommands.commandNames.weatherstop || 'weatherstop';
+                        }
+                    }
+
+                    // Permissions
+                    document.getElementById('permissionsEnabled').checked = config.permissions.enabled;
+                    document.getElementById('allowAll').checked = config.permissions.allowAll;
+                    document.getElementById('allowFollowers').checked = config.permissions.allowedGroups.followers;
+                    document.getElementById('allowSuperfans').checked = config.permissions.allowedGroups.superfans;
+                    document.getElementById('allowSubscribers').checked = config.permissions.allowedGroups.subscribers;
+                    document.getElementById('allowTeamMembers').checked = config.permissions.allowedGroups.teamMembers;
+                    document.getElementById('minTeamLevel').value = config.permissions.allowedGroups.minTeamLevel;
+                    document.getElementById('minTeamLevelValue').textContent = config.permissions.allowedGroups.minTeamLevel;
+                    document.getElementById('topGifterThreshold').value = config.permissions.topGifterThreshold;
+                    document.getElementById('topGifterValue').textContent = config.permissions.topGifterThreshold;
+                    document.getElementById('minPoints').value = config.permissions.minPoints;
+
+                    // Effects
+                    effects.forEach(effect => {
+                        const effectConfig = config.effects[effect];
+                        document.getElementById(`effect-${effect}-enabled`).checked = effectConfig.enabled;
+                        document.getElementById(`effect-${effect}-intensity`).value = effectConfig.defaultIntensity;
+                        document.getElementById(`effect-${effect}-intensity-val`).textContent = effectConfig.defaultIntensity.toFixed(1);
+                        document.getElementById(`effect-${effect}-duration`).value = effectConfig.defaultDuration;
+                        const permanentToggle = document.getElementById(`effect-${effect}-permanent`);
+                        if (permanentToggle) {
+                            permanentToggle.checked = effectConfig.permanent === true;
+                        }
+                    });
+
+                    showStatus('status.config_loaded', 'success');
+                }
+            } catch (error) {
+                showStatus('status.error_loading_config', 'danger', { error: error.message });
+            }
+        }
+
+        // Save configuration
+        async function saveConfig() {
+            try {
+                const saveBtn = document.getElementById('saveConfig');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = `<span class="spinner"></span> ${translate('status.saving_config')}`;
+                saveBtn.disabled = true;
+
+                const config = {
+                    enabled: document.getElementById('enabled').checked,
+                    rateLimitPerMinute: parseInt(document.getElementById('rateLimitPerMinute').value),
+                    useGlobalAuth: document.getElementById('useGlobalAuth').checked,
+                    chatCommands: {
+                        enabled: document.getElementById('chatCommandsEnabled').checked,
+                        requirePermission: document.getElementById('chatCommandsRequirePermission').checked,
+                        allowIntensityControl: document.getElementById('chatCommandsAllowIntensity').checked,
+                        allowDurationControl: document.getElementById('chatCommandsAllowDuration').checked,
+                        commandNames: {
+                            weather: document.getElementById('cmdNameWeather').value || 'weather',
+                            weatherlist: document.getElementById('cmdNameWeatherlist').value || 'weatherlist',
+                            weatherstop: document.getElementById('cmdNameWeatherstop').value || 'weatherstop'
+                        }
+                    },
+                    permissions: {
+                        enabled: document.getElementById('permissionsEnabled').checked,
+                        allowAll: document.getElementById('allowAll').checked,
+                        allowedGroups: {
+                            followers: document.getElementById('allowFollowers').checked,
+                            superfans: document.getElementById('allowSuperfans').checked,
+                            subscribers: document.getElementById('allowSubscribers').checked,
+                            teamMembers: document.getElementById('allowTeamMembers').checked,
+                            minTeamLevel: parseInt(document.getElementById('minTeamLevel').value)
+                        },
+                        topGifterThreshold: parseInt(document.getElementById('topGifterThreshold').value),
+                        minPoints: parseInt(document.getElementById('minPoints').value)
+                    },
+                    effects: {}
+                };
+
+                effects.forEach(effect => {
+                    config.effects[effect] = {
+                        enabled: document.getElementById(`effect-${effect}-enabled`).checked,
+                        defaultIntensity: parseFloat(document.getElementById(`effect-${effect}-intensity`).value),
+                        defaultDuration: parseInt(document.getElementById(`effect-${effect}-duration`).value),
+                        permanent: document.getElementById(`effect-${effect}-permanent`).checked
+                    };
+                });
+
+                const response = await fetch('/api/weather/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('status.config_saved', 'success');
+                } else {
+                    showStatus('status.error_saving_config', 'danger', { error: data.error });
+                }
+
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            } catch (error) {
+                showStatus('status.error_saving_config', 'danger', { error: error.message });
+                document.getElementById('saveConfig').innerHTML = '<span>💾</span> ' + translate('buttons.save_config');
+                document.getElementById('saveConfig').disabled = false;
+            }
+        }
+
+        // Test effect
+        async function testEffect(action) {
+            try {
+                const intensity = parseFloat(document.getElementById(`effect-${action}-intensity`).value);
+                const duration = parseInt(document.getElementById(`effect-${action}-duration`).value);
+
+                const response = await fetch('/api/weather/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // Don't send username for test requests to bypass permission checks
+                    body: JSON.stringify({ action, intensity, duration })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const effectLabel = translate(`effects.names.${action}`) || action;
+                    showStatus('status.effect_triggered', 'success', { effect: effectLabel });
+                } else {
+                    showStatus('status.effect_trigger_error', 'danger', { error: data.error });
+                }
+            } catch (error) {
+                showStatus('status.effect_trigger_error', 'danger', { error: error.message });
+            }
+        }
+
+        // Show status message
+        function showStatus(messageKey, type, params = {}) {
+            const alert = document.getElementById('statusAlert');
+            alert.className = `alert alert-${type} show`;
+
+            const message = translate(messageKey, params);
+            let icon = '<span>ℹ️</span>';
+            if (type === 'success') icon = '<span>✅</span>';
+            if (type === 'danger') icon = '<span>❌</span>';
+            
+            alert.innerHTML = `${icon} <span>${message}</span>`;
+
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        // Copy overlay URL
+        function copyOverlayUrl() {
+            const input = document.getElementById('overlayUrl');
+            input.select();
+            document.execCommand('copy');
+            showStatus('status.overlay_copied', 'success');
+        }
+
+        // Range input updates
+        document.getElementById('rateLimitPerMinute').addEventListener('input', (e) => {
+            document.getElementById('rateLimitValue').textContent = e.target.value;
+        });
+
+        document.getElementById('minTeamLevel').addEventListener('input', (e) => {
+            document.getElementById('minTeamLevelValue').textContent = e.target.value;
+        });
+
+        document.getElementById('topGifterThreshold').addEventListener('input', (e) => {
+            document.getElementById('topGifterValue').textContent = e.target.value;
+        });
+
+        effects.forEach(effect => {
+            document.getElementById(`effect-${effect}-intensity`).addEventListener('input', (e) => {
+                document.getElementById(`effect-${effect}-intensity-val`).textContent = parseFloat(e.target.value).toFixed(1);
+            });
+        });
+
+        // Save button
+        document.getElementById('saveConfig').addEventListener('click', saveConfig);
+
+        // Copy overlay URL button
+        document.getElementById('copyOverlayUrlBtn').addEventListener('click', copyOverlayUrl);
+        
+        // Update command displays when user types
+        document.getElementById('cmdNameWeather').addEventListener('input', (e) => {
+            document.getElementById('displayCmdWeather').textContent = e.target.value || 'weather';
+        });
+        document.getElementById('cmdNameWeatherlist').addEventListener('input', (e) => {
+            document.getElementById('displayCmdList').textContent = e.target.value || 'weatherlist';
+        });
+        document.getElementById('cmdNameWeatherstop').addEventListener('input', (e) => {
+            document.getElementById('displayCmdStop').textContent = e.target.value || 'weatherstop';
+        });
+
+        // Test effect buttons
+        document.querySelectorAll('[data-test-effect]').forEach(button => {
+            button.addEventListener('click', () => {
+                const effectName = button.getAttribute('data-test-effect');
+                testEffect(effectName);
+            });
+        });
+
+        // =========================
+        // GIFT-TO-WEATHER MAPPING
+        // =========================
+        
+        let giftCatalog = [];
+        let giftMappings = [];
+
+        // Load gift catalog
+        async function loadGiftCatalog() {
+            try {
+                const btn = document.getElementById('loadGiftCatalog');
+                const status = document.getElementById('giftCatalogStatus');
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> ' + translate('status.gift_catalog_loading');
+                status.textContent = translate('status.gift_catalog_loading');
+
+                const response = await fetch('/api/gift-catalog');
+                const data = await response.json();
+
+                if (data.success && data.catalog) {
+                    giftCatalog = data.catalog;
+                    status.textContent = translate('status.gift_catalog_loaded', { count: giftCatalog.length });
+                    
+                    // Also load existing mappings
+                    await loadGiftMappings();
+                    
+                    // Render the gift mapping UI
+                    renderGiftMappingUI();
+                    
+                    showStatus('status.gift_catalog_loaded', 'success', { count: giftCatalog.length });
+                } else {
+                    status.textContent = translate('status.gift_catalog_empty');
+                    showStatus('status.gift_catalog_empty', 'danger');
+                }
+            } catch (error) {
+                document.getElementById('giftCatalogStatus').textContent = translate('status.gift_catalog_error', { error: error.message });
+                showStatus('status.gift_catalog_error', 'danger', { error: error.message });
+            } finally {
+                const btn = document.getElementById('loadGiftCatalog');
+                btn.disabled = false;
+                btn.innerHTML = '<span>🔄</span> ' + translate('buttons.load_catalog');
+            }
+        }
+
+        // Update gift catalog from server
+        async function updateGiftCatalog() {
+            const status = document.getElementById('giftCatalogStatus');
+            const btn = document.getElementById('updateGiftCatalog');
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> ' + translate('status.gift_catalog_updating');
+                status.textContent = translate('status.gift_catalog_updating');
+
+                const response = await fetch('/api/gift-catalog/update', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    status.textContent = translate('status.gift_catalog_updated');
+                    showStatus('status.gift_catalog_updated', 'success');
+                    await loadGiftCatalog();
+                } else {
+                    status.textContent = translate('status.gift_catalog_error', { error: data.error });
+                    showStatus('status.gift_catalog_error', 'danger', { error: data.error });
+                }
+            } catch (error) {
+                status.textContent = translate('status.gift_catalog_error', { error: error.message });
+                showStatus('status.gift_catalog_error', 'danger', { error: error.message });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>⟳</span> ' + translate('buttons.update_catalog');
+            }
+        }
+
+        // Load existing gift mappings
+        async function loadGiftMappings() {
+            try {
+                const response = await fetch('/api/weather/gift-mappings');
+                const data = await response.json();
+                
+                if (data.success) {
+                    giftMappings = data.mappings || [];
+                }
+            } catch (error) {
+                console.error('Error loading gift mappings:', error);
+            }
+        }
+
+        // Render gift mapping UI
+        function renderGiftMappingUI() {
+            const container = document.getElementById('giftMappingList');
+            
+            if (giftCatalog.length === 0) {
+                container.innerHTML = `<p class="help-text">${translate('status.gift_catalog_empty')}</p>`;
+                return;
+            }
+
+            // Create a map of existing mappings
+            const mappingMap = new Map();
+            giftMappings.forEach(m => mappingMap.set(m.gift_id, m));
+
+            let html = '<div class="grid grid-2" style="gap: 1rem;">';
+            
+            giftCatalog.forEach(gift => {
+                const mapping = mappingMap.get(gift.id);
+                const hasMapping = !!mapping;
+                
+                html += `
+                    <div class="effect-card" style="border-left: 3px solid ${hasMapping ? '#10b981' : '#6b7280'};">
+                        <div class="effect-header" style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div class="effect-title">
+                                    ${gift.image_url ? `<img src="${escapeHtml(gift.image_url)}" alt="${escapeHtml(gift.name)}" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 0.5rem;" onerror="this.style.display='none'">` : '🎁'}
+                                    <strong>${escapeHtml(gift.name)}</strong>
+                                </div>
+                                <div class="help-text" style="font-size: 0.75rem; margin-top: 0.25rem;">
+                                    💎 ${gift.diamond_count} diamonds | ID: ${gift.id}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="form-label" data-i18n-key="cards.gifts.effect_label">${translate('cards.gifts.effect_label') || 'Weather Effect'}</label>
+                            <select class="form-select" id="gift-${gift.id}-effect">
+                                <option value="">-- ${translate('cards.gifts.no_mapping') || 'No Mapping'} --</option>
+                                ${effects.map(effect => `
+                                    <option value="${effect}" ${mapping && mapping.weather_effect === effect ? 'selected' : ''}>
+                                        ${translate(`effects.names.${effect}`) || effect.charAt(0).toUpperCase() + effect.slice(1)}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        
+                        <div id="gift-${gift.id}-settings" style="${hasMapping ? '' : 'display: none;'}">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    ${translate('effects.intensity')}
+                                    <span class="range-value" id="gift-${gift.id}-intensity-val">${mapping ? mapping.intensity.toFixed(1) : '0.5'}</span>
+                                </label>
+                                <input type="range" class="range-slider" id="gift-${gift.id}-intensity" min="0" max="1" step="0.1" value="${mapping ? mapping.intensity : 0.5}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">${translate('effects.duration_ms')}</label>
+                                <input type="number" class="form-control" id="gift-${gift.id}-duration" value="${mapping ? mapping.duration : 10000}" min="1000" max="60000">
+                            </div>
+                            
+                            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <label class="switch">
+                                    <input type="checkbox" id="gift-${gift.id}-enabled" ${!mapping || mapping.enabled ? 'checked' : ''}>
+                                    <span class="slider"></span>
+                                </label>
+                                <label class="form-label" style="margin: 0;">${translate('cards.gifts.enabled') || 'Enabled'}</label>
+                            </div>
+                            
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                <button class="btn btn-primary btn-sm save-gift-btn" style="flex: 1;" data-gift-id="${gift.id}">
+                                    <span>💾</span> ${translate('cards.gifts.save') || 'Save'}
+                                </button>
+                                <button class="btn btn-danger btn-sm delete-gift-btn" data-gift-id="${gift.id}">
+                                    <span>🗑️</span> ${translate('cards.gifts.delete') || 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+
+            // Add event listeners for the dropdowns
+            giftCatalog.forEach(gift => {
+                const select = document.getElementById(`gift-${gift.id}-effect`);
+                const settings = document.getElementById(`gift-${gift.id}-settings`);
+                const intensitySlider = document.getElementById(`gift-${gift.id}-intensity`);
+                const intensityVal = document.getElementById(`gift-${gift.id}-intensity-val`);
+                
+                if (select) {
+                    select.addEventListener('change', (e) => {
+                        if (e.target.value) {
+                            settings.style.display = '';
+                        } else {
+                            settings.style.display = 'none';
+                        }
+                    });
+                }
+                
+                if (intensitySlider && intensityVal) {
+                    intensitySlider.addEventListener('input', (e) => {
+                        intensityVal.textContent = parseFloat(e.target.value).toFixed(1);
+                    });
+                }
+            });
+
+            // Add event listeners for save and delete buttons
+            document.querySelectorAll('.save-gift-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const giftId = parseInt(e.currentTarget.dataset.giftId);
+                    saveGiftMapping(giftId);
+                });
+            });
+
+            document.querySelectorAll('.delete-gift-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const giftId = parseInt(e.currentTarget.dataset.giftId);
+                    deleteGiftMapping(giftId);
+                });
+            });
+
+            applyTranslations();
+        }
+
+        // Save gift mapping
+        async function saveGiftMapping(giftId) {
+            try {
+                const weatherEffect = document.getElementById(`gift-${giftId}-effect`).value;
+                
+                if (!weatherEffect) {
+                    showStatus('status.select_effect', 'danger');
+                    return;
+                }
+                
+                const intensity = parseFloat(document.getElementById(`gift-${giftId}-intensity`).value);
+                const duration = parseInt(document.getElementById(`gift-${giftId}-duration`).value);
+                const enabled = document.getElementById(`gift-${giftId}-enabled`).checked;
+
+                const response = await fetch('/api/weather/gift-mappings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        giftId,
+                        weatherEffect,
+                        intensity,
+                        duration,
+                        enabled
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('status.gift_mapping_saved', 'success');
+                    await loadGiftMappings();
+                    renderGiftMappingUI();
+                } else {
+                    showStatus('status.gift_mapping_error', 'danger', { error: data.error });
+                }
+            } catch (error) {
+                showStatus('status.gift_mapping_error', 'danger', { error: error.message });
+            }
+        }
+
+        // Delete gift mapping
+        async function deleteGiftMapping(giftId) {
+            try {
+                if (!confirm(translate('cards.gifts.delete_confirm') || 'Are you sure you want to delete this gift mapping?')) {
+                    return;
+                }
+
+                const response = await fetch(`/api/weather/gift-mappings/${giftId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('status.gift_mapping_deleted', 'success');
+                    await loadGiftMappings();
+                    renderGiftMappingUI();
+                } else {
+                    showStatus('status.gift_mapping_error', 'danger', { error: data.error });
+                }
+            } catch (error) {
+                showStatus('status.gift_mapping_error', 'danger', { error: error.message });
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Event listeners for gift mapping buttons
+        document.getElementById('loadGiftCatalog').addEventListener('click', loadGiftCatalog);
+        document.getElementById('updateGiftCatalog').addEventListener('click', updateGiftCatalog);
+        document.getElementById('refreshGiftMappings').addEventListener('click', async () => {
+            await loadGiftMappings();
+            renderGiftMappingUI();
+            showStatus('status.gift_mappings_refreshed', 'success');
+        });
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            await initI18n();
+            await loadConfig();
+            initSocket();
+
+            // Set overlay URL
+            const overlayUrl = `${window.location.origin}/weather-control/overlay`;
+            document.getElementById('overlayUrl').value = overlayUrl;
+        });
+    </script>
+</body>
+</html>

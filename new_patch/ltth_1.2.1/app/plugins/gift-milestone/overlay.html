@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Milestone Celebration Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #milestone-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #milestone-container.active {
+            display: flex;
+        }
+
+        .celebration-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: celebrationEnter 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes celebrationEnter {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes celebrationExit {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        .celebration-content.exiting {
+            animation: celebrationExit 0.5s ease-in-out;
+        }
+
+        #milestone-thank-you {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4),
+                3px 3px 6px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+            text-align: center;
+            animation: titlePulse 1s ease-in-out infinite;
+        }
+
+        #milestone-title {
+            font-size: 4em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4),
+                3px 3px 6px rgba(0, 0, 0, 0.8);
+            margin-bottom: 30px;
+            text-align: center;
+            animation: titlePulse 1s ease-in-out infinite;
+        }
+
+        #milestone-tier-status {
+            font-size: 2em;
+            font-weight: bold;
+            color: #fff;
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4),
+                3px 3px 6px rgba(0, 0, 0, 0.8);
+            margin-top: 20px;
+            text-align: center;
+            animation: titlePulse 1s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        #milestone-media-container {
+            position: relative;
+            max-width: 80vw;
+            max-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #milestone-gif {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            display: none;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        }
+
+        #milestone-video {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            display: none;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        }
+
+        #milestone-audio {
+            display: none;
+        }
+
+        /* Confetti particles */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confettiFall linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Fireworks effect */
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: fireworkExplosion 1s ease-out forwards;
+        }
+
+        @keyframes fireworkExplosion {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+            }
+        }
+
+        /* Sparkle effect */
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkleFloat 2s ease-out forwards;
+        }
+
+        @keyframes sparkleFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <div id="milestone-container">
+        <div class="celebration-content" id="celebrationContent">
+            <div id="milestone-thank-you"></div>
+            <div id="milestone-title">🎯 Milestone erreicht! 🎉</div>
+            <div id="milestone-media-container">
+                <img id="milestone-gif" alt="Milestone GIF">
+                <video id="milestone-video" autoplay muted playsinline></video>
+            </div>
+            <div id="milestone-tier-status"></div>
+        </div>
+    </div>
+
+    <audio id="milestone-audio"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/plugins/gift-milestone/overlay.js"></script>
+</body>
+</html>

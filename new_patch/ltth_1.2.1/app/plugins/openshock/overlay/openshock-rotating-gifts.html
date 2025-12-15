@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShock - Rotating Gifts Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gift-container {
+            background: linear-gradient(135deg, rgba(139, 0, 139, 0.9), rgba(75, 0, 130, 0.9));
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            min-width: 400px;
+            max-width: 500px;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .gift-container.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .gift-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .gift-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+            margin-bottom: 10px;
+        }
+
+        .gift-icon-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .gift-icon {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .gift-icon.placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .gift-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .intensity-bar {
+            width: 150px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .intensity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #FF5722);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .no-gifts {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 20px;
+            padding: 40px;
+        }
+
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: #fff;
+            transform: scale(1.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .gift-container.active {
+            animation: pulse 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="gift-container" id="giftContainer">
+        <div class="gift-header">
+            <div class="gift-name" id="giftName">Loading...</div>
+        </div>
+
+        <div class="gift-icon-wrapper">
+            <img class="gift-icon" id="giftIcon" src="" alt="Gift" style="display: none;">
+            <div class="gift-icon placeholder" id="giftIconPlaceholder">🎁</div>
+        </div>
+
+        <div class="gift-details">
+            <div class="detail-row">
+                <span class="detail-label">Pattern:</span>
+                <span class="detail-value" id="patternName">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Duration:</span>
+                <span class="detail-value" id="duration">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Intensity:</span>
+                <div class="intensity-bar">
+                    <div class="intensity-fill" id="intensityFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-dots" id="progressDots"></div>
+    </div>
+
+    <div class="no-gifts" id="noGifts" style="display: none;">
+        No active gift mappings configured
+    </div>
+
+    <script>
+        // Configuration
+        const ROTATION_INTERVAL = 7000; // 7 seconds per gift
+        const TRANSITION_DURATION = 500; // 0.5 seconds fade transition
+
+        // State
+        let gifts = [];
+        let currentIndex = 0;
+        let rotationTimer = null;
+        let socket = null;
+
+        // Initialize Socket.io connection
+        function initSocket() {
+            socket = io();
+
+            socket.on('connect', () => {
+                console.log('[Rotating Gifts] Connected to server');
+                // Request initial gift data
+                socket.emit('openshock:request:gifts');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('[Rotating Gifts] Disconnected from server');
+            });
+
+            // Receive initial gift list
+            socket.on('openshock:gifts:active_list', (data) => {
+                console.log('[Rotating Gifts] Received gift list:', data);
+                updateGiftList(data.gifts || []);
+            });
+
+            // Receive gift updates
+            socket.on('openshock:gifts:updated', () => {
+                console.log('[Rotating Gifts] Gifts updated, refreshing...');
+                // Request updated gift data
+                socket.emit('openshock:request:gifts');
+            });
+        }
+
+        // Update gift list
+        function updateGiftList(newGifts) {
+            gifts = newGifts.filter(g => g.active);
+            currentIndex = 0;
+
+            if (gifts.length === 0) {
+                showNoGifts();
+            } else {
+                hideNoGifts();
+                renderProgressDots();
+                showGift(0);
+                startRotation();
+            }
+        }
+
+        // Show "no gifts" message
+        function showNoGifts() {
+            document.getElementById('giftContainer').style.display = 'none';
+            document.getElementById('noGifts').style.display = 'block';
+            stopRotation();
+        }
+
+        // Hide "no gifts" message
+        function hideNoGifts() {
+            document.getElementById('giftContainer').style.display = 'block';
+            document.getElementById('noGifts').style.display = 'none';
+        }
+
+        // Render progress dots
+        function renderProgressDots() {
+            const dotsContainer = document.getElementById('progressDots');
+            dotsContainer.innerHTML = '';
+
+            if (gifts.length <= 1) {
+                return; // Don't show dots if only one gift or none
+            }
+
+            gifts.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (index === currentIndex) {
+                    dot.classList.add('active');
+                }
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        // Update active dot
+        function updateActiveDot() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                if (index === currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // Show specific gift
+        function showGift(index) {
+            if (gifts.length === 0) {
+                showNoGifts();
+                return;
+            }
+
+            const gift = gifts[index];
+            const container = document.getElementById('giftContainer');
+
+            // Fade out
+            container.classList.remove('active');
+
+            setTimeout(() => {
+                // Update content
+                document.getElementById('giftName').textContent = gift.giftName || 'Unknown Gift';
+                
+                // Update icon
+                const iconImg = document.getElementById('giftIcon');
+                const iconPlaceholder = document.getElementById('giftIconPlaceholder');
+                
+                if (gift.giftIconUrl) {
+                    iconImg.src = gift.giftIconUrl;
+                    iconImg.style.display = 'block';
+                    iconPlaceholder.style.display = 'none';
+                } else {
+                    iconImg.style.display = 'none';
+                    iconPlaceholder.style.display = 'flex';
+                }
+
+                // Update pattern info
+                document.getElementById('patternName').textContent = gift.patternName || 'Direct Command';
+                
+                // Format duration
+                const durationMs = gift.patternDurationMs || 0;
+                const durationSec = (durationMs / 1000).toFixed(1);
+                document.getElementById('duration').textContent = `${durationSec}s`;
+
+                // Update intensity bar
+                const intensity = gift.intensity || 0;
+                document.getElementById('intensityFill').style.width = `${intensity}%`;
+
+                // Update active dot
+                updateActiveDot();
+
+                // Fade in
+                setTimeout(() => {
+                    container.classList.add('active');
+                }, 50);
+            }, TRANSITION_DURATION);
+        }
+
+        // Start rotation
+        function startRotation() {
+            stopRotation(); // Clear any existing timer
+
+            if (gifts.length <= 1) {
+                return; // Don't rotate if only one gift
+            }
+
+            rotationTimer = setInterval(() => {
+                currentIndex = (currentIndex + 1) % gifts.length;
+                showGift(currentIndex);
+            }, ROTATION_INTERVAL);
+        }
+
+        // Stop rotation
+        function stopRotation() {
+            if (rotationTimer) {
+                clearInterval(rotationTimer);
+                rotationTimer = null;
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            console.log('[Rotating Gifts] Overlay loaded');
+            initSocket();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            stopRotation();
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "openshock": {
+    "title": "OpenShock Integration",
+    "subtitle": "Hardware Shock Control",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable OpenShock",
+      "api_url": "API URL",
+      "api_token": "API Token",
+      "shocker_id": "Shocker ID",
+      "test_connection": "Test Connection",
+      "save": "Enregistrer les Paramètres"
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift": "Gift Events",
+      "follow": "Follow Events",
+      "subscribe": "Subscribe Events",
+      "threshold": "Coin Threshold",
+      "intensity": "Shock Intensity (1-100)",
+      "duration": "Duration (ms)",
+      "cooldown": "Cooldown (seconds)"
+    },
+    "safety": {
+      "title": "Safety Settings",
+      "max_intensity": "Maximum Intensity",
+      "max_duration": "Maximum Duration (ms)",
+      "daily_limit": "Daily Shock Limit",
+      "require_confirmation": "Require Manual Confirmation"
+    },
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "testing": "Testing Connection...",
+      "shocks_today": "Shocks Today",
+      "last_shock": "Last Shock"
+    },
+    "controls": {
+      "test_shock": "Send Test Shock",
+      "emergency_stop": "Emergency Stop"
+    }
+  }
+}

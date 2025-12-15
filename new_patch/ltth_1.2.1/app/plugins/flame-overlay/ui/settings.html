@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Visual Effects Overlay - Einstellungen</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #ff6600;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .section-title {
+            color: #ff9933;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ff6600;
+            padding-bottom: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #ff6600;
+        }
+        
+        input[type="color"] {
+            width: 100%;
+            height: 50px;
+            padding: 5px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #ff6600;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #ff6600;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .slider-value {
+            min-width: 60px;
+            text-align: right;
+            color: #ff9933;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ff6600;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: #ff6600;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            background: #ff8533;
+        }
+        
+        .btn-secondary {
+            background: #555;
+        }
+        
+        .btn-secondary:hover {
+            background: #666;
+        }
+        
+        .info-box {
+            background: #333;
+            border-left: 4px solid #ff6600;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #ff9933;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #bbb;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .info-box code {
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ff9933;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #2d5016;
+            color: #a3e635;
+            border: 1px solid #4d7c0f;
+        }
+        
+        .status.error {
+            background: #5c1a1a;
+            color: #ef4444;
+            border: 1px solid #991b1b;
+        }
+        
+        /* Preview Styles */
+        :root {
+            --aspect-ratio-portrait: 177.78%; /* 9:16 */
+            --aspect-ratio-landscape: 56.25%; /* 16:9 */
+        }
+        
+        .preview-container {
+            position: relative;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        
+        .preview-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: var(--aspect-ratio-portrait);
+            background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px;
+        }
+        
+        .preview-wrapper.landscape {
+            padding-bottom: var(--aspect-ratio-landscape);
+        }
+        
+        .preview-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .preview-controls button {
+            padding: 8px 16px;
+            background: #444;
+            color: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        .preview-controls button:hover {
+            background: #555;
+        }
+        
+        .preview-controls button.active {
+            background: #ff6600;
+            color: white;
+        }
+        
+        .frame-position-controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        
+        .frame-position-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .frame-position-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .frame-position-input label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 0;
+        }
+        
+        .frame-position-input input {
+            padding: 6px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .frame-position-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 TikTok Visual Effects Overlay</h1>
+        <p class="subtitle">Konfiguriere dein WebGL Effekt-Overlay mit 4 verschiedenen visuellen Modi für TikTok Livestreams</p>
+        
+        <div id="status" class="status"></div>
+        
+        <!-- Resolution Settings -->
+        <div class="section">
+            <h2 class="section-title">🎭 Effekt-Typ</h2>
+            
+            <div class="form-group">
+                <label for="effectType">Wähle deinen Effekt:</label>
+                <select id="effectType">
+                    <option value="flames">🔥 Flammen (Klassisch)</option>
+                    <option value="particles">✨ Partikel-Burst</option>
+                    <option value="energy">⚡ Energie-Wellen</option>
+                    <option value="lightning">⚡ Elektrische Blitze</option>
+                </select>
+            </div>
+            
+            <p style="color: #888; font-size: 13px; margin-top: 10px;">
+                <strong>Tipp:</strong> Jeder Effekt verwendet unterschiedliche Rendering-Techniken für maximale visuelle Wirkung!
+            </p>
+        </div>
+        
+        <!-- Real-time Preview -->
+        <div class="section">
+            <h2 class="section-title">👁️ Echtzeit-Vorschau</h2>
+            
+            <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+                Die Vorschau zeigt deine Einstellungen in Echtzeit. Alle Änderungen werden sofort sichtbar.
+            </p>
+            
+            <div class="preview-controls">
+                <button onclick="togglePreview()" id="previewToggle">▶️ Vorschau starten</button>
+                <button onclick="refreshPreview()">🔄 Neu laden</button>
+                <button onclick="toggleFullscreen()">⛶ Vollbild</button>
+            </div>
+            
+            <div class="preview-container" id="previewContainer" style="display: none;">
+                <div class="preview-wrapper" id="previewWrapper">
+                    <iframe id="previewIframe" class="preview-iframe" src="about:blank"></iframe>
+                </div>
+            </div>
+            
+            <!-- Frame Positioning Controls -->
+            <div class="frame-position-controls" id="framePositionControls" style="display: none;">
+                <h3 style="color: #ff9933; font-size: 14px; margin-bottom: 10px;">📍 Rahmen-Positionierung (in %)</h3>
+                <p style="color: #888; font-size: 12px; margin-bottom: 10px;">
+                    Definiere die Position und Größe des Effekt-Rahmens innerhalb der Vorschau
+                </p>
+                <div class="frame-position-grid">
+                    <div class="frame-position-input">
+                        <label>X-Position (%)</label>
+                        <input type="number" id="frameX" min="0" max="100" value="0" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label>Y-Position (%)</label>
+                        <input type="number" id="frameY" min="0" max="100" value="0" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label>Breite (%)</label>
+                        <input type="number" id="frameWidth" min="10" max="100" value="100" step="1">
+                    </div>
+                    <div class="frame-position-input">
+                        <label>Höhe (%)</label>
+                        <input type="number" id="frameHeight" min="10" max="100" value="100" step="1">
+                    </div>
+                </div>
+                <button class="btn" onclick="applyFramePosition()" style="margin-top: 10px;">Anwenden</button>
+            </div>
+        </div>
+        
+        <!-- Resolution Settings -->
+        <div class="section">
+            <h2 class="section-title">📐 Auflösung & Format</h2>
+            
+            <div class="form-group">
+                <label for="resolutionPreset">Resolution Preset:</label>
+                <select id="resolutionPreset">
+                    <option value="tiktok-portrait">TikTok Portrait (720×1280)</option>
+                    <option value="tiktok-landscape">TikTok Landscape (1280×720)</option>
+                    <option value="hd-portrait">HD Portrait (1080×1920)</option>
+                    <option value="hd-landscape">HD Landscape (1920×1080)</option>
+                    <option value="2k-portrait">2K Portrait (1440×2560)</option>
+                    <option value="2k-landscape">2K Landscape (2560×1440)</option>
+                    <option value="4k-portrait">4K Portrait (2160×3840)</option>
+                    <option value="4k-landscape">4K Landscape (3840×2160)</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            
+            <div class="grid-2" id="customResolutionGroup" style="display: none;">
+                <div class="form-group">
+                    <label for="customWidth">Breite (px):</label>
+                    <input type="number" id="customWidth" min="100" max="3840" value="720">
+                </div>
+                <div class="form-group">
+                    <label for="customHeight">Höhe (px):</label>
+                    <input type="number" id="customHeight" min="100" max="2160" value="1280">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Frame Settings -->
+        <div class="section">
+            <h2 class="section-title">🖼️ Rahmen Einstellungen</h2>
+            
+            <div class="form-group">
+                <label for="frameMode">Rahmen Position:</label>
+                <select id="frameMode">
+                    <option value="bottom">Unten</option>
+                    <option value="top">Oben</option>
+                    <option value="sides">Seiten (Links & Rechts)</option>
+                    <option value="all">Rundherum (Alle Kanten)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="frameThickness">Rahmenbreite: <span class="slider-value" id="frameThicknessValue">150 px</span></label>
+                <input type="range" id="frameThickness" min="50" max="500" value="150" step="10">
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="maskOnlyEdges" checked>
+                    <label for="maskOnlyEdges">Nur Kanten maskieren (weicherer Übergang)</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flame Appearance -->
+        <div class="section">
+            <h2 class="section-title">🎨 Flammen Aussehen</h2>
+            
+            <div class="form-group">
+                <label for="flameColor">Flammenfarbe:</label>
+                <input type="color" id="flameColor" value="#ff6600">
+            </div>
+            
+            <div class="form-group">
+                <label for="backgroundTint">Hintergrund Tint:</label>
+                <input type="color" id="backgroundTint" value="#000000">
+            </div>
+            
+            <div class="form-group">
+                <label for="backgroundTintOpacity">Hintergrund Transparenz: <span class="slider-value" id="backgroundTintOpacityValue">0.0</span></label>
+                <input type="range" id="backgroundTintOpacity" min="0" max="1" value="0" step="0.1">
+            </div>
+        </div>
+        
+        <!-- Flame Animation -->
+        <div class="section">
+            <h2 class="section-title">⚡ Animation</h2>
+            
+            <div class="form-group">
+                <label for="flameSpeed">Flammen Geschwindigkeit: <span class="slider-value" id="flameSpeedValue">0.5</span></label>
+                <input type="range" id="flameSpeed" min="0.1" max="2.0" value="0.5" step="0.1">
+            </div>
+            
+            <div class="form-group">
+                <label for="flameIntensity">Flammen Intensität (Turbulenz): <span class="slider-value" id="flameIntensityValue">1.3</span></label>
+                <input type="range" id="flameIntensity" min="0.5" max="3.0" value="1.3" step="0.1">
+            </div>
+            
+            <div class="form-group">
+                <label for="flameBrightness">Helligkeit: <span class="slider-value" id="flameBrightnessValue">0.25</span></label>
+                <input type="range" id="flameBrightness" min="0.1" max="1.0" value="0.25" step="0.05">
+            </div>
+        </div>
+        
+        <!-- Visual Effects -->
+        <div class="section">
+            <h2 class="section-title">✨ Visuelle Effekte</h2>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableGlow" checked>
+                    <label for="enableGlow">Glow-Effekt aktivieren</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="enableAdditiveBlend" checked>
+                    <label for="enableAdditiveBlend">Additive Blending (hellere Flammen)</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="highDPI" checked>
+                    <label for="highDPI">High DPI Support (bessere Qualität auf 4K)</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="section">
+            <button class="btn" onclick="saveConfig()">💾 Einstellungen speichern</button>
+            <button class="btn btn-secondary" onclick="loadConfig()">🔄 Neu laden</button>
+            <button class="btn btn-secondary" onclick="openOverlay()">👁️ Overlay öffnen</button>
+        </div>
+        
+        <!-- Installation Guide -->
+        <div class="info-box">
+            <h3>📋 OBS Browser Source Einrichtung</h3>
+            <p><strong>1.</strong> In OBS eine neue Browser Source erstellen</p>
+            <p><strong>2.</strong> URL eingeben: <code id="overlayUrl">http://localhost:3000/flame-overlay/overlay</code></p>
+            <p><strong>3.</strong> Breite und Höhe entsprechend deiner Auswahl einstellen</p>
+            <p><strong>4.</strong> "Shutdown source when not visible" deaktivieren (für bessere Performance)</p>
+            <p><strong>5.</strong> Transparenter Hintergrund ist bereits aktiviert ✅</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>💡 Tipps</h3>
+            <p>• <strong>Rahmen Position:</strong> Wähle "Unten" für klassisches TikTok-Layout, "Rundherum" für volle Immersion</p>
+            <p>• <strong>Intensität:</strong> Höhere Werte erzeugen wildere, chaotischere Flammen</p>
+            <p>• <strong>Geschwindigkeit:</strong> Niedrigere Werte für ruhige, höhere für energetische Flammen</p>
+            <p>• <strong>Additive Blending:</strong> Macht Flammen heller und leuchtender (empfohlen)</p>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Configuration constants
+        const LANDSCAPE_PRESETS = ['tiktok-landscape', 'hd-landscape', '2k-landscape', '4k-landscape'];
+        const REALTIME_UPDATE_ELEMENTS = ['effectType', 'frameMode', 'flameColor', 'backgroundTint', 
+                                          'enableGlow', 'enableAdditiveBlend', 'maskOnlyEdges', 'highDPI'];
+        const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
+        
+        // Initialize socket.io with error handling
+        let socket = null;
+        try {
+            if (typeof io !== 'undefined') {
+                socket = io();
+                socket.on('connect_error', (error) => {
+                    console.warn('Socket.io connection error:', error);
+                });
+                
+                // Listen for config updates to refresh preview
+                socket.on('flame-overlay:config-update', (data) => {
+                    console.log('Config updated via socket:', data);
+                    if (isPreviewActive()) {
+                        // Preview will auto-update via its own socket listener
+                    }
+                });
+            } else {
+                console.warn('Socket.io not loaded - some features may not work');
+            }
+        } catch (error) {
+            console.error('Failed to initialize socket.io:', error);
+        }
+        
+        // Preview state
+        let previewActive = false;
+        
+        // Check if preview is active
+        function isPreviewActive() {
+            return previewActive;
+        }
+        
+        // Toggle preview on/off
+        function togglePreview() {
+            const container = document.getElementById('previewContainer');
+            const iframe = document.getElementById('previewIframe');
+            const toggle = document.getElementById('previewToggle');
+            const positionControls = document.getElementById('framePositionControls');
+            
+            if (!previewActive) {
+                // Start preview
+                iframe.src = '/flame-overlay/overlay';
+                container.style.display = 'block';
+                positionControls.style.display = 'block';
+                toggle.textContent = '⏸️ Vorschau stoppen';
+                previewActive = true;
+                updatePreviewAspectRatio();
+            } else {
+                // Stop preview
+                iframe.src = 'about:blank';
+                container.style.display = 'none';
+                positionControls.style.display = 'none';
+                toggle.textContent = '▶️ Vorschau starten';
+                previewActive = false;
+            }
+        }
+        
+        // Refresh preview
+        function refreshPreview() {
+            const iframe = document.getElementById('previewIframe');
+            if (previewActive) {
+                // Reliable iframe reload
+                const currentSrc = iframe.src;
+                iframe.src = 'about:blank';
+                setTimeout(() => {
+                    iframe.src = currentSrc;
+                }, 50);
+            }
+        }
+        
+        // Toggle fullscreen preview
+        function toggleFullscreen() {
+            const container = document.getElementById('previewContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Update preview aspect ratio based on resolution
+        function updatePreviewAspectRatio() {
+            const preset = document.getElementById('resolutionPreset').value;
+            const wrapper = document.getElementById('previewWrapper');
+            
+            const isLandscape = LANDSCAPE_PRESETS.includes(preset);
+            
+            if (isLandscape) {
+                wrapper.classList.add('landscape');
+            } else {
+                wrapper.classList.remove('landscape');
+            }
+        }
+        
+        // Apply frame position
+        function applyFramePosition() {
+            // collectConfig already includes framePositions from the input fields
+            const config = collectConfig();
+            
+            // Save complete config
+            fetch('/api/flame-overlay/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      showStatus('✅ Rahmenposition aktualisiert!', 'success');
+                  } else {
+                      showStatus('❌ Fehler: ' + (data.error || 'Unbekannter Fehler'), 'error');
+                  }
+              })
+              .catch(error => {
+                  showStatus('❌ Fehler beim Speichern: ' + error.message, 'error');
+              });
+        }
+        
+        // Update slider value displays and trigger real-time updates
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const valueSpan = document.getElementById(e.target.id + 'Value');
+                if (valueSpan) {
+                    let value = e.target.value;
+                    if (e.target.id === 'frameThickness') {
+                        value += ' px';
+                    }
+                    valueSpan.textContent = value;
+                }
+                
+                // Auto-update preview in real-time
+                if (previewActive) {
+                    debouncedSaveConfig();
+                }
+            });
+        });
+        
+        // Debounced save for real-time updates
+        let saveTimeout = null;
+        function debouncedSaveConfig() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveConfigSilent();
+            }, 300);
+        }
+        
+        // Save config without showing status message (for real-time updates)
+        async function saveConfigSilent() {
+            try {
+                const config = collectConfig();
+                
+                const response = await fetch('/api/flame-overlay/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                await response.json();
+            } catch (error) {
+                console.error('Error saving config:', error);
+            }
+        }
+        
+        // Collect config from form
+        function collectConfig() {
+            // Get and validate frame position values
+            const frameX = Math.max(0, Math.min(100, parseFloat(document.getElementById('frameX').value) || 0));
+            const frameY = Math.max(0, Math.min(100, parseFloat(document.getElementById('frameY').value) || 0));
+            const frameWidth = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameWidth').value) || 100));
+            const frameHeight = Math.max(10, Math.min(100, parseFloat(document.getElementById('frameHeight').value) || 100));
+            
+            return {
+                effectType: document.getElementById('effectType').value,
+                resolutionPreset: document.getElementById('resolutionPreset').value,
+                customWidth: parseInt(document.getElementById('customWidth').value),
+                customHeight: parseInt(document.getElementById('customHeight').value),
+                frameMode: document.getElementById('frameMode').value,
+                frameThickness: parseFloat(document.getElementById('frameThickness').value),
+                maskOnlyEdges: document.getElementById('maskOnlyEdges').checked,
+                flameColor: document.getElementById('flameColor').value,
+                backgroundTint: document.getElementById('backgroundTint').value,
+                backgroundTintOpacity: parseFloat(document.getElementById('backgroundTintOpacity').value),
+                flameSpeed: parseFloat(document.getElementById('flameSpeed').value),
+                flameIntensity: parseFloat(document.getElementById('flameIntensity').value),
+                flameBrightness: parseFloat(document.getElementById('flameBrightness').value),
+                enableGlow: document.getElementById('enableGlow').checked,
+                enableAdditiveBlend: document.getElementById('enableAdditiveBlend').checked,
+                highDPI: document.getElementById('highDPI').checked,
+                // Currently single-frame only, but array structure supports future multi-frame feature
+                framePositions: [{
+                    x: frameX,
+                    y: frameY,
+                    width: frameWidth,
+                    height: frameHeight
+                }]
+            };
+        }
+        
+        // Toggle custom resolution inputs and trigger updates
+        document.getElementById('resolutionPreset').addEventListener('change', (e) => {
+            const customGroup = document.getElementById('customResolutionGroup');
+            customGroup.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+            updatePreviewAspectRatio();
+            
+            // Auto-update preview
+            if (previewActive) {
+                debouncedSaveConfig();
+            }
+        });
+        
+        // Add real-time listeners to select, checkbox, and color inputs
+        REALTIME_UPDATE_ELEMENTS.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', () => {
+                    if (previewActive) {
+                        debouncedSaveConfig();
+                    }
+                });
+            }
+        });
+        
+        // Add real-time listeners to custom resolution inputs
+        CUSTOM_RESOLUTION_INPUTS.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => {
+                    if (previewActive) {
+                        debouncedSaveConfig();
+                    }
+                });
+            }
+        });
+        
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/flame-overlay/config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const config = data.config;
+                    
+                    // Effect Type
+                    document.getElementById('effectType').value = config.effectType || 'flames';
+                    
+                    // Resolution
+                    document.getElementById('resolutionPreset').value = config.resolutionPreset || 'tiktok-portrait';
+                    document.getElementById('customWidth').value = config.customWidth || 720;
+                    document.getElementById('customHeight').value = config.customHeight || 1280;
+                    
+                    // Frame
+                    document.getElementById('frameMode').value = config.frameMode || 'bottom';
+                    document.getElementById('frameThickness').value = config.frameThickness || 150;
+                    document.getElementById('frameThicknessValue').textContent = (config.frameThickness || 150) + ' px';
+                    document.getElementById('maskOnlyEdges').checked = config.maskOnlyEdges !== false;
+                    
+                    // Appearance
+                    document.getElementById('flameColor').value = config.flameColor || '#ff6600';
+                    document.getElementById('backgroundTint').value = config.backgroundTint || '#000000';
+                    document.getElementById('backgroundTintOpacity').value = config.backgroundTintOpacity || 0;
+                    document.getElementById('backgroundTintOpacityValue').textContent = config.backgroundTintOpacity || 0;
+                    
+                    // Animation
+                    document.getElementById('flameSpeed').value = config.flameSpeed || 0.5;
+                    document.getElementById('flameSpeedValue').textContent = config.flameSpeed || 0.5;
+                    document.getElementById('flameIntensity').value = config.flameIntensity || 1.3;
+                    document.getElementById('flameIntensityValue').textContent = config.flameIntensity || 1.3;
+                    document.getElementById('flameBrightness').value = config.flameBrightness || 0.25;
+                    document.getElementById('flameBrightnessValue').textContent = config.flameBrightness || 0.25;
+                    
+                    // Effects
+                    document.getElementById('enableGlow').checked = config.enableGlow !== false;
+                    document.getElementById('enableAdditiveBlend').checked = config.enableAdditiveBlend !== false;
+                    document.getElementById('highDPI').checked = config.highDPI !== false;
+                    
+                    // Frame position
+                    if (config.framePositions && config.framePositions.length > 0) {
+                        document.getElementById('frameX').value = config.framePositions[0].x || 0;
+                        document.getElementById('frameY').value = config.framePositions[0].y || 0;
+                        document.getElementById('frameWidth').value = config.framePositions[0].width || 100;
+                        document.getElementById('frameHeight').value = config.framePositions[0].height || 100;
+                    }
+                    
+                    // Trigger custom resolution visibility
+                    document.getElementById('resolutionPreset').dispatchEvent(new Event('change'));
+                    
+                    showStatus('Konfiguration geladen', 'success');
+                }
+            } catch (error) {
+                showStatus('Fehler beim Laden: ' + error.message, 'error');
+            }
+        }
+        
+        // Save configuration
+        async function saveConfig() {
+            try {
+                const config = collectConfig();
+                
+                const response = await fetch('/api/flame-overlay/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('✅ Einstellungen gespeichert!', 'success');
+                } else {
+                    showStatus('Fehler: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Fehler beim Speichern: ' + error.message, 'error');
+            }
+        }
+        
+        // Open overlay in new window
+        function openOverlay() {
+            window.open('/flame-overlay/overlay', 'FlameOverlay', 'width=720,height=1280');
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Update overlay URL based on current location
+        const overlayUrl = window.location.origin + '/flame-overlay/overlay';
+        document.getElementById('overlayUrl').textContent = overlayUrl;
+        
+        // Load config on page load
+        loadConfig();
+    </script>
+</body>
+</html>

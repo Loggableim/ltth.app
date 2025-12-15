@@ -1,0 +1,23 @@
+{
+  "id": "emoji-rain",
+  "name": "Emoji Rain",
+  "version": "2.0.0",
+  "description": "Enhanced physics-based emoji rain with OBS HUD support, Game-Quality graphics, and 60 FPS performance",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "working-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "descriptions": {
+    "en": "Enhanced physics-based emoji rain with OBS HUD support, game-quality graphics, and 60 FPS performance. Features custom emoji sets, user mappings, and TikTok event integration.",
+    "de": "Verbesserter physikbasierter Emoji-Regen mit OBS-HUD-Unterstützung, Spiele-Qualität-Grafik und 60-FPS-Performance. Bietet benutzerdefinierte Emoji-Sets, Benutzer-Mappings und TikTok-Event-Integration.",
+    "es": "Lluvia de emojis mejorada basada en física con soporte HUD de OBS, gráficos de calidad de juego y rendimiento de 60 FPS. Incluye conjuntos de emojis personalizados, mapeos de usuarios e integración de eventos de TikTok.",
+    "fr": "Pluie d'émojis améliorée basée sur la physique avec support HUD OBS, graphismes de qualité jeu et performance 60 FPS. Comprend des ensembles d'émojis personnalisés, mappages d'utilisateurs et intégration d'événements TikTok."
+  }
+}

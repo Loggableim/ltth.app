@@ -1,0 +1,22 @@
+{
+  "id": "viewer-xp",
+  "name": "Viewer XP System",
+  "version": "1.0.0",
+  "description": "Comprehensive viewer XP and leveling system with persistent storage, daily bonuses, streaks, badges, and leaderboards. Gamifies viewer engagement across multiple streams.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "early-version",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Comprehensive viewer XP and leveling system with persistent storage, daily bonuses, streaks, badges, and leaderboards. Gamifies viewer engagement across multiple streams.",
+    "de": "Umfassendes Zuschauer-XP- und Leveling-System mit persistenter Speicherung, täglichen Boni, Streaks, Badges und Bestenlisten. Gamifiziert Zuschauer-Engagement über mehrere Streams hinweg.",
+    "es": "Sistema integral de XP y nivelación de espectadores con almacenamiento persistente, bonificaciones diarias, rachas, insignias y tablas de clasificación. Gamifica la participación del espectador a través de múltiples transmisiones.",
+    "fr": "Système complet d'XP et de niveau de spectateurs avec stockage persistant, bonus quotidiens, séries, badges et classements. Gamifie l'engagement des spectateurs sur plusieurs streams."
+  }
+}

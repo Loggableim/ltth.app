@@ -1,0 +1,23 @@
+{
+  "id": "gift-milestone",
+  "name": "Gift Milestone Celebration",
+  "version": "1.0.0",
+  "description": "Celebrate coin milestones with custom animations (GIF, MP4) and audio. Triggers special celebrations when cumulative gift coins reach configured thresholds.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "descriptions": {
+    "en": "Celebrate coin milestones with custom animations (GIF, MP4) and audio. Triggers special celebrations when cumulative gift coins reach configured thresholds with overlay support.",
+    "de": "Feiern Sie Münz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. Löst spezielle Feierlichkeiten aus, wenn kumulative Geschenk-Münzen konfigurierte Schwellenwerte mit Overlay-Unterstützung erreichen.",
+    "es": "Celebra hitos de monedas con animaciones personalizadas (GIF, MP4) y audio. Activa celebraciones especiales cuando las monedas de regalo acumuladas alcanzan umbrales configurados con soporte de overlay.",
+    "fr": "Célébrez les jalons de pièces avec animations personnalisées (GIF, MP4) et audio. Déclenche des célébrations spéciales lorsque les pièces de cadeaux cumulées atteignent les seuils configurés avec support d'overlay."
+  }
+}
