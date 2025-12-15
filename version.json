@@ -1,8 +1,21 @@
 {
-  "version": "1.2.0",
-  "releaseDate": "2025-12-08",
+  "version": "1.2.1",
+  "releaseDate": "2025-12-15",
   "status": "stable",
   "changelog": {
+    "1.2.1": {
+      "date": "2025-12-15",
+      "changes": [
+        "NEW: Multilingual Plugin Descriptions - Added multilingual descriptions to all 30 plugin.json files (EN, DE, ES, FR)",
+        "NEW: Visual Indicators for API Key Storage - Added visual indicators showing API keys are stored persistently across updates",
+        "IMPROVED: Plugin Loader Enhancement - getAllPlugins() now accepts optional locale parameter",
+        "IMPROVED: Plugin API Responses - Now include both description (localized) and descriptions (all languages)",
+        "IMPROVED: Repository Cleanup - Moved 107 files to docs_archive/ folder for better maintainability",
+        "FIXED: Version Number Correction - Corrected erroneous version 2.2.1 to 1.2.1",
+        "FIXED: Advanced Timer Plugin - Fixed overlay routes and storage migration",
+        "FIXED: Timer Overlay - Fixed timer overlay not loading correctly in browser sources"
+      ]
+    },
     "1.2.0": {
       "date": "2025-12-08",
       "changes": [
