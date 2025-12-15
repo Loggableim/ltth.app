@@ -96,13 +96,13 @@
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </div>
-                    <h3 class="download-name">Version 1.1.0</h3>
+                    <h3 class="download-name">Version 1.2.1</h3>
                     <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Latest Version</p>
                     <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
-                        Released: December 1, 2025
+                        Released: December 13, 2025
                     </p>
-                    <a href="/app/ltth_1.1.0.zip" class="btn btn-primary download-btn">
-                        Download ZIP
+                    <a href="/app/ltth_latest.zip" class="btn btn-primary download-btn">
+                        Download ZIP (latest)
                     </a>
                     <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
                         Windows, macOS, Linux
@@ -112,20 +112,14 @@
 
             <!-- Version Documentation -->
             <div class="install-steps" style="margin-top: var(--space-12);">
-                <h2 class="section-title">Version 1.1.0 - Changelog</h2>
+                <h2 class="section-title">Version 1.2.1 - Changelog</h2>
                 
                 <div style="background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-4);">
                     <h3 style="color: var(--color-primary); margin-bottom: var(--space-4);">New Features & Improvements</h3>
                     <ul class="requirements-list">
-                        <li><strong>BREAKING:</strong> Migration to Eulerstream WebSocket SDK - Complete replacement of tiktok-live-connector</li>
-                        <li><strong>NEW:</strong> Weather Control Plugin - 7 modern weather effects with GPU-accelerated rendering</li>
-                        <li><strong>NEW:</strong> Auto-Update System - Launcher checks for updates on startup</li>
-                        <li><strong>FIXED:</strong> TikTok TTS Engine 500 Errors - Complete rewrite with hybrid endpoint approach</li>
-                        <li><strong>FIXED:</strong> TikTok Connection 504 Timeout - fetchRoomInfoOnConnect optimization</li>
-                        <li><strong>FIXED:</strong> Quick Actions Menu not updating after plugin activation</li>
-                        <li><strong>FIXED:</strong> Goals Modal focus issue in Electron</li>
-                        <li><strong>IMPROVED:</strong> CSS Performance - will-change, contain, overscroll-behavior optimizations</li>
-                        <li><strong>IMPROVED:</strong> Scroll Performance - Passive event listeners</li>
+                        <li><strong>Diagnostics Panel & Performance Toolkit:</strong> GPU check, pre-plugin logging, long-task observer, and FPS/heap tracking inside the dashboard.</li>
+                        <li><strong>Splash Screen Launch Mode:</strong> Choose between Electron and Browser mode with an updated tray menu.</li>
+                        <li><strong>Stability & Performance:</strong> Hybrid TikTok TTS, quick action refresh, SQLite/IPC tuning, and resolved Euler timeouts.</li>
                     </ul>
                 </div>
             </div>

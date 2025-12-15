@@ -60,11 +60,47 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
+            <!-- Version 1.2.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
+                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Dernière</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Publié : 13 décembre 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Version axée sur la performance avec outils de diagnostic, sélection du mode de lancement et pipeline TikTok/TTS renforcée.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Nouvelles fonctionnalités</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Panneau de Diagnostic & Toolkit Performance</strong> – Vérification GPU, logs avant les plugins, observateur de long tasks, suivi FPS/mémoire</li>
+                    <li><strong>Guide de Performance Electron & Script Console</strong> – Checklist pas-à-pas et <code>performance-diagnostics.js</code> pour l’analyse en direct</li>
+                    <li><strong>Sélection du Mode sur l’Écran de Démarrage</strong> – Choix entre mode Electron ou Navigateur avec menu de tray mis à jour</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Améliorations</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>SQLite + Lots IPC</strong> – WAL, sync NORMAL, cache 64 Mo, temp_store MEMORY, mmap 256 Mo et settings:getMultiple/setMultiple pour moins d’allers-retours</li>
+                    <li><strong>Flags de Performance Electron</strong> – CalculateNativeWinOcclusion désactivé, QUIC activé, profil sRGB forcé, mises à jour runtime des composants désactivées</li>
+                    <li><strong>Virtual Scroller & CSS</strong> – Limitation via rAF, <code>contain: layout style paint</code>, <code>will-change</code> et listeners passifs</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Corrections</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Moteur TTS TikTok</strong> – Endpoints hybrides (Weilbyte, TikAPI, officiel), user-agent moderne et rotation automatique avec découpage</li>
+                    <li><strong>Actions Rapides & Plugins</strong> – Boutons actualisés après modifications des plugins; messages plus clairs pour plugins désactivés</li>
+                    <li><strong>Correctifs UI dans Electron</strong> – Focus/z-index du modal d’objectifs, panneau TTS cliquable, fenêtre blanche Chatango résolue, drapeaux linguistiques corrects</li>
+                    <li><strong>Stabilité Euler Stream</strong> – Timeouts 504 corrigés via <code>fetchRoomInfoOnConnect=false</code> et suppression de <code>enableWebsocketUpgrade</code></li>
+                </ul>
+            </div>
+
             <!-- Version 1.2.0 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
                     <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
-                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Dernière</span>
+                    <span style="background: var(--color-surface-2); color: var(--color-text-secondary); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; border: 1px solid var(--color-border);">Version précédente</span>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 8 décembre 2025</p>
                 

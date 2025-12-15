@@ -103,11 +103,47 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
+            <!-- Version 1.2.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
+                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 13, 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Performance-focused release with diagnostics tooling, splash-screen launch mode selection, and a hardened TikTok/TTS pipeline.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ New Features</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Diagnostics Panel & Performance Toolkit</strong> – GPU support check, pre-plugin logging, long task observer, and FPS/heap tracking</li>
+                    <li><strong>Electron Performance Guide & Console Script</strong> – Step-by-step checklist plus <code>performance-diagnostics.js</code> for live analysis</li>
+                    <li><strong>Splash Screen Launch Mode Selection</strong> – Choose Electron or Browser Mode with updated tray menu labels</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Improvements</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>SQLite + IPC Batching</strong> – WAL, NORMAL sync, 64MB cache, MEMORY temp_store, 256MB mmap, and settings:getMultiple/setMultiple to reduce round trips</li>
+                    <li><strong>Electron Performance Flags</strong> – Disabled CalculateNativeWinOcclusion, enabled QUIC, forced sRGB, disabled runtime component updates</li>
+                    <li><strong>Virtual Scroller & CSS</strong> – rAF throttling, <code>contain: layout style paint</code>, <code>will-change</code>, and passive scroll listeners</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bug Fixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>TikTok TTS Engine</strong> – Hybrid endpoints (Weilbyte, TikAPI, official API), modern user agent, auto-rotation with chunking</li>
+                    <li><strong>Quick Actions & Plugins</strong> – Buttons refresh after plugin changes; clearer messaging for disabled plugins</li>
+                    <li><strong>Electron UI Fixes</strong> – Goals modal focus/z-index, clickable TTS admin panel, Chatango white window fixed, language flags render correctly</li>
+                    <li><strong>Euler Stream Stability</strong> – 504 timeouts solved via <code>fetchRoomInfoOnConnect=false</code> and removal of <code>enableWebsocketUpgrade</code></li>
+                </ul>
+            </div>
+
             <!-- Version 1.2.0 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
                     <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
-                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                    <span style="background: var(--color-surface-2); color: var(--color-text-secondary); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; border: 1px solid var(--color-border);">Previous</span>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 8, 2025</p>
                 

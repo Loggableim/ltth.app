@@ -1,8 +1,23 @@
 {
-  "version": "1.2.0",
-  "releaseDate": "2025-12-08",
+  "version": "1.2.1",
+  "releaseDate": "2025-12-13",
   "status": "stable",
   "changelog": {
+    "1.2.1": {
+      "date": "2025-12-13",
+      "changes": [
+        "NEW: Diagnostics Panel & Toolkit - GPU detection, pre-plugin logging, and performance checklist in settings",
+        "NEW: Launch Mode Selection on splash screen with Browser Mode tray actions and German labels",
+        "CHANGED: SQLite tuned with WAL, NORMAL sync, 64MB cache, MEMORY temp store, 256MB mmap",
+        "CHANGED: IPC batch operations settings:getMultiple/settings:setMultiple to cut renderer-main round trips",
+        "CHANGED: Electron performance flags (disable CalculateNativeWinOcclusion, enable QUIC, force sRGB)",
+        "CHANGED: Virtual scroller rAF throttling plus CSS contain/will-change for smoother scroll",
+        "FIXED: Quick Actions refresh after plugin changes and clearer disabled plugin messaging",
+        "FIXED: Goals modal focus/z-index, TTS admin panel click targets, Chatango embed, language flags",
+        "FIXED: TikTok TTS engine rewritten with hybrid endpoints and modern UA",
+        "FIXED: Euler Stream 504 timeouts and removed invalid enableWebsocketUpgrade option"
+      ]
+    },
     "1.2.0": {
       "date": "2025-12-08",
       "changes": [

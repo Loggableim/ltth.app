@@ -1,0 +1,19 @@
+LTTH Version 1.2.1 Release Notes (2025-12-13)
+
+NEW
+- Performance Diagnostics panel in Settings (GPU support check, pre-plugin logging, quick toggles)
+- Performance Diagnostics toolkit and Electron performance guide for FPS, memory and long-task analysis
+- Launch mode selection on splash screen with Browser Mode + tray menu labels in German
+
+CHANGED
+- SQLite tuned for speed: WAL + NORMAL sync, 64MB cache, MEMORY temp store, 256MB mmap
+- Electron flags updated: disable CalculateNativeWinOcclusion, enable QUIC, force sRGB, disable runtime component updates
+- IPC batch ops for settings:getMultiple / settings:setMultiple to cut renderer-main round trips
+- Virtual scroller + CSS performance: rAF scroll throttling, contain layout/style/paint, passive listeners
+
+FIXED
+- Quick Actions refresh after plugin enable/disable; better plugin disabled messaging
+- Goals modal focus/z-index and TTS admin panel click targets in Electron
+- Chatango embed + language selector flags now render correctly in installed app
+- TikTok TTS engine rewritten with hybrid endpoints, modern UA and chunking for >300 chars
+- Euler Stream 504 timeout solved by disabling fetchRoomInfoOnConnect; removed invalid enableWebsocketUpgrade option
