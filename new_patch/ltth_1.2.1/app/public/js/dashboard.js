@@ -3410,7 +3410,9 @@ function processNextSoundboardSound() {
 
     // Add to pool
     const pool = document.getElementById('dashboard-soundboard-pool');
-    pool.appendChild(audio);
+    if (pool) {
+        pool.appendChild(audio);
+    }
 
     // Play
     audio.play().then(() => {
@@ -3460,7 +3462,9 @@ function playDashboardSoundboard(data) {
 
         // Add to pool
         const pool = document.getElementById('dashboard-soundboard-pool');
-        pool.appendChild(audio);
+        if (pool) {
+            pool.appendChild(audio);
+        }
 
         // Play
         audio.play().then(() => {
