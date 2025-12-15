@@ -109,11 +109,61 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.2.0 -->
+            <!-- Version 1.2.1 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Versión 1.2.0</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Versión 1.2.1</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Última</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Lanzamiento: 15 de diciembre de 2025</p>
+                
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Destacados</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Esta versión trae descripciones de plugins multilingües para los 30 plugins, indicadores mejorados de persistencia de claves API, y correcciones de bugs importantes para el plugin Advanced Timer.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Nuevas funciones</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Descripciones de plugins multilingües (Fase 4)</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Descripciones multilingües añadidas a los 30 archivos plugin.json</li>
+                            <li>Soporte para 4 idiomas: Inglés (en), Alemán (de), Español (es), Francés (fr)</li>
+                            <li>Nuevo objeto `descriptions` en plugin.json con descripciones por idioma</li>
+                            <li>Compatibilidad hacia atrás mantenida con el campo `description` existente</li>
+                            <li>Soporte API para descripciones localizadas vía parámetro `locale`</li>
+                            <li>Cargador de plugins actualizado con función helper `getLocalizedDescription()`</li>
+                            <li>Rutas `/api/plugins` y `/api/plugins/:id` actualizadas para selección de idioma</li>
+                        </ul>
+                    </li>
+                    <li><strong>Indicadores visuales para almacenamiento de claves API</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Indicadores visuales que muestran que las claves API se almacenan de forma persistente</li>
+                            <li>Retroalimentación mejorada para configuración de claves API</li>
+                            <li>Mejor documentación de ubicaciones de almacenamiento de claves API</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Mejoras</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Limpieza del repositorio</strong> - 107 archivos de documentación movidos a `docs_archive/`</li>
+                    <li><strong>Mejora del Plugin Loader</strong> - `getAllPlugins()` ahora acepta parámetro `locale` opcional</li>
+                    <li><strong>Respuestas API de plugins</strong> - Ahora incluyen `description` (localizado) y `descriptions` (todos los idiomas)</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Correcciones de bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    <li><strong>Corrección del número de versión</strong> - Versión errónea 2.2.1 corregida a 1.2.1</li>
+                    <li><strong>Plugin Advanced Timer</strong> - Rutas de overlay y migración de almacenamiento corregidas</li>
+                    <li><strong>Overlay Timer</strong> - Carga del timer corregida en fuentes de navegador</li>
+                    <li><strong>Gestión de estado del Timer</strong> - Gestión y recuperación de estado mejoradas</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.2.0 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Versión 1.2.0</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Lanzamiento: 8 de diciembre de 2025</p>
                 
