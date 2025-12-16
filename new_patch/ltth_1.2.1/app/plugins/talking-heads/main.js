@@ -204,13 +204,24 @@ class TalkingHeadsPlugin {
                 const cacheIndex = JSON.parse(fs.readFileSync(cacheIndexPath, 'utf-8'));
                 const now = Date.now();
                 const maxAge = this.config.cacheDurationDays * 24 * 60 * 60 * 1000;
+                const realCacheDir = path.resolve(this.cacheDir);
                 
                 for (const [uniqueId, entry] of Object.entries(cacheIndex)) {
                     // Check if cache entry is still valid
                     if (now - entry.generatedAt < maxAge) {
+                        // Sanitize uniqueId to prevent path traversal
+                        const sanitizedId = uniqueId.replace(/[^a-zA-Z0-9_]/g, '_');
+                        
                         // Load images from disk
-                        const closedPath = path.join(this.cacheDir, `${uniqueId}_closed.png`);
-                        const openPath = path.join(this.cacheDir, `${uniqueId}_open.png`);
+                        const closedPath = path.join(this.cacheDir, `${sanitizedId}_closed.png`);
+                        const openPath = path.join(this.cacheDir, `${sanitizedId}_open.png`);
+                        
+                        // Verify paths are within cache directory
+                        if (!path.resolve(closedPath).startsWith(realCacheDir + path.sep) ||
+                            !path.resolve(openPath).startsWith(realCacheDir + path.sep)) {
+                            this.logger.warn(`Skipping cache entry with invalid path: ${uniqueId}`);
+                            continue;
+                        }
                         
                         if (fs.existsSync(closedPath) && fs.existsSync(openPath)) {
                             this.avatarCache.set(uniqueId, {
@@ -237,12 +248,22 @@ class TalkingHeadsPlugin {
         try {
             if (!this.config.cacheEnabled) return;
             
+            // Sanitize uniqueId to prevent path traversal - only allow alphanumeric and underscore
+            const sanitizedId = uniqueId.replace(/[^a-zA-Z0-9_]/g, '_');
+            
             // Save to memory
             this.avatarCache.set(uniqueId, avatarData);
             
             // Save images to disk
-            const closedPath = path.join(this.cacheDir, `${uniqueId}_closed.png`);
-            const openPath = path.join(this.cacheDir, `${uniqueId}_open.png`);
+            const closedPath = path.join(this.cacheDir, `${sanitizedId}_closed.png`);
+            const openPath = path.join(this.cacheDir, `${sanitizedId}_open.png`);
+            
+            // Verify paths are within cache directory
+            const realCacheDir = path.resolve(this.cacheDir);
+            if (!path.resolve(closedPath).startsWith(realCacheDir + path.sep) ||
+                !path.resolve(openPath).startsWith(realCacheDir + path.sep)) {
+                throw new Error('Invalid cache path');
+            }
             
             fs.writeFileSync(closedPath, avatarData.closedMouth, 'base64');
             fs.writeFileSync(openPath, avatarData.openMouth, 'base64');
@@ -568,10 +589,12 @@ class TalkingHeadsPlugin {
                 const apiKey = this._getApiKey(provider);
                 
                 // Simple test - just check if API key format is valid
-                if (provider === 'openai' && !apiKey.startsWith('sk-')) {
+                // Note: OpenAI API keys currently start with 'sk-' (as of 2024)
+                // This may change in the future - consider updating if OpenAI changes their format
+                if (provider === 'openai' && apiKey && !apiKey.startsWith('sk-')) {
                     return res.json({
                         success: false,
-                        error: 'Invalid OpenAI API key format'
+                        error: 'Invalid OpenAI API key format (expected sk-... prefix)'
                     });
                 }
                 
@@ -692,7 +715,20 @@ class TalkingHeadsPlugin {
                 // Clear filesystem cache
                 const files = fs.readdirSync(this.cacheDir);
                 for (const file of files) {
-                    fs.unlinkSync(path.join(this.cacheDir, file));
+                    // Validate file path is within cache directory to prevent path traversal
+                    const filePath = path.join(this.cacheDir, file);
+                    const realPath = path.resolve(filePath);
+                    const realCacheDir = path.resolve(this.cacheDir);
+                    
+                    if (!realPath.startsWith(realCacheDir + path.sep)) {
+                        this.logger.warn(`Skipping file outside cache directory: ${file}`);
+                        continue;
+                    }
+                    
+                    // Only delete expected file types
+                    if (file.endsWith('.png') || file.endsWith('.json')) {
+                        fs.unlinkSync(filePath);
+                    }
                 }
                 
                 res.json({ success: true, cleared: count });
