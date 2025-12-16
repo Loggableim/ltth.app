@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talking Heads - AI Avatar Animation</title>
+    <link rel="stylesheet" href="ui.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>
+                <i data-lucide="user-circle-2"></i>
+                <span data-i18n="talking_heads_ui.title">Talking Heads - AI Avatar Animation</span>
+            </h1>
+            <p class="subtitle" data-i18n="talking_heads_ui.subtitle">Dynamic 2D avatars for TikTok users with TTS-synced animation</p>
+        </header>
+
+        <!-- Status Section -->
+        <section class="section">
+            <h2 data-i18n="talking_heads_ui.sections.status">Status & Settings</h2>
+            
+            <div class="form-group">
+                <label class="toggle-label">
+                    <span data-i18n="talking_heads_ui.labels.plugin_enabled">Plugin enabled</span>
+                    <input type="checkbox" id="enabled" checked>
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label class="toggle-label">
+                    <span data-i18n="talking_heads_ui.labels.debug_logging">Debug logging</span>
+                    <input type="checkbox" id="debugLogging">
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label class="toggle-label">
+                    <span data-i18n="talking_heads_ui.labels.obs_enabled">Enable OBS integration</span>
+                    <input type="checkbox" id="obsEnabled" checked>
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+            
+            <div id="api-status" class="status-box">
+                <span data-i18n="talking_heads_ui.labels.api_status_checking">Checking API status...</span>
+            </div>
+        </section>
+
+        <!-- Image Provider Section -->
+        <section class="section">
+            <h2 data-i18n="talking_heads_ui.sections.style">Avatar Style</h2>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.image_provider">Image engine</label>
+                <select id="imageProvider">
+                    <option value="auto" data-i18n="talking_heads_ui.options.provider_auto">Auto (OpenAI preferred, SiliconFlow as fallback)</option>
+                    <option value="openai" data-i18n="talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</option>
+                    <option value="siliconflow" data-i18n="talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</option>
+                </select>
+                <small class="help-text" data-i18n="talking_heads_ui.help.image_provider">Choose your preferred image generator. Auto tries OpenAI first when an API key is configured.</small>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.select_style">Avatar Style</label>
+                <div class="style-grid" id="styleGrid">
+                    <!-- Style cards will be injected by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="info-box" id="api-key-warning" style="display: none;">
+                <span data-i18n="talking_heads_ui.alerts.api_key_warning">
+                    <strong>⚠️ No API key configured!</strong><br>
+                    Configure the correct key for the selected engine in Dashboard → Settings.
+                </span>
+            </div>
+        </section>
+
+        <!-- Permissions Section -->
+        <section class="section">
+            <h2 data-i18n="talking_heads_ui.sections.permissions">Permissions</h2>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.permission_question">Who gets Talking Heads?</label>
+                <select id="permissionMode">
+                    <option value="all" data-i18n="talking_heads_ui.options.permission_all">All viewers</option>
+                    <option value="team" data-i18n="talking_heads_ui.options.permission_team">Team members only</option>
+                    <option value="subscriber" data-i18n="talking_heads_ui.options.permission_subscriber">Subscribers/Superfans only</option>
+                    <option value="custom_voice" data-i18n="talking_heads_ui.options.permission_custom_voice">Users with TTS voice only</option>
+                    <option value="moderator" data-i18n="talking_heads_ui.options.permission_moderator">Moderators only</option>
+                    <option value="top_gifter" data-i18n="talking_heads_ui.options.permission_top_gifter">Top gifters only</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="teamLevelGroup" style="display: none;">
+                <label data-i18n="talking_heads_ui.labels.min_team_level">Minimum team level</label>
+                <input type="number" id="minTeamLevel" min="0" max="6" value="0">
+                <small class="help-text" data-i18n="talking_heads_ui.help.min_team_level">Level 0-6 (0 = all team members)</small>
+            </div>
+        </section>
+
+        <!-- Animation Settings Section -->
+        <section class="section">
+            <h2 data-i18n="talking_heads_ui.sections.animation">Animation Settings</h2>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.fade_in">Fade-in duration (ms)</label>
+                <input type="number" id="fadeInDuration" min="0" max="2000" value="300">
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.fade_out">Fade-out duration (ms)</label>
+                <input type="number" id="fadeOutDuration" min="0" max="2000" value="300">
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.blink_interval">Blink interval (ms)</label>
+                <input type="number" id="blinkInterval" min="1000" max="10000" value="3000">
+            </div>
+        </section>
+
+        <!-- Cache Management Section -->
+        <section class="section">
+            <h2 data-i18n="talking_heads_ui.sections.cache">Cache Management</h2>
+            
+            <div class="form-group">
+                <label class="toggle-label">
+                    <span data-i18n="talking_heads_ui.labels.cache_enabled">Enable avatar caching</span>
+                    <input type="checkbox" id="cacheEnabled" checked>
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label data-i18n="talking_heads_ui.labels.cache_duration">Cache duration (days)</label>
+                <input type="number" id="cacheDurationDays" min="1" max="30" value="7">
+                <small class="help-text" data-i18n="talking_heads_ui.help.cache_duration">Avatars are removed after this duration</small>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label" data-i18n="talking_heads_ui.labels.cached_avatars">Cached avatars</span>
+                    <span class="stat-value" id="cachedCount">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label" data-i18n="talking_heads_ui.labels.active_animations">Active animations</span>
+                    <span class="stat-value" id="activeCount">0</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-danger" id="clearCacheBtn">
+                <i data-lucide="trash-2"></i>
+                <span data-i18n="talking_heads_ui.buttons.clear_cache">Clear entire cache</span>
+            </button>
+        </section>
+
+        <!-- Test Section -->
+        <section class="section">
+            <h2>Test</h2>
+            
+            <div class="button-row">
+                <button class="btn btn-secondary" id="testApiBtn">
+                    <i data-lucide="zap"></i>
+                    <span data-i18n="talking_heads_ui.buttons.test_api">Test API</span>
+                </button>
+                
+                <button class="btn btn-primary" id="testGenerateBtn">
+                    <i data-lucide="wand-2"></i>
+                    <span data-i18n="talking_heads_ui.buttons.test_generate">Generate test avatar</span>
+                </button>
+            </div>
+            
+            <div id="testResult" class="result-box" style="display: none;"></div>
+        </section>
+
+        <!-- Save Button -->
+        <div class="action-bar">
+            <button class="btn btn-primary btn-lg" id="saveConfigBtn">
+                <i data-lucide="save"></i>
+                <span data-i18n="talking_heads_ui.buttons.save_config">Save configuration</span>
+            </button>
+        </div>
+
+        <!-- Debug Log Section -->
+        <section class="section" id="debugSection" style="display: none;">
+            <h2 data-i18n="talking_heads_ui.sections.debug_log">Debug Log</h2>
+            <div class="debug-log" id="debugLog">
+                <p class="placeholder">Debug logs will appear here when enabled...</p>
+            </div>
+        </section>
+
+        <!-- OBS Overlay URL -->
+        <section class="section">
+            <h2>OBS Overlay</h2>
+            <div class="form-group">
+                <label>Overlay URL (add as Browser Source in OBS)</label>
+                <div class="url-copy-box">
+                    <input type="text" id="overlayUrl" readonly>
+                    <button class="btn btn-ghost" id="copyOverlayUrl">
+                        <i data-lucide="copy"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="ui.js"></script>
+</body>
+</html>
