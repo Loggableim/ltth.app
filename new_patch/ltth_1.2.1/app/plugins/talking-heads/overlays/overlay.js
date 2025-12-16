@@ -12,6 +12,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('talking-heads-container');
     
+    // Animation constants
+    const BLINK_DURATION_MS = 150;
+    const BLINK_RANDOMNESS_RANGE_MS = 1000;
+    const BLINK_RANDOMNESS_OFFSET_MS = 500;
+    const HIDE_DELAY_AFTER_SPEAKING_MS = 2000;
+    
     // Configuration (can be overridden via URL params)
     const urlParams = new URLSearchParams(window.location.search);
     const config = {
@@ -119,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.classList.add('blinking');
                 setTimeout(() => {
                     element.classList.remove('blinking');
-                }, 150);
-            }, config.blinkInterval + (Math.random() * 1000 - 500)); // Add some randomness
+                }, BLINK_DURATION_MS);
+            }, config.blinkInterval + (Math.random() * BLINK_RANDOMNESS_RANGE_MS - BLINK_RANDOMNESS_OFFSET_MS)); // Add some randomness
             
             blinkIntervals.set(uniqueId, intervalId);
         }, initialDelay);
@@ -186,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove talking head after a short delay
             setTimeout(() => {
                 removeTalkingHead(uniqueId);
-            }, 2000); // Keep visible for 2 seconds after speaking ends
+            }, HIDE_DELAY_AFTER_SPEAKING_MS); // Keep visible after speaking ends
         });
         
         // Handle status response

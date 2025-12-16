@@ -321,9 +321,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Copy overlay URL
     function copyOverlayUrl() {
-        elements.overlayUrl.select();
-        document.execCommand('copy');
-        showNotification('URL copied to clipboard', 'success');
+        // Use modern Clipboard API (fallback to deprecated execCommand for older browsers)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(elements.overlayUrl.value)
+                .then(() => showNotification('URL copied to clipboard', 'success'))
+                .catch(() => {
+                    // Fallback
+                    elements.overlayUrl.select();
+                    document.execCommand('copy');
+                    showNotification('URL copied to clipboard', 'success');
+                });
+        } else {
+            elements.overlayUrl.select();
+            document.execCommand('copy');
+            showNotification('URL copied to clipboard', 'success');
+        }
     }
 
     // Add debug log entry

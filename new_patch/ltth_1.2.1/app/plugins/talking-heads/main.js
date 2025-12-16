@@ -148,14 +148,12 @@ class TalkingHeadsPlugin {
         
         // Store profile picture URL for later use (don't generate avatar yet)
         // This avoids the /images/default-avatar.png error by using TikTok's actual profile pictures
-        if (profilePictureUrl && !this.userProfilePictures) {
-            this.userProfilePictures = new Map();
-        }
-        
         if (profilePictureUrl) {
+            // Initialize Map if not exists
             if (!this.userProfilePictures) {
                 this.userProfilePictures = new Map();
             }
+            
             this.userProfilePictures.set(uniqueId, {
                 username,
                 profilePictureUrl,

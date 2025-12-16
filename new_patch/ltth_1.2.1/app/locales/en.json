@@ -64,7 +64,8 @@
       "animation": "Animation Settings",
       "cache": "Cache Management",
       "active_animations": "Active Animations",
-      "debug_log": "Debug Log"
+      "debug_log": "Debug Log",
+      "test": "Test"
     },
     "labels": {
       "plugin_enabled": "Plugin enabled",
