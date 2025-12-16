@@ -216,9 +216,16 @@ class TalkingHeadsPlugin {
                         const closedPath = path.join(this.cacheDir, `${sanitizedId}_closed.png`);
                         const openPath = path.join(this.cacheDir, `${sanitizedId}_open.png`);
                         
-                        // Verify paths are within cache directory
-                        if (!path.resolve(closedPath).startsWith(realCacheDir + path.sep) ||
-                            !path.resolve(openPath).startsWith(realCacheDir + path.sep)) {
+                        // Verify paths are within cache directory (platform-independent)
+                        const realClosedPath = path.resolve(closedPath);
+                        const realOpenPath = path.resolve(openPath);
+                        
+                        const isValidPath = (p) => {
+                            return p.startsWith(realCacheDir) && 
+                                   (p === realCacheDir || p.startsWith(realCacheDir + path.sep) || p.startsWith(realCacheDir + '/'));
+                        };
+                        
+                        if (!isValidPath(realClosedPath) || !isValidPath(realOpenPath)) {
                             this.logger.warn(`Skipping cache entry with invalid path: ${uniqueId}`);
                             continue;
                         }
@@ -258,10 +265,17 @@ class TalkingHeadsPlugin {
             const closedPath = path.join(this.cacheDir, `${sanitizedId}_closed.png`);
             const openPath = path.join(this.cacheDir, `${sanitizedId}_open.png`);
             
-            // Verify paths are within cache directory
+            // Verify paths are within cache directory (platform-independent)
             const realCacheDir = path.resolve(this.cacheDir);
-            if (!path.resolve(closedPath).startsWith(realCacheDir + path.sep) ||
-                !path.resolve(openPath).startsWith(realCacheDir + path.sep)) {
+            const realClosedPath = path.resolve(closedPath);
+            const realOpenPath = path.resolve(openPath);
+            
+            const isValidPath = (p) => {
+                return p.startsWith(realCacheDir) && 
+                       (p === realCacheDir || p.startsWith(realCacheDir + path.sep) || p.startsWith(realCacheDir + '/'));
+            };
+            
+            if (!isValidPath(realClosedPath) || !isValidPath(realOpenPath)) {
                 throw new Error('Invalid cache path');
             }
             
@@ -720,7 +734,9 @@ class TalkingHeadsPlugin {
                     const realPath = path.resolve(filePath);
                     const realCacheDir = path.resolve(this.cacheDir);
                     
-                    if (!realPath.startsWith(realCacheDir + path.sep)) {
+                    // Ensure path is within cache directory (handles edge cases on all platforms)
+                    if (!realPath.startsWith(realCacheDir) || 
+                        (realPath !== realCacheDir && !realPath.startsWith(realCacheDir + path.sep) && !realPath.startsWith(realCacheDir + '/'))) {
                         this.logger.warn(`Skipping file outside cache directory: ${file}`);
                         continue;
                     }
