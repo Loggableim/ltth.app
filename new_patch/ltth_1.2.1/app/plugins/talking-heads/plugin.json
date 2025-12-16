@@ -1,0 +1,25 @@
+{
+  "id": "talking-heads",
+  "name": "Talking Heads",
+  "version": "1.0.0",
+  "description": "AI-generated animated avatars for TikTok users with TTS-synchronized mouth animation",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "devStatus": "development-beta",
+  "dependencies": [
+    "axios"
+  ],
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Dynamic 2D avatars for TikTok users with TTS-synced animation. Generates AI-powered talking head images that animate when users speak via TTS.",
+    "de": "Dynamische 2D-Avatare für TikTok-User mit TTS-synchronisierter Animation. Generiert KI-gesteuerte Talking-Head-Bilder, die sich beim TTS-Sprechen animieren.",
+    "es": "Avatares 2D dinámicos para usuarios de TikTok con animación sincronizada con TTS. Genera imágenes de cabezas parlantes con IA que se animan cuando los usuarios hablan mediante TTS.",
+    "fr": "Avatars 2D dynamiques pour les utilisateurs TikTok avec animation synchronisée TTS. Génère des images de têtes parlantes alimentées par l'IA qui s'animent lorsque les utilisateurs parlent via TTS."
+  }
+}
