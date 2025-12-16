@@ -51,10 +51,37 @@ socket.on('soundboard:preview', (payload) => {
 });
 
 // ========== AUDIO PLAYBACK ==========
-function playDashboardSoundboard(data) {
-    console.log('🔊 [Soundboard] Playing:', data.label);
-    logAudioEvent('info', `Attempting to play: ${data.label}`, { url: data.url, volume: data.volume }, true);
+/**
+ * Soundboard queue management
+ */
+let soundboardQueue = [];
+let isSoundboardPlaying = false;
+let soundboardPlayMode = 'overlap'; // Default mode
+
+/**
+ * Update soundboard play mode when settings change
+ */
+function setSoundboardPlayMode(mode) {
+    soundboardPlayMode = mode || 'overlap';
+    console.log('🔊 [Soundboard] Soundboard play mode set to:', soundboardPlayMode);
+    logAudioEvent('info', `Play mode set to: ${soundboardPlayMode}`, { mode: soundboardPlayMode }, true);
+}
+
+/**
+ * Process next sound in queue (for sequential mode)
+ */
+function processNextSoundboardSound() {
+    if (soundboardQueue.length === 0) {
+        isSoundboardPlaying = false;
+        return;
+    }
+
+    isSoundboardPlaying = true;
+    const data = soundboardQueue.shift();
     
+    console.log('🔊 [Soundboard] Processing queued sound:', data.label);
+    logAudioEvent('info', `Processing queued: ${data.label}`, { url: data.url, queueLength: soundboardQueue.length }, true);
+
     // Create new audio element
     const audio = document.createElement('audio');
     audio.src = data.url;
@@ -71,9 +98,11 @@ function playDashboardSoundboard(data) {
     }).catch(err => {
         console.error('❌ [Soundboard] Playback error:', err);
         logAudioEvent('error', `Playback failed: ${err.message}`, { url: data.url, error: err }, true);
+        // On error, process next sound
+        processNextSoundboardSound();
     });
     
-    // Remove after playback
+    // Remove after playback and process next
     audio.onended = () => {
         console.log('✅ [Soundboard] Finished:', data.label);
         logAudioEvent('info', `Finished playing: ${data.label}`, null);
@@ -82,6 +111,8 @@ function playDashboardSoundboard(data) {
             audioPool.splice(index, 1);
         }
         updateActiveSoundsCount();
+        // Process next sound in queue
+        processNextSoundboardSound();
     };
     
     audio.onerror = (e) => {
@@ -92,7 +123,65 @@ function playDashboardSoundboard(data) {
             audioPool.splice(index, 1);
         }
         updateActiveSoundsCount();
+        // On error, process next sound
+        processNextSoundboardSound();
     };
+}
+
+function playDashboardSoundboard(data) {
+    console.log('🔊 [Soundboard] Playing:', data.label, '(mode:', soundboardPlayMode + ')');
+    logAudioEvent('info', `Attempting to play: ${data.label}`, { url: data.url, volume: data.volume, mode: soundboardPlayMode }, true);
+
+    if (soundboardPlayMode === 'sequential') {
+        // Queue mode: add to queue
+        soundboardQueue.push(data);
+        console.log('📋 [Soundboard] Added to queue, queue length:', soundboardQueue.length);
+        logAudioEvent('info', `Added to queue: ${data.label}`, { queueLength: soundboardQueue.length }, true);
+        
+        // Start processing if not already playing
+        if (!isSoundboardPlaying) {
+            processNextSoundboardSound();
+        }
+    } else {
+        // Overlap mode: play immediately (original behavior)
+        const audio = document.createElement('audio');
+        audio.src = data.url;
+        audio.volume = data.volume || 1.0;
+        
+        // Add to pool
+        audioPool.push(audio);
+        updateActiveSoundsCount();
+        
+        // Play
+        audio.play().then(() => {
+            console.log('✅ [Soundboard] Started playing:', data.label);
+            logAudioEvent('success', `Successfully started: ${data.label}`, { url: data.url }, true);
+        }).catch(err => {
+            console.error('❌ [Soundboard] Playback error:', err);
+            logAudioEvent('error', `Playback failed: ${err.message}`, { url: data.url, error: err }, true);
+        });
+        
+        // Remove after playback
+        audio.onended = () => {
+            console.log('✅ [Soundboard] Finished:', data.label);
+            logAudioEvent('info', `Finished playing: ${data.label}`, null);
+            const index = audioPool.indexOf(audio);
+            if (index > -1) {
+                audioPool.splice(index, 1);
+            }
+            updateActiveSoundsCount();
+        };
+        
+        audio.onerror = (e) => {
+            console.error('❌ [Soundboard] Error playing:', data.label, e);
+            logAudioEvent('error', `Audio error for ${data.label}: ${e.type}`, { url: data.url, error: e }, true);
+            const index = audioPool.indexOf(audio);
+            if (index > -1) {
+                audioPool.splice(index, 1);
+            }
+            updateActiveSoundsCount();
+        };
+    }
 }
 
 // ========== SETTINGS ==========
@@ -107,6 +196,9 @@ async function loadSoundboardSettings() {
         
         const playMode = document.getElementById('soundboard-play-mode');
         if (playMode) playMode.value = settings.soundboard_play_mode || 'overlap';
+        
+        // Set the play mode for soundboard queue management
+        setSoundboardPlayMode(settings.soundboard_play_mode || 'overlap');
         
         const maxQueue = document.getElementById('soundboard-max-queue');
         if (maxQueue) maxQueue.value = settings.soundboard_max_queue_length || '10';
@@ -232,6 +324,8 @@ async function saveSoundboardSettings() {
         });
         
         if (response.ok) {
+            // Update the play mode immediately after saving
+            setSoundboardPlayMode(data.soundboard_play_mode);
             alert('✅ Soundboard settings saved successfully!');
             logAudioEvent('success', 'Settings saved successfully', null);
         }
