@@ -1006,7 +1006,7 @@
                         resources: 'Resources',
                         community: 'Community',
                         description: 'PupCid\'s Little TikTool Helper - Die professionelle TikTok LIVE Streaming-Lösung.',
-                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
+                        copyright: '© 2025-2026 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
                         madeWith: 'Made with',
                         by: 'by Loggableim'
                     }
@@ -1072,7 +1072,7 @@
                         resources: 'Resources',
                         community: 'Community',
                         description: 'PupCid\'s Little TikTool Helper - The professional TikTok LIVE streaming solution.',
-                        copyright: '© 2025 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
+                        copyright: '© 2025-2026 ltth.app - PupCid\'s Little TikTool Helper. All rights reserved.',
                         madeWith: 'Made with',
                         by: 'by Loggableim'
                     }
