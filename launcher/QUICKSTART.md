@@ -13,9 +13,10 @@ Lade den LTTH Cloud Launcher herunter:
 1. **Launcher starten**
    - Doppelklick auf `launcher.exe`
    - Windows SmartScreen: Klicke "Weitere Informationen" → "Trotzdem ausführen"
+   - **Splash Screen**: Beim ersten Start zeigt der Launcher einen Changelog mit den neuesten Änderungen
 
 2. **Ersteinrichtung**
-   - Wähle Installationspfad (Standard: `C:\Users\<User>\AppData\Local\LTTH\versions`)
+   - Nach dem Splash Screen: Wähle Installationspfad (Standard: `C:\Users\<User>\AppData\Local\LTTH\versions`)
    - Wähle Konfigurationspfad (Standard: `C:\Users\<User>\AppData\Local\LTTH\config`)
    - Klicke "Weiter"
 

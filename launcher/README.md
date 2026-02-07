@@ -6,6 +6,7 @@ Leichtgewichtiger Windows Launcher für PupCid's Little TikTool Helper.
 
 ## Features
 
+- ✅ **Splash Screen mit Changelog** - Zeigt beim Start die letzten 5 Versionen mit allen Änderungen übersichtlich an
 - ✅ **Update-Prüfung** - Automatische Prüfung auf neue Versionen beim Start
 - ✅ **Download & Installation** - Sichere Downloads mit ZIP-Extraktion
 - ✅ **Erstinstallation-Wizard** - Benutzerfreundliche Pfadauswahl bei erster Nutzung
@@ -28,10 +29,12 @@ Leichtgewichtiger Windows Launcher für PupCid's Little TikTool Helper.
 
 1. Lade `launcher.exe` von der [Download-Seite](https://ltth.app/download.html) herunter
 2. Führe die Datei aus
-3. Wähle bei der ersten Nutzung die Installationspfade:
+3. Der Launcher zeigt beim ersten Start einen **Splash Screen mit dem Changelog** der letzten Versionen
+4. Klicke auf "Weiter", um fortzufahren
+5. Wähle bei der ersten Nutzung die Installationspfade:
    - **Installationspfad**: Wo die Programmdateien gespeichert werden
    - **Konfigurationspfad**: Wo deine persönlichen Einstellungen gespeichert werden
-4. Der Launcher prüft automatisch auf Updates und installiert die neueste Version
+6. Der Launcher prüft automatisch auf Updates und installiert die neueste Version
 
 ### Für Entwickler
 
@@ -177,6 +180,12 @@ Dieses Problem wurde in Version 1.0.1+ behoben:
 - **Update**: Lade die neueste Version von `https://ltth.app/launcher.exe` herunter
 
 ## Changelog
+
+### Version 1.0.2 (2026-02-07)
+- **NEW**: Splash Screen mit Changelog - Zeigt beim Start die neuesten Änderungen übersichtlich an
+- **NEW**: Vollständiger Changelog-Abruf - `getFullChangelog()` Go-Binding für komplette Versionshistorie
+- **IMPROVED**: Changelog-Anzeige - Top 5 Versionen mit allen Änderungen, gruppiert und formatiert
+- **IMPROVED**: Benutzerfreundlichkeit - Changelog wird vor Setup/Main-View angezeigt
 
 ### Version 1.0.1 (2025-12-10)
 - **FIXED**: White screen issue - HTML now uses base64 encoding in data URL
