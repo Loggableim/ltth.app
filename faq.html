@@ -117,15 +117,42 @@
 
                 <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
                     <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">☁️</span>
+                        Was ist der Cloud Launcher?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Der Cloud Launcher ist eine kleine Windows-Anwendung (~7 MB), die LTTH automatisch herunterlädt, installiert und auf dem neuesten Stand hält. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">%LOCALAPPDATA%\LTTH\</code> gespeichert.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">⚠️</span>
+                        Warum erscheint eine SmartScreen-Warnung?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist normal für Open-Source-Projekte. Klicke „Weitere Informationen" → „Trotzdem ausführen". Die Datei ist sicher und der Quellcode ist auf GitHub einsehbar.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🍎</span>
+                        Gibt es LTTH für macOS oder Linux?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        Der Cloud Launcher ist derzeit nur für Windows verfügbar. macOS- und Linux-Support für den Launcher ist in Planung. LTTH selbst läuft auf allen Plattformen, aber die automatische Installation über den Launcher gibt es vorerst nur für Windows.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
                         <span style="font-size: var(--text-2xl);">💻</span>
                         Welche Betriebssysteme werden unterstützt?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        <strong>Windows, macOS und Linux</strong> werden unterstützt:<br><br>
-                        <strong>Windows:</strong> Windows 10/11 (64-bit) mit setup.exe Installer - einfachste Installation<br>
-                        <strong>macOS:</strong> macOS 10.15+ - manuelle Installation via npm (Native Installer in Planung)<br>
-                        <strong>Linux:</strong> Ubuntu 20.04+, Debian 11+ - manuelle Installation via npm<br><br>
-                        Alle Plattformen benötigen Node.js 18.0.0 oder höher. Siehe <a href="/docs.html" style="color: var(--color-primary); text-decoration: underline;">Installationsanleitung</a> für Details.
+                        Der <strong>Cloud Launcher</strong> unterstützt <strong>Windows 10 und Windows 11</strong>.<br><br>
+                        Die automatische Installation über den Launcher ist die empfohlene Methode für Windows-Nutzer. Siehe <a href="/download.html" style="color: var(--color-primary); text-decoration: underline;">Download-Seite</a> für Details.
                     </p>
                 </div>
 
@@ -135,9 +162,8 @@
                         Wie installiere ich das Tool?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        <strong>Windows:</strong> Einfach <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">setup.exe</code> herunterladen und ausführen. Node.js wird automatisch installiert falls benötigt.<br><br>
-                        <strong>Linux/macOS:</strong> Manuell mit <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm install</code> und <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm start</code>.<br><br>
-                        Siehe <a href="/docs.html" style="color: var(--color-primary); text-decoration: underline;">Dokumentation</a> für detaillierte Anleitung.
+                        <strong>Empfohlen:</strong> Lade den <a href="/downloads/launcher.exe" style="color: var(--color-primary); text-decoration: underline;">Cloud Launcher</a> herunter und führe ihn aus. Der Launcher installiert LTTH automatisch und hält es aktuell.<br><br>
+                        Weitere Details findest du auf der <a href="/download.html" style="color: var(--color-primary); text-decoration: underline;">Download-Seite</a>.
                     </p>
                 </div>
 
@@ -203,7 +229,7 @@
                         Brauche ich Node.js?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        Node.js wird benötigt, wird aber automatisch mit setup.exe installiert falls nicht vorhanden. Unterstützte Versionen: <strong>Node.js 18.0.0 - 23.x</strong>. Du musst dich um nichts kümmern.
+                        Der Launcher bringt alle erforderlichen Komponenten mit. Du musst dich um nichts kümmern.
                     </p>
                 </div>
 
@@ -260,8 +286,8 @@
                         Wie aktualisiere ich das Tool?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        Das Tool prüft automatisch alle 24 Stunden auf Updates. Wenn ein Update verfügbar ist, siehst du einen Banner im Dashboard.<br><br>
-                        <strong>Manuelles Update:</strong> Lade einfach die neue setup.exe und installiere über die alte Version. Deine Daten bleiben erhalten.
+                        Der Launcher prüft automatisch bei jedem Start auf Updates. Wenn ein Update verfügbar ist, wird dir eine Benachrichtigung angezeigt und du kannst mit einem Klick aktualisieren.<br><br>
+                        <strong>Automatisch:</strong> Der Launcher zeigt verfügbare Updates automatisch an und lädt sie auf Wunsch herunter.
                     </p>
                 </div>
             </div>
