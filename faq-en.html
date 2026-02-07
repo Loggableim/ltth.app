@@ -109,6 +109,36 @@
                 
                 <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border); transition: all var(--transition-base);">
                     <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">☁️</span>
+                        What is the Cloud Launcher?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        The Cloud Launcher is a small Windows application (~7 MB) that automatically downloads, installs and keeps LTTH up to date. It offers automatic updates, rollback to previous versions and integrated version management.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border); transition: all var(--transition-base);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🛡️</span>
+                        Why does SmartScreen show a warning?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        The launcher is a new application that hasn't been code-signed yet. This is normal for open-source projects. Click 'More info' → 'Run anyway'. The file is safe and the source code is available on GitHub.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border); transition: all var(--transition-base);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                        <span style="font-size: var(--text-2xl);">🍎</span>
+                        Is LTTH available for macOS or Linux?
+                    </h3>
+                    <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
+                        The Cloud Launcher is currently only available for Windows. macOS and Linux launcher support is planned. LTTH itself runs on all platforms, but automatic installation via the launcher is currently Windows-only.
+                    </p>
+                </div>
+
+                <div class="faq-item" style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); margin-bottom: var(--space-4); border: 1px solid var(--color-border); transition: all var(--transition-base);">
+                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
                         <span style="font-size: var(--text-2xl);">💰</span>
                         Is PupCid's Little TikTool Helper free?
                     </h3>
@@ -123,8 +153,9 @@
                         Which operating systems are supported?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        <strong>Windows, macOS and Linux</strong> are supported:<br><br>
-                        <strong>Windows:</strong> Windows 10/11 (64-bit) with setup.exe installer - easiest installation<br>
+                        <strong>Launcher:</strong> Windows 10/11 only<br>
+                        <strong>LTTH itself:</strong> Windows, macOS and Linux<br><br>
+                        <strong>Windows:</strong> Windows 10/11 (64-bit) with Cloud Launcher - easiest installation<br>
                         <strong>macOS:</strong> macOS 10.15+ - manual installation via npm (Native Installer planned)<br>
                         <strong>Linux:</strong> Ubuntu 20.04+, Debian 11+ - manual installation via npm<br><br>
                         All platforms require Node.js 18.0.0 or higher. See <a href="/docs-en.html" style="color: var(--color-primary); text-decoration: underline;">Installation Guide</a> for details.
@@ -137,7 +168,7 @@
                         How do I install the tool?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        <strong>Windows:</strong> Simply download <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">setup.exe</code> and run it. Node.js is automatically installed if needed.<br><br>
+                        <strong>Windows:</strong> Download and run the Cloud Launcher from <a href="/downloads/launcher.exe" style="color: var(--color-primary); text-decoration: underline;">/downloads/launcher.exe</a>. It automatically downloads, installs and keeps LTTH up to date.<br><br>
                         <strong>Linux/macOS:</strong> Manual installation with <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm install</code> and <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">npm start</code>.<br><br>
                         See <a href="/docs-en.html" style="color: var(--color-primary); text-decoration: underline;">Documentation</a> for detailed instructions.
                     </p>
@@ -205,7 +236,7 @@
                         Do I need Node.js?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        Node.js is required, but is automatically installed with setup.exe if not present. Supported versions: <strong>Node.js 18.0.0 - 23.x</strong>. You don't need to worry about anything.
+                        The launcher brings all required components with it. You don't need to worry about anything.
                     </p>
                 </div>
 
@@ -262,8 +293,8 @@
                         How do I update the tool?
                     </h3>
                     <p style="color: var(--color-text-secondary); margin: 0; line-height: 1.8;">
-                        The tool automatically checks for updates every 24 hours. When an update is available, you'll see a banner in the Dashboard.<br><br>
-                        <strong>Manual update:</strong> Simply download the new setup.exe and install over the old version. Your data will be preserved.
+                        The launcher automatically checks for updates on every start. When an update is available, you'll see a banner in the Dashboard.<br><br>
+                        <strong>Manual update:</strong> Simply download the new launcher and install over the old version. Your data will be preserved.
                     </p>
                 </div>
             </div>

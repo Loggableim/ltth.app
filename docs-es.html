@@ -125,6 +125,7 @@
                     <ul>
                         <li><a href="#introduction" class="active">Introducción</a></li>
                         <li><a href="#installation">Instalación y configuración</a></li>
+                        <li><a href="#cloud-launcher">Cloud Launcher</a></li>
                         <li><a href="#quick-start">Inicio rápido</a></li>
                         <li><a href="#configuration">Configuración</a></li>
                     </ul>
@@ -202,14 +203,15 @@
                     <li><strong>Espacio en disco:</strong> 500 MB de espacio libre</li>
                 </ul>
                 
-                <h2>Instalación</h2>
+                <h2>Instalación con Cloud Launcher (recomendado)</h2>
+                <p>El <strong>Cloud Launcher</strong> es el método de instalación más fácil y recomendado para Windows:</p>
                 <ol>
-                    <li><strong>Descargar:</strong> Descarga <code>setup.exe</code> desde <a href="/download-es.html">ltth.app/download</a></li>
-                    <li><strong>Ejecutar instalación:</strong> Haz doble clic en setup.exe y sigue el asistente de instalación</li>
-                    <li><strong>Node.js:</strong> Se instala automáticamente si no está presente</li>
-                    <li><strong>Iniciar servidor:</strong> La herramienta se inicia automáticamente después de la instalación</li>
-                    <li><strong>Abrir Dashboard:</strong> El navegador se abre automáticamente en <code>http://localhost:3000</code></li>
+                    <li><strong>Descarga:</strong> Descarga <code>launcher.exe</code> desde <a href="/downloads/launcher.exe">ltth.app/downloads/launcher.exe</a> (~7 MB)</li>
+                    <li><strong>Ejecutar Launcher:</strong> Haz doble clic en launcher.exe</li>
+                    <li><strong>Instalación automática:</strong> El launcher descarga e instala automáticamente la última versión de LTTH</li>
+                    <li><strong>¡Listo!:</strong> LTTH se inicia automáticamente y abre el dashboard</li>
                 </ol>
+                <p><strong>Beneficios:</strong> Actualizaciones automáticas, gestión de versiones, función de rollback, sin necesidad de instalación manual de Node.js.</p>
 
                 <h2>Instalación manual (para desarrolladores)</h2>
                 <pre><code># Clonar repositorio
@@ -220,12 +222,43 @@ cd ltth.app
 npm install
 
 # Iniciar servidor
-node launch.js
+node launch.js</code></pre>
+            </article>
 
-# O con script launcher:
-# Windows: start.exe
-# Linux: ./start-linux
-# macOS: ./start-mac</code></pre>
+            <article id="cloud-launcher">
+                <h1>Cloud Launcher</h1>
+                <p>El LTTH Cloud Launcher es el método de instalación recomendado para Windows.</p>
+                
+                <h2>Características</h2>
+                <ul>
+                    <li><strong>Descarga e instalación automáticas:</strong> Descarga automáticamente la última versión</li>
+                    <li><strong>Actualizaciones automáticas:</strong> Verifica version.json en cada inicio</li>
+                    <li><strong>Rollback:</strong> Cambiar a versiones anteriores vía Configuración → Versiones</li>
+                    <li><strong>Gestión de versiones integrada:</strong> Todas las versiones visibles y gestionables</li>
+                    <li><strong>Separación limpia:</strong> Datos en %LOCALAPPDATA%\LTTH\, config preservada</li>
+                </ul>
+
+                <h2>Detalles técnicos</h2>
+                <ul>
+                    <li><strong>Descarga:</strong> <a href="/downloads/launcher.exe">https://ltth.app/downloads/launcher.exe</a> (~7 MB)</li>
+                    <li><strong>Plataforma:</strong> Windows 10+</li>
+                    <li><strong>Instalación:</strong> <code>%LOCALAPPDATA%\LTTH\versions\&lt;version&gt;\</code></li>
+                    <li><strong>Configuración:</strong> <code>%APPDATA%\ltth-launcher\config.json</code></li>
+                    <li><strong>Logs:</strong> <code>%LOCALAPPDATA%\LTTH\launcher.log</code></li>
+                    <li><strong>Verificación versión:</strong> <code>https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json</code></li>
+                    <li><strong>Descarga app (interna):</strong> <code>https://ltth.app/app/ltth_latest.zip</code></li>
+                    <li><strong>Requisito:</strong> WebView2 Runtime (incluido con Windows 10/11)</li>
+                </ul>
+
+                <h2>Rollback</h2>
+                <p>Para volver a una versión anterior:</p>
+                <ol>
+                    <li>Abre la Configuración en el Launcher</li>
+                    <li>Ve a "Versiones"</li>
+                    <li>Selecciona la versión anterior deseada</li>
+                    <li>Haz clic en "Rollback"</li>
+                </ol>
+                <p>El launcher cambia inmediatamente a la versión seleccionada sin perder tu configuración.</p>
             </article>
 
             <article id="quick-start">

@@ -65,6 +65,7 @@
                     <h3 style="color: var(--color-primary); margin-bottom: 1rem;">🚀 Démarrage rapide</h3>
                     <ul style="color: var(--color-text-secondary); line-height: 2;">
                         <li><a href="/download-fr.html" style="color: var(--color-primary);">Installation</a></li>
+                        <li><a href="#cloud-launcher" style="color: var(--color-primary);">Cloud Launcher</a></li>
                         <li><a href="#premiere-connexion" style="color: var(--color-primary);">Première connexion</a></li>
                         <li><a href="#configuration-obs" style="color: var(--color-primary);">Configuration OBS</a></li>
                     </ul>
@@ -102,13 +103,57 @@
         </div>
     </section>
 
+    <section id="cloud-launcher" style="padding: 4rem 0;">
+        <div class="container" style="max-width: 900px;">
+            <h2 class="section-title">Cloud Launcher</h2>
+            <p style="color: var(--color-text-secondary); line-height: 1.8; margin-bottom: 2rem;">Le LTTH Cloud Launcher est la méthode d'installation recommandée pour Windows.</p>
+            
+            <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Fonctionnalités</h3>
+                <ul style="color: var(--color-text-secondary); line-height: 1.8;">
+                    <li><strong>Téléchargement et installation automatiques :</strong> Télécharge automatiquement la dernière version</li>
+                    <li><strong>Mises à jour automatiques :</strong> Vérifie version.json à chaque démarrage</li>
+                    <li><strong>Rollback :</strong> Retour aux versions précédentes via Paramètres → Versions</li>
+                    <li><strong>Gestion des versions intégrée :</strong> Toutes les versions visibles et gérables</li>
+                    <li><strong>Séparation propre :</strong> Données dans %LOCALAPPDATA%\LTTH\, config préservée</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Détails techniques</h3>
+                <ul style="color: var(--color-text-secondary); line-height: 1.8;">
+                    <li><strong>Téléchargement :</strong> <a href="/downloads/launcher.exe" style="color: var(--color-primary);">https://ltth.app/downloads/launcher.exe</a> (~7 Mo)</li>
+                    <li><strong>Plateforme :</strong> Windows 10+</li>
+                    <li><strong>Installation :</strong> <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">%LOCALAPPDATA%\LTTH\versions\&lt;version&gt;\</code></li>
+                    <li><strong>Configuration :</strong> <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">%APPDATA%\ltth-launcher\config.json</code></li>
+                    <li><strong>Logs :</strong> <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">%LOCALAPPDATA%\LTTH\launcher.log</code></li>
+                    <li><strong>Vérification version :</strong> <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json</code></li>
+                    <li><strong>Téléchargement app (interne) :</strong> <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">https://ltth.app/app/ltth_latest.zip</code></li>
+                    <li><strong>Prérequis :</strong> WebView2 Runtime (inclus avec Windows 10/11)</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Rollback</h3>
+                <p style="color: var(--color-text-secondary); line-height: 1.8;">Pour revenir à une version précédente :</p>
+                <ol style="color: var(--color-text-secondary); line-height: 2;">
+                    <li>Ouvrez les Paramètres dans le Launcher</li>
+                    <li>Allez dans "Versions"</li>
+                    <li>Sélectionnez la version précédente souhaitée</li>
+                    <li>Cliquez sur "Rollback"</li>
+                </ol>
+                <p style="color: var(--color-text-secondary); line-height: 1.8;">Le launcher bascule immédiatement vers la version sélectionnée sans perdre votre configuration.</p>
+            </div>
+        </div>
+    </section>
+
     <section id="premiere-connexion" style="background: var(--color-bg); padding: 4rem 0;">
         <div class="container" style="max-width: 900px;">
             <h2 class="section-title">Première connexion</h2>
             
             <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h3 style="margin-bottom: 1rem;">1. Démarrer l'application</h3>
-                <p style="color: var(--color-text-secondary); line-height: 1.8;">Après l'installation, exécutez <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">start.exe</code> (Windows) ou <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">./start-linux</code> (Linux) ou <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">./start-mac</code> (macOS). Le tableau de bord s'ouvrira automatiquement dans votre navigateur.</p>
+                <p style="color: var(--color-text-secondary); line-height: 1.8;">Après l'installation avec le <a href="#cloud-launcher" style="color: var(--color-primary);">Cloud Launcher</a>, l'application démarre automatiquement et le tableau de bord s'ouvre dans votre navigateur sur <code style="background: var(--color-bg); padding: 2px 6px; border-radius: 4px;">http://localhost:3000</code>.</p>
             </div>
             
             <div style="background: var(--color-surface); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
