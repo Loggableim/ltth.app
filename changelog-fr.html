@@ -60,11 +60,155 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.2.1 -->
+            <!-- Version 1.3.2 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.2</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Dernière</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 07 février 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Version de maintenance : Synchronisation de tous les numéros de version dans tous les fichiers de paquets.</p>
+            </div>
+
+            <!-- Version 1.3.0 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.0</h2>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 03 février 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Version majeure : AnimazingPal Brain Engine – Système de mémoire et de personnalité alimenté par l'IA pour les avatars VTuber.</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Nouvelles Fonctionnalités</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>AnimazingPal Brain Engine</strong> – Système de mémoire et de personnalité alimenté par l'IA pour les avatars VTuber
+                        <ul>
+                            <li>Mémoire persistante à long terme avec recherche vectorielle sémantique</li>
+                            <li>Suivi de profil utilisateur avec historique des relations</li>
+                            <li>5 personnalités de streamer prédéfinies + Créateur de Personnalité Personnalisée</li>
+                            <li>Réponses contextuelles alimentées par GPT (GPT-4o-mini, GPT-5 Nano)</li>
+                            <li>Système de Déclin et d'Archivage de Mémoire (7 jours d'archive, 90 jours de déclin, 30 jours d'élagage)</li>
+                            <li>Configuration de réponse automatique pour Chat, Cadeaux, Follows, Partages</li>
+                            <li>Limitation de débit et contrôle de probabilité de réponse</li>
+                            <li>15+ points de terminaison API pour la gestion du cerveau</li>
+                        </ul>
+                    </li>
+                    <li><strong>AnimazingPal Batch Processing (Système Outbox)</strong> – Flux de parole naturel pour les événements combinés
+                        <ul>
+                            <li>Fenêtre de lot de 8 secondes (configurable)</li>
+                            <li>Maximum 8 éléments par lot, maximum 320 caractères</li>
+                            <li>Pause automatique pendant l'activité vocale/microphone</li>
+                            <li>Déduplication d'événements basée sur TTL (600s)</li>
+                        </ul>
+                    </li>
+                    <li><strong>AnimazingPal Relevance Detection</strong> – Filtrage intelligent des messages de chat
+                        <ul>
+                            <li>Détection de questions avec correspondance de mots-clés</li>
+                            <li>Détection de salutations/remerciements avec cooldowns</li>
+                            <li>Filtrage de spam (commandes, URLs, emoji uniquement, caractères répétés)</li>
+                            <li>Pertinence basée sur le score (0-1) avec seuil configurable (0.6)</li>
+                        </ul>
+                    </li>
+                    <li><strong>AnimazingPal Response Engine</strong> – Génération de réponses alimentée par GPT
+                        <ul>
+                            <li>Réponses contextuelles avec historique utilisateur et souvenirs</li>
+                            <li>Accusés de réception rapides pour salutations/remerciements/cadeaux</li>
+                            <li>Cache de réponses de 5 minutes pour la réduction des appels API</li>
+                            <li>Maximum 18 mots par réponse pour un rythme TTS naturel</li>
+                        </ul>
+                    </li>
+                    <li><strong>AnimazingPal Enhanced API</strong> – 15 nouveaux points de terminaison
+                        <ul>
+                            <li>Statut d'Activité, Vidage de Lots, Test de Pertinence</li>
+                            <li>Déclencheurs de Déclin de Mémoire, Statistiques Étendues</li>
+                            <li>Statut du Cerveau, Configuration, Gestion de Personnalité</li>
+                            <li>Recherche de Mémoire, Profils Utilisateur, Réponses de Chat</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Corrections de Bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Détection de Doublons de Cadeaux</strong> – TikTok envoie les événements de cadeaux en double ; maintenant le timestamp original createTime est utilisé</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🏗️ Architecture</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Système modulaire piloté par événements avec des moteurs séparés pour le traitement par lots, la pertinence et les réponses</li>
+                    <li>Documentation étendue à 443 lignes</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.2.3 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.3</h2>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 06 janvier 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Version de maintenance : Correction du double comptage des pièces du plugin Goals.</p>
+
+                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Corrections de Bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Plugin Goals : Double comptage des pièces corrigé</strong> – Les écouteurs d'événements TikTok n'étaient pas correctement supprimés lors du rechargement du plugin ; maintenant nettoyage correct dans PluginAPI.unregisterAll()</li>
+                    <li>Affecte tous les plugins avec des gestionnaires d'événements TikTok (Goals, CoinBattle, Viewer Leaderboard, etc.)</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Améliorations</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Cohérence des versions synchronisée sur tous les fichiers de paquets</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.2.2 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.2</h2>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 15 décembre 2025</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Version Performance et Stabilité : Diagnostics de Performance Electron, Sélection du Mode de Lancement et nombreuses corrections.</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Nouvelles Fonctionnalités</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Guide et Outil de Diagnostics de Performance Electron</strong> – Diagnostic GPU, validation de configuration de build, analyse de blocage de threads, diagnostics IO/DB, liste de vérification en 13 étapes</li>
+                    <li><strong>Outil de Diagnostics de Performance</strong> – Surveillance des nœuds DOM, suivi de mémoire, scan de propriétés CSS, Observateur de Tâches Longues (&gt;50ms), suivi FPS de défilement</li>
+                    <li><strong>Panneau de Diagnostics dans les Paramètres</strong> – Détection GPU, journaux d'erreurs, démarre avant tous les autres plugins</li>
+                    <li><strong>Sélection du Mode de Lancement sur l'Écran de Démarrage</strong> – Choix entre l'application Electron ou le mode navigateur au démarrage</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Améliorations</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>SQLite : mode WAL, cache de 64 Mo, stockage temporaire en mémoire, mmap de 256 Mo</li>
+                    <li>Flags Electron : protocole QUIC, profil de couleur sRGB, CalculateNativeWinOcclusion désactivé</li>
+                    <li>Opérations IPC par Lots : settings:getMultiple et settings:setMultiple</li>
+                    <li>Virtual Scroller : throttling requestAnimationFrame, promotion de couche GPU, écouteurs d'événements passifs</li>
+                    <li>Performance CSS : will-change, contain, overscroll-behavior</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Corrections de Bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Le Menu Actions Rapides se met maintenant à jour sans rechargement de page après l'activation du plugin</li>
+                    <li>Modal Goals cliquable dans Electron (CSS stacking + focus dans iframe corrigé)</li>
+                    <li>Panneau d'Administration TTS cliquable dans Electron (corrections user-select, cursor)</li>
+                    <li>Détection de Plugin Désactivé améliorée</li>
+                    <li>Intégration Chatango fonctionne dans l'application Electron empaquetée</li>
+                    <li>Les drapeaux du Sélecteur de Langue s'affichent correctement</li>
+                    <li><strong>Erreurs 500 du Moteur TTS TikTok</strong> – Réécriture complète avec approche de point de terminaison hybride</li>
+                    <li><strong>Timeout 504 de Connexion TikTok</strong> – Optimisation de fetchRoomInfoOnConnect</li>
+                    <li><strong>Option Invalide de Connexion TikTok</strong> – enableWebsocketUpgrade supprimé</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.2.1 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Sortie : 15 décembre 2025</p>
                 
