@@ -90,113 +90,191 @@
         </div>
     </nav>
 
+    <!-- Beta Notice -->
+    <section class="beta-notice" id="betaNotice">
+        <div class="container">
+            <div class="beta-content">
+                <div class="beta-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </div>
+                <div class="beta-text">
+                    <strong>🚀 Versión <span id="betaVersion">1.3.2</span>:</strong> ¡En desarrollo activo con nuevas funciones! 
+                    Ya totalmente funcional para uso en producción. 
+                    Ayúdanos a mejorar:<br>
+                    <a href="https://github.com/Loggableim/ltth_desktop2/issues" target="_blank" rel="noopener">Reportar bugs</a> 
+                    o <a href="https://github.com/Loggableim/ltth_desktop2/issues/new" target="_blank" rel="noopener">Sugerir funciones</a>. 
+                    <a href="/roadmap-es.html">Ver roadmap →</a>
+                </div>
+                <button class="beta-close" id="betaClose" aria-label="Cerrar aviso beta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+
+
+
     <section class="hero">
         <div class="container">
             <h1 class="hero-title text-center">
-                <span class="hero-highlight">Descargar</span> PupCid's Little TikTool Helper
+                Descargar <span class="hero-highlight">ltth.app</span>
             </h1>
-            <p class="hero-description text-center" style="max-width: 700px; margin-left: auto; margin-right: auto;">
-                100% Gratuito, Open Source y disponible para Windows, macOS y Linux
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Descarga la solución profesional de streaming TikTok LIVE para Windows, macOS y Linux. Gratuito, rápido y seguro.
             </p>
         </div>
     </section>
 
     <section>
         <div class="container">
-            <div style="max-width: 900px; margin: 0 auto;">
-                <!-- Main Download Card -->
-                <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-10); border-radius: var(--radius-xl); margin-bottom: var(--space-8); text-align: center; color: white;">
-                    <h2 style="color: white; margin-bottom: var(--space-4); font-size: 2rem;">Windows (Recomendado)</h2>
-                    <p style="margin-bottom: var(--space-6); opacity: 0.95;">
-                        Instalador con todo incluido - Node.js se instala automáticamente si es necesario.
-                    </p>
-                    <a href="/app/ltth_latest.zip" class="btn btn-large" style="background: white; color: var(--color-primary); font-weight: 600; padding: 16px 32px;">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+            <div class="download-grid">
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        Descargar ZIP (v1.2.0)
+                    </div>
+                    <h3 class="download-name">Launcher Windows</h3>
+                    <p class="download-version">Recomendado · Solo ~6.6 MB</p>
+                    <a href="/downloads/launcher.exe" class="btn btn-primary download-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M9 3v18"/>
+                            <path d="M9 9h6"/>
+                        </svg>
+                        Descargar Launcher
                     </a>
-                    <p style="margin-top: var(--space-4); font-size: var(--text-sm); opacity: 0.8;">
-                        Windows 10/11 (64-bit) • ~150 MB
+                    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
+                        Con actualizaciones automáticas e instalación fácil
                     </p>
                 </div>
-
-                <!-- Alternative Downloads -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-8);">
-                    <div style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
-                        <h3 style="margin-bottom: var(--space-3);">🍎 macOS</h3>
-                        <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                            Instalación manual vía npm. Requiere Node.js 18+.
-                        </p>
-                        <pre style="background: var(--color-bg); padding: var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); overflow-x: auto;"><code>git clone https://github.com/Loggableim/pupcidslittletiktokhelper.git
-cd pupcidslittletiktokhelper
-npm install
-node launch.js</code></pre>
+                
+                <div class="download-card">
+                    <div class="download-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/>
+                            <polyline points="2.32 6.16 12 11 21.68 6.16"/>
+                            <line x1="12" y1="22.76" x2="12" y2="11"/>
+                        </svg>
                     </div>
+                    <h3 class="download-name">Manual (Todas las plataformas)</h3>
+                    <p class="download-version">Windows, macOS, Linux</p>
+                    <a href="/app/ltth_latest.zip" class="btn btn-secondary download-btn">
+                        Descargar ZIP
+                    </a>
+                    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 0.5rem;">
+                        Para usuarios avanzados · Requiere Node.js
+                    </p>
+                </div>
+            </div>
 
-                    <div style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
-                        <h3 style="margin-bottom: var(--space-3);">🐧 Linux</h3>
-                        <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                            Instalación manual vía npm. Requiere Node.js 18+.
-                        </p>
-                        <pre style="background: var(--color-bg); padding: var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); overflow-x: auto;"><code>git clone https://github.com/Loggableim/pupcidslittletiktokhelper.git
-cd pupcidslittletiktokhelper
-npm install
-node launch.js</code></pre>
+            <div class="install-steps">
+                <h2 class="section-title">Guía de instalación (Launcher Windows)</h2>
+                
+                <div class="install-step">
+                    <div class="install-step-number">1</div>
+                    <div class="install-step-content">
+                        <h3>Descargar el Launcher</h3>
+                        <p>Haz clic en el botón "Descargar Launcher" arriba para descargar <code>launcher.exe</code> (~6.6 MB).</p>
                     </div>
                 </div>
 
-                <!-- System Requirements -->
-                <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); border: 1px solid var(--color-border); margin-bottom: var(--space-8);">
-                    <h2 style="margin-bottom: var(--space-6);">Requisitos del sistema</h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-6);">
-                        <div>
-                            <h4 style="color: var(--color-primary); margin-bottom: var(--space-2);">Sistema operativo</h4>
-                            <ul style="color: var(--color-text-secondary); padding-left: var(--space-4);">
-                                <li>Windows 10/11 (64-bit)</li>
-                                <li>macOS 10.15+</li>
-                                <li>Ubuntu 20.04+ / Debian 11+</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 style="color: var(--color-primary); margin-bottom: var(--space-2);">Node.js</h4>
-                            <p style="color: var(--color-text-secondary);">
-                                Versión 18.0.0 - 23.x<br>
-                                <small>(Se instala automáticamente en Windows)</small>
-                            </p>
-                        </div>
-                        <div>
-                            <h4 style="color: var(--color-primary); margin-bottom: var(--space-2);">Hardware</h4>
-                            <ul style="color: var(--color-text-secondary); padding-left: var(--space-4);">
-                                <li>Mínimo 4 GB RAM</li>
-                                <li>500 MB espacio libre</li>
-                            </ul>
-                        </div>
+                <div class="install-step">
+                    <div class="install-step-number">2</div>
+                    <div class="install-step-content">
+                        <h3>Ejecutar el Launcher</h3>
+                        <p>Haz doble clic en el archivo <code>launcher.exe</code> descargado. El launcher te guiará a través de la instalación y descargará automáticamente la última versión de LTTH.</p>
                     </div>
                 </div>
 
-                <!-- Quick Start -->
-                <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); border: 1px solid var(--color-border);">
-                    <h2 style="margin-bottom: var(--space-6);">Inicio rápido</h2>
-                    <ol style="color: var(--color-text-secondary); line-height: 2;">
-                        <li><strong>Descargar:</strong> Descarga el archivo ZIP arriba</li>
-                        <li><strong>Extraer:</strong> Extrae el archivo ZIP en cualquier ubicación</li>
-                        <li><strong>Ejecutar:</strong> Haz doble clic en <code>start.exe</code> (Windows) o ejecuta <code>node launch.js</code></li>
-                        <li><strong>Abrir:</strong> El navegador se abre automáticamente en <code>http://localhost:3000</code></li>
-                        <li><strong>Conectar:</strong> Introduce tu nombre de usuario de TikTok e inicia tu stream</li>
+                <div class="install-step">
+                    <div class="install-step-number">3</div>
+                    <div class="install-step-content">
+                        <h3>Elegir la ruta de instalación</h3>
+                        <p>En el primer inicio, puedes seleccionar dónde debe instalarse LTTH. Las rutas predeterminadas están preconfiguradas, pero puedes personalizarlas según tus necesidades.</p>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="install-step-number">4</div>
+                    <div class="install-step-content">
+                        <h3>Conectar con TikTok</h3>
+                        <p>Después de la instalación, LTTH se inicia automáticamente. El panel de control se abre en tu navegador. ¡Introduce tu nombre de usuario de TikTok (sin @) y conéctate a tu stream LIVE!</p>
+                    </div>
+                </div>
+                
+                <div style="background: var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); margin-top: var(--space-4); border: 2px solid var(--color-border);">
+                    <h4 style="color: var(--color-text); margin-bottom: var(--space-2); display: flex; align-items: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; color: var(--color-primary);">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        Instalación manual (Avanzado)
+                    </h4>
+                    <p style="color: var(--color-text-secondary); margin-bottom: var(--space-3);">
+                        Alternativamente, puedes descargar el archivo ZIP para macOS, Linux o si prefieres la instalación manual:
+                    </p>
+                    <ol style="color: var(--color-text-secondary); margin-left: 1.5rem;">
+                        <li>Descarga <code>ltth_latest.zip</code></li>
+                        <li>Extrae el archivo ZIP</li>
+                        <li>Ejecuta <code>start.exe</code> (Windows), <code>start-linux</code> (Linux) o <code>start-mac</code> (macOS)</li>
+                        <li>Node.js 18.0.0+ debe estar ya instalado</li>
                     </ol>
-                    <p style="margin-top: var(--space-6);">
-                        <a href="/docs-es.html" style="color: var(--color-primary); text-decoration: none; font-weight: 500;">
-                            📖 Guía de instalación detallada →
-                        </a>
-                    </p>
                 </div>
 
-                <div style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-top: var(--space-6); border-left: 4px solid var(--color-primary);">
-                    <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">🔄 Actualizaciones Automáticas</h3>
-                    <p style="color: var(--color-text-secondary);">La aplicación incluye un mecanismo de actualización automática – después de la instalación inicial, las actualizaciones se ofrecen automáticamente a través del panel de control.</p>
+                <div class="system-requirements">
+                    <h3>Requisitos del sistema</h3>
+                    
+                    <p style="margin-bottom: 0.5rem; margin-top: 1rem; color: var(--color-text-secondary);">
+                        <strong>Launcher Windows:</strong>
+                    </p>
+                    <ul class="requirements-list">
+                        <li>Windows 10/11 (64-bit)</li>
+                        <li>WebView2 Runtime (preinstalado en Windows 10/11)</li>
+                        <li>Conexión a internet activa para actualizaciones y TikTok LIVE</li>
+                        <li>Al menos 512 MB de RAM (1 GB recomendado)</li>
+                        <li>~50 MB de espacio libre en disco</li>
+                    </ul>
+                    
+                    <p style="margin-bottom: 0.5rem; margin-top: 1rem; color: var(--color-text-secondary);">
+                        <strong>Instalación manual (ZIP):</strong>
+                    </p>
+                    <ul class="requirements-list">
+                        <li>Node.js 18.0.0 o superior (Descargar: <a href="https://nodejs.org" target="_blank" rel="noopener" style="color: var(--color-primary);">nodejs.org</a>)</li>
+                        <li>Windows 10+ (64-bit), macOS 10.15+, o Linux (Ubuntu 20.04+, Debian 11+)</li>
+                        <li>Conexión a internet activa para TikTok LIVE</li>
+                        <li>Al menos 512 MB de RAM (1 GB recomendado)</li>
+                        <li>200 MB de espacio libre en disco</li>
+                    </ul>
+                    
+                    <p style="margin-top: 1rem; color: var(--color-text-secondary);">
+                        <strong>Recomendado para todas las instalaciones:</strong> OBS Studio para overlays Browser Source
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-top: var(--space-6); border-left: 4px solid var(--color-primary);">
+                <h3 style="color: var(--color-primary); margin-bottom: var(--space-3);">🔄 Actualizaciones automáticas</h3>
+                <p style="color: var(--color-text-secondary);">El launcher verifica automáticamente las actualizaciones al inicio y descarga la última versión de LTTH. Tu configuración y ajustes se conservan durante las actualizaciones.</p>
+            </div>
+
+            <div class="section-cta">
+                <h3 style="margin-bottom: var(--space-3);">¿Necesitas ayuda?</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Consulta la documentación o contacta con nuestro soporte.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/docs-es.html" class="btn btn-primary">Ver documentación</a>
+                    <a href="/support-es.html" class="btn btn-secondary">Contactar soporte</a>
                 </div>
             </div>
         </div>
@@ -204,9 +282,57 @@ node launch.js</code></pre>
 
     <footer class="footer">
         <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-logo">
+                        <img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" />
+                        <span class="logo-text">ltth.app</span>
+                    </div>
+                    <p class="footer-description">
+                        PupCid's Little TikTool Helper - La solución profesional de streaming TikTok LIVE.
+                    </p>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Producto</h4>
+                    <ul class="footer-links">
+                        <li><a href="/features-es.html">Funciones</a></li>
+                        <li><a href="/plugins-es.html">Plugins</a></li>
+                        <li><a href="/changelog-es.html">Changelog</a></li>
+                        <li><a href="/roadmap-es.html">Roadmap</a></li>
+                        <li><a href="/download-es.html">Descargar</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Recursos</h4>
+                    <ul class="footer-links">
+                        <li><a href="/docs-es.html">Documentación</a></li>
+                        <li><a href="/faq-es.html">FAQ</a></li>
+                        <li><a href="/support-es.html">Soporte</a></li>
+                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-title">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="/privacy.html">Política de privacidad</a></li>
+                        <li><a href="/terms.html">Términos de servicio</a></li>
+                    </ul>
+                </div>
+            </div>
             <div class="footer-bottom">
-                <p class="footer-copyright">&copy; 2025-2026 ltth.app. Todos los derechos reservados.</p>
-                <p class="footer-legal"><a href="/impressum-es.html">Aviso legal</a></p>
+                <p class="footer-copyright">
+                    &copy; 2025-2026 ltth.app - PupCid's Little TikTool Helper. Todos los derechos reservados.
+                </p>
+                <p class="footer-legal">
+                    <a href="/impressum-es.html">Aviso legal</a>
+                </p>                <p class="footer-trademark" style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: var(--space-2);">
+                    Este producto no es un producto oficial de TikTok y no cuenta con el apoyo, patrocinio o autorización de TikTok o ByteDance. 
+                    Todas las marcas y logos pertenecen a sus respectivos propietarios.
+                </p>
+
+                <p class="footer-credits">
+                    Hecho con <span class="heart">♥</span> por Loggableim
+                </p>
             </div>
         </div>
     </footer>
