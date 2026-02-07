@@ -1,8 +1,59 @@
 {
-  "version": "1.2.1",
-  "releaseDate": "2025-12-15",
+  "version": "1.3.2",
+  "releaseDate": "2026-02-07",
   "status": "stable",
   "changelog": {
+    "1.3.2": {
+      "date": "2026-02-07",
+      "changes": [
+        "IMPROVED: Version consistency updates - Synchronized all version numbers across package files",
+        "IMPROVED: Maintenance release ensuring all components report identical version 1.3.2"
+      ]
+    },
+    "1.3.0": {
+      "date": "2026-02-03",
+      "changes": [
+        "NEW: AnimazingPal Brain Engine - AI-powered memory and personality system for VTuber avatars with persistent long-term memory, semantic vector search, 5 pre-defined streamer personalities + custom personality creator, GPT-powered contextual responses (GPT-4o-mini, GPT-5 Nano)",
+        "NEW: AnimazingPal Batch Processing (Outbox System) - Natural speech flow with 8-second batch window, max 8 items per batch, automatic pause during speech/mic activity, TTL-based event deduplication (600s)",
+        "NEW: AnimazingPal Relevance Detection - Intelligent chat message filtering with question detection, greeting/thanks recognition, spam filtering, score-based relevance (0-1) with configurable threshold",
+        "NEW: AnimazingPal Response Engine - GPT-powered reply generation with contextual responses using user history and memories, 5-minute response caching, max 18-word responses for natural TTS pacing",
+        "NEW: AnimazingPal Enhanced API - 15 new endpoints for brain/batch/relevance management including activity status, batch flushing, relevance testing, memory decay, personality management",
+        "FIXED: Gift Duplicate Detection - TikTok sends gift events twice (popup/animation + chat log entry); now uses original createTime timestamp instead of generating new ones",
+        "IMPROVED: AnimazingPal Documentation - Expanded README to 443 lines with full Brain Engine documentation",
+        "IMPROVED: AnimazingPal Architecture - Modular event-driven system with separate engines for batching, relevance, and responses"
+      ]
+    },
+    "1.2.3": {
+      "date": "2026-01-06",
+      "changes": [
+        "FIXED: Goals Plugin Coins Double-Counting - TikTok event listeners were not properly removed when plugins were unloaded/reloaded, causing duplicate event handlers to accumulate",
+        "IMPROVED: Added proper cleanup in PluginAPI.unregisterAll() to remove TikTok event listeners",
+        "IMPROVED: Version consistency updates across all package files and preset manager"
+      ]
+    },
+    "1.2.2": {
+      "date": "2025-12-15",
+      "changes": [
+        "NEW: Electron Performance Diagnostics Guide and Tool - GPU diagnosis, build config validation, thread blocking analysis, IO/DB diagnostics, 13-step diagnostic checklist",
+        "NEW: Performance Diagnostics Tool - DOM node monitoring, memory tracking, CSS property scan, Long Task observer, scroll FPS tracking",
+        "NEW: Diagnostics Panel in Settings - GPU support detection, error logs, launches before all other plugins",
+        "NEW: Launch Mode Selection on Splash Screen - Choose between Electron app or Browser mode at startup with tray menu integration",
+        "IMPROVED: SQLite Performance Optimizations - WAL mode, 64MB cache, memory temp storage, 256MB mmap",
+        "IMPROVED: Electron Performance Flags - Disabled CalculateNativeWinOcclusion, enabled QUIC protocol, force sRGB color profile",
+        "IMPROVED: IPC Batch Operations - settings:getMultiple and settings:setMultiple for reduced overhead",
+        "IMPROVED: Virtual Scroller Optimization - requestAnimationFrame throttling, GPU layer promotion, passive event listeners",
+        "IMPROVED: CSS Performance - will-change, contain, overscroll-behavior optimizations",
+        "FIXED: Quick Actions Menu not updating after enabling plugins until page refresh",
+        "FIXED: Goals Modal focus issue in Electron - CSS stacking and focus fixes for iframe context",
+        "FIXED: TTS Admin Panel unclickable in Electron - user-select and cursor fixes",
+        "FIXED: Plugin Disabled Detection improved with better error messages",
+        "FIXED: Chatango Integration white window in Electron",
+        "FIXED: Language Selector flags not showing in installed version",
+        "FIXED: TikTok TTS Engine 500 Errors - Complete rewrite with hybrid endpoint approach and multiple fallback options",
+        "FIXED: TikTok Connection 504 Timeout - fetchRoomInfoOnConnect optimization",
+        "FIXED: TikTok Connection Invalid Option - Removed non-existent enableWebsocketUpgrade"
+      ]
+    },
     "1.2.1": {
       "date": "2025-12-15",
       "changes": [
