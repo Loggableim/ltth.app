@@ -305,7 +305,7 @@ func bindFunctions(w webview2.WebView) {
 			updateAvailable = true
 		}
 
-		// Get changelog
+		// Get changelog for latest version
 		var changelog []string
 		if entry, ok := versionInfo.Changelog[latestVersion]; ok {
 			changelog = entry.Changes
@@ -323,6 +323,35 @@ func bindFunctions(w webview2.WebView) {
 
 		data, _ := json.Marshal(result)
 		log.Printf("Update check result: current=%s, latest=%s, available=%v", currentVersion, latestVersion, updateAvailable)
+		return string(data)
+	})
+
+	// Get full changelog (for splash screen)
+	w.Bind("getFullChangelog", func() string {
+		log.Println("Fetching full changelog...")
+		
+		resp, err := http.Get(VersionURL)
+		if err != nil {
+			log.Printf("Changelog fetch failed: %v", err)
+			return fmt.Sprintf(`{"success": false, "error": "%s"}`, err.Error())
+		}
+		defer resp.Body.Close()
+
+		var versionInfo VersionInfo
+		if err := json.NewDecoder(resp.Body).Decode(&versionInfo); err != nil {
+			return fmt.Sprintf(`{"success": false, "error": "Invalid version data"}`)
+		}
+
+		// Return full changelog with all versions
+		result := map[string]interface{}{
+			"success":     true,
+			"version":     versionInfo.Version,
+			"releaseDate": versionInfo.ReleaseDate,
+			"status":      versionInfo.Status,
+			"changelog":   versionInfo.Changelog,
+		}
+
+		data, _ := json.Marshal(result)
 		return string(data)
 	})
 
@@ -768,6 +797,23 @@ body {
 .changelog-list li:last-child { border-bottom: none; }
 .changelog-list li::before { content: '→'; position: absolute; left: 0; color: var(--color-primary); }
 
+.splash-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.splash-header { text-align: center; margin-bottom: 24px; }
+.splash-header h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+.splash-subtitle { font-size: 14px; color: var(--color-text-secondary); }
+.changelog-container { flex: 1; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 20px; overflow-y: auto; }
+.loading-spinner { text-align: center; padding: 40px; font-size: 16px; color: var(--color-text-secondary); }
+.changelog-version { margin-bottom: 32px; }
+.changelog-version:last-child { margin-bottom: 0; }
+.changelog-version-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--color-primary); }
+.changelog-version-title { font-size: 18px; font-weight: 700; color: var(--color-primary); }
+.changelog-version-date { font-size: 12px; color: var(--color-text-muted); }
+.changelog-version-list { list-style: none; }
+.changelog-version-list li { padding: 8px 0 8px 24px; position: relative; font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+.changelog-version-list li::before { content: '✓'; position: absolute; left: 0; color: var(--color-primary); font-weight: bold; }
+.changelog-version-list li:hover { color: var(--color-text); background: var(--color-bg); }
+.changelog-empty { text-align: center; padding: 40px; color: var(--color-text-muted); }
+
 .hidden { display: none !important; }
 </style>
 </head>
@@ -780,8 +826,29 @@ body {
     </div>
     
     <div class="content">
+        <!-- Splash Screen View with Changelog -->
+        <div class="view active" id="splashView">
+            <div class="splash-content">
+                <div class="splash-header">
+                    <h2 data-i18n="splash.title">Changelog</h2>
+                    <p class="splash-subtitle" data-i18n="splash.subtitle">Was gibt's Neues?</p>
+                </div>
+                <div class="changelog-container" id="splashChangelog">
+                    <div class="loading-spinner">⏳ <span data-i18n="splash.loading">Lade Changelog...</span></div>
+                </div>
+            </div>
+            <div style="flex:1"></div>
+            <div class="btn-row">
+                <button class="btn btn-primary btn-lg" id="splashContinueBtn" data-i18n="splash.continue">Weiter</button>
+            </div>
+            <div class="lang-row">
+                <button class="lang-btn active" data-lang="de">🇩🇪 Deutsch</button>
+                <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+            </div>
+        </div>
+        
         <!-- Setup View -->
-        <div class="view active" id="setupView">
+        <div class="view" id="setupView">
             <div class="path-group">
                 <label class="path-label" data-i18n="setup.installPath">Installationspfad</label>
                 <p class="path-desc" data-i18n="setup.installPathDesc">Hier werden die Programmdateien und Versionen gespeichert.</p>
@@ -911,6 +978,7 @@ body {
 // Localization
 const locales = {
     de: {
+        splash: { title: "Changelog", subtitle: "Was gibt's Neues?", loading: "Lade Changelog...", continue: "Weiter", error: "Fehler beim Laden des Changelogs" },
         setup: { title: "Willkommen beim LTTH Launcher", installPath: "Installationspfad", installPathDesc: "Hier werden die Programmdateien und Versionen gespeichert.", configPath: "Konfigurationspfad", configPathDesc: "Hier werden deine persönlichen Einstellungen gespeichert.", browse: "Durchsuchen...", continue: "Weiter", pathRequired: "Bitte wähle gültige Pfade aus." },
         main: { checkingUpdates: "Prüfe auf Updates...", upToDate: "Auf dem neuesten Stand", updateAvailable: "Update verfügbar", noVersion: "Keine Version installiert", ready: "Bereit zum Starten", version: "Version" },
         buttons: { checkNow: "Jetzt prüfen", installUpdate: "Update installieren", settings: "Einstellungen", logs: "Logs", start: "Starten", later: "Später", installNow: "Jetzt installieren", close: "Schließen" },
@@ -920,6 +988,7 @@ const locales = {
         errors: { network: "Netzwerkfehler", launch: "Start fehlgeschlagen" }
     },
     en: {
+        splash: { title: "Changelog", subtitle: "What's New?", loading: "Loading Changelog...", continue: "Continue", error: "Error loading changelog" },
         setup: { title: "Welcome to LTTH Launcher", installPath: "Installation Path", installPathDesc: "This is where program files and versions will be stored.", configPath: "Configuration Path", configPathDesc: "This is where your personal settings will be stored.", browse: "Browse...", continue: "Continue", pathRequired: "Please select valid paths." },
         main: { checkingUpdates: "Checking for updates...", upToDate: "Up to date", updateAvailable: "Update available", noVersion: "No version installed", ready: "Ready to start", version: "Version" },
         buttons: { checkNow: "Check Now", installUpdate: "Install Update", settings: "Settings", logs: "Logs", start: "Start", later: "Later", installNow: "Install Now", close: "Close" },
@@ -955,6 +1024,65 @@ async function init() {
     lang = config.language || 'de';
     applyLang();
     
+    // Show splash screen first
+    showView('splashView');
+    await loadSplashChangelog();
+}
+
+async function loadSplashChangelog() {
+    try {
+        const result = JSON.parse(await window.getFullChangelog());
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+        
+        const container = document.getElementById('splashChangelog');
+        const changelog = result.changelog;
+        
+        if (!changelog || Object.keys(changelog).length === 0) {
+            container.innerHTML = '<div class="changelog-empty">' + t('splash.error') + '</div>';
+            return;
+        }
+        
+        // Sort versions in descending order (newest first)
+        const versions = Object.keys(changelog).sort((a, b) => {
+            return compareVersions(b, a);
+        });
+        
+        // Show top 5 most recent versions
+        const recentVersions = versions.slice(0, 5);
+        let html = '';
+        
+        for (const version of recentVersions) {
+            const entry = changelog[version];
+            html += '<div class="changelog-version">';
+            html += '<div class="changelog-version-header">';
+            html += '<span class="changelog-version-title">v' + version + '</span>';
+            html += '<span class="changelog-version-date">' + entry.date + '</span>';
+            html += '</div>';
+            html += '<ul class="changelog-version-list">';
+            for (const change of entry.changes) {
+                html += '<li>' + escapeHtml(change) + '</li>';
+            }
+            html += '</ul>';
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+    } catch (e) {
+        const container = document.getElementById('splashChangelog');
+        container.innerHTML = '<div class="changelog-empty">' + t('splash.error') + '</div>';
+        console.error('Failed to load changelog:', e);
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function proceedFromSplash() {
     if (config.isFirstRun || !config.installPath) {
         showView('setupView');
         const paths = JSON.parse(await getDefaultPaths());
@@ -1121,6 +1249,8 @@ function showUpdateModal() {
 }
 
 // Event listeners
+document.getElementById('splashContinueBtn').onclick = proceedFromSplash;
+
 document.getElementById('browseInstallBtn').onclick = async () => {
     const path = await selectDirectory(t('setup.installPath'), document.getElementById('installPathInput').value);
     if (path) document.getElementById('installPathInput').value = path;
