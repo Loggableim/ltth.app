@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,73 +23,6 @@
     <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
-                <a href="/" class="logo">
-                    <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
-                    <span class="logo-text">ltth.app</span>
-                </a>
-                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="nav-menu" id="navMenu">
-                    <a href="/" class="nav-link">Home</a>
-                    <a href="/features.html" class="nav-link">Features</a>
-                    <a href="/plugins.html" class="nav-link">Plugins</a>
-                    <a href="/docs.html" class="nav-link">Docs</a>
-                    <a href="/community.html" class="nav-link">Community</a>
-                    <a href="/changelog.html" class="nav-link">Changelog</a>
-                    <a href="/roadmap.html" class="nav-link">Roadmap</a>
-                    <a href="/faq.html" class="nav-link">FAQ</a>
-                    <a href="/support.html" class="nav-link">Support</a>
-                    <a href="/download.html" class="nav-link active nav-cta">Download</a>
-                    
-                    <!-- Language Dropdown -->
-                    <div class="lang-dropdown">
-                        <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
-                            <span class="lang-flag">🇩🇪</span>
-                            <span class="lang-text">DE</span>
-                            <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"/>
-                            </svg>
-                        </a>
-                        <div class="lang-dropdown-menu">
-                            <a href="/download.html" class="lang-dropdown-item active">
-                                <span class="lang-flag">🇩🇪</span>
-                                <span>Deutsch</span>
-                            </a>
-                            <a href="/download-en.html" class="lang-dropdown-item">
-                                <span class="lang-flag">🇬🇧</span>
-                                <span>English</span>
-                            </a>
-                        <a href="/download-fr.html" class="lang-dropdown-item">
-                            <span class="lang-flag">🇫🇷</span>
-                            <span>Français</span>
-                        </a>
-                            <a href="/download-es.html" class="lang-dropdown-item">
-                                <span class="lang-flag">🇪🇸</span>
-                                <span>Español</span>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Theme Toggle -->
-                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-                        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5"/>
-                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                        </svg>
-                        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                        </svg>
-                    </button>
-                    </div>
-            </div>
-        </div>
-    </nav>
 
     <!-- Beta Notice -->
     <section class="beta-notice" id="betaNotice">
@@ -101,7 +34,7 @@
                     </svg>
                 </div>
                 <div class="beta-text">
-                    <strong>🚀 Version <span id="betaVersion">1.3.2</span>:</strong> Aktiv weiterentwickelt mit neuen Features! 
+                    <strong>🚀 Version <span id="betaVersion">1.3.3</span>:</strong> Aktiv weiterentwickelt mit neuen Features! 
                     Bereits voll funktionsfähig für den produktiven Einsatz. 
                     Hilf uns besser zu werden:<br>
                     <a href="https://github.com/Loggableim/ltth_desktop2/issues" target="_blank" rel="noopener">Bugs melden</a> 
@@ -145,7 +78,7 @@
                         </svg>
                     </div>
                     <h3 class="download-name">LTTH Cloud Launcher</h3>
-                    <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Version 1.3.2</p>
+                    <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Version 1.3.3</p>
                     <p style="font-size: 0.95rem; color: var(--color-text-secondary); margin: var(--space-3) 0; line-height: 1.5;">
                         Ein-Klick-Installation mit automatischen Updates, Rollback und Version-Management. 
                         Einfach herunterladen, ausführen und loslegen.
@@ -283,66 +216,13 @@
             </div>
         </div>
     </section>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-col">
-                    <div class="footer-logo">
-                        <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
-                        <span class="logo-text">ltth.app</span>
-                    </div>
-                    <p class="footer-description">
-                        PupCid's Little TikTool Helper - Die professionelle TikTok LIVE Streaming-Lösung.
-                    </p>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-title">Product</h4>
-                    <ul class="footer-links">
-                        <li><a href="/features.html">Features</a></li>
-                        <li><a href="/plugins.html">Plugins</a></li>
-                        <li><a href="/changelog.html">Changelog</a></li>
-                        <li><a href="/roadmap.html">Roadmap</a></li>
-                        <li><a href="/download.html">Download</a></li>
-                    </ul>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-title">Resources</h4>
-                    <ul class="footer-links">
-                        <li><a href="/docs.html">Documentation</a></li>
-                        <li><a href="/faq.html">FAQ</a></li>
-                        <li><a href="/support.html">Support</a></li>
-                        <li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li>
-                    </ul>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-title">Legal</h4>
-                    <ul class="footer-links">
-                        <li><a href="/privacy.html">Privacy Policy</a></li>
-                        <li><a href="/terms.html">Terms of Service</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p class="footer-copyright">
-                    &copy; 2025-2026 ltth.app - PupCid's Little TikTool Helper. All rights reserved.
-                </p>
-                <p class="footer-legal">
-                    <a href="/impressum.html">Impressum</a>
-                </p>                <p class="footer-trademark" style="font-size: 0.75rem; color: var(--color-text-secondary); margin-top: var(--space-2);">
-                    Dieses Produkt ist kein offizielles TikTok-Produkt und wird weder von TikTok noch von ByteDance unterstützt, gesponsert oder autorisiert. 
-                    Alle Marken und Logos gehören ihren jeweiligen Eigentümern.
-                </p>
-
-                <p class="footer-credits">
-                    Made with <span class="heart">♥</span> by Loggableim
-                </p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="/js/main.js"></script>
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
 </body>
 </html>

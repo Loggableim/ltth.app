@@ -202,6 +202,156 @@
             </div>
         </section>
 
+        <div class="section-divider"></div>
+
+        <!-- Slot Machine Detail -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">🎰 Slot Machine – Detailliert</h2>
+                <p style="color:var(--color-text-secondary); text-align:center; max-width:700px; margin:0 auto 2.5rem; font-size:1.05rem; line-height:1.7;">
+                    Die Slot Machine ist eines der leistungsfähigsten Elemente der Game Engine. Vollständig konfigurierbar, mit Echtzeit-Overlay, Symbol-Upload und professionellem Odds-System.
+                </p>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:2rem;">
+
+                    <!-- Engine -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">3-Walzen-Engine</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            3-Walzen-Slot-Engine mit konfigurierbaren Symbolsätzen. 12 Standard-Emoji-Symbole inklusive, vollständig austauschbar durch eigene Bilder (PNG/JPEG/GIF/WebP/SVG).
+                        </p>
+                    </div>
+
+                    <!-- Symbols & Weights -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚖️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Symbol-Gewichtungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Individuelle Gewichtungen pro Symbol. 6 Ergebnis-Kategorien (Jackpot, Großgewinn, Gewinn, Klein, Mini, Verlust) mit konfigurierbaren Wahrscheinlichkeitsprofilen.
+                        </p>
+                    </div>
+
+                    <!-- Odds Profiles -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📊</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Odds-Profile pro Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Konfigurierbare Gewinnchancen-Profile pro Trigger-Kontext: Chat (!spin), normale Gifts und seltene Gifts. Unterschiedliche Gewinnchancen je nach Aktivierung.
+                        </p>
+                    </div>
+
+                    <!-- Triggers -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Trigger-System</h3>
+                        <ul style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.8; padding-left:1.25rem; margin:0;">
+                            <li>Chat-Command <code>!spin</code> mit per-User & Global-Cooldowns</li>
+                            <li>VIP/Sub Cooldown-Ausnahmen</li>
+                            <li>Gift-Trigger-Mapping (Normal & Selten)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Rewards -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🏆</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Reward Dispatcher</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6; margin-bottom:0.5rem;">Konfigurierbare Belohnungen bei Gewinn:</p>
+                        <div class="feature-card-tags" style="flex-wrap:wrap;">
+                            <span class="feature-tag">🔊 Audio</span>
+                            <span class="feature-tag">🎨 Overlay</span>
+                            <span class="feature-tag">⚡ OpenShock</span>
+                            <span class="feature-tag">⭐ XP</span>
+                            <span class="feature-tag">💬 Chat</span>
+                            <span class="feature-tag">🎰 Free Spin</span>
+                        </div>
+                    </div>
+
+                    <!-- Overlay -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎨</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Animiertes OBS-Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Gestaffeltes Walzen-Stopp-System, Win-Glow bei Gewinn, Jackpot-Konfetti-Animation. Dynamic Reel Symbol Height und RAF Race Condition-fix.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Design & Sound -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎵</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Sound-Management</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6; margin-bottom:0.75rem;">
+                            7 anpassbare Sounds pro Maschine. Eigene Sound-Uploads, Spin-to-Sound-Synchronisation und Lautstärke-Konfiguration.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Spin Sound</span>
+                            <span class="feature-tag">Win Sound</span>
+                            <span class="feature-tag">Jackpot Sound</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎨</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Design-Presets & Themes</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6; margin-bottom:0.75rem;">
+                            6 fertige Design-Presets:
+                        </p>
+                        <div class="feature-card-tags" style="flex-wrap:wrap;">
+                            <span class="feature-tag">🎰 Classic</span>
+                            <span class="feature-tag">🌊 Ocean</span>
+                            <span class="feature-tag">🔥 Fire</span>
+                            <span class="feature-tag">💡 Neon</span>
+                            <span class="feature-tag">⬛ Monochrome</span>
+                            <span class="feature-tag">📼 Retro</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖼️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Symbol-Upload</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Ersetze alle 12 Standard-Symbole durch eigene Bilder. Unterstützt PNG, JPEG, GIF, WebP und SVG. Symbol-Editor direkt im Dashboard.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔢</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Multi-Machine-Support</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Betreibe mehrere unabhängige Slot Machines gleichzeitig. Jede mit eigenen Symbolen, Odds-Profilen, Sounds und Design-Settings.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">⚡</span>
+                            <span class="feature-tag feature-tag-new">OpenShock</span>
+                        </div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">OpenShock-Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Verbinde Slot-Machine-Ergebnisse mit OpenShock/PiShock. Konfiguriere Intensität und Dauer pro Ergebnis-Kategorie.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">⭐</span>
+                            <span class="feature-tag feature-tag-new">Neu</span>
+                        </div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Superfan-Erkennung</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            TikTok-Superfan-Status wird erkannt und gewährt automatisch VIP-Cooldown-Ausnahmen für die Slot Machine.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
         <!-- CTA -->
         <section style="padding: 3rem 0 4rem;">
             <div class="container" style="text-align:center;">

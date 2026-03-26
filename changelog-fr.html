@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,39 +17,6 @@
     <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
-                <a href="/index-fr.html" class="logo"><img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" /><span class="logo-text">ltth.app</span></a>
-                <button class="nav-toggle" id="navToggle" aria-label="Basculer la navigation"><span></span><span></span><span></span></button>
-                <div class="nav-menu" id="navMenu">
-                    <a href="/index-fr.html" class="nav-link">Accueil</a>
-                    <a href="/features-fr.html" class="nav-link">Fonctionnalités</a>
-                    <a href="/plugins-fr.html" class="nav-link">Plugins</a>
-                    <a href="/docs-fr.html" class="nav-link">Docs</a>
-                    <a href="/community-fr.html" class="nav-link">Communauté</a>
-                    <a href="/changelog-fr.html" class="nav-link active">Changelog</a>
-                    <a href="/roadmap-fr.html" class="nav-link">Roadmap</a>
-                    <a href="/faq-fr.html" class="nav-link">FAQ</a>
-                    <a href="/support-fr.html" class="nav-link">Support</a>
-                    <a href="/download-fr.html" class="nav-link nav-cta">Télécharger</a>
-                    <div class="lang-dropdown">
-                        <a href="#" class="lang-dropdown-toggle" aria-label="Sélectionner la langue"><span class="lang-flag">🇫🇷</span><span class="lang-text">FR</span><svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></a>
-                        <div class="lang-dropdown-menu">
-                            <a href="/changelog.html" class="lang-dropdown-item"><span class="lang-flag">🇩🇪</span><span>Deutsch</span></a>
-                            <a href="/changelog-en.html" class="lang-dropdown-item"><span class="lang-flag">🇬🇧</span><span>English</span></a>
-                            <a href="/changelog-fr.html" class="lang-dropdown-item active"><span class="lang-flag">🇫🇷</span><span>Français</span></a>
-                            <a href="/changelog-es.html" class="lang-dropdown-item">
-                                <span class="lang-flag">🇪🇸</span>
-                                <span>Español</span>
-                            </a>
-                        </div>
-                    </div>
-                    <button class="theme-toggle" id="themeToggle" aria-label="Basculer le mode sombre"><svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
-                </div>
-            </div>
-        </div>
-    </nav>
 
     <section class="hero">
         <div class="container">
@@ -60,6 +27,50 @@
 
     <section>
         <div class="container" style="max-width: 900px;">
+                        <!-- Version 1.3.3 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.3</h2>
+                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Dernière</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Publié le : 26 mars 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Points forts</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Majeure mise à jour : Music Bot, Weather Engine (13 effets), support PiShock, mises à jour Fireworks, correctifs critiques et nettoyage du dépôt.</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎵 Music Bot Plugin (v1.2.0)</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Recherche YouTube via yt-dlp</strong> – Intégré via npm (sans Python), auto-installation, interface du lecteur</li>
+                    <li><strong>3 designs d'overlay OBS</strong>, normalisation intelligente des requêtes, requêtes exclusives Superfan</li>
+                    <li><strong>Persistance de la file d'attente</strong>, commandes chat (!skip, !queue, !nowplaying, !remove)</li>
+                    <li><strong>Spotify/SoundCloud oEmbed</strong>, barre de vote pour passer, état inactif</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🌦️ Weather Engine (7 → 13 Effets)</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>6 nouveaux effets</strong> – Aurore, Lucioles, Météores, Sakura, Braises, Canicule</li>
+                    <li>Rides de flaques, accumulation de neige, vent Perlin, secousse d'écran orage</li>
+                    <li>9 optimisations de performances, FPS adaptatif, interface de contrôle météo</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎰 Game Engine – Machine à Sous</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Moteur 3 rouleaux, 12 symboles par défaut, poids par symbole, 6 catégories de résultats</li>
+                    <li>Profils de probabilités par déclencheur (chat/cadeau), commande !spin avec cooldowns</li>
+                    <li>Distributeur de récompenses (audio, overlay, OpenShock, XP, chat, tour gratuit)</li>
+                    <li>Multi-machine, système de tokens, reconnaissance Superfan, 7 sons, 6 presets de design</li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Corrections de bugs</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Connecteur TikTok</strong> – 3 corrections de reconnaissance des cadeaux</li>
+                    <li><strong>Profils spectateurs</strong> – 8 bugs corrigés</li>
+                    <li><strong>XP spectateurs</strong> – L'XP de temps de visionnage s'arrête hors ligne</li>
+                    <li><strong>Goals HUD</strong> – Les styles sauvegardés persistent après le rafraîchissement</li>
+                    <li>Corrections dans Gift Milestone, Soundboard, Slot Overlay, Game Engine Overlay</li>
+                </ul>
+            </div>
+
             <!-- Version 1.3.2 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
@@ -423,8 +434,13 @@
             </div>
         </div>
     </section>
-
-    <footer class="footer"><div class="container"><div class="footer-bottom"><p class="footer-copyright">&copy; 2025-2026 ltth.app. Tous droits réservés.</p><p class="footer-legal"><a href="/impressum-fr.html">Mentions légales</a></p></div></div></footer>
-    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'fr');
+        });
+    </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,39 +17,6 @@
     <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
-                <a href="/index-fr.html" class="logo"><img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" /><span class="logo-text">ltth.app</span></a>
-                <button class="nav-toggle" id="navToggle" aria-label="Basculer la navigation"><span></span><span></span><span></span></button>
-                <div class="nav-menu" id="navMenu">
-                    <a href="/index-fr.html" class="nav-link">Accueil</a>
-                    <a href="/features-fr.html" class="nav-link">Fonctionnalités</a>
-                    <a href="/plugins-fr.html" class="nav-link active">Plugins</a>
-                    <a href="/docs-fr.html" class="nav-link">Docs</a>
-                    <a href="/community-fr.html" class="nav-link">Communauté</a>
-                    <a href="/changelog-fr.html" class="nav-link">Changelog</a>
-                    <a href="/roadmap-fr.html" class="nav-link">Roadmap</a>
-                    <a href="/faq-fr.html" class="nav-link">FAQ</a>
-                    <a href="/support-fr.html" class="nav-link">Support</a>
-                    <a href="/download-fr.html" class="nav-link nav-cta">Télécharger</a>
-                    <div class="lang-dropdown">
-                        <a href="#" class="lang-dropdown-toggle" aria-label="Sélectionner la langue"><span class="lang-flag">🇫🇷</span><span class="lang-text">FR</span><svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></a>
-                        <div class="lang-dropdown-menu">
-                            <a href="/plugins.html" class="lang-dropdown-item"><span class="lang-flag">🇩🇪</span><span>Deutsch</span></a>
-                            <a href="/plugins-en.html" class="lang-dropdown-item"><span class="lang-flag">🇬🇧</span><span>English</span></a>
-                            <a href="/plugins-fr.html" class="lang-dropdown-item active"><span class="lang-flag">🇫🇷</span><span>Français</span></a>
-                            <a href="/plugins-es.html" class="lang-dropdown-item">
-                                <span class="lang-flag">🇪🇸</span>
-                                <span>Español</span>
-                            </a>
-                        </div>
-                    </div>
-                    <button class="theme-toggle" id="themeToggle" aria-label="Basculer le mode sombre"><svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
-                </div>
-            </div>
-        </div>
-    </nav>
 
     <section class="hero">
         <div class="container">
@@ -164,19 +131,13 @@
             </div>
         </div>
     </section>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-col"><div class="footer-logo"><img src="/assets/ltthicon.png" alt="Logo ltth.app" class="logo-icon" /><span class="logo-text">ltth.app</span></div><p class="footer-description">PupCid's Little TikTool Helper - La solution de streaming TikTok LIVE professionnelle.</p></div>
-                <div class="footer-col"><h4 class="footer-title">Produit</h4><ul class="footer-links"><li><a href="/features-fr.html">Fonctionnalités</a></li><li><a href="/plugins-fr.html">Plugins</a></li><li><a href="/changelog-fr.html">Changelog</a></li><li><a href="/roadmap-fr.html">Roadmap</a></li><li><a href="/download-fr.html">Télécharger</a></li></ul></div>
-                <div class="footer-col"><h4 class="footer-title">Ressources</h4><ul class="footer-links"><li><a href="/docs-fr.html">Documentation</a></li><li><a href="/faq-fr.html">FAQ</a></li><li><a href="/support-fr.html">Support</a></li><li><a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener">GitHub</a></li></ul></div>
-                <div class="footer-col"><h4 class="footer-title">Communauté</h4><ul class="footer-links"><li><a href="/community-fr.html">Hub Communauté</a></li><li><a href="https://github.com/Loggableim/ltth_desktop2/issues" target="_blank" rel="noopener">Signaler un bug</a></li><li><a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" rel="noopener">Discussions</a></li></ul></div>
-            </div>
-            <div class="footer-bottom"><p class="footer-copyright">&copy; 2025-2026 ltth.app - PupCid's Little TikTool Helper. Tous droits réservés.</p><p class="footer-legal"><a href="/impressum-fr.html">Mentions légales</a></p><p class="footer-credits">Fait avec <span class="heart">♥</span> par Loggableim</p></div>
-        </div>
-    </footer>
-
-    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'fr');
+        });
+    </script>
 </body>
 </html>
