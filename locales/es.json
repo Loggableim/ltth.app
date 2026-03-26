@@ -203,5 +203,138 @@
             "title": "Integración API TikFinity – PupCid's Little TikTool Helper",
             "description": "Manejo de eventos extendido a través de TikFinity, flujo de datos bidireccional, soporte de webhooks y sincronización en tiempo real."
         }
+    },
+    "plugins": {
+        "stableTitle": "Plugins Estables y Principales",
+        "stableSubtitle": "Plugins completamente probados y listos para producción para tu stream.",
+        "betaTitle": "Plugins Beta",
+        "betaSubtitle": "Plugins funcionales en desarrollo activo. ¡Comentarios bienvenidos!",
+        "earlyBetaTitle": "Plugins Early Beta",
+        "earlyBetaSubtitle": "Plugins experimentales en desarrollo temprano. El feedback activo ayuda al desarrollo.",
+        "badge": {
+            "stable": "🟢 Estable",
+            "beta": "🟡 Beta",
+            "earlyBeta": "🔴 Early Beta"
+        },
+        "clarityHud": {
+            "name": "ClarityHUD",
+            "desc": "Overlay de OBS modular con widgets personalizables: contador de espectadores, top gifter, feed de chat y más."
+        },
+        "lastEvent": {
+            "name": "LastEvent Spotlight",
+            "desc": "Muestra el último evento de TikTok como overlay animado: regalo, follow, share – perfecto para el engagement."
+        },
+        "soundboard": {
+            "name": "Soundboard",
+            "desc": "100.000+ sonidos via MyInstants, teclas de acceso rápido, integración OBS, mapeos de regalos y gestión de categorías."
+        },
+        "alertSystem": {
+            "name": "Sistema de Alertas",
+            "desc": "Alertas personalizables para regalos, seguidos, compartidos, likes con sonido, texto y combinaciones GIF/imagen."
+        },
+        "ttsEngine": {
+            "name": "Motor TTS",
+            "desc": "75+ voces, multi-motor (Windows SAPI, Google, Edge TTS), sistema de cola con prioridades y lista negra de usuarios."
+        },
+        "flowEngine": {
+            "name": "Motor de Flujo",
+            "desc": "Editor visual de automatización con drag & drop y disparadores basados en eventos – sin código necesario."
+        },
+        "gameEngine": {
+            "name": "Motor de Juego",
+            "desc": "5 juegos: Tragamonedas, Ruleta, Quiz, Predicciones y Token Games – integrados con eventos TikTok."
+        },
+        "animazingpal": {
+            "name": "AnimazingPal",
+            "desc": "Bot de chat con IA y integración GPT, memoria a largo plazo, 5 personalidades y respuestas contextuales."
+        },
+        "oscBridge": {
+            "name": "Puente OSC",
+            "desc": "Integración VRChat/OpenShock via protocolo OSC – controla avatares y hardware via eventos TikTok."
+        },
+        "multicam": {
+            "name": "Conmutador Multi-Cam",
+            "desc": "Cambio automático de cámara OBS basado en regalos y comandos de chat con OBS WebSocket v5."
+        },
+        "weatherOverlay": {
+            "name": "Overlay de Clima",
+            "desc": "13 efectos climáticos acelerados por GPU: lluvia, nieve, aurora, luciérnagas, sakura, tormenta y más."
+        },
+        "goalsSystem": {
+            "name": "Sistema de Metas",
+            "desc": "4 rastreadores de metas (Likes, Seguidores, Subs, Monedas) con fuente de navegador OBS y modos automáticos."
+        },
+        "musicBot": {
+            "name": "Music Bot",
+            "desc": "Búsqueda y streaming de YouTube, cola, solicitudes de canciones via chat, overlay OBS en 3 diseños, voto-skip."
+        },
+        "slotMachine": {
+            "name": "Tragamonedas",
+            "desc": "Tragamonedas de 3 carretes con soporte multi-máquina, reconocimiento superfan, sonidos personalizados y diseño configurable."
+        },
+        "chatCommands": {
+            "name": "Comandos de Chat",
+            "desc": "Comandos de chat personalizados con cooldowns, niveles de permiso (Broadcaster/Mod/Todos) e integración de disparadores Flow."
+        },
+        "minecraftConnect": {
+            "name": "Minecraft Connect",
+            "desc": "Integración de servidor Minecraft con puente de chat – conecta tu chat TikTok en vivo con el juego Minecraft."
+        },
+        "thermalPrinter": {
+            "name": "Impresora Térmica",
+            "desc": "Impresora térmica física para mensajes de chat y eventos via ESC/POS (USB y Red)."
+        },
+        "quizShow": {
+            "name": "Quiz Show",
+            "desc": "Juego de quiz interactivo para espectadores con preguntas generadas por GPT e integración de fuente de navegador OBS."
+        },
+        "viewerXp": {
+            "name": "XP de Espectadores",
+            "desc": "Seguimiento de XP, sistema de niveles y clasificaciones – recompensa a los espectadores leales con puntos de experiencia."
+        },
+        "leaderboard": {
+            "name": "Tabla de Clasificación",
+            "desc": "Overlay de clasificación en tiempo real para los mejores donantes y espectadores con actualizaciones WebSocket."
+        },
+        "openShock": {
+            "name": "OpenShock",
+            "desc": "Control de shock de hardware via eventos TikTok con mapeos de regalos configurables y editor de patrones."
+        },
+        "giftMilestone": {
+            "name": "Hito de Regalos",
+            "desc": "Rastreador de hitos para objetivos de regalos con celebraciones automáticas al alcanzar umbrales."
+        },
+        "vdoninja": {
+            "name": "VDO.Ninja",
+            "desc": "Streaming multi-invitado con integración VDO.Ninja, gestión de salas, códigos QR y enrutamiento de audio."
+        },
+        "gcce": {
+            "name": "GCCE",
+            "desc": "Game Controller Chat Extension – control de gamepad basado en chat con permisos y limitación de velocidad."
+        },
+        "advancedTimer": {
+            "name": "Temporizador Avanzado",
+            "desc": "Temporizadores y cuenta regresiva avanzados para streams con integración de fuente de navegador OBS."
+        },
+        "chatango": {
+            "name": "Chatango",
+            "desc": "Integración de chat Chatango – conecta tu canal Chatango al panel LTTH."
+        },
+        "gcceHud": {
+            "name": "GCCE HUD",
+            "desc": "Overlay HUD para la Game Controller Chat Extension – muestra comandos activos y acciones de jugadores."
+        },
+        "streamAlchemy": {
+            "name": "Stream Alchemy",
+            "desc": "Sistema de crafting RPG: los regalos TikTok se combinan en ítems RPG generados por IA – 4 niveles de rareza."
+        },
+        "emojiRain": {
+            "name": "WebGPU Emoji Rain",
+            "desc": "Lluvia de partículas emoji acelerada por GPU activada por regalos, likes y follows de TikTok."
+        },
+        "vulkanRockets": {
+            "name": "Vulkan Rockets",
+            "desc": "Animaciones de cohetes aceleradas por GPU como overlay – espectáculo visual para momentos especiales del stream."
+        }
     }
 }
