@@ -1,8 +1,24 @@
 {
-  "version": "1.3.2",
-  "releaseDate": "2026-02-07",
+  "version": "1.3.3",
+  "releaseDate": "2026-03-11",
   "status": "stable",
+  "downloadVersion": "1.3.2",
+  "downloadNote": "Latest published GitHub release is 1.3.2. Version 1.3.3 is available via the Cloud Launcher auto-update system.",
+  "downloadUrl": "https://github.com/Loggableim/ltth_desktop2/releases/tag/1.3.2",
   "changelog": {
+    "1.3.3": {
+      "date": "2026-03-11",
+      "changes": [
+        "NEW: Music Bot Plugin – YouTube search/streaming, queue management, song requests via chat, OBS overlay with 3 designs, Spotify oEmbed, vote-skip system",
+        "NEW: Slot Machine Plugin – Standalone 3-reel slot machine, multi-machine support, Superfan recognition, configurable symbols and sounds",
+        "NEW: Chat Commands Plugin – Custom chat commands with cooldowns, permission levels (broadcaster/mod/all), Flow trigger integration",
+        "NEW: Weather Engine expanded to 13 effects – Rain, Snow, Aurora, Fireflies, Sakura, Thunderstorm, Fog, Heatwave, Blizzard, Meteor Shower, Bubble Float, Leaf Fall, Confetti",
+        "NEW: PiShock / OpenShock hardware integration enhancements",
+        "IMPROVED: Plugin system now supports 31+ plugins with hot-reload",
+        "IMPROVED: AnimazingPal – GPT-5 Nano model support, improved batch processing",
+        "IMPROVED: TTS Engine – Edge TTS multi-engine support, improved queue system"
+      ]
+    },
     "1.3.2": {
       "date": "2026-02-07",
       "changes": [
