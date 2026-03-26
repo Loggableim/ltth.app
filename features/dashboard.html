@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-Tab Dashboard – Zentrales Steuerungszentrum mit Live-Viewer-Stats, Chat-Feed, Event-Log, Quick Actions, OBS-Integration und Plugin-Verwaltung für TikTok LIVE.">
+    <title>Multi-Tab Dashboard – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Multi-Tab Dashboard – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Zentrales Steuerungszentrum für deinen TikTok LIVE Stream – alles auf einen Blick.">
+    <meta property="og:url" content="https://ltth.app/features/dashboard.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/dashboard.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Multi-Tab Dashboard</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">📊</span>
+                <h1 class="feature-hero-title">Multi-Tab Dashboard</h1>
+                <p class="feature-hero-subtitle">Dein zentrales Steuerungszentrum für den Stream. Live-Stats, Chat, Events und OBS-Controls – alles in einem übersichtlichen, tabbed Interface.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- dashboard tabs -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Dashboard-Bereiche</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📈</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Live Viewer Stats</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Echtzeit-Zuschauerzahlen, Like-Rate, Gift-Einnahmen und neue Follower auf einen Blick. Historische Graphen zeigen den Verlauf der letzten 30 Minuten.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Echtzeit</span>
+                            <span class="feature-tag">Statistiken</span>
+                            <span class="feature-tag">Graphen</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💬</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Chat Feed</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Live-Chatfeed mit farbiger Hervorhebung für Gifts, Mods, VIPs und Top-Fans. Filterfunktion nach Nutzertyp, Stichworten oder Event-Kategorie.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Chat</span>
+                            <span class="feature-tag">Filter</span>
+                            <span class="feature-tag">Farb-Coding</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📋</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Event Log</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Chronologisches Log aller Stream-Events: Gifts, Follows, Shares, Likes und System-Events. Exportierbar als CSV für spätere Auswertungen.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Events</span>
+                            <span class="feature-tag">Log</span>
+                            <span class="feature-tag">CSV-Export</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- features grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Steuerungsfunktionen</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Quick Actions Panel</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Häufig genutzte Aktionen als One-Click-Buttons: TTS ein/aus, Soundboard-Trigger, Flow starten, Alert auslösen. Vollständig konfigurierbar.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎬</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">OBS Integration Controls</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Direkte OBS-Steuerung vom Dashboard: Szenen wechseln, Sources toggeln, Recording starten/stoppen – alles ohne OBS-Fenster wechseln zu müssen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔌</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Plugin Management</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Alle Plugins direkt aus dem Dashboard aktivieren, deaktivieren, konfigurieren und aktualisieren. Status-Übersicht zeigt aktive und fehlerhafte Plugins.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔔</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Alert Queue Monitor</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Aktuelle TTS- und Alert-Warteschlange einsehen. Einzelne Einträge überspringen oder die gesamte Queue leeren – perfekt für Moderation.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Goals Tracker</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Aktive Stream-Goals im Überblick. Fortschrittsanzeigen für Follower-Ziele, Gift-Ziele und Chat-Ziele – direkt aus dem Dashboard steuerbar.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🗂️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Tabbed Interface</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Alle Bereiche als eigenständige Tabs. Mehrere Browser-Fenster oder Monitore: Chat auf Monitor 1, Stats auf Monitor 2 – individuell anordnbar.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- stats -->
+        <section style="padding: 2rem 0;">
+            <div class="container">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1.5rem; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">6</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Dashboard-Tabs</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">∞</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Quick Actions</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">1s</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Update-Interval</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">30m</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Historie</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Dashboard nutzen</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Behalte deinen Stream immer im Blick – mit dem leistungsstärksten Dashboard für TikTok LIVE.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

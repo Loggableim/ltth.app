@@ -1,187 +1,207 @@
 {
-  "lang": "es",
-  "nav": {
-    "home": "Inicio",
-    "features": "Funciones",
-    "plugins": "Plugins",
-    "gameEngine": "Motor de Juego",
-    "docs": "Docs",
-    "download": "Descargar",
-    "changelog": "Registro de cambios",
-    "community": "Comunidad",
-    "faq": "FAQ",
-    "support": "Soporte",
-    "launcher": "Lanzador",
-    "vdoninja": "VDO.Ninja",
-    "viewerXp": "XP Espectadores",
-    "alerts": "Sistema de Alertas",
-    "goals": "Sistema de Metas"
-  },
-  "features": {
-    "animazingpal": "AnimazingPal Brain Engine",
-    "tts": "Motor Text-to-Speech",
-    "overlays": "Overlays y HUD",
-    "osc": "Puente OSC / VRChat",
-    "flowEngine": "Motor de Flujo",
-    "soundboard": "Soundboard Pro",
-    "multicam": "Conmutador MultiCam",
-    "security": "Seguridad",
-    "gameEngine": "Motor de Juego",
-    "pluginSystem": "Sistema de Plugins",
-    "vdoninja": "VDO.Ninja Multi-Invitado",
-    "viewerXp": "Sistema de XP de Espectadores",
-    "alerts": {
-      "title": "Sistema de Alertas",
-      "description": "Alertas totalmente personalizables para Regalos, Seguidos, Compartidos, Likes y Suscripciones con sonido, texto y combinaciones de imagen/GIF."
-    },
-    "goals": {
-      "title": "Sistema de Metas",
-      "description": "4 rastreadores de metas separados para Likes, Seguidores, Suscripciones y Monedas con URL de fuente de navegador OBS y modos automáticos."
-    },
-    "slot_machine": {
-      "title": "Tragamonedas",
-      "description": "Tragamonedas de 3 carretes con soporte multi-máquina, sonidos personalizados, reconocimiento de superfan y diseño completamente configurable."
-    }
-  },
-  "common": {
-    "learnMore": "Saber más",
-    "download": "Descargar ahora",
-    "getStarted": "Comenzar",
-    "viewDocs": "Documentación",
-    "openSource": "Código abierto",
-    "free": "Gratis",
-    "windowsOnly": "Disponible para Windows",
-    "version": "Versión",
-    "comingSoon": "Próximamente",
-    "new": "Nuevo",
-    "back": "Atrás",
-    "viewAll": "Ver todo"
-  },
-  "hero": {
-    "title": "Solución profesional de streaming en vivo de TikTok",
-    "subtitle": "Con más de 30 plugins, gestión de chat con IA, Motor de Juego, TTS y más. Gratis, código abierto y completamente local.",
-    "downloadCta": "Descargar ahora",
-    "featuresCta": "Explorar funciones",
-    "statsUsers": "Streamers activos",
-    "statsPlugins": "Plugins",
-    "statsStars": "Estrellas en GitHub"
-  },
-  "footer": {
-    "description": "PupCid's Little TikTool Helper – La solución profesional de streaming en vivo de TikTok.",
-    "product": "Producto",
-    "resources": "Recursos",
-    "community": "Comunidad",
-    "support": "Soporte",
-    "supportDev": "Apoyar el desarrollo",
-    "legal": "Legal",
-    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Todos los derechos reservados.",
-    "trademark": "No es un producto oficial de TikTok."
-  },
-  "meta": {
-    "home": {
-      "title": "PupCid's Little TikTool Helper – Solución profesional de streaming en vivo de TikTok",
-      "description": "Eventos en tiempo real, TTS con más de 75 voces, soundboard, sistema de plugins, integración con OBS y motor de juego para streamers de TikTok LIVE. Gratis y de código abierto."
+    "lang": "es",
+    "nav": {
+        "home": "Inicio",
+        "features": "Funciones",
+        "plugins": "Plugins",
+        "gameEngine": "Motor de Juego",
+        "docs": "Docs",
+        "download": "Descargar",
+        "changelog": "Registro de cambios",
+        "community": "Comunidad",
+        "faq": "FAQ",
+        "support": "Soporte",
+        "launcher": "Lanzador",
+        "vdoninja": "VDO.Ninja",
+        "viewerXp": "XP Espectadores",
+        "alerts": "Sistema de Alertas",
+        "goals": "Sistema de Metas"
     },
     "features": {
-      "title": "Funciones – PupCid's Little TikTool Helper",
-      "description": "Descubre todas las funciones: AnimazingPal Brain Engine, Motor de Juego, TTS, Motor de Flujo, Soundboard Pro, Overlays y más."
+        "animazingpal": "AnimazingPal Brain Engine",
+        "tts": "Motor Text-to-Speech",
+        "overlays": "Overlays y HUD",
+        "osc": "Puente OSC / VRChat",
+        "flowEngine": "Motor de Flujo",
+        "soundboard": "Soundboard Pro",
+        "multicam": "Conmutador MultiCam",
+        "security": "Seguridad",
+        "gameEngine": "Motor de Juego",
+        "pluginSystem": "Sistema de Plugins",
+        "vdoninja": "VDO.Ninja Multi-Invitado",
+        "viewerXp": "Sistema de XP de Espectadores",
+        "alerts": {
+            "title": "Sistema de Alertas",
+            "description": "Alertas totalmente personalizables para Regalos, Seguidos, Compartidos, Likes y Suscripciones con sonido, texto y combinaciones de imagen/GIF."
+        },
+        "goals": {
+            "title": "Sistema de Metas",
+            "description": "4 rastreadores de metas separados para Likes, Seguidores, Suscripciones y Monedas con URL de fuente de navegador OBS y modos automáticos."
+        },
+        "slot_machine": {
+            "title": "Tragamonedas",
+            "description": "Tragamonedas de 3 carretes con soporte multi-máquina, sonidos personalizados, reconocimiento de superfan y diseño completamente configurable."
+        }
     },
-    "download": {
-      "title": "Descargar – PupCid's Little TikTool Helper",
-      "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
+    "common": {
+        "learnMore": "Saber más",
+        "download": "Descargar ahora",
+        "getStarted": "Comenzar",
+        "viewDocs": "Documentación",
+        "openSource": "Código abierto",
+        "free": "Gratis",
+        "windowsOnly": "Disponible para Windows",
+        "version": "Versión",
+        "comingSoon": "Próximamente",
+        "new": "Nuevo",
+        "back": "Atrás",
+        "viewAll": "Ver todo"
+    },
+    "hero": {
+        "title": "Solución profesional de streaming en vivo de TikTok",
+        "subtitle": "Con más de 30 plugins, gestión de chat con IA, Motor de Juego, TTS y más. Gratis, código abierto y completamente local.",
+        "downloadCta": "Descargar ahora",
+        "featuresCta": "Explorar funciones",
+        "statsUsers": "Streamers activos",
+        "statsPlugins": "Plugins",
+        "statsStars": "Estrellas en GitHub"
+    },
+    "footer": {
+        "description": "PupCid's Little TikTool Helper – La solución profesional de streaming en vivo de TikTok.",
+        "product": "Producto",
+        "resources": "Recursos",
+        "community": "Comunidad",
+        "support": "Soporte",
+        "supportDev": "Apoyar el desarrollo",
+        "legal": "Legal",
+        "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Todos los derechos reservados.",
+        "trademark": "No es un producto oficial de TikTok."
+    },
+    "meta": {
+        "home": {
+            "title": "PupCid's Little TikTool Helper – Solución profesional de streaming en vivo de TikTok",
+            "description": "Eventos en tiempo real, TTS con más de 75 voces, soundboard, sistema de plugins, integración con OBS y motor de juego para streamers de TikTok LIVE. Gratis y de código abierto."
+        },
+        "features": {
+            "title": "Funciones – PupCid's Little TikTool Helper",
+            "description": "Descubre todas las funciones: AnimazingPal Brain Engine, Motor de Juego, TTS, Motor de Flujo, Soundboard Pro, Overlays y más."
+        },
+        "download": {
+            "title": "Descargar – PupCid's Little TikTool Helper",
+            "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
+        }
+    },
+    "slotMachine": {
+        "title": "Tragamonedas",
+        "subtitle": "Tragamonedas clásica como overlay de navegador OBS",
+        "reels": "Carretes",
+        "symbols": "Símbolos",
+        "weights": "Pesos",
+        "odds": "Probabilidades",
+        "triggers": "Disparadores",
+        "rewards": "Recompensas",
+        "chatCommand": "Comando de Chat",
+        "cooldown": "Cooldown",
+        "jackpot": "Jackpot",
+        "spin": "Girar",
+        "winGlow": "Brillo de Victoria",
+        "designPresets": "Presets de Diseño",
+        "symbolUpload": "Carga de Símbolos",
+        "soundManagement": "Gestión de Sonidos",
+        "multiMachine": "Soporte Multi-Máquina",
+        "superfan": "Reconocimiento Superfan",
+        "tokenSystem": "Sistema de Tokens"
+    },
+    "viewerXp": {
+        "title": "Sistema de XP de Espectadores",
+        "subtitle": "Seguimiento de XP, sistema de niveles y tablas de clasificación",
+        "xpTracking": "Seguimiento de XP",
+        "levelSystem": "Sistema de Niveles",
+        "leaderboard": "Tabla de Clasificación",
+        "overlayIntegration": "Integración de Overlay OBS",
+        "statistics": "Estadísticas",
+        "watchTime": "Tiempo de Visualización",
+        "offlineProtection": "Protección Offline"
+    },
+    "vdoninja": {
+        "title": "VDO.Ninja Multi-Invitado",
+        "subtitle": "Streams profesionales con múltiples invitados con integración VDO.Ninja",
+        "roomManagement": "Gestión de Salas",
+        "guestManagement": "Gestión de Invitados",
+        "apiRoutes": "Rutas API",
+        "socketEvents": "Eventos Socket.io",
+        "multiGuest": "Streaming Multi-Invitado",
+        "flowIntegration": "Integración de Automatización de Flujo",
+        "autoInjection": "Auto-Inyección en Flujos"
+    },
+    "pages": {
+        "index": {
+            "title": "PupCid's Little TikTool Helper – Solución Profesional de Streaming para TikTok LIVE",
+            "description": "La solución profesional de streaming para streamers de TikTok LIVE. Eventos en tiempo real, TTS, soundboard, sistema de plugins y más."
+        },
+        "plugins": {
+            "title": "Plugins – PupCid's Little TikTool Helper",
+            "description": "Más de 30 plugins para streams de TikTok LIVE. Extensiones para cada caso de uso."
+        },
+        "docs": {
+            "title": "Documentación – PupCid's Little TikTool Helper",
+            "description": "Documentación completa: instalación, configuración, referencia de API y desarrollo de plugins."
+        },
+        "community": {
+            "title": "Comunidad – PupCid's Little TikTool Helper",
+            "description": "Únete a la comunidad LTTH. Discord, GitHub, comentarios y soporte."
+        },
+        "changelog": {
+            "title": "Registro de Cambios – PupCid's Little TikTool Helper",
+            "description": "Todos los cambios, nuevas funciones y correcciones de errores en cada versión de LTTH."
+        },
+        "roadmap": {
+            "title": "Hoja de Ruta – PupCid's Little TikTool Helper",
+            "description": "Funciones planificadas y desarrollo futuro de PupCid's Little TikTool Helper."
+        },
+        "faq": {
+            "title": "Preguntas Frecuentes – PupCid's Little TikTool Helper",
+            "description": "Preguntas frecuentes sobre instalación, uso y configuración de LTTH."
+        },
+        "support": {
+            "title": "Soporte – PupCid's Little TikTool Helper",
+            "description": "Ayuda y soporte para PupCid's Little TikTool Helper. Reportar errores, obtener ayuda."
+        },
+        "download": {
+            "title": "Descargar – PupCid's Little TikTool Helper",
+            "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
+        },
+        "impressum": {
+            "title": "Aviso Legal – PupCid's Little TikTool Helper",
+            "description": "Información legal, aviso legal y política de privacidad de ltth.app."
+        },
+        "donate": {
+            "title": "Apoyar el Proyecto – PupCid's Little TikTool Helper",
+            "description": "Apoya el desarrollo de PupCid's Little TikTool Helper con una donación."
+        },
+        "thankyou": {
+            "title": "¡Gracias! – PupCid's Little TikTool Helper",
+            "description": "Gracias por apoyar a PupCid's Little TikTool Helper."
+        },
+        "emoji_rain": {
+            "title": "WebGPU Emoji Rain – PupCid's Little TikTool Helper",
+            "description": "Efectos de partículas acelerados por hardware activados por regalos, likes y follows de TikTok. Conjuntos de emojis personalizables."
+        },
+        "dashboard": {
+            "title": "Panel de Control Multi-Pestaña – PupCid's Little TikTool Helper",
+            "description": "Panel de control central con estadísticas en vivo, feed de chat, registro de eventos, acciones rápidas e integración con OBS."
+        },
+        "auto_updater": {
+            "title": "Sistema de Actualización Automática – PupCid's Little TikTool Helper",
+            "description": "Verificación automática de actualizaciones, aplicación de parches con un clic, gestión de versiones y soporte de reversión."
+        },
+        "chat_commands": {
+            "title": "Comandos de Chat Personalizados – PupCid's Little TikTool Helper",
+            "description": "Define comandos de chat personalizados, activa flujos, gestiona tiempos de reutilización y establece niveles de permisos."
+        },
+        "tikfinity_api": {
+            "title": "Integración API TikFinity – PupCid's Little TikTool Helper",
+            "description": "Manejo de eventos extendido a través de TikFinity, flujo de datos bidireccional, soporte de webhooks y sincronización en tiempo real."
+        }
     }
-  },
-  "slotMachine": {
-    "title": "Tragamonedas",
-    "subtitle": "Tragamonedas clásica como overlay de navegador OBS",
-    "reels": "Carretes",
-    "symbols": "Símbolos",
-    "weights": "Pesos",
-    "odds": "Probabilidades",
-    "triggers": "Disparadores",
-    "rewards": "Recompensas",
-    "chatCommand": "Comando de Chat",
-    "cooldown": "Cooldown",
-    "jackpot": "Jackpot",
-    "spin": "Girar",
-    "winGlow": "Brillo de Victoria",
-    "designPresets": "Presets de Diseño",
-    "symbolUpload": "Carga de Símbolos",
-    "soundManagement": "Gestión de Sonidos",
-    "multiMachine": "Soporte Multi-Máquina",
-    "superfan": "Reconocimiento Superfan",
-    "tokenSystem": "Sistema de Tokens"
-  },
-  "viewerXp": {
-    "title": "Sistema de XP de Espectadores",
-    "subtitle": "Seguimiento de XP, sistema de niveles y tablas de clasificación",
-    "xpTracking": "Seguimiento de XP",
-    "levelSystem": "Sistema de Niveles",
-    "leaderboard": "Tabla de Clasificación",
-    "overlayIntegration": "Integración de Overlay OBS",
-    "statistics": "Estadísticas",
-    "watchTime": "Tiempo de Visualización",
-    "offlineProtection": "Protección Offline"
-  },
-  "vdoninja": {
-    "title": "VDO.Ninja Multi-Invitado",
-    "subtitle": "Streams profesionales con múltiples invitados con integración VDO.Ninja",
-    "roomManagement": "Gestión de Salas",
-    "guestManagement": "Gestión de Invitados",
-    "apiRoutes": "Rutas API",
-    "socketEvents": "Eventos Socket.io",
-    "multiGuest": "Streaming Multi-Invitado",
-    "flowIntegration": "Integración de Automatización de Flujo",
-    "autoInjection": "Auto-Inyección en Flujos"
-  },
-  "pages": {
-    "index": {
-      "title": "PupCid's Little TikTool Helper – Solución Profesional de Streaming para TikTok LIVE",
-      "description": "La solución profesional de streaming para streamers de TikTok LIVE. Eventos en tiempo real, TTS, soundboard, sistema de plugins y más."
-    },
-    "plugins": {
-      "title": "Plugins – PupCid's Little TikTool Helper",
-      "description": "Más de 30 plugins para streams de TikTok LIVE. Extensiones para cada caso de uso."
-    },
-    "docs": {
-      "title": "Documentación – PupCid's Little TikTool Helper",
-      "description": "Documentación completa: instalación, configuración, referencia de API y desarrollo de plugins."
-    },
-    "community": {
-      "title": "Comunidad – PupCid's Little TikTool Helper",
-      "description": "Únete a la comunidad LTTH. Discord, GitHub, comentarios y soporte."
-    },
-    "changelog": {
-      "title": "Registro de Cambios – PupCid's Little TikTool Helper",
-      "description": "Todos los cambios, nuevas funciones y correcciones de errores en cada versión de LTTH."
-    },
-    "roadmap": {
-      "title": "Hoja de Ruta – PupCid's Little TikTool Helper",
-      "description": "Funciones planificadas y desarrollo futuro de PupCid's Little TikTool Helper."
-    },
-    "faq": {
-      "title": "Preguntas Frecuentes – PupCid's Little TikTool Helper",
-      "description": "Preguntas frecuentes sobre instalación, uso y configuración de LTTH."
-    },
-    "support": {
-      "title": "Soporte – PupCid's Little TikTool Helper",
-      "description": "Ayuda y soporte para PupCid's Little TikTool Helper. Reportar errores, obtener ayuda."
-    },
-    "download": {
-      "title": "Descargar – PupCid's Little TikTool Helper",
-      "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
-    },
-    "impressum": {
-      "title": "Aviso Legal – PupCid's Little TikTool Helper",
-      "description": "Información legal, aviso legal y política de privacidad de ltth.app."
-    },
-    "donate": {
-      "title": "Apoyar el Proyecto – PupCid's Little TikTool Helper",
-      "description": "Apoya el desarrollo de PupCid's Little TikTool Helper con una donación."
-    },
-    "thankyou": {
-      "title": "¡Gracias! – PupCid's Little TikTool Helper",
-      "description": "Gracias por apoyar a PupCid's Little TikTool Helper."
-    }
-  }
 }
