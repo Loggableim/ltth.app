@@ -203,5 +203,138 @@
             "title": "TikFinity API Integration – PupCid's Little TikTool Helper",
             "description": "Erweiterte Event-Behandlung via TikFinity, bidirektionaler Datenfluss, Webhook-Support und Echtzeit-Sync."
         }
+    },
+    "plugins": {
+        "stableTitle": "Stable & Core Plugins",
+        "stableSubtitle": "Vollständig getestete und produktionsreife Plugins für deinen Stream.",
+        "betaTitle": "Beta Plugins",
+        "betaSubtitle": "Funktionsfähige Plugins in aktiver Weiterentwicklung. Feedback willkommen!",
+        "earlyBetaTitle": "Early Beta Plugins",
+        "earlyBetaSubtitle": "Experimentelle Plugins in früher Entwicklungsphase. Aktives Feedback hilft bei der Weiterentwicklung.",
+        "badge": {
+            "stable": "🟢 Stable",
+            "beta": "🟡 Beta",
+            "earlyBeta": "🔴 Early Beta"
+        },
+        "clarityHud": {
+            "name": "ClarityHUD",
+            "desc": "Modulares OBS-Overlay mit anpassbaren Widgets: Viewer-Count, Top-Gifter, Chat-Feed und mehr."
+        },
+        "lastEvent": {
+            "name": "LastEvent Spotlight",
+            "desc": "Zeigt das letzte TikTok-Event als animiertes Overlay: Gift, Follow, Share – perfekt für Viewer-Engagement."
+        },
+        "soundboard": {
+            "name": "Soundboard",
+            "desc": "100.000+ Sounds via MyInstants, Hotkeys, OBS-Integration, Gift-Mappings und Kategorien-Management."
+        },
+        "alertSystem": {
+            "name": "Alert System",
+            "desc": "Anpassbare Alerts für Gifts, Follows, Shares, Likes mit Sound, Text und GIF/Bild-Kombinationen."
+        },
+        "ttsEngine": {
+            "name": "TTS Engine",
+            "desc": "75+ Stimmen, Multi-Engine (Windows SAPI, Google, Edge TTS), Queue-System mit Prioritäten und User-Blacklist."
+        },
+        "flowEngine": {
+            "name": "Flow Engine",
+            "desc": "Visueller Automations-Editor mit Drag & Drop und event-basierten Triggern – kein Code nötig."
+        },
+        "gameEngine": {
+            "name": "Game Engine",
+            "desc": "5 Spiele: Slot Machine, Wheel of Fortune, Quiz, Predictions und Token Games – voll in TikTok-Events integriert."
+        },
+        "animazingpal": {
+            "name": "AnimazingPal",
+            "desc": "KI-Chat-Bot mit GPT-Integration, Langzeit-Gedächtnis, 5 Persönlichkeiten und kontextuellen Antworten."
+        },
+        "oscBridge": {
+            "name": "OSC Bridge",
+            "desc": "VRChat/OpenShock-Integration über OSC-Protokoll – steuere Avatare und Hardware über TikTok-Events."
+        },
+        "multicam": {
+            "name": "Multi-Cam Switcher",
+            "desc": "Automatisches OBS-Kamera-Switching basierend auf Gifts und Chat-Commands mit OBS WebSocket v5."
+        },
+        "weatherOverlay": {
+            "name": "Weather Overlay",
+            "desc": "13 GPU-beschleunigte Wetter-Effekte: Regen, Schnee, Aurora, Fireflies, Sakura, Gewitter und mehr."
+        },
+        "goalsSystem": {
+            "name": "Goals System",
+            "desc": "4 Ziel-Tracker (Likes, Follower, Subs, Coins) mit OBS Browser Source, Auto-Modes und Progress-Bars."
+        },
+        "musicBot": {
+            "name": "Music Bot",
+            "desc": "YouTube-Suche & Streaming, Queue, Song Requests via Chat, OBS Overlay in 3 Designs, Vote-Skip."
+        },
+        "slotMachine": {
+            "name": "Slot Machine",
+            "desc": "3-Reel Slot Machine mit Multi-Machine-Support, Superfan-Erkennung, Custom Sounds und konfigurierbarem Design."
+        },
+        "chatCommands": {
+            "name": "Chat Commands",
+            "desc": "Custom Chat Commands mit Cooldowns, Permission-Stufen (Broadcaster/Mod/All) und Flow-Trigger-Integration."
+        },
+        "minecraftConnect": {
+            "name": "Minecraft Connect",
+            "desc": "Minecraft-Server-Integration mit Chat-Bridge – verbinde deinen TikTok-Live-Chat mit dem Minecraft-Spiel."
+        },
+        "thermalPrinter": {
+            "name": "Thermal Printer",
+            "desc": "Physischer Thermodrucker für Chat-Nachrichten und Events via ESC/POS (USB & Netzwerk)."
+        },
+        "quizShow": {
+            "name": "Quiz Show",
+            "desc": "Interaktives Quiz-Game für Viewer mit GPT-generierten Fragen und OBS Browser Source Integration."
+        },
+        "viewerXp": {
+            "name": "Viewer XP",
+            "desc": "XP-Tracking, Level-System und Bestenlisten – belohne treue Zuschauer mit Erfahrungspunkten."
+        },
+        "leaderboard": {
+            "name": "Leaderboard",
+            "desc": "Ranglisten-Overlay für Top-Gifter und Viewer in Echtzeit mit WebSocket-Updates und OBS Browser Source."
+        },
+        "openShock": {
+            "name": "OpenShock",
+            "desc": "Hardware-Shock-Steuerung via TikTok-Events mit konfigurierbaren Gift-Mappings und Pattern-Editor."
+        },
+        "giftMilestone": {
+            "name": "Gift Milestone",
+            "desc": "Meilenstein-Tracker für Gift-Ziele mit automatischen Feierlichkeiten beim Erreichen von Schwellenwerten."
+        },
+        "vdoninja": {
+            "name": "VDO.Ninja",
+            "desc": "Multi-Guest-Streaming mit VDO.Ninja-Integration, Room-Management, QR-Codes und Audio-Routing."
+        },
+        "gcce": {
+            "name": "GCCE",
+            "desc": "Game Controller Chat Extension – chat-basierte Gamepad-Steuerung mit Permissions und Rate-Limiting."
+        },
+        "advancedTimer": {
+            "name": "Advanced Timer",
+            "desc": "Erweiterte Timer und Countdowns für Streams mit OBS Browser Source Integration und Event-Triggern."
+        },
+        "chatango": {
+            "name": "Chatango",
+            "desc": "Chatango-Chat-Integration – verbinde deinen Chatango-Kanal mit dem LTTH-Dashboard."
+        },
+        "gcceHud": {
+            "name": "GCCE HUD",
+            "desc": "HUD-Overlay für die Game Controller Chat Extension – zeigt aktive Befehle und Spieler-Aktionen."
+        },
+        "streamAlchemy": {
+            "name": "Stream Alchemy",
+            "desc": "RPG-Crafting-System: TikTok-Gifts werden zu KI-generierten RPG-Items kombiniert – 4 Seltenheitsstufen."
+        },
+        "emojiRain": {
+            "name": "WebGPU Emoji Rain",
+            "desc": "GPU-beschleunigter Emoji-Partikel-Regen ausgelöst durch TikTok Gifts, Likes und Follows."
+        },
+        "vulkanRockets": {
+            "name": "Vulkan Rockets",
+            "desc": "GPU-beschleunigte Raketen-Animationen als Overlay – visuelles Spektakel für besondere Stream-Momente."
+        }
     }
 }
