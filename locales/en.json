@@ -1,0 +1,76 @@
+{
+  "lang": "en",
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "plugins": "Plugins",
+    "gameEngine": "Game Engine",
+    "docs": "Docs",
+    "download": "Download",
+    "changelog": "Changelog",
+    "community": "Community",
+    "faq": "FAQ",
+    "support": "Support",
+    "launcher": "Launcher"
+  },
+  "features": {
+    "animazingpal": "AnimazingPal Brain Engine",
+    "tts": "Text-to-Speech Engine",
+    "overlays": "Overlays & HUD",
+    "osc": "OSC / VRChat Bridge",
+    "flowEngine": "Flow Engine",
+    "soundboard": "Soundboard Pro",
+    "multicam": "Multi-Cam Switcher",
+    "security": "Security",
+    "gameEngine": "Game Engine",
+    "pluginSystem": "Plugin System"
+  },
+  "common": {
+    "learnMore": "Learn more",
+    "download": "Download now",
+    "getStarted": "Get Started",
+    "viewDocs": "Documentation",
+    "openSource": "Open Source",
+    "free": "Free",
+    "windowsOnly": "Available for Windows",
+    "version": "Version",
+    "comingSoon": "Coming Soon",
+    "new": "New",
+    "back": "Back",
+    "viewAll": "View all"
+  },
+  "hero": {
+    "title": "Professional TikTok LIVE Streaming Solution",
+    "subtitle": "With 30+ plugins, AI-powered chat management, Game Engine, TTS and more. Free, Open Source and fully local.",
+    "downloadCta": "Download Now",
+    "featuresCta": "Explore Features",
+    "statsUsers": "Active Streamers",
+    "statsPlugins": "Plugins",
+    "statsStars": "GitHub Stars"
+  },
+  "footer": {
+    "description": "PupCid's Little TikTool Helper – The professional TikTok LIVE streaming solution.",
+    "product": "Product",
+    "resources": "Resources",
+    "community": "Community",
+    "support": "Support",
+    "supportDev": "Support the Development",
+    "legal": "Legal",
+    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. All rights reserved.",
+    "trademark": "Not an official TikTok product."
+  },
+  "meta": {
+    "home": {
+      "title": "PupCid's Little TikTool Helper – Professional TikTok LIVE Streaming Solution",
+      "description": "Real-time events, TTS with 75+ voices, soundboard, plugin system, OBS integration and game engine for TikTok LIVE streamers. Free and Open Source."
+    },
+    "features": {
+      "title": "Features – PupCid's Little TikTool Helper",
+      "description": "Discover all features: AnimazingPal Brain Engine, Game Engine, TTS, Flow Engine, Soundboard Pro, Overlays and more."
+    },
+    "download": {
+      "title": "Download – PupCid's Little TikTool Helper",
+      "description": "Download PupCid's Little TikTool Helper for free. Available for Windows 10/11."
+    }
+  }
+}

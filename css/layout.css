@@ -1,0 +1,355 @@
+/* layout.css - Shared Layout Styles for ltth.app */
+
+/* ===================================
+   Navigation Dropdown Styles
+   =================================== */
+
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+}
+
+.nav-dropdown-arrow {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nav-dropdown.open .nav-dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    min-width: 220px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 200;
+    animation: dropdownIn 0.15s ease;
+}
+
+.nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-text, #f5f7f4);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.nav-dropdown-item:hover {
+    background: rgba(18, 161, 22, 0.15);
+    color: var(--color-primary, #12a116);
+}
+
+/* ===================================
+   Feature Card Grid
+   =================================== */
+
+.feature-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+@media (max-width: 900px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .feature-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.feature-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.feature-card-item {
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 1rem;
+    padding: 1.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    height: 100%;
+}
+
+.feature-card-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(18, 161, 22, 0.15);
+    border-color: var(--color-primary, #12a116);
+}
+
+.feature-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--color-text, #f5f7f4);
+}
+
+.feature-card-desc {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.feature-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.feature-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background: rgba(18, 161, 22, 0.12);
+    color: var(--color-primary, #12a116);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.feature-tag-new {
+    background: rgba(100, 18, 161, 0.2);
+    color: #a855f7;
+}
+
+/* ===================================
+   Sub-Page Layout (Sidebar + Content)
+   =================================== */
+
+.subpage-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2.5rem;
+    align-items: start;
+    padding: 2rem 0;
+}
+
+@media (max-width: 860px) {
+    .subpage-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.subpage-sidebar {
+    position: sticky;
+    top: 5rem;
+}
+
+.subpage-sidebar-nav {
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 1rem;
+    padding: 1.25rem;
+}
+
+.subpage-sidebar-nav h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary, #b5b7b4);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border, #2a2b2d);
+}
+
+.subpage-sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.subpage-sidebar-nav li a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.subpage-sidebar-nav li a:hover,
+.subpage-sidebar-nav li a.active {
+    background: rgba(18, 161, 22, 0.12);
+    color: var(--color-primary, #12a116);
+}
+
+/* ===================================
+   Breadcrumb Navigation
+   =================================== */
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.breadcrumb a {
+    color: var(--color-text-secondary, #b5b7b4);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary, #12a116);
+}
+
+.breadcrumb-sep {
+    opacity: 0.5;
+}
+
+.breadcrumb-current {
+    color: var(--color-text, #f5f7f4);
+    font-weight: 500;
+}
+
+/* ===================================
+   Version Badge
+   =================================== */
+
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    background: rgba(18, 161, 22, 0.15);
+    color: var(--color-primary, #12a116);
+    border: 1px solid rgba(18, 161, 22, 0.3);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+}
+
+/* ===================================
+   Mobile Hamburger Open State
+   =================================== */
+
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-surface, #1a1b1d);
+        border-bottom: 1px solid var(--color-border, #2a2b2d);
+        padding: 1rem;
+        gap: 0.25rem;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    
+    .nav-menu.open {
+        display: flex;
+    }
+    
+    .nav-toggle.open span:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+    .nav-toggle.open span:nth-child(2) {
+        opacity: 0;
+    }
+    .nav-toggle.open span:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+    
+    .nav-dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: none;
+        background: rgba(18, 161, 22, 0.05);
+        margin: 0.25rem 0;
+    }
+    
+    .lang-dropdown .lang-dropdown-menu {
+        position: static;
+    }
+}
+
+/* ===================================
+   Feature Section Hero
+   =================================== */
+
+.feature-hero {
+    padding: 5rem 0 3rem;
+    text-align: center;
+}
+
+.feature-hero-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-hero-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--color-primary, #12a116), #42ff73);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.feature-hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    max-width: 650px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+}
+
+/* ===================================
+   Section dividers
+   =================================== */
+
+.section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border, #2a2b2d), transparent);
+    margin: 3rem 0;
+}

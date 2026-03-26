@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Multi-Cam Switcher – Automatisches Kamera-Switching basierend auf TikTok-Events, OBS Szenen-Wechsel via WebSocket und manuelle Overrides.">
+    <title>Multi-Cam Switcher – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Multi-Cam Switcher – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Automatisches Kamera-Switching basierend auf TikTok-Events, OBS Szenen-Wechsel via WebSocket und manuelle Overrides.">
+    <meta property="og:url" content="https://ltth.app/features/multicam.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/multicam.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Multi-Cam Switcher</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">📷</span>
+                <h1 class="feature-hero-title">Multi-Cam Switcher</h1>
+                <p class="feature-hero-subtitle">Dein Stream reagiert automatisch auf TikTok-Events – Kamera-Wechsel, Szenenübergänge und visuelle Anpassungen passieren von selbst, während du streamst.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- main features -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Switcher Features</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🤖</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Automatisches Switching</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Regeln definieren, wann welche Kamera oder Szene aktiv wird. LTTH wechselt automatisch basierend auf Viewer-Anzahl, Events oder Zeit-Triggern.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎬</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">OBS WebSocket</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Vollständige OBS-Integration via WebSocket v5. Szenen, Quellen, Filter, Audio und Übergänge sind alle steuerbar – direkt aus dem Admin-Panel.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Trigger-Bedingungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Flexible Trigger: Viewer-Anzahl überschreitet Schwelle, Gift-Typ empfangen, Comment-Keyword erkannt oder Meilenstein erreicht.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🕹️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Manual Override</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Jederzeit manuell übersteuern: Ein-Klick-Szenen-Wechsel im Admin-Dashboard. Hotkey-Support für blitzschnelle Kamera-Wechsel während des Streams.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖥️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Live Preview</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Vorschau aller OBS-Szenen im Admin-Panel. Sieh vor dem Wechsel, was Zuschauer sehen werden. Übergangs-Vorschau inkl. Transition-Effekte.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Scene Rotation</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Automatische Szenen-Rotation nach Zeit oder Event-Anzahl. Halte deinen Stream dynamisch ohne manuellen Eingriff – ideal für lange Live-Sessions.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- trigger examples -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Trigger-Beispiele</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:600;">👥 Viewer-Spike</span>
+                            <span style="font-size:0.8rem; color:var(--color-text-secondary);">→ Wechsel auf Haupt-Cam</span>
+                        </div>
+                        <p style="color:var(--color-text-secondary); font-size:0.85rem;">Wenn Viewer-Anzahl &gt; 500 → Szene "Main Camera" aktivieren</p>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:600;">🎁 Mega Gift</span>
+                            <span style="font-size:0.8rem; color:var(--color-text-secondary);">→ Reaction Cam</span>
+                        </div>
+                        <p style="color:var(--color-text-secondary); font-size:0.85rem;">Wenn Geschenkwert &gt; 1000 → Szene "Close Up" für 10 Sekunden</p>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <span style="font-weight:600;">💬 "!cam2"</span>
+                            <span style="font-size:0.8rem; color:var(--color-text-secondary);">→ Kamera 2</span>
+                        </div>
+                        <p style="color:var(--color-text-secondary); font-size:0.85rem;">Chat-Command von Moderator → Szene "Camera 2" aktivieren</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Multi-Cam einrichten</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Professionelle Kamera-Automation für deinen TikTok LIVE – kostenlos herunterladen.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

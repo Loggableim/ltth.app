@@ -1,0 +1,65 @@
+// i18n.js - Internationalization for ltth.app
+(function() {
+    'use strict';
+    
+    let translations = {};
+    let currentLang = 'de';
+    
+    function get(key) {
+        const parts = key.split('.');
+        let obj = translations;
+        for (const part of parts) {
+            if (obj == null || typeof obj !== 'object') return key;
+            obj = obj[part];
+        }
+        return (obj != null && typeof obj === 'string') ? obj : key;
+    }
+    
+    async function load(lang) {
+        try {
+            const response = await fetch('/locales/' + lang + '.json');
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            translations = await response.json();
+            currentLang = lang;
+            return true;
+        } catch(e) {
+            console.warn('i18n: Could not load locale', lang, e);
+            if (lang !== 'de') {
+                return load('de'); // fallback to German
+            }
+            return false;
+        }
+    }
+    
+    function apply() {
+        document.documentElement.lang = currentLang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const value = get(key);
+            if (value !== key) {
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.placeholder = value;
+                } else if (el.hasAttribute('data-i18n-attr')) {
+                    const attr = el.getAttribute('data-i18n-attr');
+                    el.setAttribute(attr, value);
+                } else {
+                    el.textContent = value;
+                }
+            }
+        });
+        // Update page title if data-i18n-title set on <head>
+        const titleKey = document.head.getAttribute('data-i18n-title');
+        if (titleKey) {
+            const title = get(titleKey);
+            if (title !== titleKey) document.title = title;
+        }
+        document.dispatchEvent(new CustomEvent('i18nApplied', { detail: { lang: currentLang } }));
+    }
+    
+    async function init(lang) {
+        await load(lang || 'de');
+        apply();
+    }
+    
+    window.I18n = { init, apply, t: get, load, get currentLang() { return currentLang; } };
+})();
