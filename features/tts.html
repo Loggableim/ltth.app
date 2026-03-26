@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TTS Engine – 75+ Stimmen mit Azure TTS und ElevenLabs, Warteschlangen-Management, Filtersystem und per-User Voice Settings für TikTok LIVE.">
+    <title>Text-to-Speech Engine – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Text-to-Speech Engine – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="75+ Stimmen mit Azure TTS und ElevenLabs, Warteschlangen-Management, Filtersystem und per-User Voice Settings.">
+    <meta property="og:url" content="https://ltth.app/features/tts.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/tts.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">TTS Engine</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🎙️</span>
+                <h1 class="feature-hero-title">Text-to-Speech Engine</h1>
+                <p class="feature-hero-subtitle">75+ natürlich klingende Stimmen, professionelle TTS-Anbieter und ein intelligentes Queue-System – deine Zuschauer werden gehört, ohne deinen Stream zu unterbrechen.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- voice providers -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">TTS-Anbieter</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">☁️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Azure TTS</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Microsoft Azure Cognitive Services bietet über 400 neuronale Stimmen in 140+ Sprachen. Hochqualitative, natürlich klingende Sprachausgabe mit SSML-Support.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">400+ Stimmen</span>
+                            <span class="feature-tag">140+ Sprachen</span>
+                            <span class="feature-tag">SSML</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎭</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ElevenLabs</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            State-of-the-Art KI-Stimmensynthese von ElevenLabs. Extrem realistische Stimmen mit emotionaler Nuancierung. Ideal für VTuber und Charakterstimmen.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">KI-Stimmen</span>
+                            <span class="feature-tag">Emotionen</span>
+                            <span class="feature-tag">VTuber</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💻</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">System TTS</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Offline-TTS über Windows SAPI und Web Speech API. Keine API-Kosten, immer verfügbar. Nutzt installierte System-Stimmen für lokale Sprachausgabe.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Offline</span>
+                            <span class="feature-tag">Kostenlos</span>
+                            <span class="feature-tag">Windows SAPI</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- features grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">TTS Features im Detail</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📋</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Queue Management</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Intelligente TTS-Warteschlange mit Prioritäten. Gifts werden bevorzugt, Spam wird gefiltert. Maximale Queue-Länge und Timeout konfigurierbar.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔇</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Voice Filter System</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Blocklist und Allowlist für Wörter und Phrasen. Regex-Support für komplexe Filter. Automatische Zensur von Beleidigungen und Spam-Patterns.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👤</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Per-User Voice Settings</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Jeder Viewer kann eine eigene Stimme wählen. Persistente Einstellungen pro Username. Moderatoren können Stimmen zuweisen oder entziehen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔊</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Voice Preview</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Alle verfügbaren Stimmen direkt im Admin-UI vorhören. Probetexte eingeben und Ausgabe in Echtzeit testen, bevor die Stimme live geht.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💬</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Chat Commands</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Viewer steuern TTS per Befehlen: <code style="background:rgba(18,161,22,0.1); padding:0.1rem 0.4rem; border-radius:0.25rem; font-size:0.85rem;">!voice [name]</code> zum Wechseln, <code style="background:rgba(18,161,22,0.1); padding:0.1rem 0.4rem; border-radius:0.25rem; font-size:0.85rem;">!tts off</code> zum Deaktivieren.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎚️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Pitch &amp; Speed Control</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Globale und per-Stimme Lautstärke, Geschwindigkeit und Tonhöhe anpassbar. Live-Vorschau aller Änderungen ohne Neustart erforderlich.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- stats -->
+        <section style="padding: 2rem 0;">
+            <div class="container">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1.5rem; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">75+</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Stimmen verfügbar</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">3</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">TTS-Anbieter</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">∞</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">User-Stimmen</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">0ms</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Offline-Latenz (SAPI)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">TTS Engine ausprobieren</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Lass deine Community gehört werden – mit der besten TTS-Integration für TikTok LIVE.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>
