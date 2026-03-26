@@ -336,5 +336,127 @@
             "name": "Vulkan Rockets",
             "desc": "GPU-beschleunigte Raketen-Animationen als Overlay – visuelles Spektakel für besondere Stream-Momente."
         }
+    },
+    "screenshots": {
+        "tts": {
+            "hero": {
+                "alt": "TTS-Adminpanel mit Stimmenwahl, Warteschlange und Anbietereinstellungen",
+                "caption": "Text-to-Speech-Adminpanel mit Multi-Anbieter-Unterstützung und Live-Warteschlangen-Management"
+            }
+        },
+        "soundboard": {
+            "hero": {
+                "alt": "Soundboard-Raster mit Soundkarten, Geschenk-Trigger-Zuordnungen und Lautstärkereglern",
+                "caption": "Soundboard mit geschenk-ausgelösten Sounds, Hotkeys und individuellem Lautstärkeregler"
+            }
+        },
+        "alerts": {
+            "hero": {
+                "alt": "Alertsystem mit Ereignisliste, Vorschau-Panel und Animationseinstellungen",
+                "caption": "Vollständig anpassbares Alertsystem für Follows, Geschenke, Abos und eigene Ereignisse"
+            }
+        },
+        "goals": {
+            "hero": {
+                "alt": "Vier Ziel-Tracker mit Fortschrittsbalken für Münzen, Follower, Likes und Abos",
+                "caption": "Live-synchronisierte Ziel-Tracker mit konfigurierbaren Zielvorgaben und Overlay-Ansicht"
+            }
+        },
+        "flowEngine": {
+            "hero": {
+                "alt": "Flow-Editor-Canvas mit Trigger-, Bedingungs- und Aktions-Knoten",
+                "caption": "Visueller Flow-Editor – Trigger, Bedingungen und Aktionen ohne Code verknüpfen"
+            }
+        },
+        "dashboard": {
+            "hero": {
+                "alt": "Haupt-Dashboard mit Stream-Statistiken, Verbindungsstatus und Schnellzugriff-Buttons",
+                "caption": "Zentrales Dashboard mit Echtzeit-Stream-Metriken und Ein-Klick-Steuerung"
+            }
+        },
+        "overlays": {
+            "hero": {
+                "alt": "Overlay-Manager mit Wettereffekt-Raster und Browser-Source-Vorschau",
+                "caption": "Browser-Source-Overlays für OBS – Wetter, Partikel, Alerts und mehr"
+            }
+        },
+        "multicam": {
+            "hero": {
+                "alt": "Multi-Cam-Panel mit Kameraliste, OBS-Verbindungsstatus und Wechselregeln",
+                "caption": "Automatisches Multi-Kamera-Switching gesteuert durch TikTok-LIVE-Ereignisse"
+            }
+        },
+        "oscBridge": {
+            "hero": {
+                "alt": "OSC-Bridge mit Adressliste, VRChat-Parametern und Ereignis-Trigger-Zuordnungen",
+                "caption": "OSC-Nachrichten an VRChat, VTUBE Studio oder andere OSC-fähige Software senden"
+            }
+        },
+        "animazingpal": {
+            "hero": {
+                "alt": "AnimazingPal-Chatbot-Einstellungen mit Persönlichkeitsauswahl und Speicherstatistiken",
+                "caption": "KI-gestützter Chat-Begleiter mit anpassbarer Persönlichkeit und kontextuellem Gedächtnis"
+            }
+        },
+        "vdoninja": {
+            "hero": {
+                "alt": "VDO.Ninja-Raummanager mit Gästeliste, Raumeinstellungen und QR-Code",
+                "caption": "Remote-Gäste per VDO.Ninja einbinden mit automatischem Raummanagement"
+            }
+        },
+        "viewerXp": {
+            "hero": {
+                "alt": "Viewer-XP-Bestenliste mit XP-Einstellungen, Level-Schwellenwerten und Rangabzeichen",
+                "caption": "Treue Zuschauer mit XP, Levels und einer Live-Bestenliste im Stream belohnen"
+            }
+        },
+        "security": {
+            "hero": {
+                "alt": "Sicherheitseinstellungen mit Sperrliste, Rate-Limiting-Regeln und Moderationsoptionen",
+                "caption": "Stream schützen mit Keyword-Filtern, Rate-Limiting und automatisierter Moderation"
+            }
+        },
+        "pluginSystem": {
+            "hero": {
+                "alt": "Plugin-Manager-Raster mit installierten Plugins, Status-Badges und Installieren-Button",
+                "caption": "Funktionen mit Community-Plugins erweitern – durchsuchen, installieren und verwalten"
+            }
+        },
+        "slotMachine": {
+            "hero": {
+                "alt": "Spielautomat-Oberfläche mit Walzen-Vorschau, Symbol-Konfiguration und Geschenk-Trigger",
+                "caption": "Geschenk-ausgelöster Spielautomat mit eigenen Symbolen und animiertem Walzen-Overlay"
+            }
+        },
+        "gameEngine": {
+            "hero": {
+                "alt": "Game-Engine mit Spieltyp-Auswahl, aktiver Spielliste und Teilnehmer-Statistiken",
+                "caption": "Interaktive Minispiele durch TikTok-Geschenke, Likes und Kommentare auslösen"
+            }
+        },
+        "emojiRain": {
+            "hero": {
+                "alt": "Emoji-Regen-Einstellungen mit Partikel-Vorschau, Emoji-Set-Auswahl und Dichte-Regler",
+                "caption": "Bunte Emoji-Regen-Effekte im Overlay durch Live-Ereignisse auslösen"
+            }
+        },
+        "autoUpdater": {
+            "hero": {
+                "alt": "Auto-Updater-Panel mit aktueller Version, Update-Status und Änderungsprotokoll",
+                "caption": "Automatisch aktuell bleiben – Ein-Klick-Updates mit integriertem Changelog"
+            }
+        },
+        "chatCommands": {
+            "hero": {
+                "alt": "Chat-Befehls-Tabelle mit Befehlen, Antworten und Berechtigungsstufen",
+                "caption": "Eigene Chat-Befehle mit Cooldowns, Aliasen und Berechtigungsstufen erstellen"
+            }
+        },
+        "tikfinityApi": {
+            "hero": {
+                "alt": "TikFinity-API-Panel mit Verbindungsstatus, Webhook-Liste und Synchronisierungseinstellungen",
+                "caption": "Erstklassige TikFinity-Integration für erweiterte Ereignisdaten und Webhook-Unterstützung"
+            }
+        }
     }
 }

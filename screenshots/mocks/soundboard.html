@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Soundboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;display:flex;align-items:center;gap:.6rem;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.toolbar{display:flex;gap:.5rem;margin-bottom:1.25rem;align-items:center}
+.btn{padding:.45rem 1rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.85rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.sound-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.5rem}
+.sound-card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1rem;text-align:center;cursor:pointer;transition:border-color .15s}
+.sound-card:hover{border-color:#12a116}
+.sound-card.playing{border-color:#12a116;background:#12a11615}
+.sound-icon{font-size:1.8rem;margin-bottom:.4rem}
+.sound-name{font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sound-key{font-size:.65rem;color:#9ca3af;margin-top:.25rem;background:#0e0f10;border-radius:.25rem;padding:.1rem .3rem;display:inline-block}
+.sound-vol{height:3px;background:#2a2b2c;border-radius:2px;margin-top:.5rem}
+.sound-vol-fill{height:100%;background:#12a116;border-radius:2px}
+.mapping-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.mapping-title{font-weight:700;margin-bottom:1rem}
+.mapping-item{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.5rem;padding:.75rem;margin-bottom:.5rem}
+.mi-gift{font-size:.75rem;color:#f59e0b;font-weight:600}
+.mi-sound{font-size:.82rem;color:#e8eaed;margin-top:.2rem}
+.mi-arrow{font-size:.75rem;color:#9ca3af}
+.section-title{font-weight:600;font-size:.9rem;margin-bottom:.75rem;color:#9ca3af;text-transform:uppercase;font-size:.7rem;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🎵 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item">🔊 Text-to-Speech</div>
+    <div class="nav-item active">🎵 Soundboard</div>
+    <div class="nav-item">🔔 Alerts</div>
+    <div class="nav-item">🎯 Goals</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🎵 Soundboard</h1>
+    <div class="toolbar">
+      <button class="btn btn-primary">+ Add Sound</button>
+      <button class="btn btn-secondary">Import Pack</button>
+      <button class="btn btn-secondary">🔀 Shuffle</button>
+      <span style="margin-left:auto;font-size:.82rem;color:#9ca3af">24 sounds loaded</span>
+    </div>
+    <div class="section-title">Quick Access</div>
+    <div class="sound-grid">
+      <div class="sound-card playing"><div class="sound-icon">💥</div><div class="sound-name">Explosion</div><div class="sound-key">F1</div><div class="sound-vol"><div class="sound-vol-fill" style="width:80%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🎉</div><div class="sound-name">Confetti Pop</div><div class="sound-key">F2</div><div class="sound-vol"><div class="sound-vol-fill" style="width:70%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🎸</div><div class="sound-name">Guitar Riff</div><div class="sound-key">F3</div><div class="sound-vol"><div class="sound-vol-fill" style="width:60%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">😂</div><div class="sound-name">Laugh Track</div><div class="sound-key">F4</div><div class="sound-vol"><div class="sound-vol-fill" style="width:50%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🔔</div><div class="sound-name">Ding</div><div class="sound-key">F5</div><div class="sound-vol"><div class="sound-vol-fill" style="width:90%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🐱</div><div class="sound-name">Meow</div><div class="sound-key">F6</div><div class="sound-vol"><div class="sound-vol-fill" style="width:65%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🚨</div><div class="sound-name">Air Horn</div><div class="sound-key">F7</div><div class="sound-vol"><div class="sound-vol-fill" style="width:75%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🎺</div><div class="sound-name">Fanfare</div><div class="sound-key">F8</div><div class="sound-vol"><div class="sound-vol-fill" style="width:55%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">👏</div><div class="sound-name">Applause</div><div class="sound-key">F9</div><div class="sound-vol"><div class="sound-vol-fill" style="width:85%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🥁</div><div class="sound-name">Drum Roll</div><div class="sound-key">F10</div><div class="sound-vol"><div class="sound-vol-fill" style="width:70%"></div></div></div>
+    </div>
+    <div class="section-title">All Sounds</div>
+    <div class="sound-grid">
+      <div class="sound-card"><div class="sound-icon">🌊</div><div class="sound-name">Ocean Wave</div><div class="sound-key">—</div><div class="sound-vol"><div class="sound-vol-fill" style="width:40%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">⚡</div><div class="sound-name">Thunder</div><div class="sound-key">—</div><div class="sound-vol"><div class="sound-vol-fill" style="width:60%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🎵</div><div class="sound-name">Jingle</div><div class="sound-key">—</div><div class="sound-vol"><div class="sound-vol-fill" style="width:72%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">👾</div><div class="sound-name">8-bit Win</div><div class="sound-key">—</div><div class="sound-vol"><div class="sound-vol-fill" style="width:80%"></div></div></div>
+      <div class="sound-card"><div class="sound-icon">🎤</div><div class="sound-name">Drop In</div><div class="sound-key">—</div><div class="sound-vol"><div class="sound-vol-fill" style="width:55%"></div></div></div>
+    </div>
+  </div>
+  <div class="mapping-panel">
+    <div class="mapping-title">🎁 Gift Mappings</div>
+    <div class="mapping-item"><div class="mi-gift">🌹 Rose (×1)</div><div class="mi-sound">→ Ding</div></div>
+    <div class="mapping-item"><div class="mi-gift">🚀 TikTok Universe (×1)</div><div class="mi-sound">→ Explosion</div></div>
+    <div class="mapping-item"><div class="mi-gift">💎 Diamond (×1)</div><div class="mi-sound">→ Fanfare</div></div>
+    <div class="mapping-item"><div class="mi-gift">🦁 Lion (×1)</div><div class="mi-sound">→ Applause</div></div>
+    <div class="mapping-item"><div class="mi-gift">🎸 Guitar (×1)</div><div class="mi-sound">→ Guitar Riff</div></div>
+    <div style="margin:1rem 0;border-top:1px solid #2a2b2c"></div>
+    <div class="mapping-title">⌨️ Hotkeys</div>
+    <div class="mapping-item"><div class="mi-sound" style="font-size:.75rem">Ctrl+Shift+1 → Explosion</div></div>
+    <div class="mapping-item"><div class="mi-sound" style="font-size:.75rem">Ctrl+Shift+2 → Air Horn</div></div>
+    <div class="mapping-item"><div class="mi-sound" style="font-size:.75rem">Ctrl+Shift+3 → Applause</div></div>
+    <div style="margin-top:.75rem">
+      <button class="btn btn-primary" style="width:100%">+ Add Mapping</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Viewer XP</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.lb-header{display:grid;grid-template-columns:40px 1fr 80px 80px 60px;gap:.5rem;padding:.4rem .75rem;font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #2a2b2c;margin-bottom:.35rem}
+.lb-row{display:grid;grid-template-columns:40px 1fr 80px 80px 60px;gap:.5rem;padding:.6rem .75rem;background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.5rem;margin-bottom:.3rem;align-items:center;font-size:.82rem}
+.lb-row.top1{border-color:#f59e0b;background:#f59e0b10}
+.lb-row.top2{border-color:#9ca3af;background:#9ca3af10}
+.lb-row.top3{border-color:#b45309;background:#b4530910}
+.rank{font-weight:800;text-align:center}
+.rank1{color:#f59e0b}
+.rank2{color:#9ca3af}
+.rank3{color:#b45309}
+.username{font-weight:600;color:#12a116}
+.xp-bar-mini{height:4px;background:#2a2b2c;border-radius:2px;margin-top:2px}
+.xp-fill{height:100%;background:#12a116;border-radius:2px}
+.level-badge{background:#12a11625;color:#12a116;border:1px solid #12a11640;font-size:.7rem;padding:.1rem .4rem;border-radius:.25rem;text-align:center}
+.right-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.card{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.625rem;padding:.875rem;margin-bottom:.65rem}
+.card-title{font-size:.8rem;font-weight:600;margin-bottom:.5rem}
+.label{font-size:.72rem;color:#9ca3af;margin-bottom:.25rem;margin-top:.4rem}
+input,select{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.35rem .6rem;width:100%;font-size:.78rem;margin-bottom:.4rem}
+.xp-event{display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem;font-size:.78rem}
+.xp-val{color:#12a116;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">⭐ ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">⭐ Viewer XP</div>
+    <div class="nav-item">🎯 Goals</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <h1>⭐ Viewer XP Leaderboard</h1>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-secondary">Export CSV</button>
+        <button class="btn btn-primary">Reset Season</button>
+      </div>
+    </div>
+    <div class="lb-header"><span>Rank</span><span>Viewer</span><span>XP</span><span>Level</span><span>Badge</span></div>
+    <div class="lb-row top1">
+      <span class="rank rank1">🥇</span>
+      <div><div class="username">@StarGazer99</div><div class="xp-bar-mini"><div class="xp-fill" style="width:92%"></div></div></div>
+      <span style="font-weight:700;color:#f59e0b">92,400</span>
+      <div class="level-badge">Lv. 48</div>
+      <span style="font-size:.9rem">👑</span>
+    </div>
+    <div class="lb-row top2">
+      <span class="rank rank2">🥈</span>
+      <div><div class="username">@CryptoKing2024</div><div class="xp-bar-mini"><div class="xp-fill" style="width:78%"></div></div></div>
+      <span style="font-weight:700;color:#9ca3af">78,200</span>
+      <div class="level-badge">Lv. 41</div>
+      <span style="font-size:.9rem">🌟</span>
+    </div>
+    <div class="lb-row top3">
+      <span class="rank rank3">🥉</span>
+      <div><div class="username">@NightOwl_42</div><div class="xp-bar-mini"><div class="xp-fill" style="width:65%"></div></div></div>
+      <span style="font-weight:700;color:#b45309">65,100</span>
+      <div class="level-badge">Lv. 34</div>
+      <span style="font-size:.9rem">⚡</span>
+    </div>
+    <div class="lb-row"><span class="rank" style="color:#9ca3af">4</span><div><div class="username">@PixelDancer</div><div class="xp-bar-mini"><div class="xp-fill" style="width:52%"></div></div></div><span>52,300</span><div class="level-badge">Lv. 27</div><span style="font-size:.9rem">🎮</span></div>
+    <div class="lb-row"><span class="rank" style="color:#9ca3af">5</span><div><div class="username">@LunaVibes</div><div class="xp-bar-mini"><div class="xp-fill" style="width:43%"></div></div></div><span>43,800</span><div class="level-badge">Lv. 23</div><span style="font-size:.9rem">🌙</span></div>
+    <div class="lb-row"><span class="rank" style="color:#9ca3af">6</span><div><div class="username">@TechWizard</div><div class="xp-bar-mini"><div class="xp-fill" style="width:35%"></div></div></div><span>35,200</span><div class="level-badge">Lv. 19</div><span style="font-size:.9rem">🔧</span></div>
+    <div class="lb-row"><span class="rank" style="color:#9ca3af">7</span><div><div class="username">@SunriseGamer</div><div class="xp-bar-mini"><div class="xp-fill" style="width:28%"></div></div></div><span>28,900</span><div class="level-badge">Lv. 15</div><span style="font-size:.9rem">☀️</span></div>
+  </div>
+  <div class="right-panel">
+    <div style="font-weight:700;margin-bottom:.75rem">XP Settings</div>
+    <div class="card">
+      <div class="card-title">XP per Event</div>
+      <div class="xp-event"><span>Follow</span><input type="number" value="50" style="width:70px;margin:0"></div>
+      <div class="xp-event"><span>Comment</span><input type="number" value="5" style="width:70px;margin:0"></div>
+      <div class="xp-event"><span>Like (×10)</span><input type="number" value="2" style="width:70px;margin:0"></div>
+      <div class="xp-event"><span>Gift (per coin)</span><input type="number" value="1" style="width:70px;margin:0"></div>
+      <div class="xp-event"><span>Subscribe</span><input type="number" value="200" style="width:70px;margin:0"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Level Thresholds</div>
+      <div style="font-size:.72rem;color:#9ca3af;margin-bottom:.35rem">XP needed per level</div>
+      <div class="xp-event"><span>Level 1→5</span><span class="xp-val">1,000 XP</span></div>
+      <div class="xp-event"><span>Level 5→10</span><span class="xp-val">5,000 XP</span></div>
+      <div class="xp-event"><span>Level 10→20</span><span class="xp-val">15,000 XP</span></div>
+      <div class="xp-event"><span>Level 20→50</span><span class="xp-val">50,000 XP</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Overlay</div>
+      <div class="label">Browser Source</div>
+      <input value="http://localhost:3000/leaderboard" style="font-size:.7rem">
+      <button class="btn btn-primary" style="width:100%;margin-top:.25rem">Copy URL</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

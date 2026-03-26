@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Emoji Rain</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.preview-box{background:#000;border-radius:.875rem;height:200px;position:relative;overflow:hidden;margin-bottom:1.25rem;border:1px solid #2a2b2c;display:flex;align-items:center;justify-content:center}
+.preview-label{color:#2a2b2c;font-size:1rem;z-index:1}
+.emoji-particle{position:absolute;font-size:1.5rem;animation:fall linear infinite;opacity:.9}
+@keyframes fall{0%{transform:translateY(-50px) rotate(0deg);opacity:1}100%{transform:translateY(220px) rotate(360deg);opacity:.2}}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-weight:600;margin-bottom:.75rem;font-size:.9rem}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.25rem;margin-top:.5rem}
+input[type=range]{width:100%;margin-bottom:.25rem;accent-color:#12a116}
+select,input[type=number],input[type=text]{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem;margin-bottom:.5rem}
+.emoji-set-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:.35rem;margin-bottom:.75rem}
+.emoji-btn{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.4rem;text-align:center;cursor:pointer;font-size:1.2rem;transition:border-color .1s}
+.emoji-btn.selected{border-color:#12a116;background:#12a11615}
+.range-val{font-size:.75rem;color:#12a116;font-weight:700;float:right}
+.right-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem}
+.trigger-row{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.5rem;padding:.65rem;margin-bottom:.4rem}
+.tr-event{font-size:.75rem;color:#f59e0b;font-weight:600}
+.tr-emojis{font-size:.85rem;margin-top:.2rem}
+.tr-duration{font-size:.7rem;color:#9ca3af;margin-top:.15rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🌧️ ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🌧️ Emoji Rain</div>
+    <div class="nav-item">🌐 Overlays</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🌧️ Emoji Rain</h1>
+    <div class="preview-box">
+      <span class="preview-label">LIVE PREVIEW</span>
+      <span class="emoji-particle" style="left:8%;animation-duration:1.8s;animation-delay:0s">❤️</span>
+      <span class="emoji-particle" style="left:18%;animation-duration:2.1s;animation-delay:.4s">🔥</span>
+      <span class="emoji-particle" style="left:30%;animation-duration:1.5s;animation-delay:.8s">⭐</span>
+      <span class="emoji-particle" style="left:45%;animation-duration:2.4s;animation-delay:.2s">💎</span>
+      <span class="emoji-particle" style="left:58%;animation-duration:1.7s;animation-delay:.6s">🎉</span>
+      <span class="emoji-particle" style="left:70%;animation-duration:2.0s;animation-delay:1s">🌹</span>
+      <span class="emoji-particle" style="left:82%;animation-duration:1.6s;animation-delay:.3s">✨</span>
+      <span class="emoji-particle" style="left:92%;animation-duration:2.2s;animation-delay:.7s">💫</span>
+      <span class="emoji-particle" style="left:23%;animation-duration:1.9s;animation-delay:1.2s">🎊</span>
+      <span class="emoji-particle" style="left:65%;animation-duration:2.3s;animation-delay:.9s">🚀</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Emoji Set</div>
+      <div class="emoji-set-grid">
+        <div class="emoji-btn selected">❤️</div>
+        <div class="emoji-btn selected">🔥</div>
+        <div class="emoji-btn selected">⭐</div>
+        <div class="emoji-btn selected">💎</div>
+        <div class="emoji-btn selected">🎉</div>
+        <div class="emoji-btn selected">🌹</div>
+        <div class="emoji-btn selected">✨</div>
+        <div class="emoji-btn selected">💫</div>
+        <div class="emoji-btn">🎊</div>
+        <div class="emoji-btn">🚀</div>
+        <div class="emoji-btn">🦋</div>
+        <div class="emoji-btn">🌈</div>
+        <div class="emoji-btn">🎸</div>
+        <div class="emoji-btn">🎯</div>
+        <div class="emoji-btn">🍀</div>
+        <div class="emoji-btn">+ add</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Physics Settings</div>
+      <div class="label">Density <span class="range-val">65</span></div>
+      <input type="range" min="1" max="100" value="65">
+      <div class="label">Fall Speed <span class="range-val">Medium</span></div>
+      <input type="range" min="1" max="5" value="3">
+      <div class="label">Duration (seconds)</div>
+      <input type="number" value="8">
+      <div class="label">Size</div>
+      <select><option>Small</option><option selected>Medium</option><option>Large</option><option>Mixed</option></select>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div style="font-weight:700;margin-bottom:1rem">Event Triggers</div>
+    <div class="trigger-row">
+      <div class="tr-event">🌹 Rose Gift</div>
+      <div class="tr-emojis">❤️🌹💕</div>
+      <div class="tr-duration">Duration: 5s · Density: 80</div>
+    </div>
+    <div class="trigger-row">
+      <div class="tr-event">🚀 TikTok Universe</div>
+      <div class="tr-emojis">🚀⭐💥✨</div>
+      <div class="tr-duration">Duration: 15s · Density: 100</div>
+    </div>
+    <div class="trigger-row">
+      <div class="tr-event">👤 Follow</div>
+      <div class="tr-emojis">🎉💫⭐</div>
+      <div class="tr-duration">Duration: 3s · Density: 40</div>
+    </div>
+    <div class="trigger-row">
+      <div class="tr-event">❤️ 100+ Likes</div>
+      <div class="tr-emojis">❤️🔥💖</div>
+      <div class="tr-duration">Duration: 5s · Density: 60</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:.75rem">+ Add Trigger</button>
+    <div style="margin-top:1rem;border-top:1px solid #2a2b2c;padding-top:1rem">
+      <div class="label">Browser Source URL</div>
+      <div style="background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.45rem .65rem;font-size:.7rem;font-family:monospace;color:#9ca3af;word-break:break-all">http://localhost:3000/overlay/emoji-rain</div>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:.5rem">▶ Test Rain</button>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;display:flex;align-items:center;gap:.6rem;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+h1{font-size:1.4rem;font-weight:700}
+.status-pill{background:#12a11625;color:#12a116;border:1px solid #12a11640;padding:.3rem .8rem;border-radius:1rem;font-size:.78rem;display:flex;align-items:center;gap:.4rem}
+.dot{width:7px;height:7px;background:#12a116;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem}
+.stat-label{font-size:.75rem;color:#9ca3af;margin-bottom:.4rem}
+.stat-value{font-size:1.8rem;font-weight:800;color:#12a116}
+.stat-delta{font-size:.75rem;color:#22c55e;margin-top:.25rem}
+.stat-delta.neg{color:#ef4444}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem}
+.card-title{font-weight:600;margin-bottom:.75rem}
+.event-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #2a2b2c;font-size:.82rem}
+.event-row:last-child{border-bottom:none}
+.event-user{color:#12a116;font-weight:600}
+.event-type{color:#9ca3af}
+.event-time{font-size:.7rem;color:#6b7280}
+.quick-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.qa-btn{background:#2a2b2c;border:1px solid #3a3b3c;color:#e8eaed;padding:.5rem .9rem;border-radius:.5rem;border:none;cursor:pointer;font-size:.8rem;display:flex;align-items:center;gap:.35rem}
+.qa-btn:hover{background:#3a3b3c}
+.module-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.module-card{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.625rem;padding:.875rem;text-align:center}
+.module-icon{font-size:1.5rem;margin-bottom:.3rem}
+.module-name{font-size:.75rem;font-weight:600}
+.module-status{font-size:.65rem;margin-top:.2rem}
+.ms-active{color:#12a116}
+.ms-inactive{color:#9ca3af}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">📊 ltth.app</div>
+    <div class="nav-item active">📊 Dashboard</div>
+    <div class="nav-item">🔊 Text-to-Speech</div>
+    <div class="nav-item">🎵 Soundboard</div>
+    <div class="nav-item">🔔 Alerts</div>
+    <div class="nav-item">🎯 Goals</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">🎥 Multi-Cam</div>
+    <div class="nav-item">🌐 Overlays</div>
+    <div class="nav-item">🔌 Plugins</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>📊 Dashboard</h1>
+      <div class="status-pill"><div class="dot"></div>Live · 1h 24m</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Viewers</div>
+        <div class="stat-value">1,247</div>
+        <div class="stat-delta">▲ +184 this hour</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Gifts (value)</div>
+        <div class="stat-value">8,400</div>
+        <div class="stat-delta">▲ +2,100 coins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Follows</div>
+        <div class="stat-value">312</div>
+        <div class="stat-delta">▲ +28 this stream</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Comments</div>
+        <div class="stat-value">5,892</div>
+        <div class="stat-delta stat-delta">▲ +412 last 5m</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Recent Events</div>
+        <div class="event-row"><span class="event-user">@StarGazer99</span><span class="event-type">🌹 Rose ×5</span><span class="event-time">now</span></div>
+        <div class="event-row"><span class="event-user">@NightOwl_42</span><span class="event-type">👤 Followed</span><span class="event-time">12s</span></div>
+        <div class="event-row"><span class="event-user">@PixelDancer</span><span class="event-type">💬 Comment</span><span class="event-time">23s</span></div>
+        <div class="event-row"><span class="event-user">@CryptoKing</span><span class="event-type">🚀 Universe ×1</span><span class="event-time">45s</span></div>
+        <div class="event-row"><span class="event-user">@LunaVibes</span><span class="event-type">❤️ 50 Likes</span><span class="event-time">1m</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quick Actions</div>
+        <div class="quick-actions">
+          <button class="qa-btn">🎙️ Test TTS</button>
+          <button class="qa-btn">🔔 Test Alert</button>
+          <button class="qa-btn">🎵 Play Sound</button>
+          <button class="qa-btn">🔄 Reset Goals</button>
+          <button class="qa-btn">📸 Screenshot</button>
+          <button class="qa-btn">🗑 Clear Queue</button>
+          <button class="qa-btn">💾 Save Logs</button>
+          <button class="qa-btn">🔌 Reconnect</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:1rem">
+      <div class="card-title">Active Modules</div>
+      <div class="module-grid">
+        <div class="module-card"><div class="module-icon">🎙️</div><div class="module-name">TTS Engine</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🎵</div><div class="module-name">Soundboard</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🔔</div><div class="module-name">Alerts</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🎯</div><div class="module-name">Goals</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🔀</div><div class="module-name">Flow Engine</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🌐</div><div class="module-name">Overlays</div><div class="module-status ms-active">● Active</div></div>
+        <div class="module-card"><div class="module-icon">🎥</div><div class="module-name">Multi-Cam</div><div class="module-status ms-inactive">○ Idle</div></div>
+        <div class="module-card"><div class="module-icon">🔌</div><div class="module-name">OSC Bridge</div><div class="module-status ms-inactive">○ Idle</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
