@@ -13,7 +13,9 @@
     "support": "Soporte",
     "launcher": "Lanzador",
     "vdoninja": "VDO.Ninja",
-    "viewerXp": "XP Espectadores"
+    "viewerXp": "XP Espectadores",
+    "alerts": "Sistema de Alertas",
+    "goals": "Sistema de Metas"
   },
   "features": {
     "animazingpal": "AnimazingPal Brain Engine",
@@ -27,7 +29,19 @@
     "gameEngine": "Motor de Juego",
     "pluginSystem": "Sistema de Plugins",
     "vdoninja": "VDO.Ninja Multi-Invitado",
-    "viewerXp": "Sistema de XP de Espectadores"
+    "viewerXp": "Sistema de XP de Espectadores",
+    "alerts": {
+      "title": "Sistema de Alertas",
+      "description": "Alertas totalmente personalizables para Regalos, Seguidos, Compartidos, Likes y Suscripciones con sonido, texto y combinaciones de imagen/GIF."
+    },
+    "goals": {
+      "title": "Sistema de Metas",
+      "description": "4 rastreadores de metas separados para Likes, Seguidores, Suscripciones y Monedas con URL de fuente de navegador OBS y modos automáticos."
+    },
+    "slot_machine": {
+      "title": "Tragamonedas",
+      "description": "Tragamonedas de 3 carretes con soporte multi-máquina, sonidos personalizados, reconocimiento de superfan y diseño completamente configurable."
+    }
   },
   "common": {
     "learnMore": "Saber más",

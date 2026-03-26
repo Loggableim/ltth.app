@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Goals System – 4 separate Ziel-Tracker für Likes, Follower, Subscriptions und Coins mit OBS Browser Source, anpassbaren Stilen und Auto-Modes.">
+    <title>Goals System – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Goals System – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="4 separate Ziel-Tracker für Likes, Follower, Subscriptions und Coins mit OBS Browser Source und Auto-Modes.">
+    <meta property="og:url" content="https://ltth.app/features/goals.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/goals.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Goals System</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🎯</span>
+                <h1 class="feature-hero-title">Goals System</h1>
+                <p class="feature-hero-subtitle">Motiviere deine Community mit vier unabhängigen Ziel-Trackern für Likes, Follower, Subscriptions und Coins – mit OBS Browser Source, anpassbaren Animationen und intelligenten Auto-Modes.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Goal Types -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">4 Separate Ziel-Tracker</h2>
+                <p style="color:var(--color-text-secondary); text-align:center; max-width:640px; margin:0 auto 2.5rem;">
+                    Jedes Ziel hat seine eigene Browser-Source-URL für OBS, sodass alle vier Ziele gleichzeitig oder einzeln im Stream angezeigt werden können.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">❤️</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Likes-Ziel</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Verfolge den Fortschritt zu einem Likes-Ziel in Echtzeit. Konfigurierbare Zielmenge, Startpunkt und automatische Reset-Optionen.
+                        </p>
+                        <div style="margin-top:1rem; padding:0.75rem; background:rgba(18,161,22,0.1); border-radius:0.5rem; font-size:0.8rem; color:#12a116;">
+                            Browser Source: <code>/goals/likes</code>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👥</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Follower-Ziel</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Zeige den Fortschritt zu einer bestimmten Follower-Anzahl. Unterstützt absolute Ziele (z. B. 10.000 Follower) und relative Ziele (z. B. +500 neue Follower).
+                        </p>
+                        <div style="margin-top:1rem; padding:0.75rem; background:rgba(18,161,22,0.1); border-radius:0.5rem; font-size:0.8rem; color:#12a116;">
+                            Browser Source: <code>/goals/followers</code>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⭐</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Subscriptions-Ziel</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Tracke neue Abonnements pro Session. Motiviere Zuschauer zu abonnieren mit sichtbarem Fortschrittsbalken und konfigurierbaren Belohnungen bei Erreichen des Ziels.
+                        </p>
+                        <div style="margin-top:1rem; padding:0.75rem; background:rgba(18,161,22,0.1); border-radius:0.5rem; font-size:0.8rem; color:#12a116;">
+                            Browser Source: <code>/goals/subs</code>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🪙</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Coins-Ziel</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Verfolge eingehende TikTok-Coins aus Gifts. Setze Coin-Ziele pro Stream oder per Session. Zeige den Fortschritt live in OBS an.
+                        </p>
+                        <div style="margin-top:1rem; padding:0.75rem; background:rgba(18,161,22,0.1); border-radius:0.5rem; font-size:0.8rem; color:#12a116;">
+                            Browser Source: <code>/goals/coins</code>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Auto Modes -->
+        <section style="padding: 3rem 0; background:var(--color-surface-alt, rgba(255,255,255,0.02));">
+            <div class="container">
+                <h2 class="section-title">Auto-Modes</h2>
+                <p style="color:var(--color-text-secondary); text-align:center; max-width:640px; margin:0 auto 2.5rem;">
+                    Intelligente Automatisierungsmodi, die das Ziel-Verhalten nach Erreichen des Ziels steuern.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">➕</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Add Mode</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Nach Erreichen des Ziels wird ein neues Ziel automatisch hinzugefügt. Der Fortschrittsbalken überschreitet 100% und läuft nahtlos weiter.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">✖️</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Double Mode</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Das Ziel wird nach Erreichen automatisch verdoppelt. Ideal für Engagement-Challenges, bei denen die Community immer größere Ziele angeht.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👁️</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Hide Mode</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Das Overlay wird nach Erreichen des Ziels automatisch ausgeblendet. Sauberes Display-Management ohne manuelle Eingriffe während des Streams.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Customization -->
+        <section style="padding: 3rem 0;">
+            <div class="container">
+                <h2 class="section-title">Design & Anpassung</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎨</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Farben & Fonts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Vollständig anpassbare Farben für Hintergrund, Fortschrittsbalken, Text und Rahmen. Wähle aus verfügbaren System-Fonts oder nutze eigene Web-Fonts.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">✨</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Animationen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Flüssige CSS-Animationen beim Fortschrittsupdate. Konfigurierbare Feierstimmung bei Ziel-Erreichen – Konfetti, Pulsieren, Glow-Effekte.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📐</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Layout-Optionen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Horizontaler oder vertikaler Fortschrittsbalken, mit oder ohne Prozentzahl, konfigurierbare Größen für verschiedene OBS-Source-Dimensionen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">🔧</span>
+                            <span style="background:#12a116; color:#fff; font-size:0.65rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:0.25rem;">FIXED v1.3.0</span>
+                        </div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Doppelzählung behoben</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            In v1.3.0 wurde ein Bug behoben, bei dem Goals-Werte bei bestimmten Events doppelt gezählt wurden. Präzises Tracking ist nun garantiert.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Related Features -->
+        <section style="padding: 3rem 0; background:var(--color-surface-alt, rgba(255,255,255,0.02));">
+            <div class="container">
+                <h2 class="section-title">Verwandte Features</h2>
+                <div class="feature-cards-grid">
+                    <a href="/features/alerts.html" class="feature-card">
+                        <span class="feature-card-icon">🔔</span>
+                        <h3 class="feature-card-title">Alert System</h3>
+                        <p class="feature-card-desc">Anpassbare Alerts für Gifts, Follows, Shares und Likes mit Sound und GIF.</p>
+                    </a>
+                    <a href="/features/overlays.html" class="feature-card">
+                        <span class="feature-card-icon">🎨</span>
+                        <h3 class="feature-card-title">Overlays & HUD</h3>
+                        <p class="feature-card-desc">Stream-Overlays und HUD-Elemente für professionelle Produktionen.</p>
+                    </a>
+                    <a href="/features/viewer-xp.html" class="feature-card">
+                        <span class="feature-card-icon">⭐</span>
+                        <h3 class="feature-card-title">Viewer XP System</h3>
+                        <p class="feature-card-desc">XP-Tracking, Level-System und Bestenlisten für deine Viewer.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Goals System aktivieren</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Motiviere deine Community mit klaren, sichtbaren Zielen im Stream.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

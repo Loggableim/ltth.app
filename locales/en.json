@@ -13,7 +13,9 @@
     "support": "Support",
     "launcher": "Launcher",
     "vdoninja": "VDO.Ninja",
-    "viewerXp": "Viewer XP"
+    "viewerXp": "Viewer XP",
+    "alerts": "Alert System",
+    "goals": "Goals System"
   },
   "features": {
     "animazingpal": "AnimazingPal Brain Engine",
@@ -27,7 +29,19 @@
     "gameEngine": "Game Engine",
     "pluginSystem": "Plugin System",
     "vdoninja": "VDO.Ninja Multi-Guest",
-    "viewerXp": "Viewer XP System"
+    "viewerXp": "Viewer XP System",
+    "alerts": {
+      "title": "Alert System",
+      "description": "Fully customizable alerts for Gifts, Follows, Shares, Likes and Subscriptions with sound, text and image/GIF combinations."
+    },
+    "goals": {
+      "title": "Goals System",
+      "description": "4 separate goal trackers for Likes, Followers, Subscriptions and Coins with OBS Browser Source and auto-modes."
+    },
+    "slot_machine": {
+      "title": "Slot Machine",
+      "description": "3-reel slot machine with multi-machine support, custom sounds, superfan recognition and fully configurable design."
+    }
   },
   "common": {
     "learnMore": "Learn more",

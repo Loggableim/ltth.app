@@ -13,7 +13,9 @@
     "support": "Support",
     "launcher": "Lanceur",
     "vdoninja": "VDO.Ninja",
-    "viewerXp": "XP Spectateurs"
+    "viewerXp": "XP Spectateurs",
+    "alerts": "Système d'Alertes",
+    "goals": "Système d'Objectifs"
   },
   "features": {
     "animazingpal": "AnimazingPal Brain Engine",
@@ -27,7 +29,19 @@
     "gameEngine": "Moteur de jeu",
     "pluginSystem": "Système de plugins",
     "vdoninja": "VDO.Ninja Multi-Invité",
-    "viewerXp": "Système XP Spectateurs"
+    "viewerXp": "Système XP Spectateurs",
+    "alerts": {
+      "title": "Système d'Alertes",
+      "description": "Alertes entièrement personnalisables pour les Cadeaux, Abonnements, Partages, Likes et Souscriptions avec son, texte et combinaisons image/GIF."
+    },
+    "goals": {
+      "title": "Système d'Objectifs",
+      "description": "4 trackers d'objectifs séparés pour les Likes, Abonnés, Souscriptions et Coins avec URL de source de navigateur OBS et modes automatiques."
+    },
+    "slot_machine": {
+      "title": "Machine à Sous",
+      "description": "Machine à sous 3 rouleaux avec support multi-machine, sons personnalisés, reconnaissance superfan et design entièrement configurable."
+    }
   },
   "common": {
     "learnMore": "En savoir plus",
