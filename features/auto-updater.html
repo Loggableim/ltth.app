@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Auto-Update System – Automatische Update-Prüfung, One-Click Patch-Anwendung, Versions-Management, Rollback-Support und Update-Benachrichtigungen für LTTH.">
+    <title>Auto-Update System – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Auto-Update System – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Immer auf dem neuesten Stand – mit automatischer Update-Erkennung und One-Click-Installation.">
+    <meta property="og:url" content="https://ltth.app/features/auto-updater.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/auto-updater.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Auto-Update System</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🔄</span>
+                <h1 class="feature-hero-title">Auto-Update System</h1>
+                <p class="feature-hero-subtitle">Immer die neueste Version – ohne manuelle Eingriffe. LTTH erkennt Updates automatisch, informiert dich diskret und installiert Patches mit einem Klick.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- update flow -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Update-Prozess</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔍</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Automatische Prüfung</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            LTTH prüft beim Start und in konfigurierbaren Intervallen auf neue Versionen. Kein manuelles Suchen nach Updates – du wirst sofort informiert, wenn etwas verfügbar ist.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Automatisch</span>
+                            <span class="feature-tag">Beim Start</span>
+                            <span class="feature-tag">Konfigurierbar</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖱️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">One-Click Installation</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Ein Klick genügt: LTTH lädt den Patch herunter, wendet ihn an und startet neu – alles ohne manuelles Herunterladen oder Installationsprozesse durchlaufen zu müssen.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">One-Click</span>
+                            <span class="feature-tag">Patch</span>
+                            <span class="feature-tag">Auto-Restart</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⏪</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Rollback-Support</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Probleme nach einem Update? Mit dem Rollback-Feature kehrst du mit einem Klick zur vorherigen Version zurück. Alle Einstellungen und Plugin-Daten bleiben erhalten.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Rollback</span>
+                            <span class="feature-tag">Sicher</span>
+                            <span class="feature-tag">Daten erhalten</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- features grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Update-Management Details</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📦</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Versions-Management</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Detaillierte Versionsübersicht: aktuell installierte Version, verfügbare Versionen und Changelog-Einträge pro Release. Semantisches Versioning (SemVer) für klare Kommunikation.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔔</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Update-Benachrichtigungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Nicht-invasive Benachrichtigungen wenn Updates verfügbar sind. Keine Popups während des Streams – Updates werden für einen günstigen Moment vorgemerkt.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔒</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Signierte Pakete</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Alle Update-Pakete werden kryptografisch signiert. LTTH verifiziert die Signatur vor der Installation – Schutz vor manipulierten Updates oder Man-in-the-Middle-Angriffen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Update-Kanal Auswahl</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Wähle zwischen Stable, Beta und Nightly Builds. Stable für zuverlässige Produktionsnutzung, Beta für frühen Zugriff auf neue Features, Nightly für Entwickler.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌐</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Changelog-Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Inline-Changelog direkt im Update-Dialog. Sieh genau was neu ist, bevor du installierst: neue Features, Bugfixes und Breaking Changes klar aufgelistet.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⏸️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Update-Aufschub</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Updates können auf später verschoben werden. Perfekt für Streamer, die mitten im Stream sind: Update-Erinnerung nach Ende des Streams oder in konfigurierbaren Stunden.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- stats -->
+        <section style="padding: 2rem 0;">
+            <div class="container">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1.5rem; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">1</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Klick zum Update</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">3</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Update-Kanäle</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">∞</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Rollback-Versionen</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">0</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Datenverlust</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Immer aktuell bleiben</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Das Auto-Update System sorgt dafür, dass du immer die neuesten Features und Bugfixes hast – ohne Aufwand.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WebGPU Emoji Rain – Hardwarebeschleunigte Partikeleffekte, ausgelöst durch TikTok Gifts, Likes und Follows. Anpassbare Emoji-Sets, Geschwindigkeit und Dichte.">
+    <title>WebGPU Emoji Rain – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="WebGPU Emoji Rain – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Hardwarebeschleunigte Partikeleffekte für TikTok LIVE. Tausende Emojis gleichzeitig – reibungslos per WebGPU.">
+    <meta property="og:url" content="https://ltth.app/features/emoji-rain.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/emoji-rain.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">WebGPU Emoji Rain</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🌧️</span>
+                <h1 class="feature-hero-title">WebGPU Emoji Rain</h1>
+                <p class="feature-hero-subtitle">Tausende Emojis fallen gleichzeitig – hardwarebeschleunigt per WebGPU. Ausgelöst durch TikTok Gifts, Likes und Follows für spektakuläre Stream-Momente.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- trigger types -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Event-Trigger</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎁</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Gift-Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Jedes TikTok Gift löst eine Emoji-Rain-Sequenz aus. Die Intensität skaliert automatisch mit dem Gift-Wert – kleine Gifts erzeugen sanfte Schauer, große Gifts entfachen echte Emoji-Stürme.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Gifts</span>
+                            <span class="feature-tag">Skalierbar</span>
+                            <span class="feature-tag">Echtzeit</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">❤️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Like-Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Likes aus der Community erzeugen kontinuierliche Emoji-Ströme. Konfigurierbare Schwellenwerte: ab 10, 50 oder 100 Likes pro Sekunde wird der Effekt aktiviert.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Likes</span>
+                            <span class="feature-tag">Schwellenwert</span>
+                            <span class="feature-tag">Kontinuierlich</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👥</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Follow-Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Neue Follower werden mit einem kurzen Emoji-Regen begrüßt. Kombinierbar mit anderen Alert-Typen für ein kohärentes visuelles Erlebnis.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Follows</span>
+                            <span class="feature-tag">Begrüßung</span>
+                            <span class="feature-tag">Kombinierbar</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- features grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Technische Features</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">WebGPU-Beschleunigung</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Nutzt die modernste Web-Grafik-API für hardwarebeschleunigte Partikelberechnungen. Tausende Emojis gleichzeitig ohne CPU-Last auf dem Streaming-PC.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎨</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Anpassbare Emoji-Sets</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Eigene Emoji-Kollektionen pro Event-Typ definieren. Gift-spezifische Sets: Roses regnen Rosen, TikTok-Coins regnen Münzen. Unbegrenzte Anpassung.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎛️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Geschwindigkeit &amp; Dichte</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Fallgeschwindigkeit, Partikelgröße, Rotationsanimation und Dichte individuell konfigurierbar. Presets für sanften Niesel bis hin zum totalen Emoji-Chaos.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Graceful Fallback</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Automatischer Rückfall auf Canvas-2D-Rendering, wenn WebGPU nicht verfügbar ist. Der Effekt funktioniert auf allen Geräten, nur mit reduzierter Partikelzahl.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖥️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">OBS Browser Source</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Als transparente OBS Browser Source einsetzbar. Wird über beliebige Szenen gelegt – kein separates Fenster oder Overlay-Software notwendig.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔌</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Plugin-Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Ersetzt das veraltete emoji-rain Plugin vollständig. Nahtlose Integration in das Flow Engine System – Emoji Rain als Action in beliebigen Flows auslösbar.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- stats -->
+        <section style="padding: 2rem 0;">
+            <div class="container">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1.5rem; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">10k+</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Partikel gleichzeitig</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">60</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">FPS flüssig</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">3</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Event-Trigger</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">0%</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Extra CPU-Last</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Emoji Rain aktivieren</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Begeistere deine Community mit spektakulären WebGPU-Partikeleffekten – kostenlos in LTTH enthalten.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>
