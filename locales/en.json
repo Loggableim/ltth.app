@@ -11,7 +11,9 @@
     "community": "Community",
     "faq": "FAQ",
     "support": "Support",
-    "launcher": "Launcher"
+    "launcher": "Launcher",
+    "vdoninja": "VDO.Ninja",
+    "viewerXp": "Viewer XP"
   },
   "features": {
     "animazingpal": "AnimazingPal Brain Engine",
@@ -23,7 +25,9 @@
     "multicam": "Multi-Cam Switcher",
     "security": "Security",
     "gameEngine": "Game Engine",
-    "pluginSystem": "Plugin System"
+    "pluginSystem": "Plugin System",
+    "vdoninja": "VDO.Ninja Multi-Guest",
+    "viewerXp": "Viewer XP System"
   },
   "common": {
     "learnMore": "Learn more",
@@ -72,5 +76,48 @@
       "title": "Download – PupCid's Little TikTool Helper",
       "description": "Download PupCid's Little TikTool Helper for free. Available for Windows 10/11."
     }
+  },
+  "slotMachine": {
+    "title": "Slot Machine",
+    "subtitle": "Classic slot machine as OBS browser overlay",
+    "reels": "Reels",
+    "symbols": "Symbols",
+    "weights": "Weights",
+    "odds": "Odds",
+    "triggers": "Triggers",
+    "rewards": "Rewards",
+    "chatCommand": "Chat Command",
+    "cooldown": "Cooldown",
+    "jackpot": "Jackpot",
+    "spin": "Spin",
+    "winGlow": "Win Glow",
+    "designPresets": "Design Presets",
+    "symbolUpload": "Symbol Upload",
+    "soundManagement": "Sound Management",
+    "multiMachine": "Multi-Machine Support",
+    "superfan": "Superfan Recognition",
+    "tokenSystem": "Token System"
+  },
+  "viewerXp": {
+    "title": "Viewer XP System",
+    "subtitle": "XP tracking, level system and leaderboards for your viewers",
+    "xpTracking": "XP Tracking",
+    "levelSystem": "Level System",
+    "leaderboard": "Leaderboard",
+    "overlayIntegration": "OBS Overlay Integration",
+    "statistics": "Statistics",
+    "watchTime": "Watch Time",
+    "offlineProtection": "Offline Protection"
+  },
+  "vdoninja": {
+    "title": "VDO.Ninja Multi-Guest",
+    "subtitle": "Professional multi-guest streams with VDO.Ninja integration",
+    "roomManagement": "Room Management",
+    "guestManagement": "Guest Management",
+    "apiRoutes": "API Routes",
+    "socketEvents": "Socket.io Events",
+    "multiGuest": "Multi-Guest Streaming",
+    "flowIntegration": "Flow Automation Integration",
+    "autoInjection": "Auto-Injection into Flows"
   }
 }

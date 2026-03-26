@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -274,11 +274,15 @@
         </section>
 
     </main>
-
-    <script src="/js/main.js"></script>
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+<script>
         document.addEventListener('DOMContentLoaded', () => {
             if (window.LTTHLayout) LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');

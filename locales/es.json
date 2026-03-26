@@ -11,7 +11,9 @@
     "community": "Comunidad",
     "faq": "FAQ",
     "support": "Soporte",
-    "launcher": "Lanzador"
+    "launcher": "Lanzador",
+    "vdoninja": "VDO.Ninja",
+    "viewerXp": "XP Espectadores"
   },
   "features": {
     "animazingpal": "AnimazingPal Brain Engine",
@@ -23,7 +25,9 @@
     "multicam": "Conmutador MultiCam",
     "security": "Seguridad",
     "gameEngine": "Motor de Juego",
-    "pluginSystem": "Sistema de Plugins"
+    "pluginSystem": "Sistema de Plugins",
+    "vdoninja": "VDO.Ninja Multi-Invitado",
+    "viewerXp": "Sistema de XP de Espectadores"
   },
   "common": {
     "learnMore": "Saber más",
@@ -72,5 +76,48 @@
       "title": "Descargar – PupCid's Little TikTool Helper",
       "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
     }
+  },
+  "slotMachine": {
+    "title": "Tragamonedas",
+    "subtitle": "Tragamonedas clásica como overlay de navegador OBS",
+    "reels": "Carretes",
+    "symbols": "Símbolos",
+    "weights": "Pesos",
+    "odds": "Probabilidades",
+    "triggers": "Disparadores",
+    "rewards": "Recompensas",
+    "chatCommand": "Comando de Chat",
+    "cooldown": "Cooldown",
+    "jackpot": "Jackpot",
+    "spin": "Girar",
+    "winGlow": "Brillo de Victoria",
+    "designPresets": "Presets de Diseño",
+    "symbolUpload": "Carga de Símbolos",
+    "soundManagement": "Gestión de Sonidos",
+    "multiMachine": "Soporte Multi-Máquina",
+    "superfan": "Reconocimiento Superfan",
+    "tokenSystem": "Sistema de Tokens"
+  },
+  "viewerXp": {
+    "title": "Sistema de XP de Espectadores",
+    "subtitle": "Seguimiento de XP, sistema de niveles y tablas de clasificación",
+    "xpTracking": "Seguimiento de XP",
+    "levelSystem": "Sistema de Niveles",
+    "leaderboard": "Tabla de Clasificación",
+    "overlayIntegration": "Integración de Overlay OBS",
+    "statistics": "Estadísticas",
+    "watchTime": "Tiempo de Visualización",
+    "offlineProtection": "Protección Offline"
+  },
+  "vdoninja": {
+    "title": "VDO.Ninja Multi-Invitado",
+    "subtitle": "Streams profesionales con múltiples invitados con integración VDO.Ninja",
+    "roomManagement": "Gestión de Salas",
+    "guestManagement": "Gestión de Invitados",
+    "apiRoutes": "Rutas API",
+    "socketEvents": "Eventos Socket.io",
+    "multiGuest": "Streaming Multi-Invitado",
+    "flowIntegration": "Integración de Automatización de Flujo",
+    "autoInjection": "Auto-Inyección en Flujos"
   }
 }
