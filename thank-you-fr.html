@@ -1,77 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr" data-lang="fr">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Merci pour votre don ! Vous soutenez le développement de PupCid's Little TikTool Helper.">
-    <title>Merci ! - PupCid's Little TikTool Helper</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#12a116">
-    <link rel="alternate" hreflang="de" href="https://ltth.app/thank-you.html">
-    <link rel="alternate" hreflang="en" href="https://ltth.app/thank-you-en.html">
-    <link rel="alternate" hreflang="fr" href="https://ltth.app/thank-you-fr.html">
-    <link rel="alternate" hreflang="es" href="https://ltth.app/thank-you-es.html">
-    <link rel="alternate" hreflang="x-default" href="https://ltth.app/thank-you.html">
-    <link rel="canonical" href="https://ltth.app/thank-you-fr.html">
-    <link rel="stylesheet" href="/css/main.css">
-    <style>
-        .celebration { animation: celebrate 1s ease-in-out; }
-        @keyframes celebrate { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .heart-float { animation: heartFloat 3s ease-in-out infinite; }
-        @keyframes heartFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    </style>
+    <meta http-equiv="refresh" content="0; url=/thank-you.html?lang=fr">
+    <link rel="canonical" href="https://ltth.app/thank-you.html?lang=fr">
+    <title>Redirecting...</title>
 </head>
 <body>
-    <section class="hero">
-        <div class="container">
-            <div class="celebration">
-                <h1 class="hero-title text-center">🎉 <span class="hero-highlight">Merci !</span> 🎉</h1>
-                <p class="hero-description text-center" style="max-width: 700px; margin-left: auto; margin-right: auto;">Votre soutien compte énormément pour moi !</p>
-            </div>
-        </div>
-    </section>
-    <section>
-        <div class="container">
-            <div style="max-width: 700px; margin: 0 auto;">
-                <div style="background: var(--color-surface); padding: var(--space-10); border-radius: var(--radius-xl); border: 1px solid var(--color-border); text-align: center;">
-                    <div style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--color-primary) 0%, #0f8f18 100%); color: white; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-8); font-size: 4rem; box-shadow: 0 10px 30px rgba(18, 161, 22, 0.3);" class="heart-float">❤️</div>
-                    <h2 style="margin-bottom: var(--space-6); font-size: 2rem;">Vous êtes formidable !</h2>
-                    <p style="color: var(--color-text-secondary); margin-bottom: var(--space-6); font-size: 1.2rem; line-height: 1.8;">Votre don m'aide à continuer le développement de PupCid's Little TikTool Helper et à créer de nouvelles fonctionnalités pour la communauté.</p>
-                    <div style="background: rgba(18, 161, 22, 0.1); border: 2px solid var(--color-primary); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
-                        <p style="color: var(--color-text); font-size: 1.1rem; margin: 0;"><strong>🚀 Prochaines étapes :</strong></p>
-                        <p style="color: var(--color-text-secondary); margin-top: var(--space-3); margin-bottom: 0;">Consultez la <a href="/roadmap-fr.html" style="color: var(--color-primary); text-decoration: underline;">Roadmap</a> pour voir les fonctionnalités que je prévois. Vos retours sont toujours les bienvenus !</p>
-                    </div>
-                    <div style="margin-bottom: var(--space-8);">
-                        <h3 style="margin-bottom: var(--space-4);">Restez connecté</h3>
-                        <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
-                            <a href="https://discord.gg/qazznedY8g" target="_blank" rel="noopener" class="btn btn-primary">💬 Rejoindre Discord</a>
-                            <a href="https://github.com/Loggableim/ltth_desktop2" target="_blank" rel="noopener" class="btn btn-secondary">⭐ Voir sur GitHub</a>
-                        </div>
-                    </div>
-                    <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-6);">
-                        <p style="color: var(--color-text-secondary); font-size: 1rem;">Vous pouvez maintenant continuer à utiliser l'outil ou explorer les dernières mises à jour.</p>
-                        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
-                            <a href="/index-fr.html" class="btn btn-secondary">Aller à l'accueil</a>
-                            <a href="/changelog-fr.html" class="btn btn-secondary">Voir le Changelog</a>
-                            <a href="/download-fr.html" class="btn btn-primary">Télécharger</a>
-                        </div>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: var(--space-8);">
-                    <p style="color: var(--color-text-secondary); font-size: 1.2rem;"><strong>Merci encore ! 🙏✨</strong></p>
-                    <p style="color: var(--color-text-secondary); margin-top: var(--space-3);">- Loggableim (PupCid's Little TikTool Helper Team)</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    <script src="/js/i18n.js"></script>
-    <script src="/js/layout.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
-            if (window.I18n) I18n.init(window.__ltthLang || 'fr');
-        });
-    </script>
+    <p>Redirecting to <a href="/thank-you.html?lang=fr">Thank You (Français)</a>...</p>
 </body>
 </html>

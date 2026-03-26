@@ -133,5 +133,55 @@
     "multiGuest": "Streaming Multi-Invitado",
     "flowIntegration": "Integración de Automatización de Flujo",
     "autoInjection": "Auto-Inyección en Flujos"
+  },
+  "pages": {
+    "index": {
+      "title": "PupCid's Little TikTool Helper – Solución Profesional de Streaming para TikTok LIVE",
+      "description": "La solución profesional de streaming para streamers de TikTok LIVE. Eventos en tiempo real, TTS, soundboard, sistema de plugins y más."
+    },
+    "plugins": {
+      "title": "Plugins – PupCid's Little TikTool Helper",
+      "description": "Más de 30 plugins para streams de TikTok LIVE. Extensiones para cada caso de uso."
+    },
+    "docs": {
+      "title": "Documentación – PupCid's Little TikTool Helper",
+      "description": "Documentación completa: instalación, configuración, referencia de API y desarrollo de plugins."
+    },
+    "community": {
+      "title": "Comunidad – PupCid's Little TikTool Helper",
+      "description": "Únete a la comunidad LTTH. Discord, GitHub, comentarios y soporte."
+    },
+    "changelog": {
+      "title": "Registro de Cambios – PupCid's Little TikTool Helper",
+      "description": "Todos los cambios, nuevas funciones y correcciones de errores en cada versión de LTTH."
+    },
+    "roadmap": {
+      "title": "Hoja de Ruta – PupCid's Little TikTool Helper",
+      "description": "Funciones planificadas y desarrollo futuro de PupCid's Little TikTool Helper."
+    },
+    "faq": {
+      "title": "Preguntas Frecuentes – PupCid's Little TikTool Helper",
+      "description": "Preguntas frecuentes sobre instalación, uso y configuración de LTTH."
+    },
+    "support": {
+      "title": "Soporte – PupCid's Little TikTool Helper",
+      "description": "Ayuda y soporte para PupCid's Little TikTool Helper. Reportar errores, obtener ayuda."
+    },
+    "download": {
+      "title": "Descargar – PupCid's Little TikTool Helper",
+      "description": "Descarga PupCid's Little TikTool Helper gratis. Disponible para Windows 10/11."
+    },
+    "impressum": {
+      "title": "Aviso Legal – PupCid's Little TikTool Helper",
+      "description": "Información legal, aviso legal y política de privacidad de ltth.app."
+    },
+    "donate": {
+      "title": "Apoyar el Proyecto – PupCid's Little TikTool Helper",
+      "description": "Apoya el desarrollo de PupCid's Little TikTool Helper con una donación."
+    },
+    "thankyou": {
+      "title": "¡Gracias! – PupCid's Little TikTool Helper",
+      "description": "Gracias por apoyar a PupCid's Little TikTool Helper."
+    }
   }
 }
