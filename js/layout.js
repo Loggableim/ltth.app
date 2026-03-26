@@ -130,25 +130,31 @@
         const lang = detectLanguage();
         window.__ltthLang = lang;
         
-        // Load header
-        const headerHTML = await loadPartial('/_partials/header.html');
-        if (headerHTML) {
-            const headerEl = document.createElement('div');
-            headerEl.innerHTML = headerHTML;
-            const nav = headerEl.querySelector('nav, header');
-            if (nav) {
-                document.body.insertBefore(nav, document.body.firstChild);
+        // Only inject shared header if page doesn't already have a #navbar
+        const existingNav = document.getElementById('navbar');
+        if (!existingNav) {
+            const headerHTML = await loadPartial('/_partials/header.html');
+            if (headerHTML) {
+                const headerEl = document.createElement('div');
+                headerEl.innerHTML = headerHTML;
+                const nav = headerEl.querySelector('nav, header');
+                if (nav) {
+                    document.body.insertBefore(nav, document.body.firstChild);
+                }
             }
         }
         
-        // Load footer
-        const footerHTML = await loadPartial('/_partials/footer.html');
-        if (footerHTML) {
-            const footerEl = document.createElement('div');
-            footerEl.innerHTML = footerHTML;
-            const footer = footerEl.querySelector('footer');
-            if (footer) {
-                document.body.appendChild(footer);
+        // Only inject shared footer if page doesn't already have a .footer
+        const existingFooter = document.querySelector('footer.footer');
+        if (!existingFooter) {
+            const footerHTML = await loadPartial('/_partials/footer.html');
+            if (footerHTML) {
+                const footerEl = document.createElement('div');
+                footerEl.innerHTML = footerHTML;
+                const footer = footerEl.querySelector('footer');
+                if (footer) {
+                    document.body.appendChild(footer);
+                }
             }
         }
         

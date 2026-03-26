@@ -39,6 +39,7 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
     
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -54,7 +55,7 @@
             "priceCurrency": "USD"
         },
         "description": "Professionelle Streaming-Lösung für TikTok LIVE Streamer mit Echtzeit-Events, Text-to-Speech, Alerts, Soundboard, Plugin-System und OBS-Integration. Kostenlos und Open Source.",
-        "softwareVersion": "1.3.2",
+        "softwareVersion": "1.3.3",
 
         "creator": {
             "@type": "Organization",
@@ -157,7 +158,7 @@
                     </svg>
                 </div>
                 <div class="beta-text">
-                    <strong>🚀 Version <span id="betaVersion">1.3.2</span>:</strong> Aktiv weiterentwickelt mit neuen Features! 
+                    <strong>🚀 Version <span id="betaVersion">1.3.3</span>:</strong> Music Bot, Weather Engine (13 Effekte), PiShock Support und mehr! 
                     Bereits voll funktionsfähig für den produktiven Einsatz. 
                     Hilf uns besser zu werden:<br>
                     <a href="https://github.com/Loggableim/ltth_desktop2/issues" target="_blank" rel="noopener">Bugs melden</a> 
@@ -460,6 +461,37 @@
                         Steuere deinen VRChat-Avatar via OSC-Protokoll. Wave-Geste bei Gifts, Celebrate-Animation, 
                         Dance-Trigger, Hearts & Confetti-Effekte. Custom OSC-Parameter unterstützt.
                     </p>
+                </div>
+                
+                <!-- NEW in v1.3.3 -->
+                <div class="feature-card">
+                    <div class="feature-icon">🎰</div>
+                    <h3 class="feature-title">Game Engine <span class="badge" style="background:rgba(100,18,161,0.2);color:#a855f7;border-radius:9999px;padding:0.15rem 0.5rem;font-size:0.75rem;font-weight:600;vertical-align:middle;">NEU</span></h3>
+                    <p class="feature-description">
+                        Slot Machine, Wheel of Fortune, Plinko, Connect 4 und Chess – alle gesteuert durch TikTok-Gifts. 
+                        Token-System, Superfan-Erkennung, OBS Overlay und 7 einzigartige Sounds.
+                    </p>
+                    <a href="/features/game-engine.html" style="color:var(--color-primary);font-size:0.9rem;text-decoration:none;">Mehr erfahren →</a>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🌦️</div>
+                    <h3 class="feature-title">Weather Engine <span class="badge" style="background:rgba(100,18,161,0.2);color:#a855f7;border-radius:9999px;padding:0.15rem 0.5rem;font-size:0.75rem;font-weight:600;vertical-align:middle;">NEU</span></h3>
+                    <p class="feature-description">
+                        13 prozedurale Wettereffekte inkl. Aurora, Fireflies, Meteors, Sakura und WebGPU Emoji Rain. 
+                        Adaptive FPS, GPU-optimiert – live auf deinem OBS-Stream.
+                    </p>
+                    <a href="/features/overlays.html" style="color:var(--color-primary);font-size:0.9rem;text-decoration:none;">Mehr erfahren →</a>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎵</div>
+                    <h3 class="feature-title">Music Bot <span class="badge" style="background:rgba(100,18,161,0.2);color:#a855f7;border-radius:9999px;padding:0.15rem 0.5rem;font-size:0.75rem;font-weight:600;vertical-align:middle;">NEU</span></h3>
+                    <p class="feature-description">
+                        YouTube-Suche via yt-dlp (kein Python nötig), Spotify/SoundCloud oEmbed, Vote-Skip, 
+                        3 OBS-Overlay-Designs und Superfan-only Requests.
+                    </p>
+                    <a href="/plugins.html" style="color:var(--color-primary);font-size:0.9rem;text-decoration:none;">Plugins anzeigen →</a>
                 </div>
             </div>
             
@@ -1059,5 +1091,7 @@
     </footer>
 
     <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
 </body>
 </html>
