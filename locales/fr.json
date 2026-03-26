@@ -1,0 +1,76 @@
+{
+  "lang": "fr",
+  "nav": {
+    "home": "Accueil",
+    "features": "Fonctionnalités",
+    "plugins": "Plugins",
+    "gameEngine": "Moteur de jeu",
+    "docs": "Docs",
+    "download": "Télécharger",
+    "changelog": "Journal des modifications",
+    "community": "Communauté",
+    "faq": "FAQ",
+    "support": "Support",
+    "launcher": "Lanceur"
+  },
+  "features": {
+    "animazingpal": "AnimazingPal Brain Engine",
+    "tts": "Moteur Text-to-Speech",
+    "overlays": "Overlays et HUD",
+    "osc": "Pont OSC / VRChat",
+    "flowEngine": "Moteur de flux",
+    "soundboard": "Soundboard Pro",
+    "multicam": "Commutateur MultiCam",
+    "security": "Sécurité",
+    "gameEngine": "Moteur de jeu",
+    "pluginSystem": "Système de plugins"
+  },
+  "common": {
+    "learnMore": "En savoir plus",
+    "download": "Télécharger maintenant",
+    "getStarted": "Commencer",
+    "viewDocs": "Documentation",
+    "openSource": "Open Source",
+    "free": "Gratuit",
+    "windowsOnly": "Disponible pour Windows",
+    "version": "Version",
+    "comingSoon": "Bientôt disponible",
+    "new": "Nouveau",
+    "back": "Retour",
+    "viewAll": "Voir tout"
+  },
+  "hero": {
+    "title": "Solution professionnelle de streaming en direct TikTok",
+    "subtitle": "Avec plus de 30 plugins, gestion de chat par IA, moteur de jeu, TTS et bien plus. Gratuit, open source et entièrement local.",
+    "downloadCta": "Télécharger maintenant",
+    "featuresCta": "Découvrir les fonctionnalités",
+    "statsUsers": "Streamers actifs",
+    "statsPlugins": "Plugins",
+    "statsStars": "Étoiles GitHub"
+  },
+  "footer": {
+    "description": "PupCid's Little TikTool Helper – La solution professionnelle de streaming en direct TikTok.",
+    "product": "Produit",
+    "resources": "Ressources",
+    "community": "Communauté",
+    "support": "Support",
+    "supportDev": "Soutenir le développement",
+    "legal": "Mentions légales",
+    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Tous droits réservés.",
+    "trademark": "Pas un produit officiel de TikTok."
+  },
+  "meta": {
+    "home": {
+      "title": "PupCid's Little TikTool Helper – Solution professionnelle de streaming en direct TikTok",
+      "description": "Événements en temps réel, TTS avec plus de 75 voix, soundboard, système de plugins, intégration OBS et moteur de jeu pour les streamers TikTok LIVE. Gratuit et open source."
+    },
+    "features": {
+      "title": "Fonctionnalités – PupCid's Little TikTool Helper",
+      "description": "Découvrez toutes les fonctionnalités : AnimazingPal Brain Engine, Moteur de jeu, TTS, Moteur de flux, Soundboard Pro, Overlays et plus encore."
+    },
+    "download": {
+      "title": "Télécharger – PupCid's Little TikTool Helper",
+      "description": "Téléchargez PupCid's Little TikTool Helper gratuitement. Disponible pour Windows 10/11."
+    }
+  }
+}
