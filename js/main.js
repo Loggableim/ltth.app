@@ -141,6 +141,9 @@
         }
 
         setActiveLink() {
+            if (document.body && document.body.dataset.page) {
+                return;
+            }
             const currentPath = window.location.pathname;
             document.querySelectorAll('.nav-link').forEach(link => {
                 try {

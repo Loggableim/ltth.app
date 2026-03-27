@@ -117,6 +117,11 @@ body {
   cursor: pointer;
 }
 
+.dropdown-toggle.active {
+  background: #12a116;
+  color: #0b0b0b;
+}
+
 .dropdown-panel {
   position: absolute;
   top: calc(100% + 6px);
