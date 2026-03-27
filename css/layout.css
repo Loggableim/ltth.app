@@ -1,6 +1,17 @@
 /* layout.css - Shared Layout Styles for ltth.app */
 
 /* ===================================
+   Layout Loading State
+   Prevents layout shift while header/footer partials are being injected.
+   The `data-layout-loading` attribute is set by layout.js at the start of
+   init() and removed once injection is complete.
+   =================================== */
+
+body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgress) {
+    visibility: hidden;
+}
+
+/* ===================================
    Navigation Dropdown Styles
    =================================== */
 
@@ -284,17 +295,21 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
     
-    .nav-menu.open {
+    .nav-menu.open,
+    .nav-menu.active {
         display: flex;
     }
     
-    .nav-toggle.open span:nth-child(1) {
+    .nav-toggle.open span:nth-child(1),
+    .nav-toggle.active span:nth-child(1) {
         transform: translateY(8px) rotate(45deg);
     }
-    .nav-toggle.open span:nth-child(2) {
+    .nav-toggle.open span:nth-child(2),
+    .nav-toggle.active span:nth-child(2) {
         opacity: 0;
     }
-    .nav-toggle.open span:nth-child(3) {
+    .nav-toggle.open span:nth-child(3),
+    .nav-toggle.active span:nth-child(3) {
         transform: translateY(-8px) rotate(-45deg);
     }
     

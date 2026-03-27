@@ -62,11 +62,29 @@
     // ===================================
     class NavigationManager {
         constructor() {
-            this.navToggle = document.getElementById('navToggle');
-            this.navMenu = document.getElementById('navMenu');
-            this.navbar = document.getElementById('navbar');
             this.isMenuOpen = false;
-            this.init();
+            this._initWhenReady();
+        }
+
+        _initWhenReady() {
+            const nav = document.getElementById('navMenu');
+            if (nav) {
+                // Nav already in DOM (e.g. layout.js finished before main.js ran)
+                this._bindElements();
+                this.init();
+            } else {
+                // Nav not yet injected – wait for layout.js to finish
+                document.addEventListener('layoutReady', () => {
+                    this._bindElements();
+                    this.init();
+                }, { once: true });
+            }
+        }
+
+        _bindElements() {
+            this.navToggle = document.getElementById('navToggle');
+            this.navMenu   = document.getElementById('navMenu');
+            this.navbar    = document.getElementById('navbar');
         }
 
         init() {
@@ -76,14 +94,20 @@
         }
 
         setupEventListeners() {
-            if (this.navToggle) {
+            // layout.js owns the hamburger toggle when it has already initialised it.
+            // Avoid double-binding by checking the marker set by layout.js.
+            const alreadyBound = this.navToggle &&
+                this.navToggle.getAttribute('data-ltth-burger-init');
+
+            if (!alreadyBound && this.navToggle) {
                 this.navToggle.addEventListener('click', () => this.toggleMenu());
             }
 
             // Close menu when clicking outside
             document.addEventListener('click', (e) => {
-                if (this.isMenuOpen && 
-                    !this.navMenu.contains(e.target) && 
+                if (this.isMenuOpen &&
+                    this.navMenu && this.navToggle &&
+                    !this.navMenu.contains(e.target) &&
                     !this.navToggle.contains(e.target)) {
                     this.closeMenu();
                 }
@@ -97,65 +121,54 @@
             });
 
             // Close menu when clicking on a link
-            const navLinks = this.navMenu.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth < 768) {
-                        this.closeMenu();
-                    }
+            if (this.navMenu) {
+                const navLinks = this.navMenu.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth < 768) {
+                            this.closeMenu();
+                        }
+                    });
                 });
-            });
+            }
         }
 
         toggleMenu() {
             this.isMenuOpen = !this.isMenuOpen;
-            this.navMenu.classList.toggle('active', this.isMenuOpen);
-            this.navToggle.classList.toggle('active', this.isMenuOpen);
-            
+            if (this.navMenu)   this.navMenu.classList.toggle('active', this.isMenuOpen);
+            if (this.navToggle) this.navToggle.classList.toggle('active', this.isMenuOpen);
+
             // Prevent body scroll when menu is open on mobile
-            if (this.isMenuOpen) {
-                document.body.style.overflow = 'hidden';
-            } else {
-                document.body.style.overflow = '';
-            }
+            document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
         }
 
         closeMenu() {
             this.isMenuOpen = false;
-            this.navMenu.classList.remove('active');
-            this.navToggle.classList.remove('active');
+            if (this.navMenu)   this.navMenu.classList.remove('active');
+            if (this.navToggle) this.navToggle.classList.remove('active');
             document.body.style.overflow = '';
         }
 
         setActiveLink() {
             const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.nav-link');
-            
-            navLinks.forEach(link => {
-                const linkPath = new URL(link.href).pathname;
-                if (linkPath === currentPath || (currentPath === '/' && linkPath === '/index.html')) {
-                    link.classList.add('active');
-                } else {
-                    link.classList.remove('active');
-                }
+            document.querySelectorAll('.nav-link').forEach(link => {
+                try {
+                    const linkPath = new URL(link.href).pathname;
+                    if (linkPath === currentPath || (currentPath === '/' && linkPath === '/index.html')) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                } catch(e) { console.debug('NavigationManager: skipping link with invalid href', link, e); }
             });
         }
 
         setupScrollBehavior() {
-            let lastScroll = 0;
-            const scrollThreshold = 10;
-
             window.addEventListener('scroll', () => {
-                const currentScroll = window.pageYOffset;
-
-                // Add shadow when scrolled
-                if (currentScroll > 10) {
-                    this.navbar.style.boxShadow = 'var(--shadow-md)';
-                } else {
-                    this.navbar.style.boxShadow = 'none';
+                if (this.navbar) {
+                    this.navbar.style.boxShadow = window.pageYOffset > 10
+                        ? 'var(--shadow-md)' : 'none';
                 }
-
-                lastScroll = currentScroll;
             });
         }
     }

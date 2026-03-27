@@ -59,6 +59,10 @@
     async function init(lang) {
         await load(lang || 'de');
         apply();
+        // Re-apply translations once layout.js has injected header/footer
+        document.addEventListener('layoutReady', () => {
+            apply();
+        }, { once: true });
     }
     
     window.I18n = { init, apply, t: get, load, get currentLang() { return currentLang; } };
