@@ -226,10 +226,46 @@
         });
     }
     
+    function ensureStylesheet(href) {
+        if (document.querySelector('link[rel="stylesheet"][href="' + href + '"]')) return;
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+    }
+
+    function ensureScript(src) {
+        if (document.querySelector('script[src="' + src + '"]')) return;
+        const script = document.createElement('script');
+        script.src = src;
+        script.defer = true;
+        document.body.appendChild(script);
+    }
+
+    function resolvePageFromPath(pathname) {
+        if (pathname === '/' || pathname === '/index.html') return 'home';
+        if (pathname.startsWith('/download') || pathname.startsWith('/downloads') || pathname.startsWith('/app/')) return 'download';
+        if (pathname.startsWith('/changelog')) return 'changelog';
+        if (pathname.startsWith('/features')) return 'features';
+        if (pathname.startsWith('/docs')) return 'docs';
+        if (pathname.startsWith('/community')) return 'community';
+        if (pathname.startsWith('/faq')) return 'faq';
+        if (pathname.startsWith('/support')) return 'support';
+        if (pathname.startsWith('/plugins')) return 'plugins';
+        return '';
+    }
+
     async function init(options) {
         options = options || {};
         const lang = detectLanguage();
         window.__ltthLang = lang;
+
+        ensureStylesheet('/css/nav.css');
+        ensureScript('/js/nav.js');
+        if (!document.body.dataset.page) {
+            const inferredPage = resolvePageFromPath(window.location.pathname);
+            if (inferredPage) document.body.dataset.page = inferredPage;
+        }
 
         // Prevent layout shift: hide body content until header/footer are injected
         document.body.setAttribute('data-layout-loading', '');
@@ -261,6 +297,13 @@
                 const header = headerEl.querySelector('header');
                 if (header) {
                     header.setAttribute(INJECTED_ATTR, 'true');
+                    const navbarHTML = await loadPartial('/_partials/navbar.html');
+                    if (navbarHTML) {
+                        const navWrap = document.createElement('div');
+                        navWrap.innerHTML = navbarHTML;
+                        const navbar = navWrap.querySelector('#navbar');
+                        if (navbar) header.appendChild(navbar);
+                    }
                     document.body.insertBefore(header, document.body.firstChild);
                 }
             }
@@ -292,13 +335,8 @@
         document.body.removeAttribute('data-layout-loading');
 
         // Init interactions
-        initHamburger();
         initScrollProgress();
-        initNavbarScroll();
-        initLangSwitcher(lang);
-        initFeaturesDropdown();
         initTheme();
-        setActiveNav(lang);
         
         // Re-apply i18n translations to newly injected header/footer nodes
         if (window.I18n && typeof window.I18n.apply === 'function') {

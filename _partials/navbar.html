@@ -1,0 +1,74 @@
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo" aria-label="ltth.app home">
+            <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+            <span>ltth.app</span>
+        </a>
+
+        <button class="nav-toggle" id="navToggle" data-ltth-burger-init="true" aria-label="Toggle navigation" aria-controls="navMenu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <div class="nav-menu" id="navMenu" data-state="closed">
+            <div class="nav-group">
+                <a href="/" class="nav-link" data-section="home">Home</a>
+                        <div class="nav-dropdown" aria-expanded="false">
+                            <button class="dropdown-toggle" type="button" data-section="features" aria-expanded="false" aria-controls="featuresDropdown">
+                        Features
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="dropdown-panel" id="featuresDropdown">
+                        <a href="/features/" class="dropdown-item" data-section="features">Overview</a>
+                        <a href="/features/animazingpal.html" class="dropdown-item">AnimazingPal</a>
+                        <a href="/features/tts.html" class="dropdown-item">TTS Engine</a>
+                        <a href="/features/overlays.html" class="dropdown-item">Overlays &amp; HUD</a>
+                        <a href="/features/osc-bridge.html" class="dropdown-item">OSC / VRChat</a>
+                        <a href="/features/flow-engine.html" class="dropdown-item">Flow Engine</a>
+                        <a href="/features/soundboard.html" class="dropdown-item">Soundboard</a>
+                        <a href="/features/multicam.html" class="dropdown-item">MultiCam</a>
+                        <a href="/features/security.html" class="dropdown-item">Security</a>
+                        <a href="/features/game-engine.html" class="dropdown-item">Game Engine</a>
+                        <a href="/features/plugin-system.html" class="dropdown-item">Plugin System</a>
+                        <a href="/features/vdoninja.html" class="dropdown-item">VDO.Ninja</a>
+                        <a href="/features/viewer-xp.html" class="dropdown-item">Viewer XP</a>
+                        <a href="/features/alerts.html" class="dropdown-item">Alert System</a>
+                        <a href="/features/goals.html" class="dropdown-item">Goals System</a>
+                        <a href="/features/slot-machine.html" class="dropdown-item">Slot Machine</a>
+                    </div>
+                </div>
+                <a href="/plugins.html" class="nav-link" data-section="plugins">Plugins</a>
+                <a href="/docs.html" class="nav-link" data-section="docs">Docs</a>
+                <a href="/download.html" class="nav-link" data-section="download">Download</a>
+                <a href="/changelog.html" class="nav-link" data-section="changelog">Changelog</a>
+                <a href="/community.html" class="nav-link" data-section="community">Community</a>
+                <a href="/faq.html" class="nav-link" data-section="faq">FAQ</a>
+                <a href="/support.html" class="nav-link" data-section="support">Support</a>
+            </div>
+
+            <div class="nav-actions">
+                <div class="lang-switch">
+                    <label for="langSelect" class="sr-only">Language</label>
+                    <select id="langSelect" aria-label="Select language">
+                        <option value="de">DE</option>
+                        <option value="en">EN</option>
+                        <option value="fr">FR</option>
+                        <option value="es">ES</option>
+                    </select>
+                </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
