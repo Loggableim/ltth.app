@@ -336,5 +336,127 @@
             "name": "Vulkan Rockets",
             "desc": "GPU-accelerated rocket animations as overlay – visual spectacle for special stream moments."
         }
+    },
+    "screenshots": {
+        "tts": {
+            "hero": {
+                "alt": "TTS admin panel showing voice selector, queue list and provider settings",
+                "caption": "Text-to-Speech admin panel with multi-provider support and live queue management"
+            }
+        },
+        "soundboard": {
+            "hero": {
+                "alt": "Soundboard grid with sound cards, gift trigger mappings and volume controls",
+                "caption": "Soundboard featuring gift-triggered sounds, hotkeys and per-sound volume control"
+            }
+        },
+        "alerts": {
+            "hero": {
+                "alt": "Alert system showing event type list, preview panel and animation settings",
+                "caption": "Fully customisable alert system for follows, gifts, subs and custom events"
+            }
+        },
+        "goals": {
+            "hero": {
+                "alt": "Four goal trackers showing progress bars for coins, followers, likes and subs",
+                "caption": "Live-synced goal trackers with configurable targets and overlay-ready display"
+            }
+        },
+        "flowEngine": {
+            "hero": {
+                "alt": "Flow editor canvas with trigger, condition and action nodes connected by lines",
+                "caption": "Visual flow editor – chain triggers, conditions and actions without writing code"
+            }
+        },
+        "dashboard": {
+            "hero": {
+                "alt": "Main dashboard showing stream stats, connection status and quick-action buttons",
+                "caption": "Central dashboard with real-time stream metrics and one-click controls"
+            }
+        },
+        "overlays": {
+            "hero": {
+                "alt": "Overlay manager showing weather effects grid and live browser-source preview",
+                "caption": "Browser-source overlays for OBS – weather, particles, alerts and more"
+            }
+        },
+        "multicam": {
+            "hero": {
+                "alt": "Multi-cam panel with camera list, OBS connection status and switch rules",
+                "caption": "Automated multi-camera switching driven by TikTok LIVE events"
+            }
+        },
+        "oscBridge": {
+            "hero": {
+                "alt": "OSC Bridge showing address list, VRChat parameters and event trigger mappings",
+                "caption": "Send OSC messages to VRChat, VTUBE Studio or any OSC-compatible software"
+            }
+        },
+        "animazingpal": {
+            "hero": {
+                "alt": "AnimazingPal chat-bot settings with personality selector and memory stats",
+                "caption": "AI-powered chat companion with customisable personality and contextual memory"
+            }
+        },
+        "vdoninja": {
+            "hero": {
+                "alt": "VDO.Ninja room manager showing guest list, room settings and QR code",
+                "caption": "Integrate remote guests via VDO.Ninja with automatic room management"
+            }
+        },
+        "viewerXp": {
+            "hero": {
+                "alt": "Viewer XP leaderboard with XP settings, level thresholds and rank badges",
+                "caption": "Reward loyal viewers with XP, levels and a live leaderboard on stream"
+            }
+        },
+        "security": {
+            "hero": {
+                "alt": "Security settings showing block list, rate limiting rules and moderation options",
+                "caption": "Protect your stream with keyword filters, rate limiting and automated moderation"
+            }
+        },
+        "pluginSystem": {
+            "hero": {
+                "alt": "Plugin manager grid showing installed plugins with status badges and install button",
+                "caption": "Extend functionality with community plugins – browse, install and manage in one place"
+            }
+        },
+        "slotMachine": {
+            "hero": {
+                "alt": "Slot machine UI with reel preview, symbol configuration and gift trigger settings",
+                "caption": "Gift-triggered slot machine with custom symbols and animated reel overlay"
+            }
+        },
+        "gameEngine": {
+            "hero": {
+                "alt": "Game engine showing game type selector, active game list and participant stats",
+                "caption": "Run interactive mini-games driven by TikTok gifts, likes and comments"
+            }
+        },
+        "emojiRain": {
+            "hero": {
+                "alt": "Emoji rain settings with particle preview, emoji set selection and density slider",
+                "caption": "Trigger colourful emoji rain effects on your overlay from live events"
+            }
+        },
+        "autoUpdater": {
+            "hero": {
+                "alt": "Auto-updater panel showing current version, update status and changelog",
+                "caption": "Stay up to date automatically – one-click updates with built-in changelog"
+            }
+        },
+        "chatCommands": {
+            "hero": {
+                "alt": "Chat commands table listing commands, responses and permission levels",
+                "caption": "Create custom chat commands with cooldowns, aliases and permission levels"
+            }
+        },
+        "tikfinityApi": {
+            "hero": {
+                "alt": "TikFinity API panel showing connection status, webhook list and sync settings",
+                "caption": "First-class TikFinity integration for extended event data and webhook support"
+            }
+        }
     }
 }

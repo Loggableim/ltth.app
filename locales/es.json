@@ -336,5 +336,127 @@
             "name": "Vulkan Rockets",
             "desc": "Animaciones de cohetes aceleradas por GPU como overlay – espectáculo visual para momentos especiales del stream."
         }
+    },
+    "screenshots": {
+        "tts": {
+            "hero": {
+                "alt": "Panel de administración TTS con selector de voz, cola y configuración de proveedores",
+                "caption": "Panel TTS con soporte multiproveedor y gestión de cola en tiempo real"
+            }
+        },
+        "soundboard": {
+            "hero": {
+                "alt": "Cuadrícula de sonidos con tarjetas, mapeo de regalos y controles de volumen",
+                "caption": "Soundboard con sonidos activados por regalos, atajos de teclado y volumen individual"
+            }
+        },
+        "alerts": {
+            "hero": {
+                "alt": "Sistema de alertas con lista de eventos, panel de vista previa y configuración de animaciones",
+                "caption": "Sistema de alertas totalmente personalizable para follows, regalos, suscripciones y eventos propios"
+            }
+        },
+        "goals": {
+            "hero": {
+                "alt": "Cuatro rastreadores de metas con barras de progreso para monedas, seguidores, likes y suscripciones",
+                "caption": "Rastreadores de metas sincronizados en vivo con objetivos configurables y vista para overlay"
+            }
+        },
+        "flowEngine": {
+            "hero": {
+                "alt": "Canvas del editor de flujos con nodos de disparador, condición y acción conectados",
+                "caption": "Editor visual de flujos: encadena disparadores, condiciones y acciones sin código"
+            }
+        },
+        "dashboard": {
+            "hero": {
+                "alt": "Panel principal con estadísticas de stream, estado de conexión y botones de acción rápida",
+                "caption": "Panel central con métricas en tiempo real y controles en un clic"
+            }
+        },
+        "overlays": {
+            "hero": {
+                "alt": "Gestor de overlays con cuadrícula de efectos meteorológicos y vista previa de fuente de navegador",
+                "caption": "Overlays para fuente de navegador en OBS: clima, partículas, alertas y más"
+            }
+        },
+        "multicam": {
+            "hero": {
+                "alt": "Panel multicámara con lista de cámaras, estado de conexión OBS y reglas de cambio",
+                "caption": "Cambio automático de cámaras activado por eventos en TikTok LIVE"
+            }
+        },
+        "oscBridge": {
+            "hero": {
+                "alt": "OSC Bridge con lista de direcciones, parámetros de VRChat y mapeo de disparadores",
+                "caption": "Envía mensajes OSC a VRChat, VTUBE Studio o cualquier software compatible con OSC"
+            }
+        },
+        "animazingpal": {
+            "hero": {
+                "alt": "Configuración del chatbot AnimazingPal con selector de personalidad y estadísticas de memoria",
+                "caption": "Compañero de chat con IA, personalidad personalizable y memoria contextual"
+            }
+        },
+        "vdoninja": {
+            "hero": {
+                "alt": "Gestor de sala VDO.Ninja con lista de invitados, configuración y código QR",
+                "caption": "Integra invitados remotos vía VDO.Ninja con gestión automática de salas"
+            }
+        },
+        "viewerXp": {
+            "hero": {
+                "alt": "Tabla de clasificación Viewer XP con configuración de XP, umbrales de nivel e insignias",
+                "caption": "Recompensa a los espectadores fieles con XP, niveles y una tabla de clasificación en directo"
+            }
+        },
+        "security": {
+            "hero": {
+                "alt": "Configuración de seguridad con lista de bloqueos, reglas de limitación de tasa y moderación",
+                "caption": "Protege tu stream con filtros de palabras clave, limitación de tasa y moderación automática"
+            }
+        },
+        "pluginSystem": {
+            "hero": {
+                "alt": "Cuadrícula del gestor de plugins con insignias de estado y botón de instalación",
+                "caption": "Amplía funcionalidades con plugins de la comunidad: busca, instala y gestiona en un lugar"
+            }
+        },
+        "slotMachine": {
+            "hero": {
+                "alt": "Interfaz de la máquina tragaperras con vista previa de rodillos, símbolos y configuración de disparadores",
+                "caption": "Máquina tragaperras activada por regalos con símbolos personalizados y overlay animado"
+            }
+        },
+        "gameEngine": {
+            "hero": {
+                "alt": "Motor de juegos con selector de tipo de juego, lista de juegos activos y estadísticas",
+                "caption": "Minijuegos interactivos activados por regalos, likes y comentarios de TikTok"
+            }
+        },
+        "emojiRain": {
+            "hero": {
+                "alt": "Configuración de lluvia de emojis con vista previa de partículas, conjunto de emojis y deslizador de densidad",
+                "caption": "Activa efectos de lluvia de emojis en el overlay desde eventos en directo"
+            }
+        },
+        "autoUpdater": {
+            "hero": {
+                "alt": "Panel de actualización automática con versión actual, estado y registro de cambios",
+                "caption": "Mantente actualizado automáticamente: actualizaciones con un clic y registro de cambios integrado"
+            }
+        },
+        "chatCommands": {
+            "hero": {
+                "alt": "Tabla de comandos de chat con comandos, respuestas y niveles de permiso",
+                "caption": "Crea comandos de chat personalizados con tiempos de espera, alias y niveles de permiso"
+            }
+        },
+        "tikfinityApi": {
+            "hero": {
+                "alt": "Panel de la API TikFinity con estado de conexión, lista de webhooks y configuración de sincronización",
+                "caption": "Integración de primer nivel con TikFinity para datos de eventos extendidos y soporte de webhooks"
+            }
+        }
     }
 }

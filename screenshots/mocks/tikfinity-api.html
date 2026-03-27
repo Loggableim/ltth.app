@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>TikFinity API</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.conn-status{background:#12a11615;border:1px solid #12a11640;border-radius:.75rem;padding:1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem}
+.cs-icon{font-size:2.5rem}
+.cs-title{font-weight:700;color:#12a116;font-size:1rem}
+.cs-meta{font-size:.78rem;color:#9ca3af;margin-top:.2rem}
+.dot-anim{width:10px;height:10px;border-radius:50%;background:#12a116;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-weight:600;margin-bottom:.75rem;font-size:.9rem}
+.table-header{display:grid;grid-template-columns:1fr 1.5fr 80px 60px;gap:.5rem;padding:.4rem .65rem;font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #2a2b2c;margin-bottom:.3rem}
+.hook-row{display:grid;grid-template-columns:1fr 1.5fr 80px 60px;gap:.5rem;padding:.55rem .65rem;background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;margin-bottom:.3rem;align-items:center;font-size:.78rem}
+.hook-event{color:#12a116;font-family:monospace;font-size:.75rem;font-weight:600}
+.hook-url{color:#b0b5bc;font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.method-badge{font-size:.65rem;padding:.12rem .35rem;border-radius:.25rem;font-weight:700}
+.m-post{background:#12a11625;color:#12a116}
+.status-ok{font-size:.65rem;color:#12a116}
+.right-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.event-log{background:#000;border-radius:.5rem;padding:.75rem;font-family:monospace;font-size:.7rem;color:#22c55e;height:250px;overflow-y:auto;margin-top:.5rem}
+.el-row{padding:.1rem 0}
+.el-ts{color:#6b7280}
+.el-event{color:#22c55e}
+.el-data{color:#9ca3af}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #2a2b2c;font-size:.82rem}
+.stat-row:last-child{border-bottom:none}
+.stat-val{color:#12a116;font-weight:700}
+select,input{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem;margin-bottom:.5rem}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.25rem;margin-top:.5rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🔗 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🔗 TikFinity API</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🔗 TikFinity API</h1>
+    <div class="conn-status">
+      <div class="dot-anim"></div>
+      <div class="cs-icon">🔗</div>
+      <div>
+        <div class="cs-title">TikFinity Connected</div>
+        <div class="cs-meta">API v3.2 · User: @mystreamer · Plan: Pro · Last sync: 2s ago</div>
+      </div>
+      <button class="btn btn-secondary" style="margin-left:auto">Disconnect</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Webhook Endpoints</div>
+      <div class="table-header"><span>Event</span><span>Endpoint URL</span><span>Method</span><span>Status</span></div>
+      <div class="hook-row"><span class="hook-event">gift.received</span><span class="hook-url">http://localhost:3000/api/tikfinity/gift</span><span class="method-badge m-post">POST</span><span class="status-ok">● 200</span></div>
+      <div class="hook-row"><span class="hook-event">follow.new</span><span class="hook-url">http://localhost:3000/api/tikfinity/follow</span><span class="method-badge m-post">POST</span><span class="status-ok">● 200</span></div>
+      <div class="hook-row"><span class="hook-event">comment.received</span><span class="hook-url">http://localhost:3000/api/tikfinity/comment</span><span class="method-badge m-post">POST</span><span class="status-ok">● 200</span></div>
+      <div class="hook-row"><span class="hook-event">like.batch</span><span class="hook-url">http://localhost:3000/api/tikfinity/likes</span><span class="method-badge m-post">POST</span><span class="status-ok">● 200</span></div>
+      <div class="hook-row"><span class="hook-event">share.stream</span><span class="hook-url">http://localhost:3000/api/tikfinity/share</span><span class="method-badge m-post">POST</span><span class="status-ok">● 200</span></div>
+      <button class="btn btn-primary" style="margin-top:.65rem">+ Add Webhook</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Sync Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div><div class="label">Sync interval (ms)</div><input type="number" value="500"></div>
+        <div><div class="label">Event batch size</div><input type="number" value="50"></div>
+      </div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-primary">Save</button>
+        <button class="btn btn-secondary">Test Connection</button>
+      </div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div style="font-weight:700;margin-bottom:.5rem">API Stats</div>
+    <div class="stat-row"><span>Events received</span><span class="stat-val">12,847</span></div>
+    <div class="stat-row"><span>Webhooks sent</span><span class="stat-val">12,801</span></div>
+    <div class="stat-row"><span>Error rate</span><span class="stat-val">0.03%</span></div>
+    <div class="stat-row"><span>Avg latency</span><span class="stat-val">18ms</span></div>
+    <div style="margin-top:1rem;font-weight:600;font-size:.85rem">Live Event Log</div>
+    <div class="event-log">
+      <div class="el-row"><span class="el-ts">[12:06:02] </span><span class="el-event">gift.received </span><span class="el-data">rose ×5 @StarGazer</span></div>
+      <div class="el-row"><span class="el-ts">[12:06:01] </span><span class="el-event">like.batch </span><span class="el-data">count=50</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:59] </span><span class="el-event">comment.received </span><span class="el-data">"Hello!"</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:58] </span><span class="el-event">follow.new </span><span class="el-data">@NightOwl</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:57] </span><span class="el-event">gift.received </span><span class="el-data">universe ×1 @King</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:55] </span><span class="el-event">share.stream </span><span class="el-data">@PixelDancer</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:53] </span><span class="el-event">like.batch </span><span class="el-data">count=100</span></div>
+      <div class="el-row"><span class="el-ts">[12:05:51] </span><span class="el-event">comment.received </span><span class="el-data">"LFG! 🔥"</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

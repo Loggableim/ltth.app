@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Auto Updater</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.version-card{background:linear-gradient(135deg,#12a11615,#0e0f10);border:1px solid #12a11640;border-radius:1rem;padding:2rem;display:grid;grid-template-columns:1fr auto;gap:1.5rem;align-items:center;margin-bottom:1.5rem}
+.vc-label{font-size:.78rem;color:#9ca3af;margin-bottom:.25rem}
+.vc-version{font-size:2.2rem;font-weight:800;color:#12a116;font-variant-numeric:tabular-nums}
+.vc-date{font-size:.78rem;color:#9ca3af;margin-top:.2rem}
+.update-banner{background:#f59e0b15;border:1px solid #f59e0b40;border-radius:.75rem;padding:1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem}
+.ub-icon{font-size:2rem}
+.ub-title{font-weight:700;color:#f59e0b}
+.ub-sub{font-size:.78rem;color:#9ca3af;margin-top:.15rem}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem}
+.card-title{font-weight:600;margin-bottom:.75rem;font-size:.9rem}
+.changelog{background:#0e0f10;border-radius:.625rem;padding:1.25rem;font-size:.82rem;line-height:1.7}
+.cl-version{font-weight:700;color:#12a116;font-size:.9rem;margin-bottom:.3rem}
+.cl-date{font-size:.72rem;color:#9ca3af;margin-bottom:.5rem}
+.cl-item{padding:.2rem 0;color:#b0b5bc}
+.cl-item::before{content:"• ";color:#12a116}
+.cl-type{font-size:.65rem;padding:.1rem .3rem;border-radius:.2rem;margin-right:.3rem;font-weight:600}
+.type-feat{background:#12a11625;color:#12a116}
+.type-fix{background:#3b82f625;color:#3b82f6}
+.type-perf{background:#8b5cf625;color:#8b5cf6}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.3rem;margin-top:.5rem}
+select{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #2a2b2c;font-size:.82rem}
+.toggle-row:last-child{border-bottom:none}
+.tog{width:36px;height:19px;background:#2a2b2c;border-radius:10px;position:relative;cursor:pointer;border:none;flex-shrink:0}
+.tog.on{background:#12a116}
+.tog::after{content:'';position:absolute;width:15px;height:15px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.15s}
+.tog.on::after{left:19px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🔄 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🔄 Auto Updater</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🔄 Auto Updater</h1>
+    <div class="version-card">
+      <div>
+        <div class="vc-label">Current Version</div>
+        <div class="vc-version">v2.14.3</div>
+        <div class="vc-date">Released 3 days ago · 2025-01-12</div>
+      </div>
+      <div style="text-align:right">
+        <div class="vc-label">Update Channel</div>
+        <select style="width:140px;margin-top:.3rem"><option>Stable</option><option>Beta</option><option>Nightly</option></select>
+        <div style="margin-top:.75rem"><button class="btn btn-secondary">Check Now</button></div>
+      </div>
+    </div>
+    <div class="update-banner">
+      <div class="ub-icon">📦</div>
+      <div style="flex:1">
+        <div class="ub-title">Update available: v2.15.0</div>
+        <div class="ub-sub">Size: 24.3 MB · Stable channel · Contains 8 improvements</div>
+      </div>
+      <button class="btn btn-primary">Update Now</button>
+    </div>
+    <div class="cols2">
+      <div class="card">
+        <div class="card-title">Update Settings</div>
+        <div class="toggle-row"><span>Auto-download updates</span><button class="tog on"></button></div>
+        <div class="toggle-row"><span>Auto-install on stream end</span><button class="tog on"></button></div>
+        <div class="toggle-row"><span>Notify before updating</span><button class="tog on"></button></div>
+        <div class="toggle-row"><span>Keep backup of last version</span><button class="tog"></button></div>
+        <div class="label" style="margin-top:.75rem">Check frequency</div>
+        <select><option>Every hour</option><option>Every 6 hours</option><option>Daily</option><option>Manual</option></select>
+      </div>
+      <div class="card">
+        <div class="card-title">Version History</div>
+        <div style="display:flex;flex-direction:column;gap:.35rem">
+          <div style="background:#12a11615;border:1px solid #12a11640;border-radius:.375rem;padding:.5rem .75rem;font-size:.78rem"><span style="color:#12a116;font-weight:700">v2.15.0</span> <span style="color:#9ca3af">Available</span></div>
+          <div style="background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.5rem .75rem;font-size:.78rem"><span style="font-weight:600">v2.14.3</span> <span style="color:#12a116">● Current</span></div>
+          <div style="background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.5rem .75rem;font-size:.78rem;color:#9ca3af">v2.14.2 · Jan 8</div>
+          <div style="background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.5rem .75rem;font-size:.78rem;color:#9ca3af">v2.14.1 · Jan 3</div>
+          <div style="background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;padding:.5rem .75rem;font-size:.78rem;color:#9ca3af">v2.14.0 · Dec 28</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">What's New in v2.15.0</div>
+      <div class="changelog">
+        <div class="cl-version">v2.15.0 <span style="font-weight:400;color:#9ca3af">· 2025-01-15</span></div>
+        <div class="cl-item"><span class="cl-type type-feat">FEAT</span> New Flow Engine condition: viewer count threshold</div>
+        <div class="cl-item"><span class="cl-type type-feat">FEAT</span> AnimazingPal now supports GPT-4o-mini for faster responses</div>
+        <div class="cl-item"><span class="cl-type type-fix">FIX</span> TTS queue no longer skips last item after reconnect</div>
+        <div class="cl-item"><span class="cl-type type-fix">FIX</span> Goal progress bar now resets correctly on stream end</div>
+        <div class="cl-item"><span class="cl-type type-perf">PERF</span> Reduced memory usage during long streams by 30%</div>
+        <div class="cl-item"><span class="cl-type type-feat">FEAT</span> Plugin API v2: plugins can now register overlay widgets</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

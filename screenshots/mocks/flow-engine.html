@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Flow Engine</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 260px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;display:flex;align-items:center;gap:.6rem;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.canvas{background:#0a0b0c;position:relative;overflow:hidden;flex:1}
+.canvas-header{background:#1a1b1c;border-bottom:1px solid #2a2b2c;padding:.75rem 1rem;display:flex;gap:.5rem;align-items:center}
+.canvas-body{position:relative;height:calc(100% - 44px)}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.8rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.node{position:absolute;border-radius:.625rem;padding:1rem 1.1rem;min-width:150px;cursor:move;user-select:none}
+.node-trigger{background:#1e3a2a;border:2px solid #12a116}
+.node-condition{background:#1e2a3a;border:2px solid #3b82f6}
+.node-action{background:#2a1e3a;border:2px solid #8b5cf6}
+.node-action2{background:#3a2a1e;border:2px solid #f59e0b}
+.node-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;opacity:.7}
+.node-title{font-weight:700;font-size:.9rem}
+.node-sub{font-size:.72rem;color:#9ca3af;margin-top:.25rem}
+.node-port{width:10px;height:10px;border-radius:50%;position:absolute}
+.port-out{right:-5px;top:50%;transform:translateY(-50%);background:#12a116}
+.port-in{left:-5px;top:50%;transform:translateY(-50%);background:#3b82f6}
+.port-out-purple{background:#8b5cf6}
+.port-out-yellow{background:#f59e0b}
+svg.connections{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.right-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.panel-title{font-weight:700;margin-bottom:1rem}
+.flow-list-item{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.5rem;padding:.75rem;margin-bottom:.5rem;cursor:pointer}
+.fli-name{font-weight:600;font-size:.85rem}
+.fli-meta{font-size:.7rem;color:#9ca3af;margin-top:.2rem}
+.fli-badge{font-size:.65rem;padding:.1rem .35rem;border-radius:.25rem;float:right}
+.badge-on{background:#12a11625;color:#12a116;border:1px solid #12a11640}
+.badge-off{background:#2a2b2c;color:#9ca3af}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.25rem;margin-top:.6rem}
+select{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🔀 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item">🔔 Alerts</div>
+    <div class="nav-item active">🔀 Flow Engine</div>
+    <div class="nav-item">🎯 Goals</div>
+    <div class="nav-item">🔊 TTS</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="canvas-header">
+      <button class="btn btn-primary">▶ Run Flow</button>
+      <button class="btn btn-secondary">+ Add Node</button>
+      <button class="btn btn-secondary">💾 Save</button>
+      <span style="margin-left:.5rem;font-size:.78rem;color:#9ca3af">Gift Welcome Flow</span>
+      <span style="margin-left:auto;font-size:.75rem;background:#12a11625;color:#12a116;padding:.2rem .5rem;border-radius:.25rem;border:1px solid #12a11640">● Active</span>
+    </div>
+    <div class="canvas-body">
+      <svg class="connections">
+        <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#12a116"/></marker></defs>
+        <path d="M290,185 C340,185 370,245 420,245" stroke="#12a116" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+        <path d="M590,245 C640,245 670,185 720,185" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+        <path d="M590,245 C640,245 670,320 720,320" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+        <path d="M880,185 C930,185 960,185 990,185" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+        <path d="M880,320 C930,320 960,320 990,320" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+      </svg>
+      <div class="node node-trigger" style="left:80px;top:155px">
+        <div class="node-label">Trigger</div>
+        <div class="node-title">🎁 Gift Received</div>
+        <div class="node-sub">Any gift · Any user</div>
+        <div class="node-port port-out" style="right:-5px"></div>
+      </div>
+      <div class="node node-condition" style="left:420px;top:215px">
+        <div class="node-port port-in"></div>
+        <div class="node-label">Condition</div>
+        <div class="node-title">⚖️ Check Value</div>
+        <div class="node-sub">coins ≥ 500</div>
+        <div class="node-port" style="right:-5px;top:35%;transform:translateY(-50%);background:#22c55e;width:10px;height:10px;border-radius:50%;position:absolute">✓</div>
+        <div class="node-port" style="right:-5px;top:65%;transform:translateY(-50%);background:#ef4444;width:10px;height:10px;border-radius:50%;position:absolute">✗</div>
+      </div>
+      <div class="node node-action" style="left:720px;top:155px">
+        <div class="node-port port-in"></div>
+        <div class="node-label">Action</div>
+        <div class="node-title">🔊 Play TTS</div>
+        <div class="node-sub">"{username} sent {gift}!"</div>
+        <div class="node-port port-out" style="right:-5px;top:50%;transform:translateY(-50%);background:#8b5cf6"></div>
+      </div>
+      <div class="node node-action2" style="left:720px;top:290px">
+        <div class="node-port port-in"></div>
+        <div class="node-label">Action</div>
+        <div class="node-title">🔔 Show Alert</div>
+        <div class="node-sub">Small gift alert</div>
+        <div class="node-port port-out" style="right:-5px;top:50%;transform:translateY(-50%);background:#f59e0b"></div>
+      </div>
+      <div class="node node-action" style="left:990px;top:155px">
+        <div class="node-port port-in"></div>
+        <div class="node-label">Action</div>
+        <div class="node-title">🎯 Add to Goal</div>
+        <div class="node-sub">Coin goal +{coins}</div>
+      </div>
+      <div class="node node-action2" style="left:990px;top:290px">
+        <div class="node-port port-in"></div>
+        <div class="node-label">Action</div>
+        <div class="node-title">🎵 Play Sound</div>
+        <div class="node-sub">ding.mp3</div>
+      </div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div class="panel-title">My Flows</div>
+    <div class="flow-list-item" style="border-color:#12a116">
+      <span class="fli-badge badge-on">On</span>
+      <div class="fli-name">Gift Welcome Flow</div>
+      <div class="fli-meta">6 nodes · Last run 2m ago</div>
+    </div>
+    <div class="flow-list-item">
+      <span class="fli-badge badge-on">On</span>
+      <div class="fli-name">Follow Celebration</div>
+      <div class="fli-meta">4 nodes · Last run 8m ago</div>
+    </div>
+    <div class="flow-list-item">
+      <span class="fli-badge badge-off">Off</span>
+      <div class="fli-name">Goal Reached</div>
+      <div class="fli-meta">3 nodes · Never run</div>
+    </div>
+    <div class="flow-list-item">
+      <span class="fli-badge badge-on">On</span>
+      <div class="fli-name">Raid Response</div>
+      <div class="fli-meta">5 nodes · Last run 1h ago</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:.5rem">+ New Flow</button>
+    <div style="margin-top:1rem;border-top:1px solid #2a2b2c;padding-top:1rem">
+      <div class="label">Node Library</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem">
+        <span style="background:#1e3a2a;border:1px solid #12a11640;color:#12a116;font-size:.7rem;padding:.2rem .5rem;border-radius:.25rem">Trigger</span>
+        <span style="background:#1e2a3a;border:1px solid #3b82f640;color:#3b82f6;font-size:.7rem;padding:.2rem .5rem;border-radius:.25rem">Condition</span>
+        <span style="background:#2a1e3a;border:1px solid #8b5cf640;color:#8b5cf6;font-size:.7rem;padding:.2rem .5rem;border-radius:.25rem">Action</span>
+        <span style="background:#3a2a1e;border:1px solid #f59e0b40;color:#f59e0b;font-size:.7rem;padding:.2rem .5rem;border-radius:.25rem">Delay</span>
+        <span style="background:#3a1e2a;border:1px solid #ec489940;color:#ec4899;font-size:.7rem;padding:.2rem .5rem;border-radius:.25rem">Loop</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Security & Moderation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.btn-danger{background:#3a1a1a;color:#f87171;border:1px solid #f8717140}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem}
+.card-title{font-weight:600;margin-bottom:.75rem;font-size:.9rem;display:flex;align-items:center;gap:.5rem}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.3rem;margin-top:.5rem}
+input,select,textarea{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem;margin-bottom:.5rem}
+textarea{resize:none;height:70px;font-family:monospace}
+.block-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem .65rem;background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;margin-bottom:.3rem;font-size:.82rem}
+.blocked-name{font-weight:600;color:#f87171}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid #2a2b2c;font-size:.82rem}
+.toggle-row:last-child{border-bottom:none}
+.toggle{width:38px;height:20px;background:#2a2b2c;border-radius:10px;position:relative;cursor:pointer;border:none}
+.toggle.on{background:#12a116}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s}
+.toggle.on::after{left:20px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🛡️ ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🛡️ Security</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🛡️ Security &amp; Moderation</h1>
+    <div class="cols2" style="margin-bottom:1rem">
+      <div class="card">
+        <div class="card-title">🚫 Block List</div>
+        <div style="display:flex;gap:.4rem;margin-bottom:.75rem">
+          <input placeholder="Username or keyword..." style="margin-bottom:0;flex:1">
+          <button class="btn btn-danger">Block</button>
+        </div>
+        <div class="block-row"><span class="blocked-name">@SpamBot_99</span><span style="font-size:.7rem;color:#9ca3af">Keyword match</span><button class="btn btn-secondary" style="padding:.15rem .45rem;font-size:.7rem">Remove</button></div>
+        <div class="block-row"><span class="blocked-name">buy followers</span><span style="font-size:.7rem;color:#9ca3af">Phrase filter</span><button class="btn btn-secondary" style="padding:.15rem .45rem;font-size:.7rem">Remove</button></div>
+        <div class="block-row"><span class="blocked-name">@TrollUser2024</span><span style="font-size:.7rem;color:#9ca3af">Manual</span><button class="btn btn-secondary" style="padding:.15rem .45rem;font-size:.7rem">Remove</button></div>
+        <div class="block-row"><span class="blocked-name">free coins</span><span style="font-size:.7rem;color:#9ca3af">Phrase filter</span><button class="btn btn-secondary" style="padding:.15rem .45rem;font-size:.7rem">Remove</button></div>
+        <div class="block-row"><span class="blocked-name">@FakeGifter</span><span style="font-size:.7rem;color:#9ca3af">Manual</span><button class="btn btn-secondary" style="padding:.15rem .45rem;font-size:.7rem">Remove</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Rate Limiting</div>
+        <div class="label">Max messages per user (per minute)</div>
+        <input type="number" value="10">
+        <div class="label">Cooldown after limit (seconds)</div>
+        <input type="number" value="30">
+        <div class="label">Action when limit exceeded</div>
+        <select><option>Ignore message</option><option>Timeout user</option><option>Block user</option></select>
+        <div class="label">Exempt roles</div>
+        <select><option>Moderators, Subscribers</option><option>Moderators only</option><option>No exemptions</option></select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔧 Moderation Rules</div>
+      <div class="cols2">
+        <div>
+          <div class="label">Keyword Filters (one per line)</div>
+          <textarea>spam
+buy followers
+free coins
+click here
+discord.gg</textarea>
+        </div>
+        <div>
+          <div class="toggle-row"><span>Auto-block on spam detection</span><button class="toggle on"></button></div>
+          <div class="toggle-row"><span>Block duplicate messages</span><button class="toggle on"></button></div>
+          <div class="toggle-row"><span>Require account age ≥ 7 days</span><button class="toggle"></button></div>
+          <div class="toggle-row"><span>Allow only followers</span><button class="toggle"></button></div>
+          <div class="toggle-row"><span>Log all moderation actions</span><button class="toggle on"></button></div>
+          <div class="toggle-row"><span>Notify on block</span><button class="toggle on"></button></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-primary">Save Rules</button>
+        <button class="btn btn-secondary">Export Blocklist</button>
+        <button class="btn btn-secondary">View Logs</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Multi-Cam</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.conn-bar{background:#1a1b1c;border:1px solid #12a11640;border-radius:.5rem;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;font-size:.82rem}
+.dot{width:8px;height:8px;border-radius:50%;background:#12a116}
+.cam-list{display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem}
+.cam-card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1rem;display:grid;grid-template-columns:100px 1fr auto;gap:1rem;align-items:center}
+.cam-card.live{border-color:#12a116}
+.cam-thumb{background:#000;border-radius:.5rem;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border:1px solid #2a2b2c}
+.cam-name{font-weight:600;font-size:.9rem}
+.cam-source{font-size:.75rem;color:#9ca3af;margin-top:.2rem}
+.cam-actions{display:flex;gap:.4rem}
+.badge-live{background:#12a11625;color:#12a116;border:1px solid #12a11640;font-size:.65rem;padding:.15rem .4rem;border-radius:.25rem}
+.badge-standby{background:#2a2b2c;color:#9ca3af;font-size:.65rem;padding:.15rem .4rem;border-radius:.25rem}
+.rules-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.rule-item{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.5rem;padding:.75rem;margin-bottom:.5rem}
+.rule-trigger{font-size:.75rem;color:#f59e0b;font-weight:600}
+.rule-action{font-size:.82rem;color:#e8eaed;margin-top:.2rem}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.25rem;margin-top:.6rem}
+select{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1rem;margin-bottom:1rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🎥 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🎥 Multi-Cam</div>
+    <div class="nav-item">🌐 Overlays</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🎥 Multi-Cam Switcher</h1>
+    <div class="conn-bar"><div class="dot"></div><span>OBS Connected · WebSocket 4.9.1 · obs-studio 29.1.3</span><button class="btn btn-secondary" style="margin-left:auto">Reconnect</button></div>
+    <div class="cam-list">
+      <div class="cam-card live">
+        <div class="cam-thumb">📷</div>
+        <div>
+          <div class="cam-name">Main Camera</div>
+          <div class="cam-source">Scene: Main · OBS source "Cam1"</div>
+          <span class="badge-live">● LIVE</span>
+        </div>
+        <div class="cam-actions"><button class="btn btn-primary">Switch To</button><button class="btn btn-secondary">Edit</button></div>
+      </div>
+      <div class="cam-card">
+        <div class="cam-thumb">🎮</div>
+        <div>
+          <div class="cam-name">Game Capture</div>
+          <div class="cam-source">Scene: Gaming · OBS source "GameCap"</div>
+          <span class="badge-standby">○ Standby</span>
+        </div>
+        <div class="cam-actions"><button class="btn btn-primary">Switch To</button><button class="btn btn-secondary">Edit</button></div>
+      </div>
+      <div class="cam-card">
+        <div class="cam-thumb">📱</div>
+        <div>
+          <div class="cam-name">Face Cam</div>
+          <div class="cam-source">Scene: FaceCam · OBS source "FaceWebcam"</div>
+          <span class="badge-standby">○ Standby</span>
+        </div>
+        <div class="cam-actions"><button class="btn btn-primary">Switch To</button><button class="btn btn-secondary">Edit</button></div>
+      </div>
+      <div class="cam-card">
+        <div class="cam-thumb">🖥️</div>
+        <div>
+          <div class="cam-name">Screen Share</div>
+          <div class="cam-source">Scene: Screen · OBS source "Monitor1"</div>
+          <span class="badge-standby">○ Standby</span>
+        </div>
+        <div class="cam-actions"><button class="btn btn-primary">Switch To</button><button class="btn btn-secondary">Edit</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:.5rem">Transition Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div><div class="label">Transition Type</div><select><option>Cut</option><option>Fade</option><option>Slide</option></select></div>
+        <div><div class="label">Duration (ms)</div><select><option>0</option><option>300</option><option>500</option><option>1000</option></select></div>
+      </div>
+    </div>
+  </div>
+  <div class="rules-panel">
+    <div style="font-weight:700;margin-bottom:1rem">Switch Rules</div>
+    <div class="rule-item"><div class="rule-trigger">🎁 Gift ≥ 5000 coins</div><div class="rule-action">→ Switch to "Main Camera"</div></div>
+    <div class="rule-item"><div class="rule-trigger">🎮 Comment contains "game"</div><div class="rule-action">→ Switch to "Game Capture"</div></div>
+    <div class="rule-item"><div class="rule-trigger">👤 100+ viewers</div><div class="rule-action">→ Switch to "Face Cam"</div></div>
+    <div class="rule-item"><div class="rule-trigger">⭐ Subscribe event</div><div class="rule-action">→ Switch to "Main Camera"</div></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:.75rem">+ Add Rule</button>
+    <div style="margin-top:1rem;border-top:1px solid #2a2b2c;padding-top:1rem">
+      <div style="font-weight:600;margin-bottom:.5rem">Auto-Switch</div>
+      <div class="label">Return to default after (s)</div>
+      <select><option>5</option><option>10</option><option>30</option><option>Never</option></select>
+    </div>
+  </div>
+</div>
+</body>
+</html>
