@@ -18,6 +18,10 @@ body {
   border-bottom: 1px solid var(--nav-border);
 }
 
+.navbar.scrolled {
+  box-shadow: var(--nav-shadow);
+}
+
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;

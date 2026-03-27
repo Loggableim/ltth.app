@@ -227,7 +227,10 @@
     }
     
     function ensureStylesheet(href) {
-        if (document.querySelector('link[rel="stylesheet"][href="' + href + '"]')) return;
+        const hrefUrl = new URL(href, window.location.origin).href;
+        for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+            if (link.href === hrefUrl) return;
+        }
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = href;
@@ -235,7 +238,10 @@
     }
 
     function ensureScript(src) {
-        if (document.querySelector('script[src="' + src + '"]')) return;
+        const srcUrl = new URL(src, window.location.origin).href;
+        for (const scriptTag of document.querySelectorAll('script[src]')) {
+            if (scriptTag.src === srcUrl) return;
+        }
         const script = document.createElement('script');
         script.src = src;
         script.defer = true;
@@ -244,14 +250,15 @@
 
     function resolvePageFromPath(pathname) {
         if (pathname === '/' || pathname === '/index.html') return 'home';
-        if (pathname.startsWith('/download') || pathname.startsWith('/downloads') || pathname.startsWith('/app/')) return 'download';
+        if (pathname === '/download.html' || pathname === '/download/' || pathname.startsWith('/downloads/') || pathname === '/downloads') return 'download';
+        if (pathname === '/app' || pathname === '/app/' || pathname === '/app/index.html' || pathname === '/app/index-en.html') return 'download';
         if (pathname.startsWith('/changelog')) return 'changelog';
-        if (pathname.startsWith('/features')) return 'features';
-        if (pathname.startsWith('/docs')) return 'docs';
-        if (pathname.startsWith('/community')) return 'community';
-        if (pathname.startsWith('/faq')) return 'faq';
-        if (pathname.startsWith('/support')) return 'support';
-        if (pathname.startsWith('/plugins')) return 'plugins';
+        if (pathname === '/features' || pathname.startsWith('/features/')) return 'features';
+        if (pathname === '/docs.html' || pathname === '/docs/' || pathname === '/docs') return 'docs';
+        if (pathname === '/community.html' || pathname === '/community/' || pathname === '/community') return 'community';
+        if (pathname === '/faq.html' || pathname === '/faq/' || pathname === '/faq') return 'faq';
+        if (pathname === '/support.html' || pathname === '/support/' || pathname === '/support' || pathname === '/support-the-developement.html') return 'support';
+        if (pathname === '/plugins.html' || pathname === '/plugins/' || pathname === '/plugins') return 'plugins';
         return '';
     }
 
