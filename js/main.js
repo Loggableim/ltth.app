@@ -571,6 +571,8 @@
             languageManager: new LanguageManager(),
             betaNoticeManager: new BetaNoticeManager()
         };
+        window.ltth = window.ltth || {};
+        window.ltth.enhancedManagers = enhancedManagers;
     }
 
     function initApp() {
