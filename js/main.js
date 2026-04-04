@@ -348,12 +348,6 @@
         document.body.classList.add('loaded');
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-
     window.ltth = { Analytics, ClipboardManager };
 
     class ScrollProgressBar {
@@ -564,15 +558,36 @@
         }
     }
 
+    // Guard to ensure enhanced managers are created exactly once.
+    let isEnhancedInitialized = false;
+    const enhancedManagers = {};
     function initEnhanced() {
-        new ScrollProgressBar();
-        new VersionBadgeManager();
-        new LiveSearch();
-        new ChangelogRenderer();
-        new LanguageManager();
-        new BetaNoticeManager();
+        if (isEnhancedInitialized) return;
+        isEnhancedInitialized = true;
+        enhancedManagers.scrollProgressBar = new ScrollProgressBar();
+        enhancedManagers.versionBadgeManager = new VersionBadgeManager();
+        enhancedManagers.liveSearch = new LiveSearch();
+        enhancedManagers.changelogRenderer = new ChangelogRenderer();
+        enhancedManagers.languageManager = new LanguageManager();
+        enhancedManagers.betaNoticeManager = new BetaNoticeManager();
+        window.ltth = window.ltth || {};
+        window.ltth.enhancedManagers = enhancedManagers;
     }
 
-    const originalInit = init;
-    init = function() { originalInit(); initEnhanced(); };
+    function initApp() {
+        init();
+        const hasInjectedLayout = !!document.querySelector('#site-header[data-ltth-injected]');
+        if (hasInjectedLayout) {
+            initEnhanced();
+        } else {
+            // layoutReady is dispatched after shared layout injection completes.
+            document.addEventListener('layoutReady', initEnhanced, { once: true });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
 })();

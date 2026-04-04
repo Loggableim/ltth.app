@@ -33,6 +33,13 @@
     
     function apply() {
         document.documentElement.lang = currentLang;
+        document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+            const key = el.getAttribute('data-i18n-alt');
+            const value = get(key);
+            if (value !== key) {
+                el.setAttribute('alt', value);
+            }
+        });
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const value = get(key);
