@@ -41,35 +41,139 @@
             <div class="nav-menu" id="navMenu">
                 <a href="/" class="nav-link" data-page="home">Home</a>
                 
-                <!-- Features Dropdown -->
-                <div class="nav-dropdown">
-                    <a href="/features/" class="nav-link nav-dropdown-toggle" data-page="features">
+                <!-- Features Mega Menu -->
+                <div class="nav-mega" id="featuresMega">
+                    <a href="/features/" class="nav-link nav-mega-toggle" data-page="features" aria-haspopup="true" aria-expanded="false">
                         Features
-                        <svg class="nav-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <svg class="nav-mega-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9"/>
                         </svg>
                     </a>
-                    <div class="nav-dropdown-menu">
-                        <a href="/features/animazingpal.html" class="nav-dropdown-item">🧠 AnimazingPal</a>
-                        <a href="/features/tts.html" class="nav-dropdown-item">🎙️ TTS Engine</a>
-                        <a href="/features/overlays.html" class="nav-dropdown-item">🎨 Overlays &amp; HUD</a>
-                        <a href="/features/osc-bridge.html" class="nav-dropdown-item">🥽 OSC / VRChat</a>
-                        <a href="/features/flow-engine.html" class="nav-dropdown-item">⚡ Flow Engine</a>
-                        <a href="/features/soundboard.html" class="nav-dropdown-item">🔊 Soundboard</a>
-                        <a href="/features/multicam.html" class="nav-dropdown-item">📷 MultiCam</a>
-                        <a href="/features/security.html" class="nav-dropdown-item">🔒 Security</a>
-                        <a href="/features/game-engine.html" class="nav-dropdown-item">🎮 Game Engine (Overview)</a>
-                        <a href="/features/plugin-system.html" class="nav-dropdown-item">🔌 Plugin System</a>
-                        <a href="/features/vdoninja.html" class="nav-dropdown-item">📡 VDO.Ninja</a>
-                        <a href="/features/viewer-xp.html" class="nav-dropdown-item">⭐ Viewer XP</a>
-                        <a href="/features/alerts.html" class="nav-dropdown-item">🔔 Alert System</a>
-                        <a href="/features/goals.html" class="nav-dropdown-item">🎯 Goals System</a>
-                        <a href="/features/slot-machine.html" class="nav-dropdown-item">🎰 Slot Machine</a>
-                        <a href="/features/dashboard.html" class="nav-dropdown-item">📊 Dashboard</a>
-                        <a href="/features/emoji-rain.html" class="nav-dropdown-item">🌧️ Emoji Rain</a>
-                        <a href="/features/chat-commands.html" class="nav-dropdown-item">💬 Chat Commands</a>
-                        <a href="/features/auto-updater.html" class="nav-dropdown-item">🔄 Auto Updater</a>
-                        <a href="/features/tikfinity-api.html" class="nav-dropdown-item">🔗 TikFinity API</a>
+                    <div class="nav-mega-panel" role="region" aria-label="Features Menu">
+                        <div class="mega-panel-inner">
+                            <div class="mega-grid">
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🧠 KI &amp; Intelligenz</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/animazingpal.html" class="mega-item">
+                                            <span class="mega-item-emoji">🧠</span>
+                                            <span class="mega-item-label">AnimazingPal</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎙️ Audio &amp; Stimme</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/tts.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎙️</span>
+                                            <span class="mega-item-label">TTS Engine</span>
+                                        </a>
+                                        <a href="/features/soundboard.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔊</span>
+                                            <span class="mega-item-label">Soundboard</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎨 Visuell &amp; Overlay</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/overlays.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎨</span>
+                                            <span class="mega-item-label">Overlays &amp; HUD</span>
+                                        </a>
+                                        <a href="/features/emoji-rain.html" class="mega-item">
+                                            <span class="mega-item-emoji">🌧️</span>
+                                            <span class="mega-item-label">Emoji Rain</span>
+                                        </a>
+                                        <a href="/features/alerts.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔔</span>
+                                            <span class="mega-item-label">Alert System</span>
+                                        </a>
+                                        <a href="/features/goals.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎯</span>
+                                            <span class="mega-item-label">Goals System</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎮 Gaming &amp; Interaktion</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/game-engine.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎮</span>
+                                            <span class="mega-item-label">Game Engine</span>
+                                        </a>
+                                        <a href="/features/slot-machine.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎰</span>
+                                            <span class="mega-item-label">Slot Machine</span>
+                                        </a>
+                                        <a href="/features/chat-commands.html" class="mega-item">
+                                            <span class="mega-item-emoji">💬</span>
+                                            <span class="mega-item-label">Chat Commands</span>
+                                        </a>
+                                        <a href="/features/viewer-xp.html" class="mega-item">
+                                            <span class="mega-item-emoji">⭐</span>
+                                            <span class="mega-item-label">Viewer XP</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🔌 System &amp; Erweiterung</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/plugin-system.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔌</span>
+                                            <span class="mega-item-label">Plugin System</span>
+                                        </a>
+                                        <a href="/features/flow-engine.html" class="mega-item">
+                                            <span class="mega-item-emoji">⚡</span>
+                                            <span class="mega-item-label">Flow Engine</span>
+                                        </a>
+                                        <a href="/features/auto-updater.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔄</span>
+                                            <span class="mega-item-label">Auto Updater</span>
+                                        </a>
+                                        <a href="/features/tikfinity-api.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔗</span>
+                                            <span class="mega-item-label">TikFinity API</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">📡 Verbindungen</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/osc-bridge.html" class="mega-item">
+                                            <span class="mega-item-emoji">🥽</span>
+                                            <span class="mega-item-label">OSC / VRChat</span>
+                                        </a>
+                                        <a href="/features/vdoninja.html" class="mega-item">
+                                            <span class="mega-item-emoji">📡</span>
+                                            <span class="mega-item-label">VDO.Ninja</span>
+                                        </a>
+                                        <a href="/features/multicam.html" class="mega-item">
+                                            <span class="mega-item-emoji">📷</span>
+                                            <span class="mega-item-label">MultiCam</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">📊 Übersicht</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/dashboard.html" class="mega-item">
+                                            <span class="mega-item-emoji">📊</span>
+                                            <span class="mega-item-label">Dashboard</span>
+                                        </a>
+                                        <a href="/features/security.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔒</span>
+                                            <span class="mega-item-label">Security</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mega-panel-footer">
+                                <a href="/features/" class="mega-all-features">
+                                    Alle Features ansehen →
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
