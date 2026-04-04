@@ -558,11 +558,11 @@
         }
     }
 
-    let enhancedInitDone = false;
+    let isEnhancedInitialized = false;
     let enhancedManagers = {};
     function initEnhanced() {
-        if (enhancedInitDone) return;
-        enhancedInitDone = true;
+        if (isEnhancedInitialized) return;
+        isEnhancedInitialized = true;
         enhancedManagers = {
             scrollProgressBar: new ScrollProgressBar(),
             versionBadgeManager: new VersionBadgeManager(),
@@ -578,6 +578,7 @@
         if (document.getElementById('betaClose')) {
             initEnhanced();
         } else {
+            // layoutReady is dispatched by js/layout.js after async header/footer injection.
             document.addEventListener('layoutReady', initEnhanced, { once: true });
         }
     }
