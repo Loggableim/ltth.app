@@ -575,13 +575,18 @@
     }
 
     function initApp() {
-        init();
         const hasInjectedLayout = !!document.querySelector('#site-header[data-ltth-injected]');
         if (hasInjectedLayout) {
+            init();
             initEnhanced();
         } else {
-            // layoutReady is dispatched after shared layout injection completes.
-            document.addEventListener('layoutReady', initEnhanced, { once: true });
+            // Defer ALL initialization until layout partials are injected so that
+            // ThemeManager, NavigationManager, BetaNoticeManager etc. can find their
+            // DOM elements (which live inside the injected header partial).
+            document.addEventListener('layoutReady', () => {
+                init();
+                initEnhanced();
+            }, { once: true });
         }
     }
 
