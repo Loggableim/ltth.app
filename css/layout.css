@@ -38,7 +38,7 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
 .nav-dropdown-menu {
     display: none;
     position: absolute;
-    top: calc(100% + 0.5rem);
+    top: 100%;
     left: 0;
     background: var(--color-surface, #1a1b1d);
     border: 1px solid var(--color-border, #2a2b2d);
@@ -572,6 +572,41 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     .mega-panel-footer {
         text-align: left;
         padding-top: 0.5rem;
+    }
+}
+
+/* ===================================
+   Desktop Dropdown Hover Support
+   =================================== */
+
+@media (min-width: 769px) {
+    /* Pure CSS hover: show dropdown when hovering the container */
+    .nav-dropdown:hover .nav-dropdown-menu {
+        display: block;
+    }
+
+    /* Invisible bridge above the menu to cover the gap between
+       trigger and menu, preventing mouseleave from firing mid-transit */
+    .nav-dropdown-menu::before {
+        content: '';
+        position: absolute;
+        top: -0.5rem;
+        left: 0;
+        width: 100%;
+        height: 0.5rem;
+        background: transparent;
+    }
+
+    /* Invisible bridge above the mega panel to cover any gap between
+       the navbar bottom and the panel top */
+    .nav-mega-panel::before {
+        content: '';
+        position: absolute;
+        top: -1rem;
+        left: 0;
+        width: 100%;
+        height: 1rem;
+        background: transparent;
     }
 }
 
