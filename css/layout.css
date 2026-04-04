@@ -535,7 +535,7 @@ body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgre
     }
 
     .nav-mega.open .nav-mega-panel {
-        max-height: 1000px;
+        max-height: 2000px;
         transition: max-height 0.3s ease;
         padding: 0;
     }

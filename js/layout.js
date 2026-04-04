@@ -194,6 +194,7 @@
         function openMega() {
             mega.classList.add('open');
             toggle.setAttribute('aria-expanded', 'true');
+            mega.dispatchEvent(new Event('ltth:open'));
             // Position panel below navbar on desktop
             if (!isMobile()) {
                 const navbar = document.getElementById('navbar');
@@ -215,18 +216,29 @@
             mega.classList.contains('open') ? closeMega() : openMega();
         });
 
-        // Desktop: also open on hover; re-evaluated on resize
+        // Desktop: also open on hover; re-evaluated on resize (debounced + guarded)
+        let hoverActive = false;
+        function addHoverListeners() {
+            if (hoverActive) return;
+            hoverActive = true;
+            mega.addEventListener('mouseenter', openMega);
+            mega.addEventListener('mouseleave', closeMega);
+        }
+        function removeHoverListeners() {
+            if (!hoverActive) return;
+            hoverActive = false;
+            mega.removeEventListener('mouseenter', openMega);
+            mega.removeEventListener('mouseleave', closeMega);
+        }
         function updateHoverListeners() {
-            if (!isMobile()) {
-                mega.addEventListener('mouseenter', openMega);
-                mega.addEventListener('mouseleave', closeMega);
-            } else {
-                mega.removeEventListener('mouseenter', openMega);
-                mega.removeEventListener('mouseleave', closeMega);
-            }
+            isMobile() ? removeHoverListeners() : addHoverListeners();
         }
         updateHoverListeners();
-        window.addEventListener('resize', updateHoverListeners, { passive: true });
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(updateHoverListeners, 100);
+        }, { passive: true });
 
         // Close on outside click
         document.addEventListener('click', (e) => {
@@ -244,8 +256,13 @@
         });
 
         // Keyboard navigation within panel: Arrow keys move between mega-items
+        // Cache items list when panel opens for performance
+        let cachedItems = [];
+        mega.addEventListener('ltth:open', () => {
+            cachedItems = Array.from(panel.querySelectorAll('.mega-item'));
+        });
         panel.addEventListener('keydown', (e) => {
-            const items = Array.from(panel.querySelectorAll('.mega-item'));
+            const items = cachedItems.length ? cachedItems : Array.from(panel.querySelectorAll('.mega-item'));
             const idx = items.indexOf(document.activeElement);
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
