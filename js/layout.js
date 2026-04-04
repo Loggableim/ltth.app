@@ -205,6 +205,7 @@
         }
 
         function closeMega() {
+            clearTimeout(closeTimer);
             mega.classList.remove('open');
             toggle.setAttribute('aria-expanded', 'false');
         }
@@ -218,17 +219,38 @@
 
         // Desktop: also open on hover; re-evaluated on resize (debounced + guarded)
         let hoverActive = false;
+        let closeTimer = null;
+
+        function onMegaEnter() {
+            clearTimeout(closeTimer);
+            openMega();
+        }
+        function onMegaLeave() {
+            closeTimer = setTimeout(closeMega, 150);
+        }
+        function onPanelEnter() {
+            clearTimeout(closeTimer);
+        }
+        function onPanelLeave() {
+            closeTimer = setTimeout(closeMega, 150);
+        }
+
         function addHoverListeners() {
             if (hoverActive) return;
             hoverActive = true;
-            mega.addEventListener('mouseenter', openMega);
-            mega.addEventListener('mouseleave', closeMega);
+            mega.addEventListener('mouseenter', onMegaEnter);
+            mega.addEventListener('mouseleave', onMegaLeave);
+            panel.addEventListener('mouseenter', onPanelEnter);
+            panel.addEventListener('mouseleave', onPanelLeave);
         }
         function removeHoverListeners() {
             if (!hoverActive) return;
             hoverActive = false;
-            mega.removeEventListener('mouseenter', openMega);
-            mega.removeEventListener('mouseleave', closeMega);
+            clearTimeout(closeTimer);
+            mega.removeEventListener('mouseenter', onMegaEnter);
+            mega.removeEventListener('mouseleave', onMegaLeave);
+            panel.removeEventListener('mouseenter', onPanelEnter);
+            panel.removeEventListener('mouseleave', onPanelLeave);
         }
         function updateHoverListeners() {
             isMobile() ? removeHoverListeners() : addHoverListeners();
