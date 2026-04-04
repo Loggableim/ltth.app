@@ -181,23 +181,111 @@
         }
     }
     
-    function initFeaturesDropdown() {
-        const dropdown = document.querySelector('.nav-dropdown');
-        if (dropdown) {
-            const toggle = dropdown.querySelector('.nav-dropdown-toggle');
-            const menu = dropdown.querySelector('.nav-dropdown-menu');
-            if (toggle && menu) {
-                toggle.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    dropdown.classList.toggle('open');
-                });
-                document.addEventListener('click', (e) => {
-                    if (!dropdown.contains(e.target)) {
-                        dropdown.classList.remove('open');
-                    }
-                });
+    function initMegaMenu() {
+        const mega = document.getElementById('featuresMega');
+        if (!mega) return;
+
+        const toggle = mega.querySelector('.nav-mega-toggle');
+        const panel = mega.querySelector('.nav-mega-panel');
+        if (!toggle || !panel) return;
+
+        const isMobile = () => window.innerWidth <= 768;
+
+        function openMega() {
+            mega.classList.add('open');
+            toggle.setAttribute('aria-expanded', 'true');
+            mega.dispatchEvent(new Event('ltth:open'));
+            // Position panel below navbar on desktop
+            if (!isMobile()) {
+                const navbar = document.getElementById('navbar');
+                if (navbar) {
+                    panel.style.top = navbar.getBoundingClientRect().bottom + 'px';
+                }
             }
         }
+
+        function closeMega() {
+            mega.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+
+        // Toggle on click (works for both desktop and mobile)
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            mega.classList.contains('open') ? closeMega() : openMega();
+        });
+
+        // Desktop: also open on hover; re-evaluated on resize (debounced + guarded)
+        let hoverActive = false;
+        function addHoverListeners() {
+            if (hoverActive) return;
+            hoverActive = true;
+            mega.addEventListener('mouseenter', openMega);
+            mega.addEventListener('mouseleave', closeMega);
+        }
+        function removeHoverListeners() {
+            if (!hoverActive) return;
+            hoverActive = false;
+            mega.removeEventListener('mouseenter', openMega);
+            mega.removeEventListener('mouseleave', closeMega);
+        }
+        function updateHoverListeners() {
+            isMobile() ? removeHoverListeners() : addHoverListeners();
+        }
+        updateHoverListeners();
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(updateHoverListeners, 100);
+        }, { passive: true });
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (mega.classList.contains('open') && !mega.contains(e.target)) {
+                closeMega();
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mega.classList.contains('open')) {
+                closeMega();
+                toggle.focus();
+            }
+        });
+
+        // Keyboard navigation within panel: Arrow keys move between mega-items
+        // Cache items list when panel opens for performance
+        let cachedItems = [];
+        mega.addEventListener('ltth:open', () => {
+            cachedItems = Array.from(panel.querySelectorAll('.mega-item'));
+        });
+        panel.addEventListener('keydown', (e) => {
+            const items = cachedItems.length ? cachedItems : Array.from(panel.querySelectorAll('.mega-item'));
+            const idx = items.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[Math.min(idx + 1, items.length - 1)]?.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (idx <= 0) {
+                    closeMega();
+                    toggle.focus();
+                } else {
+                    items[idx - 1]?.focus();
+                }
+            }
+        });
+
+        // Close mega on scroll (desktop)
+        let scrollTimer;
+        window.addEventListener('scroll', () => {
+            if (!isMobile() && mega.classList.contains('open')) {
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(closeMega, 100);
+            }
+        }, { passive: true });
     }
 
     function initTheme() {
@@ -296,7 +384,7 @@
         initScrollProgress();
         initNavbarScroll();
         initLangSwitcher(lang);
-        initFeaturesDropdown();
+        initMegaMenu();
         initTheme();
         setActiveNav(lang);
         
