@@ -577,7 +577,8 @@
 
     function initApp() {
         init();
-        if (document.getElementById('betaClose')) {
+        const hasInjectedLayout = !!document.querySelector('#site-header[data-ltth-injected]');
+        if (hasInjectedLayout) {
             initEnhanced();
         } else {
             // layoutReady is dispatched by js/layout.js after async header/footer injection.
