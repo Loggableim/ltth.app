@@ -559,13 +559,16 @@
     }
 
     let enhancedInitDone = false;
+    let enhancedManagers = null;
     function initEnhanced() {
         if (enhancedInitDone) return;
         enhancedInitDone = true;
-        new VersionBadgeManager();
-        new LiveSearch();
-        new ChangelogRenderer();
-        new BetaNoticeManager();
+        enhancedManagers = {
+            versionBadgeManager: new VersionBadgeManager(),
+            liveSearch: new LiveSearch(),
+            changelogRenderer: new ChangelogRenderer(),
+            betaNoticeManager: new BetaNoticeManager()
+        };
     }
 
     function initApp() {
