@@ -559,14 +559,16 @@
     }
 
     let enhancedInitDone = false;
-    let enhancedManagers = null;
+    let enhancedManagers = {};
     function initEnhanced() {
         if (enhancedInitDone) return;
         enhancedInitDone = true;
         enhancedManagers = {
+            scrollProgressBar: new ScrollProgressBar(),
             versionBadgeManager: new VersionBadgeManager(),
             liveSearch: new LiveSearch(),
             changelogRenderer: new ChangelogRenderer(),
+            languageManager: new LanguageManager(),
             betaNoticeManager: new BetaNoticeManager()
         };
     }
