@@ -1,0 +1,15 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1920" height="1080" fill="transparent"/>
+  <rect x="1620" y="100" width="250" height="400" rx="12" fill="#1a1a1a" fill-opacity="0.8"/>
+  <text x="1745" y="140" font-family="Arial, sans-serif" font-size="20" fill="#12a116" text-anchor="middle" font-weight="bold">LIVE ALERTS</text>
+  <rect x="1640" y="160" width="210" height="60" rx="6" fill="#12a116" fill-opacity="0.2"/>
+  <text x="1745" y="185" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">🎁 MaxUser99</text>
+  <text x="1745" y="205" font-family="Arial, sans-serif" font-size="12" fill="#aaa" text-anchor="middle">sent Rose x5</text>
+  <rect x="50" y="900" width="400" height="120" rx="12" fill="#1a1a1a" fill-opacity="0.8"/>
+  <text x="250" y="935" font-family="Arial, sans-serif" font-size="18" fill="#12a116" text-anchor="middle" font-weight="bold">GOAL: Likes</text>
+  <rect x="70" y="950" width="360" height="30" rx="15" fill="#333"/>
+  <rect x="70" y="950" width="240" height="30" rx="15" fill="#12a116"/>
+  <text x="250" y="1000" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">666 / 1000 Likes</text>
+  <text x="960" y="540" font-family="Arial, sans-serif" font-size="32" fill="#666" text-anchor="middle">OBS Overlay Preview</text>
+  <text x="960" y="580" font-family="Arial, sans-serif" font-size="18" fill="#555" text-anchor="middle">Replace with real overlay-preview.png (1920x1080 transparent)</text>
+</svg>

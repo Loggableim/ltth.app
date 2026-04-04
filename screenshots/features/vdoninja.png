@@ -1,0 +1,23 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="340" height="350" rx="8" fill="#2a2a2a"/>
+  <text x="220" y="85" font-family="Arial, sans-serif" font-size="18" fill="#12a116" text-anchor="middle" font-weight="bold">OBS Studio</text>
+  <rect x="70" y="100" width="300" height="40" rx="4" fill="#333"/>
+  <text x="220" y="125" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Scene 1: Main Camera</text>
+  <rect x="70" y="150" width="300" height="40" rx="4" fill="#12a116" fill-opacity="0.3"/>
+  <text x="220" y="175" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Scene 2: Overlay Active</text>
+  <rect x="70" y="200" width="300" height="40" rx="4" fill="#333"/>
+  <text x="220" y="225" font-family="Arial, sans-serif" font-size="14" fill="#fff" text-anchor="middle">Scene 3: Full Screen</text>
+  <path d="M 390 225 L 410 225" stroke="#12a116" stroke-width="3" fill="none"/>
+  <polygon points="410,225 400,220 400,230" fill="#12a116"/>
+  <rect x="410" y="50" width="340" height="350" rx="8" fill="#2a2a2a"/>
+  <text x="580" y="85" font-family="Arial, sans-serif" font-size="18" fill="#12a116" text-anchor="middle" font-weight="bold">ltth.app Control</text>
+  <rect x="430" y="100" width="300" height="40" rx="4" fill="#333"/>
+  <text x="580" y="125" font-family="Arial, sans-serif" font-size="14" fill="#aaa" text-anchor="middle">Browser Source URL:</text>
+  <rect x="430" y="150" width="300" height="40" rx="4" fill="#12a116" fill-opacity="0.2"/>
+  <text x="580" y="175" font-family="Arial, sans-serif" font-size="12" fill="#fff" text-anchor="middle">http://localhost:3000/overlay</text>
+  <rect x="430" y="200" width="300" height="40" rx="4" fill="#333"/>
+  <circle cx="460" cy="220" r="10" fill="#12a116"/>
+  <text x="480" y="225" font-family="Arial, sans-serif" font-size="14" fill="#fff">Connected</text>
+  <text x="400" y="430" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real obs-integration.png</text>
+</svg>

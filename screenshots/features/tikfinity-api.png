@@ -1,0 +1,15 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="350" rx="8" fill="#2a2a2a"/>
+  <rect x="70" y="70" width="660" height="50" rx="4" fill="#12a116" opacity="0.2"/>
+  <circle cx="100" cy="95" r="15" fill="#12a116"/>
+  <rect x="130" y="80" width="200" height="30" rx="4" fill="#333"/>
+  <rect x="70" y="140" width="660" height="50" rx="4" fill="#333"/>
+  <circle cx="100" cy="165" r="15" fill="#4ade80"/>
+  <rect x="130" y="150" width="200" height="30" rx="4" fill="#2a2a2a"/>
+  <rect x="70" y="210" width="660" height="50" rx="4" fill="#333"/>
+  <circle cx="100" cy="235" r="15" fill="#fbbf24"/>
+  <rect x="130" y="220" width="200" height="30" rx="4" fill="#2a2a2a"/>
+  <text x="400" y="340" font-family="Arial, sans-serif" font-size="24" fill="#666" text-anchor="middle">Event Stream Screenshot</text>
+  <text x="400" y="370" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real event-stream.png</text>
+</svg>

@@ -7,23 +7,23 @@
     "display": "standalone",
     "background_color": "#0e0f10",
     "theme_color": "#12a116",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "icons": [
         {
             "src": "/assets/icon-192x192.png",
             "type": "image/png",
             "sizes": "192x192",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "/assets/icon-512x512.png",
             "type": "image/png",
             "sizes": "512x512",
-            "purpose": "any maskable"
+            "purpose": "maskable"
         }
     ],
     "categories": ["productivity", "social", "utilities", "multimedia"],
-    "lang": "en-US",
+    "lang": "de",
     "dir": "ltr",
     "scope": "/",
     "prefer_related_applications": false,

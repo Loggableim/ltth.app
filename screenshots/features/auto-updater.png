@@ -1,0 +1,16 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="450" fill="#1a1a1a"/>
+  <rect x="50" y="50" width="700" height="350" rx="8" fill="#2a2a2a"/>
+  <text x="400" y="90" font-family="Arial, sans-serif" font-size="24" fill="#12a116" text-anchor="middle" font-weight="bold">Settings</text>
+  <rect x="70" y="110" width="660" height="50" rx="4" fill="#333"/>
+  <text x="90" y="140" font-family="Arial, sans-serif" font-size="14" fill="#fff">TikTok Username</text>
+  <rect x="300" y="125" width="400" height="25" rx="4" fill="#2a2a2a"/>
+  <rect x="70" y="180" width="660" height="50" rx="4" fill="#333"/>
+  <text x="90" y="210" font-family="Arial, sans-serif" font-size="14" fill="#fff">Auto-Reconnect</text>
+  <circle cx="650" cy="205" r="12" fill="#12a116"/>
+  <rect x="70" y="250" width="660" height="50" rx="4" fill="#333"/>
+  <text x="90" y="280" font-family="Arial, sans-serif" font-size="14" fill="#fff">Enable TTS</text>
+  <circle cx="650" cy="275" r="12" fill="#12a116"/>
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="24" fill="#666" text-anchor="middle">Settings Screenshot</text>
+  <text x="400" y="390" font-family="Arial, sans-serif" font-size="14" fill="#555" text-anchor="middle">Replace with real settings.png</text>
+</svg>

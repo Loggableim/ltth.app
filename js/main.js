@@ -348,12 +348,6 @@
         document.body.classList.add('loaded');
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-
     window.ltth = { Analytics, ClipboardManager };
 
     class ScrollProgressBar {
@@ -564,15 +558,28 @@
         }
     }
 
+    let enhancedInitDone = false;
     function initEnhanced() {
-        new ScrollProgressBar();
+        if (enhancedInitDone) return;
+        enhancedInitDone = true;
         new VersionBadgeManager();
         new LiveSearch();
         new ChangelogRenderer();
-        new LanguageManager();
         new BetaNoticeManager();
     }
 
-    const originalInit = init;
-    init = function() { originalInit(); initEnhanced(); };
+    function initApp() {
+        init();
+        if (document.getElementById('betaClose')) {
+            initEnhanced();
+        } else {
+            document.addEventListener('layoutReady', initEnhanced, { once: true });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
 })();
