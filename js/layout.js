@@ -215,11 +215,18 @@
             mega.classList.contains('open') ? closeMega() : openMega();
         });
 
-        // Desktop: also open on hover
-        if (!isMobile()) {
-            mega.addEventListener('mouseenter', openMega);
-            mega.addEventListener('mouseleave', closeMega);
+        // Desktop: also open on hover; re-evaluated on resize
+        function updateHoverListeners() {
+            if (!isMobile()) {
+                mega.addEventListener('mouseenter', openMega);
+                mega.addEventListener('mouseleave', closeMega);
+            } else {
+                mega.removeEventListener('mouseenter', openMega);
+                mega.removeEventListener('mouseleave', closeMega);
+            }
         }
+        updateHoverListeners();
+        window.addEventListener('resize', updateHoverListeners, { passive: true });
 
         // Close on outside click
         document.addEventListener('click', (e) => {
@@ -245,8 +252,12 @@
                 items[Math.min(idx + 1, items.length - 1)]?.focus();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (idx <= 0) { closeMega(); toggle.focus(); }
-                else items[idx - 1]?.focus();
+                if (idx <= 0) {
+                    closeMega();
+                    toggle.focus();
+                } else {
+                    items[idx - 1]?.focus();
+                }
             }
         });
 
