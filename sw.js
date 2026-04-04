@@ -19,7 +19,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Let the browser handle non-GET requests (e.g. POST/PUT) without SW interception.
+  // Let the browser handle non-GET requests (for example, POST/PUT) without SW interception.
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
 

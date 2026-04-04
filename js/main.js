@@ -558,19 +558,18 @@
         }
     }
 
+    // Guard to ensure enhanced managers are created exactly once.
     let isEnhancedInitialized = false;
-    let enhancedManagers = {};
+    const enhancedManagers = {};
     function initEnhanced() {
         if (isEnhancedInitialized) return;
         isEnhancedInitialized = true;
-        enhancedManagers = {
-            scrollProgressBar: new ScrollProgressBar(),
-            versionBadgeManager: new VersionBadgeManager(),
-            liveSearch: new LiveSearch(),
-            changelogRenderer: new ChangelogRenderer(),
-            languageManager: new LanguageManager(),
-            betaNoticeManager: new BetaNoticeManager()
-        };
+        enhancedManagers.scrollProgressBar = new ScrollProgressBar();
+        enhancedManagers.versionBadgeManager = new VersionBadgeManager();
+        enhancedManagers.liveSearch = new LiveSearch();
+        enhancedManagers.changelogRenderer = new ChangelogRenderer();
+        enhancedManagers.languageManager = new LanguageManager();
+        enhancedManagers.betaNoticeManager = new BetaNoticeManager();
         window.ltth = window.ltth || {};
         window.ltth.enhancedManagers = enhancedManagers;
     }
@@ -581,7 +580,7 @@
         if (hasInjectedLayout) {
             initEnhanced();
         } else {
-            // layoutReady is dispatched by js/layout.js after async header/footer injection.
+            // layoutReady is dispatched after shared layout injection completes.
             document.addEventListener('layoutReady', initEnhanced, { once: true });
         }
     }
