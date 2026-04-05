@@ -300,6 +300,9 @@
 
     class ScrollProgressBar {
         constructor() {
+            this.progressBar = null;
+            // layout.js already creates #scrollProgress; skip to avoid a duplicate bar
+            if (document.getElementById('scrollProgress') || document.querySelector('.scroll-progress')) return;
             this.createProgressBar();
             this.init();
         }
@@ -315,6 +318,7 @@
             this.updateProgress();
         }
         updateProgress() {
+            if (!this.progressBar) return;
             const windowHeight = window.innerHeight;
             const documentHeight = document.documentElement.scrollHeight;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -401,7 +405,8 @@
             this.searchResults.classList.add('active');
         }
         highlightMatch(text, query) {
-            const regex = new RegExp(`(${query})`, 'gi');
+            const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escaped})`, 'gi');
             return text.replace(regex, '<mark>$1</mark>');
         }
     }
