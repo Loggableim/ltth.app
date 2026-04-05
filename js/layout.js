@@ -347,6 +347,29 @@
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
     }
+
+    function initContrastPreference() {
+        const root = document.documentElement;
+        if (!window.matchMedia || root.getAttribute('data-ltth-contrast-init')) return;
+
+        const mediaQuery = window.matchMedia('(prefers-contrast: more)');
+        const applyContrastPreference = () => {
+            if (mediaQuery.matches) {
+                root.setAttribute('data-prefers-contrast', 'more');
+            } else {
+                root.removeAttribute('data-prefers-contrast');
+            }
+        };
+
+        root.setAttribute('data-ltth-contrast-init', 'true');
+        applyContrastPreference();
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', applyContrastPreference);
+        } else if (typeof mediaQuery.addListener === 'function') {
+            mediaQuery.addListener(applyContrastPreference);
+        }
+    }
     
     async function init(options) {
         options = options || {};
@@ -422,6 +445,7 @@
             initLangSwitcher(lang);
             initMegaMenu();
             initTheme();
+            initContrastPreference();
             setActiveNav(lang);
 
             // Re-apply i18n translations to newly injected header/footer nodes

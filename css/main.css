@@ -2289,6 +2289,21 @@ section {
     }
 }
 
+:root[data-prefers-contrast="more"] {
+    --color-border: #000000;
+    --shadow-sm: none;
+    --shadow-md: 0 0 0 2px currentColor;
+    --shadow-lg: 0 0 0 3px currentColor;
+}
+
+:root[data-prefers-contrast="more"] .btn-primary {
+    border: 2px solid currentColor;
+}
+
+:root[data-prefers-contrast="more"] .btn-secondary {
+    border-width: 3px;
+}
+
 /* ===================================
    Print Optimization
    =================================== */
