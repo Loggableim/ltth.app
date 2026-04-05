@@ -12,7 +12,7 @@
             const stored = localStorage.getItem('ltth_lang');
             if (stored && SUPPORTED_LANGS.includes(stored)) return stored;
         } catch (e) {
-            console.debug('layout.js: localStorage unavailable, falling back to URL/navigator language', e);
+            console.debug('layout.js: localStorage unavailable, continuing with URL/navigator language detection', e);
         }
         
         // 2. URL param
@@ -432,7 +432,7 @@
             // Dispatch event so dependent modules (main.js, i18n.js) can finish setup
             document.dispatchEvent(new CustomEvent('layoutReady', { detail: { lang } }));
         } catch (e) {
-            console.error('layout.js: init failed', e);
+            console.error('layout.js: Layout initialization failed during injection or interaction setup', e);
         } finally {
             // Reveal page even when partial loading fails
             document.body.removeAttribute('data-layout-loading');
