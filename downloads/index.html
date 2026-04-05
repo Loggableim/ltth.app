@@ -20,7 +20,8 @@
     <link rel="stylesheet" href="/css/layout.css">
 </head>
 <body>
-    <section class="hero">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <section class="hero" id="main-content">
         <div class="container">
             <h1 class="hero-title text-center">
                 PupCid's Little TikTool Helper <span class="hero-highlight">Download</span>
@@ -110,6 +111,14 @@
     </section>
 
     <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LTTHLayout) LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
     <script>
         // Fetch and display current release information
         async function loadReleaseInfo() {
@@ -162,14 +171,6 @@
         } else {
             loadReleaseInfo();
         }
-    </script>
-    <script src="/js/i18n.js"></script>
-    <script src="/js/layout.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
-            if (window.I18n) I18n.init(window.__ltthLang || 'de');
-        });
     </script>
 </body>
 </html>
