@@ -5,6 +5,7 @@
     const SUPPORTED_LANGS = ['de', 'en', 'es', 'fr'];
     const DEFAULT_LANG = 'de';
     const INJECTED_ATTR = 'data-ltth-injected';
+    let contrastPreferenceInitialized = false;
     
     function detectLanguage() {
         // 1. localStorage
@@ -350,7 +351,7 @@
 
     function initContrastPreference() {
         const root = document.documentElement;
-        if (!window.matchMedia || root.getAttribute('data-ltth-contrast-init')) return;
+        if (!window.matchMedia || contrastPreferenceInitialized) return;
 
         const mediaQuery = window.matchMedia('(prefers-contrast: more)');
         const applyContrastPreference = () => {
@@ -361,7 +362,7 @@
             }
         };
 
-        root.setAttribute('data-ltth-contrast-init', 'true');
+        contrastPreferenceInitialized = true;
         applyContrastPreference();
 
         if (typeof mediaQuery.addEventListener === 'function') {
