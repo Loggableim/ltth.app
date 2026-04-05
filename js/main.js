@@ -300,6 +300,7 @@
 
     class ScrollProgressBar {
         constructor() {
+            this.progressBar = null;
             // layout.js already creates #scrollProgress; skip to avoid a duplicate bar
             if (document.getElementById('scrollProgress') || document.querySelector('.scroll-progress')) return;
             this.createProgressBar();
