@@ -100,11 +100,13 @@
             menu.classList.add('open', 'active');
             toggle.classList.add('open', 'active');
             toggle.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
         }
         function closeMenu() {
             menu.classList.remove('open', 'active');
             toggle.classList.remove('open', 'active');
             toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
         }
 
         toggle.addEventListener('click', (e) => {
@@ -122,6 +124,12 @@
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && menu.classList.contains('open')) closeMenu();
+        });
+        // Close menu when a nav-link is clicked on mobile
+        menu.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) closeMenu();
+            });
         });
     }
     

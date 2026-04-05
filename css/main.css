@@ -361,37 +361,8 @@ pre code {
     transition: all var(--transition-fast);
 }
 
-.nav-toggle.active span:nth-child(1) {
-    transform: rotate(-45deg) translate(-5px, 6px);
-}
-
 .nav-toggle.active span:nth-child(2) {
     opacity: 0;
-}
-
-.nav-toggle.active span:nth-child(3) {
-    transform: rotate(45deg) translate(-5px, -6px);
-}
-
-.nav-menu {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 80%;
-    max-width: 400px;
-    height: 100vh;
-    background-color: var(--color-surface);
-    padding: var(--space-20) var(--space-6);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    transition: right var(--transition-base);
-    box-shadow: var(--shadow-2xl);
-    z-index: var(--z-fixed);
-}
-
-.nav-menu.active {
-    right: 0;
 }
 
 .nav-link {

@@ -63,7 +63,6 @@
     // ===================================
     class NavigationManager {
         constructor() {
-            this.isMenuOpen = false;
             this._initWhenReady();
         }
 
@@ -81,63 +80,12 @@
         }
 
         _bindElements() {
-            this.navToggle = document.getElementById('navToggle');
-            this.navMenu   = document.getElementById('navMenu');
-            this.navbar    = document.getElementById('navbar');
+            this.navbar = document.getElementById('navbar');
         }
 
         init() {
-            this.setupEventListeners();
             this.setActiveLink();
             this.setupScrollBehavior();
-        }
-
-        setupEventListeners() {
-            const alreadyBound = this.navToggle && this.navToggle.getAttribute('data-ltth-burger-init');
-
-            if (!alreadyBound && this.navToggle) {
-                this.navToggle.addEventListener('click', () => this.toggleMenu());
-            }
-
-            document.addEventListener('click', (e) => {
-                if (this.isMenuOpen &&
-                    this.navMenu && this.navToggle &&
-                    !this.navMenu.contains(e.target) &&
-                    !this.navToggle.contains(e.target)) {
-                    this.closeMenu();
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && this.isMenuOpen) {
-                    this.closeMenu();
-                }
-            });
-
-            if (this.navMenu) {
-                const navLinks = this.navMenu.querySelectorAll('.nav-link');
-                navLinks.forEach(link => {
-                    link.addEventListener('click', () => {
-                        if (window.innerWidth < 768) {
-                            this.closeMenu();
-                        }
-                    });
-                });
-            }
-        }
-
-        toggleMenu() {
-            this.isMenuOpen = !this.isMenuOpen;
-            if (this.navMenu)   this.navMenu.classList.toggle('active', this.isMenuOpen);
-            if (this.navToggle) this.navToggle.classList.toggle('active', this.isMenuOpen);
-            document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
-        }
-
-        closeMenu() {
-            this.isMenuOpen = false;
-            if (this.navMenu)   this.navMenu.classList.remove('active');
-            if (this.navToggle) this.navToggle.classList.remove('active');
-            document.body.style.overflow = '';
         }
 
         setActiveLink() {
