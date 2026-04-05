@@ -8,8 +8,12 @@
     
     function detectLanguage() {
         // 1. localStorage
-        const stored = localStorage.getItem('ltth_lang');
-        if (stored && SUPPORTED_LANGS.includes(stored)) return stored;
+        try {
+            const stored = localStorage.getItem('ltth_lang');
+            if (stored && SUPPORTED_LANGS.includes(stored)) return stored;
+        } catch (e) {
+            console.debug('layout.js: localStorage unavailable, falling back to URL/navigator language', e);
+        }
         
         // 2. URL param
         const urlParams = new URLSearchParams(window.location.search);
@@ -351,80 +355,88 @@
 
         // Prevent layout shift: hide body content until header/footer are injected
         document.body.setAttribute('data-layout-loading', '');
-        
-        // --- Header injection ---
-        // A header injected by layout.js carries INJECTED_ATTR on #site-header.
-        // If #navbar exists without that marker it is an outdated hardcoded fragment;
-        // remove it so we can inject the current version from the partial.
-        const injectedHeader = document.querySelector('#site-header[' + INJECTED_ATTR + ']');
-        if (!injectedHeader) {
-            const staleHeader = document.getElementById('site-header');
-            const staleNav    = document.getElementById('navbar');
-            if (staleHeader) {
-                staleHeader.remove();
-            } else if (staleNav) {
-                // Remove the closest ancestor block element that wraps the nav
-                const wrapper = staleNav.closest('header') || staleNav.parentElement;
-                if (wrapper && wrapper !== document.body && wrapper !== document.documentElement) {
-                    wrapper.remove();
-                } else if (staleNav.parentNode) {
-                    staleNav.remove();
+
+        try {
+            // --- Header injection ---
+            // A header injected by layout.js carries INJECTED_ATTR on #site-header.
+            // If #navbar exists without that marker it is an outdated hardcoded fragment;
+            // replace it with the current version from the partial (but never remove it
+            // before the replacement is actually available).
+            const injectedHeader = document.querySelector('#site-header[' + INJECTED_ATTR + ']');
+            if (!injectedHeader) {
+                const staleHeader = document.getElementById('site-header');
+                const staleNav = document.getElementById('navbar');
+
+                const headerHTML = await loadPartial('/_partials/header.html');
+                if (headerHTML) {
+                    const headerEl = document.createElement('div');
+                    headerEl.innerHTML = headerHTML;
+                    const header = headerEl.querySelector('header');
+                    if (header) {
+                        header.setAttribute(INJECTED_ATTR, 'true');
+                        if (staleHeader && staleHeader.parentNode) {
+                            staleHeader.replaceWith(header);
+                        } else if (staleNav && staleNav.parentNode) {
+                            const wrapper = staleNav.closest('header') || staleNav.parentElement;
+                            if (wrapper && wrapper.parentNode && wrapper !== document.body && wrapper !== document.documentElement) {
+                                wrapper.replaceWith(header);
+                            } else {
+                                document.body.insertBefore(header, document.body.firstChild);
+                                staleNav.remove();
+                            }
+                        } else {
+                            document.body.insertBefore(header, document.body.firstChild);
+                        }
+                    }
                 }
             }
 
-            const headerHTML = await loadPartial('/_partials/header.html');
-            if (headerHTML) {
-                const headerEl = document.createElement('div');
-                headerEl.innerHTML = headerHTML;
-                const header = headerEl.querySelector('header');
-                if (header) {
-                    header.setAttribute(INJECTED_ATTR, 'true');
-                    document.body.insertBefore(header, document.body.firstChild);
+            // Use MutationObserver to confirm #navbar is in the DOM before continuing,
+            // so that initHamburger() and friends can safely query it.
+            await waitForElement('#navbar');
+
+            // --- Footer injection ---
+            const injectedFooter = document.querySelector('footer.footer[' + INJECTED_ATTR + ']');
+            if (!injectedFooter) {
+                const staleFooter = document.querySelector('footer.footer');
+                const footerHTML = await loadPartial('/_partials/footer.html');
+                if (footerHTML) {
+                    const footerEl = document.createElement('div');
+                    footerEl.innerHTML = footerHTML;
+                    const footer = footerEl.querySelector('footer');
+                    if (footer) {
+                        footer.setAttribute(INJECTED_ATTR, 'true');
+                        if (staleFooter && staleFooter.parentNode) {
+                            staleFooter.replaceWith(footer);
+                        } else {
+                            document.body.appendChild(footer);
+                        }
+                    }
                 }
             }
-        }
 
-        // Use MutationObserver to confirm #navbar is in the DOM before continuing,
-        // so that initHamburger() and friends can safely query it.
-        await waitForElement('#navbar');
-        
-        // --- Footer injection ---
-        const injectedFooter = document.querySelector('footer.footer[' + INJECTED_ATTR + ']');
-        if (!injectedFooter) {
-            const staleFooter = document.querySelector('footer.footer');
-            if (staleFooter) staleFooter.remove();
+            // Init interactions
+            initHamburger();
+            initScrollProgress();
+            initNavbarScroll();
+            initLangSwitcher(lang);
+            initMegaMenu();
+            initTheme();
+            setActiveNav(lang);
 
-            const footerHTML = await loadPartial('/_partials/footer.html');
-            if (footerHTML) {
-                const footerEl = document.createElement('div');
-                footerEl.innerHTML = footerHTML;
-                const footer = footerEl.querySelector('footer');
-                if (footer) {
-                    footer.setAttribute(INJECTED_ATTR, 'true');
-                    document.body.appendChild(footer);
-                }
+            // Re-apply i18n translations to newly injected header/footer nodes
+            if (window.I18n && typeof window.I18n.apply === 'function') {
+                window.I18n.apply();
             }
-        }
-        
-        // Reveal page now that layout is in place
-        document.body.removeAttribute('data-layout-loading');
 
-        // Init interactions
-        initHamburger();
-        initScrollProgress();
-        initNavbarScroll();
-        initLangSwitcher(lang);
-        initMegaMenu();
-        initTheme();
-        setActiveNav(lang);
-        
-        // Re-apply i18n translations to newly injected header/footer nodes
-        if (window.I18n && typeof window.I18n.apply === 'function') {
-            window.I18n.apply();
+            // Dispatch event so dependent modules (main.js, i18n.js) can finish setup
+            document.dispatchEvent(new CustomEvent('layoutReady', { detail: { lang } }));
+        } catch (e) {
+            console.error('layout.js: init failed', e);
+        } finally {
+            // Reveal page even when partial loading fails
+            document.body.removeAttribute('data-layout-loading');
         }
-
-        // Dispatch event so dependent modules (main.js, i18n.js) can finish setup
-        document.dispatchEvent(new CustomEvent('layoutReady', { detail: { lang } }));
     }
     
     window.LTTHLayout = { init, detectLanguage };
