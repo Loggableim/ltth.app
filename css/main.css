@@ -2273,7 +2273,7 @@ section {
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     :root {
         --color-border: #000000;
         --shadow-sm: none;
