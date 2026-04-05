@@ -134,7 +134,6 @@ html {
     font-size: 16px;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -2273,7 +2272,7 @@ section {
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: more) {
+@media (forced-colors: active) {
     :root {
         --color-border: #000000;
         --shadow-sm: none;

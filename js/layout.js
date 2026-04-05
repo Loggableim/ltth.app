@@ -367,7 +367,7 @@
                 const staleHeader = document.getElementById('site-header');
                 const staleNav = document.getElementById('navbar');
 
-                const headerHTML = await loadPartial('/_partials/header.html');
+                const headerHTML = await loadPartial('/partials/header.html');
                 if (headerHTML) {
                     const headerEl = document.createElement('div');
                     headerEl.innerHTML = headerHTML;
@@ -399,7 +399,7 @@
             const injectedFooter = document.querySelector('footer.footer[' + INJECTED_ATTR + ']');
             if (!injectedFooter) {
                 const staleFooter = document.querySelector('footer.footer');
-                const footerHTML = await loadPartial('/_partials/footer.html');
+                const footerHTML = await loadPartial('/partials/footer.html');
                 if (footerHTML) {
                     const footerEl = document.createElement('div');
                     footerEl.innerHTML = footerHTML;

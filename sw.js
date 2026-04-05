@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ltth-v1.3.3';
+const CACHE_NAME = 'ltth-v1.3.4';
 const urlsToCache = [
   '/',
   '/index.html',
