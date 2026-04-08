@@ -13,9 +13,9 @@
     
     <!-- Hreflang Tags for Language Alternates -->
     <link rel="alternate" hreflang="de" href="https://ltth.app/support.html">
-    <link rel="alternate" hreflang="en" href="https://ltth.app/support-en.html">
-    <link rel="alternate" hreflang="fr" href="https://ltth.app/support-fr.html">
-    <link rel="alternate" hreflang="es" href="https://ltth.app/support-es.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/support.html?lang=en">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/support.html?lang=fr">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/support.html?lang=es">
     <link rel="alternate" hreflang="x-default" href="https://ltth.app/support.html">
     <link rel="canonical" href="https://ltth.app/support.html">
     
@@ -99,8 +99,8 @@
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');
         });
     </script>

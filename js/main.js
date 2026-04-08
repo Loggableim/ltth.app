@@ -503,9 +503,9 @@
             this.init();
         }
         init() {
-            if (localStorage.getItem('betaNoticeDismissed') === 'true' && this.betaNotice) this.betaNotice.classList.add('hidden');
+            if (localStorage.getItem('ltth_beta_closed') === '1' && this.betaNotice) this.betaNotice.classList.add('hidden');
             if (this.betaClose) this.betaClose.addEventListener('click', () => {
-                localStorage.setItem('betaNoticeDismissed', 'true');
+                localStorage.setItem('ltth_beta_closed', '1');
                 if (this.betaNotice) this.betaNotice.classList.add('hidden');
             });
         }

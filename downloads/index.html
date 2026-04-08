@@ -114,8 +114,8 @@
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');
         });
     </script>
@@ -128,6 +128,10 @@
                     console.warn('CURRENT_RELEASE.json not found (status: ' + response.status + '). ' +
                                 'Using default values. The page will display the hardcoded version until ' +
                                 'the first release is deployed via the release script.');
+                    const dateElement = document.getElementById('releaseDate');
+                    if (dateElement) dateElement.textContent = '26. März 2026';
+                    const notesElement = document.getElementById('releaseNotes');
+                    if (notesElement) notesElement.textContent = 'Version 1.3.3 – Vollständige Details im Changelog verfügbar.';
                     return;
                 }
                 

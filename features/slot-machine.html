@@ -317,8 +317,8 @@
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');
         });
     </script>

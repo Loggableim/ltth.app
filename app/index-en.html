@@ -45,7 +45,7 @@
                         </svg>
                     </div>
                     <h3 class="download-name">Version 1.3.2</h3>
-                    <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Latest Version</p>
+                    <p class="download-version" style="color: var(--color-primary); font-weight: 600;">Last Maintenance Release</p>
                     <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
                         For installation, use the <a href="/downloads/launcher.exe" style="color: var(--color-primary); font-weight: 600;">LTTH Cloud Launcher</a>
                     </p>
@@ -87,8 +87,8 @@
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'en');
         });
     </script>

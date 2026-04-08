@@ -84,8 +84,18 @@
             link.classList.remove('active');
             if (page === 'home' && (path === '/' || path === '/index.html')) {
                 link.classList.add('active');
-            } else if (page && path.includes(page)) {
-                link.classList.add('active');
+            } else if (page) {
+                const pageBase = page.replace('.html', '');
+                const segments = path.split('/').filter(Boolean);
+                const last = segments[segments.length - 1] || '';
+                if (
+                    last === page ||
+                    last === pageBase ||
+                    (segments.length > 0 && segments[0] === pageBase && path.endsWith('/')) ||
+                    path === '/' + page
+                ) {
+                    link.classList.add('active');
+                }
             }
         });
     }
@@ -322,6 +332,25 @@
         }, { passive: true });
     }
 
+    function initBetaNotice() {
+        const notice = document.getElementById('betaNotice');
+        const closeBtn = document.getElementById('betaClose');
+        if (!notice || !closeBtn) return;
+        // If already owned by BetaNoticeManager (main.js), skip
+        if (closeBtn.getAttribute('data-ltth-beta-init')) return;
+        closeBtn.setAttribute('data-ltth-beta-init', 'true');
+        try {
+            if (localStorage.getItem('ltth_beta_closed') === '1') {
+                notice.style.display = 'none';
+                return;
+            }
+        } catch(e) {}
+        closeBtn.addEventListener('click', () => {
+            notice.style.display = 'none';
+            try { localStorage.setItem('ltth_beta_closed', '1'); } catch(e) {}
+        });
+    }
+
     function initTheme() {
         // Minimal theme management for pages that do not load main.js
         const themeBtn = document.getElementById('themeToggle');
@@ -417,6 +446,7 @@
 
             // Init interactions
             initHamburger();
+            initBetaNotice();
             initScrollProgress();
             initNavbarScroll();
             initLangSwitcher(lang);
