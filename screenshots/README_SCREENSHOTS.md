@@ -32,9 +32,9 @@ screenshots/
 │   └── tikfinity-api.html
 ├── features/                      # Captured feature screenshots (generated)
 │   ├── .gitkeep                   # Keeps the directory tracked by git
-│   ├── tts.png                    # ⬜ Pending capture
-│   ├── soundboard.png             # ⬜ Pending capture
-│   └── ...
+│   ├── tts.png                    # ✅ Generated from mock
+│   ├── soundboard.png             # ✅ Generated from mock
+│   └── ...                        # All 20 features captured
 ├── 01_homepage_hero.png           # Website-level screenshots
 └── ...
 ```
@@ -72,25 +72,25 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 | Feature Page | Screenshot Source | Status |
 |---|---|---|
 | `features/tts.html` | `/assets/screenshots/tts-admin.png` | ✅ Real screenshot |
-| `features/soundboard.html` | `/assets/screenshots/soundboard.png` | ✅ Real screenshot |
+| `features/soundboard.html` | `/assets/screenshots/soundboard.png` | ✅ Generated from mock |
 | `features/goals.html` | `/assets/screenshots/goals-overlay.png` | ✅ Real screenshot |
 | `features/flow-engine.html` | `/assets/screenshots/flows-editor.png` | ✅ Real screenshot |
 | `features/dashboard.html` | `/assets/screenshots/dashboard-main.png` | ✅ Real screenshot |
-| `features/overlays.html` | `/assets/screenshots/overlay-preview.png` | ✅ Real screenshot |
-| `features/plugin-system.html` | `/assets/screenshots/plugins.png` | ✅ Real screenshot |
-| `features/alerts.html` | `/screenshots/features/alerts.png` | ⬜ Pending (mock available) |
-| `features/animazingpal.html` | `/screenshots/features/animazingpal.png` | ⬜ Pending (mock available) |
-| `features/auto-updater.html` | `/screenshots/features/auto-updater.png` | ⬜ Pending (mock available) |
-| `features/chat-commands.html` | `/screenshots/features/chat-commands.png` | ⬜ Pending (mock available) |
-| `features/emoji-rain.html` | `/screenshots/features/emoji-rain.png` | ⬜ Pending (mock available) |
-| `features/game-engine.html` | `/screenshots/features/game-engine.png` | ⬜ Pending (mock available) |
-| `features/multicam.html` | `/screenshots/features/multicam.png` | ⬜ Pending (mock available) |
-| `features/osc-bridge.html` | `/screenshots/features/osc-bridge.png` | ⬜ Pending (mock available) |
-| `features/security.html` | `/screenshots/features/security.png` | ⬜ Pending (mock available) |
-| `features/slot-machine.html` | `/screenshots/features/slot-machine.png` | ⬜ Pending (mock available) |
-| `features/tikfinity-api.html` | `/screenshots/features/tikfinity-api.png` | ⬜ Pending (mock available) |
-| `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ⬜ Pending (mock available) |
-| `features/viewer-xp.html` | `/screenshots/features/viewer-xp.png` | ⬜ Pending (mock available) |
+| `features/overlays.html` | `/assets/screenshots/overlay-preview.png` | ✅ Generated from mock |
+| `features/plugin-system.html` | `/assets/screenshots/plugins.png` | ✅ Generated from mock |
+| `features/alerts.html` | `/screenshots/features/alerts.png` | ✅ Generated from mock |
+| `features/animazingpal.html` | `/screenshots/features/animazingpal.png` | ✅ Generated from mock |
+| `features/auto-updater.html` | `/screenshots/features/auto-updater.png` | ✅ Generated from mock |
+| `features/chat-commands.html` | `/screenshots/features/chat-commands.png` | ✅ Generated from mock |
+| `features/emoji-rain.html` | `/screenshots/features/emoji-rain.png` | ✅ Generated from mock |
+| `features/game-engine.html` | `/screenshots/features/game-engine.png` | ✅ Generated from mock |
+| `features/multicam.html` | `/screenshots/features/multicam.png` | ✅ Generated from mock |
+| `features/osc-bridge.html` | `/screenshots/features/osc-bridge.png` | ✅ Generated from mock |
+| `features/security.html` | `/screenshots/features/security.png` | ✅ Generated from mock |
+| `features/slot-machine.html` | `/screenshots/features/slot-machine.png` | ✅ Generated from mock |
+| `features/tikfinity-api.html` | `/screenshots/features/tikfinity-api.png` | ✅ Generated from mock |
+| `features/vdoninja.html` | `/screenshots/features/vdoninja.png` | ✅ Generated from mock |
+| `features/viewer-xp.html` | `/screenshots/features/viewer-xp.png` | ✅ Generated from mock |
 
 ---
 
