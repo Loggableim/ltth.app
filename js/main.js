@@ -139,7 +139,6 @@
                         }
                     } catch (err) {
                         // Invalid selector (e.g. href contains special CSS chars) – ignore
-                        console.debug('SmoothScroll: invalid selector', href, err);
                     }
                 });
             });
