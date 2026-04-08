@@ -563,6 +563,7 @@ pre code {
     }
     
     .nav-menu {
+        display: flex;
         position: static;
         width: auto;
         max-width: none;
@@ -570,8 +571,10 @@ pre code {
         padding: 0;
         flex-direction: row;
         align-items: center;
+        gap: 0.25rem;
         box-shadow: none;
         background: none;
+        flex-wrap: nowrap;
     }
     
     .nav-link {
