@@ -30,11 +30,11 @@ screenshots/
 │   ├── auto-updater.html
 │   ├── chat-commands.html
 │   └── tikfinity-api.html
-├── features/                      # Captured feature screenshots (generated)
+├── features/                      # Captured feature screenshots (generated via Puppeteer)
 │   ├── .gitkeep                   # Keeps the directory tracked by git
 │   ├── tts.png                    # ✅ Generated from mock
 │   ├── soundboard.png             # ✅ Generated from mock
-│   └── ...                        # All 20 features captured
+│   └── ...                        # 20 total — see status table below
 ├── 01_homepage_hero.png           # Website-level screenshots
 └── ...
 ```
