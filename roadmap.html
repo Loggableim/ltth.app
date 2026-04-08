@@ -13,9 +13,9 @@
     
     <!-- Hreflang Tags for Language Alternates -->
     <link rel="alternate" hreflang="de" href="https://ltth.app/roadmap.html">
-    <link rel="alternate" hreflang="en" href="https://ltth.app/roadmap-en.html">
-    <link rel="alternate" hreflang="fr" href="https://ltth.app/roadmap-fr.html">
-    <link rel="alternate" hreflang="es" href="https://ltth.app/roadmap-es.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/roadmap.html?lang=en">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/roadmap.html?lang=fr">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/roadmap.html?lang=es">
     <link rel="alternate" hreflang="x-default" href="https://ltth.app/roadmap.html">
     <link rel="canonical" href="https://ltth.app/roadmap.html">
     
@@ -130,8 +130,8 @@
     <script src="/js/i18n.js"></script>
     <script src="/js/layout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.LTTHLayout) LTTHLayout.init();
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');
         });
     </script>

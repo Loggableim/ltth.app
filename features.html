@@ -2,9 +2,12 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=/features/">
     <link rel="canonical" href="https://ltth.app/features/">
     <title>Redirecting...</title>
+    <script>
+        var lang = new URLSearchParams(window.location.search).get('lang');
+        window.location.replace('/features/' + (lang ? '?lang=' + lang : ''));
+    </script>
 </head>
 <body>
     <p>Redirecting to <a href="/features/">Features</a>...</p>
