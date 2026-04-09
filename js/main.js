@@ -46,6 +46,7 @@
             const themeToggle = document.getElementById('themeToggle');
             if (themeToggle) {
                 if (!themeToggle.getAttribute('data-ltth-theme-init')) {
+                    themeToggle.setAttribute('data-ltth-theme-init', 'true');
                     themeToggle.addEventListener('click', () => this.toggleTheme());
                 }
             }
@@ -108,7 +109,7 @@
                     this.navbar.style.boxShadow = window.pageYOffset > 10
                         ? 'var(--shadow-md)' : 'none';
                 }
-            });
+            }, { passive: true });
         }
     }
 
@@ -126,14 +127,18 @@
                     const href = anchor.getAttribute('href');
                     if (href === '#') return;
                     e.preventDefault();
-                    const target = document.querySelector(href);
-                    if (target) {
-                        const offset = 80;
-                        const targetPosition = target.offsetTop - offset;
-                        window.scrollTo({
-                            top: targetPosition,
-                            behavior: 'smooth'
-                        });
+                    try {
+                        const target = document.querySelector(href);
+                        if (target) {
+                            const offset = 80;
+                            const targetPosition = target.offsetTop - offset;
+                            window.scrollTo({
+                                top: targetPosition,
+                                behavior: 'smooth'
+                            });
+                        }
+                    } catch (err) {
+                        // Invalid selector (e.g. href contains special CSS chars) – ignore
                     }
                 });
             });
@@ -147,6 +152,9 @@
         }
 
         init() {
+            // Respect prefers-reduced-motion: skip fade-in animation entirely
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
             if ('IntersectionObserver' in window) {
                 this.observer = new IntersectionObserver(
                     (entries) => {
@@ -322,8 +330,9 @@
             const windowHeight = window.innerHeight;
             const documentHeight = document.documentElement.scrollHeight;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
-            this.progressBar.style.width = `${Math.min(scrollPercent, 100)}%`;
+            const scrollable = documentHeight - windowHeight;
+            const scrollPercent = scrollable > 0 ? (scrollTop / scrollable) * 100 : 0;
+            this.progressBar.style.width = `${Math.min(Math.max(scrollPercent, 0), 100)}%`;
         }
     }
 
@@ -332,6 +341,7 @@
         async init() {
             try {
                 const response = await fetch('/version.json');
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
                 this.updateVersionBadges(data);
             } catch (error) { console.error('Failed to load version data:', error); }
@@ -420,18 +430,24 @@
             if (!this.container) return;
             try {
                 const response = await fetch('/version.json');
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
                 this.renderChangelog(data.changelog);
             } catch (error) { console.error('Failed to load changelog:', error); }
         }
+        _escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
         renderChangelog(changelog) {
             const entries = Object.entries(changelog).map(([version, data]) => {
-                const changes = data.changes.map(change => `<li>${change}</li>`).join('');
+                const changes = data.changes.map(change => `<li>${this._escapeHtml(change)}</li>`).join('');
                 return `
                     <div class="changelog-entry">
                         <div class="changelog-header">
-                            <h3 class="changelog-version">v${version}</h3>
-                            <span class="changelog-date">${data.date}</span>
+                            <h3 class="changelog-version">v${this._escapeHtml(version)}</h3>
+                            <span class="changelog-date">${this._escapeHtml(data.date)}</span>
                         </div>
                         <ul class="changelog-changes">${changes}</ul>
                     </div>
@@ -441,60 +457,10 @@
         }
     }
 
-    class LanguageManager {
-        constructor() {
-            this.currentLang = localStorage.getItem('language') || (navigator.language.startsWith('de') ? 'de' : 'en');
-            this.translations = this.getTranslations();
-            this.init();
-        }
-        init() {
-            document.documentElement.setAttribute('lang', this.currentLang);
-            this.setupEventListeners();
-            this.updatePageContent();
-        }
-        setupEventListeners() {
-            const langToggle = document.getElementById('langToggle');
-            if (langToggle) langToggle.addEventListener('click', () => {
-                const newLang = this.currentLang === 'de' ? 'en' : 'de';
-                this.currentLang = newLang;
-                localStorage.setItem('language', newLang);
-                this.init();
-            });
-        }
-        updatePageContent() {
-            document.querySelectorAll('[data-i18n]').forEach(element => {
-                const translation = this.getTranslation(element.getAttribute('data-i18n'));
-                if (translation) {
-                    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') element.placeholder = translation;
-                    else element.textContent = translation;
-                }
-            });
-            document.querySelectorAll('[data-i18n-html]').forEach(element => {
-                const translation = this.getTranslation(element.getAttribute('data-i18n-html'));
-                if (translation) element.innerHTML = translation;
-            });
-            const langToggle = document.getElementById('langToggle');
-            if (langToggle) {
-                const langText = langToggle.querySelector('.lang-text');
-                if (langText) langText.textContent = this.currentLang === 'de' ? 'EN' : 'DE';
-            }
-        }
-        getTranslation(key) {
-            const keys = key.split('.');
-            let value = this.translations[this.currentLang];
-            for (const k of keys) {
-                if (value && value[k]) value = value[k];
-                else return null;
-            }
-            return value;
-        }
-        getTranslations() {
-            return {
-                de: { nav: { home: 'Home', features: 'Features', download: 'Download' } },
-                en: { nav: { home: 'Home', features: 'Features', download: 'Download' } }
-            };
-        }
-    }
+    // LanguageManager removed – i18n.js (async locale JSON) and layout.js
+    // (language switcher + localStorage key 'ltth_lang') are the canonical
+    // translation systems.  The former LanguageManager was a conflicting
+    // hard-coded two-language stub that used a separate 'language' key.
 
     class BetaNoticeManager {
         constructor() {
@@ -503,10 +469,19 @@
             this.init();
         }
         init() {
-            if (localStorage.getItem('ltth_beta_closed') === '1' && this.betaNotice) this.betaNotice.classList.add('hidden');
-            if (this.betaClose) this.betaClose.addEventListener('click', () => {
-                localStorage.setItem('ltth_beta_closed', '1');
-                if (this.betaNotice) this.betaNotice.classList.add('hidden');
+            if (!this.betaNotice || !this.betaClose) return;
+            // If layout.js already owns this button, skip
+            if (this.betaClose.getAttribute('data-ltth-beta-init')) return;
+            this.betaClose.setAttribute('data-ltth-beta-init', 'true');
+            try {
+                if (localStorage.getItem('ltth_beta_closed') === '1') {
+                    this.betaNotice.style.display = 'none';
+                    return;
+                }
+            } catch(e) {}
+            this.betaClose.addEventListener('click', () => {
+                this.betaNotice.style.display = 'none';
+                try { localStorage.setItem('ltth_beta_closed', '1'); } catch(e) {}
             });
         }
     }
@@ -521,7 +496,6 @@
         enhancedManagers.versionBadgeManager = new VersionBadgeManager();
         enhancedManagers.liveSearch = new LiveSearch();
         enhancedManagers.changelogRenderer = new ChangelogRenderer();
-        enhancedManagers.languageManager = new LanguageManager();
         enhancedManagers.betaNoticeManager = new BetaNoticeManager();
         window.ltth = window.ltth || {};
         window.ltth.enhancedManagers = enhancedManagers;

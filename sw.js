@@ -7,6 +7,12 @@ const urlsToCache = [
   '/js/main.js',
   '/js/layout.js',
   '/js/i18n.js',
+  '/_partials/header.html',
+  '/_partials/footer.html',
+  '/locales/de.json',
+  '/locales/en.json',
+  '/locales/es.json',
+  '/locales/fr.json',
   '/assets/favicon-32x32.png',
   '/assets/favicon-16x16.png',
   '/assets/apple-touch-icon.png'
@@ -16,6 +22,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -28,8 +35,11 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          // Only cache successful responses to avoid negative cache poisoning
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          }
           return response;
         })
         .catch(() => caches.match(event.request))
@@ -53,6 +63,6 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
