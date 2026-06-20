@@ -260,4 +260,8 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('respondedEvents');
     expect(script).toContain('skippedEvents');
   });
+
+  test('Animaze reconnect settings explain unlimited unattended retries', () => {
+    expect(html).toContain('0 = unbegrenzt');
+  });
 });

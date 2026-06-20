@@ -2517,7 +2517,7 @@ class AnimazingPalPlugin {
       return;
     }
 
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+    if (this.maxReconnectAttempts > 0 && this.reconnectAttempts >= this.maxReconnectAttempts) {
       this.api.log(`Max reconnect attempts (${this.maxReconnectAttempts}) reached. Please reconnect manually.`, 'warn');
       this.safeEmitStatus();
       return;
@@ -2528,7 +2528,8 @@ class AnimazingPalPlugin {
     // Linear backoff: base delay * attempt number
     const delay = this.config.reconnectDelay * this.reconnectAttempts;
     
-    this.api.log(`Scheduling reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms...`, 'info');
+    const reconnectLimitLabel = this.maxReconnectAttempts > 0 ? this.maxReconnectAttempts : 'unlimited';
+    this.api.log(`Scheduling reconnect attempt ${this.reconnectAttempts}/${reconnectLimitLabel} in ${delay}ms...`, 'info');
     
     if (this.config && this.config.verboseLogging) {
       this.api.log(`Reconnect delay calculated: ${this.config.reconnectDelay}ms * ${this.reconnectAttempts} = ${delay}ms`, 'debug');
@@ -2537,12 +2538,18 @@ class AnimazingPalPlugin {
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       try {
-        this.api.log(`Attempting reconnection (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`, 'info');
-        await this.connect();
+        this.api.log(`Attempting reconnection (attempt ${this.reconnectAttempts}/${reconnectLimitLabel})...`, 'info');
+        const connected = await this.connect();
+        if (!connected && this.config?.reconnectOnDisconnect) {
+          this.scheduleReconnect();
+        }
       } catch (error) {
         this.api.log(`Reconnect attempt ${this.reconnectAttempts} failed: ${error.message}`, 'error');
         if (this.config && this.config.verboseLogging) {
           this.api.log(`Reconnect error stack: ${error.stack}`, 'debug');
+        }
+        if (this.config?.reconnectOnDisconnect) {
+          this.scheduleReconnect();
         }
       }
     }, delay);

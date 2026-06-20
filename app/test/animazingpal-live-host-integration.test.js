@@ -1217,6 +1217,47 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.shouldReconnectAfterAnimazeClose(true)).toBe(false);
   });
 
+  test('treats zero max reconnect attempts as unlimited for unattended hosting', () => {
+    const { plugin } = createPlugin();
+    plugin.maxReconnectAttempts = 0;
+    plugin.reconnectAttempts = 2;
+    plugin.config.reconnectDelay = 5;
+    const timer = { id: 'animaze-reconnect' };
+    const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockReturnValue(timer);
+
+    try {
+      plugin.scheduleReconnect();
+      expect(plugin.reconnectAttempts).toBe(3);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 15);
+      expect(plugin.reconnectTimer).toBe(timer);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  test('continues the Animaze reconnect chain after a failed attempt', async () => {
+    const { plugin } = createPlugin();
+    plugin.maxReconnectAttempts = 3;
+    plugin.reconnectAttempts = 0;
+    plugin.config.reconnectDelay = 5;
+    plugin.connect = jest.fn().mockResolvedValue(false);
+    const callbacks = [];
+    const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation(callback => {
+      callbacks.push(callback);
+      return { id: callbacks.length };
+    });
+
+    try {
+      plugin.scheduleReconnect();
+      await callbacks[0]();
+      expect(plugin.connect).toHaveBeenCalledTimes(1);
+      expect(plugin.reconnectAttempts).toBe(2);
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {
     const routes = [];
     const tiktok = { connect: jest.fn().mockResolvedValue(true) };
