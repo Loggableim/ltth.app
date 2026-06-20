@@ -85,4 +85,20 @@ describe('AnimazingPal LLM providers', () => {
     }));
     expect(result.content).toBe('Ollama Antwort');
   });
+
+  test('disables thinking only for the short Ollama connection probe', async () => {
+    const request = jest.fn().mockResolvedValue({
+      message: { content: 'Hallo!' }, model: 'nemotron-3-nano:30b-cloud'
+    });
+    const client = createLLMProvider({
+      provider: 'ollama', baseUrl: 'https://ollama.com', model: 'nemotron-3-nano:30b-cloud',
+      apiKey: 'ollama-secret', thinking: true
+    }, logger, request);
+
+    const result = await client.testConnection();
+
+    expect(result.success).toBe(true);
+    expect(request.mock.calls[0][0].body.think).toBe(false);
+    expect(client.config.thinking).toBe(true);
+  });
 });

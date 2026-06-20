@@ -141,6 +141,7 @@
       ${input('audio.monitoringEnabled', 'Monitoring aktiv', { type: 'checkbox' })}${input('audio.monitoringVolume', 'Monitoring-Lautstärke', { type: 'number', min: 0, max: 100 })}
       ${input('audio.missingDeviceBehavior', 'Fehlendes Gerät', { type: 'select', options: ['mute', 'default', 'error'] })}
       <p class="text-sm text-gray-400">setSinkId: <strong>${typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? 'verfügbar' : 'nicht verfügbar'}</strong></p>
+      <button class="btn btn-success" data-pick-output-device>Audiogerät auswählen und speichern</button>
       <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
     </div>${actions('audio')}</div></section>`;
   }
@@ -245,6 +246,26 @@
     }
   }
 
+  async function pickOutputDevice() {
+    if (!navigator.mediaDevices?.selectAudioOutput) {
+      throw new Error('Dieser Browser unterstützt die explizite Audiogeräteauswahl nicht. Bitte Chrome oder Edge verwenden.');
+    }
+    const device = await navigator.mediaDevices.selectAudioOutput();
+    if (!device?.deviceId) throw new Error('Kein Audiogerät ausgewählt');
+    state.devices = [...state.devices.filter(item => item.deviceId !== device.deviceId), device];
+    const body = await request('/api/animazingpal/live-host/config', {
+      method: 'POST',
+      body: JSON.stringify({ audio: {
+        ...state.config.audio,
+        outputDeviceId: device.deviceId,
+        outputDeviceLabel: device.label || 'Ausgewähltes Audiogerät'
+      } })
+    });
+    state.config = body.config;
+    render();
+    notify(`Audiogerät gespeichert: ${device.label || device.deviceId}`);
+  }
+
   function normalizeVoices(payload) {
     const source = payload.voices?.fishaudio || payload.fishaudio || {};
     return Array.isArray(source)
@@ -319,6 +340,7 @@
       request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
+    document.querySelector('[data-pick-output-device]')?.addEventListener('click', () => pickOutputDevice().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);
     document.querySelectorAll('[data-bundle-edit]').forEach(button => button.onclick = () => editBundle(button.dataset.bundleEdit));
     document.querySelectorAll('[data-bundle-delete]').forEach(button => button.onclick = () => { state.config.avatarBundles = state.config.avatarBundles.filter(item => item.id !== button.dataset.bundleDelete); save('avatarBundles').catch(error => notify(error.message, true)); });

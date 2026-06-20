@@ -25,6 +25,8 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('/api/gift-catalog');
     expect(script).toContain('/api/animazingpal/live-host/source/connect');
     expect(script).toContain('navigator.mediaDevices.enumerateDevices');
+    expect(script).toContain('navigator.mediaDevices.selectAudioOutput');
+    expect(script).toContain('data-pick-output-device');
     expect(script).toContain('viewerMemory');
     expect(script).toContain('avatarBundles');
   });

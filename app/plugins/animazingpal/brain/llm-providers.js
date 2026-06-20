@@ -130,6 +130,14 @@ class GeminiProvider extends BaseProvider {
 }
 
 class OllamaProvider extends BaseProvider {
+  async testConnection() {
+    const result = await this.generateResponse('Antworte kurz.', 'Sag Hallo.', [], {
+      maxTokens: 32,
+      thinking: false
+    });
+    return { success: true, provider: this.config.provider, model: result.model, response: result.content };
+  }
+
   async generateResponse(systemPrompt, userMessage, history = [], options = {}) {
     const headers = this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {};
     const response = await this.execute({
@@ -139,7 +147,7 @@ class OllamaProvider extends BaseProvider {
         model: options.model || this.config.model,
         messages: this.buildMessages(systemPrompt, userMessage, history),
         stream: false,
-        think: this.config.thinking,
+        think: options.thinking ?? this.config.thinking,
         options: {
           temperature: options.temperature ?? this.config.temperature,
           num_predict: options.maxTokens || this.config.maxResponseTokens,
