@@ -110,11 +110,20 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('idleMotion.enabled');
     expect(script).toContain('idleMotion.intervalMs');
     expect(script).toContain('idleMotion.jitterMs');
+    expect(script).toContain('idleMotion.includeEmotes');
     expect(script).toContain('idleMotion.alternateActionTypes');
+    expect(script).toContain('Idle/Special/Emote rotieren');
     expect(script).toContain('idleMotion.preferNames');
     expect(script).toContain('idleMotion.avoidNames');
     expect(script).toContain('lastIdleMotion');
     expect(script).toContain('idleMotionSkipped');
+  });
+
+  test('avatar dropdown normalizes Animaze friendlyName and itemName without undefined labels', () => {
+    expect(script).toContain('avatar.itemName');
+    expect(script).toContain('avatar.friendlyName');
+    expect(script).toContain('Unbenannter Avatar');
+    expect(script).not.toContain('${platform}: ${avatar.modelName || avatar.name || avatar.id}');
   });
 
   test('live-host UI refreshes runtime health continuously for unattended operation', () => {

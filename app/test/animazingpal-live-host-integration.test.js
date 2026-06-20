@@ -507,34 +507,40 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
   });
 
-  test('automatic idle motion alternates idle and special actions for visible liveliness', async () => {
+  test('automatic idle motion rotates idle, special actions and emotes for visible liveliness', async () => {
     const { plugin } = createPlugin();
     plugin.config.enabled = true;
     Object.assign(plugin.config.brain.liveHost.idleMotion, {
       enabled: true,
       cooldownAfterActionMs: 0,
       actionType: 'idle',
-      preferNames: ['Explaining', 'Hello'],
+      preferNames: ['Explaining', 'Hello', 'Heart'],
       avoidNames: ['Motionless'],
       fallbackToSpecialAction: true,
+      includeEmotes: true,
       alternateActionTypes: true
     });
     plugin.isConnected = true;
     plugin.animazeData = {
       ...plugin.animazeData,
       idleAnims: [{ animName: 'Explaining 1', index: 18 }],
-      specialActions: [{ animName: 'Hello', index: 0 }]
+      specialActions: [{ animName: 'Hello', index: 0 }],
+      emotes: [{ friendlyName: 'Hearts', itemName: 'Emote_Hearts' }]
     };
     plugin.triggerIdle = jest.fn().mockResolvedValue(true);
     plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+    plugin.triggerEmote = jest.fn().mockResolvedValue(true);
 
     const first = await plugin.runLiveHostIdleMotionTick(100000);
     const second = await plugin.runLiveHostIdleMotionTick(120000);
+    const third = await plugin.runLiveHostIdleMotionTick(140000);
 
     expect(first).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
     expect(second).toEqual(expect.objectContaining({ actionType: 'specialAction', actionValue: 0, success: true }));
+    expect(third).toEqual(expect.objectContaining({ actionType: 'emote', actionValue: 'Emote_Hearts', success: true }));
     expect(plugin.triggerIdle).toHaveBeenCalledWith(18);
     expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
+    expect(plugin.triggerEmote).toHaveBeenCalledWith('Emote_Hearts');
   });
 
   test('automatic idle motion can disable action type alternation', async () => {
@@ -563,6 +569,35 @@ describe('AnimazingPal live host integration', () => {
     expect(first).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
     expect(second).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
     expect(plugin.triggerSpecialAction).not.toHaveBeenCalled();
+  });
+
+  test('automatic idle motion can prefer emotes directly', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    Object.assign(plugin.config.brain.liveHost.idleMotion, {
+      enabled: true,
+      cooldownAfterActionMs: 0,
+      actionType: 'emote',
+      preferNames: ['Confetti'],
+      includeEmotes: true
+    });
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      idleAnims: [{ animName: 'Explaining 1', index: 18 }],
+      specialActions: [{ animName: 'Hello', index: 0 }],
+      emotes: [{ friendlyName: 'Confetti', itemName: 'Emote_Confetti_Template' }]
+    };
+    plugin.triggerEmote = jest.fn().mockResolvedValue(true);
+
+    const result = await plugin.runLiveHostIdleMotionTick(100000);
+
+    expect(result).toEqual(expect.objectContaining({
+      actionType: 'emote',
+      actionValue: 'Emote_Confetti_Template',
+      success: true
+    }));
+    expect(plugin.triggerEmote).toHaveBeenCalledWith('Emote_Confetti_Template');
   });
 
   test('automatic idle motion respects cooldown after recent avatar actions', async () => {

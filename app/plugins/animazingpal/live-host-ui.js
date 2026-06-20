@@ -358,7 +358,8 @@
           { value: 'specialAction', label: 'Special Action bevorzugen' }
         ] })}
         ${input('idleMotion.fallbackToSpecialAction', 'Fallback erlauben', { type: 'checkbox' })}
-        ${input('idleMotion.alternateActionTypes', 'Idle/Special alternieren', { type: 'checkbox' })}
+        ${input('idleMotion.includeEmotes', 'Emotes einbeziehen', { type: 'checkbox' })}
+        ${input('idleMotion.alternateActionTypes', 'Idle/Special/Emote rotieren', { type: 'checkbox' })}
         ${input('idleMotion.pauseWhileSpeaking', 'Beim Sprechen pausieren', { type: 'checkbox' })}
         ${input('idleMotion.cooldownAfterActionMs', 'Cooldown nach Aktion (ms)', { type: 'number', min: 0, max: 600000 })}
       </div>
@@ -549,9 +550,9 @@
     const platform = payload.activePlatform || payload.platformState?.key || 'animaze';
     const data = payload.platformData || payload.animazeData || payload.platformState?.data || {};
     state.avatars = (data.avatars || []).map(avatar => ({
-      id: avatar.modelID || avatar.id || avatar.name,
-      name: `${platform}: ${avatar.modelName || avatar.name || avatar.id}`
-    }));
+      id: avatar.modelID || avatar.itemName || avatar.id || avatar.name || avatar.friendlyName || '',
+      name: `${platform}: ${avatar.modelName || avatar.friendlyName || avatar.name || avatar.itemName || avatar.id || 'Unbenannter Avatar'}`
+    })).filter(avatar => avatar.id);
   }
 
   function saveBundle() {

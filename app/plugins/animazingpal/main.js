@@ -3630,20 +3630,29 @@ class AnimazingPalPlugin {
       if (!item) return null;
       return {
         actionType,
-        actionValue: actionType === 'idle' ? item.index : item.index,
+        actionValue: actionType === 'emote' ? (item.itemName || item.friendlyName) : item.index,
         name: item.animName || item.friendlyName || item.itemName || item.name || String(item.index)
       };
     };
 
     const preferredType = options.preferredType || idleMotion.actionType;
+    const pickEmote = () => idleMotion.includeEmotes ? pickFrom(this.animazeData.emotes, 'emote') : null;
+
+    if (preferredType === 'emote') {
+      return pickEmote()
+        || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.specialActions, 'specialAction') : null)
+        || pickFrom(this.animazeData.idleAnims, 'idle');
+    }
 
     if (preferredType === 'specialAction') {
       return pickFrom(this.animazeData.specialActions, 'specialAction')
+        || pickEmote()
         || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.idleAnims, 'idle') : null);
     }
 
     return pickFrom(this.animazeData.idleAnims, 'idle')
-      || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.specialActions, 'specialAction') : null);
+      || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.specialActions, 'specialAction') : null)
+      || pickEmote();
   }
 
   async runLiveHostIdleMotionTick(now = Date.now()) {
@@ -3670,9 +3679,12 @@ class AnimazingPalPlugin {
       result.reason = 'cooldown';
     } else {
       this.liveHostIdleMotionSequence = (this.liveHostIdleMotionSequence || 0) + 1;
-      const preferredType = idleMotion.alternateActionTypes && idleMotion.fallbackToSpecialAction && this.liveHostIdleMotionSequence % 2 === 0
-        ? (idleMotion.actionType === 'idle' ? 'specialAction' : 'idle')
-        : idleMotion.actionType;
+      let preferredType = idleMotion.actionType;
+      if (idleMotion.alternateActionTypes && idleMotion.fallbackToSpecialAction) {
+        const rotation = idleMotion.includeEmotes ? ['idle', 'specialAction', 'emote'] : ['idle', 'specialAction'];
+        const start = Math.max(0, rotation.indexOf(idleMotion.actionType));
+        preferredType = rotation[(start + this.liveHostIdleMotionSequence - 1) % rotation.length];
+      }
       const action = this.selectLiveHostIdleMotionAction(idleMotion, { preferredType });
       if (!action) {
         result.reason = 'no-action';
@@ -3684,6 +3696,8 @@ class AnimazingPalPlugin {
           result.success = await this.triggerIdle(action.actionValue);
         } else if (action.actionType === 'specialAction') {
           result.success = await this.triggerSpecialAction(action.actionValue);
+        } else if (action.actionType === 'emote') {
+          result.success = await this.triggerEmote(action.actionValue);
         }
         result.triggered = result.success;
         result.reason = result.success ? 'triggered' : 'send-failed';

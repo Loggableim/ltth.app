@@ -144,9 +144,10 @@ function buildLiveHostDefaults() {
       intervalMs: 15000,
       jitterMs: 5000,
       actionType: 'idle',
-      preferNames: ['Explaining', 'Walking', 'Bored', 'Victory', 'Hello', 'Dance'],
+      preferNames: ['Explaining', 'Walking', 'Bored', 'Victory', 'Hello', 'Dance', 'Heart', 'Confetti'],
       avoidNames: ['Motionless'],
       fallbackToSpecialAction: true,
+      includeEmotes: true,
       alternateActionTypes: true,
       pauseWhileSpeaking: false,
       cooldownAfterActionMs: 5000
@@ -275,7 +276,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.idleMotion.enabled = configured.idleMotion.enabled !== false;
   configured.idleMotion.intervalMs = Math.round(clamp(configured.idleMotion.intervalMs, 3000, 600000, defaults.idleMotion.intervalMs));
   configured.idleMotion.jitterMs = Math.round(clamp(configured.idleMotion.jitterMs, 0, 120000, defaults.idleMotion.jitterMs));
-  configured.idleMotion.actionType = ['idle', 'specialAction'].includes(configured.idleMotion.actionType)
+  configured.idleMotion.actionType = ['idle', 'specialAction', 'emote'].includes(configured.idleMotion.actionType)
     ? configured.idleMotion.actionType : defaults.idleMotion.actionType;
   configured.idleMotion.preferNames = Array.isArray(configured.idleMotion.preferNames)
     ? configured.idleMotion.preferNames.slice(0, 50).map(value => safeString(value, 80)).filter(Boolean)
@@ -284,6 +285,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
     ? configured.idleMotion.avoidNames.slice(0, 50).map(value => safeString(value, 80)).filter(Boolean)
     : defaults.idleMotion.avoidNames;
   configured.idleMotion.fallbackToSpecialAction = configured.idleMotion.fallbackToSpecialAction !== false;
+  configured.idleMotion.includeEmotes = configured.idleMotion.includeEmotes !== false;
   configured.idleMotion.alternateActionTypes = configured.idleMotion.alternateActionTypes !== false;
   configured.idleMotion.pauseWhileSpeaking = !!configured.idleMotion.pauseWhileSpeaking;
   configured.idleMotion.cooldownAfterActionMs = Math.round(clamp(configured.idleMotion.cooldownAfterActionMs, 0, 600000, defaults.idleMotion.cooldownAfterActionMs));
@@ -334,7 +336,7 @@ function applyLiveHostPreset(config, preset) {
     },
     viewerMemory: { enabled: true, writeMemories: true },
     avatarSwitch: { enabled: true, persistUntilNextSwitch: true, revertAfterMs: 0 },
-    idleMotion: { enabled: true, intervalMs: 15000, jitterMs: 5000, actionType: 'idle', fallbackToSpecialAction: true, alternateActionTypes: true, pauseWhileSpeaking: false }
+    idleMotion: { enabled: true, intervalMs: 15000, jitterMs: 5000, actionType: 'idle', fallbackToSpecialAction: true, includeEmotes: true, alternateActionTypes: true, pauseWhileSpeaking: false }
   }));
 }
 
