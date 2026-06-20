@@ -108,9 +108,10 @@ describe('AnimazingPal live host configuration', () => {
 
   test('normalizes live source event-staleness watchdog settings', () => {
     const configured = normalizeLiveHostConfig({
-      source: { eventStaleMs: 1, reconnectOnEventStale: true }
+      source: { watchdogIntervalMs: 1, eventStaleMs: 1, reconnectOnEventStale: true }
     });
 
+    expect(configured.source.watchdogIntervalMs).toBe(5000);
     expect(configured.source.eventStaleMs).toBe(30000);
     expect(configured.source.reconnectOnEventStale).toBe(true);
   });

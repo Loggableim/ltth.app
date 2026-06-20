@@ -645,6 +645,27 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.api.tiktok.connect).toHaveBeenCalledWith('jeffreestar');
   });
 
+  test('source watchdog schedules checks with the configured interval', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.source = {
+      username: 'jeffreestar',
+      readOnly: true,
+      autoConnect: true,
+      watchdogIntervalMs: 12000
+    };
+    plugin.api.tiktok = { connect: jest.fn() };
+    const timer = { id: 'source-watchdog' };
+    const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockReturnValue(timer);
+
+    try {
+      expect(plugin.startLiveHostSourceWatchdog()).toBe(true);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 12000);
+      expect(plugin.liveHostSourceWatchdogTimer).toBe(timer);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
   test('preflight blocks stale browser audio device ids that would leak to default output', () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;
@@ -1207,6 +1228,9 @@ describe('AnimazingPal live host integration', () => {
     };
     const plugin = new AnimazingPalPlugin(api);
     plugin.config = plugin.normalizeConfig(plugin.getDefaultConfig());
+    plugin.config.brain.liveHost.source.watchdogIntervalMs = 12000;
+    plugin.config.brain.liveHost.source.eventStaleMs = 45000;
+    plugin.config.brain.liveHost.source.reconnectOnEventStale = true;
     plugin.brainEngine = { setStreamerId: jest.fn(), getStatistics: jest.fn(), getPersonalities: jest.fn() };
     plugin.registerRoutes();
     const route = routes.find(item => item.path === '/api/animazingpal/live-host/source/connect');
@@ -1215,7 +1239,13 @@ describe('AnimazingPal live host integration', () => {
     await route.handler({ body: { username: '@wardalq4' } }, res);
 
     expect(tiktok.connect).toHaveBeenCalledWith('wardalq4');
-    expect(plugin.config.brain.liveHost.source).toEqual(expect.objectContaining({ username: 'wardalq4', readOnly: true }));
+    expect(plugin.config.brain.liveHost.source).toEqual(expect.objectContaining({
+      username: 'wardalq4',
+      readOnly: true,
+      watchdogIntervalMs: 12000,
+      eventStaleMs: 45000,
+      reconnectOnEventStale: true
+    }));
     expect(plugin.brainEngine.setStreamerId).toHaveBeenCalledWith('wardalq4');
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, readOnly: true }));
   });

@@ -276,6 +276,7 @@
         <div class="basis-full">${renderPreflightStatus()}</div>
       </div>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${input('source.watchdogIntervalMs', 'Watchdog-Intervall (ms)', { type: 'number', min: 5000, max: 300000 })}
         ${input('source.eventStaleMs', 'Event-Stale-Schwelle (ms)', { type: 'number', min: 30000, max: 3600000 })}
         ${input('source.reconnectOnEventStale', 'Bei stale Events reconnecten', { type: 'checkbox' })}
         ${input('source.username', 'Öffentlicher LIVE-Kanal')}${input('source.autoConnect', 'Automatisch lesend verbinden', { type: 'checkbox' })}

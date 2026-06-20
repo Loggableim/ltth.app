@@ -69,6 +69,7 @@ function buildLiveHostDefaults() {
       username: '',
       readOnly: true,
       autoConnect: false,
+      watchdogIntervalMs: 30000,
       eventStaleMs: 300000,
       reconnectOnEventStale: false
     },
@@ -192,6 +193,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.source.username = safeString(configured.source.username, 100).replace(/^@/, '');
   configured.source.readOnly = true;
   configured.source.autoConnect = !!configured.source.autoConnect;
+  configured.source.watchdogIntervalMs = Math.round(clamp(configured.source.watchdogIntervalMs, 5000, 300000, defaults.source.watchdogIntervalMs));
   configured.source.eventStaleMs = Math.round(clamp(configured.source.eventStaleMs, 30000, 3600000, defaults.source.eventStaleMs));
   configured.source.reconnectOnEventStale = !!configured.source.reconnectOnEventStale;
 

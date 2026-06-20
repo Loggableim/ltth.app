@@ -1309,7 +1309,14 @@ class AnimazingPalPlugin {
           return res.status(503).json({ success: false, error: 'TikTok event source unavailable' });
         }
         await this.api.tiktok.connect(username);
-        this.config.brain.liveHost.source = { username, readOnly: true, autoConnect: this.config.brain.liveHost.source?.autoConnect === true };
+        this.config.brain.liveHost = normalizeLiveHostConfig({
+          ...this.config.brain.liveHost,
+          source: {
+            ...this.config.brain.liveHost.source,
+            username,
+            readOnly: true
+          }
+        }, this.config.brain);
         this.config.brain.liveHost.viewerMemory.streamerId = username;
         this.brainEngine?.setStreamerId(username);
         this.api.setConfig('config', this.config);
@@ -3741,7 +3748,7 @@ class AnimazingPalPlugin {
     this.liveHostSourceWatchdogTimer = setTimeout(() => {
       this.liveHostSourceWatchdogTimer = null;
       this.runLiveHostSourceWatchdog().finally(() => this.startLiveHostSourceWatchdog());
-    }, 30000);
+    }, liveHost.source.watchdogIntervalMs);
     return true;
   }
 
