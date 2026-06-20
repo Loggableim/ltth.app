@@ -12,6 +12,14 @@ let animazingPalAudioUnlocked = false;
 let pendingAnimazingPalTTS = [];
 let animazingPalSinkWarningShown = false;
 const animazingPalStreamingBuffers = new Map();
+window.animazingPalTTSPlaybackState = {
+  status: 'idle',
+  lastStartedAt: null,
+  lastEndedAt: null,
+  lastError: null,
+  lastRouting: null,
+  lastItem: null
+};
 
 // Toast queue for sequential messages
 let toastQueue = [];
@@ -50,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
     handleAnimazingPalStreamEnd(data);
   });
 
+  socket.on('tts:playback:error', (data) => {
+    recordAnimazingPalTTSPlayback('error', {
+      error: data?.error || data?.message || 'TTS playback error',
+      item: data
+    });
+  });
+
   window.addEventListener('audio-unlocked', () => {
     animazingPalAudioUnlocked = true;
     flushPendingAnimazingPalTTS();
@@ -58,6 +73,33 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set up event listeners
   setupEventListeners();
 });
+
+function recordAnimazingPalTTSPlayback(status, details = {}) {
+  const current = window.animazingPalTTSPlaybackState || {};
+  const next = {
+    ...current,
+    status,
+    lastItem: details.item || current.lastItem || null
+  };
+
+  if (status === 'started') {
+    next.lastStartedAt = new Date().toISOString();
+    next.lastError = null;
+  }
+  if (status === 'ended') {
+    next.lastEndedAt = new Date().toISOString();
+  }
+  if (status === 'error') {
+    next.lastError = String(details.error?.message || details.error || 'Unknown playback error');
+  }
+  if (details.routing) {
+    next.lastRouting = details.routing;
+  }
+
+  window.animazingPalTTSPlaybackState = next;
+  window.dispatchEvent(new CustomEvent('animazingpal:tts-playback-state', { detail: next }));
+  return next;
+}
 
 function setupEventListeners() {
   const unlockOnInteraction = () => {
@@ -1427,21 +1469,26 @@ async function playAnimazingPalTTS(data) {
     if (window.TTSOutputRouter) {
       const routing = await window.TTSOutputRouter.routeAudioElement(audio);
       console.log('[AnimazingPal] TTS output routing:', routing);
+      recordAnimazingPalTTSPlayback('routing', { routing, item: data });
       showAnimazingPalSinkWarningIfNeeded(routing);
       window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('[AnimazingPal] TTS monitoring failed:', err));
     }
 
     await audio.play();
+    recordAnimazingPalTTSPlayback('started', { item: data });
 
     audio.onended = () => {
+      recordAnimazingPalTTSPlayback('ended', { item: data });
       URL.revokeObjectURL(audioUrl);
     };
 
     audio.onerror = () => {
+      recordAnimazingPalTTSPlayback('error', { error: audio.error?.message || 'Audio element playback error', item: data });
       URL.revokeObjectURL(audioUrl);
     };
   } catch (error) {
     console.error('[AnimazingPal] TTS playback error:', error);
+    recordAnimazingPalTTSPlayback('error', { error, item: data });
     if (error.name === 'NotAllowedError') {
       animazingPalAudioUnlocked = false;
       pendingAnimazingPalTTS.push(data);
@@ -1515,23 +1562,28 @@ async function playAnimazingPalStreamingAudio(id) {
     if (window.TTSOutputRouter) {
       const routing = await window.TTSOutputRouter.routeAudioElement(audio);
       console.log('[AnimazingPal] Streaming TTS output routing:', routing);
+      recordAnimazingPalTTSPlayback('routing', { routing, item: { id, streaming: true } });
       showAnimazingPalSinkWarningIfNeeded(routing);
       window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('[AnimazingPal] Streaming TTS monitoring failed:', err));
     }
 
     await audio.play();
+    recordAnimazingPalTTSPlayback('started', { item: { id, streaming: true } });
 
     audio.onended = () => {
+      recordAnimazingPalTTSPlayback('ended', { item: { id, streaming: true } });
       URL.revokeObjectURL(audioUrl);
       animazingPalStreamingBuffers.delete(id);
     };
 
     audio.onerror = () => {
+      recordAnimazingPalTTSPlayback('error', { error: audio.error?.message || 'Streaming audio element playback error', item: { id, streaming: true } });
       URL.revokeObjectURL(audioUrl);
       animazingPalStreamingBuffers.delete(id);
     };
   } catch (error) {
     console.error('[AnimazingPal] Streaming TTS playback error:', error);
+    recordAnimazingPalTTSPlayback('error', { error, item: { id, streaming: true } });
     animazingPalStreamingBuffers.delete(id);
   }
 }

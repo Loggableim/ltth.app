@@ -65,8 +65,12 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(uiScript).toContain("socket.on('tts:play'");
     expect(uiScript).toContain("socket.on('tts:stream:chunk'");
     expect(uiScript).toContain("socket.on('tts:stream:end'");
+    expect(uiScript).toContain("socket.on('tts:playback:error'");
     expect(uiScript).toContain('playAnimazingPalTTS');
+    expect(uiScript).toContain('recordAnimazingPalTTSPlayback');
+    expect(uiScript).toContain('window.animazingPalTTSPlaybackState');
     expect(uiScript).toContain('window.TTSOutputRouter.routeAudioElement');
+    expect(uiScript).toContain('lastRouting');
   });
 
   test('live-host UI exposes operator diagnostics for audio and runtime health', () => {
@@ -76,6 +80,9 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('liveHostRuntimeDiagnostics');
     expect(script).toContain('/api/tts/status');
     expect(script).toContain('/api/tts/queue');
+    expect(script).toContain('animazingPalTTSPlaybackState');
+    expect(script).toContain('animazingpal:tts-playback-state');
+    expect(script).toContain('lastError');
     expect(script).toContain('setSinkId nicht verfügbar');
   });
 

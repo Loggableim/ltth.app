@@ -155,6 +155,9 @@
     const ttsEngine = ttsStatus.defaultEngine || ttsStatus.config?.defaultEngine || 'unbekannt';
     const queueSize = state.ttsQueue.queue?.size ?? state.ttsQueue.size ?? state.ttsQueue.queueSize ?? 0;
     const currentText = state.ttsQueue.queue?.currentItem?.text || state.ttsQueue.currentItem?.text || '';
+    const playback = window.animazingPalTTSPlaybackState || {};
+    const lastRouting = playback.lastRouting || {};
+    const lastError = playback.lastError || '';
     const sinkClass = sinkSupported ? 'text-green-400' : 'text-yellow-300';
     const routingHint = sinkSupported
       ? 'Browser kann das gespeicherte Ausgabegerät direkt ansteuern.'
@@ -167,7 +170,11 @@
         <div>Ausgabe: <strong>${escapeHtml(outputLabel)}</strong>${outputId ? '' : ' (Default)'}</div>
         <div>setSinkId: <strong class="${sinkClass}">${sinkSupported ? 'verfügbar' : 'nicht verfügbar'}</strong></div>
         <div>TTS-Queue: <strong>${escapeHtml(queueSize)}</strong>${currentText ? ` · ${escapeHtml(String(currentText).slice(0, 80))}` : ''}</div>
+        <div>Browser-Playback: <strong class="${lastError ? 'text-red-400' : 'text-green-400'}">${escapeHtml(playback.status || 'idle')}</strong></div>
+        <div>Letztes Routing: <strong class="${lastRouting.routed === false ? 'text-yellow-300' : 'text-gray-200'}">${lastRouting.routed === false ? 'nicht geroutet' : lastRouting.routed === true ? 'geroutet' : 'unbekannt'}</strong></div>
       </div>
+      ${lastError ? `<p class="text-xs text-red-300 mt-2">Letzter Browser-TTS-Fehler: ${escapeHtml(lastError)}</p>` : ''}
+      ${lastRouting.reason ? `<p class="text-xs text-yellow-300 mt-2">Routing-Hinweis: ${escapeHtml(lastRouting.reason)}</p>` : ''}
       <p class="text-xs text-gray-400 mt-2">${escapeHtml(routingHint)}</p>
     </div>`;
   }
@@ -602,5 +609,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('[data-tab="livehost"]')?.addEventListener('click', initialize);
+    window.addEventListener('animazingpal:tts-playback-state', () => {
+      if (state.loaded) render();
+    });
   });
 }());
