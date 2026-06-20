@@ -66,6 +66,7 @@ class AnimazingPalPlugin {
     this.liveHostIdleMotionTimer = null;
     this.liveHostLastAvatarActionAt = 0;
     this.liveHostIdleMotionSequence = 0;
+    this.liveHostBrowserHeartbeat = null;
     this.speechState = new SpeechState();
 
     // Avatar platform registry
@@ -1192,6 +1193,11 @@ class AnimazingPalPlugin {
         this.api.log(`Live host preflight failed: ${error.message}`, 'warn');
         res.status(500).json({ success: false, error: error.message });
       }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/browser-heartbeat', (req, res) => {
+      const heartbeat = this.recordLiveHostBrowserHeartbeat(req.body || {});
+      res.json({ success: true, heartbeat });
     });
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/config', async (req, res) => {
@@ -3522,6 +3528,7 @@ class AnimazingPalPlugin {
 
   getLiveHostRuntimeStatus() {
     this.ensureLiveHostRuntime();
+    const browserHeartbeat = this.getLiveHostBrowserHeartbeatStatus();
     return {
       speaking: this.speechState.isSpeaking(),
       speechDurationMs: this.speechState.getSpeechDuration(),
@@ -3530,7 +3537,50 @@ class AnimazingPalPlugin {
       animazeConnected: this.isConnected,
       animazeReconnectScheduled: Boolean(this.reconnectTimer),
       animazeReconnectAttempts: this.reconnectAttempts,
+      browserHeartbeat,
       diagnostics: { ...this.liveHostDiagnostics }
+    };
+  }
+
+  recordLiveHostBrowserHeartbeat(payload = {}) {
+    const browser = payload.browser || payload || {};
+    const playback = browser.playback || {};
+    const routing = playback.lastRouting || {};
+    const now = Date.now();
+    this.liveHostBrowserHeartbeat = {
+      receivedAt: new Date(now).toISOString(),
+      receivedAtMs: now,
+      sinkSupported: browser.sinkSupported !== false,
+      audioUnlocked: browser.audioUnlocked === true,
+      configuredOutputDeviceAvailable: browser.configuredOutputDeviceAvailable !== false,
+      selectedOutputDeviceId: String(browser.selectedOutputDeviceId || '').slice(0, 500),
+      playback: {
+        status: String(playback.status || 'unknown').slice(0, 80),
+        lastError: playback.lastError ? String(playback.lastError).slice(0, 500) : '',
+        lastRouting: {
+          routed: routing.routed === undefined ? null : routing.routed === true,
+          reason: routing.reason ? String(routing.reason).slice(0, 500) : ''
+        }
+      }
+    };
+    return this.getLiveHostBrowserHeartbeatStatus(now);
+  }
+
+  getLiveHostBrowserHeartbeatStatus(now = Date.now()) {
+    if (!this.liveHostBrowserHeartbeat) {
+      return {
+        present: false,
+        stale: true,
+        ageMs: null,
+        receivedAt: null
+      };
+    }
+    const ageMs = Math.max(0, now - Number(this.liveHostBrowserHeartbeat.receivedAtMs || 0));
+    return {
+      ...this.liveHostBrowserHeartbeat,
+      present: true,
+      stale: ageMs > 30000,
+      ageMs
     };
   }
 
@@ -3718,7 +3768,9 @@ class AnimazingPalPlugin {
   evaluateLiveHostPreflight(options = {}) {
     this.ensureLiveHostRuntime();
     const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
-    const browser = options.browser || {};
+    const heartbeatStatus = this.getLiveHostBrowserHeartbeatStatus();
+    const hasInlineBrowserState = !!options.browser;
+    const browser = options.browser || (heartbeatStatus.present ? heartbeatStatus : {});
     const checks = [];
     const add = (id, status, label, detail, action = null) => {
       checks.push({ id, status, label, detail, ...(action ? { action } : {}) });
@@ -3774,6 +3826,19 @@ class AnimazingPalPlugin {
     const playback = browser.playback || {};
     const playbackRouting = playback.lastRouting || {};
     const playbackHasError = Boolean(playback.lastError || playback.status === 'error' || playbackRouting.routed === false);
+    add(
+      'browser.heartbeat',
+      hasInlineBrowserState || (heartbeatStatus.present && !heartbeatStatus.stale) ? 'ok' : 'error',
+      'Browser Host-Tab',
+      hasInlineBrowserState
+        ? 'Aktueller Browserzustand wurde mit dem Preflight gesendet.'
+        : (heartbeatStatus.present
+          ? `Letzter Browser-Heartbeat ist stale (${heartbeatStatus.ageMs}ms).`
+          : 'Kein Browser-Heartbeat empfangen; der Standalone-Host-Tab ist nicht nachweisbar aktiv.'),
+      hasInlineBrowserState || (heartbeatStatus.present && !heartbeatStatus.stale)
+        ? null
+        : 'AnimazingPal Standalone-UI im Browser offen lassen und neu laden.'
+    );
     add(
       'audio.output',
       hasOutputDevice ? 'ok' : 'warn',

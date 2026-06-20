@@ -268,6 +268,10 @@ describe('AnimazingPal live host integration', () => {
         animazeConnected: false,
         animazeReconnectScheduled: false,
         animazeReconnectAttempts: 0,
+        browserHeartbeat: expect.objectContaining({
+          present: false,
+          stale: true
+        }),
         dedupeCacheSize: 0,
         responseSlotsUsedLastMinute: 0,
         diagnostics: expect.objectContaining({
@@ -410,6 +414,88 @@ describe('AnimazingPal live host integration', () => {
     expect(preflight.ready).toBe(false);
     expect(preflight.checks).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'audio.playback', status: 'error' })
+    ]));
+  });
+
+  test('records browser host heartbeats for unattended TTS routing diagnostics', () => {
+    const { plugin } = createPlugin();
+
+    const heartbeat = plugin.recordLiveHostBrowserHeartbeat({
+      browser: {
+        sinkSupported: true,
+        audioUnlocked: true,
+        configuredOutputDeviceAvailable: true,
+        selectedOutputDeviceId: 'cable-device',
+        playback: {
+          status: 'idle',
+          lastRouting: { routed: true }
+        }
+      }
+    });
+
+    expect(heartbeat).toEqual(expect.objectContaining({
+      present: true,
+      stale: false,
+      audioUnlocked: true,
+      configuredOutputDeviceAvailable: true,
+      selectedOutputDeviceId: 'cable-device',
+      playback: expect.objectContaining({
+        status: 'idle',
+        lastRouting: expect.objectContaining({ routed: true })
+      })
+    }));
+    expect(plugin.getLiveHostRuntimeStatus().browserHeartbeat).toEqual(expect.objectContaining({
+      present: true,
+      stale: false
+    }));
+  });
+
+  test('preflight can use the latest browser heartbeat when no inline browser state is posted', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+    plugin.recordLiveHostBrowserHeartbeat({
+      browser: {
+        sinkSupported: true,
+        audioUnlocked: true,
+        configuredOutputDeviceAvailable: true,
+        selectedOutputDeviceId: 'cable-device',
+        playback: { status: 'idle', lastRouting: { routed: true } }
+      }
+    });
+
+    const preflight = plugin.evaluateLiveHostPreflight();
+
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'browser.heartbeat', status: 'ok' }),
+      expect.objectContaining({ id: 'audio.browser', status: 'ok' })
+    ]));
+  });
+
+  test('preflight fails when no standalone browser heartbeat is available', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight();
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'browser.heartbeat', status: 'error' })
     ]));
   });
 

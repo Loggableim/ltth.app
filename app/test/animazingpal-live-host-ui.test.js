@@ -135,4 +135,13 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('document.visibilityState');
     expect(script).toContain('lastHealthAt');
   });
+
+  test('live-host UI sends browser heartbeats for unattended audio routing', () => {
+    expect(script).toContain('sendBrowserHeartbeat');
+    expect(script).toContain('/api/animazingpal/live-host/browser-heartbeat');
+    expect(script).toContain('browserHeartbeat');
+    expect(script).toContain('Browser-Host');
+    expect(script).toContain('Standalone-Tab offen lassen');
+    expect(script).toContain('await sendBrowserHeartbeat()');
+  });
 });
