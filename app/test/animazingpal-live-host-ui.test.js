@@ -144,4 +144,11 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('Standalone-Tab offen lassen');
     expect(script).toContain('await sendBrowserHeartbeat()');
   });
+
+  test('live-host UI surfaces TikTok source watchdog state', () => {
+    expect(script).toContain('sourceStatus');
+    expect(script).toContain('TikTok-Quelle');
+    expect(script).toContain('connectedToSource');
+    expect(script).toContain('lastReconnectError');
+  });
 });

@@ -67,6 +67,14 @@ class AnimazingPalPlugin {
     this.liveHostLastAvatarActionAt = 0;
     this.liveHostIdleMotionSequence = 0;
     this.liveHostBrowserHeartbeat = null;
+    this.liveHostSourceWatchdogTimer = null;
+    this.liveHostSourceReconnectInFlight = false;
+    this.liveHostSourceStatus = {
+      lastCheckedAt: null,
+      lastReconnectAt: null,
+      lastReconnectError: null,
+      reconnectAttempts: 0
+    };
     this.speechState = new SpeechState();
 
     // Avatar platform registry
@@ -172,6 +180,7 @@ class AnimazingPalPlugin {
         this.api.tiktok.connect(source.username).catch(error => this.api.log(`Read-only LIVE source auto-connect failed: ${error.message}`, 'warn'));
       }, 10000);
     }
+    this.startLiveHostSourceWatchdog();
     
     // Auto-connect if enabled
     const activePlatformProfile = this.getPlatformProfile();
@@ -1206,6 +1215,7 @@ class AnimazingPalPlugin {
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
         this.startLiveHostIdleMotion();
+        this.startLiveHostSourceWatchdog();
         this.safeEmitStatus();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
@@ -1220,6 +1230,7 @@ class AnimazingPalPlugin {
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
         this.startLiveHostIdleMotion();
+        this.startLiveHostSourceWatchdog();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -1251,6 +1262,7 @@ class AnimazingPalPlugin {
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
         this.startLiveHostIdleMotion();
+        this.startLiveHostSourceWatchdog();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -1288,6 +1300,7 @@ class AnimazingPalPlugin {
         this.config.brain.liveHost.viewerMemory.streamerId = username;
         this.brainEngine?.setStreamerId(username);
         this.api.setConfig('config', this.config);
+        this.startLiveHostSourceWatchdog();
         res.json({ success: true, username, readOnly: true });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -3472,6 +3485,14 @@ class AnimazingPalPlugin {
     if (!this.speechState) {
       this.speechState = new SpeechState();
     }
+    if (!this.liveHostSourceStatus) {
+      this.liveHostSourceStatus = {
+        lastCheckedAt: null,
+        lastReconnectAt: null,
+        lastReconnectError: null,
+        reconnectAttempts: 0
+      };
+    }
   }
 
   getLiveHostEventSignature(eventType, data = {}) {
@@ -3529,6 +3550,7 @@ class AnimazingPalPlugin {
   getLiveHostRuntimeStatus() {
     this.ensureLiveHostRuntime();
     const browserHeartbeat = this.getLiveHostBrowserHeartbeatStatus();
+    const sourceStatus = this.getLiveHostSourceStatus();
     return {
       speaking: this.speechState.isSpeaking(),
       speechDurationMs: this.speechState.getSpeechDuration(),
@@ -3538,8 +3560,78 @@ class AnimazingPalPlugin {
       animazeReconnectScheduled: Boolean(this.reconnectTimer),
       animazeReconnectAttempts: this.reconnectAttempts,
       browserHeartbeat,
+      sourceStatus,
       diagnostics: { ...this.liveHostDiagnostics }
     };
+  }
+
+  getLiveHostSourceStatus() {
+    this.ensureLiveHostRuntime();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const source = liveHost.source || {};
+    const tiktok = this.api.tiktok || {};
+    const active = typeof tiktok.isActive === 'function'
+      ? tiktok.isActive()
+      : (typeof tiktok.isConnected === 'function' ? tiktok.isConnected() : !!tiktok.connected);
+    const currentUsername = String(tiktok.currentUsername || tiktok.username || '').replace(/^@/, '');
+    const desiredUsername = String(source.username || '').replace(/^@/, '');
+    const connectedToSource = Boolean(active && desiredUsername && (!currentUsername || currentUsername.toLowerCase() === desiredUsername.toLowerCase()));
+    return {
+      configured: Boolean(desiredUsername),
+      username: desiredUsername,
+      currentUsername,
+      connected: Boolean(active),
+      connectedToSource,
+      autoConnect: source.autoConnect === true,
+      readOnly: source.readOnly !== false,
+      reconnectInFlight: this.liveHostSourceReconnectInFlight === true,
+      ...this.liveHostSourceStatus
+    };
+  }
+
+  stopLiveHostSourceWatchdog() {
+    if (this.liveHostSourceWatchdogTimer) {
+      clearTimeout(this.liveHostSourceWatchdogTimer);
+      this.liveHostSourceWatchdogTimer = null;
+    }
+  }
+
+  startLiveHostSourceWatchdog() {
+    this.stopLiveHostSourceWatchdog();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    if (!liveHost.enabled || !liveHost.source?.autoConnect || !liveHost.source?.username || !this.api.tiktok?.connect) {
+      return false;
+    }
+    this.liveHostSourceWatchdogTimer = setTimeout(() => {
+      this.liveHostSourceWatchdogTimer = null;
+      this.runLiveHostSourceWatchdog().finally(() => this.startLiveHostSourceWatchdog());
+    }, 30000);
+    return true;
+  }
+
+  async runLiveHostSourceWatchdog() {
+    const status = this.getLiveHostSourceStatus();
+    this.liveHostSourceStatus.lastCheckedAt = new Date().toISOString();
+    if (!status.configured || !status.autoConnect || status.connectedToSource || this.liveHostSourceReconnectInFlight || !this.api.tiktok?.connect) {
+      return { reconnected: false, status: this.getLiveHostSourceStatus() };
+    }
+
+    this.liveHostSourceReconnectInFlight = true;
+    this.liveHostSourceStatus.reconnectAttempts = (this.liveHostSourceStatus.reconnectAttempts || 0) + 1;
+    try {
+      await this.api.tiktok.connect(status.username);
+      this.liveHostSourceStatus.lastReconnectAt = new Date().toISOString();
+      this.liveHostSourceStatus.lastReconnectError = null;
+      this.api.log(`Live host source reconnected read-only to @${status.username}`, 'info');
+      return { reconnected: true, status: this.getLiveHostSourceStatus() };
+    } catch (error) {
+      this.liveHostSourceStatus.lastReconnectError = error.message;
+      this.api.log(`Live host source reconnect failed for @${status.username}: ${error.message}`, 'warn');
+      return { reconnected: false, error: error.message, status: this.getLiveHostSourceStatus() };
+    } finally {
+      this.liveHostSourceReconnectInFlight = false;
+      this.safeEmitStatus();
+    }
   }
 
   recordLiveHostBrowserHeartbeat(payload = {}) {
@@ -3916,6 +4008,7 @@ class AnimazingPalPlugin {
     );
 
     const sourceUsername = String(liveHost.source?.username || '').trim();
+    const sourceStatus = this.getLiveHostSourceStatus();
     add(
       'source.username',
       sourceUsername ? 'ok' : 'error',
@@ -3929,6 +4022,20 @@ class AnimazingPalPlugin {
       'Read-only Schutz',
       liveHost.source?.readOnly !== false ? 'Quelle ist read-only; es werden keine Aktionen an TikTok gesendet.' : 'Read-only Schutz ist nicht aktiv.',
       liveHost.source?.readOnly !== false ? null : 'Read-only für fremde TikTok-LIVEs aktivieren.'
+    );
+
+    add(
+      'source.connection',
+      !sourceUsername ? 'error' : (sourceStatus.connectedToSource ? 'ok' : (sourceStatus.autoConnect ? 'warn' : 'error')),
+      'TikTok Quellenverbindung',
+      sourceStatus.connectedToSource
+        ? `Read-only Quelle @${sourceStatus.username} ist verbunden.`
+        : (sourceStatus.connected
+          ? `TikTok ist verbunden, aber nicht eindeutig mit @${sourceStatus.username || sourceUsername}.`
+          : `Read-only Quelle @${sourceStatus.username || sourceUsername || '?'} ist nicht verbunden.`),
+      sourceStatus.connectedToSource
+        ? null
+        : (sourceStatus.autoConnect ? 'Watchdog reconnectet automatisch; Status beobachten.' : 'Quelle lesend verbinden oder Auto-Connect aktivieren.')
     );
 
     const runtime = this.getLiveHostRuntimeStatus();
@@ -5573,6 +5680,7 @@ class AnimazingPalPlugin {
       clearTimeout(this.liveHostSourceTimer);
       this.liveHostSourceTimer = null;
     }
+    this.stopLiveHostSourceWatchdog();
     if (this.liveHostEventDeduper && typeof this.liveHostEventDeduper.destroy === 'function') {
       this.liveHostEventDeduper.destroy();
       this.liveHostEventDeduper = null;

@@ -272,6 +272,10 @@ describe('AnimazingPal live host integration', () => {
           present: false,
           stale: true
         }),
+        sourceStatus: expect.objectContaining({
+          configured: false,
+          connectedToSource: false
+        }),
         dedupeCacheSize: 0,
         responseSlotsUsedLastMinute: 0,
         diagnostics: expect.objectContaining({
@@ -496,6 +500,65 @@ describe('AnimazingPal live host integration', () => {
     expect(preflight.ready).toBe(false);
     expect(preflight.checks).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'browser.heartbeat', status: 'error' })
+    ]));
+  });
+
+  test('reports live host TikTok source status from the runtime connector', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.source = { username: 'jeffreestar', readOnly: true, autoConnect: true };
+    plugin.api.tiktok = { isActive: () => true, currentUsername: 'jeffreestar' };
+
+    const status = plugin.getLiveHostSourceStatus();
+
+    expect(status).toEqual(expect.objectContaining({
+      configured: true,
+      username: 'jeffreestar',
+      currentUsername: 'jeffreestar',
+      connected: true,
+      connectedToSource: true,
+      autoConnect: true,
+      readOnly: true
+    }));
+  });
+
+  test('watchdog reconnects the read-only TikTok source when disconnected', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.source = { username: 'jeffreestar', readOnly: true, autoConnect: true };
+    plugin.api.tiktok = {
+      isActive: jest.fn(() => false),
+      currentUsername: '',
+      connect: jest.fn().mockResolvedValue(true)
+    };
+
+    const result = await plugin.runLiveHostSourceWatchdog();
+
+    expect(plugin.api.tiktok.connect).toHaveBeenCalledWith('jeffreestar');
+    expect(result).toEqual(expect.objectContaining({ reconnected: true }));
+    expect(plugin.getLiveHostSourceStatus()).toEqual(expect.objectContaining({
+      reconnectAttempts: 1,
+      lastReconnectError: null
+    }));
+  });
+
+  test('preflight reports source connection separately from source username', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source = { username: 'jeffreestar', readOnly: true, autoConnect: false };
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.tiktok = { isActive: () => false, currentUsername: '' };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'source.username', status: 'ok' }),
+      expect.objectContaining({ id: 'source.connection', status: 'error' })
     ]));
   });
 
