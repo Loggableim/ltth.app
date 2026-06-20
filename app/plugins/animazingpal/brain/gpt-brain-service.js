@@ -10,36 +10,52 @@
  */
 
 const https = require('https');
+const { createLLMProvider } = require('./llm-providers');
 
 class GPTBrainService {
-  constructor(apiKey, logger, options = {}) {
-    this.apiKey = apiKey;
+  constructor(apiKeyOrConfig, logger, options = {}) {
+    const legacyConfig = typeof apiKeyOrConfig === 'string'
+      ? {
+          provider: 'openai',
+          apiKey: apiKeyOrConfig,
+          baseUrl: 'https://api.openai.com/v1',
+          model: options.model || 'gpt-4o-mini',
+          timeoutMs: options.timeout || 30000,
+          maxRetries: options.maxRetries ?? 2,
+          retryBackoffMs: options.retryDelay || 1000,
+          maxResponseTokens: options.maxResponseTokens || 300
+        }
+      : { ...(apiKeyOrConfig || {}) };
+
+    this.providerConfig = legacyConfig;
+    this.apiKey = legacyConfig.apiKey;
     this.logger = logger;
+    this.provider = options.providerClient || createLLMProvider(legacyConfig, logger);
     
     // Default to GPT-5 Nano for cost efficiency
-    this.defaultModel = options.model || 'gpt-4o-mini';
+    this.defaultModel = legacyConfig.model || options.model || 'gpt-4o-mini';
     
     // API configuration
     this.apiHost = 'api.openai.com';
     this.apiPath = '/v1/chat/completions';
     
     // Request configuration
-    this.timeout = options.timeout || 30000;
-    this.maxRetries = options.maxRetries || 2;
-    this.retryDelay = options.retryDelay || 1000;
+    this.timeout = legacyConfig.timeoutMs || options.timeout || 30000;
+    this.maxRetries = legacyConfig.maxRetries ?? options.maxRetries ?? 2;
+    this.retryDelay = legacyConfig.retryBackoffMs || options.retryDelay || 1000;
     
     // Token limits for efficiency
     this.maxContextTokens = options.maxContextTokens || 2000;
-    this.maxResponseTokens = options.maxResponseTokens || 300;
+    this.maxResponseTokens = legacyConfig.maxResponseTokens || options.maxResponseTokens || 300;
     
     // Response caching for repeated queries
     this.responseCache = new Map();
     this.cacheMaxSize = 100;
-    this.cacheTTL = 300000; // 5 minutes
+    this.cacheTTL = legacyConfig.cacheTtlMs ?? 300000;
     
     // Rate limiting
     this.lastRequestTime = 0;
-    this.minRequestInterval = 500; // Minimum 500ms between requests
+    this.minRequestInterval = options.minRequestInterval ?? 500;
     
     // Available models
     this.models = {
@@ -172,82 +188,20 @@ class GPTBrainService {
       }
     }
     
-    // Build messages array
-    const messages = [
-      { role: 'system', content: systemPrompt }
-    ];
-    
-    // Add conversation history (limited for token efficiency)
-    const historyLimit = 10;
-    const recentHistory = conversationHistory.slice(-historyLimit);
-    for (const msg of recentHistory) {
-      messages.push({
-        role: msg.role,
-        content: msg.content
-      });
+    const result = await this.provider.generateResponse(systemPrompt, userMessage, conversationHistory, {
+      ...options,
+      model: options.model || this.defaultModel,
+      maxTokens: options.maxTokens || this.maxResponseTokens
+    });
+    const content = result.content;
+    this.logger.info(`GPT Brain: Response received (${content.length} chars)`);
+
+    if (!options.skipCache && conversationHistory.length === 0) {
+      const cacheKey = this._getCacheKey(systemPrompt, userMessage);
+      this._cacheResponse(cacheKey, content);
     }
-    
-    // Add current user message
-    messages.push({ role: 'user', content: userMessage });
-    
-    // Select model
-    const model = this.models[options.model || this.defaultModel] || this.defaultModel;
-    
-    // Prepare request
-    const requestData = {
-      model,
-      messages,
-      max_tokens: options.maxTokens || this.maxResponseTokens,
-      temperature: options.temperature || 0.8,
-      presence_penalty: options.presencePenalty || 0.3,
-      frequency_penalty: options.frequencyPenalty || 0.3
-    };
-    
-    // Make request with retries
-    let lastError = null;
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      try {
-        this.logger.debug(`GPT Brain: Request attempt ${attempt}/${this.maxRetries}`);
-        
-        const response = await this._makeRequest(requestData);
-        
-        if (!response.choices || response.choices.length === 0) {
-          throw new Error('No response choices returned');
-        }
-        
-        const content = response.choices[0].message.content;
-        
-        this.logger.info(`GPT Brain: Response received (${content.length} chars)`);
-        
-        // Cache the response
-        if (!options.skipCache && conversationHistory.length === 0) {
-          const cacheKey = this._getCacheKey(systemPrompt, userMessage);
-          this._cacheResponse(cacheKey, content);
-        }
-        
-        return {
-          content,
-          model,
-          usage: response.usage,
-          cached: false
-        };
-        
-      } catch (error) {
-        lastError = error;
-        this.logger.error(`GPT Brain: Request failed (attempt ${attempt}): ${error.message}`);
-        
-        // Don't retry on auth errors
-        if (error.message.includes('401') || error.message.includes('403')) {
-          throw error;
-        }
-        
-        if (attempt < this.maxRetries) {
-          await this._sleep(this.retryDelay * attempt);
-        }
-      }
-    }
-    
-    throw lastError || new Error('GPT request failed after all retries');
+
+    return { ...result, content, cached: false };
   }
 
   /**
@@ -373,18 +327,7 @@ Fokussiere auf: Persönlichkeit, Interessen, Beziehung zum Streamer.`;
    */
   async testConnection() {
     try {
-      const response = await this._makeRequest({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: 'Sag Hallo' }],
-        max_tokens: 10
-      });
-      
-      return {
-        success: true,
-        message: 'GPT API connection successful',
-        model: response.model,
-        response: response.choices[0]?.message?.content
-      };
+      return await this.provider.testConnection();
     } catch (error) {
       return {
         success: false,

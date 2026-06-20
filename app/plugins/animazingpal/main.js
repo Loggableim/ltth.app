@@ -22,6 +22,13 @@ const WebSocket = require('ws');
 const path = require('path');
 const BrainEngine = require('./brain/brain-engine');
 const {
+  buildLiveHostDefaults,
+  normalizeLiveHostConfig,
+  sanitizeLiveHostConfig,
+  mergeLiveHostSecrets,
+  applyLiveHostPreset
+} = require('./brain/live-host-config');
+const {
   createPlatformAdapter,
   getPlatformDefinition,
   listPlatformDefinitions
@@ -344,7 +351,8 @@ class AnimazingPalPlugin {
         },
         // Rate limiting
         maxResponsesPerMinute: 10,
-        chatResponseProbability: 0.3  // Respond to 30% of chats
+        chatResponseProbability: 0.3,  // Respond to 30% of chats
+        liveHost: buildLiveHostDefaults()
       },
       // Logic Matrix for event-driven actions
       logicMatrix: {
@@ -948,6 +956,10 @@ class AnimazingPalPlugin {
   normalizeConfig(config = {}) {
     const defaults = this.getDefaultConfig();
     const normalized = this.mergeConfigPatch(defaults, config);
+    normalized.brain.liveHost = normalizeLiveHostConfig(
+      normalized.brain.liveHost || {},
+      normalized.brain
+    );
 
     // Preserve legacy top-level Animaze settings while introducing
     // the platform profile structure for new targets.
@@ -3147,6 +3159,53 @@ class AnimazingPalPlugin {
     return intent;
   }
 
+  async speakHostResponse(message, options = {}) {
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    if (!liveHost.enabled || !liveHost.tts.enabled || !message) {
+      return { success: false, blocked: true, reason: 'host_tts_disabled' };
+    }
+
+    const ttsPlugin = this.api.getPluginInstance?.('tts') || this.api.getPlugin?.('tts');
+    if (!ttsPlugin || typeof ttsPlugin.speak !== 'function') {
+      this.api.log('AnimazingPal host speech skipped: TTS plugin unavailable', 'warn');
+      return { success: false, blocked: true, reason: 'tts_plugin_unavailable' };
+    }
+
+    const eventConfig = liveHost.events[options.eventType] || {};
+    const pick = (eventValue, globalValue) => eventValue !== null && eventValue !== undefined && eventValue !== ''
+      ? eventValue
+      : globalValue;
+    const request = {
+      text: String(message).slice(0, liveHost.response.maxCharacters),
+      userId: options.userId || 'animazingpal-host',
+      username: options.username || 'AnimazingPal',
+      voiceId: pick(eventConfig.voiceId, liveHost.tts.voiceId) || null,
+      engine: 'fishaudio',
+      source: 'animazingpal',
+      priority: pick(eventConfig.priority, liveHost.tts.priority),
+      emotion: pick(eventConfig.emotion, liveHost.tts.emotion),
+      pitch: pick(eventConfig.pitch, liveHost.tts.pitch),
+      volume: pick(eventConfig.volume, liveHost.tts.volume),
+      speed: pick(eventConfig.speed, liveHost.tts.speed),
+      streaming: liveHost.tts.streaming,
+      duckOtherAudio: liveHost.tts.duckOtherAudio
+    };
+
+    try {
+      const result = await ttsPlugin.speak(request);
+      this.api.emit('animazingpal:host-speech', {
+        eventType: options.eventType || 'manual',
+        username: request.username,
+        success: result?.success !== false,
+        id: result?.id || null
+      });
+      return result;
+    } catch (error) {
+      this.api.log(`AnimazingPal host speech failed: ${error.message}`, 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
   relayChatMessage(message, options = {}) {
     const useEcho = options.useEcho ?? false;
 
@@ -4331,7 +4390,8 @@ class AnimazingPalPlugin {
       autoRespond: this.config.brain.autoRespond,
       maxResponsesPerMinute: this.config.brain.maxResponsesPerMinute,
       chatResponseProbability: this.config.brain.chatResponseProbability,
-      apiKeyConfigured: !!this.config.brain.openaiApiKey
+      apiKeyConfigured: !!this.config.brain.openaiApiKey,
+      liveHost: sanitizeLiveHostConfig(this.config.brain.liveHost || buildLiveHostDefaults())
     } : null;
 
     const viewerbaseConfig = this.config.viewerbase ? {

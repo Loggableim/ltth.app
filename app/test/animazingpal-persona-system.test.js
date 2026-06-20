@@ -83,6 +83,13 @@ describe('AnimazingPal Persona System', function() {
       assert.ok(friendlyStreamer.emote_config, 'Should have emote_config');
       assert.ok(friendlyStreamer.memory_behavior, 'Should have memory_behavior');
     });
+
+    it('should include funny, cynical and sarcastic host personas', function() {
+      const names = memoryDb.getPersonalities().map(persona => persona.name);
+      assert.ok(names.includes('entertainer'), 'Should include the funny entertainer persona');
+      assert.ok(names.includes('cynical_host'), 'Should include a cynical host persona');
+      assert.ok(names.includes('sarcastic_host'), 'Should include a sarcastic host persona');
+    });
   });
 
   describe('Persona CRUD Operations', function() {

@@ -17,6 +17,8 @@
 const MemoryDatabase = require('./memory-database');
 const VectorMemory = require('./vector-memory');
 const GPTBrainService = require('./gpt-brain-service');
+const { normalizeLiveHostConfig } = require('./live-host-config');
+const ViewerMemoryAdapter = require('./viewer-memory-adapter');
 
 class BrainEngine {
   constructor(api, options = {}) {
@@ -34,6 +36,7 @@ class BrainEngine {
     // Initialize components
     this.memoryDb = new MemoryDatabase(db, this.logger);
     this.vectorMemory = new VectorMemory(this.logger);
+    this.viewerMemory = new ViewerMemoryAdapter(api);
     this.gptBrain = null; // Initialized when API key is set
     
     // Current streamer ID (for per-streamer memory)
@@ -150,14 +153,31 @@ class BrainEngine {
    */
   configure(newConfig) {
     this.config = { ...this.config, ...newConfig };
-    
-    // Update GPT service if API key changed
-    if (newConfig.openaiApiKey) {
-      this.gptBrain = new GPTBrainService(newConfig.openaiApiKey, this.logger, {
-        model: this.config.model,
-        timeout: 30000,
-        maxRetries: 2
-      });
+
+    const liveHostInput = newConfig.liveHost || (
+      newConfig.provider || newConfig.providers || newConfig.response || newConfig.tts
+        ? newConfig
+        : this.config.liveHost || {}
+    );
+    const liveHost = normalizeLiveHostConfig(liveHostInput, newConfig);
+    this.config.liveHost = liveHost;
+    const providerConfig = {
+      ...liveHost.providers[liveHost.provider],
+      provider: liveHost.provider,
+      contextMessages: liveHost.response.contextMessages,
+      cacheTtlMs: liveHost.response.cacheTtlMs
+    };
+
+    if (providerConfig.apiKey || liveHost.provider === 'ollama') {
+      this.gptBrain = new GPTBrainService(providerConfig, this.logger);
+    } else {
+      this.gptBrain = null;
+    }
+
+    this.config.maxResponsesPerMinute = liveHost.response.maxResponsesPerMinute;
+    this.config.chatResponseProbability = liveHost.response.chatProbability;
+    if (this.streamContext) {
+      this.streamContext.speakCooldown = liveHost.response.speakCooldownMs;
     }
     
     // Update active personality if changed
@@ -310,6 +330,17 @@ class BrainEngine {
         memories.push(memory.content);
       }
     }
+
+    if (username && this.config.liveHost?.viewerMemory?.enabled) {
+      const viewerContext = this.viewerMemory.getViewerContext(
+        username,
+        this.config.liveHost.viewerMemory,
+        this.config.liveHost.privacy
+      );
+      for (const memory of viewerContext.memories || []) {
+        if (memory.content && !memories.includes(memory.content)) memories.push(memory.content);
+      }
+    }
     
     return memories.slice(0, this.config.maxContextMemories);
   }
@@ -335,6 +366,20 @@ class BrainEngine {
     this.memoryDb.db.prepare(`
       UPDATE animazingpal_memories SET embedding = ? WHERE id = ?
     `).run(JSON.stringify(embedding), memoryId);
+
+    if (options.user && this.config.liveHost?.viewerMemory?.enabled && this.config.liveHost.viewerMemory.writeMemories) {
+      try {
+        this.viewerMemory.recordMemory(options.user, {
+          streamerId: this.config.liveHost.viewerMemory.streamerId || this.getStreamerId(),
+          type: options.type || 'interaction',
+          content,
+          importance: options.importance || 0.5,
+          metadata: { event: options.event || null, tags: options.tags || [] }
+        });
+      } catch (error) {
+        this.logger.warn(`Viewer Profiles memory write failed: ${error.message}`);
+      }
+    }
     
     return memoryId;
   }
@@ -387,10 +432,16 @@ class BrainEngine {
       const contextMemories = this._getContextMemories(message, username);
       const conversationHistory = this.memoryDb.getConversationHistory(this.currentSession, 10);
       const interactionHistory = this.memoryDb.getInteractionHistory(username, 5);
+      const viewerContext = this.config.liveHost?.viewerMemory?.enabled
+        ? this.viewerMemory.getViewerContext(username, this.config.liveHost.viewerMemory, this.config.liveHost.privacy)
+        : { profile: null, insights: null, topGifts: [] };
       
       // Build enhanced user info with interaction context
       const enhancedUserInfo = {
         ...userProfile,
+        ...(viewerContext.profile || {}),
+        viewer_insights: viewerContext.insights || null,
+        top_gifts: viewerContext.topGifts || [],
         interaction_history: interactionHistory,
         recent_interactions: interactionHistory.length,
         last_topic: userProfile.last_topic || 'unknown'

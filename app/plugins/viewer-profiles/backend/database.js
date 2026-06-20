@@ -656,6 +656,25 @@ class ViewerProfilesDatabase {
         )
       `);
 
+      // Streamer-scoped long-term memories used by intelligent host plugins.
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS viewer_host_memories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          viewer_id INTEGER NOT NULL,
+          streamer_id TEXT NOT NULL DEFAULT 'default',
+          memory_type TEXT NOT NULL DEFAULT 'interaction',
+          content TEXT NOT NULL,
+          importance REAL NOT NULL DEFAULT 0.5,
+          sentiment TEXT,
+          metadata TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          last_used_at TEXT,
+          use_count INTEGER DEFAULT 0,
+          archived INTEGER DEFAULT 0,
+          FOREIGN KEY (viewer_id) REFERENCES viewer_profiles (id) ON DELETE CASCADE
+        )
+      `);
+
       // Activity heatmap table
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS viewer_activity_heatmap (
@@ -699,6 +718,8 @@ class ViewerProfilesDatabase {
         CREATE INDEX IF NOT EXISTS idx_session_viewer ON viewer_sessions(viewer_id);
         CREATE INDEX IF NOT EXISTS idx_interaction_viewer ON viewer_interactions(viewer_id);
         CREATE INDEX IF NOT EXISTS idx_interaction_type ON viewer_interactions(interaction_type);
+        CREATE INDEX IF NOT EXISTS idx_host_memory_viewer_streamer ON viewer_host_memories(viewer_id, streamer_id);
+        CREATE INDEX IF NOT EXISTS idx_host_memory_importance ON viewer_host_memories(importance);
         CREATE INDEX IF NOT EXISTS idx_heatmap_viewer ON viewer_activity_heatmap(viewer_id);
       `);
 
@@ -1239,6 +1260,49 @@ class ViewerProfilesDatabase {
       this.api.log(`Error adding interaction: ${error.message}`, 'error');
       throw error;
     }
+  }
+
+  recordHostMemory(username, memory = {}) {
+    const viewer = this.getOrCreateViewer(username);
+    const content = String(memory.content || '').trim();
+    if (!content) {
+      throw new Error('Host memory content is required');
+    }
+
+    const importance = Math.min(1, Math.max(0, Number(memory.importance) || 0.5));
+    const result = this.db.prepare(`
+      INSERT INTO viewer_host_memories
+        (viewer_id, streamer_id, memory_type, content, importance, sentiment, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      viewer.id,
+      String(memory.streamerId || 'default'),
+      String(memory.type || 'interaction'),
+      content.slice(0, 4000),
+      importance,
+      memory.sentiment ? String(memory.sentiment).slice(0, 50) : null,
+      memory.metadata ? JSON.stringify(memory.metadata) : null
+    );
+
+    return result.lastInsertRowid;
+  }
+
+  getHostMemories(username, streamerId = 'default', options = {}) {
+    const viewer = this.getViewerByUsername(username);
+    if (!viewer) return [];
+    const limit = Math.min(100, Math.max(1, Number(options.limit) || 20));
+    const minimumImportance = Math.min(1, Math.max(0, Number(options.minimumImportance) || 0));
+    const rows = this.db.prepare(`
+      SELECT * FROM viewer_host_memories
+      WHERE viewer_id = ? AND streamer_id = ? AND archived = 0 AND importance >= ?
+      ORDER BY importance DESC, created_at DESC
+      LIMIT ?
+    `).all(viewer.id, String(streamerId || 'default'), minimumImportance, limit);
+
+    return rows.map(row => ({
+      ...row,
+      metadata: this.safeJsonParse(row.metadata, {})
+    }));
   }
 
   /**
