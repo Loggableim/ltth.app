@@ -89,4 +89,14 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('configuredOutputDeviceAvailable');
     expect(script).toContain('isConfiguredOutputDeviceAvailable');
   });
+
+  test('live-host UI refreshes runtime health continuously for unattended operation', () => {
+    expect(script).toContain('LIVE_HOST_HEALTH_REFRESH_MS');
+    expect(script).toContain('refreshLiveHostHealth');
+    expect(script).toContain('startLiveHostHealthRefresh');
+    expect(script).toContain('setInterval(() => refreshLiveHostHealth()');
+    expect(script).toContain('data-refresh-livehost-health');
+    expect(script).toContain('document.visibilityState');
+    expect(script).toContain('lastHealthAt');
+  });
 });

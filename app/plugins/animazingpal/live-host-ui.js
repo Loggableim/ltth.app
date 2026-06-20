@@ -4,6 +4,7 @@
   const PROVIDERS = ['openai', 'gemini', 'openrouter', 'ollama'];
   const EVENTS = ['chat', 'gift', 'follow', 'share', 'like', 'subscribe', 'join'];
   const PROFILE_FIELDS = ['display_name', 'language', 'tags', 'is_vip', 'vip_tier', 'total_visits', 'total_comments', 'total_gifts_sent', 'total_coins_spent'];
+  const LIVE_HOST_HEALTH_REFRESH_MS = 10000;
   const state = {
     config: null,
     voices: [],
@@ -15,6 +16,9 @@
     ttsStatus: {},
     ttsQueue: {},
     preflight: null,
+    healthTimer: null,
+    healthRefreshing: false,
+    lastHealthAt: null,
     loaded: false
   };
 
@@ -171,8 +175,13 @@
   function renderRuntimeDiagnostics() {
     const runtime = state.status.liveHostRuntime || {};
     const diagnostics = runtime.diagnostics || {};
+    const lastHealth = state.lastHealthAt ? new Date(state.lastHealthAt).toLocaleTimeString() : 'noch nicht aktualisiert';
     return `<div id="liveHostRuntimeDiagnostics" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
-      <div class="font-semibold mb-2">24/7 Runtime-Schutz</div>
+      <div class="flex flex-wrap items-center gap-2 mb-2">
+        <div class="font-semibold flex-1">24/7 Runtime-Schutz</div>
+        <span class="text-xs text-gray-400">Health: ${escapeHtml(lastHealth)}</span>
+        <button class="btn btn-secondary btn-sm" data-refresh-livehost-health>Health aktualisieren</button>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div>Speaking: <strong>${runtime.speaking ? 'ja' : 'nein'}</strong></div>
         <div>Slots/Minute: <strong>${escapeHtml(runtime.responseSlotsUsedLastMinute ?? 0)}</strong></div>
@@ -450,6 +459,31 @@
     notify(state.preflight.ready ? '24/7 Preflight bereit' : '24/7 Preflight hat blockierende Fehler', !state.preflight.ready);
   }
 
+  async function refreshLiveHostHealth() {
+    if (!state.loaded || state.healthRefreshing || document.visibilityState === 'hidden') return;
+    state.healthRefreshing = true;
+    try {
+      const [status, ttsStatus, ttsQueue] = await Promise.all([
+        request('/api/animazingpal/status').catch(() => state.status || {}),
+        request('/api/tts/status').catch(() => state.ttsStatus || {}),
+        request('/api/tts/queue').catch(() => state.ttsQueue || {})
+      ]);
+      state.status = status || state.status || {};
+      state.ttsStatus = ttsStatus || state.ttsStatus || {};
+      state.ttsQueue = ttsQueue || state.ttsQueue || {};
+      state.lastHealthAt = new Date().toISOString();
+      normalizeStatus(state.status);
+      render();
+    } finally {
+      state.healthRefreshing = false;
+    }
+  }
+
+  function startLiveHostHealthRefresh() {
+    if (state.healthTimer) clearInterval(state.healthTimer);
+    state.healthTimer = setInterval(() => refreshLiveHostHealth().catch(error => notify(error.message, true)), LIVE_HOST_HEALTH_REFRESH_MS);
+  }
+
   function normalizeVoices(payload) {
     const source = payload.voices?.fishaudio || payload.fishaudio || {};
     return Array.isArray(source)
@@ -524,6 +558,7 @@
       request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
+    document.querySelector('[data-refresh-livehost-health]')?.addEventListener('click', () => refreshLiveHostHealth().catch(error => notify(error.message, true)));
     document.querySelector('[data-pick-output-device]')?.addEventListener('click', () => pickOutputDevice().catch(error => notify(error.message, true)));
     document.querySelector('[data-preflight-check]')?.addEventListener('click', () => runPreflight().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);
@@ -559,6 +594,7 @@
       await loadDevices();
       state.loaded = true;
       render();
+      startLiveHostHealthRefresh();
     } catch (error) {
       document.getElementById('liveHostSettings').innerHTML = `<div class="card text-red-400">Live-Host-Konfiguration konnte nicht geladen werden: ${escapeHtml(error.message)}</div>`;
     }
