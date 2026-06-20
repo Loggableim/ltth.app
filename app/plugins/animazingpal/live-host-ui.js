@@ -184,6 +184,7 @@
     const diagnostics = runtime.diagnostics || {};
     const movement = diagnostics.lastMovementTest || null;
     const idleMotion = diagnostics.lastIdleMotion || null;
+    const ttsProbe = diagnostics.lastTtsProbe || null;
     const browserHeartbeat = runtime.browserHeartbeat || {};
     const sourceStatus = runtime.sourceStatus || {};
     const lastHealth = state.lastHealthAt ? new Date(state.lastHealthAt).toLocaleTimeString() : 'noch nicht aktualisiert';
@@ -193,6 +194,7 @@
         <span class="text-xs text-gray-400">Health: ${escapeHtml(lastHealth)}</span>
         <button class="btn btn-secondary btn-sm" data-refresh-livehost-health>Health aktualisieren</button>
         <button class="btn btn-secondary btn-sm" data-movement-test>Animaze Bewegung testen</button>
+        <button class="btn btn-secondary btn-sm" data-tts-probe>TTS Probe</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div>Speaking: <strong>${runtime.speaking ? 'ja' : 'nein'}</strong></div>
@@ -207,6 +209,7 @@
       </div>
       ${browserHeartbeat.present ? `<p class="text-xs ${browserHeartbeat.stale ? 'text-red-300' : 'text-gray-400'} mt-2">Browser-Heartbeat: ${escapeHtml(browserHeartbeat.ageMs ?? '?')}ms alt · Audio ${browserHeartbeat.audioUnlocked ? 'frei' : 'gesperrt'} · Device ${browserHeartbeat.configuredOutputDeviceAvailable ? 'verfügbar' : 'fehlt'}</p>` : '<p class="text-xs text-red-300 mt-2">Kein Browser-Heartbeat empfangen. Standalone-Tab offen lassen.</p>'}
       ${sourceStatus.configured ? `<p class="text-xs ${sourceStatus.connectedToSource ? 'text-gray-400' : 'text-yellow-300'} mt-2">TikTok-Quelle: @${escapeHtml(sourceStatus.username || '?')} · aktuell ${escapeHtml(sourceStatus.currentUsername || 'nicht verbunden')} · Reconnects ${escapeHtml(sourceStatus.reconnectAttempts || 0)}${sourceStatus.lastReconnectError ? ` · ${escapeHtml(sourceStatus.lastReconnectError)}` : ''}</p>` : '<p class="text-xs text-red-300 mt-2">Keine TikTok-Quelle konfiguriert.</p>'}
+      ${ttsProbe ? `<p class="text-xs ${ttsProbe.success ? 'text-green-400' : 'text-red-300'} mt-2">TTS-Probe: ${ttsProbe.success ? 'ok' : 'fehlgeschlagen'} · ${escapeHtml(ttsProbe.engine || 'fishaudio')}${ttsProbe.error ? ` · ${escapeHtml(ttsProbe.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine TTS-Probe in dieser Laufzeit.</p>'}
       ${movement ? `<p class="text-xs ${movement.success ? 'text-green-400' : 'text-red-300'} mt-2">Letzter Bewegungstest: ${movement.success ? 'gesendet' : 'fehlgeschlagen'}${movement.name || movement.index !== undefined ? ` · ${escapeHtml(movement.name || movement.index)}` : ''}${movement.error ? ` · ${escapeHtml(movement.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch kein Animaze-Bewegungstest in dieser Laufzeit.</p>'}
       ${idleMotion ? `<p class="text-xs ${idleMotion.success ? 'text-green-400' : 'text-yellow-300'} mt-2">Letzte Auto-Idle-Motion: ${escapeHtml(idleMotion.reason || 'unbekannt')}${idleMotion.name ? ` · ${escapeHtml(idleMotion.name)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine automatische Idle-Motion in dieser Laufzeit.</p>'}
       ${diagnostics.lastRateLimitedAt ? `<p class="text-xs text-yellow-300 mt-2">Letztes Rate-Limit: ${escapeHtml(diagnostics.lastRateLimitedAt)}</p>` : ''}
@@ -549,6 +552,17 @@
       : `Animaze Bewegungstest fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
   }
 
+  async function runTtsProbe() {
+    const result = await request('/api/animazingpal/live-host/tts-probe', {
+      method: 'POST',
+      body: JSON.stringify({ speak: false })
+    });
+    await refreshLiveHostHealth();
+    notify(result.success
+      ? 'TTS Probe ok'
+      : `TTS Probe fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
+  }
+
   function startLiveHostHealthRefresh() {
     if (state.healthTimer) clearInterval(state.healthTimer);
     state.healthTimer = setInterval(() => refreshLiveHostHealth().catch(error => notify(error.message, true)), LIVE_HOST_HEALTH_REFRESH_MS);
@@ -561,13 +575,25 @@
       : Object.entries(source).map(([id, item]) => ({ id, name: typeof item === 'string' ? item : item.name || id }));
   }
 
+  function firstPresentAvatarField(avatar, fields) {
+    for (const field of fields) {
+      const value = avatar?.[field];
+      if (value === null || value === undefined) continue;
+      const text = String(value).trim();
+      if (!text || /^(undefined|null|\[object Object\])$/i.test(text)) continue;
+      return text;
+    }
+    return '';
+  }
+
   function normalizeStatus(payload) {
     const platform = payload.activePlatform || payload.platformState?.key || 'animaze';
     const data = payload.platformData || payload.animazeData || payload.platformState?.data || {};
-    state.avatars = (data.avatars || []).map(avatar => ({
-      id: avatar.modelID || avatar.itemName || avatar.id || avatar.name || avatar.friendlyName || '',
-      name: `${platform}: ${avatar.modelName || avatar.friendlyName || avatar.name || avatar.itemName || avatar.id || 'Unbenannter Avatar'}`
-    })).filter(avatar => avatar.id);
+    state.avatars = (data.avatars || []).map(avatar => {
+      const id = firstPresentAvatarField(avatar, ['modelID', 'itemName', 'id', 'name', 'friendlyName', 'modelName']);
+      const name = firstPresentAvatarField(avatar, ['modelName', 'friendlyName', 'name', 'itemName', 'id', 'modelID']) || 'Unbenannter Avatar';
+      return { id, name: `${platform}: ${name}` };
+    }).filter(avatar => avatar.id);
   }
 
   function saveBundle() {
@@ -630,6 +656,7 @@
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
     document.querySelector('[data-refresh-livehost-health]')?.addEventListener('click', () => refreshLiveHostHealth().catch(error => notify(error.message, true)));
     document.querySelector('[data-movement-test]')?.addEventListener('click', () => runMovementTest().catch(error => notify(error.message, true)));
+    document.querySelector('[data-tts-probe]')?.addEventListener('click', () => runTtsProbe().catch(error => notify(error.message, true)));
     document.querySelector('[data-pick-output-device]')?.addEventListener('click', () => pickOutputDevice().catch(error => notify(error.message, true)));
     document.querySelector('[data-preflight-check]')?.addEventListener('click', () => runPreflight().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);

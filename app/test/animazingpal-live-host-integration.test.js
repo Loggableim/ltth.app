@@ -30,6 +30,51 @@ describe('AnimazingPal live host integration', () => {
     expect(result.success).toBe(true);
   });
 
+  test('dry-runs the live-host TTS probe without enqueueing speech', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    ttsPlugin.config = { defaultEngine: 'fishaudio' };
+    ttsPlugin.queueManager = { getInfo: jest.fn(() => ({ size: 0, maxSize: 100 })) };
+    plugin.safeEmitStatus = jest.fn();
+
+    const result = await plugin.runLiveHostTtsProbe({ speak: false });
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      speak: false,
+      engine: 'fishaudio',
+      enabled: true,
+      pluginAvailable: true,
+      queue: { size: 0, maxSize: 100 }
+    }));
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+    expect(plugin.liveHostDiagnostics.lastTtsProbe).toBe(result);
+    expect(plugin.safeEmitStatus).toHaveBeenCalled();
+  });
+
+  test('stores spoken live-host TTS probe failures for preflight diagnostics', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    ttsPlugin.speak.mockResolvedValue({ success: false, error: 'Fish failed' });
+    plugin.safeEmitStatus = jest.fn();
+
+    const result = await plugin.runLiveHostTtsProbe({ speak: true, text: 'Probe' });
+    const preflight = plugin.evaluateLiveHostPreflight({});
+
+    expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: 'Probe',
+      username: 'AnimazingPal',
+      source: 'animazingpal'
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      speak: true,
+      error: 'Fish failed'
+    }));
+    expect(plugin.liveHostDiagnostics.lastTtsProbe).toBe(result);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'tts.probe', status: 'error' })
+    ]));
+  });
+
   test('safe config exposes live host settings without provider secrets', () => {
     const { plugin } = createPlugin();
     plugin.config.brain.liveHost.providers.ollama.apiKey = 'do-not-expose';

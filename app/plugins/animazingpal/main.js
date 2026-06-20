@@ -61,6 +61,7 @@ class AnimazingPalPlugin {
       lastRateLimitedAt: null,
       lastMovementTest: null,
       lastIdleMotion: null,
+      lastTtsProbe: null,
       idleMotionSkipped: 0
     };
     this.liveHostIdleMotionTimer = null;
@@ -1270,9 +1271,15 @@ class AnimazingPalPlugin {
     });
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/speak-test', async (req, res) => {
-      const result = await this.speakHostResponse(req.body?.text || 'AnimazingPal Sprachtest erfolgreich.', {
-        username: 'AnimazingPal', eventType: 'manual'
+      const result = await this.runLiveHostTtsProbe({
+        text: req.body?.text || 'AnimazingPal Sprachtest erfolgreich.',
+        speak: true
       });
+      res.status(result?.success === false ? 400 : 200).json(result);
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/tts-probe', async (req, res) => {
+      const result = await this.runLiveHostTtsProbe(req.body || {});
       res.status(result?.success === false ? 400 : 200).json(result);
     });
 
@@ -3456,6 +3463,47 @@ class AnimazingPalPlugin {
     }
   }
 
+  async runLiveHostTtsProbe(options = {}) {
+    this.ensureLiveHostRuntime();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const ttsPlugin = this.api.getPluginInstance?.('tts') || this.api.getPlugin?.('tts');
+    const queueInfo = ttsPlugin?.queueManager?.getInfo?.() || null;
+    const result = {
+      success: false,
+      checkedAt: new Date().toISOString(),
+      speak: options.speak === true,
+      engine: ttsPlugin?.config?.defaultEngine || liveHost.tts.engine || 'fishaudio',
+      enabled: liveHost.enabled && liveHost.tts.enabled,
+      pluginAvailable: Boolean(ttsPlugin && (ttsPlugin.isInitialized !== false) && (ttsPlugin.initialized !== false)),
+      queue: queueInfo,
+      error: null,
+      ttsResult: null
+    };
+
+    if (!result.enabled) {
+      result.error = 'LiveHost TTS is disabled';
+    } else if (!result.pluginAvailable || typeof ttsPlugin?.speak !== 'function') {
+      result.error = 'TTS plugin unavailable';
+    } else if (!result.speak) {
+      result.success = true;
+    } else {
+      const speech = await this.speakHostResponse(options.text || 'AnimazingPal Sprachtest erfolgreich.', {
+        username: 'AnimazingPal',
+        eventType: 'manual',
+        userId: 'animazingpal-tts-probe'
+      });
+      result.ttsResult = speech;
+      result.success = speech?.success !== false;
+      if (!result.success) {
+        result.error = speech?.error || speech?.reason || 'TTS speech failed';
+      }
+    }
+
+    this.liveHostDiagnostics.lastTtsProbe = result;
+    this.safeEmitStatus();
+    return result;
+  }
+
   ensureLiveHostRuntime() {
     if (!this.liveHostEventDeduper) {
       this.liveHostEventDeduper = new EventDeduper({ ttl: 120, maxSize: 5000 });
@@ -3471,6 +3519,7 @@ class AnimazingPalPlugin {
         lastRateLimitedAt: null,
         lastMovementTest: null,
         lastIdleMotion: null,
+        lastTtsProbe: null,
         idleMotionSkipped: 0
       };
     } else if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastMovementTest')) {
@@ -3478,6 +3527,9 @@ class AnimazingPalPlugin {
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastIdleMotion')) {
       this.liveHostDiagnostics.lastIdleMotion = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastTtsProbe')) {
+      this.liveHostDiagnostics.lastTtsProbe = null;
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'idleMotionSkipped')) {
       this.liveHostDiagnostics.idleMotionSkipped = 0;
@@ -3894,6 +3946,7 @@ class AnimazingPalPlugin {
       || this.api.pluginLoader?.getPluginInstance?.('tts');
     const ttsInitialized = Boolean(ttsPlugin && (ttsPlugin.isInitialized !== false) && (ttsPlugin.initialized !== false));
     const ttsEngine = ttsPlugin?.config?.defaultEngine || liveHost.tts.engine || 'fishaudio';
+    const lastTtsProbe = this.liveHostDiagnostics.lastTtsProbe;
     add(
       'tts.plugin',
       liveHost.tts.enabled && ttsInitialized ? 'ok' : 'error',
@@ -3902,6 +3955,17 @@ class AnimazingPalPlugin {
         ? (ttsInitialized ? `TTS-Plugin ist bereit (${ttsEngine}).` : 'TTS-Plugin ist nicht verfügbar oder nicht initialisiert.')
         : 'LiveHost-TTS ist deaktiviert.',
       liveHost.tts.enabled && ttsInitialized ? null : 'TTS-Plugin aktivieren und Fish.audio konfigurieren.'
+    );
+    add(
+      'tts.probe',
+      lastTtsProbe?.success ? 'ok' : (lastTtsProbe ? 'error' : 'warn'),
+      'TTS Pipeline-Probe',
+      lastTtsProbe
+        ? (lastTtsProbe.success
+          ? `Letzte TTS-Probe ok (${lastTtsProbe.engine}, ${lastTtsProbe.checkedAt}).`
+          : `Letzte TTS-Probe fehlgeschlagen: ${lastTtsProbe.error || 'unbekannt'}.`)
+        : 'Noch keine TTS-Probe in dieser Laufzeit ausgefuehrt.',
+      lastTtsProbe?.success ? null : 'Im Fish.audio-Bereich Sprachtest oder TTS-Probe ausfuehren.'
     );
 
     const queueInfo = ttsPlugin?.queueManager?.getInfo?.() || null;

@@ -105,6 +105,13 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('lastMovementTest');
   });
 
+  test('live-host UI exposes and binds a TTS pipeline probe', () => {
+    expect(script).toContain('data-tts-probe');
+    expect(script).toContain('runTtsProbe');
+    expect(script).toContain('/api/animazingpal/live-host/tts-probe');
+    expect(script).toContain('lastTtsProbe');
+  });
+
   test('live-host UI exposes configurable automatic idle motion', () => {
     expect(script).toContain('renderIdleMotion');
     expect(script).toContain('idleMotion.enabled');
@@ -120,8 +127,10 @@ describe('AnimazingPal live-host configuration UI', () => {
   });
 
   test('avatar dropdown normalizes Animaze friendlyName and itemName without undefined labels', () => {
-    expect(script).toContain('avatar.itemName');
-    expect(script).toContain('avatar.friendlyName');
+    expect(script).toContain("['modelID', 'itemName', 'id', 'name', 'friendlyName', 'modelName']");
+    expect(script).toContain("['modelName', 'friendlyName', 'name', 'itemName', 'id', 'modelID']");
+    expect(script).toContain('firstPresentAvatarField');
+    expect(script).toContain('undefined|null|\\[object Object\\]');
     expect(script).toContain('Unbenannter Avatar');
     expect(script).not.toContain('${platform}: ${avatar.modelName || avatar.name || avatar.id}');
   });
