@@ -4,13 +4,9 @@
  */
 
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 
-function describeIfModule(relativePath, name, suite) {
-  const modulePath = path.join(__dirname, relativePath);
-  const runner = fs.existsSync(modulePath) ? describe : describe.skip;
-  runner(name, suite);
+function describeIfModule(_relativePath, name, suite) {
+  describe(name, suite);
 }
 
 describe('AnimazingPal Enhanced Features', function() {

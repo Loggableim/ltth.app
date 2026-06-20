@@ -4,7 +4,18 @@
   const PROVIDERS = ['openai', 'gemini', 'openrouter', 'ollama'];
   const EVENTS = ['chat', 'gift', 'follow', 'share', 'like', 'subscribe', 'join'];
   const PROFILE_FIELDS = ['display_name', 'language', 'tags', 'is_vip', 'vip_tier', 'total_visits', 'total_comments', 'total_gifts_sent', 'total_coins_spent'];
-  const state = { config: null, voices: [], gifts: [], avatars: [], personalities: [], devices: [], loaded: false };
+  const state = {
+    config: null,
+    voices: [],
+    gifts: [],
+    avatars: [],
+    personalities: [],
+    devices: [],
+    status: {},
+    ttsStatus: {},
+    ttsQueue: {},
+    loaded: false
+  };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -118,6 +129,51 @@
     ];
   }
 
+  function supportsSinkId() {
+    return typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
+  }
+
+  function renderAudioRoutingStatus() {
+    const outputLabel = get('audio.outputDeviceLabel') || 'Windows-Standardgerät';
+    const outputId = get('audio.outputDeviceId');
+    const sinkSupported = supportsSinkId();
+    const ttsStatus = state.ttsStatus.status || state.ttsStatus;
+    const ttsReady = ttsStatus.initialized !== false;
+    const ttsEngine = ttsStatus.defaultEngine || ttsStatus.config?.defaultEngine || 'unbekannt';
+    const queueSize = state.ttsQueue.queue?.size ?? state.ttsQueue.size ?? state.ttsQueue.queueSize ?? 0;
+    const currentText = state.ttsQueue.queue?.currentItem?.text || state.ttsQueue.currentItem?.text || '';
+    const sinkClass = sinkSupported ? 'text-green-400' : 'text-yellow-300';
+    const routingHint = sinkSupported
+      ? 'Browser kann das gespeicherte Ausgabegerät direkt ansteuern.'
+      : 'setSinkId nicht verfügbar: Audio läuft über das Windows-Standardgerät. Setze Windows-Standardausgabe auf CABLE Input oder nutze Chrome/Edge mit Audiogerätefreigabe.';
+
+    return `<div id="liveHostAudioRoutingStatus" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm">
+      <div class="font-semibold mb-2">Audio-Betriebsstatus</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>Fish.audio: <strong class="${ttsReady ? 'text-green-400' : 'text-red-400'}">${ttsReady ? 'bereit' : 'nicht bereit'}</strong> (${escapeHtml(ttsEngine)})</div>
+        <div>Ausgabe: <strong>${escapeHtml(outputLabel)}</strong>${outputId ? '' : ' (Default)'}</div>
+        <div>setSinkId: <strong class="${sinkClass}">${sinkSupported ? 'verfügbar' : 'nicht verfügbar'}</strong></div>
+        <div>TTS-Queue: <strong>${escapeHtml(queueSize)}</strong>${currentText ? ` · ${escapeHtml(String(currentText).slice(0, 80))}` : ''}</div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">${escapeHtml(routingHint)}</p>
+    </div>`;
+  }
+
+  function renderRuntimeDiagnostics() {
+    const runtime = state.status.liveHostRuntime || {};
+    const diagnostics = runtime.diagnostics || {};
+    return `<div id="liveHostRuntimeDiagnostics" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
+      <div class="font-semibold mb-2">24/7 Runtime-Schutz</div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div>Speaking: <strong>${runtime.speaking ? 'ja' : 'nein'}</strong></div>
+        <div>Slots/Minute: <strong>${escapeHtml(runtime.responseSlotsUsedLastMinute ?? 0)}</strong></div>
+        <div>Dedupe-Cache: <strong>${escapeHtml(runtime.dedupeCacheSize ?? 0)}</strong></div>
+        <div>Deduped/Rate-limited: <strong>${escapeHtml(diagnostics.dedupedEvents ?? 0)} / ${escapeHtml(diagnostics.rateLimitedResponses ?? 0)}</strong></div>
+      </div>
+      ${diagnostics.lastRateLimitedAt ? `<p class="text-xs text-yellow-300 mt-2">Letztes Rate-Limit: ${escapeHtml(diagnostics.lastRateLimitedAt)}</p>` : ''}
+    </div>`;
+  }
+
   function render() {
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
@@ -172,7 +228,7 @@
       ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: deviceOptions() })}
       ${input('audio.monitoringEnabled', 'Monitoring aktiv', { type: 'checkbox' })}${input('audio.monitoringVolume', 'Monitoring-Lautstärke', { type: 'number', min: 0, max: 100 })}
       ${input('audio.missingDeviceBehavior', 'Fehlendes Gerät', { type: 'select', options: ['mute', 'default', 'error'] })}
-      <p class="text-sm text-gray-400">setSinkId: <strong>${typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? 'verfügbar' : 'nicht verfügbar'}</strong></p>
+      ${renderAudioRoutingStatus()}
       <p class="text-xs text-gray-500">System-Fallback-Geräte kommen von Windows. Für direktes Browser-Routing muss das Gerät über den Auswahlbutton freigegeben sein; sonst nutzt der Player das Windows-Standardgerät.</p>
       <button class="btn btn-success" data-pick-output-device>Audiogerät auswählen und speichern</button>
       <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
@@ -215,7 +271,7 @@
   function renderDiagnostics() {
     return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Diagnose</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       ${input('diagnostics.verboseLogging', 'Verbose Logging', { type: 'checkbox' })}${input('diagnostics.emitEvents', 'Diagnoseereignisse', { type: 'checkbox' })}${input('diagnostics.retainLastErrors', 'Letzte Fehler behalten', { type: 'number', min: 0, max: 100 })}${input('diagnostics.includePromptBodies', 'Prompt-Inhalte loggen', { type: 'checkbox' })}
-    </div><p class="text-sm text-gray-400 mt-3" id="liveHostStatus">TikTok, Provider, Fish.audio, Audio und Animaze werden über die Live-Statusanzeige überwacht.</p>${actions('diagnostics')}</div></section>`;
+    </div>${renderRuntimeDiagnostics()}<p class="text-sm text-gray-400 mt-3" id="liveHostStatus">TikTok, Provider, Fish.audio, Audio und Animaze werden über die Live-Statusanzeige überwacht.</p>${actions('diagnostics')}</div></section>`;
   }
 
   function valueOf(element) {
@@ -416,14 +472,19 @@
   async function initialize() {
     if (state.loaded) return;
     try {
-      const [config, voices, gifts, status, personalities] = await Promise.all([
+      const [config, voices, gifts, status, personalities, ttsStatus, ttsQueue] = await Promise.all([
         request('/api/animazingpal/live-host/config'),
         request('/api/tts/voices?engine=fishaudio').catch(() => ({ voices: {} })),
         request('/api/gift-catalog').catch(() => ({ catalog: [] })),
         request('/api/animazingpal/status').catch(() => ({})),
-        request('/api/animazingpal/brain/personalities').catch(() => ({ personalities: [] }))
+        request('/api/animazingpal/brain/personalities').catch(() => ({ personalities: [] })),
+        request('/api/tts/status').catch(() => ({})),
+        request('/api/tts/queue').catch(() => ({}))
       ]);
       state.config = config.config;
+      state.status = status || {};
+      state.ttsStatus = ttsStatus || {};
+      state.ttsQueue = ttsQueue || {};
       state.voices = normalizeVoices(voices);
       state.gifts = (gifts.catalog || []).map(item => ({
         id: String(item.id ?? item.giftId ?? item.gift_id),

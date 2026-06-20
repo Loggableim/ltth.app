@@ -173,6 +173,44 @@ describe('AnimazingPal live host integration', () => {
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Kurz gesagt: ja.' }));
   });
 
+  test('deduplicates repeated live-host events before generating speech', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    Object.assign(plugin.config.brain.liveHost.events.gift, {
+      enabled: true, probability: 1, cooldownMs: 0, templateEnabled: true,
+      brainEnabled: false, template: 'Danke für {giftName}, {nickname}!'
+    });
+    const event = { msgId: 'gift-123', uniqueId: 'alice', nickname: 'Alice', giftName: 'Rose', diamondCount: 1 };
+
+    const first = await plugin.processLiveHostEvent('gift', event);
+    const second = await plugin.processLiveHostEvent('gift', event);
+
+    expect(first).toEqual(expect.objectContaining({ handled: true, responded: true }));
+    expect(second).toEqual(expect.objectContaining({ handled: true, responded: false, duplicate: true }));
+    expect(ttsPlugin.speak).toHaveBeenCalledTimes(1);
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.dedupedEvents).toBe(1);
+  });
+
+  test('rate limits live-host speech slots for unattended streams', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    Object.assign(plugin.config.brain.liveHost.response, { maxResponsesPerMinute: 1 });
+    Object.assign(plugin.config.brain.liveHost.events.gift, {
+      enabled: true, probability: 1, cooldownMs: 0, templateEnabled: true,
+      brainEnabled: false, template: 'Danke für {giftName}, {nickname}!'
+    });
+
+    const first = await plugin.processLiveHostEvent('gift', {
+      msgId: 'gift-1', uniqueId: 'alice', nickname: 'Alice', giftName: 'Rose', diamondCount: 1
+    });
+    const second = await plugin.processLiveHostEvent('gift', {
+      msgId: 'gift-2', uniqueId: 'bob', nickname: 'Bob', giftName: 'Heart', diamondCount: 1
+    });
+
+    expect(first).toEqual(expect.objectContaining({ handled: true, responded: true }));
+    expect(second).toEqual(expect.objectContaining({ handled: true, responded: false, rateLimited: true }));
+    expect(ttsPlugin.speak).toHaveBeenCalledTimes(1);
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.rateLimitedResponses).toBe(1);
+  });
+
   test('triggers situational Animaze actions from available defaults', async () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;
@@ -205,6 +243,36 @@ describe('AnimazingPal live host integration', () => {
       forceRespond: true, systemPromptOverride: 'Antworte besonders trocken.'
     }));
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Na endlich.' }));
+  });
+
+  test('status route exposes live-host runtime diagnostics', () => {
+    const routes = [];
+    const plugin = new AnimazingPalPlugin({
+      getSocketIO: () => ({ emit: jest.fn() }),
+      getDatabase: () => ({}),
+      registerRoute: (method, path, handler) => routes.push({ method: method.toLowerCase(), path, handler }),
+      registerSocket: jest.fn(), registerTikTokEvent: jest.fn(), emit: jest.fn(), log: jest.fn(),
+      getConfig: jest.fn(), setConfig: jest.fn(), getPlugin: jest.fn()
+    });
+    plugin.config = plugin.normalizeConfig(plugin.getDefaultConfig());
+    plugin.brainEngine = { getStatistics: jest.fn(), getPersonalities: jest.fn() };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.path === '/api/animazingpal/status');
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    route.handler({}, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      liveHostRuntime: expect.objectContaining({
+        speaking: false,
+        dedupeCacheSize: 0,
+        responseSlotsUsedLastMinute: 0,
+        diagnostics: expect.objectContaining({
+          dedupedEvents: 0,
+          rateLimitedResponses: 0
+        })
+      })
+    }));
   });
 
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {

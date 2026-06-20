@@ -8,6 +8,10 @@ let supportedPlatforms = [];
 let viewerbaseState = null;
 let giftCatalog = [];
 let isConnected = false;
+let animazingPalAudioUnlocked = false;
+let pendingAnimazingPalTTS = [];
+let animazingPalSinkWarningShown = false;
+const animazingPalStreamingBuffers = new Map();
 
 // Toast queue for sequential messages
 let toastQueue = [];
@@ -34,11 +38,35 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`ChatPal: ${data.response}`);
   });
 
+  socket.on('tts:play', (data) => {
+    playAnimazingPalTTS(data);
+  });
+
+  socket.on('tts:stream:chunk', (data) => {
+    handleAnimazingPalStreamChunk(data);
+  });
+
+  socket.on('tts:stream:end', (data) => {
+    handleAnimazingPalStreamEnd(data);
+  });
+
+  window.addEventListener('audio-unlocked', () => {
+    animazingPalAudioUnlocked = true;
+    flushPendingAnimazingPalTTS();
+  });
+
   // Set up event listeners
   setupEventListeners();
 });
 
 function setupEventListeners() {
+  const unlockOnInteraction = () => {
+    unlockAnimazingPalAudio().catch(err => console.warn('[AnimazingPal] Audio unlock failed:', err));
+  };
+
+  document.body.addEventListener('click', unlockOnInteraction, { once: true });
+  document.body.addEventListener('keydown', unlockOnInteraction, { once: true });
+
   // Connection button
   const connectBtn = document.getElementById('connectBtn');
   if (connectBtn) {
@@ -1311,6 +1339,231 @@ function switchTab(tabName) {
   }
 }
 
+async function unlockAnimazingPalAudio() {
+  if (animazingPalAudioUnlocked || window.audioUnlocked) {
+    animazingPalAudioUnlocked = true;
+    flushPendingAnimazingPalTTS();
+    return true;
+  }
+
+  if (window.audioUnlockManager) {
+    try {
+      await window.audioUnlockManager.unlock();
+      animazingPalAudioUnlocked = true;
+      flushPendingAnimazingPalTTS();
+      return true;
+    } catch (error) {
+      console.warn('[AnimazingPal] Global audio unlock failed:', error);
+    }
+  }
+
+  const audio = document.getElementById('animazingpal-tts-audio');
+  if (!audio) return false;
+
+  audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+  audio.volume = 0.01;
+
+  try {
+    await audio.play();
+    audio.pause();
+    audio.currentTime = 0;
+    animazingPalAudioUnlocked = true;
+    flushPendingAnimazingPalTTS();
+    return true;
+  } catch (error) {
+    showAnimazingPalAudioPrompt();
+    return false;
+  }
+}
+
+function flushPendingAnimazingPalTTS() {
+  if (!animazingPalAudioUnlocked && !window.audioUnlocked) return;
+  const queue = pendingAnimazingPalTTS.splice(0);
+  queue.forEach(item => playAnimazingPalTTS(item));
+}
+
+function showAnimazingPalAudioPrompt() {
+  if (document.getElementById('animazingpal-audio-enable-prompt')) return;
+
+  const prompt = document.createElement('div');
+  prompt.id = 'animazingpal-audio-enable-prompt';
+  prompt.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 max-w-2xl';
+  prompt.style.zIndex = '99999';
+  prompt.innerHTML = `
+    <span><strong>AnimazingPal Audio:</strong> klicken, damit Fish.audio auf das konfigurierte Ausgabegerät geroutet wird.</span>
+    <button id="animazingpal-enable-audio-btn" class="bg-white text-indigo-700 px-4 py-2 rounded font-semibold hover:bg-indigo-50 transition flex-shrink-0">
+      Audio aktivieren
+    </button>
+  `;
+
+  document.body.appendChild(prompt);
+  document.getElementById('animazingpal-enable-audio-btn').addEventListener('click', async () => {
+    await unlockAnimazingPalAudio();
+    prompt.remove();
+  });
+}
+
+async function playAnimazingPalTTS(data) {
+  if (!animazingPalAudioUnlocked && !window.audioUnlocked) {
+    pendingAnimazingPalTTS.push(data);
+    showAnimazingPalAudioPrompt();
+    return;
+  }
+
+  const audio = document.getElementById('animazingpal-tts-audio');
+  if (!audio) {
+    console.error('[AnimazingPal] TTS audio element not found');
+    return;
+  }
+
+  try {
+    const audioBlob = animazingPalBase64ToBlob(data.audioData, 'audio/mpeg');
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    audio.src = audioUrl;
+    audio.volume = (data.volume || 80) / 100;
+    audio.playbackRate = data.speed || 1.0;
+
+    if (window.TTSOutputRouter) {
+      const routing = await window.TTSOutputRouter.routeAudioElement(audio);
+      console.log('[AnimazingPal] TTS output routing:', routing);
+      showAnimazingPalSinkWarningIfNeeded(routing);
+      window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('[AnimazingPal] TTS monitoring failed:', err));
+    }
+
+    await audio.play();
+
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+    };
+
+    audio.onerror = () => {
+      URL.revokeObjectURL(audioUrl);
+    };
+  } catch (error) {
+    console.error('[AnimazingPal] TTS playback error:', error);
+    if (error.name === 'NotAllowedError') {
+      animazingPalAudioUnlocked = false;
+      pendingAnimazingPalTTS.push(data);
+      showAnimazingPalAudioPrompt();
+    }
+  }
+}
+
+function handleAnimazingPalStreamChunk(data) {
+  if (!animazingPalAudioUnlocked && !window.audioUnlocked) {
+    showAnimazingPalAudioPrompt();
+    return;
+  }
+
+  if (!animazingPalStreamingBuffers.has(data.id)) {
+    animazingPalStreamingBuffers.set(data.id, {
+      chunks: [],
+      volume: data.volume,
+      speed: data.speed,
+      format: data.format || 'mp3',
+      playbackStarted: false
+    });
+  }
+
+  const buffer = animazingPalStreamingBuffers.get(data.id);
+  const binaryString = atob(data.chunk);
+  buffer.chunks.push(Uint8Array.from(binaryString, char => char.charCodeAt(0)));
+
+  if (data.isFirst) {
+    buffer.volume = data.volume;
+    buffer.speed = data.speed;
+    buffer.format = data.format || 'mp3';
+  }
+}
+
+function handleAnimazingPalStreamEnd(data) {
+  const buffer = animazingPalStreamingBuffers.get(data.id);
+  if (!buffer || buffer.playbackStarted) return;
+
+  buffer.playbackStarted = true;
+  playAnimazingPalStreamingAudio(data.id);
+}
+
+async function playAnimazingPalStreamingAudio(id) {
+  const buffer = animazingPalStreamingBuffers.get(id);
+  if (!buffer || buffer.chunks.length === 0) {
+    animazingPalStreamingBuffers.delete(id);
+    return;
+  }
+
+  const audio = document.getElementById('animazingpal-tts-audio');
+  if (!audio) {
+    animazingPalStreamingBuffers.delete(id);
+    return;
+  }
+
+  try {
+    const totalLength = buffer.chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of buffer.chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    const audioUrl = URL.createObjectURL(new Blob([combined], { type: getAnimazingPalAudioMimeType(buffer.format) }));
+    audio.src = audioUrl;
+    audio.volume = (buffer.volume || 80) / 100;
+    audio.playbackRate = buffer.speed || 1.0;
+
+    if (window.TTSOutputRouter) {
+      const routing = await window.TTSOutputRouter.routeAudioElement(audio);
+      console.log('[AnimazingPal] Streaming TTS output routing:', routing);
+      showAnimazingPalSinkWarningIfNeeded(routing);
+      window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('[AnimazingPal] Streaming TTS monitoring failed:', err));
+    }
+
+    await audio.play();
+
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      animazingPalStreamingBuffers.delete(id);
+    };
+
+    audio.onerror = () => {
+      URL.revokeObjectURL(audioUrl);
+      animazingPalStreamingBuffers.delete(id);
+    };
+  } catch (error) {
+    console.error('[AnimazingPal] Streaming TTS playback error:', error);
+    animazingPalStreamingBuffers.delete(id);
+  }
+}
+
+function getAnimazingPalAudioMimeType(format) {
+  const mimeTypes = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    opus: 'audio/opus',
+    pcm: 'audio/pcm',
+    ogg: 'audio/ogg'
+  };
+  return mimeTypes[format] || 'audio/mpeg';
+}
+
+function animazingPalBase64ToBlob(base64, mimeType) {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
+}
+
+function showAnimazingPalSinkWarningIfNeeded(routing) {
+  if (animazingPalSinkWarningShown || !routing || routing.routed) return;
+  if (routing.reason !== 'setSinkId_unsupported') return;
+
+  animazingPalSinkWarningShown = true;
+  showToast('Browser kann das Ausgabegerät nicht direkt wählen. Setze Windows-Standardausgabe auf CABLE Input oder nutze einen Browser mit setSinkId.', 'error');
+}
+
 function showToast(message, type = 'info') {
   toastQueue.push({ message, type });
   if (!toastShowing) {
@@ -2361,3 +2614,4 @@ async function toggleOverride(behavior, enabled) {
 window.editPersona = editPersona;
 window.deletePersona = deletePersona;
 window.toggleOverride = toggleOverride;
+window.playAnimazingPalTTS = playAnimazingPalTTS;

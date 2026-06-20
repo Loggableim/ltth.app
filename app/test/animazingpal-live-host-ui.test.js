@@ -3,6 +3,7 @@ const path = require('path');
 
 describe('AnimazingPal live-host configuration UI', () => {
   const html = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.html'), 'utf8');
+  const uiScript = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.js'), 'utf8');
   const script = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/live-host-ui.js'), 'utf8');
 
   test('exposes the live-host tab and section controls', () => {
@@ -55,5 +56,26 @@ describe('AnimazingPal live-host configuration UI', () => {
   test('never attempts to read stored API keys back into inputs', () => {
     expect(script).toContain('apiKeyConfigured');
     expect(script).not.toContain('value="${provider.apiKey}');
+  });
+
+  test('standalone UI consumes TTS playback events and routes audio output', () => {
+    expect(html).toContain('id="animazingpal-tts-audio"');
+    expect(html).toContain('/js/audio-unlock.js');
+    expect(html).toContain('/js/tts-output-router.js');
+    expect(uiScript).toContain("socket.on('tts:play'");
+    expect(uiScript).toContain("socket.on('tts:stream:chunk'");
+    expect(uiScript).toContain("socket.on('tts:stream:end'");
+    expect(uiScript).toContain('playAnimazingPalTTS');
+    expect(uiScript).toContain('window.TTSOutputRouter.routeAudioElement');
+  });
+
+  test('live-host UI exposes operator diagnostics for audio and runtime health', () => {
+    expect(script).toContain('renderAudioRoutingStatus');
+    expect(script).toContain('renderRuntimeDiagnostics');
+    expect(script).toContain('liveHostAudioRoutingStatus');
+    expect(script).toContain('liveHostRuntimeDiagnostics');
+    expect(script).toContain('/api/tts/status');
+    expect(script).toContain('/api/tts/queue');
+    expect(script).toContain('setSinkId nicht verfügbar');
   });
 });

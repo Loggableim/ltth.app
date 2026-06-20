@@ -34,6 +34,8 @@ const {
   listPlatformDefinitions
 } = require('./platforms');
 const { listAudioOutputDevices } = require('./brain/audio-devices');
+const EventDeduper = require('./brain/event-deduper');
+const SpeechState = require('./brain/speech-state');
 
 class AnimazingPalPlugin {
   constructor(api) {
@@ -50,6 +52,15 @@ class AnimazingPalPlugin {
     
     // Brain Engine - AI Intelligence System
     this.brainEngine = null;
+    this.liveHostEventDeduper = new EventDeduper({ ttl: 120, maxSize: 5000 });
+    this.liveHostResponseTimes = [];
+    this.liveHostDiagnostics = {
+      dedupedEvents: 0,
+      rateLimitedResponses: 0,
+      lastDedupedSignature: null,
+      lastRateLimitedAt: null
+    };
+    this.speechState = new SpeechState();
 
     // Avatar platform registry
     this.platformAdapter = null;
@@ -1107,7 +1118,8 @@ class AnimazingPalPlugin {
         platformDefinition: platformState.definition,
         activePlatform: platformState.key,
         supportedPlatforms: this.getSupportedPlatforms(),
-        overrideBehaviors: this.overrideBehaviors
+        overrideBehaviors: this.overrideBehaviors,
+        liveHostRuntime: this.getLiveHostRuntimeStatus()
       });
     });
 
@@ -3335,6 +3347,7 @@ class AnimazingPalPlugin {
   }
 
   async speakHostResponse(message, options = {}) {
+    this.ensureLiveHostRuntime();
     const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
     if (!liveHost.enabled || !liveHost.tts.enabled || !message) {
       return { success: false, blocked: true, reason: 'host_tts_disabled' };
@@ -3371,6 +3384,7 @@ class AnimazingPalPlugin {
     };
 
     try {
+      this.speechState.markStarted();
       const result = await ttsPlugin.speak(request);
       this.api.emit('animazingpal:host-speech', {
         eventType: options.eventType || 'manual',
@@ -3382,7 +3396,92 @@ class AnimazingPalPlugin {
     } catch (error) {
       this.api.log(`AnimazingPal host speech failed: ${error.message}`, 'error');
       return { success: false, error: error.message };
+    } finally {
+      this.speechState.markEnded();
     }
+  }
+
+  ensureLiveHostRuntime() {
+    if (!this.liveHostEventDeduper) {
+      this.liveHostEventDeduper = new EventDeduper({ ttl: 120, maxSize: 5000 });
+    }
+    if (!Array.isArray(this.liveHostResponseTimes)) {
+      this.liveHostResponseTimes = [];
+    }
+    if (!this.liveHostDiagnostics) {
+      this.liveHostDiagnostics = {
+        dedupedEvents: 0,
+        rateLimitedResponses: 0,
+        lastDedupedSignature: null,
+        lastRateLimitedAt: null
+      };
+    }
+    if (!this.speechState) {
+      this.speechState = new SpeechState();
+    }
+  }
+
+  getLiveHostEventSignature(eventType, data = {}) {
+    const user = data.userId || data.uniqueId || data.username || data.nickname || 'anonymous';
+    if (data.msgId || data.messageId || data.eventId || data.id) {
+      return this.liveHostEventDeduper.generateSignature(eventType, {
+        id: data.msgId || data.messageId || data.eventId || data.id,
+        user
+      });
+    }
+    const base = { user };
+    if (eventType === 'chat') base.comment = String(data.comment || '').trim().slice(0, 500);
+    if (eventType === 'gift') {
+      base.giftId = data.giftId || '';
+      base.giftName = data.giftName || '';
+      base.repeatCount = data.repeatCount || 1;
+      base.diamondCount = data.diamondCount || 0;
+    }
+    if (eventType === 'like') base.likeCount = data.likeCount || 0;
+    if (eventType === 'share' || eventType === 'follow' || eventType === 'subscribe' || eventType === 'join') {
+      base.type = eventType;
+    }
+    return this.liveHostEventDeduper.generateSignature(eventType, base);
+  }
+
+  isDuplicateLiveHostEvent(eventType, data = {}) {
+    this.ensureLiveHostRuntime();
+    const signature = this.getLiveHostEventSignature(eventType, data);
+    const duplicate = this.liveHostEventDeduper.hasSeen(signature);
+    if (duplicate) {
+      this.liveHostDiagnostics.dedupedEvents += 1;
+      this.liveHostDiagnostics.lastDedupedSignature = signature;
+    }
+    return { duplicate, signature };
+  }
+
+  canUseLiveHostResponseSlot(liveHost = buildLiveHostDefaults()) {
+    this.ensureLiveHostRuntime();
+    const now = Date.now();
+    const limit = Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10);
+    this.liveHostResponseTimes = this.liveHostResponseTimes.filter(timestamp => now - timestamp < 60000);
+    if (this.liveHostResponseTimes.length >= limit) {
+      this.liveHostDiagnostics.rateLimitedResponses += 1;
+      this.liveHostDiagnostics.lastRateLimitedAt = new Date(now).toISOString();
+      return false;
+    }
+    return true;
+  }
+
+  recordLiveHostResponseSlot() {
+    this.ensureLiveHostRuntime();
+    this.liveHostResponseTimes.push(Date.now());
+  }
+
+  getLiveHostRuntimeStatus() {
+    this.ensureLiveHostRuntime();
+    return {
+      speaking: this.speechState.isSpeaking(),
+      speechDurationMs: this.speechState.getSpeechDuration(),
+      dedupeCacheSize: this.liveHostEventDeduper.size(),
+      responseSlotsUsedLastMinute: this.liveHostResponseTimes.filter(timestamp => Date.now() - timestamp < 60000).length,
+      diagnostics: { ...this.liveHostDiagnostics }
+    };
   }
 
   _formatLiveHostMessage(message) {
@@ -3523,9 +3622,15 @@ class AnimazingPalPlugin {
   }
 
   async processLiveHostEvent(eventType, data = {}) {
+    this.ensureLiveHostRuntime();
     const liveHost = this.config?.brain?.liveHost;
     const event = liveHost?.events?.[eventType];
     if (!liveHost?.enabled || !event?.enabled) return { handled: false };
+
+    const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
+    if (dedupe.duplicate) {
+      return { handled: true, responded: false, duplicate: true };
+    }
 
     const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
     const likes = Number(data.likeCount) || 0;
@@ -3551,6 +3656,9 @@ class AnimazingPalPlugin {
     }
 
     if (!decision.respond) return { handled: true, responded: false, decision };
+    if (!this.canUseLiveHostResponseSlot(liveHost)) {
+      return { handled: true, responded: false, decision, rateLimited: true };
+    }
 
     const username = data.uniqueId || data.username || 'Viewer';
     let responded = false;
@@ -3559,6 +3667,7 @@ class AnimazingPalPlugin {
       if (message) {
         await this.speakHostResponse(message, { eventType, username, userId: username });
         responded = true;
+        this.recordLiveHostResponseSlot();
       }
     }
 
@@ -3575,6 +3684,7 @@ class AnimazingPalPlugin {
       if (response?.text) {
         await this.speakHostResponse(this._formatLiveHostMessage(response.text), { eventType, username, userId: username });
         responded = true;
+        this.recordLiveHostResponseSlot();
       }
     }
     return { handled: true, responded };
@@ -4939,6 +5049,7 @@ class AnimazingPalPlugin {
       supportedPlatforms: this.getSupportedPlatforms(),
       overrideBehaviors: this.overrideBehaviors,
       brainStatistics: brainStats,
+      liveHostRuntime: this.getLiveHostRuntimeStatus(),
       viewerbase: this.getViewerbaseStatus()
     });
   }
@@ -4989,6 +5100,10 @@ class AnimazingPalPlugin {
     if (this.liveHostSourceTimer) {
       clearTimeout(this.liveHostSourceTimer);
       this.liveHostSourceTimer = null;
+    }
+    if (this.liveHostEventDeduper && typeof this.liveHostEventDeduper.destroy === 'function') {
+      this.liveHostEventDeduper.destroy();
+      this.liveHostEventDeduper = null;
     }
     this.viewerbaseSyncPending = null;
     this.viewerbaseSyncInFlight = false;
