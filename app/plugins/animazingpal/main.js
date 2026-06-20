@@ -59,8 +59,12 @@ class AnimazingPalPlugin {
       rateLimitedResponses: 0,
       lastDedupedSignature: null,
       lastRateLimitedAt: null,
-      lastMovementTest: null
+      lastMovementTest: null,
+      lastIdleMotion: null,
+      idleMotionSkipped: 0
     };
+    this.liveHostIdleMotionTimer = null;
+    this.liveHostLastAvatarActionAt = 0;
     this.speechState = new SpeechState();
 
     // Avatar platform registry
@@ -176,6 +180,8 @@ class AnimazingPalPlugin {
       }
       this.safeEmitStatus();
     }
+
+    this.startLiveHostIdleMotion();
     
     this.api.log('AnimazingPal Plugin initialized', 'info');
   }
@@ -1192,6 +1198,7 @@ class AnimazingPalPlugin {
         this.config.brain.liveHost = mergeLiveHostSecrets(this.config.brain.liveHost, req.body || {});
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        this.startLiveHostIdleMotion();
         this.safeEmitStatus();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
@@ -1205,6 +1212,7 @@ class AnimazingPalPlugin {
         this.config.brain.liveHost = applyLiveHostPreset(this.config.brain.liveHost, req.body?.preset || 'safe-live');
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        this.startLiveHostIdleMotion();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -1235,6 +1243,7 @@ class AnimazingPalPlugin {
         }
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        this.startLiveHostIdleMotion();
         res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
       } catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -3440,10 +3449,18 @@ class AnimazingPalPlugin {
         rateLimitedResponses: 0,
         lastDedupedSignature: null,
         lastRateLimitedAt: null,
-        lastMovementTest: null
+        lastMovementTest: null,
+        lastIdleMotion: null,
+        idleMotionSkipped: 0
       };
     } else if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastMovementTest')) {
       this.liveHostDiagnostics.lastMovementTest = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastIdleMotion')) {
+      this.liveHostDiagnostics.lastIdleMotion = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'idleMotionSkipped')) {
+      this.liveHostDiagnostics.idleMotionSkipped = 0;
     }
     if (!this.speechState) {
       this.speechState = new SpeechState();
@@ -3556,6 +3573,124 @@ class AnimazingPalPlugin {
     }
 
     this.liveHostDiagnostics.lastMovementTest = result;
+    if (result.success) {
+      this.liveHostLastAvatarActionAt = Date.now();
+    }
+    return result;
+  }
+
+  stopLiveHostIdleMotion() {
+    if (this.liveHostIdleMotionTimer) {
+      clearTimeout(this.liveHostIdleMotionTimer);
+      this.liveHostIdleMotionTimer = null;
+    }
+  }
+
+  startLiveHostIdleMotion() {
+    this.stopLiveHostIdleMotion();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    if (!this.config?.enabled || !liveHost.enabled || !liveHost.idleMotion?.enabled) {
+      return false;
+    }
+    this.scheduleLiveHostIdleMotion(liveHost);
+    return true;
+  }
+
+  scheduleLiveHostIdleMotion(liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {})) {
+    if (this.liveHostIdleMotionTimer || !liveHost.enabled || !liveHost.idleMotion?.enabled) {
+      return;
+    }
+    const idleMotion = liveHost.idleMotion;
+    const interval = Math.max(3000, Number(idleMotion.intervalMs) || 15000);
+    const jitter = Math.max(0, Number(idleMotion.jitterMs) || 0);
+    const delay = interval + (jitter ? Math.round(Math.random() * jitter) : 0);
+    this.liveHostIdleMotionTimer = setTimeout(async () => {
+      this.liveHostIdleMotionTimer = null;
+      try {
+        await this.runLiveHostIdleMotionTick();
+      } catch (error) {
+        this.api.log(`Live host idle motion failed: ${error.message}`, 'warn');
+      } finally {
+        this.startLiveHostIdleMotion();
+      }
+    }, delay);
+  }
+
+  selectLiveHostIdleMotionAction(idleMotion = {}) {
+    const preferred = Array.isArray(idleMotion.preferNames) ? idleMotion.preferNames : [];
+    const avoided = Array.isArray(idleMotion.avoidNames) ? idleMotion.avoidNames : [];
+    const matches = (item, needles) => {
+      const label = String(item.animName || item.friendlyName || item.itemName || item.name || '').toLocaleLowerCase();
+      return needles.some(needle => label.includes(String(needle).toLocaleLowerCase()));
+    };
+    const pickFrom = (items, actionType) => {
+      const usable = (Array.isArray(items) ? items : []).filter(item => !matches(item, avoided));
+      const item = usable.find(candidate => matches(candidate, preferred)) || usable[0];
+      if (!item) return null;
+      return {
+        actionType,
+        actionValue: actionType === 'idle' ? item.index : item.index,
+        name: item.animName || item.friendlyName || item.itemName || item.name || String(item.index)
+      };
+    };
+
+    if (idleMotion.actionType === 'specialAction') {
+      return pickFrom(this.animazeData.specialActions, 'specialAction')
+        || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.idleAnims, 'idle') : null);
+    }
+
+    return pickFrom(this.animazeData.idleAnims, 'idle')
+      || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.specialActions, 'specialAction') : null);
+  }
+
+  async runLiveHostIdleMotionTick(now = Date.now()) {
+    this.ensureLiveHostRuntime();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const idleMotion = liveHost.idleMotion || {};
+    const result = {
+      success: false,
+      triggered: false,
+      checkedAt: new Date(now).toISOString(),
+      reason: null,
+      actionType: null,
+      actionValue: null,
+      name: null
+    };
+
+    if (!this.config?.enabled || !liveHost.enabled || !idleMotion.enabled) {
+      result.reason = 'disabled';
+    } else if (!this.isConnected) {
+      result.reason = 'animaze-disconnected';
+    } else if (idleMotion.pauseWhileSpeaking && this.speechState?.isSpeaking()) {
+      result.reason = 'speaking';
+    } else if (now - (this.liveHostLastAvatarActionAt || 0) < idleMotion.cooldownAfterActionMs) {
+      result.reason = 'cooldown';
+    } else {
+      const action = this.selectLiveHostIdleMotionAction(idleMotion);
+      if (!action) {
+        result.reason = 'no-action';
+      } else {
+        result.actionType = action.actionType;
+        result.actionValue = action.actionValue;
+        result.name = action.name;
+        if (action.actionType === 'idle') {
+          result.success = await this.triggerIdle(action.actionValue);
+        } else if (action.actionType === 'specialAction') {
+          result.success = await this.triggerSpecialAction(action.actionValue);
+        }
+        result.triggered = result.success;
+        result.reason = result.success ? 'triggered' : 'send-failed';
+        if (result.success) {
+          this.liveHostLastAvatarActionAt = now;
+        }
+      }
+    }
+
+    if (!result.success) {
+      this.liveHostDiagnostics.idleMotionSkipped = (this.liveHostDiagnostics.idleMotionSkipped || 0) + 1;
+    }
+    this.liveHostDiagnostics.lastIdleMotion = result;
+    this.safeEmitStatus();
     return result;
   }
 
@@ -3682,6 +3817,16 @@ class AnimazingPalPlugin {
           : `Letzter Motion-Test fehlgeschlagen: ${lastMovementTest.error || 'unbekannt'}.`)
         : 'Noch kein Animaze-Bewegungstest in dieser Laufzeit ausgefuehrt.',
       lastMovementTest?.success ? null : 'Im Diagnosebereich "Animaze Bewegung testen" ausfuehren und Avatar sichtbar pruefen.'
+    );
+
+    add(
+      'animaze.idleMotion',
+      liveHost.idleMotion?.enabled ? 'ok' : 'warn',
+      'Automatische Idle-Motion',
+      liveHost.idleMotion?.enabled
+        ? `Aktiv: alle ca. ${liveHost.idleMotion.intervalMs}ms (${liveHost.idleMotion.actionType}).`
+        : 'Automatische Idle-Motion ist deaktiviert; der Avatar kann ohne Events statisch wirken.',
+      liveHost.idleMotion?.enabled ? null : 'Idle-Motion aktivieren oder Event-Aktionen häufiger triggern.'
     );
 
     const sourceUsername = String(liveHost.source?.username || '').trim();
@@ -3890,6 +4035,7 @@ class AnimazingPalPlugin {
           giftName: data.giftName || '',
           count: data.repeatCount || data.likeCount || 1
         });
+        this.liveHostLastAvatarActionAt = Date.now();
       }
     }
 
@@ -5328,6 +5474,8 @@ class AnimazingPalPlugin {
         this.api.log(`Disconnect error stack: ${error.stack}`, 'debug');
       }
     }
+
+    this.stopLiveHostIdleMotion();
     
     this.lastEventTimes.clear();
     this.pendingRequests.clear();

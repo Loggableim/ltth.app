@@ -139,6 +139,17 @@ function buildLiveHostDefaults() {
       matchGiftNameFallback: true,
       waitForRepeatEnd: true
     },
+    idleMotion: {
+      enabled: true,
+      intervalMs: 15000,
+      jitterMs: 5000,
+      actionType: 'idle',
+      preferNames: ['Explaining', 'Walking', 'Bored', 'Victory', 'Hello', 'Dance'],
+      avoidNames: ['Motionless'],
+      fallbackToSpecialAction: true,
+      pauseWhileSpeaking: false,
+      cooldownAfterActionMs: 5000
+    },
     diagnostics: {
       verboseLogging: false,
       emitEvents: true,
@@ -260,6 +271,20 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
     }).filter(Boolean)
     : [];
   configured.activeAvatarBundleId = safeString(configured.activeAvatarBundleId, 100);
+  configured.idleMotion.enabled = configured.idleMotion.enabled !== false;
+  configured.idleMotion.intervalMs = Math.round(clamp(configured.idleMotion.intervalMs, 3000, 600000, defaults.idleMotion.intervalMs));
+  configured.idleMotion.jitterMs = Math.round(clamp(configured.idleMotion.jitterMs, 0, 120000, defaults.idleMotion.jitterMs));
+  configured.idleMotion.actionType = ['idle', 'specialAction'].includes(configured.idleMotion.actionType)
+    ? configured.idleMotion.actionType : defaults.idleMotion.actionType;
+  configured.idleMotion.preferNames = Array.isArray(configured.idleMotion.preferNames)
+    ? configured.idleMotion.preferNames.slice(0, 50).map(value => safeString(value, 80)).filter(Boolean)
+    : defaults.idleMotion.preferNames;
+  configured.idleMotion.avoidNames = Array.isArray(configured.idleMotion.avoidNames)
+    ? configured.idleMotion.avoidNames.slice(0, 50).map(value => safeString(value, 80)).filter(Boolean)
+    : defaults.idleMotion.avoidNames;
+  configured.idleMotion.fallbackToSpecialAction = configured.idleMotion.fallbackToSpecialAction !== false;
+  configured.idleMotion.pauseWhileSpeaking = !!configured.idleMotion.pauseWhileSpeaking;
+  configured.idleMotion.cooldownAfterActionMs = Math.round(clamp(configured.idleMotion.cooldownAfterActionMs, 0, 600000, defaults.idleMotion.cooldownAfterActionMs));
   configured.audio.outputDeviceId = safeString(configured.audio.outputDeviceId, 500);
   configured.audio.outputDeviceLabel = safeString(configured.audio.outputDeviceLabel, 500);
   configured.audio.missingDeviceBehavior = ['mute', 'default', 'error'].includes(configured.audio.missingDeviceBehavior)
@@ -306,7 +331,8 @@ function applyLiveHostPreset(config, preset) {
       like: { brainEnabled: false }, join: { brainEnabled: false }
     },
     viewerMemory: { enabled: true, writeMemories: true },
-    avatarSwitch: { enabled: true, persistUntilNextSwitch: true, revertAfterMs: 0 }
+    avatarSwitch: { enabled: true, persistUntilNextSwitch: true, revertAfterMs: 0 },
+    idleMotion: { enabled: true, intervalMs: 15000, jitterMs: 5000, actionType: 'idle', fallbackToSpecialAction: true, pauseWhileSpeaking: false }
   }));
 }
 

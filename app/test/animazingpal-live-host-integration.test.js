@@ -437,6 +437,98 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastMovementTest).toEqual(expect.objectContaining({ success: true, index: 0 }));
   });
 
+  test('automatic idle motion picks a non-motionless idle animation', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    plugin.config.brain.liveHost.idleMotion = {
+      ...plugin.config.brain.liveHost.idleMotion,
+      enabled: true,
+      intervalMs: 15000,
+      cooldownAfterActionMs: 0,
+      actionType: 'idle',
+      preferNames: ['Explaining', 'Walking'],
+      avoidNames: ['Motionless']
+    };
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      idleAnims: [
+        { animName: 'Motionless Idle', index: 1 },
+        { animName: 'Explaining 1', index: 18 }
+      ],
+      specialActions: []
+    };
+    plugin.triggerIdle = jest.fn().mockResolvedValue(true);
+
+    const result = await plugin.runLiveHostIdleMotionTick(100000);
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      triggered: true,
+      actionType: 'idle',
+      actionValue: 18,
+      name: 'Explaining 1'
+    }));
+    expect(plugin.triggerIdle).toHaveBeenCalledWith(18);
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastIdleMotion).toEqual(expect.objectContaining({
+      success: true,
+      reason: 'triggered'
+    }));
+  });
+
+  test('automatic idle motion falls back to special actions when no usable idle exists', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    Object.assign(plugin.config.brain.liveHost.idleMotion, {
+      enabled: true,
+      cooldownAfterActionMs: 0,
+      actionType: 'idle',
+      preferNames: ['Dance', 'Hello'],
+      avoidNames: ['Motionless'],
+      fallbackToSpecialAction: true
+    });
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      idleAnims: [{ animName: 'Motionless Idle', index: 1 }],
+      specialActions: [{ animName: 'Hello', index: 0 }]
+    };
+    plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+
+    const result = await plugin.runLiveHostIdleMotionTick(100000);
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      triggered: true,
+      actionType: 'specialAction',
+      actionValue: 0,
+      name: 'Hello'
+    }));
+    expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
+  });
+
+  test('automatic idle motion respects cooldown after recent avatar actions', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    Object.assign(plugin.config.brain.liveHost.idleMotion, {
+      enabled: true,
+      cooldownAfterActionMs: 5000
+    });
+    plugin.isConnected = true;
+    plugin.liveHostLastAvatarActionAt = 98000;
+    plugin.triggerIdle = jest.fn();
+
+    const result = await plugin.runLiveHostIdleMotionTick(100000);
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      triggered: false,
+      reason: 'cooldown'
+    }));
+    expect(plugin.triggerIdle).not.toHaveBeenCalled();
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.idleMotionSkipped).toBe(1);
+  });
+
   test('movement probe fails loudly when Animaze is disconnected', async () => {
     const { plugin } = createPlugin();
     plugin.isConnected = false;

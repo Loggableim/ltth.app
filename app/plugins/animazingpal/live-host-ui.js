@@ -183,6 +183,7 @@
     const runtime = state.status.liveHostRuntime || {};
     const diagnostics = runtime.diagnostics || {};
     const movement = diagnostics.lastMovementTest || null;
+    const idleMotion = diagnostics.lastIdleMotion || null;
     const lastHealth = state.lastHealthAt ? new Date(state.lastHealthAt).toLocaleTimeString() : 'noch nicht aktualisiert';
     return `<div id="liveHostRuntimeDiagnostics" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
       <div class="flex flex-wrap items-center gap-2 mb-2">
@@ -198,8 +199,10 @@
         <div>Slots/Minute: <strong>${escapeHtml(runtime.responseSlotsUsedLastMinute ?? 0)}</strong></div>
         <div>Dedupe-Cache: <strong>${escapeHtml(runtime.dedupeCacheSize ?? 0)}</strong></div>
         <div>Deduped/Rate-limited: <strong>${escapeHtml(diagnostics.dedupedEvents ?? 0)} / ${escapeHtml(diagnostics.rateLimitedResponses ?? 0)}</strong></div>
+        <div>Idle-Skips: <strong>${escapeHtml(diagnostics.idleMotionSkipped ?? 0)}</strong></div>
       </div>
       ${movement ? `<p class="text-xs ${movement.success ? 'text-green-400' : 'text-red-300'} mt-2">Letzter Bewegungstest: ${movement.success ? 'gesendet' : 'fehlgeschlagen'}${movement.name || movement.index !== undefined ? ` · ${escapeHtml(movement.name || movement.index)}` : ''}${movement.error ? ` · ${escapeHtml(movement.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch kein Animaze-Bewegungstest in dieser Laufzeit.</p>'}
+      ${idleMotion ? `<p class="text-xs ${idleMotion.success ? 'text-green-400' : 'text-yellow-300'} mt-2">Letzte Auto-Idle-Motion: ${escapeHtml(idleMotion.reason || 'unbekannt')}${idleMotion.name ? ` · ${escapeHtml(idleMotion.name)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine automatische Idle-Motion in dieser Laufzeit.</p>'}
       ${diagnostics.lastRateLimitedAt ? `<p class="text-xs text-yellow-300 mt-2">Letztes Rate-Limit: ${escapeHtml(diagnostics.lastRateLimitedAt)}</p>` : ''}
     </div>`;
   }
@@ -286,6 +289,7 @@
       ${renderTtsAudio()}
       ${renderMemory()}
       ${renderBundles()}
+      ${renderIdleMotion()}
       ${renderDiagnostics()}
     `;
     bind();
@@ -343,6 +347,28 @@
       </div>${actions('avatarBundles')}${actions('avatarSwitch')}</div></section>`;
   }
 
+  function renderIdleMotion() {
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Idle-Motion</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        ${input('idleMotion.enabled', 'Automatische Bewegung aktiv', { type: 'checkbox' })}
+        ${input('idleMotion.intervalMs', 'Intervall (ms)', { type: 'number', min: 3000, max: 600000 })}
+        ${input('idleMotion.jitterMs', 'Zufalls-Jitter (ms)', { type: 'number', min: 0, max: 120000 })}
+        ${input('idleMotion.actionType', 'Aktionstyp', { type: 'select', options: [
+          { value: 'idle', label: 'Idle-Animation bevorzugen' },
+          { value: 'specialAction', label: 'Special Action bevorzugen' }
+        ] })}
+        ${input('idleMotion.fallbackToSpecialAction', 'Fallback erlauben', { type: 'checkbox' })}
+        ${input('idleMotion.pauseWhileSpeaking', 'Beim Sprechen pausieren', { type: 'checkbox' })}
+        ${input('idleMotion.cooldownAfterActionMs', 'Cooldown nach Aktion (ms)', { type: 'number', min: 0, max: 600000 })}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        ${textarea('idleMotion.preferNames', 'Bevorzugte Animationsnamen, kommasepariert')}
+        ${textarea('idleMotion.avoidNames', 'Zu vermeidende Namen, kommasepariert')}
+      </div>
+      <p class="text-sm text-gray-400 mt-3">Damit der Avatar nicht einfriert: bevorzugt Explaining/Walking/Bored/Victory und vermeidet Motionless. Änderungen greifen nach Speichern ohne Neustart.</p>
+      ${actions('idleMotion')}</div></section>`;
+  }
+
   function renderDiagnostics() {
     return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Diagnose</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       ${input('diagnostics.verboseLogging', 'Verbose Logging', { type: 'checkbox' })}${input('diagnostics.emitEvents', 'Diagnoseereignisse', { type: 'checkbox' })}${input('diagnostics.retainLastErrors', 'Letzte Fehler behalten', { type: 'number', min: 0, max: 100 })}${input('diagnostics.includePromptBodies', 'Prompt-Inhalte loggen', { type: 'checkbox' })}
@@ -352,6 +378,9 @@
   function valueOf(element) {
     if (element.type === 'checkbox') return element.checked;
     if (element.type === 'number') return element.value === '' ? null : Number(element.value);
+    if (['idleMotion.preferNames', 'idleMotion.avoidNames'].includes(element.dataset.lh)) {
+      return String(element.value || '').split(',').map(item => item.trim()).filter(Boolean);
+    }
     return element.value;
   }
 

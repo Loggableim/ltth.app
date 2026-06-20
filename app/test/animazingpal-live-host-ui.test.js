@@ -105,6 +105,17 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('lastMovementTest');
   });
 
+  test('live-host UI exposes configurable automatic idle motion', () => {
+    expect(script).toContain('renderIdleMotion');
+    expect(script).toContain('idleMotion.enabled');
+    expect(script).toContain('idleMotion.intervalMs');
+    expect(script).toContain('idleMotion.jitterMs');
+    expect(script).toContain('idleMotion.preferNames');
+    expect(script).toContain('idleMotion.avoidNames');
+    expect(script).toContain('lastIdleMotion');
+    expect(script).toContain('idleMotionSkipped');
+  });
+
   test('live-host UI refreshes runtime health continuously for unattended operation', () => {
     expect(script).toContain('LIVE_HOST_HEALTH_REFRESH_MS');
     expect(script).toContain('refreshLiveHostHealth');
