@@ -3549,6 +3549,9 @@ class AnimazingPalPlugin {
     const sinkSupported = browser.sinkSupported !== false;
     const audioUnlocked = browser.audioUnlocked === true;
     const outputDeviceAvailable = browser.configuredOutputDeviceAvailable !== false;
+    const playback = browser.playback || {};
+    const playbackRouting = playback.lastRouting || {};
+    const playbackHasError = Boolean(playback.lastError || playback.status === 'error' || playbackRouting.routed === false);
     add(
       'audio.output',
       hasOutputDevice ? 'ok' : 'warn',
@@ -3579,6 +3582,15 @@ class AnimazingPalPlugin {
       hasOutputDevice && !sinkSupported
         ? 'Windows-Standardausgabe auf CABLE Input setzen oder Browser mit setSinkId verwenden.'
         : (audioUnlocked ? null : 'In der Standalone-UI auf „Audio aktivieren“ klicken.')
+    );
+    add(
+      'audio.playback',
+      playbackHasError ? 'error' : 'ok',
+      'Browser-TTS Playback',
+      playbackHasError
+        ? `Browser-TTS meldet einen Playback/Routing-Fehler: ${playback.lastError || playbackRouting.reason || playback.status || 'unbekannt'}.`
+        : `Browser-TTS Playback: ${playback.status || 'noch kein Testlauf gemeldet'}.`,
+      playbackHasError ? 'Audiogeraet erneut freigeben, Sprachtest ausfuehren und Preflight wiederholen.' : null
     );
 
     add(

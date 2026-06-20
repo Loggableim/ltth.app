@@ -94,6 +94,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('sinkSupported');
     expect(script).toContain('audioUnlocked');
     expect(script).toContain('configuredOutputDeviceAvailable');
+    expect(script).toContain('playback: window.animazingPalTTSPlaybackState');
     expect(script).toContain('isConfiguredOutputDeviceAvailable');
   });
 

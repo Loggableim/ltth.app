@@ -229,7 +229,8 @@
         sinkSupported,
         audioUnlocked: window.audioUnlocked === true || window.animazingPalAudioUnlocked === true,
         configuredOutputDeviceAvailable,
-        selectedOutputDeviceId: outputSelect?.value || ''
+        selectedOutputDeviceId: outputSelect?.value || '',
+        playback: window.animazingPalTTSPlaybackState || null
       }
     };
   }
