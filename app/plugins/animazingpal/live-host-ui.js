@@ -588,7 +588,7 @@
       const value = avatar?.[field];
       if (value === null || value === undefined) continue;
       const text = String(value).trim();
-      if (!text || /^(undefined|null|\[object Object\])$/i.test(text)) continue;
+      if (!text || /\b(undefined|null)\b|\[object Object\]/i.test(text)) continue;
       return text;
     }
     return '';

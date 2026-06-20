@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { JSDOM } = require('jsdom');
 
 describe('AnimazingPal live-host configuration UI', () => {
   const html = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.html'), 'utf8');
@@ -130,9 +131,49 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain("['modelID', 'itemName', 'id', 'name', 'friendlyName', 'modelName']");
     expect(script).toContain("['modelName', 'friendlyName', 'name', 'itemName', 'id', 'modelID']");
     expect(script).toContain('firstPresentAvatarField');
-    expect(script).toContain('undefined|null|\\[object Object\\]');
+    expect(script).toContain('\\b(undefined|null)\\b|\\[object Object\\]');
     expect(script).toContain('Unbenannter Avatar');
     expect(script).not.toContain('${platform}: ${avatar.modelName || avatar.name || avatar.id}');
+  });
+
+  test('avatar dropdown does not render Animaze undefined labels from malformed avatar data', async () => {
+    const dom = new JSDOM('<!doctype html><button data-tab="livehost"></button><div id="liveHostSettings"></div>', {
+      runScripts: 'outside-only',
+      url: 'http://127.0.0.1:3000/animazingpal/ui'
+    });
+
+    const responses = {
+      '/api/animazingpal/live-host/config': { config: { providers: {}, avatarBundles: [], avatarSwitch: {}, events: {}, audio: {}, diagnostics: {} } },
+      '/api/tts/voices?engine=fishaudio': { voices: {} },
+      '/api/gift-catalog': { catalog: [] },
+      '/api/animazingpal/status': {
+        activePlatform: 'animaze',
+        animazeData: {
+          avatars: [{ modelID: 'avatar-42', modelName: 'animaze undefined' }]
+        }
+      },
+      '/api/animazingpal/brain/personalities': { personalities: [] },
+      '/api/tts/status': {},
+      '/api/tts/queue': {},
+      '/api/animazingpal/live-host/audio-devices': { devices: [] }
+    };
+
+    dom.window.fetch = jest.fn(async url => ({
+      ok: true,
+      json: async () => responses[String(url)] || {}
+    }));
+    dom.window.setInterval = jest.fn(() => 1);
+    dom.window.clearInterval = jest.fn();
+    dom.window.navigator.mediaDevices = { enumerateDevices: jest.fn(async () => []) };
+    dom.window.eval(script);
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    dom.window.document.querySelector('[data-tab="livehost"]').click();
+    await new Promise(resolve => setImmediate(resolve));
+
+    const avatarOptions = [...dom.window.document.querySelectorAll('#bundleAvatar option')].map(option => option.textContent);
+    expect(avatarOptions).toContain('animaze: avatar-42');
+    expect(avatarOptions.join('\n')).not.toMatch(/undefined/i);
   });
 
   test('live-host UI refreshes runtime health continuously for unattended operation', () => {
