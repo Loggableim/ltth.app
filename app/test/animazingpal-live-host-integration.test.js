@@ -464,6 +464,34 @@ describe('AnimazingPal live host integration', () => {
     ]));
   });
 
+  test('preflight warns when the TTS queue is full', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.tiktok = { isConnected: () => true };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 100, maxSize: 100 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({
+      browser: {
+        sinkSupported: true,
+        audioUnlocked: true,
+        configuredOutputDeviceAvailable: true,
+        playback: { status: 'ended', lastRouting: { routed: true } }
+      }
+    });
+
+    expect(preflight.ready).toBe(true);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'tts.queue', status: 'warn' })
+    ]));
+  });
+
   test('records live source events for unattended stream freshness diagnostics', async () => {
     const { plugin } = createPlugin();
     plugin.config.brain.liveHost.events.chat.brainEnabled = false;

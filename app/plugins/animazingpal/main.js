@@ -4056,7 +4056,7 @@ class AnimazingPalPlugin {
     );
 
     const queueInfo = ttsPlugin?.queueManager?.getInfo?.() || null;
-    if (queueInfo && Number(queueInfo.size || 0) > Number(queueInfo.maxSize || 100)) {
+    if (queueInfo && Number(queueInfo.size || 0) >= Number(queueInfo.maxSize || 100)) {
       add('tts.queue', 'warn', 'TTS Queue', `Queue wirkt überfüllt: ${queueInfo.size}/${queueInfo.maxSize}.`, 'Queue leeren oder Antwortlimit senken.');
     } else {
       add('tts.queue', 'ok', 'TTS Queue', queueInfo ? `Queue: ${queueInfo.size || 0}/${queueInfo.maxSize || 100}.` : 'Queue-Status nicht verfügbar, TTS-Plugin antwortet aber.');
