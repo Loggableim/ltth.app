@@ -300,6 +300,7 @@
         ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
         ${input('response.queueLimit', 'Queue-Limit', { type: 'number', min: 1, max: 1000 })}${input('response.queuePolicy', 'Abbruchverhalten', { type: 'select', options: ['drop-lowest', 'drop-oldest', 'reject-new'] })}
         ${input('response.speakCooldownMs', 'Sprech-Cooldown (ms)', { type: 'number', min: 0, max: 60000 })}
+        ${input('response.silenceWarnAfterEvents', 'Silence-Warnung nach Events', { type: 'number', min: 1, max: 1000 })}
       </div><div class="mt-3">${textarea('response.systemPrompt', 'Systemprompt', 5)}</div>${actions('response')}</div></section>
       <section class="mt-4"><h2 class="text-xl font-bold mb-3">Ereignisse</h2><div class="grid grid-cols-1 gap-3">${EVENTS.map(eventCard).join('')}</div>${actions('events')}</section>
       ${renderTtsAudio()}

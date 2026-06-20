@@ -4216,6 +4216,23 @@ class AnimazingPalPlugin {
       runtime.responseSlotsUsedLastMinute < Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10) ? null : 'Kurz warten oder Antworten/Minute erhöhen.'
     );
 
+    const processedEvents = Number(runtime.diagnostics?.processedEvents) || 0;
+    const respondedEvents = Number(runtime.diagnostics?.respondedEvents) || 0;
+    const skippedEvents = Number(runtime.diagnostics?.skippedEvents) || 0;
+    const silenceWarnAfterEvents = Math.max(1, Number(liveHost.response?.silenceWarnAfterEvents) || 5);
+    const responseStarved = processedEvents >= silenceWarnAfterEvents && respondedEvents === 0;
+    add(
+      'runtime.responseFlow',
+      responseStarved ? 'warn' : 'ok',
+      'Host Antwortfluss',
+      responseStarved
+        ? `Host hat ${processedEvents} Events verarbeitet, aber noch keine Antwort gesprochen. Letzter Grund: ${runtime.diagnostics?.lastEventResult?.reason || 'unbekannt'}.`
+        : `Antwortfluss: ${respondedEvents} gesprochen, ${skippedEvents} übersprungen, ${processedEvents} verarbeitet.`,
+      responseStarved
+        ? 'Decision-Schwelle, Event-Aktivierung, Templates, Brain-Kanal und Rate-Limits prüfen.'
+        : null
+    );
+
     const summary = checks.reduce((acc, check) => {
       acc[check.status === 'error' ? 'errors' : check.status === 'warn' ? 'warnings' : 'ok'] += 1;
       return acc;

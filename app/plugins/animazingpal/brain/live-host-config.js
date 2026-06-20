@@ -93,7 +93,8 @@ function buildLiveHostDefaults() {
       contextMessages: 10,
       queueLimit: 50,
       queuePolicy: 'drop-lowest',
-      speakCooldownMs: 3000
+      speakCooldownMs: 3000,
+      silenceWarnAfterEvents: 5
     },
     events: Object.fromEntries(EVENT_TYPES.map(type => [type, eventDefaults(['gift', 'follow', 'share', 'subscribe'].includes(type))])),
     tts: {
@@ -217,6 +218,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.contextMessages = Math.round(clamp(configured.response.contextMessages, 0, 100, 10));
   configured.response.queueLimit = Math.round(clamp(configured.response.queueLimit, 1, 1000, 50));
   configured.response.speakCooldownMs = Math.round(clamp(configured.response.speakCooldownMs, 0, 60000, 3000));
+  configured.response.silenceWarnAfterEvents = Math.round(clamp(configured.response.silenceWarnAfterEvents, 1, 1000, defaults.response.silenceWarnAfterEvents));
   configured.response.language = safeString(configured.response.language, 20, 'de');
   configured.response.systemPrompt = safeString(configured.response.systemPrompt, 8000);
   configured.response.queuePolicy = ['drop-lowest', 'drop-oldest', 'reject-new'].includes(configured.response.queuePolicy)

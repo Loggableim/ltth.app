@@ -23,11 +23,12 @@ describe('AnimazingPal live host configuration', () => {
 
   test('normalizes automatic host decision settings', () => {
     const configured = normalizeLiveHostConfig({
-      response: { decisionMode: 'bad-mode', minDecisionScore: 99 }
+      response: { decisionMode: 'bad-mode', minDecisionScore: 99, silenceWarnAfterEvents: 9999 }
     });
 
     expect(configured.response.decisionMode).toBe('auto');
     expect(configured.response.minDecisionScore).toBe(1);
+    expect(configured.response.silenceWarnAfterEvents).toBe(1000);
   });
 
   test('normalizes numeric fine settings to documented safety bounds', () => {

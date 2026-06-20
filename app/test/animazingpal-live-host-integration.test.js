@@ -293,6 +293,31 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test('preflight warns when live events are processed but no host response has spoken', async () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.response.silenceWarnAfterEvents = 2;
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.tiktok = { isConnected: () => true, currentUsername: 'jeffreestar' };
+    Object.assign(plugin.config.brain.liveHost.events.chat, {
+      enabled: true, probability: 1, cooldownMs: 0, brainEnabled: true,
+      templateEnabled: false, avatarActionEnabled: false
+    });
+    plugin.brainEngine = { processChat: jest.fn() };
+
+    await plugin.processLiveHostEvent('chat', { uniqueId: 'a', comment: 'lol' });
+    await plugin.processLiveHostEvent('chat', { uniqueId: 'b', comment: 'haha' });
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'runtime.responseFlow', status: 'warn' })
+    ]));
+  });
+
   test('triggers situational Animaze actions from available defaults', async () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;

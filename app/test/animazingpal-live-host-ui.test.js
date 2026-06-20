@@ -168,6 +168,8 @@ describe('AnimazingPal live-host configuration UI', () => {
   test('live-host UI surfaces last event outcome diagnostics', () => {
     expect(script).toContain('lastEventResult');
     expect(script).toContain('Letztes Host-Event');
+    expect(script).toContain('response.silenceWarnAfterEvents');
+    expect(script).toContain('Silence-Warnung nach Events');
     expect(script).toContain('processedEvents');
     expect(script).toContain('respondedEvents');
     expect(script).toContain('skippedEvents');
