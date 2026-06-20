@@ -4069,6 +4069,8 @@ class AnimazingPalPlugin {
     const playback = browser.playback || {};
     const playbackRouting = playback.lastRouting || {};
     const playbackHasError = Boolean(playback.lastError || playback.status === 'error' || playbackRouting.routed === false);
+    const playbackRouted = playbackRouting.routed === true;
+    const playbackNeedsRoutingProof = hasOutputDevice && !playbackHasError && !playbackRouted;
     add(
       'browser.heartbeat',
       hasInlineBrowserState || (heartbeatStatus.present && !heartbeatStatus.stale) ? 'ok' : 'error',
@@ -4115,12 +4117,16 @@ class AnimazingPalPlugin {
     );
     add(
       'audio.playback',
-      playbackHasError ? 'error' : 'ok',
+      playbackHasError ? 'error' : (playbackNeedsRoutingProof ? 'warn' : 'ok'),
       'Browser-TTS Playback',
       playbackHasError
         ? `Browser-TTS meldet einen Playback/Routing-Fehler: ${playback.lastError || playbackRouting.reason || playback.status || 'unbekannt'}.`
-        : `Browser-TTS Playback: ${playback.status || 'noch kein Testlauf gemeldet'}.`,
-      playbackHasError ? 'Audiogeraet erneut freigeben, Sprachtest ausfuehren und Preflight wiederholen.' : null
+        : (playbackNeedsRoutingProof
+          ? `Browser-TTS wurde noch nicht erfolgreich auf ${liveHost.audio.outputDeviceLabel || liveHost.audio.outputDeviceId} geroutet (${playback.status || 'noch kein Testlauf gemeldet'}).`
+          : `Browser-TTS Playback: ${playback.status || 'noch kein Testlauf gemeldet'}.`),
+      playbackHasError || playbackNeedsRoutingProof
+        ? 'Audiogeraet erneut freigeben, Sprachtest ausfuehren und Preflight wiederholen.'
+        : null
     );
 
     add(
