@@ -58,7 +58,8 @@ class AnimazingPalPlugin {
       dedupedEvents: 0,
       rateLimitedResponses: 0,
       lastDedupedSignature: null,
-      lastRateLimitedAt: null
+      lastRateLimitedAt: null,
+      lastMovementTest: null
     };
     this.speechState = new SpeechState();
 
@@ -1249,6 +1250,11 @@ class AnimazingPalPlugin {
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/avatar/activate', async (req, res) => {
       const result = await this.activateAvatarBundle(req.body?.bundleId, { reason: 'manual-ui' });
+      res.status(result.success ? 200 : 400).json(result);
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/movement-test', async (req, res) => {
+      const result = await this.runLiveHostMovementTest(req.body || {});
       res.status(result.success ? 200 : 400).json(result);
     });
 
@@ -3433,8 +3439,11 @@ class AnimazingPalPlugin {
         dedupedEvents: 0,
         rateLimitedResponses: 0,
         lastDedupedSignature: null,
-        lastRateLimitedAt: null
+        lastRateLimitedAt: null,
+        lastMovementTest: null
       };
+    } else if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastMovementTest')) {
+      this.liveHostDiagnostics.lastMovementTest = null;
     }
     if (!this.speechState) {
       this.speechState = new SpeechState();
@@ -3505,6 +3514,49 @@ class AnimazingPalPlugin {
       animazeReconnectAttempts: this.reconnectAttempts,
       diagnostics: { ...this.liveHostDiagnostics }
     };
+  }
+
+  async runLiveHostMovementTest(options = {}) {
+    this.ensureLiveHostRuntime();
+    const requestedIndex = options.index !== undefined ? Number(options.index) : null;
+    const specialActions = Array.isArray(this.animazeData?.specialActions) ? this.animazeData.specialActions : [];
+    const candidate = Number.isFinite(requestedIndex)
+      ? specialActions.find(action => Number(action.index) === requestedIndex)
+      : specialActions.find(action => /hello|wave|dance|shrug/i.test(action.animName || action.friendlyName || '')) || specialActions[0];
+
+    const result = {
+      success: false,
+      checkedAt: new Date().toISOString(),
+      platform: this.getActivePlatformKey(),
+      actionType: 'specialAction',
+      index: candidate?.index ?? requestedIndex,
+      name: candidate?.animName || candidate?.friendlyName || null,
+      error: null
+    };
+
+    if (!this.isConnected) {
+      result.error = 'Animaze is not connected';
+      this.liveHostDiagnostics.lastMovementTest = result;
+      return result;
+    }
+
+    if (result.index === undefined || result.index === null || Number.isNaN(Number(result.index))) {
+      result.error = 'No Animaze special action is available for movement testing';
+      this.liveHostDiagnostics.lastMovementTest = result;
+      return result;
+    }
+
+    try {
+      result.success = await this.triggerSpecialAction(result.index);
+      if (!result.success) {
+        result.error = 'Animaze command was not accepted by the socket layer';
+      }
+    } catch (error) {
+      result.error = error.message;
+    }
+
+    this.liveHostDiagnostics.lastMovementTest = result;
+    return result;
   }
 
   evaluateLiveHostPreflight(options = {}) {
@@ -3617,6 +3669,19 @@ class AnimazingPalPlugin {
       this.isConnected
         ? null
         : (this.reconnectTimer ? 'Kurz warten oder manuell verbinden, falls Animaze nicht laeuft.' : 'Animaze starten und AnimazingPal auf Port 9000 verbinden.')
+    );
+
+    const lastMovementTest = this.liveHostDiagnostics.lastMovementTest;
+    add(
+      'animaze.movementProbe',
+      lastMovementTest?.success ? 'ok' : (lastMovementTest ? 'error' : 'warn'),
+      'Animaze Bewegungstest',
+      lastMovementTest
+        ? (lastMovementTest.success
+          ? `Letzter Motion-Befehl gesendet: ${lastMovementTest.name || lastMovementTest.index} (${lastMovementTest.checkedAt}).`
+          : `Letzter Motion-Test fehlgeschlagen: ${lastMovementTest.error || 'unbekannt'}.`)
+        : 'Noch kein Animaze-Bewegungstest in dieser Laufzeit ausgefuehrt.',
+      lastMovementTest?.success ? null : 'Im Diagnosebereich "Animaze Bewegung testen" ausfuehren und Avatar sichtbar pruefen.'
     );
 
     const sourceUsername = String(liveHost.source?.username || '').trim();

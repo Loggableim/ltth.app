@@ -182,19 +182,24 @@
   function renderRuntimeDiagnostics() {
     const runtime = state.status.liveHostRuntime || {};
     const diagnostics = runtime.diagnostics || {};
+    const movement = diagnostics.lastMovementTest || null;
     const lastHealth = state.lastHealthAt ? new Date(state.lastHealthAt).toLocaleTimeString() : 'noch nicht aktualisiert';
     return `<div id="liveHostRuntimeDiagnostics" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
       <div class="flex flex-wrap items-center gap-2 mb-2">
         <div class="font-semibold flex-1">24/7 Runtime-Schutz</div>
         <span class="text-xs text-gray-400">Health: ${escapeHtml(lastHealth)}</span>
         <button class="btn btn-secondary btn-sm" data-refresh-livehost-health>Health aktualisieren</button>
+        <button class="btn btn-secondary btn-sm" data-movement-test>Animaze Bewegung testen</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div>Speaking: <strong>${runtime.speaking ? 'ja' : 'nein'}</strong></div>
+        <div>Animaze: <strong class="${runtime.animazeConnected ? 'text-green-400' : 'text-red-400'}">${runtime.animazeConnected ? 'verbunden' : 'getrennt'}</strong></div>
+        <div>Reconnect: <strong>${runtime.animazeReconnectScheduled ? `geplant (${runtime.animazeReconnectAttempts || 0})` : 'nein'}</strong></div>
         <div>Slots/Minute: <strong>${escapeHtml(runtime.responseSlotsUsedLastMinute ?? 0)}</strong></div>
         <div>Dedupe-Cache: <strong>${escapeHtml(runtime.dedupeCacheSize ?? 0)}</strong></div>
         <div>Deduped/Rate-limited: <strong>${escapeHtml(diagnostics.dedupedEvents ?? 0)} / ${escapeHtml(diagnostics.rateLimitedResponses ?? 0)}</strong></div>
       </div>
+      ${movement ? `<p class="text-xs ${movement.success ? 'text-green-400' : 'text-red-300'} mt-2">Letzter Bewegungstest: ${movement.success ? 'gesendet' : 'fehlgeschlagen'}${movement.name || movement.index !== undefined ? ` · ${escapeHtml(movement.name || movement.index)}` : ''}${movement.error ? ` · ${escapeHtml(movement.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch kein Animaze-Bewegungstest in dieser Laufzeit.</p>'}
       ${diagnostics.lastRateLimitedAt ? `<p class="text-xs text-yellow-300 mt-2">Letztes Rate-Limit: ${escapeHtml(diagnostics.lastRateLimitedAt)}</p>` : ''}
     </div>`;
   }
@@ -487,6 +492,17 @@
     }
   }
 
+  async function runMovementTest() {
+    const result = await request('/api/animazingpal/live-host/movement-test', {
+      method: 'POST',
+      body: '{}'
+    });
+    await refreshLiveHostHealth();
+    notify(result.success
+      ? `Animaze Bewegungstest gesendet: ${result.name || result.index}`
+      : `Animaze Bewegungstest fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
+  }
+
   function startLiveHostHealthRefresh() {
     if (state.healthTimer) clearInterval(state.healthTimer);
     state.healthTimer = setInterval(() => refreshLiveHostHealth().catch(error => notify(error.message, true)), LIVE_HOST_HEALTH_REFRESH_MS);
@@ -567,6 +583,7 @@
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
     document.querySelector('[data-refresh-livehost-health]')?.addEventListener('click', () => refreshLiveHostHealth().catch(error => notify(error.message, true)));
+    document.querySelector('[data-movement-test]')?.addEventListener('click', () => runMovementTest().catch(error => notify(error.message, true)));
     document.querySelector('[data-pick-output-device]')?.addEventListener('click', () => pickOutputDevice().catch(error => notify(error.message, true)));
     document.querySelector('[data-preflight-check]')?.addEventListener('click', () => runPreflight().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);

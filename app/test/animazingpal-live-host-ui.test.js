@@ -98,6 +98,13 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('isConfiguredOutputDeviceAvailable');
   });
 
+  test('live-host UI exposes a manual Animaze movement probe', () => {
+    expect(script).toContain('data-movement-test');
+    expect(script).toContain('/api/animazingpal/live-host/movement-test');
+    expect(script).toContain('Animaze Bewegung testen');
+    expect(script).toContain('lastMovementTest');
+  });
+
   test('live-host UI refreshes runtime health continuously for unattended operation', () => {
     expect(script).toContain('LIVE_HOST_HEALTH_REFRESH_MS');
     expect(script).toContain('refreshLiveHostHealth');

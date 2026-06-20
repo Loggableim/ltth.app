@@ -413,6 +413,68 @@ describe('AnimazingPal live host integration', () => {
     ]));
   });
 
+  test('movement probe records a successful Animaze action command for operator verification', async () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      specialActions: [
+        { animName: 'Idle', index: 2 },
+        { animName: 'Hello', index: 0 }
+      ]
+    };
+    plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+
+    const result = await plugin.runLiveHostMovementTest();
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      actionType: 'specialAction',
+      index: 0,
+      name: 'Hello'
+    }));
+    expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastMovementTest).toEqual(expect.objectContaining({ success: true, index: 0 }));
+  });
+
+  test('movement probe fails loudly when Animaze is disconnected', async () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = false;
+
+    const result = await plugin.runLiveHostMovementTest();
+
+    expect(result).toEqual(expect.objectContaining({
+      success: false,
+      error: 'Animaze is not connected'
+    }));
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastMovementTest).toEqual(expect.objectContaining({ success: false }));
+  });
+
+  test('preflight reports the last Animaze movement probe state', async () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      specialActions: [{ animName: 'Hello', index: 0 }]
+    };
+    plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    await plugin.runLiveHostMovementTest();
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'animaze.movementProbe', status: 'ok' })
+    ]));
+  });
+
   test('reconnects after an established auto-connected Animaze socket closes', () => {
     const { plugin } = createPlugin();
     plugin.config.enabled = true;
