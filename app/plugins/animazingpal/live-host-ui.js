@@ -121,13 +121,21 @@
   }
 
   function deviceOptions() {
-    return [
+    const options = [
       { value: '', label: 'Standardgerät' },
       ...state.devices.map(device => ({
         value: device.source === 'system' ? `system:${device.deviceId}` : device.deviceId,
         label: `${device.label || device.deviceId}${device.source === 'system' ? ' (System-Fallback)' : ''}`
       }))
     ];
+    const configuredId = get('audio.outputDeviceId');
+    if (configuredId && !options.some(option => option.value === configuredId)) {
+      options.splice(1, 0, {
+        value: configuredId,
+        label: `${get('audio.outputDeviceLabel') || configuredId} (nicht freigegeben / neu auswählen)`
+      });
+    }
+    return options;
   }
 
   function supportsSinkId() {
@@ -197,13 +205,24 @@
 
   function getBrowserPreflightState() {
     const audio = document.getElementById('animazingpal-tts-audio');
+    const configuredOutputDeviceAvailable = isConfiguredOutputDeviceAvailable();
+    const outputSelect = document.querySelector('[data-lh="audio.outputDeviceId"]');
     const sinkSupported = Boolean(audio?.setSinkId) || supportsSinkId();
     return {
       browser: {
         sinkSupported,
-        audioUnlocked: window.audioUnlocked === true || window.animazingPalAudioUnlocked === true
+        audioUnlocked: window.audioUnlocked === true || window.animazingPalAudioUnlocked === true,
+        configuredOutputDeviceAvailable,
+        selectedOutputDeviceId: outputSelect?.value || ''
       }
     };
+  }
+
+  function isConfiguredOutputDeviceAvailable() {
+    const configuredId = get('audio.outputDeviceId');
+    if (!configuredId) return true;
+    if (configuredId.startsWith('system:')) return true;
+    return state.devices.some(device => device.source !== 'system' && device.deviceId === configuredId);
   }
 
   function render() {

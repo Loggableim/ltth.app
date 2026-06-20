@@ -86,5 +86,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('liveHostPreflightStatus');
     expect(script).toContain('sinkSupported');
     expect(script).toContain('audioUnlocked');
+    expect(script).toContain('configuredOutputDeviceAvailable');
+    expect(script).toContain('isConfiguredOutputDeviceAvailable');
   });
 });

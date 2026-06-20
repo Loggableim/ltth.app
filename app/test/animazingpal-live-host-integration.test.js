@@ -346,6 +346,38 @@ describe('AnimazingPal live host integration', () => {
     ]));
   });
 
+  test('preflight blocks stale browser audio device ids that would leak to default output', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'old-browser-device-id';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.config.brain.liveHost.audio.missingDeviceBehavior = 'default';
+    plugin.api.tiktok = { isConnected: () => true };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({
+      browser: {
+        sinkSupported: true,
+        audioUnlocked: true,
+        configuredOutputDeviceAvailable: false,
+        selectedOutputDeviceId: ''
+      }
+    });
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'audio.device',
+        status: 'error'
+      })
+    ]));
+  });
+
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {
     const routes = [];
     const tiktok = { connect: jest.fn().mockResolvedValue(true) };

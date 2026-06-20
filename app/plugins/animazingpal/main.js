@@ -3548,6 +3548,7 @@ class AnimazingPalPlugin {
     const hasOutputDevice = Boolean(liveHost.audio.outputDeviceId);
     const sinkSupported = browser.sinkSupported !== false;
     const audioUnlocked = browser.audioUnlocked === true;
+    const outputDeviceAvailable = browser.configuredOutputDeviceAvailable !== false;
     add(
       'audio.output',
       hasOutputDevice ? 'ok' : 'warn',
@@ -3557,9 +3558,20 @@ class AnimazingPalPlugin {
         : 'Kein explizites Ausgabegerät gesetzt; Browser/Windows-Default wird genutzt.',
       hasOutputDevice ? null : 'CABLE Input im Audio-Routing auswählen.'
     );
+    if (hasOutputDevice) {
+      add(
+        'audio.device',
+        outputDeviceAvailable ? 'ok' : 'error',
+        'Audio-Device',
+        outputDeviceAvailable
+          ? 'Das konfigurierte Ausgabe-Device ist im Browser verfuegbar.'
+          : `Das gespeicherte Ausgabe-Device ist im Browser nicht verfuegbar (${liveHost.audio.outputDeviceLabel || liveHost.audio.outputDeviceId}). Audio wuerde auf Standardausgabe fallen und Animaze nicht erreichen.`,
+        outputDeviceAvailable ? null : 'In der Standalone-UI Audiogeraet auswaehlen und CABLE Input erneut freigeben.'
+      );
+    }
     add(
       'audio.browser',
-      hasOutputDevice && !sinkSupported ? 'error' : (audioUnlocked ? 'ok' : 'warn'),
+      hasOutputDevice && (!sinkSupported || !outputDeviceAvailable) ? 'error' : (audioUnlocked ? 'ok' : 'warn'),
       'Browser-Audio',
       hasOutputDevice && !sinkSupported
         ? 'Browser kann das konfigurierte Ausgabegerät nicht direkt ansteuern.'
