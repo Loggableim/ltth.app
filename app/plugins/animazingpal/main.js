@@ -4059,7 +4059,9 @@ class AnimazingPalPlugin {
     const queueSize = Number(queueInfo?.size || 0);
     const queueMaxSize = Math.max(1, Number(queueInfo?.maxSize || 100));
     const queueWarnRatio = Math.min(1, Math.max(0, Number(liveHost.response?.queueWarnRatio ?? 0.8)));
-    if (queueInfo && queueSize >= queueMaxSize * queueWarnRatio) {
+    if (!queueInfo) {
+      add('tts.queue', 'warn', 'TTS Queue', 'Queue-Status nicht verfuegbar; Backpressure kann nicht bewertet werden.', 'TTS-Plugin Queue-Diagnose pruefen oder TTS-Probe ausfuehren.');
+    } else if (queueSize >= queueMaxSize * queueWarnRatio) {
       add('tts.queue', 'warn', 'TTS Queue', `Queue wirkt überfüllt: ${queueInfo.size}/${queueInfo.maxSize}.`, 'Queue leeren oder Antwortlimit senken.');
     } else {
       add('tts.queue', 'ok', 'TTS Queue', queueInfo ? `Queue: ${queueInfo.size || 0}/${queueInfo.maxSize || 100}.` : 'Queue-Status nicht verfügbar, TTS-Plugin antwortet aber.');
