@@ -113,6 +113,19 @@ describe('AnimazingPal Long-term Memory', () => {
   });
 
   describe('Interaction History Tracking', () => {
+    test('serializes structured event context when storing a memory', () => {
+      const memoryId = memoryDb.storeMemory({
+        type: 'like',
+        content: 'viewer sent 42 likes',
+        context: { likeCount: 42 },
+        user: 'viewer',
+        event: 'like'
+      });
+
+      const memory = db.prepare('SELECT context FROM animazingpal_memories WHERE id = ?').get(memoryId);
+      expect(JSON.parse(memory.context)).toEqual({ likeCount: 42 });
+    });
+
     test('should add interaction to history', () => {
       memoryDb.getOrCreateUserProfile('user1', 'User One');
       

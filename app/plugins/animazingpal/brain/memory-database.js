@@ -425,7 +425,9 @@ Sprechstil: Schlagfertig, verspielt, sarkastisch und warmherzig`,
       streamerId,
       data.type || 'general',
       data.content,
-      data.context || null,
+      data.context
+        ? (typeof data.context === 'string' ? data.context : JSON.stringify(data.context))
+        : null,
       data.embedding ? JSON.stringify(data.embedding) : null,
       data.importance || 0.5,
       data.tags ? JSON.stringify(data.tags) : null,
