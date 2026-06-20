@@ -390,7 +390,7 @@
 
   function renderDiagnostics() {
     return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Diagnose</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      ${input('diagnostics.verboseLogging', 'Verbose Logging', { type: 'checkbox' })}${input('diagnostics.emitEvents', 'Diagnoseereignisse', { type: 'checkbox' })}${input('diagnostics.retainLastErrors', 'Letzte Fehler behalten', { type: 'number', min: 0, max: 100 })}${input('diagnostics.movementProbeStaleMs', 'Motion-Test stale nach ms', { type: 'number', min: 30000, max: 86400000 })}${input('diagnostics.includePromptBodies', 'Prompt-Inhalte loggen', { type: 'checkbox' })}
+      ${input('diagnostics.verboseLogging', 'Verbose Logging', { type: 'checkbox' })}${input('diagnostics.emitEvents', 'Diagnoseereignisse', { type: 'checkbox' })}${input('diagnostics.retainLastErrors', 'Letzte Fehler behalten', { type: 'number', min: 0, max: 100 })}${input('diagnostics.browserHeartbeatStaleMs', 'Browser-Heartbeat stale nach ms', { type: 'number', min: 5000, max: 300000 })}${input('diagnostics.movementProbeStaleMs', 'Motion-Test stale nach ms', { type: 'number', min: 30000, max: 86400000 })}${input('diagnostics.includePromptBodies', 'Prompt-Inhalte loggen', { type: 'checkbox' })}
     </div>${renderRuntimeDiagnostics()}<p class="text-sm text-gray-400 mt-3" id="liveHostStatus">TikTok, Provider, Fish.audio, Audio und Animaze werden über die Live-Statusanzeige überwacht.</p>${actions('diagnostics')}</div></section>`;
   }
 

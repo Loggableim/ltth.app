@@ -770,6 +770,29 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test('browser heartbeat stale threshold is configurable for unattended browser sessions', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.diagnostics.browserHeartbeatStaleMs = 120000;
+    plugin.liveHostBrowserHeartbeat = {
+      receivedAt: new Date(100000).toISOString(),
+      receivedAtMs: 100000,
+      sinkSupported: true,
+      audioUnlocked: true,
+      configuredOutputDeviceAvailable: true,
+      selectedOutputDeviceId: 'cable-device',
+      playback: { status: 'idle', lastRouting: { routed: true } }
+    };
+
+    const status = plugin.getLiveHostBrowserHeartbeatStatus(160000);
+
+    expect(status).toEqual(expect.objectContaining({
+      present: true,
+      stale: false,
+      ageMs: 60000,
+      thresholdMs: 120000
+    }));
+  });
+
   test('preflight can use the latest browser heartbeat when no inline browser state is posted', () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;

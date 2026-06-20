@@ -3798,19 +3798,23 @@ class AnimazingPalPlugin {
   }
 
   getLiveHostBrowserHeartbeatStatus(now = Date.now()) {
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const thresholdMs = Math.max(5000, Number(liveHost.diagnostics?.browserHeartbeatStaleMs) || 30000);
     if (!this.liveHostBrowserHeartbeat) {
       return {
         present: false,
         stale: true,
         ageMs: null,
-        receivedAt: null
+        receivedAt: null,
+        thresholdMs
       };
     }
     const ageMs = Math.max(0, now - Number(this.liveHostBrowserHeartbeat.receivedAtMs || 0));
     return {
       ...this.liveHostBrowserHeartbeat,
       present: true,
-      stale: ageMs > 30000,
+      stale: ageMs > thresholdMs,
+      thresholdMs,
       ageMs
     };
   }

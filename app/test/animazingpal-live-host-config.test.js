@@ -16,6 +16,7 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.response.maxSentences).toBe(2);
     expect(configured.response.queueWarnRatio).toBe(0.8);
     expect(configured.tts.probeStaleMs).toBe(300000);
+    expect(configured.diagnostics.browserHeartbeatStaleMs).toBe(30000);
     expect(configured.diagnostics.movementProbeStaleMs).toBe(300000);
     expect(configured.events.gift.brainEnabled).toBe(true);
     expect(configured.events.like.brainEnabled).toBe(false);
@@ -114,11 +115,12 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.source.reconnectOnEventStale).toBe(true);
   });
 
-  test('normalizes movement probe stale diagnostics settings', () => {
+  test('normalizes stale diagnostics settings', () => {
     const configured = normalizeLiveHostConfig({
-      diagnostics: { movementProbeStaleMs: 999999999 }
+      diagnostics: { browserHeartbeatStaleMs: 1, movementProbeStaleMs: 999999999 }
     });
 
+    expect(configured.diagnostics.browserHeartbeatStaleMs).toBe(5000);
     expect(configured.diagnostics.movementProbeStaleMs).toBe(86400000);
   });
 });

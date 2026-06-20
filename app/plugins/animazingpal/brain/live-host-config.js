@@ -161,6 +161,7 @@ function buildLiveHostDefaults() {
       verboseLogging: false,
       emitEvents: true,
       retainLastErrors: 20,
+      browserHeartbeatStaleMs: 30000,
       movementProbeStaleMs: 300000,
       includePromptBodies: false
     }
@@ -305,6 +306,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.audio.missingDeviceBehavior = ['mute', 'default', 'error'].includes(configured.audio.missingDeviceBehavior)
     ? configured.audio.missingDeviceBehavior : defaults.audio.missingDeviceBehavior;
   configured.diagnostics.retainLastErrors = Math.round(clamp(configured.diagnostics.retainLastErrors, 0, 100, defaults.diagnostics.retainLastErrors));
+  configured.diagnostics.browserHeartbeatStaleMs = Math.round(clamp(configured.diagnostics.browserHeartbeatStaleMs, 5000, 300000, defaults.diagnostics.browserHeartbeatStaleMs));
   configured.diagnostics.movementProbeStaleMs = Math.round(clamp(configured.diagnostics.movementProbeStaleMs, 30000, 86400000, defaults.diagnostics.movementProbeStaleMs));
   return configured;
 }

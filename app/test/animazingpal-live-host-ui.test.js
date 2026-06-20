@@ -106,6 +106,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('/api/animazingpal/live-host/movement-test');
     expect(script).toContain('Animaze Bewegung testen');
     expect(script).toContain('lastMovementTest');
+    expect(script).toContain('diagnostics.browserHeartbeatStaleMs');
     expect(script).toContain('diagnostics.movementProbeStaleMs');
   });
 
