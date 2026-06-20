@@ -78,4 +78,13 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('/api/tts/queue');
     expect(script).toContain('setSinkId nicht verfügbar');
   });
+
+  test('live-host UI exposes a preflight check before unattended operation', () => {
+    expect(script).toContain('runPreflight');
+    expect(script).toContain('/api/animazingpal/live-host/preflight');
+    expect(script).toContain('data-preflight-check');
+    expect(script).toContain('liveHostPreflightStatus');
+    expect(script).toContain('sinkSupported');
+    expect(script).toContain('audioUnlocked');
+  });
 });

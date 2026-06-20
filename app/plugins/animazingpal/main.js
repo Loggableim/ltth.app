@@ -1177,6 +1177,15 @@ class AnimazingPalPlugin {
       }
     });
 
+    this.api.registerRoute('post', '/api/animazingpal/live-host/preflight', (req, res) => {
+      try {
+        res.json({ success: true, preflight: this.evaluateLiveHostPreflight(req.body || {}) });
+      } catch (error) {
+        this.api.log(`Live host preflight failed: ${error.message}`, 'warn');
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
     this.api.registerRoute('post', '/api/animazingpal/live-host/config', async (req, res) => {
       try {
         this.config.brain.liveHost = mergeLiveHostSecrets(this.config.brain.liveHost, req.body || {});
@@ -3481,6 +3490,128 @@ class AnimazingPalPlugin {
       dedupeCacheSize: this.liveHostEventDeduper.size(),
       responseSlotsUsedLastMinute: this.liveHostResponseTimes.filter(timestamp => Date.now() - timestamp < 60000).length,
       diagnostics: { ...this.liveHostDiagnostics }
+    };
+  }
+
+  evaluateLiveHostPreflight(options = {}) {
+    this.ensureLiveHostRuntime();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const browser = options.browser || {};
+    const checks = [];
+    const add = (id, status, label, detail, action = null) => {
+      checks.push({ id, status, label, detail, ...(action ? { action } : {}) });
+    };
+
+    add(
+      'liveHost.enabled',
+      liveHost.enabled ? 'ok' : 'error',
+      'Live Host',
+      liveHost.enabled ? 'Live Host ist aktiviert.' : 'Live Host ist deaktiviert.',
+      liveHost.enabled ? null : 'Live Host im Standalone-Tab aktivieren.'
+    );
+
+    const provider = liveHost.providers?.[liveHost.provider] || {};
+    const providerNeedsKey = liveHost.provider !== 'ollama' || /ollama\.com/i.test(provider.baseUrl || '') || !/^https?:\/\/(127\.0\.0\.1|localhost)/i.test(provider.baseUrl || '');
+    const providerHasKey = Boolean(provider.apiKey);
+    add(
+      'provider.credentials',
+      providerNeedsKey && !providerHasKey ? 'error' : 'ok',
+      'Brain Provider',
+      providerNeedsKey && !providerHasKey
+        ? `${liveHost.provider} braucht einen gespeicherten API-Key.`
+        : `${liveHost.provider} ist konfiguriert.`,
+      providerNeedsKey && !providerHasKey ? 'API-Key im Brain-Provider-Bereich speichern oder lokalen Ollama-Endpunkt setzen.' : null
+    );
+
+    const ttsPlugin = this.api.getPluginInstance?.('tts')
+      || this.api.getPlugin?.('tts')
+      || this.api.pluginLoader?.getPluginInstance?.('tts');
+    const ttsInitialized = Boolean(ttsPlugin && (ttsPlugin.isInitialized !== false) && (ttsPlugin.initialized !== false));
+    const ttsEngine = ttsPlugin?.config?.defaultEngine || liveHost.tts.engine || 'fishaudio';
+    add(
+      'tts.plugin',
+      liveHost.tts.enabled && ttsInitialized ? 'ok' : 'error',
+      'Fish.audio / TTS',
+      liveHost.tts.enabled
+        ? (ttsInitialized ? `TTS-Plugin ist bereit (${ttsEngine}).` : 'TTS-Plugin ist nicht verfügbar oder nicht initialisiert.')
+        : 'LiveHost-TTS ist deaktiviert.',
+      liveHost.tts.enabled && ttsInitialized ? null : 'TTS-Plugin aktivieren und Fish.audio konfigurieren.'
+    );
+
+    const queueInfo = ttsPlugin?.queueManager?.getInfo?.() || null;
+    if (queueInfo && Number(queueInfo.size || 0) > Number(queueInfo.maxSize || 100)) {
+      add('tts.queue', 'warn', 'TTS Queue', `Queue wirkt überfüllt: ${queueInfo.size}/${queueInfo.maxSize}.`, 'Queue leeren oder Antwortlimit senken.');
+    } else {
+      add('tts.queue', 'ok', 'TTS Queue', queueInfo ? `Queue: ${queueInfo.size || 0}/${queueInfo.maxSize || 100}.` : 'Queue-Status nicht verfügbar, TTS-Plugin antwortet aber.');
+    }
+
+    const hasOutputDevice = Boolean(liveHost.audio.outputDeviceId);
+    const sinkSupported = browser.sinkSupported !== false;
+    const audioUnlocked = browser.audioUnlocked === true;
+    add(
+      'audio.output',
+      hasOutputDevice ? 'ok' : 'warn',
+      'Audio-Ausgabe',
+      hasOutputDevice
+        ? `Ausgabe gesetzt: ${liveHost.audio.outputDeviceLabel || liveHost.audio.outputDeviceId}.`
+        : 'Kein explizites Ausgabegerät gesetzt; Browser/Windows-Default wird genutzt.',
+      hasOutputDevice ? null : 'CABLE Input im Audio-Routing auswählen.'
+    );
+    add(
+      'audio.browser',
+      hasOutputDevice && !sinkSupported ? 'error' : (audioUnlocked ? 'ok' : 'warn'),
+      'Browser-Audio',
+      hasOutputDevice && !sinkSupported
+        ? 'Browser kann das konfigurierte Ausgabegerät nicht direkt ansteuern.'
+        : (audioUnlocked ? 'Audio ist freigeschaltet.' : 'Audio ist noch nicht per User-Klick freigeschaltet.'),
+      hasOutputDevice && !sinkSupported
+        ? 'Windows-Standardausgabe auf CABLE Input setzen oder Browser mit setSinkId verwenden.'
+        : (audioUnlocked ? null : 'In der Standalone-UI auf „Audio aktivieren“ klicken.')
+    );
+
+    add(
+      'animaze.connection',
+      this.isConnected ? 'ok' : 'error',
+      'Animaze',
+      this.isConnected ? 'Animaze ist verbunden.' : 'Animaze ist nicht verbunden.',
+      this.isConnected ? null : 'Animaze starten und AnimazingPal auf Port 9000 verbinden.'
+    );
+
+    const sourceUsername = String(liveHost.source?.username || '').trim();
+    add(
+      'source.username',
+      sourceUsername ? 'ok' : 'error',
+      'TikTok Quelle',
+      sourceUsername ? `Read-only Quelle: @${sourceUsername}.` : 'Kein öffentlicher TikTok-LIVE-Kanal konfiguriert.',
+      sourceUsername ? null : 'Öffentlichen LIVE-Kanal eintragen und lesend verbinden.'
+    );
+    add(
+      'source.readOnly',
+      liveHost.source?.readOnly !== false ? 'ok' : 'error',
+      'Read-only Schutz',
+      liveHost.source?.readOnly !== false ? 'Quelle ist read-only; es werden keine Aktionen an TikTok gesendet.' : 'Read-only Schutz ist nicht aktiv.',
+      liveHost.source?.readOnly !== false ? null : 'Read-only für fremde TikTok-LIVEs aktivieren.'
+    );
+
+    const runtime = this.getLiveHostRuntimeStatus();
+    add(
+      'runtime.rateLimit',
+      runtime.responseSlotsUsedLastMinute < Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10) ? 'ok' : 'warn',
+      'Antwortlimit',
+      `${runtime.responseSlotsUsedLastMinute}/${liveHost.response?.maxResponsesPerMinute || 10} Antwortslots in der letzten Minute genutzt.`,
+      runtime.responseSlotsUsedLastMinute < Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10) ? null : 'Kurz warten oder Antworten/Minute erhöhen.'
+    );
+
+    const summary = checks.reduce((acc, check) => {
+      acc[check.status === 'error' ? 'errors' : check.status === 'warn' ? 'warnings' : 'ok'] += 1;
+      return acc;
+    }, { ok: 0, warnings: 0, errors: 0 });
+
+    return {
+      ready: summary.errors === 0,
+      checkedAt: new Date().toISOString(),
+      summary,
+      checks
     };
   }
 

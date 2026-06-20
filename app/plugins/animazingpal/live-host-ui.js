@@ -14,6 +14,7 @@
     status: {},
     ttsStatus: {},
     ttsQueue: {},
+    preflight: null,
     loaded: false
   };
 
@@ -174,14 +175,47 @@
     </div>`;
   }
 
+  function renderPreflightStatus() {
+    if (!state.preflight) {
+      return `<div id="liveHostPreflightStatus" class="text-sm text-gray-400">Noch kein Preflight ausgeführt.</div>`;
+    }
+
+    const border = state.preflight.ready ? 'border-green-700 bg-green-950/30' : 'border-red-700 bg-red-950/30';
+    const summary = state.preflight.summary || { ok: 0, warnings: 0, errors: 0 };
+    const checks = state.preflight.checks || [];
+    return `<div id="liveHostPreflightStatus" class="mt-3 rounded-lg border ${border} p-3 text-sm">
+      <div class="font-semibold">${state.preflight.ready ? 'Preflight bereit' : 'Preflight blockiert'} · OK ${summary.ok || 0} · Warnungen ${summary.warnings || 0} · Fehler ${summary.errors || 0}</div>
+      <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+        ${checks.map(check => `<div class="rounded border border-gray-700 bg-gray-900/70 p-2">
+          <div><strong>${escapeHtml(check.label)}</strong> <span class="${check.status === 'ok' ? 'text-green-400' : check.status === 'warn' ? 'text-yellow-300' : 'text-red-400'}">${escapeHtml(check.status)}</span></div>
+          <div class="text-gray-300">${escapeHtml(check.detail)}</div>
+          ${check.action ? `<div class="text-xs text-gray-400 mt-1">Aktion: ${escapeHtml(check.action)}</div>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  function getBrowserPreflightState() {
+    const audio = document.getElementById('animazingpal-tts-audio');
+    const sinkSupported = Boolean(audio?.setSinkId) || supportsSinkId();
+    return {
+      browser: {
+        sinkSupported,
+        audioUnlocked: window.audioUnlocked === true || window.animazingPalAudioUnlocked === true
+      }
+    };
+  }
+
   function render() {
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
     root.innerHTML = `
       <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
         ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
+        <button class="btn btn-primary" data-preflight-check>24/7 Preflight prüfen</button>
         <button class="btn btn-success" data-preset="safe-live">Sicherer Livetest</button>
         <button class="btn btn-secondary" data-livehost-reset="all">Alle Einstellungen zurücksetzen</button>
+        <div class="basis-full">${renderPreflightStatus()}</div>
       </div>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         ${input('source.username', 'Öffentlicher LIVE-Kanal')}${input('source.autoConnect', 'Automatisch lesend verbinden', { type: 'checkbox' })}
@@ -387,6 +421,16 @@
     notify(`Audiogerät gespeichert: ${device.label || device.deviceId}`);
   }
 
+  async function runPreflight() {
+    const body = await request('/api/animazingpal/live-host/preflight', {
+      method: 'POST',
+      body: JSON.stringify(getBrowserPreflightState())
+    });
+    state.preflight = body.preflight;
+    render();
+    notify(state.preflight.ready ? '24/7 Preflight bereit' : '24/7 Preflight hat blockierende Fehler', !state.preflight.ready);
+  }
+
   function normalizeVoices(payload) {
     const source = payload.voices?.fishaudio || payload.fishaudio || {};
     return Array.isArray(source)
@@ -462,6 +506,7 @@
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
     document.querySelector('[data-pick-output-device]')?.addEventListener('click', () => pickOutputDevice().catch(error => notify(error.message, true)));
+    document.querySelector('[data-preflight-check]')?.addEventListener('click', () => runPreflight().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);
     document.querySelectorAll('[data-bundle-edit]').forEach(button => button.onclick = () => editBundle(button.dataset.bundleEdit));
     document.querySelectorAll('[data-bundle-delete]').forEach(button => button.onclick = () => { state.config.avatarBundles = state.config.avatarBundles.filter(item => item.id !== button.dataset.bundleDelete); save('avatarBundles').catch(error => notify(error.message, true)); });

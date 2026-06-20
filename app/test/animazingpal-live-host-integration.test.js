@@ -275,6 +275,77 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test('preflight reports a ready standalone host with concrete component checks', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.tiktok = { isConnected: () => true };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.ready).toBe(true);
+    expect(preflight.summary.errors).toBe(0);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'liveHost.enabled', status: 'ok' }),
+      expect.objectContaining({ id: 'tts.plugin', status: 'ok' }),
+      expect.objectContaining({ id: 'audio.browser', status: 'ok' }),
+      expect.objectContaining({ id: 'animaze.connection', status: 'ok' }),
+      expect.objectContaining({ id: 'source.readOnly', status: 'ok' })
+    ]));
+  });
+
+  test('preflight fails loud when critical 24/7 host prerequisites are missing', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = false;
+    plugin.config.brain.liveHost.enabled = true;
+    plugin.config.brain.liveHost.tts.enabled = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = '';
+    plugin.config.brain.liveHost.source.username = '';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.getPluginInstance = jest.fn(() => null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: false, audioUnlocked: false } });
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.summary.errors).toBeGreaterThan(0);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'provider.credentials', status: 'error' }),
+      expect.objectContaining({ id: 'tts.plugin', status: 'error' }),
+      expect.objectContaining({ id: 'audio.browser', status: 'error' }),
+      expect.objectContaining({ id: 'animaze.connection', status: 'error' }),
+      expect.objectContaining({ id: 'source.username', status: 'error' })
+    ]));
+  });
+
+  test('preflight detects TTS through getPlugin fallback used by the runtime API', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.getPluginInstance = undefined;
+    plugin.api.getPlugin = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0, maxSize: 100 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'tts.plugin', status: 'ok' })
+    ]));
+  });
+
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {
     const routes = [];
     const tiktok = { connect: jest.fn().mockResolvedValue(true) };
