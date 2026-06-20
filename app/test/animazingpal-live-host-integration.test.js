@@ -1258,6 +1258,30 @@ describe('AnimazingPal live host integration', () => {
     }
   });
 
+  test('starts the Animaze reconnect chain when the initial auto-connect fails', async () => {
+    const api = {
+      getSocketIO: () => ({ emit: jest.fn() }),
+      getDatabase: () => ({}),
+      getConfig: jest.fn(() => ({ enabled: true, autoConnect: true })),
+      log: jest.fn(),
+      emit: jest.fn()
+    };
+    const plugin = new AnimazingPalPlugin(api);
+    plugin.registerRoutes = jest.fn();
+    plugin.registerSocketEvents = jest.fn();
+    plugin.registerTikTokEvents = jest.fn();
+    plugin.startLiveHostSourceWatchdog = jest.fn();
+    plugin.startLiveHostIdleMotion = jest.fn();
+    plugin.safeEmitStatus = jest.fn();
+    plugin.connect = jest.fn().mockResolvedValue(false);
+    plugin.scheduleReconnect = jest.fn();
+
+    await plugin.init();
+
+    expect(plugin.connect).toHaveBeenCalledTimes(1);
+    expect(plugin.scheduleReconnect).toHaveBeenCalledTimes(1);
+  });
+
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {
     const routes = [];
     const tiktok = { connect: jest.fn().mockResolvedValue(true) };

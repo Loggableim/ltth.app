@@ -194,7 +194,8 @@ class AnimazingPalPlugin {
     if (this.config.enabled && activePlatformProfile.autoConnect) {
       const connected = await this.connect();
       if (!connected) {
-        this.api.log('Auto-connect failed, will retry on manual connect', 'warn');
+        this.api.log('Auto-connect failed, scheduling automatic retry', 'warn');
+        this.scheduleReconnect();
       }
       this.safeEmitStatus();
     }
