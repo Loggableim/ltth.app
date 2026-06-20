@@ -507,6 +507,64 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
   });
 
+  test('automatic idle motion alternates idle and special actions for visible liveliness', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    Object.assign(plugin.config.brain.liveHost.idleMotion, {
+      enabled: true,
+      cooldownAfterActionMs: 0,
+      actionType: 'idle',
+      preferNames: ['Explaining', 'Hello'],
+      avoidNames: ['Motionless'],
+      fallbackToSpecialAction: true,
+      alternateActionTypes: true
+    });
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      idleAnims: [{ animName: 'Explaining 1', index: 18 }],
+      specialActions: [{ animName: 'Hello', index: 0 }]
+    };
+    plugin.triggerIdle = jest.fn().mockResolvedValue(true);
+    plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+
+    const first = await plugin.runLiveHostIdleMotionTick(100000);
+    const second = await plugin.runLiveHostIdleMotionTick(120000);
+
+    expect(first).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
+    expect(second).toEqual(expect.objectContaining({ actionType: 'specialAction', actionValue: 0, success: true }));
+    expect(plugin.triggerIdle).toHaveBeenCalledWith(18);
+    expect(plugin.triggerSpecialAction).toHaveBeenCalledWith(0);
+  });
+
+  test('automatic idle motion can disable action type alternation', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    Object.assign(plugin.config.brain.liveHost.idleMotion, {
+      enabled: true,
+      cooldownAfterActionMs: 0,
+      actionType: 'idle',
+      preferNames: ['Explaining', 'Hello'],
+      fallbackToSpecialAction: true,
+      alternateActionTypes: false
+    });
+    plugin.isConnected = true;
+    plugin.animazeData = {
+      ...plugin.animazeData,
+      idleAnims: [{ animName: 'Explaining 1', index: 18 }],
+      specialActions: [{ animName: 'Hello', index: 0 }]
+    };
+    plugin.triggerIdle = jest.fn().mockResolvedValue(true);
+    plugin.triggerSpecialAction = jest.fn().mockResolvedValue(true);
+
+    const first = await plugin.runLiveHostIdleMotionTick(100000);
+    const second = await plugin.runLiveHostIdleMotionTick(120000);
+
+    expect(first).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
+    expect(second).toEqual(expect.objectContaining({ actionType: 'idle', actionValue: 18, success: true }));
+    expect(plugin.triggerSpecialAction).not.toHaveBeenCalled();
+  });
+
   test('automatic idle motion respects cooldown after recent avatar actions', async () => {
     const { plugin } = createPlugin();
     plugin.config.enabled = true;

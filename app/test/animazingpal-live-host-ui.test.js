@@ -110,6 +110,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('idleMotion.enabled');
     expect(script).toContain('idleMotion.intervalMs');
     expect(script).toContain('idleMotion.jitterMs');
+    expect(script).toContain('idleMotion.alternateActionTypes');
     expect(script).toContain('idleMotion.preferNames');
     expect(script).toContain('idleMotion.avoidNames');
     expect(script).toContain('lastIdleMotion');

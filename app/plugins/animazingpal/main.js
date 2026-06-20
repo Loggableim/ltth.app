@@ -65,6 +65,7 @@ class AnimazingPalPlugin {
     };
     this.liveHostIdleMotionTimer = null;
     this.liveHostLastAvatarActionAt = 0;
+    this.liveHostIdleMotionSequence = 0;
     this.speechState = new SpeechState();
 
     // Avatar platform registry
@@ -3616,7 +3617,7 @@ class AnimazingPalPlugin {
     }, delay);
   }
 
-  selectLiveHostIdleMotionAction(idleMotion = {}) {
+  selectLiveHostIdleMotionAction(idleMotion = {}, options = {}) {
     const preferred = Array.isArray(idleMotion.preferNames) ? idleMotion.preferNames : [];
     const avoided = Array.isArray(idleMotion.avoidNames) ? idleMotion.avoidNames : [];
     const matches = (item, needles) => {
@@ -3634,7 +3635,9 @@ class AnimazingPalPlugin {
       };
     };
 
-    if (idleMotion.actionType === 'specialAction') {
+    const preferredType = options.preferredType || idleMotion.actionType;
+
+    if (preferredType === 'specialAction') {
       return pickFrom(this.animazeData.specialActions, 'specialAction')
         || (idleMotion.fallbackToSpecialAction ? pickFrom(this.animazeData.idleAnims, 'idle') : null);
     }
@@ -3666,7 +3669,11 @@ class AnimazingPalPlugin {
     } else if (now - (this.liveHostLastAvatarActionAt || 0) < idleMotion.cooldownAfterActionMs) {
       result.reason = 'cooldown';
     } else {
-      const action = this.selectLiveHostIdleMotionAction(idleMotion);
+      this.liveHostIdleMotionSequence = (this.liveHostIdleMotionSequence || 0) + 1;
+      const preferredType = idleMotion.alternateActionTypes && idleMotion.fallbackToSpecialAction && this.liveHostIdleMotionSequence % 2 === 0
+        ? (idleMotion.actionType === 'idle' ? 'specialAction' : 'idle')
+        : idleMotion.actionType;
+      const action = this.selectLiveHostIdleMotionAction(idleMotion, { preferredType });
       if (!action) {
         result.reason = 'no-action';
       } else {

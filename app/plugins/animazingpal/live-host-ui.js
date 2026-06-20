@@ -358,6 +358,7 @@
           { value: 'specialAction', label: 'Special Action bevorzugen' }
         ] })}
         ${input('idleMotion.fallbackToSpecialAction', 'Fallback erlauben', { type: 'checkbox' })}
+        ${input('idleMotion.alternateActionTypes', 'Idle/Special alternieren', { type: 'checkbox' })}
         ${input('idleMotion.pauseWhileSpeaking', 'Beim Sprechen pausieren', { type: 'checkbox' })}
         ${input('idleMotion.cooldownAfterActionMs', 'Cooldown nach Aktion (ms)', { type: 'number', min: 0, max: 600000 })}
       </div>
