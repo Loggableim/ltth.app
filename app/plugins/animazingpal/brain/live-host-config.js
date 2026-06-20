@@ -68,7 +68,9 @@ function buildLiveHostDefaults() {
     source: {
       username: '',
       readOnly: true,
-      autoConnect: false
+      autoConnect: false,
+      eventStaleMs: 300000,
+      reconnectOnEventStale: false
     },
     provider: 'openai',
     providers: {
@@ -185,6 +187,8 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.source.username = safeString(configured.source.username, 100).replace(/^@/, '');
   configured.source.readOnly = true;
   configured.source.autoConnect = !!configured.source.autoConnect;
+  configured.source.eventStaleMs = Math.round(clamp(configured.source.eventStaleMs, 30000, 3600000, defaults.source.eventStaleMs));
+  configured.source.reconnectOnEventStale = !!configured.source.reconnectOnEventStale;
 
   for (const provider of PROVIDERS) {
     const item = configured.providers[provider];
@@ -336,6 +340,7 @@ function applyLiveHostPreset(config, preset) {
     },
     viewerMemory: { enabled: true, writeMemories: true },
     avatarSwitch: { enabled: true, persistUntilNextSwitch: true, revertAfterMs: 0 },
+    source: { eventStaleMs: 300000, reconnectOnEventStale: true },
     idleMotion: { enabled: true, intervalMs: 15000, jitterMs: 5000, actionType: 'idle', fallbackToSpecialAction: true, includeEmotes: true, alternateActionTypes: true, pauseWhileSpeaking: false }
   }));
 }

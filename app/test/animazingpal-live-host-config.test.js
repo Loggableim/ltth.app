@@ -96,6 +96,15 @@ describe('AnimazingPal live host configuration', () => {
 
   test('keeps foreign TikTok sources read-only', () => {
     const configured = normalizeLiveHostConfig({ source: { username: '@wardalq4', readOnly: false, autoConnect: true } });
-    expect(configured.source).toEqual({ username: 'wardalq4', readOnly: true, autoConnect: true });
+    expect(configured.source).toEqual(expect.objectContaining({ username: 'wardalq4', readOnly: true, autoConnect: true }));
+  });
+
+  test('normalizes live source event-staleness watchdog settings', () => {
+    const configured = normalizeLiveHostConfig({
+      source: { eventStaleMs: 1, reconnectOnEventStale: true }
+    });
+
+    expect(configured.source.eventStaleMs).toBe(30000);
+    expect(configured.source.reconnectOnEventStale).toBe(true);
   });
 });

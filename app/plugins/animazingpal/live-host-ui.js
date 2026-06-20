@@ -187,6 +187,7 @@
     const ttsProbe = diagnostics.lastTtsProbe || null;
     const browserHeartbeat = runtime.browserHeartbeat || {};
     const sourceStatus = runtime.sourceStatus || {};
+    const sourceEventStatus = runtime.sourceEventStatus || {};
     const lastHealth = state.lastHealthAt ? new Date(state.lastHealthAt).toLocaleTimeString() : 'noch nicht aktualisiert';
     return `<div id="liveHostRuntimeDiagnostics" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
       <div class="flex flex-wrap items-center gap-2 mb-2">
@@ -206,6 +207,7 @@
         <div>Idle-Skips: <strong>${escapeHtml(diagnostics.idleMotionSkipped ?? 0)}</strong></div>
         <div>Browser-Host: <strong class="${browserHeartbeat.present && !browserHeartbeat.stale ? 'text-green-400' : 'text-red-300'}">${browserHeartbeat.present ? (browserHeartbeat.stale ? 'stale' : 'aktiv') : 'unbekannt'}</strong></div>
         <div>TikTok-Quelle: <strong class="${sourceStatus.connectedToSource ? 'text-green-400' : sourceStatus.autoConnect ? 'text-yellow-300' : 'text-red-300'}">${sourceStatus.connectedToSource ? 'verbunden' : sourceStatus.autoConnect ? 'watchdog' : 'getrennt'}</strong></div>
+        <div>TikTok-Events: <strong class="${sourceEventStatus.seen && !sourceEventStatus.stale ? 'text-green-400' : 'text-yellow-300'}">${sourceEventStatus.seen ? (sourceEventStatus.stale ? 'stale' : 'aktiv') : 'noch keine'}</strong></div>
       </div>
       ${browserHeartbeat.present ? `<p class="text-xs ${browserHeartbeat.stale ? 'text-red-300' : 'text-gray-400'} mt-2">Browser-Heartbeat: ${escapeHtml(browserHeartbeat.ageMs ?? '?')}ms alt · Audio ${browserHeartbeat.audioUnlocked ? 'frei' : 'gesperrt'} · Device ${browserHeartbeat.configuredOutputDeviceAvailable ? 'verfügbar' : 'fehlt'}</p>` : '<p class="text-xs text-red-300 mt-2">Kein Browser-Heartbeat empfangen. Standalone-Tab offen lassen.</p>'}
       ${sourceStatus.configured ? `<p class="text-xs ${sourceStatus.connectedToSource ? 'text-gray-400' : 'text-yellow-300'} mt-2">TikTok-Quelle: @${escapeHtml(sourceStatus.username || '?')} · aktuell ${escapeHtml(sourceStatus.currentUsername || 'nicht verbunden')} · Reconnects ${escapeHtml(sourceStatus.reconnectAttempts || 0)}${sourceStatus.lastReconnectError ? ` · ${escapeHtml(sourceStatus.lastReconnectError)}` : ''}</p>` : '<p class="text-xs text-red-300 mt-2">Keine TikTok-Quelle konfiguriert.</p>'}
@@ -271,6 +273,8 @@
         <div class="basis-full">${renderPreflightStatus()}</div>
       </div>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${input('source.eventStaleMs', 'Event-Stale-Schwelle (ms)', { type: 'number', min: 30000, max: 3600000 })}
+        ${input('source.reconnectOnEventStale', 'Bei stale Events reconnecten', { type: 'checkbox' })}
         ${input('source.username', 'Öffentlicher LIVE-Kanal')}${input('source.autoConnect', 'Automatisch lesend verbinden', { type: 'checkbox' })}
         <p class="text-sm text-gray-400">Nur eingehende Ereignisse. AnimazingPal sendet keine Chats, Likes, Follows oder Gifts an den fremden Kanal.</p>
       </div><button class="btn btn-success mt-3" data-source-connect>Jetzt lesend verbinden</button>${actions('source')}</div></section>

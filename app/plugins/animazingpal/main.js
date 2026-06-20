@@ -62,6 +62,8 @@ class AnimazingPalPlugin {
       lastMovementTest: null,
       lastIdleMotion: null,
       lastTtsProbe: null,
+      lastSourceEventAt: null,
+      lastSourceEventType: null,
       idleMotionSkipped: 0
     };
     this.liveHostIdleMotionTimer = null;
@@ -3520,6 +3522,8 @@ class AnimazingPalPlugin {
         lastMovementTest: null,
         lastIdleMotion: null,
         lastTtsProbe: null,
+        lastSourceEventAt: null,
+        lastSourceEventType: null,
         idleMotionSkipped: 0
       };
     } else if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastMovementTest')) {
@@ -3530,6 +3534,12 @@ class AnimazingPalPlugin {
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastTtsProbe')) {
       this.liveHostDiagnostics.lastTtsProbe = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastSourceEventAt')) {
+      this.liveHostDiagnostics.lastSourceEventAt = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastSourceEventType')) {
+      this.liveHostDiagnostics.lastSourceEventType = null;
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'idleMotionSkipped')) {
       this.liveHostDiagnostics.idleMotionSkipped = 0;
@@ -3599,10 +3609,34 @@ class AnimazingPalPlugin {
     this.liveHostResponseTimes.push(Date.now());
   }
 
+  recordLiveHostSourceEvent(eventType) {
+    this.ensureLiveHostRuntime();
+    this.liveHostDiagnostics.lastSourceEventAt = new Date().toISOString();
+    this.liveHostDiagnostics.lastSourceEventType = eventType || 'unknown';
+  }
+
+  getLiveHostSourceEventStatus(liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {})) {
+    this.ensureLiveHostRuntime();
+    const thresholdMs = Math.max(30000, Number(liveHost.source?.eventStaleMs) || 300000);
+    const lastSourceEventAt = this.liveHostDiagnostics.lastSourceEventAt || null;
+    const timestamp = lastSourceEventAt ? Date.parse(lastSourceEventAt) : NaN;
+    const ageMs = Number.isFinite(timestamp) ? Date.now() - timestamp : null;
+    return {
+      seen: Boolean(lastSourceEventAt && Number.isFinite(timestamp)),
+      lastEventAt: Number.isFinite(timestamp) ? lastSourceEventAt : null,
+      eventType: this.liveHostDiagnostics.lastSourceEventType || null,
+      ageMs,
+      thresholdMs,
+      stale: Number.isFinite(ageMs) ? ageMs > thresholdMs : false
+    };
+  }
+
   getLiveHostRuntimeStatus() {
     this.ensureLiveHostRuntime();
     const browserHeartbeat = this.getLiveHostBrowserHeartbeatStatus();
     const sourceStatus = this.getLiveHostSourceStatus();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const sourceEventStatus = this.getLiveHostSourceEventStatus(liveHost);
     return {
       speaking: this.speechState.isSpeaking(),
       speechDurationMs: this.speechState.getSpeechDuration(),
@@ -3613,6 +3647,7 @@ class AnimazingPalPlugin {
       animazeReconnectAttempts: this.reconnectAttempts,
       browserHeartbeat,
       sourceStatus,
+      sourceEventStatus,
       diagnostics: { ...this.liveHostDiagnostics }
     };
   }
@@ -3663,8 +3698,11 @@ class AnimazingPalPlugin {
 
   async runLiveHostSourceWatchdog() {
     const status = this.getLiveHostSourceStatus();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const eventStatus = this.getLiveHostSourceEventStatus(liveHost);
+    const staleConnectedSource = status.connectedToSource && eventStatus.stale && liveHost.source?.reconnectOnEventStale;
     this.liveHostSourceStatus.lastCheckedAt = new Date().toISOString();
-    if (!status.configured || !status.autoConnect || status.connectedToSource || this.liveHostSourceReconnectInFlight || !this.api.tiktok?.connect) {
+    if (!status.configured || !status.autoConnect || (!staleConnectedSource && status.connectedToSource) || this.liveHostSourceReconnectInFlight || !this.api.tiktok?.connect) {
       return { reconnected: false, status: this.getLiveHostSourceStatus() };
     }
 
@@ -3674,8 +3712,8 @@ class AnimazingPalPlugin {
       await this.api.tiktok.connect(status.username);
       this.liveHostSourceStatus.lastReconnectAt = new Date().toISOString();
       this.liveHostSourceStatus.lastReconnectError = null;
-      this.api.log(`Live host source reconnected read-only to @${status.username}`, 'info');
-      return { reconnected: true, status: this.getLiveHostSourceStatus() };
+      this.api.log(`Live host source reconnected read-only to @${status.username}${staleConnectedSource ? ' after stale events' : ''}`, 'info');
+      return { reconnected: true, reason: staleConnectedSource ? 'stale-events' : 'disconnected', status: this.getLiveHostSourceStatus() };
     } catch (error) {
       this.liveHostSourceStatus.lastReconnectError = error.message;
       this.api.log(`Live host source reconnect failed for @${status.username}: ${error.message}`, 'warn');
@@ -4101,6 +4139,24 @@ class AnimazingPalPlugin {
         ? null
         : (sourceStatus.autoConnect ? 'Watchdog reconnectet automatisch; Status beobachten.' : 'Quelle lesend verbinden oder Auto-Connect aktivieren.')
     );
+    const sourceEventStatus = this.getLiveHostSourceEventStatus(liveHost);
+    add(
+      'source.events',
+      !sourceStatus.connectedToSource ? 'warn' : (!sourceEventStatus.seen || sourceEventStatus.stale ? 'warn' : 'ok'),
+      'TikTok Event-Fluss',
+      !sourceStatus.connectedToSource
+        ? 'Event-Fluss kann erst nach Quellenverbindung bewertet werden.'
+        : (!sourceEventStatus.seen
+          ? 'Seit Prozessstart wurde noch kein TikTok-Event vom Live Host verarbeitet.'
+          : (sourceEventStatus.stale
+            ? `Letztes TikTok-Event ist stale (${sourceEventStatus.ageMs}ms > ${sourceEventStatus.thresholdMs}ms).`
+            : `Letztes TikTok-Event: ${sourceEventStatus.eventType} vor ${sourceEventStatus.ageMs}ms.`)),
+      sourceStatus.connectedToSource && sourceEventStatus.stale && liveHost.source?.reconnectOnEventStale
+        ? 'Watchdog reconnectet die Quelle automatisch bei stale Events.'
+        : (sourceStatus.connectedToSource && (sourceEventStatus.stale || !sourceEventStatus.seen)
+          ? 'Chat/Gift-Testevent abwarten oder Event-Stale-Reconnect aktivieren.'
+          : null)
+    );
 
     const runtime = this.getLiveHostRuntimeStatus();
     add(
@@ -4265,7 +4321,9 @@ class AnimazingPalPlugin {
     this.ensureLiveHostRuntime();
     const liveHost = this.config?.brain?.liveHost;
     const event = liveHost?.events?.[eventType];
-    if (!liveHost?.enabled || !event?.enabled) return { handled: false };
+    if (!liveHost?.enabled) return { handled: false };
+    this.recordLiveHostSourceEvent(eventType);
+    if (!event?.enabled) return { handled: false };
 
     const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
     if (dedupe.duplicate) {

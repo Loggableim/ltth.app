@@ -402,6 +402,67 @@ describe('AnimazingPal live host integration', () => {
     ]));
   });
 
+  test('records live source events for unattended stream freshness diagnostics', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.events.chat.brainEnabled = false;
+    plugin.config.brain.liveHost.events.chat.templateEnabled = false;
+
+    await plugin.processLiveHostEvent('chat', { uniqueId: 'viewer', comment: 'hi' });
+
+    expect(plugin.liveHostDiagnostics.lastSourceEventAt).toEqual(expect.any(String));
+    expect(plugin.liveHostDiagnostics.lastSourceEventType).toBe('chat');
+    expect(plugin.getLiveHostRuntimeStatus().sourceEventStatus).toEqual(expect.objectContaining({
+      seen: true,
+      eventType: 'chat',
+      stale: false
+    }));
+  });
+
+  test('preflight warns when the connected source has stale live events', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.source.eventStaleMs = 30000;
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'cable-device';
+    plugin.config.brain.liveHost.audio.outputDeviceLabel = 'CABLE Input';
+    plugin.api.tiktok = { isConnected: () => true, currentUsername: 'jeffreestar' };
+    plugin.ensureLiveHostRuntime();
+    plugin.liveHostDiagnostics.lastSourceEventAt = new Date(Date.now() - 60000).toISOString();
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'source.events', status: 'warn' })
+    ]));
+  });
+
+  test('source watchdog reconnects a connected source when live events go stale and recovery is enabled', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.source = {
+      username: 'jeffreestar',
+      readOnly: true,
+      autoConnect: true,
+      eventStaleMs: 30000,
+      reconnectOnEventStale: true
+    };
+    plugin.api.tiktok = {
+      isConnected: () => true,
+      currentUsername: 'jeffreestar',
+      connect: jest.fn().mockResolvedValue(true)
+    };
+    plugin.safeEmitStatus = jest.fn();
+    plugin.ensureLiveHostRuntime();
+    plugin.liveHostDiagnostics.lastSourceEventAt = new Date(Date.now() - 60000).toISOString();
+
+    const result = await plugin.runLiveHostSourceWatchdog();
+
+    expect(result.reconnected).toBe(true);
+    expect(result.reason).toBe('stale-events');
+    expect(plugin.api.tiktok.connect).toHaveBeenCalledWith('jeffreestar');
+  });
+
   test('preflight blocks stale browser audio device ids that would leak to default output', () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;

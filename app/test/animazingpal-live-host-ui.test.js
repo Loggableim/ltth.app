@@ -156,7 +156,11 @@ describe('AnimazingPal live-host configuration UI', () => {
 
   test('live-host UI surfaces TikTok source watchdog state', () => {
     expect(script).toContain('sourceStatus');
+    expect(script).toContain('sourceEventStatus');
+    expect(script).toContain('source.eventStaleMs');
+    expect(script).toContain('source.reconnectOnEventStale');
     expect(script).toContain('TikTok-Quelle');
+    expect(script).toContain('TikTok-Events');
     expect(script).toContain('connectedToSource');
     expect(script).toContain('lastReconnectError');
   });
