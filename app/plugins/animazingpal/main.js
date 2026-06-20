@@ -2287,8 +2287,6 @@ class AnimazingPalPlugin {
 
     return new Promise((resolve) => {
       let resolved = false; // Guard to prevent multiple resolve calls
-      const isInitialConnection = this.reconnectAttempts === 0; // Track if this is initial connection
-
       const safeResolve = (value) => {
         if (!resolved) {
           resolved = true;
@@ -2306,6 +2304,7 @@ class AnimazingPalPlugin {
 
         this.ws.on('open', async () => {
           this.isConnected = true;
+          this.reconnectTimer = null;
           this.reconnectAttempts = 0;
           this.api.log('Connected to Animaze successfully', 'info');
           
@@ -2348,9 +2347,7 @@ class AnimazingPalPlugin {
           this.api.log('Disconnected from Animaze', 'info');
           this.safeEmitStatus();
           
-          // Only trigger reconnect if this is not the initial connection AND we were previously connected
-          // This prevents reconnect loops during plugin initialization
-          if (!isInitialConnection && wasConnected && this.config.reconnectOnDisconnect && this.config.enabled) {
+          if (this.shouldReconnectAfterAnimazeClose(wasConnected)) {
             this.scheduleReconnect();
           }
         });
@@ -2461,6 +2458,10 @@ class AnimazingPalPlugin {
   }
 
   scheduleReconnect() {
+    if (this.reconnectTimer) {
+      return;
+    }
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       this.api.log(`Max reconnect attempts (${this.maxReconnectAttempts}) reached. Please reconnect manually.`, 'warn');
       this.safeEmitStatus();
@@ -2479,6 +2480,7 @@ class AnimazingPalPlugin {
     }
     
     this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
       try {
         this.api.log(`Attempting reconnection (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`, 'info');
         await this.connect();
@@ -2489,6 +2491,15 @@ class AnimazingPalPlugin {
         }
       }
     }, delay);
+  }
+
+  shouldReconnectAfterAnimazeClose(wasConnected) {
+    return Boolean(
+      wasConnected
+      && this.config
+      && this.config.enabled
+      && this.config.reconnectOnDisconnect
+    );
   }
 
   handleAnimazeMessage(data) {
@@ -3489,6 +3500,9 @@ class AnimazingPalPlugin {
       speechDurationMs: this.speechState.getSpeechDuration(),
       dedupeCacheSize: this.liveHostEventDeduper.size(),
       responseSlotsUsedLastMinute: this.liveHostResponseTimes.filter(timestamp => Date.now() - timestamp < 60000).length,
+      animazeConnected: this.isConnected,
+      animazeReconnectScheduled: Boolean(this.reconnectTimer),
+      animazeReconnectAttempts: this.reconnectAttempts,
       diagnostics: { ...this.liveHostDiagnostics }
     };
   }
@@ -3597,8 +3611,12 @@ class AnimazingPalPlugin {
       'animaze.connection',
       this.isConnected ? 'ok' : 'error',
       'Animaze',
-      this.isConnected ? 'Animaze ist verbunden.' : 'Animaze ist nicht verbunden.',
-      this.isConnected ? null : 'Animaze starten und AnimazingPal auf Port 9000 verbinden.'
+      this.isConnected
+        ? 'Animaze ist verbunden.'
+        : (this.reconnectTimer ? `Animaze ist getrennt; Reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts} ist geplant.` : 'Animaze ist nicht verbunden.'),
+      this.isConnected
+        ? null
+        : (this.reconnectTimer ? 'Kurz warten oder manuell verbinden, falls Animaze nicht laeuft.' : 'Animaze starten und AnimazingPal auf Port 9000 verbinden.')
     );
 
     const sourceUsername = String(liveHost.source?.username || '').trim();

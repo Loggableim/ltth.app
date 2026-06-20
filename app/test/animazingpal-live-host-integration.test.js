@@ -265,6 +265,9 @@ describe('AnimazingPal live host integration', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       liveHostRuntime: expect.objectContaining({
         speaking: false,
+        animazeConnected: false,
+        animazeReconnectScheduled: false,
+        animazeReconnectAttempts: 0,
         dedupeCacheSize: 0,
         responseSlotsUsedLastMinute: 0,
         diagnostics: expect.objectContaining({
@@ -408,6 +411,18 @@ describe('AnimazingPal live host integration', () => {
     expect(preflight.checks).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'audio.playback', status: 'error' })
     ]));
+  });
+
+  test('reconnects after an established auto-connected Animaze socket closes', () => {
+    const { plugin } = createPlugin();
+    plugin.config.enabled = true;
+    plugin.config.reconnectOnDisconnect = true;
+
+    expect(plugin.shouldReconnectAfterAnimazeClose(true)).toBe(true);
+    expect(plugin.shouldReconnectAfterAnimazeClose(false)).toBe(false);
+
+    plugin.config.reconnectOnDisconnect = false;
+    expect(plugin.shouldReconnectAfterAnimazeClose(true)).toBe(false);
   });
 
   test('connects a foreign public LIVE as read-only event source without profile switching', async () => {
