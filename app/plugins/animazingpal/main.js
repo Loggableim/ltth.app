@@ -4034,6 +4034,9 @@ class AnimazingPalPlugin {
     const ttsInitialized = Boolean(ttsPlugin && (ttsPlugin.isInitialized !== false) && (ttsPlugin.initialized !== false));
     const ttsEngine = ttsPlugin?.config?.defaultEngine || liveHost.tts.engine || 'fishaudio';
     const lastTtsProbe = this.liveHostDiagnostics.lastTtsProbe;
+    const ttsProbeAgeMs = lastTtsProbe?.checkedAt ? Date.now() - Date.parse(lastTtsProbe.checkedAt) : null;
+    const ttsProbeStaleMs = Math.max(30000, Number(liveHost.tts?.probeStaleMs) || 300000);
+    const ttsProbeIsStale = lastTtsProbe?.success === true && (!Number.isFinite(ttsProbeAgeMs) || ttsProbeAgeMs > ttsProbeStaleMs);
     add(
       'tts.plugin',
       liveHost.tts.enabled && ttsInitialized ? 'ok' : 'error',
@@ -4045,14 +4048,16 @@ class AnimazingPalPlugin {
     );
     add(
       'tts.probe',
-      lastTtsProbe?.success ? 'ok' : (lastTtsProbe ? 'error' : 'warn'),
+      ttsProbeIsStale ? 'warn' : (lastTtsProbe?.success ? 'ok' : (lastTtsProbe ? 'error' : 'warn')),
       'TTS Pipeline-Probe',
       lastTtsProbe
-        ? (lastTtsProbe.success
+        ? (ttsProbeIsStale
+          ? `Letzte TTS-Probe ist stale (${Number.isFinite(ttsProbeAgeMs) ? `${ttsProbeAgeMs}ms` : 'unbekanntes Alter'} > ${ttsProbeStaleMs}ms).`
+          : (lastTtsProbe.success
           ? `Letzte TTS-Probe ok (${lastTtsProbe.engine}, ${lastTtsProbe.checkedAt}).`
-          : `Letzte TTS-Probe fehlgeschlagen: ${lastTtsProbe.error || 'unbekannt'}.`)
+          : `Letzte TTS-Probe fehlgeschlagen: ${lastTtsProbe.error || 'unbekannt'}.`))
         : 'Noch keine TTS-Probe in dieser Laufzeit ausgefuehrt.',
-      lastTtsProbe?.success ? null : 'Im Fish.audio-Bereich Sprachtest oder TTS-Probe ausfuehren.'
+      lastTtsProbe?.success && !ttsProbeIsStale ? null : 'Im Fish.audio-Bereich Sprachtest oder TTS-Probe ausfuehren.'
     );
 
     const queueInfo = ttsPlugin?.queueManager?.getInfo?.() || null;

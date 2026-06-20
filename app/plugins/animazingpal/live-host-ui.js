@@ -318,7 +318,7 @@
       ${input('tts.emotion', 'Emotion')}${input('tts.pitch', 'Pitch', { type: 'number', min: -12, max: 12, step: 0.1 })}
       ${input('tts.volume', 'Lautstärke', { type: 'number', min: 0, max: 100 })}${input('tts.speed', 'Tempo', { type: 'number', min: 0.5, max: 2, step: 0.05 })}
       ${input('tts.streaming', 'Streaming', { type: 'checkbox' })}${input('tts.priority', 'Queue-Priorität', { type: 'number', min: 0, max: 100 })}
-      ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}
+      ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}${input('tts.probeStaleMs', 'Probe-Stale nach ms', { type: 'number', min: 30000, max: 86400000 })}
     </div><label class="block mt-3"><span class="text-gray-400 text-sm">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
     <div class="card"><h2 class="text-xl font-bold mb-3">Audio-Routing</h2><div class="grid grid-cols-1 gap-3">
       ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: deviceOptions() })}

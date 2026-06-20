@@ -73,6 +73,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(uiScript).toContain('window.animazingPalTTSPlaybackState');
     expect(uiScript).toContain('window.TTSOutputRouter.routeAudioElement');
     expect(uiScript).toContain('lastRouting');
+    expect(script).toContain('tts.probeStaleMs');
   });
 
   test('live-host UI exposes operator diagnostics for audio and runtime health', () => {

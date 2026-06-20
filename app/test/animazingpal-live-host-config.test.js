@@ -15,6 +15,7 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.response.chatProbability).toBe(0.1);
     expect(configured.response.maxSentences).toBe(2);
     expect(configured.response.queueWarnRatio).toBe(0.8);
+    expect(configured.tts.probeStaleMs).toBe(300000);
     expect(configured.events.gift.brainEnabled).toBe(true);
     expect(configured.events.like.brainEnabled).toBe(false);
     expect(configured.providers.ollama.timeoutMs).toBe(30000);
@@ -37,7 +38,7 @@ describe('AnimazingPal live host configuration', () => {
     const configured = normalizeLiveHostConfig({
       response: { maxResponsesPerMinute: 999, chatProbability: -2, maxSentences: 0 },
       providers: { ollama: { timeoutMs: 1, maxRetries: 99, temperature: 8 } },
-      tts: { volume: 999, speed: 0, pitch: -99 }
+      tts: { volume: 999, speed: 0, pitch: -99, probeStaleMs: 999999999 }
     });
 
     expect(configured.response.maxResponsesPerMinute).toBe(120);
@@ -49,6 +50,7 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.tts.volume).toBe(100);
     expect(configured.tts.speed).toBe(0.5);
     expect(configured.tts.pitch).toBe(-12);
+    expect(configured.tts.probeStaleMs).toBe(86400000);
   });
 
   test('migrates the legacy OpenAI brain fields', () => {

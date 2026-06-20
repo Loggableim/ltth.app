@@ -109,7 +109,8 @@ function buildLiveHostDefaults() {
       streaming: true,
       priority: 80,
       duckOtherAudio: true,
-      fallbackBehavior: 'silent'
+      fallbackBehavior: 'silent',
+      probeStaleMs: 300000
     },
     audio: {
       outputDeviceId: '',
@@ -232,6 +233,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.tts.speed = clamp(configured.tts.speed, 0.5, 2, 1);
   configured.tts.pitch = clamp(configured.tts.pitch, -12, 12, 0);
   configured.tts.priority = Math.round(clamp(configured.tts.priority, 0, 100, 80));
+  configured.tts.probeStaleMs = Math.round(clamp(configured.tts.probeStaleMs, 30000, 86400000, defaults.tts.probeStaleMs));
   configured.audio.monitoringVolume = clamp(configured.audio.monitoringVolume, 0, 100, 30);
   configured.viewerMemory.maxMemories = Math.round(clamp(configured.viewerMemory.maxMemories, 1, 100, 20));
   configured.viewerMemory.minimumImportance = clamp(configured.viewerMemory.minimumImportance, 0, 1, 0.25);
