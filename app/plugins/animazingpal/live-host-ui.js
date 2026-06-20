@@ -93,6 +93,16 @@
     return [{ value: '', label: 'Globale Host-Stimme' }, ...state.voices.map(voice => ({ value: voice.id, label: voice.name }))];
   }
 
+  function deviceOptions() {
+    return [
+      { value: '', label: 'Standardgerät' },
+      ...state.devices.map(device => ({
+        value: device.source === 'system' ? `system:${device.deviceId}` : device.deviceId,
+        label: `${device.label || device.deviceId}${device.source === 'system' ? ' (System-Fallback)' : ''}`
+      }))
+    ];
+  }
+
   function render() {
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
@@ -137,10 +147,11 @@
       ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}
     </div><label class="block mt-3"><span class="text-gray-400 text-sm">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
     <div class="card"><h2 class="text-xl font-bold mb-3">Audio-Routing</h2><div class="grid grid-cols-1 gap-3">
-      ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: [{ value: '', label: 'Standardgerät' }, ...state.devices.map(device => ({ value: device.deviceId, label: device.label || device.deviceId }))] })}
+      ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: deviceOptions() })}
       ${input('audio.monitoringEnabled', 'Monitoring aktiv', { type: 'checkbox' })}${input('audio.monitoringVolume', 'Monitoring-Lautstärke', { type: 'number', min: 0, max: 100 })}
       ${input('audio.missingDeviceBehavior', 'Fehlendes Gerät', { type: 'select', options: ['mute', 'default', 'error'] })}
       <p class="text-sm text-gray-400">setSinkId: <strong>${typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? 'verfügbar' : 'nicht verfügbar'}</strong></p>
+      <p class="text-xs text-gray-500">System-Fallback-Geräte kommen von Windows. Für direktes Browser-Routing muss das Gerät über den Auswahlbutton freigegeben sein; sonst nutzt der Player das Windows-Standardgerät.</p>
       <button class="btn btn-success" data-pick-output-device>Audiogerät auswählen und speichern</button>
       <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
     </div>${actions('audio')}</div></section>`;
@@ -236,14 +247,46 @@
     notify(`${section} gespeichert`);
   }
 
-  async function loadDevices() {
-    if (!navigator.mediaDevices?.enumerateDevices) return;
+  function mergeDevices(...groups) {
+    const devices = [];
+    const seen = new Set();
+    for (const group of groups) {
+      for (const device of group || []) {
+        const label = device.label || device.deviceId;
+        const key = `${device.source || 'browser'}:${device.deviceId || label}`.toLowerCase();
+        if (!label || seen.has(key)) continue;
+        seen.add(key);
+        devices.push(device);
+      }
+    }
+    return devices;
+  }
+
+  async function loadBrowserDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) return [];
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      state.devices = devices.filter(device => device.kind === 'audiooutput');
+      return devices
+        .filter(device => device.kind === 'audiooutput')
+        .map(device => ({ deviceId: device.deviceId, label: device.label || device.deviceId, source: 'browser' }));
     } catch (error) {
       notify(`Audiogeräte nicht lesbar: ${error.message}`, true);
+      return [];
     }
+  }
+
+  async function loadSystemDevices() {
+    try {
+      const payload = await request('/api/animazingpal/live-host/audio-devices');
+      return (payload.devices || []).map(device => ({ ...device, source: device.source || 'system' }));
+    } catch {
+      return [];
+    }
+  }
+
+  async function loadDevices() {
+    const [browserDevices, systemDevices] = await Promise.all([loadBrowserDevices(), loadSystemDevices()]);
+    state.devices = mergeDevices(browserDevices, systemDevices);
   }
 
   async function pickOutputDevice() {

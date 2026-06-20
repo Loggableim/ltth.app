@@ -42,6 +42,19 @@ describe('TTS output device router', () => {
     expect(result.fallback).toBe('default');
   });
 
+  test('treats system fallback device labels as default-output hints instead of invalid sink ids', async () => {
+    const audio = { setSinkId: jest.fn().mockResolvedValue(), muted: false, volume: 1 };
+    const router = createTTSOutputRouter({
+      loadConfig: async () => ({ audio: { outputDeviceId: 'system:CABLE In 16 Ch (VB-Audio Virtual Cable)', missingDeviceBehavior: 'mute' } })
+    });
+
+    const result = await router.routeAudioElement(audio);
+
+    expect(audio.setSinkId).not.toHaveBeenCalled();
+    expect(audio.muted).toBe(false);
+    expect(result.reason).toBe('system_output_requires_default_device');
+  });
+
   test('creates an optional default-device monitoring copy', async () => {
     const monitor = { volume: 0, setSinkId: jest.fn().mockResolvedValue(), play: jest.fn().mockResolvedValue() };
     const audio = { volume: 0.8, cloneNode: jest.fn(() => monitor) };

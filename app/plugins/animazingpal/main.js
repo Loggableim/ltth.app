@@ -33,6 +33,7 @@ const {
   getPlatformDefinition,
   listPlatformDefinitions
 } = require('./platforms');
+const { listAudioOutputDevices } = require('./brain/audio-devices');
 
 class AnimazingPalPlugin {
   constructor(api) {
@@ -1110,6 +1111,15 @@ class AnimazingPalPlugin {
         config: sanitizeLiveHostConfig(this.config.brain.liveHost),
         presets: ['safe-live']
       });
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/audio-devices', async (req, res) => {
+      try {
+        res.json({ success: true, devices: await listAudioOutputDevices() });
+      } catch (error) {
+        this.api.log(`Audio device discovery failed: ${error.message}`, 'warn');
+        res.json({ success: true, devices: [] });
+      }
     });
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/config', async (req, res) => {

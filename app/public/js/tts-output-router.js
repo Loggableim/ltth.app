@@ -37,6 +37,11 @@
         return { routed: true, deviceId: '', fallback: 'default' };
       }
 
+      if (deviceId.startsWith('system:')) {
+        audio.muted = false;
+        return { routed: false, deviceId, fallback: 'default', reason: 'system_output_requires_default_device' };
+      }
+
       if (typeof audio.setSinkId !== 'function') {
         if (fallback === 'error') throw new Error('setSinkId is not supported by this browser');
         if (fallback === 'default') {

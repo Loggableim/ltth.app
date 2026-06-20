@@ -23,12 +23,19 @@ describe('AnimazingPal live-host configuration UI', () => {
     }
     expect(script).toContain('/api/tts/voices?engine=fishaudio');
     expect(script).toContain('/api/gift-catalog');
+    expect(script).toContain('/api/animazingpal/live-host/audio-devices');
     expect(script).toContain('/api/animazingpal/live-host/source/connect');
     expect(script).toContain('navigator.mediaDevices.enumerateDevices');
     expect(script).toContain('navigator.mediaDevices.selectAudioOutput');
     expect(script).toContain('data-pick-output-device');
     expect(script).toContain('viewerMemory');
     expect(script).toContain('avatarBundles');
+  });
+
+  test('keeps the main tab bar readable on narrow screens', () => {
+    expect(html).toContain('data-animazingpal-tabs');
+    expect(html).toContain('overflow-x-auto');
+    expect(html).toContain('flex-wrap');
   });
 
   test('never attempts to read stored API keys back into inputs', () => {
