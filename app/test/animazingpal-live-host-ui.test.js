@@ -32,6 +32,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('data-pick-output-device');
     expect(script).toContain('viewerMemory');
     expect(script).toContain('avatarBundles');
+    expect(script).toContain('response.queueWarnRatio');
   });
 
   test('gift mappings use catalog and action dropdowns instead of prompt-only entry', () => {

@@ -92,6 +92,7 @@ function buildLiveHostDefaults() {
       cacheTtlMs: 300000,
       contextMessages: 10,
       queueLimit: 50,
+      queueWarnRatio: 0.8,
       queuePolicy: 'drop-lowest',
       speakCooldownMs: 3000,
       silenceWarnAfterEvents: 5
@@ -217,6 +218,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.cacheTtlMs = Math.round(clamp(configured.response.cacheTtlMs, 0, 86400000, 300000));
   configured.response.contextMessages = Math.round(clamp(configured.response.contextMessages, 0, 100, 10));
   configured.response.queueLimit = Math.round(clamp(configured.response.queueLimit, 1, 1000, 50));
+  configured.response.queueWarnRatio = clamp(configured.response.queueWarnRatio, 0, 1, defaults.response.queueWarnRatio);
   configured.response.speakCooldownMs = Math.round(clamp(configured.response.speakCooldownMs, 0, 60000, 3000));
   configured.response.silenceWarnAfterEvents = Math.round(clamp(configured.response.silenceWarnAfterEvents, 1, 1000, defaults.response.silenceWarnAfterEvents));
   configured.response.language = safeString(configured.response.language, 20, 'de');
@@ -333,7 +335,7 @@ function applyLiveHostPreset(config, preset) {
   if (preset !== 'safe-live') throw new Error(`Unknown live host preset: ${preset}`);
   return normalizeLiveHostConfig(merge(config, {
     enabled: true,
-    response: { decisionMode: 'auto', minDecisionScore: 0.55, maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2 },
+    response: { decisionMode: 'auto', minDecisionScore: 0.55, maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2, queueWarnRatio: 0.8 },
     providers: { ollama: { timeoutMs: 30000, maxRetries: 2, retryBackoffMs: 1000 } },
     events: {
       chat: { brainEnabled: true, probability: 0.1 },

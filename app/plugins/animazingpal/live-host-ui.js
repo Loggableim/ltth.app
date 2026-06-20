@@ -298,7 +298,7 @@
         ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
         ${input('response.language', 'Sprache')}${input('response.cacheEnabled', 'Cache aktiv', { type: 'checkbox' })}
         ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
-        ${input('response.queueLimit', 'Queue-Limit', { type: 'number', min: 1, max: 1000 })}${input('response.queuePolicy', 'Abbruchverhalten', { type: 'select', options: ['drop-lowest', 'drop-oldest', 'reject-new'] })}
+        ${input('response.queueLimit', 'Queue-Limit', { type: 'number', min: 1, max: 1000 })}${input('response.queueWarnRatio', 'Queue-Warnschwelle 0-1', { type: 'number', min: 0, max: 1, step: 0.05 })}${input('response.queuePolicy', 'Abbruchverhalten', { type: 'select', options: ['drop-lowest', 'drop-oldest', 'reject-new'] })}
         ${input('response.speakCooldownMs', 'Sprech-Cooldown (ms)', { type: 'number', min: 0, max: 60000 })}
         ${input('response.silenceWarnAfterEvents', 'Silence-Warnung nach Events', { type: 'number', min: 1, max: 1000 })}
       </div><div class="mt-3">${textarea('response.systemPrompt', 'Systemprompt', 5)}</div>${actions('response')}</div></section>
