@@ -64,6 +64,10 @@ class AnimazingPalPlugin {
       lastTtsProbe: null,
       lastSourceEventAt: null,
       lastSourceEventType: null,
+      lastEventResult: null,
+      processedEvents: 0,
+      respondedEvents: 0,
+      skippedEvents: 0,
       idleMotionSkipped: 0
     };
     this.liveHostIdleMotionTimer = null;
@@ -3524,6 +3528,10 @@ class AnimazingPalPlugin {
         lastTtsProbe: null,
         lastSourceEventAt: null,
         lastSourceEventType: null,
+        lastEventResult: null,
+        processedEvents: 0,
+        respondedEvents: 0,
+        skippedEvents: 0,
         idleMotionSkipped: 0
       };
     } else if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastMovementTest')) {
@@ -3540,6 +3548,18 @@ class AnimazingPalPlugin {
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastSourceEventType')) {
       this.liveHostDiagnostics.lastSourceEventType = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastEventResult')) {
+      this.liveHostDiagnostics.lastEventResult = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'processedEvents')) {
+      this.liveHostDiagnostics.processedEvents = 0;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'respondedEvents')) {
+      this.liveHostDiagnostics.respondedEvents = 0;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'skippedEvents')) {
+      this.liveHostDiagnostics.skippedEvents = 0;
     }
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'idleMotionSkipped')) {
       this.liveHostDiagnostics.idleMotionSkipped = 0;
@@ -3613,6 +3633,35 @@ class AnimazingPalPlugin {
     this.ensureLiveHostRuntime();
     this.liveHostDiagnostics.lastSourceEventAt = new Date().toISOString();
     this.liveHostDiagnostics.lastSourceEventType = eventType || 'unknown';
+  }
+
+  recordLiveHostEventOutcome(eventType, result = {}) {
+    this.ensureLiveHostRuntime();
+    const responded = result.responded === true;
+    const decisionReasons = result.decision?.respond === false
+      ? (Array.isArray(result.decision.reasons) && result.decision.reasons.length > 0 ? result.decision.reasons : ['low_signal'])
+      : [];
+    const reason = result.reason
+      || (result.duplicate ? 'duplicate' : null)
+      || (result.rateLimited ? 'rate-limited' : null)
+      || (result.decision?.respond === false ? `decision:${decisionReasons.join(',')}` : null)
+      || (responded ? 'responded' : 'skipped');
+    const outcome = {
+      eventType: eventType || 'unknown',
+      handled: result.handled !== false,
+      responded,
+      reason,
+      checkedAt: new Date().toISOString(),
+      decision: result.decision || null
+    };
+    this.liveHostDiagnostics.processedEvents = (this.liveHostDiagnostics.processedEvents || 0) + 1;
+    if (responded) {
+      this.liveHostDiagnostics.respondedEvents = (this.liveHostDiagnostics.respondedEvents || 0) + 1;
+    } else {
+      this.liveHostDiagnostics.skippedEvents = (this.liveHostDiagnostics.skippedEvents || 0) + 1;
+    }
+    this.liveHostDiagnostics.lastEventResult = outcome;
+    return outcome;
   }
 
   getLiveHostSourceEventStatus(liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {})) {
@@ -4323,22 +4372,30 @@ class AnimazingPalPlugin {
     const event = liveHost?.events?.[eventType];
     if (!liveHost?.enabled) return { handled: false };
     this.recordLiveHostSourceEvent(eventType);
-    if (!event?.enabled) return { handled: false };
+    const complete = result => {
+      this.recordLiveHostEventOutcome(eventType, result);
+      return result;
+    };
+    if (!event?.enabled) return complete({ handled: false, responded: false, reason: 'event-disabled' });
 
     const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
     if (dedupe.duplicate) {
-      return { handled: true, responded: false, duplicate: true };
+      return complete({ handled: true, responded: false, duplicate: true, reason: 'duplicate' });
     }
 
     const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
     const likes = Number(data.likeCount) || 0;
     const quantity = Number(data.repeatCount) || 1;
-    if (coins < event.minCoins || likes < event.minLikes || quantity < event.minQuantity) return { handled: true, responded: false };
+    if (coins < event.minCoins || likes < event.minLikes || quantity < event.minQuantity) {
+      return complete({ handled: true, responded: false, reason: 'minimum-filter' });
+    }
     const decision = this.decideLiveHostResponse(eventType, data, event, liveHost);
 
     this.liveHostEventCooldowns ||= new Map();
     const now = Date.now();
-    if (now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) return { handled: true, responded: false };
+    if (now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) {
+      return complete({ handled: true, responded: false, reason: 'cooldown' });
+    }
     this.liveHostEventCooldowns.set(eventType, now);
 
     if (event.avatarActionEnabled && this.isConnected) {
@@ -4354,9 +4411,9 @@ class AnimazingPalPlugin {
       }
     }
 
-    if (!decision.respond) return { handled: true, responded: false, decision };
+    if (!decision.respond) return complete({ handled: true, responded: false, decision });
     if (!this.canUseLiveHostResponseSlot(liveHost)) {
-      return { handled: true, responded: false, decision, rateLimited: true };
+      return complete({ handled: true, responded: false, decision, rateLimited: true, reason: 'rate-limited' });
     }
 
     const username = data.uniqueId || data.username || 'Viewer';
@@ -4386,7 +4443,7 @@ class AnimazingPalPlugin {
         this.recordLiveHostResponseSlot();
       }
     }
-    return { handled: true, responded };
+    return complete({ handled: true, responded });
   }
 
   resolveAvatarBundleForGift(gift = {}) {

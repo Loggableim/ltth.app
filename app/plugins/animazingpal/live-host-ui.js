@@ -185,6 +185,7 @@
     const movement = diagnostics.lastMovementTest || null;
     const idleMotion = diagnostics.lastIdleMotion || null;
     const ttsProbe = diagnostics.lastTtsProbe || null;
+    const lastEventResult = diagnostics.lastEventResult || null;
     const browserHeartbeat = runtime.browserHeartbeat || {};
     const sourceStatus = runtime.sourceStatus || {};
     const sourceEventStatus = runtime.sourceEventStatus || {};
@@ -204,6 +205,7 @@
         <div>Slots/Minute: <strong>${escapeHtml(runtime.responseSlotsUsedLastMinute ?? 0)}</strong></div>
         <div>Dedupe-Cache: <strong>${escapeHtml(runtime.dedupeCacheSize ?? 0)}</strong></div>
         <div>Deduped/Rate-limited: <strong>${escapeHtml(diagnostics.dedupedEvents ?? 0)} / ${escapeHtml(diagnostics.rateLimitedResponses ?? 0)}</strong></div>
+        <div>Events Host/Speak/Skip: <strong>${escapeHtml(diagnostics.processedEvents ?? 0)} / ${escapeHtml(diagnostics.respondedEvents ?? 0)} / ${escapeHtml(diagnostics.skippedEvents ?? 0)}</strong></div>
         <div>Idle-Skips: <strong>${escapeHtml(diagnostics.idleMotionSkipped ?? 0)}</strong></div>
         <div>Browser-Host: <strong class="${browserHeartbeat.present && !browserHeartbeat.stale ? 'text-green-400' : 'text-red-300'}">${browserHeartbeat.present ? (browserHeartbeat.stale ? 'stale' : 'aktiv') : 'unbekannt'}</strong></div>
         <div>TikTok-Quelle: <strong class="${sourceStatus.connectedToSource ? 'text-green-400' : sourceStatus.autoConnect ? 'text-yellow-300' : 'text-red-300'}">${sourceStatus.connectedToSource ? 'verbunden' : sourceStatus.autoConnect ? 'watchdog' : 'getrennt'}</strong></div>
@@ -211,6 +213,7 @@
       </div>
       ${browserHeartbeat.present ? `<p class="text-xs ${browserHeartbeat.stale ? 'text-red-300' : 'text-gray-400'} mt-2">Browser-Heartbeat: ${escapeHtml(browserHeartbeat.ageMs ?? '?')}ms alt · Audio ${browserHeartbeat.audioUnlocked ? 'frei' : 'gesperrt'} · Device ${browserHeartbeat.configuredOutputDeviceAvailable ? 'verfügbar' : 'fehlt'}</p>` : '<p class="text-xs text-red-300 mt-2">Kein Browser-Heartbeat empfangen. Standalone-Tab offen lassen.</p>'}
       ${sourceStatus.configured ? `<p class="text-xs ${sourceStatus.connectedToSource ? 'text-gray-400' : 'text-yellow-300'} mt-2">TikTok-Quelle: @${escapeHtml(sourceStatus.username || '?')} · aktuell ${escapeHtml(sourceStatus.currentUsername || 'nicht verbunden')} · Reconnects ${escapeHtml(sourceStatus.reconnectAttempts || 0)}${sourceStatus.lastReconnectError ? ` · ${escapeHtml(sourceStatus.lastReconnectError)}` : ''}</p>` : '<p class="text-xs text-red-300 mt-2">Keine TikTok-Quelle konfiguriert.</p>'}
+      ${lastEventResult ? `<p class="text-xs ${lastEventResult.responded ? 'text-green-400' : 'text-yellow-300'} mt-2">Letztes Host-Event: ${escapeHtml(lastEventResult.eventType || '?')} · ${lastEventResult.responded ? 'gesprochen' : 'nicht gesprochen'} · ${escapeHtml(lastEventResult.reason || 'ohne Grund')}</p>` : '<p class="text-xs text-yellow-300 mt-2">Letztes Host-Event: noch keines verarbeitet.</p>'}
       ${ttsProbe ? `<p class="text-xs ${ttsProbe.success ? 'text-green-400' : 'text-red-300'} mt-2">TTS-Probe: ${ttsProbe.success ? 'ok' : 'fehlgeschlagen'} · ${escapeHtml(ttsProbe.engine || 'fishaudio')}${ttsProbe.error ? ` · ${escapeHtml(ttsProbe.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine TTS-Probe in dieser Laufzeit.</p>'}
       ${movement ? `<p class="text-xs ${movement.success ? 'text-green-400' : 'text-red-300'} mt-2">Letzter Bewegungstest: ${movement.success ? 'gesendet' : 'fehlgeschlagen'}${movement.name || movement.index !== undefined ? ` · ${escapeHtml(movement.name || movement.index)}` : ''}${movement.error ? ` · ${escapeHtml(movement.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch kein Animaze-Bewegungstest in dieser Laufzeit.</p>'}
       ${idleMotion ? `<p class="text-xs ${idleMotion.success ? 'text-green-400' : 'text-yellow-300'} mt-2">Letzte Auto-Idle-Motion: ${escapeHtml(idleMotion.reason || 'unbekannt')}${idleMotion.name ? ` · ${escapeHtml(idleMotion.name)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine automatische Idle-Motion in dieser Laufzeit.</p>'}

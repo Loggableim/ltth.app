@@ -164,4 +164,12 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('connectedToSource');
     expect(script).toContain('lastReconnectError');
   });
+
+  test('live-host UI surfaces last event outcome diagnostics', () => {
+    expect(script).toContain('lastEventResult');
+    expect(script).toContain('Letztes Host-Event');
+    expect(script).toContain('processedEvents');
+    expect(script).toContain('respondedEvents');
+    expect(script).toContain('skippedEvents');
+  });
 });

@@ -197,6 +197,11 @@ describe('AnimazingPal live host integration', () => {
     expect(result).toEqual(expect.objectContaining({ handled: true, responded: false }));
     expect(plugin.brainEngine.processChat).not.toHaveBeenCalled();
     expect(ttsPlugin.speak).not.toHaveBeenCalled();
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastEventResult).toEqual(expect.objectContaining({
+      eventType: 'chat',
+      responded: false,
+      reason: 'decision:low_signal'
+    }));
   });
 
   test('auto decision mode responds to high-signal chat questions', async () => {
@@ -254,6 +259,38 @@ describe('AnimazingPal live host integration', () => {
     expect(second).toEqual(expect.objectContaining({ handled: true, responded: false, rateLimited: true }));
     expect(ttsPlugin.speak).toHaveBeenCalledTimes(1);
     expect(plugin.getLiveHostRuntimeStatus().diagnostics.rateLimitedResponses).toBe(1);
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastEventResult).toEqual(expect.objectContaining({
+      eventType: 'gift',
+      responded: false,
+      reason: 'rate-limited'
+    }));
+  });
+
+  test('tracks live-host event outcome counters for unattended silence diagnostics', async () => {
+    const { plugin } = createPlugin();
+    Object.assign(plugin.config.brain.liveHost.events.follow, {
+      enabled: true, probability: 1, cooldownMs: 0, templateEnabled: true,
+      brainEnabled: false, avatarActionEnabled: false, template: 'Danke {username}'
+    });
+    Object.assign(plugin.config.brain.liveHost.events.chat, {
+      enabled: true, probability: 1, cooldownMs: 0, brainEnabled: true,
+      templateEnabled: false, avatarActionEnabled: false
+    });
+    plugin.brainEngine = { processChat: jest.fn() };
+
+    await plugin.processLiveHostEvent('follow', { uniqueId: 'alice' });
+    await plugin.processLiveHostEvent('chat', { uniqueId: 'bob', comment: 'lol' });
+
+    expect(plugin.getLiveHostRuntimeStatus().diagnostics).toEqual(expect.objectContaining({
+      processedEvents: 2,
+      respondedEvents: 1,
+      skippedEvents: 1,
+      lastEventResult: expect.objectContaining({
+        eventType: 'chat',
+        responded: false,
+        reason: 'decision:low_signal'
+      })
+    }));
   });
 
   test('triggers situational Animaze actions from available defaults', async () => {
