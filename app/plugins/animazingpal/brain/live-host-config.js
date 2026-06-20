@@ -161,6 +161,7 @@ function buildLiveHostDefaults() {
       verboseLogging: false,
       emitEvents: true,
       retainLastErrors: 20,
+      movementProbeStaleMs: 300000,
       includePromptBodies: false
     }
   };
@@ -303,6 +304,8 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.audio.outputDeviceLabel = safeString(configured.audio.outputDeviceLabel, 500);
   configured.audio.missingDeviceBehavior = ['mute', 'default', 'error'].includes(configured.audio.missingDeviceBehavior)
     ? configured.audio.missingDeviceBehavior : defaults.audio.missingDeviceBehavior;
+  configured.diagnostics.retainLastErrors = Math.round(clamp(configured.diagnostics.retainLastErrors, 0, 100, defaults.diagnostics.retainLastErrors));
+  configured.diagnostics.movementProbeStaleMs = Math.round(clamp(configured.diagnostics.movementProbeStaleMs, 30000, 86400000, defaults.diagnostics.movementProbeStaleMs));
   return configured;
 }
 

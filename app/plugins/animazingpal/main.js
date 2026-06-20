@@ -4152,16 +4152,21 @@ class AnimazingPalPlugin {
     );
 
     const lastMovementTest = this.liveHostDiagnostics.lastMovementTest;
+    const movementProbeAgeMs = lastMovementTest?.checkedAt ? Date.now() - Date.parse(lastMovementTest.checkedAt) : null;
+    const movementProbeStaleMs = Math.max(30000, Number(liveHost.diagnostics?.movementProbeStaleMs) || 300000);
+    const movementProbeIsStale = lastMovementTest?.success === true && (!Number.isFinite(movementProbeAgeMs) || movementProbeAgeMs > movementProbeStaleMs);
     add(
       'animaze.movementProbe',
-      lastMovementTest?.success ? 'ok' : (lastMovementTest ? 'error' : 'warn'),
+      movementProbeIsStale ? 'warn' : (lastMovementTest?.success ? 'ok' : (lastMovementTest ? 'error' : 'warn')),
       'Animaze Bewegungstest',
       lastMovementTest
         ? (lastMovementTest.success
-          ? `Letzter Motion-Befehl gesendet: ${lastMovementTest.name || lastMovementTest.index} (${lastMovementTest.checkedAt}).`
+          ? (movementProbeIsStale
+            ? `Letzter Motion-Test ist stale (${Number.isFinite(movementProbeAgeMs) ? `${movementProbeAgeMs}ms` : 'unbekanntes Alter'} > ${movementProbeStaleMs}ms).`
+            : `Letzter Motion-Befehl gesendet: ${lastMovementTest.name || lastMovementTest.index} (${lastMovementTest.checkedAt}).`)
           : `Letzter Motion-Test fehlgeschlagen: ${lastMovementTest.error || 'unbekannt'}.`)
         : 'Noch kein Animaze-Bewegungstest in dieser Laufzeit ausgefuehrt.',
-      lastMovementTest?.success ? null : 'Im Diagnosebereich "Animaze Bewegung testen" ausfuehren und Avatar sichtbar pruefen.'
+      lastMovementTest?.success && !movementProbeIsStale ? null : 'Im Diagnosebereich "Animaze Bewegung testen" ausfuehren und Avatar sichtbar pruefen.'
     );
 
     add(
