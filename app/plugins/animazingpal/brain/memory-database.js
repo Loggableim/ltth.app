@@ -131,6 +131,11 @@ class MemoryDatabase {
         )
       `);
 
+      // Existing installations predate streamer-scoped columns. Migrate before
+      // creating scoped indexes or SQLite rejects initialization entirely.
+      this._ensureStreamerScopeColumns();
+      this._applyMigrations();
+
       // Create indexes for performance
       this.db.exec(`
         CREATE INDEX IF NOT EXISTS idx_memories_streamer ON animazingpal_memories(streamer_id);
@@ -148,14 +153,21 @@ class MemoryDatabase {
       // Insert default personalities if not exist
       this._insertDefaultPersonalities();
 
-      // Apply schema migrations for new fields
-      this._applyMigrations();
-
       this.initialized = true;
       this.logger.info('AnimazingPal Memory Database initialized');
     } catch (error) {
       this.logger.error(`Failed to initialize memory database: ${error.message}`);
       throw error;
+    }
+  }
+
+  _ensureStreamerScopeColumns() {
+    for (const table of ['animazingpal_memories', 'animazingpal_user_profiles', 'animazingpal_conversations']) {
+      const columns = this.db.prepare(`PRAGMA table_info(${table})`).all().map(column => column.name);
+      if (!columns.includes('streamer_id')) {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN streamer_id TEXT NOT NULL DEFAULT 'default'`);
+        this.logger.info(`Migration: Added streamer_id column to ${table}`);
+      }
     }
   }
 

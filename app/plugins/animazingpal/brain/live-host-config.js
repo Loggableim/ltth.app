@@ -9,6 +9,10 @@ function clamp(value, min, max, fallback) {
   return Math.min(max, Math.max(min, parsed));
 }
 
+function safeString(value, maximum, fallback = '') {
+  return String(value ?? fallback).trim().slice(0, maximum);
+}
+
 function merge(target, patch) {
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return patch;
   const output = { ...(target || {}) };
@@ -61,6 +65,11 @@ function eventDefaults(brainEnabled) {
 function buildLiveHostDefaults() {
   return {
     enabled: false,
+    source: {
+      username: '',
+      readOnly: true,
+      autoConnect: false
+    },
     provider: 'openai',
     providers: {
       openai: providerDefaults('openai', 'https://api.openai.com/v1', 'gpt-4o-mini'),
@@ -158,12 +167,15 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   const defaults = buildLiveHostDefaults();
   const configured = merge(merge(defaults, migrateLegacy(legacy)), input);
   configured.provider = PROVIDERS.includes(configured.provider) ? configured.provider : defaults.provider;
+  configured.source.username = safeString(configured.source.username, 100).replace(/^@/, '');
+  configured.source.readOnly = true;
+  configured.source.autoConnect = !!configured.source.autoConnect;
 
   for (const provider of PROVIDERS) {
     const item = configured.providers[provider];
-    item.baseUrl = String(item.baseUrl || defaults.providers[provider].baseUrl).replace(/\/$/, '');
-    item.model = String(item.model || defaults.providers[provider].model).trim();
-    item.apiKey = typeof item.apiKey === 'string' ? item.apiKey.trim() : '';
+    item.baseUrl = safeString(item.baseUrl || defaults.providers[provider].baseUrl, 2048).replace(/\/$/, '');
+    item.model = safeString(item.model || defaults.providers[provider].model, 200);
+    item.apiKey = typeof item.apiKey === 'string' ? item.apiKey.trim().slice(0, 4096) : '';
     item.timeoutMs = clamp(item.timeoutMs, 1000, 120000, 30000);
     item.maxRetries = Math.round(clamp(item.maxRetries, 0, 10, 2));
     item.retryBackoffMs = Math.round(clamp(item.retryBackoffMs, 0, 30000, 1000));
@@ -182,7 +194,13 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.contextMessages = Math.round(clamp(configured.response.contextMessages, 0, 100, 10));
   configured.response.queueLimit = Math.round(clamp(configured.response.queueLimit, 1, 1000, 50));
   configured.response.speakCooldownMs = Math.round(clamp(configured.response.speakCooldownMs, 0, 60000, 3000));
+  configured.response.language = safeString(configured.response.language, 20, 'de');
+  configured.response.systemPrompt = safeString(configured.response.systemPrompt, 8000);
+  configured.response.queuePolicy = ['drop-lowest', 'drop-oldest', 'reject-new'].includes(configured.response.queuePolicy)
+    ? configured.response.queuePolicy : defaults.response.queuePolicy;
 
+  configured.tts.voiceId = safeString(configured.tts.voiceId, 200);
+  configured.tts.emotion = safeString(configured.tts.emotion, 40, 'neutral');
   configured.tts.volume = clamp(configured.tts.volume, 0, 100, 80);
   configured.tts.speed = clamp(configured.tts.speed, 0.5, 2, 1);
   configured.tts.pitch = clamp(configured.tts.pitch, -12, 12, 0);
@@ -190,6 +208,10 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.audio.monitoringVolume = clamp(configured.audio.monitoringVolume, 0, 100, 30);
   configured.viewerMemory.maxMemories = Math.round(clamp(configured.viewerMemory.maxMemories, 1, 100, 20));
   configured.viewerMemory.minimumImportance = clamp(configured.viewerMemory.minimumImportance, 0, 1, 0.25);
+  configured.viewerMemory.streamerId = safeString(configured.viewerMemory.streamerId, 200, 'default');
+  configured.viewerMemory.allowedProfileFields = Array.isArray(configured.viewerMemory.allowedProfileFields)
+    ? [...new Set(configured.viewerMemory.allowedProfileFields.filter(field => defaults.viewerMemory.allowedProfileFields.includes(field)))]
+    : defaults.viewerMemory.allowedProfileFields;
   configured.avatarSwitch.revertAfterMs = Math.round(clamp(configured.avatarSwitch.revertAfterMs, 0, 86400000, 0));
 
   for (const type of EVENT_TYPES) {
@@ -202,9 +224,40 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
     event.minCoins = Math.round(clamp(event.minCoins, 0, 100000000, 0));
     event.minLikes = Math.round(clamp(event.minLikes, 0, 100000000, 0));
     event.minQuantity = Math.round(clamp(event.minQuantity, 1, 1000000, 1));
+    event.prompt = safeString(event.prompt, 4000);
+    event.template = safeString(event.template, 2000);
+    event.voiceId = safeString(event.voiceId, 200);
+    event.emotion = safeString(event.emotion, 40);
+    event.pitch = event.pitch === null || event.pitch === '' ? null : clamp(event.pitch, -12, 12, 0);
+    event.volume = event.volume === null || event.volume === '' ? null : clamp(event.volume, 0, 100, 80);
+    event.speed = event.speed === null || event.speed === '' ? null : clamp(event.speed, 0.5, 2, 1);
   }
 
-  configured.avatarBundles = Array.isArray(configured.avatarBundles) ? configured.avatarBundles.slice(0, 200) : [];
+  configured.avatarBundles = Array.isArray(configured.avatarBundles)
+    ? configured.avatarBundles.slice(0, 200).map(bundle => {
+      const id = safeString(bundle?.id, 100).replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+      if (!id) return null;
+      return {
+        id,
+        name: safeString(bundle.name || id, 120),
+        avatarName: safeString(bundle.avatarName, 200),
+        personalityId: safeString(bundle.personalityId, 100),
+        voiceId: safeString(bundle.voiceId, 200),
+        emotion: safeString(bundle.emotion, 40),
+        pitch: clamp(bundle.pitch, -12, 12, 0),
+        volume: clamp(bundle.volume, 0, 100, 80),
+        speed: clamp(bundle.speed, 0.5, 2, 1),
+        priority: Math.round(clamp(bundle.priority, 0, 100, configured.tts.priority)),
+        giftIds: [...new Set((Array.isArray(bundle.giftIds) ? bundle.giftIds : []).map(value => safeString(value, 80)).filter(Boolean))],
+        giftNames: [...new Set((Array.isArray(bundle.giftNames) ? bundle.giftNames : []).map(value => safeString(value, 160)).filter(Boolean))]
+      };
+    }).filter(Boolean)
+    : [];
+  configured.activeAvatarBundleId = safeString(configured.activeAvatarBundleId, 100);
+  configured.audio.outputDeviceId = safeString(configured.audio.outputDeviceId, 500);
+  configured.audio.outputDeviceLabel = safeString(configured.audio.outputDeviceLabel, 500);
+  configured.audio.missingDeviceBehavior = ['mute', 'default', 'error'].includes(configured.audio.missingDeviceBehavior)
+    ? configured.audio.missingDeviceBehavior : defaults.audio.missingDeviceBehavior;
   return configured;
 }
 

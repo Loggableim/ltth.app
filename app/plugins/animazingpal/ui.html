@@ -166,6 +166,7 @@
       <div class="tab" data-tab="personalities">Persönlichkeiten</div>
       <div class="tab" data-tab="memories">Erinnerungen</div>
       <div class="tab" data-tab="viewerbase">Viewerbase</div>
+      <div class="tab" data-tab="livehost">Live Host</div>
       <div class="tab" data-tab="settings">Einstellungen</div>
     </div>
 
@@ -859,6 +860,15 @@
       </div>
     </div>
 
+    <!-- Tab Content: Live Host -->
+    <div id="tab-livehost" class="tab-content hidden">
+      <div id="liveHostSettings">
+        <div class="card">
+          <p class="text-gray-400">Live-Host-Einstellungen werden geladen...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Tab Content: Settings -->
     <div id="tab-settings" class="tab-content hidden">
       <div class="card">
@@ -880,6 +890,18 @@
           <div id="settingsPortRow">
             <label class="text-gray-400 text-sm">Port</label>
             <input type="number" class="input" id="settingsPort" value="9000">
+          </div>
+          <div>
+            <label class="text-gray-400 text-sm">Reconnect-Verzögerung (ms)</label>
+            <input type="number" class="input" id="settingsReconnectDelay" min="0" max="60000" value="5000">
+          </div>
+          <div>
+            <label class="text-gray-400 text-sm">Max. Reconnect-Versuche</label>
+            <input type="number" class="input" id="settingsMaxReconnectAttempts" min="0" max="100" value="10">
+          </div>
+          <div>
+            <label class="text-gray-400 text-sm">Verbindungs-Timeout (ms)</label>
+            <input type="number" class="input" id="settingsConnectionTimeoutMs" min="1000" max="120000" value="10000">
           </div>
           <div id="settingsAuthTokenRow" class="hidden md:col-span-2">
             <label class="text-gray-400 text-sm">VTube Studio Auth Token</label>
@@ -968,5 +990,6 @@
   </div>
 
   <script src="/plugins/animazingpal/ui.js"></script>
+  <script src="/plugins/animazingpal/live-host-ui.js"></script>
 </body>
 </html>

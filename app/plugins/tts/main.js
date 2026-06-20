@@ -13,6 +13,7 @@ const PermissionManager = require('./utils/permission-manager');
 const QueueManager = require('./utils/queue-manager');
 const EngineCircuitBreaker = require('./utils/engine-circuit-breaker');
 const { resolvePlaybackDuration } = require('./utils/audio-duration');
+const { resolveTtsRequestOverrides } = require('./utils/request-overrides');
 const EventTTSHandler = require('./event-tts-handler');
 
 /**
@@ -2467,6 +2468,7 @@ class TTSPlugin {
             isSubscriber = false,
             priority = null
         } = params;
+        const requestOverrides = resolveTtsRequestOverrides(params, this.config);
 
         this._logDebug('SPEAK_START', 'Speak method called', {
             text: text?.substring(0, 50),
@@ -3018,13 +3020,13 @@ class TTSPlugin {
 
             // Step 5: Generate TTS (no caching)
             // For Fish Audio (not in quality mode), use lazy queuing with streaming
-            const useLazyQueuing = selectedEngine === 'fishaudio' && this.config.performanceMode !== 'quality';
+            const useLazyQueuing = selectedEngine === 'fishaudio' && requestOverrides.streaming;
             
             this._logDebug('SPEAK_STEP5', 'Starting TTS synthesis', {
                 engine: selectedEngine,
                 voice: selectedVoice,
                 textLength: finalText.length,
-                speed: this.config.speed,
+                speed: requestOverrides.speed,
                 useLazyQueuing: useLazyQueuing,
                 performanceMode: this.config.performanceMode
             });
@@ -3072,7 +3074,7 @@ class TTSPlugin {
                 });
                 
                 // Priority: user emotion > default Fish.audio emotion
-                const emotion = userSettings?.voice_emotion || this.config.defaultFishaudioEmotion;
+                const emotion = userSettings?.voice_emotion || requestOverrides.emotion;
                 if (emotion && emotion !== 'neutral') {
                     synthesisOptions.emotion = emotion;
                     this._logDebug('SPEAK_STEP5', 'Emotion set for Fish.audio', { emotion });
@@ -3085,14 +3087,14 @@ class TTSPlugin {
                 synthesisOptions.mp3_bitrate = 128; // Good quality-to-size ratio
                 
                 // Add pitch and volume if configured
-                if (this.config.defaultFishaudioPitch !== undefined && this.config.defaultFishaudioPitch !== 0) {
-                    synthesisOptions.pitch = this.config.defaultFishaudioPitch;
-                    this._logDebug('SPEAK_STEP5', 'Pitch set for Fish.audio', { pitch: this.config.defaultFishaudioPitch });
+                if (requestOverrides.pitch !== 0) {
+                    synthesisOptions.pitch = requestOverrides.pitch;
+                    this._logDebug('SPEAK_STEP5', 'Pitch set for Fish.audio', { pitch: requestOverrides.pitch });
                 }
                 
-                if (this.config.defaultFishaudioVolume !== undefined && this.config.defaultFishaudioVolume !== 1.0) {
-                    synthesisOptions.volume = this.config.defaultFishaudioVolume;
-                    this._logDebug('SPEAK_STEP5', 'Volume set for Fish.audio', { volume: this.config.defaultFishaudioVolume });
+                if (requestOverrides.synthesisVolume !== 1.0) {
+                    synthesisOptions.volume = requestOverrides.synthesisVolume;
+                    this._logDebug('SPEAK_STEP5', 'Volume set for Fish.audio', { volume: requestOverrides.synthesisVolume });
                 }
             }
             
@@ -3107,7 +3109,7 @@ class TTSPlugin {
             } else {
                 // Regular synthesis path for all other cases
                 try {
-                    audioData = await this._synthesizeWithCircuit(selectedEngine, finalText, selectedVoice, this.config.speed, synthesisOptions);
+                    audioData = await this._synthesizeWithCircuit(selectedEngine, finalText, selectedVoice, requestOverrides.speed, synthesisOptions);
                     this._logDebug('SPEAK_STEP5', 'TTS synthesis successful', {
                         engine: selectedEngine,
                         voice: selectedVoice,
@@ -3202,8 +3204,8 @@ class TTSPlugin {
                 textLength: finalText.length,
                 voice: selectedVoice,
                 engine: selectedEngine,
-                volume: this.config.volume * (userSettings?.volume_gain ?? 1.0),
-                speed: this.config.speed,
+                volume: requestOverrides.playbackVolume * (userSettings?.volume_gain ?? 1.0),
+                speed: requestOverrides.speed,
                 source,
                 priority,
                 isStreaming: isStreaming
@@ -3218,8 +3220,9 @@ class TTSPlugin {
                 audioData,
                 isStreaming: isStreaming,
                 ...(isStreaming && { synthesisOptions }), // Include synthesisOptions for streaming items
-                volume: this.config.volume * (userSettings?.volume_gain ?? 1.0),
-                speed: this.config.speed,
+                volume: requestOverrides.playbackVolume * (userSettings?.volume_gain ?? 1.0),
+                speed: requestOverrides.speed,
+                duckOther: requestOverrides.duckOtherAudio,
                 source,
                 teamLevel,
                 isSubscriber,
@@ -3365,7 +3368,7 @@ class TTSPlugin {
                             item.engine,
                             item.text,
                             item.voice,
-                            this.config.speed,
+                            item.speed,
                             item.synthesisOptions || {}
                         );
                         this._logDebug('PLAYBACK', 'On-demand synthesis complete', {
@@ -3419,7 +3422,7 @@ class TTSPlugin {
                                     volume: item.volume,
                                     speed: item.speed,
                                     format: 'mp3',
-                                    duckOther: this.config.duckOtherAudio,
+                                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
                                     duckVolume: this.config.duckVolume
                                 });
 
@@ -3534,7 +3537,7 @@ class TTSPlugin {
                                 volume: item.volume,
                                 speed: item.speed,
                                 format: streamResult.format || 'mp3',
-                                duckOther: this.config.duckOtherAudio,
+                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
                                 duckVolume: this.config.duckVolume
                             });
 
@@ -3628,7 +3631,7 @@ class TTSPlugin {
                                 audioData: audioData,
                                 volume: item.volume,
                                 speed: item.speed,
-                                duckOther: this.config.duckOtherAudio,
+                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
                                 duckVolume: this.config.duckVolume
                             });
 
@@ -3670,7 +3673,7 @@ class TTSPlugin {
                     audioData: item.audioData,
                     volume: item.volume,
                     speed: item.speed,
-                    duckOther: this.config.duckOtherAudio,
+                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
                     duckVolume: this.config.duckVolume
                 });
 

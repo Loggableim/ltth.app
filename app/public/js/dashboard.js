@@ -3443,7 +3443,7 @@ function showAudioEnablePrompt() {
 /**
  * TTS im Dashboard abspielen
  */
-function playDashboardTTS(data) {
+async function playDashboardTTS(data) {
     console.log('🎤 [Dashboard] Playing TTS:', data.text);
 
     // Check if audio is unlocked
@@ -3465,6 +3465,12 @@ function playDashboardTTS(data) {
         audio.src = audioUrl;
         audio.volume = (data.volume || 80) / 100;
         audio.playbackRate = data.speed || 1.0;
+
+        if (window.TTSOutputRouter) {
+            const routing = await window.TTSOutputRouter.routeAudioElement(audio);
+            console.log('ðŸ”Š [Dashboard] TTS output routing:', routing);
+            window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('TTS monitoring failed:', err));
+        }
 
         audio.play().then(() => {
             console.log('✅ [Dashboard] TTS started playing');
@@ -3582,7 +3588,7 @@ function handleStreamEnd(data) {
 /**
  * Combine stream chunks and play as audio
  */
-function playStreamingAudio(id) {
+async function playStreamingAudio(id) {
     const buffer = streamingBuffers.get(id);
     if (!buffer || buffer.chunks.length === 0) {
         console.warn(`⚠️ [Dashboard] No chunks to play for ${id}`);
@@ -3622,6 +3628,12 @@ function playStreamingAudio(id) {
         audio.volume = (buffer.volume || 80) / 100;
         audio.playbackRate = buffer.speed || 1.0;
         audio.src = audioUrl;
+
+        if (window.TTSOutputRouter) {
+            const routing = await window.TTSOutputRouter.routeAudioElement(audio);
+            console.log(`ðŸ”Š [Dashboard] Streaming TTS output routing for ${id}:`, routing);
+            window.TTSOutputRouter.playMonitor(audio).catch(err => console.warn('Streaming TTS monitoring failed:', err));
+        }
         
         // Start playback
         audio.play().then(() => {

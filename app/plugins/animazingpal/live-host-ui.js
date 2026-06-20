@@ -1,0 +1,358 @@
+(function () {
+  'use strict';
+
+  const PROVIDERS = ['openai', 'gemini', 'openrouter', 'ollama'];
+  const EVENTS = ['chat', 'gift', 'follow', 'share', 'like', 'subscribe', 'join'];
+  const PROFILE_FIELDS = ['display_name', 'language', 'tags', 'is_vip', 'vip_tier', 'total_visits', 'total_comments', 'total_gifts_sent', 'total_coins_spent'];
+  const state = { config: null, voices: [], gifts: [], avatars: [], personalities: [], devices: [], loaded: false };
+
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+
+  function get(path, fallback = '') {
+    let value = state.config;
+    for (const part of path.split('.')) value = value?.[part];
+    return value ?? fallback;
+  }
+
+  function set(target, path, value) {
+    const parts = path.split('.');
+    const leaf = parts.pop();
+    let cursor = target;
+    for (const part of parts) cursor = cursor[part] ||= {};
+    cursor[leaf] = value;
+  }
+
+  function input(path, label, options = {}) {
+    const type = options.type || 'text';
+    const value = get(path, options.fallback ?? '');
+    if (type === 'checkbox') {
+      return `<label class="flex items-center gap-2"><input type="checkbox" data-lh="${path}" ${value ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
+    }
+    if (type === 'select') {
+      const choices = options.options || [];
+      return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><select class="select" data-lh="${path}">${choices.map(choice => {
+        const item = typeof choice === 'string' ? { value: choice, label: choice } : choice;
+        return `<option value="${escapeHtml(item.value)}" ${String(value) === String(item.value) ? 'selected' : ''}>${escapeHtml(item.label)}</option>`;
+      }).join('')}</select></label>`;
+    }
+    const attrs = ['min', 'max', 'step', 'placeholder'].filter(key => options[key] !== undefined)
+      .map(key => `${key}="${escapeHtml(options[key])}"`).join(' ');
+    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><input class="input" type="${type}" data-lh="${path}" value="${escapeHtml(type === 'password' ? '' : value)}" ${attrs}></label>`;
+  }
+
+  function textarea(path, label, rows = 3) {
+    return `<label class="block"><span class="text-gray-400 text-sm">${escapeHtml(label)}</span><textarea class="input" rows="${rows}" data-lh="${path}">${escapeHtml(get(path))}</textarea></label>`;
+  }
+
+  function actions(section) {
+    return `<div class="flex gap-2 mt-4"><button class="btn btn-primary" data-livehost-save="${section}">Speichern</button><button class="btn btn-secondary" data-livehost-reset="${section}">Bereich zurücksetzen</button><span class="text-sm text-gray-400 self-center" data-validation="${section}"></span></div>`;
+  }
+
+  function providerCard(providerName) {
+    const base = `providers.${providerName}`;
+    const configured = get(`${base}.apiKeyConfigured`, false);
+    return `<details class="card mt-3" ${state.config.provider === providerName ? 'open' : ''}>
+      <summary class="font-bold cursor-pointer uppercase">${providerName} ${configured ? '• Key konfiguriert' : '• kein Key'}</summary>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+        ${input(`${base}.model`, 'Modell')}${input(`${base}.baseUrl`, 'Base-URL')}
+        ${input(`${base}.apiKey`, 'API-Key', { type: 'password', placeholder: configured ? 'Konfiguriert – leer lassen zum Behalten' : 'API-Key' })}
+        ${input(`${base}.timeoutMs`, 'Timeout (ms)', { type: 'number', min: 1000, max: 120000 })}
+        ${input(`${base}.maxRetries`, 'Retries', { type: 'number', min: 0, max: 10 })}
+        ${input(`${base}.retryBackoffMs`, 'Backoff (ms)', { type: 'number', min: 0, max: 30000 })}
+        ${input(`${base}.temperature`, 'Temperature', { type: 'number', min: 0, max: 2, step: 0.05 })}
+        ${input(`${base}.maxResponseTokens`, 'Max Tokens', { type: 'number', min: 16, max: 4096 })}
+        ${input(`${base}.presencePenalty`, 'Presence Penalty', { type: 'number', min: -2, max: 2, step: 0.1 })}
+        ${input(`${base}.frequencyPenalty`, 'Frequency Penalty', { type: 'number', min: -2, max: 2, step: 0.1 })}
+        ${input(`${base}.thinking`, 'Thinking-Modus', { type: 'checkbox' })}
+        <button class="btn btn-secondary" data-clear-key="${providerName}">API-Key explizit löschen</button>
+      </div>
+    </details>`;
+  }
+
+  function eventCard(type) {
+    const base = `events.${type}`;
+    return `<details class="card" ${['chat', 'gift'].includes(type) ? 'open' : ''}><summary class="font-bold cursor-pointer uppercase">${type}</summary>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+        ${input(`${base}.enabled`, 'Aktiv', { type: 'checkbox' })}${input(`${base}.brainEnabled`, 'Brain-Antwort', { type: 'checkbox' })}
+        ${input(`${base}.templateEnabled`, 'Feste Vorlage', { type: 'checkbox' })}${input(`${base}.avatarActionEnabled`, 'Avataraktion', { type: 'checkbox' })}
+        ${input(`${base}.probability`, 'Wahrscheinlichkeit 0–1', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input(`${base}.cooldownMs`, 'Cooldown (ms)', { type: 'number', min: 0, max: 3600000 })}
+        ${input(`${base}.priority`, 'Priorität 0–100', { type: 'number', min: 0, max: 100 })}
+        ${input(`${base}.minCoins`, 'Minimum Coins', { type: 'number', min: 0 })}
+        ${input(`${base}.minLikes`, 'Minimum Likes', { type: 'number', min: 0 })}
+        ${input(`${base}.minQuantity`, 'Minimum Anzahl', { type: 'number', min: 1 })}
+        ${input(`${base}.voiceId`, 'Fish-Stimme', { type: 'select', options: voiceOptions() })}
+        ${input(`${base}.emotion`, 'Emotion')}${input(`${base}.pitch`, 'Pitch', { type: 'number', min: -12, max: 12, step: 0.1 })}
+        ${input(`${base}.volume`, 'Lautstärke', { type: 'number', min: 0, max: 100 })}${input(`${base}.speed`, 'Tempo', { type: 'number', min: 0.5, max: 2, step: 0.05 })}
+      </div><div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">${textarea(`${base}.prompt`, 'Eigener Prompt')}${textarea(`${base}.template`, 'Text-Template')}</div></details>`;
+  }
+
+  function voiceOptions() {
+    return [{ value: '', label: 'Globale Host-Stimme' }, ...state.voices.map(voice => ({ value: voice.id, label: voice.name }))];
+  }
+
+  function render() {
+    const root = document.getElementById('liveHostSettings');
+    if (!root || !state.config) return;
+    root.innerHTML = `
+      <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
+        ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
+        <button class="btn btn-success" data-preset="safe-live">Sicherer Livetest</button>
+        <button class="btn btn-secondary" data-livehost-reset="all">Alle Einstellungen zurücksetzen</button>
+      </div>
+      <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${input('source.username', 'Öffentlicher LIVE-Kanal')}${input('source.autoConnect', 'Automatisch lesend verbinden', { type: 'checkbox' })}
+        <p class="text-sm text-gray-400">Nur eingehende Ereignisse. AnimazingPal sendet keine Chats, Likes, Follows oder Gifts an den fremden Kanal.</p>
+      </div><button class="btn btn-success mt-3" data-source-connect>Jetzt lesend verbinden</button>${actions('source')}</div></section>
+      <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Brain-Provider</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${input('provider', 'Aktiver Provider', { type: 'select', options: PROVIDERS })}${input('enabled', 'Brain aktiv', { type: 'checkbox' })}</div>
+        <label class="block mt-3"><span class="text-gray-400 text-sm">Aktive Persönlichkeit</span><select class="select" id="liveHostPersonality"><option value="">Aktuelle Persönlichkeit beibehalten</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select></label>
+        ${PROVIDERS.map(providerCard).join('')}<button class="btn btn-secondary mt-3" data-provider-test>Aktiven Provider und Modell testen</button>${actions('providers')}</div></section>
+      <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Antwortverhalten</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        ${input('response.maxResponsesPerMinute', 'Antworten/Minute', { type: 'number', min: 1, max: 120 })}
+        ${input('response.chatProbability', 'Chat-Wahrscheinlichkeit', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
+        ${input('response.language', 'Sprache')}${input('response.cacheEnabled', 'Cache aktiv', { type: 'checkbox' })}
+        ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
+        ${input('response.queueLimit', 'Queue-Limit', { type: 'number', min: 1, max: 1000 })}${input('response.queuePolicy', 'Abbruchverhalten', { type: 'select', options: ['drop-lowest', 'drop-oldest', 'reject-new'] })}
+        ${input('response.speakCooldownMs', 'Sprech-Cooldown (ms)', { type: 'number', min: 0, max: 60000 })}
+      </div><div class="mt-3">${textarea('response.systemPrompt', 'Systemprompt', 5)}</div>${actions('response')}</div></section>
+      <section class="mt-4"><h2 class="text-xl font-bold mb-3">Ereignisse</h2><div class="grid grid-cols-1 gap-3">${EVENTS.map(eventCard).join('')}</div>${actions('events')}</section>
+      ${renderTtsAudio()}
+      ${renderMemory()}
+      ${renderBundles()}
+      ${renderDiagnostics()}
+    `;
+    bind();
+  }
+
+  function renderTtsAudio() {
+    return `<section class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4"><div class="card"><h2 class="text-xl font-bold mb-3">Fish.audio</h2><div class="grid grid-cols-2 gap-3">
+      ${input('tts.enabled', 'TTS aktiv', { type: 'checkbox' })}${input('tts.voiceId', 'Globale Host-Stimme', { type: 'select', options: voiceOptions() })}
+      ${input('tts.emotion', 'Emotion')}${input('tts.pitch', 'Pitch', { type: 'number', min: -12, max: 12, step: 0.1 })}
+      ${input('tts.volume', 'Lautstärke', { type: 'number', min: 0, max: 100 })}${input('tts.speed', 'Tempo', { type: 'number', min: 0.5, max: 2, step: 0.05 })}
+      ${input('tts.streaming', 'Streaming', { type: 'checkbox' })}${input('tts.priority', 'Queue-Priorität', { type: 'number', min: 0, max: 100 })}
+      ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}
+    </div><label class="block mt-3"><span class="text-gray-400 text-sm">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
+    <div class="card"><h2 class="text-xl font-bold mb-3">Audio-Routing</h2><div class="grid grid-cols-1 gap-3">
+      ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: [{ value: '', label: 'Standardgerät' }, ...state.devices.map(device => ({ value: device.deviceId, label: device.label || device.deviceId }))] })}
+      ${input('audio.monitoringEnabled', 'Monitoring aktiv', { type: 'checkbox' })}${input('audio.monitoringVolume', 'Monitoring-Lautstärke', { type: 'number', min: 0, max: 100 })}
+      ${input('audio.missingDeviceBehavior', 'Fehlendes Gerät', { type: 'select', options: ['mute', 'default', 'error'] })}
+      <p class="text-sm text-gray-400">setSinkId: <strong>${typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype ? 'verfügbar' : 'nicht verfügbar'}</strong></p>
+      <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
+    </div>${actions('audio')}</div></section>`;
+  }
+
+  function renderMemory() {
+    const allowed = get('viewerMemory.allowedProfileFields', []);
+    return `<section class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4"><div class="card"><h2 class="text-xl font-bold mb-3">Viewer Profiles & Long-Term Memory</h2><div class="grid grid-cols-2 gap-3">
+      ${input('viewerMemory.enabled', 'Viewer Memory aktiv', { type: 'checkbox' })}${input('viewerMemory.streamerId', 'Streamer-ID')}
+      ${input('viewerMemory.maxMemories', 'Max. Erinnerungen', { type: 'number', min: 1, max: 100 })}${input('viewerMemory.minimumImportance', 'Min. Wichtigkeit', { type: 'number', min: 0, max: 1, step: 0.05 })}
+      ${input('viewerMemory.writeMemories', 'Erinnerungen schreiben', { type: 'checkbox' })}${input('viewerMemory.includeInsights', 'Insights lesen', { type: 'checkbox' })}
+      ${input('viewerMemory.includeGiftHistory', 'Geschenkverlauf lesen', { type: 'checkbox' })}
+    </div><p class="text-gray-400 text-sm mt-3">Freigegebene Profilfelder</p><div class="grid grid-cols-2 gap-2">${PROFILE_FIELDS.map(field => `<label><input type="checkbox" data-profile-field="${field}" ${allowed.includes(field) ? 'checked' : ''}> ${field}</label>`).join('')}</div>${actions('viewerMemory')}</div>
+    <div class="card"><h2 class="text-xl font-bold mb-3">Datenschutz</h2><div class="grid grid-cols-1 gap-3">
+      ${input('privacy.includeNotes', 'Interne Notizen einbeziehen', { type: 'checkbox' })}${input('privacy.includeBirthday', 'Geburtstag einbeziehen', { type: 'checkbox' })}${input('privacy.includeContactFields', 'Kontaktfelder einbeziehen', { type: 'checkbox' })}${input('privacy.redactPromptPayloads', 'Prompt-Payloads redigieren', { type: 'checkbox' })}
+    </div>${actions('privacy')}</div></section>`;
+  }
+
+  function renderBundles() {
+    const bundles = get('avatarBundles', []);
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Geschenkekatalog → Avatar-Bundles</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        ${input('avatarSwitch.enabled', 'Auto-Switch aktiv', { type: 'checkbox' })}${input('avatarSwitch.persistUntilNextSwitch', 'Bis zum nächsten Switch aktiv', { type: 'checkbox' })}
+        ${input('avatarSwitch.revertAfterMs', 'Zurücksetzen nach ms', { type: 'number', min: 0 })}${input('avatarSwitch.matchGiftNameFallback', 'Gift-Name-Fallback', { type: 'checkbox' })}${input('avatarSwitch.waitForRepeatEnd', 'Streak-Ende abwarten', { type: 'checkbox' })}
+      </div>
+      <div id="avatarBundleList" class="mt-4 space-y-2">${bundles.length ? bundles.map(bundle => `<div class="flex items-center gap-2 bg-gray-800 p-2 rounded"><strong class="flex-1">${escapeHtml(bundle.name || bundle.id)}</strong><span class="text-gray-400">${escapeHtml((bundle.giftIds || bundle.gifts || []).join(', '))}</span><button class="btn btn-secondary" data-bundle-edit="${escapeHtml(bundle.id)}">Bearbeiten</button><button class="btn btn-success" data-bundle-activate="${escapeHtml(bundle.id)}">Aktivieren</button><button class="btn btn-danger" data-bundle-delete="${escapeHtml(bundle.id)}">Löschen</button></div>`).join('') : '<p class="text-gray-400">Noch keine Bundles.</p>'}</div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+        <input class="input" id="bundleId" placeholder="Bundle-ID"><input class="input" id="bundleName" placeholder="Anzeigename">
+        <select class="select" id="bundleAvatar"><option value="">Avatar wählen</option>${state.avatars.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
+        <select class="select" id="bundlePersonality"><option value="">Persönlichkeit wählen</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
+        <select class="select" id="bundleVoice">${voiceOptions().map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('')}</select>
+        <input class="input" id="bundleEmotion" placeholder="Emotion"><input class="input" id="bundlePitch" type="number" min="-12" max="12" step="0.1" placeholder="Pitch">
+        <input class="input" id="bundleVolume" type="number" min="0" max="100" placeholder="Lautstärke"><input class="input" id="bundleSpeed" type="number" min="0.5" max="2" step="0.05" placeholder="Tempo">
+        <select class="select md:col-span-2" id="bundleGifts" multiple size="6">${state.gifts.map(gift => `<option value="${escapeHtml(gift.id)}">${escapeHtml(gift.name)} (#${escapeHtml(gift.id)})</option>`).join('')}</select>
+        <button class="btn btn-primary" data-bundle-save>Bundle hinzufügen/aktualisieren</button>
+      </div>${actions('avatarBundles')}${actions('avatarSwitch')}</div></section>`;
+  }
+
+  function renderDiagnostics() {
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Diagnose</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${input('diagnostics.verboseLogging', 'Verbose Logging', { type: 'checkbox' })}${input('diagnostics.emitEvents', 'Diagnoseereignisse', { type: 'checkbox' })}${input('diagnostics.retainLastErrors', 'Letzte Fehler behalten', { type: 'number', min: 0, max: 100 })}${input('diagnostics.includePromptBodies', 'Prompt-Inhalte loggen', { type: 'checkbox' })}
+    </div><p class="text-sm text-gray-400 mt-3" id="liveHostStatus">TikTok, Provider, Fish.audio, Audio und Animaze werden über die Live-Statusanzeige überwacht.</p>${actions('diagnostics')}</div></section>`;
+  }
+
+  function valueOf(element) {
+    if (element.type === 'checkbox') return element.checked;
+    if (element.type === 'number') return element.value === '' ? null : Number(element.value);
+    return element.value;
+  }
+
+  function collect(section) {
+    const patch = {};
+    document.querySelectorAll('[data-lh]').forEach(element => {
+      const path = element.dataset.lh;
+      if (section !== 'all' && path !== section && !path.startsWith(`${section}.`)) return;
+      if (element.type === 'password' && !element.value) return;
+      set(patch, path, valueOf(element));
+    });
+    if (section === 'viewerMemory' || section === 'all') {
+      set(patch, 'viewerMemory.allowedProfileFields', [...document.querySelectorAll('[data-profile-field]:checked')].map(item => item.dataset.profileField));
+    }
+    if (section === 'audio' || section === 'all') {
+      const device = document.querySelector('[data-lh="audio.outputDeviceId"]');
+      set(patch, 'audio.outputDeviceLabel', device?.selectedOptions?.[0]?.textContent || '');
+    }
+    return patch;
+  }
+
+  async function request(url, options = {}) {
+    const response = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+    const body = await response.json();
+    if (!response.ok || body.success === false) throw new Error(body.error || `HTTP ${response.status}`);
+    return body;
+  }
+
+  function notify(message, error = false) {
+    if (typeof window.showToast === 'function') return window.showToast(message, error ? 'error' : 'success');
+    const status = document.getElementById('liveHostStatus');
+    if (status) status.textContent = message;
+  }
+
+  async function save(section) {
+    const patch = section === 'avatarBundles'
+      ? { avatarBundles: state.config.avatarBundles }
+      : collect(section);
+    if (section === 'providers') {
+      patch.provider = document.querySelector('[data-lh="provider"]').value;
+      patch.enabled = document.querySelector('[data-lh="enabled"]').checked;
+    }
+    const body = await request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify(patch) });
+    state.config = body.config;
+    render();
+    notify(`${section} gespeichert`);
+  }
+
+  async function loadDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      state.devices = devices.filter(device => device.kind === 'audiooutput');
+    } catch (error) {
+      notify(`Audiogeräte nicht lesbar: ${error.message}`, true);
+    }
+  }
+
+  function normalizeVoices(payload) {
+    const source = payload.voices?.fishaudio || payload.fishaudio || {};
+    return Array.isArray(source)
+      ? source.map(item => ({ id: item.id || item.voice_id || item.name, name: item.name || item.id }))
+      : Object.entries(source).map(([id, item]) => ({ id, name: typeof item === 'string' ? item : item.name || id }));
+  }
+
+  function normalizeStatus(payload) {
+    const platform = payload.activePlatform || payload.platformState?.key || 'animaze';
+    const data = payload.platformData || payload.animazeData || payload.platformState?.data || {};
+    state.avatars = (data.avatars || []).map(avatar => ({
+      id: avatar.modelID || avatar.id || avatar.name,
+      name: `${platform}: ${avatar.modelName || avatar.name || avatar.id}`
+    }));
+  }
+
+  function saveBundle() {
+    const id = document.getElementById('bundleId').value.trim();
+    if (!id) return notify('Bundle-ID fehlt', true);
+    const bundle = {
+      id, name: document.getElementById('bundleName').value.trim() || id,
+      avatarName: document.getElementById('bundleAvatar').value,
+      personalityId: document.getElementById('bundlePersonality').value,
+      voiceId: document.getElementById('bundleVoice').value,
+      emotion: document.getElementById('bundleEmotion').value.trim(),
+      pitch: Number(document.getElementById('bundlePitch').value || 0),
+      volume: Number(document.getElementById('bundleVolume').value || 80),
+      speed: Number(document.getElementById('bundleSpeed').value || 1),
+      giftIds: [...document.getElementById('bundleGifts').selectedOptions].map(option => option.value)
+    };
+    const index = state.config.avatarBundles.findIndex(item => item.id === id);
+    if (index >= 0) state.config.avatarBundles[index] = bundle;
+    else state.config.avatarBundles.push(bundle);
+    save('avatarBundles').catch(error => notify(error.message, true));
+  }
+
+  function editBundle(id) {
+    const bundle = state.config.avatarBundles.find(item => item.id === id);
+    if (!bundle) return;
+    for (const [field, value] of Object.entries({ bundleId: bundle.id, bundleName: bundle.name, bundleAvatar: bundle.avatarName, bundlePersonality: bundle.personalityId, bundleVoice: bundle.voiceId, bundleEmotion: bundle.emotion, bundlePitch: bundle.pitch, bundleVolume: bundle.volume, bundleSpeed: bundle.speed })) {
+      const element = document.getElementById(field); if (element) element.value = value ?? '';
+    }
+    const gifts = new Set(bundle.giftIds || bundle.gifts || []);
+    for (const option of document.getElementById('bundleGifts').options) option.selected = gifts.has(option.value);
+  }
+
+  function bind() {
+    document.querySelectorAll('[data-livehost-save]').forEach(button => button.onclick = () => save(button.dataset.livehostSave).catch(error => notify(error.message, true)));
+    document.querySelectorAll('[data-livehost-reset]').forEach(button => button.onclick = async () => {
+      if (!window.confirm(`Bereich ${button.dataset.livehostReset} wirklich zurücksetzen? API-Keys bleiben erhalten.`)) return;
+      try { const body = await request('/api/animazingpal/live-host/reset', { method: 'POST', body: JSON.stringify({ section: button.dataset.livehostReset }) }); state.config = body.config; render(); } catch (error) { notify(error.message, true); }
+    });
+    document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify('Preset Sicherer Livetest angewendet'); } catch (error) { notify(error.message, true); } });
+    document.querySelector('[data-speak-test]')?.addEventListener('click', () => request('/api/animazingpal/live-host/speak-test', { method: 'POST', body: JSON.stringify({ text: document.getElementById('liveHostTestText').value }) }).then(() => notify('Sprachtest gestartet')).catch(error => notify(error.message, true)));
+    document.querySelector('[data-provider-test]')?.addEventListener('click', async () => {
+      try {
+        await save('providers');
+        const result = await request('/api/animazingpal/brain/test', { method: 'POST', body: '{}' });
+        notify(`Provider-Test erfolgreich${result.response ? `: ${result.response}` : ''}`);
+      } catch (error) { notify(error.message, true); }
+    });
+    document.querySelector('[data-source-connect]')?.addEventListener('click', async () => {
+      try {
+        await save('source');
+        const username = document.querySelector('[data-lh="source.username"]').value;
+        const result = await request('/api/animazingpal/live-host/source/connect', { method: 'POST', body: JSON.stringify({ username }) });
+        notify(`Lesend mit @${result.username} verbunden`);
+      } catch (error) { notify(error.message, true); }
+    });
+    document.getElementById('liveHostPersonality')?.addEventListener('change', event => {
+      if (!event.target.value) return;
+      request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
+    });
+    document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
+    document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);
+    document.querySelectorAll('[data-bundle-edit]').forEach(button => button.onclick = () => editBundle(button.dataset.bundleEdit));
+    document.querySelectorAll('[data-bundle-delete]').forEach(button => button.onclick = () => { state.config.avatarBundles = state.config.avatarBundles.filter(item => item.id !== button.dataset.bundleDelete); save('avatarBundles').catch(error => notify(error.message, true)); });
+    document.querySelectorAll('[data-bundle-activate]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/avatar/activate', { method: 'POST', body: JSON.stringify({ bundleId: button.dataset.bundleActivate }) }).then(() => notify('Avatar-Bundle aktiviert')).catch(error => notify(error.message, true)));
+    document.querySelectorAll('[data-clear-key]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify({ providers: { [button.dataset.clearKey]: { clearApiKey: true } } }) }).then(body => { state.config = body.config; render(); notify('API-Key gelöscht'); }).catch(error => notify(error.message, true)));
+  }
+
+  async function initialize() {
+    if (state.loaded) return;
+    try {
+      const [config, voices, gifts, status, personalities] = await Promise.all([
+        request('/api/animazingpal/live-host/config'),
+        request('/api/tts/voices?engine=fishaudio').catch(() => ({ voices: {} })),
+        request('/api/gift-catalog').catch(() => ({ catalog: [] })),
+        request('/api/animazingpal/status').catch(() => ({})),
+        request('/api/animazingpal/brain/personalities').catch(() => ({ personalities: [] }))
+      ]);
+      state.config = config.config;
+      state.voices = normalizeVoices(voices);
+      state.gifts = (gifts.catalog || []).map(item => ({
+        id: String(item.id ?? item.giftId ?? item.gift_id),
+        name: item.name || item.giftName || item.gift_name || item.id || item.gift_id
+      }));
+      state.personalities = (personalities.personalities || []).map(item => ({ id: item.name || item.id, name: item.displayName || item.name || item.id }));
+      normalizeStatus(status);
+      await loadDevices();
+      state.loaded = true;
+      render();
+    } catch (error) {
+      document.getElementById('liveHostSettings').innerHTML = `<div class="card text-red-400">Live-Host-Konfiguration konnte nicht geladen werden: ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('[data-tab="livehost"]')?.addEventListener('click', initialize);
+  });
+}());

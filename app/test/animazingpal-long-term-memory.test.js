@@ -318,6 +318,22 @@ describe('AnimazingPal Long-term Memory', () => {
   });
 
   describe('Database Migration', () => {
+    test('initializes a pre-streamer legacy database before creating scoped indexes', () => {
+      const oldDb = new Database(':memory:');
+      oldDb.exec(`
+        CREATE TABLE animazingpal_memories (id INTEGER PRIMARY KEY, memory_type TEXT NOT NULL, content TEXT NOT NULL, importance REAL, created_at DATETIME, source_user TEXT);
+        CREATE TABLE animazingpal_user_profiles (id INTEGER PRIMARY KEY, username TEXT NOT NULL UNIQUE, nickname TEXT, interaction_count INTEGER DEFAULT 0);
+        CREATE TABLE animazingpal_conversations (id INTEGER PRIMARY KEY, session_id TEXT, role TEXT, content TEXT, created_at DATETIME);
+      `);
+      const MemoryDatabase = require('../plugins/animazingpal/brain/memory-database');
+      const testMemoryDb = new MemoryDatabase(oldDb, logger);
+
+      expect(() => testMemoryDb.initialize()).not.toThrow();
+      expect(oldDb.prepare('PRAGMA table_info(animazingpal_memories)').all().map(column => column.name)).toContain('streamer_id');
+      expect(testMemoryDb.getPersonalities().map(item => item.name)).toEqual(expect.arrayContaining(['cynical_host', 'sarcastic_host']));
+      oldDb.close();
+    });
+
     test('should add new columns to existing database', () => {
       // Create a database without new columns (simulate old version)
       const oldDb = new Database(':memory:');

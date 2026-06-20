@@ -275,6 +275,9 @@ function updateStatus(data) {
   document.getElementById('settingsPort').value = port;
   document.getElementById('settingsAutoConnect').checked = activeProfile.autoConnect !== false;
   document.getElementById('settingsReconnect').checked = activeProfile.reconnectOnDisconnect !== false;
+  document.getElementById('settingsReconnectDelay').value = activeProfile.reconnectDelay ?? currentConfig.reconnectDelay ?? 5000;
+  document.getElementById('settingsMaxReconnectAttempts').value = activeProfile.maxReconnectAttempts ?? currentConfig.maxReconnectAttempts ?? 10;
+  document.getElementById('settingsConnectionTimeoutMs').value = activeProfile.connectionTimeoutMs ?? currentConfig.connectionTimeoutMs ?? 10000;
   document.getElementById('settingsVerbose').checked = activeProfile.verboseLogging || currentConfig.verboseLogging || false;
   const settingsAuthToken = document.getElementById('settingsAuthToken');
   if (settingsAuthToken) {
@@ -1211,6 +1214,10 @@ async function saveSettings() {
     port,
     autoConnect: document.getElementById('settingsAutoConnect').checked,
     reconnectOnDisconnect: document.getElementById('settingsReconnect').checked,
+    reconnectDelay: parseInt(document.getElementById('settingsReconnectDelay').value, 10) || 5000,
+    maxReconnectAttempts: Number.isFinite(parseInt(document.getElementById('settingsMaxReconnectAttempts').value, 10))
+      ? parseInt(document.getElementById('settingsMaxReconnectAttempts').value, 10) : 10,
+    connectionTimeoutMs: parseInt(document.getElementById('settingsConnectionTimeoutMs').value, 10) || 10000,
     verboseLogging: document.getElementById('settingsVerbose').checked
   };
   const authTokenEl = document.getElementById('settingsAuthToken');
@@ -1232,6 +1239,9 @@ async function saveSettings() {
     config.port = port;
     config.autoConnect = profilePatch.autoConnect;
     config.reconnectOnDisconnect = profilePatch.reconnectOnDisconnect;
+    config.reconnectDelay = profilePatch.reconnectDelay;
+    config.maxReconnectAttempts = profilePatch.maxReconnectAttempts;
+    config.connectionTimeoutMs = profilePatch.connectionTimeoutMs;
     config.verboseLogging = profilePatch.verboseLogging;
   }
 

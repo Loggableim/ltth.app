@@ -72,4 +72,20 @@ describe('AnimazingPal live host configuration', () => {
     expect(preserved.providers.ollama.apiKey).toBe('kept-secret');
     expect(cleared.providers.ollama.apiKey).toBe('');
   });
+
+  test('normalizes avatar bundle fine settings and removes malformed entries', () => {
+    const configured = normalizeLiveHostConfig({ avatarBundles: [
+      { id: ' rose host ', avatarName: 'Rose', personalityId: 'sarcastic_host', giftIds: [5655, '5655'], pitch: 99, volume: -1, speed: 9 },
+      { avatarName: 'Missing id' }
+    ] });
+
+    expect(configured.avatarBundles).toEqual([expect.objectContaining({
+      id: 'rose-host', giftIds: ['5655'], pitch: 12, volume: 0, speed: 2
+    })]);
+  });
+
+  test('keeps foreign TikTok sources read-only', () => {
+    const configured = normalizeLiveHostConfig({ source: { username: '@wardalq4', readOnly: false, autoConnect: true } });
+    expect(configured.source).toEqual({ username: 'wardalq4', readOnly: true, autoConnect: true });
+  });
 });

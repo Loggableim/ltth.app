@@ -117,6 +117,7 @@ class AnimazingPalPlugin {
     
     // Load configuration
     this.config = this.normalizeConfig(this.api.getConfig('config') || this.getDefaultConfig());
+    this.maxReconnectAttempts = this.config.maxReconnectAttempts;
     this.refreshEventCooldowns();
     this.platformAdapter = this.getActivePlatformAdapter();
     
@@ -145,6 +146,13 @@ class AnimazingPalPlugin {
     
     // Register TikTok event handlers
     this.registerTikTokEvents();
+
+    const source = this.config.brain?.liveHost?.source;
+    if (this.config.brain?.liveHost?.enabled && source?.autoConnect && source.username && this.api.tiktok?.connect) {
+      this.liveHostSourceTimer = setTimeout(() => {
+        this.api.tiktok.connect(source.username).catch(error => this.api.log(`Read-only LIVE source auto-connect failed: ${error.message}`, 'warn'));
+      }, 10000);
+    }
     
     // Auto-connect if enabled
     const activePlatformProfile = this.getPlatformProfile();
@@ -171,6 +179,8 @@ class AnimazingPalPlugin {
             autoConnect: true,
             reconnectOnDisconnect: true,
             reconnectDelay: 5000,
+            maxReconnectAttempts: 10,
+            connectionTimeoutMs: 10000,
             autoRefreshData: true,
             verboseLogging: false
           },
@@ -198,6 +208,8 @@ class AnimazingPalPlugin {
       port: 8008,
       reconnectOnDisconnect: true,
       reconnectDelay: 5000,
+      maxReconnectAttempts: 10,
+      connectionTimeoutMs: 10000,
       // Auto-refresh Animaze data on connect
       autoRefreshData: true,
       // Gift mappings - map TikTok gifts to Animaze actions
@@ -988,6 +1000,8 @@ class AnimazingPalPlugin {
         autoConnect: config.autoConnect !== undefined ? config.autoConnect : normalized.platform.profiles.animaze.autoConnect,
         reconnectOnDisconnect: config.reconnectOnDisconnect !== undefined ? config.reconnectOnDisconnect : normalized.platform.profiles.animaze.reconnectOnDisconnect,
         reconnectDelay: config.reconnectDelay !== undefined ? config.reconnectDelay : normalized.platform.profiles.animaze.reconnectDelay,
+        maxReconnectAttempts: config.maxReconnectAttempts !== undefined ? config.maxReconnectAttempts : normalized.platform.profiles.animaze.maxReconnectAttempts,
+        connectionTimeoutMs: config.connectionTimeoutMs !== undefined ? config.connectionTimeoutMs : normalized.platform.profiles.animaze.connectionTimeoutMs,
         autoRefreshData: config.autoRefreshData !== undefined ? config.autoRefreshData : normalized.platform.profiles.animaze.autoRefreshData,
         verboseLogging: config.verboseLogging !== undefined ? config.verboseLogging : normalized.platform.profiles.animaze.verboseLogging
       };
@@ -999,6 +1013,9 @@ class AnimazingPalPlugin {
       normalized.autoConnect = normalized.platform.profiles.animaze.autoConnect;
       normalized.reconnectOnDisconnect = normalized.platform.profiles.animaze.reconnectOnDisconnect;
       normalized.reconnectDelay = normalized.platform.profiles.animaze.reconnectDelay;
+      const maxReconnectAttempts = parseInt(normalized.platform.profiles.animaze.maxReconnectAttempts, 10);
+      normalized.maxReconnectAttempts = Math.max(0, Math.min(100, Number.isFinite(maxReconnectAttempts) ? maxReconnectAttempts : 10));
+      normalized.connectionTimeoutMs = Math.max(1000, Math.min(120000, parseInt(normalized.platform.profiles.animaze.connectionTimeoutMs, 10) || 10000));
       normalized.autoRefreshData = normalized.platform.profiles.animaze.autoRefreshData;
       normalized.verboseLogging = normalized.platform.profiles.animaze.verboseLogging;
     }
@@ -1072,6 +1089,7 @@ class AnimazingPalPlugin {
         }
 
         this.config = mergedConfig;
+        this.maxReconnectAttempts = mergedConfig.maxReconnectAttempts;
         this.refreshEventCooldowns();
         this.platformAdapter = this.getActivePlatformAdapter();
         this.api.setConfig('config', this.config);
@@ -1083,6 +1101,100 @@ class AnimazingPalPlugin {
       } catch (error) {
         this.api.log(`Config update error: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/config', (req, res) => {
+      res.json({
+        success: true,
+        config: sanitizeLiveHostConfig(this.config.brain.liveHost),
+        presets: ['safe-live']
+      });
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/config', async (req, res) => {
+      try {
+        this.config.brain.liveHost = mergeLiveHostSecrets(this.config.brain.liveHost, req.body || {});
+        this.api.setConfig('config', this.config);
+        this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        this.safeEmitStatus();
+        res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
+      } catch (error) {
+        this.api.log(`Live host config update failed: ${error.message}`, 'error');
+        res.status(400).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/preset', async (req, res) => {
+      try {
+        this.config.brain.liveHost = applyLiveHostPreset(this.config.brain.liveHost, req.body?.preset || 'safe-live');
+        this.api.setConfig('config', this.config);
+        this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
+      } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/reset', async (req, res) => {
+      try {
+        const section = req.body?.section || 'all';
+        const defaults = buildLiveHostDefaults();
+        const current = this.config.brain.liveHost;
+        if (section === 'all') {
+          if (req.body?.clearSecrets) {
+            this.config.brain.liveHost = defaults;
+          } else {
+            const providerKeys = Object.fromEntries(Object.entries(current.providers || {}).map(([name, provider]) => [name, {
+              apiKey: provider.apiKey || ''
+            }]));
+            this.config.brain.liveHost = mergeLiveHostSecrets(defaults, { providers: providerKeys });
+          }
+        } else if (Object.prototype.hasOwnProperty.call(defaults, section)) {
+          const patch = { [section]: defaults[section] };
+          this.config.brain.liveHost = section === 'providers'
+            ? mergeLiveHostSecrets(current, patch)
+            : normalizeLiveHostConfig(this.mergeConfigPatch(current, patch));
+        } else {
+          return res.status(400).json({ success: false, error: `Unknown settings section: ${section}` });
+        }
+        this.api.setConfig('config', this.config);
+        this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
+        res.json({ success: true, config: sanitizeLiveHostConfig(this.config.brain.liveHost) });
+      } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/speak-test', async (req, res) => {
+      const result = await this.speakHostResponse(req.body?.text || 'AnimazingPal Sprachtest erfolgreich.', {
+        username: 'AnimazingPal', eventType: 'manual'
+      });
+      res.status(result?.success === false ? 400 : 200).json(result);
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/avatar/activate', async (req, res) => {
+      const result = await this.activateAvatarBundle(req.body?.bundleId, { reason: 'manual-ui' });
+      res.status(result.success ? 200 : 400).json(result);
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/source/connect', async (req, res) => {
+      try {
+        const username = String(req.body?.username || this.config.brain.liveHost.source?.username || '').trim().replace(/^@/, '');
+        if (!/^[a-zA-Z0-9._-]{1,100}$/.test(username)) {
+          return res.status(400).json({ success: false, error: 'Invalid TikTok username' });
+        }
+        if (!this.api.tiktok?.connect) {
+          return res.status(503).json({ success: false, error: 'TikTok event source unavailable' });
+        }
+        await this.api.tiktok.connect(username);
+        this.config.brain.liveHost.source = { username, readOnly: true, autoConnect: this.config.brain.liveHost.source?.autoConnect === true };
+        this.config.brain.liveHost.viewerMemory.streamerId = username;
+        this.brainEngine?.setStreamerId(username);
+        this.api.setConfig('config', this.config);
+        res.json({ success: true, username, readOnly: true });
+      } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
       }
     });
 
@@ -1426,10 +1538,12 @@ class AnimazingPalPlugin {
     // Configure brain settings
     this.api.registerRoute('post', '/api/animazingpal/brain/config', async (req, res) => {
       try {
-        const brainConfig = req.body;
-        
-        // Update config
-        this.config.brain = { ...this.config.brain, ...brainConfig };
+        const brainConfig = { ...(req.body || {}) };
+        if (brainConfig.liveHost) {
+          brainConfig.liveHost = mergeLiveHostSecrets(this.config.brain.liveHost, brainConfig.liveHost);
+        }
+        if (!brainConfig.openaiApiKey) delete brainConfig.openaiApiKey;
+        this.config.brain = this.mergeConfigPatch(this.config.brain, brainConfig);
         this.api.setConfig('config', this.config);
         
         // Apply to brain engine
@@ -1438,7 +1552,7 @@ class AnimazingPalPlugin {
         }
         
         this.api.log('Brain config updated', 'info');
-        res.json({ success: true, config: this.config.brain });
+        res.json({ success: true, config: this.getSafeConfig().brain });
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
       }
@@ -1999,6 +2113,14 @@ class AnimazingPalPlugin {
       this.handleSubscribeEvent(data);
     });
 
+    this.api.registerTikTokEvent('join', (data) => {
+      this.processLiveHostEvent('join', data).catch(error => this.api.log(`Live host join error: ${error.message}`, 'warn'));
+      this.recordViewerbaseActivity('join', {
+        username: data.uniqueId || 'Someone',
+        nickname: data.nickname || data.uniqueId || 'Someone'
+      });
+    });
+
     this.api.log('TikTok event handlers registered for AnimazingPal', 'info');
   }
 
@@ -2197,7 +2319,7 @@ class AnimazingPalPlugin {
             }
             safeResolve(false);
           }
-        }, 10000);
+        }, this.config.connectionTimeoutMs || 10000);
 
       } catch (error) {
         const errorMsg = error.message || 'Unknown error during WebSocket initialization';
@@ -3172,21 +3294,25 @@ class AnimazingPalPlugin {
     }
 
     const eventConfig = liveHost.events[options.eventType] || {};
-    const pick = (eventValue, globalValue) => eventValue !== null && eventValue !== undefined && eventValue !== ''
-      ? eventValue
-      : globalValue;
+    const activeBundle = liveHost.avatarBundles.find(bundle => bundle.id === liveHost.activeAvatarBundleId) || {};
+    const pick = (eventValue, bundleValue, globalValue) => {
+      if (eventValue !== null && eventValue !== undefined && eventValue !== '') return eventValue;
+      if (bundleValue !== null && bundleValue !== undefined && bundleValue !== '') return bundleValue;
+      return globalValue;
+    };
     const request = {
       text: String(message).slice(0, liveHost.response.maxCharacters),
       userId: options.userId || 'animazingpal-host',
       username: options.username || 'AnimazingPal',
-      voiceId: pick(eventConfig.voiceId, liveHost.tts.voiceId) || null,
+      voiceId: pick(eventConfig.voiceId, activeBundle.voiceId, liveHost.tts.voiceId) || null,
       engine: 'fishaudio',
       source: 'animazingpal',
-      priority: pick(eventConfig.priority, liveHost.tts.priority),
-      emotion: pick(eventConfig.emotion, liveHost.tts.emotion),
-      pitch: pick(eventConfig.pitch, liveHost.tts.pitch),
-      volume: pick(eventConfig.volume, liveHost.tts.volume),
-      speed: pick(eventConfig.speed, liveHost.tts.speed),
+      teamLevel: 99,
+      priority: pick(eventConfig.priority, activeBundle.priority, liveHost.tts.priority),
+      emotion: pick(eventConfig.emotion, activeBundle.emotion, liveHost.tts.emotion),
+      pitch: pick(eventConfig.pitch, activeBundle.pitch, liveHost.tts.pitch),
+      volume: pick(eventConfig.volume, activeBundle.volume, liveHost.tts.volume),
+      speed: pick(eventConfig.speed, activeBundle.speed, liveHost.tts.speed),
       streaming: liveHost.tts.streaming,
       duckOtherAudio: liveHost.tts.duckOtherAudio
     };
@@ -3206,10 +3332,136 @@ class AnimazingPalPlugin {
     }
   }
 
+  _formatLiveHostMessage(message) {
+    const liveHost = this.config?.brain?.liveHost || buildLiveHostDefaults();
+    const sentences = String(message || '').match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+    return sentences.slice(0, liveHost.response.maxSentences).join(' ').trim().slice(0, liveHost.response.maxCharacters);
+  }
+
+  _renderLiveHostTemplate(template, data = {}) {
+    const values = {
+      username: data.uniqueId || data.username || 'Viewer',
+      nickname: data.nickname || data.uniqueId || data.username || 'Viewer',
+      comment: data.comment || '',
+      giftName: data.giftName || '',
+      count: data.repeatCount || data.likeCount || 1,
+      coins: (data.diamondCount || 0) * (data.repeatCount || 1)
+    };
+    return Object.entries(values).reduce((text, [key, value]) => text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)), String(template || ''));
+  }
+
+  async processLiveHostEvent(eventType, data = {}) {
+    const liveHost = this.config?.brain?.liveHost;
+    const event = liveHost?.events?.[eventType];
+    if (!liveHost?.enabled || !event?.enabled) return { handled: false };
+
+    const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
+    const likes = Number(data.likeCount) || 0;
+    const quantity = Number(data.repeatCount) || 1;
+    if (coins < event.minCoins || likes < event.minLikes || quantity < event.minQuantity) return { handled: true, responded: false };
+    if (Math.random() > event.probability) return { handled: true, responded: false };
+
+    this.liveHostEventCooldowns ||= new Map();
+    const now = Date.now();
+    if (now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) return { handled: true, responded: false };
+    this.liveHostEventCooldowns.set(eventType, now);
+
+    const username = data.uniqueId || data.username || 'Viewer';
+    let responded = false;
+    if (event.templateEnabled && event.template) {
+      const message = this._formatLiveHostMessage(this._renderLiveHostTemplate(event.template, data));
+      if (message) {
+        await this.speakHostResponse(message, { eventType, username, userId: username });
+        responded = true;
+      }
+    }
+
+    if (event.brainEnabled && this.brainEngine && eventType !== 'join') {
+      const method = {
+        chat: () => this.brainEngine.processChat(username, data.comment || '', { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
+        gift: () => this.brainEngine.processGift(username, data.giftName || 'gift', coins || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
+        follow: () => this.brainEngine.processFollow(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
+        share: () => this.brainEngine.processShare(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
+        like: () => this.brainEngine.processLike(username, likes || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
+        subscribe: () => this.brainEngine.processSubscribe(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt })
+      }[eventType];
+      const response = method ? await method() : null;
+      if (response?.text) {
+        await this.speakHostResponse(this._formatLiveHostMessage(response.text), { eventType, username, userId: username });
+        responded = true;
+      }
+    }
+    return { handled: true, responded };
+  }
+
+  resolveAvatarBundleForGift(gift = {}) {
+    const liveHost = this.config?.brain?.liveHost || buildLiveHostDefaults();
+    if (!liveHost.avatarSwitch?.enabled) return null;
+    const bundles = Array.isArray(liveHost.avatarBundles) ? liveHost.avatarBundles : [];
+    const giftId = gift.giftId === null || gift.giftId === undefined ? '' : String(gift.giftId).trim();
+    const giftName = String(gift.giftName || '').trim().toLocaleLowerCase();
+    const byId = giftId
+      ? bundles.find(bundle => (bundle.giftIds || []).some(id => String(id).trim() === giftId))
+      : null;
+    if (byId) return byId;
+    if (!liveHost.avatarSwitch.matchGiftNameFallback || !giftName) return null;
+    return bundles.find(bundle => (bundle.giftNames || []).some(name => String(name).trim().toLocaleLowerCase() === giftName)) || null;
+  }
+
+  async activateAvatarBundle(bundleId, options = {}) {
+    const liveHost = this.config?.brain?.liveHost;
+    const bundle = liveHost?.avatarBundles?.find(item => item.id === bundleId);
+    if (!bundle) return { success: false, error: 'Avatar bundle not found' };
+
+    const previousBundleId = liveHost.activeAvatarBundleId || '';
+    if (bundle.avatarName) {
+      const loaded = await this.loadAvatar(bundle.avatarName);
+      if (!loaded) return { success: false, error: `Avatar could not be loaded: ${bundle.avatarName}` };
+    }
+    if (bundle.personalityId && this.brainEngine) {
+      await this.brainEngine.setActivePersonality(bundle.personalityId);
+      this.config.brain.activePersonality = bundle.personalityId;
+    }
+
+    liveHost.activeAvatarBundleId = bundle.id;
+    this.api.setConfig?.('config', this.config);
+    this.api.emit('animazingpal:avatar-bundle-activated', {
+      bundleId: bundle.id,
+      avatarName: bundle.avatarName || null,
+      personalityId: bundle.personalityId || null,
+      reason: options.reason || 'manual'
+    });
+
+    if (this.avatarRevertTimer) clearTimeout(this.avatarRevertTimer);
+    if (!liveHost.avatarSwitch.persistUntilNextSwitch && liveHost.avatarSwitch.revertAfterMs > 0 && previousBundleId) {
+      this.avatarRevertTimer = setTimeout(() => {
+        this.activateAvatarBundle(previousBundleId, { reason: 'automatic-revert' }).catch(error => {
+          this.api.log(`Avatar bundle revert failed: ${error.message}`, 'warn');
+        });
+      }, liveHost.avatarSwitch.revertAfterMs);
+    }
+
+    return { success: true, bundle };
+  }
+
   relayChatMessage(message, options = {}) {
     const useEcho = options.useEcho ?? false;
+    const liveHost = this.config?.brain?.liveHost;
+    const sourceEvent = options.metadata?.sourceEvent || options.eventType || 'manual';
+    const hostSpeechEvents = new Set(['brainResponse', 'standaloneResponse', 'gift', 'follow', 'share', 'like', 'subscribe', 'join']);
+    const useFishHost = !!liveHost?.enabled && !!liveHost?.tts?.enabled && hostSpeechEvents.has(options.eventType);
 
-    if (this.isConnected) {
+    if (useFishHost) {
+      this.speakHostResponse(message, {
+        username: options.username,
+        eventType: sourceEvent,
+        userId: options.metadata?.userId
+      }).catch(error => {
+        this.api.log(`Failed to relay host response to Fish.audio: ${error.message}`, 'warn');
+      });
+    }
+
+    if (this.isConnected && !useFishHost) {
       try {
         const result = this.sendChatMessage(message, useEcho);
         if (result && typeof result.catch === 'function') {
@@ -3439,6 +3691,16 @@ class AnimazingPalPlugin {
     const giftId = data.giftId;
     const giftName = data.giftName;
     const giftValue = data.diamondCount || 1;
+    const liveHost = this.config.brain?.liveHost;
+    const avatarBundle = this.resolveAvatarBundleForGift({ giftId, giftName });
+    const giftSequenceComplete = data.repeatEnd !== false;
+    let avatarReady = Promise.resolve();
+    if (avatarBundle && liveHost?.events?.gift?.avatarActionEnabled && (!liveHost?.avatarSwitch?.waitForRepeatEnd || giftSequenceComplete)) {
+      avatarReady = this.activateAvatarBundle(avatarBundle.id, { reason: `gift:${giftId || giftName}` }).catch(error => {
+        this.api.log(`Gift avatar bundle activation failed: ${error.message}`, 'error');
+      });
+    }
+    avatarReady.then(() => this.processLiveHostEvent('gift', data)).catch(error => this.api.log(`Live host gift error: ${error.message}`, 'warn'));
 
     // Evaluate logic matrix first
     const logicMatrixAction = this.evaluateLogicMatrix('gift', {
@@ -3535,7 +3797,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('gift', placeholders);
@@ -3617,6 +3879,7 @@ class AnimazingPalPlugin {
     const comment = data.comment;
 
     if (!comment) return;
+    this.processLiveHostEvent('chat', data).catch(error => this.api.log(`Live host chat error: ${error.message}`, 'warn'));
 
     const placeholders = {
       username,
@@ -3729,7 +3992,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled && this.config.brain?.autoRespond?.chat) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled && this.config.brain?.autoRespond?.chat) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('chat', placeholders);
@@ -3800,6 +4063,7 @@ class AnimazingPalPlugin {
     this.api.log(`Follow event from ${username}`, 'info');
 
     const placeholders = { username, nickname: data.nickname || username };
+    this.processLiveHostEvent('follow', data).catch(error => this.api.log(`Live host follow error: ${error.message}`, 'warn'));
 
     this.emitVrchatIntent('follow', {
       username,
@@ -3865,7 +4129,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled && this.config.brain?.autoRespond?.follows) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled && this.config.brain?.autoRespond?.follows) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('follow', placeholders);
@@ -3932,6 +4196,7 @@ class AnimazingPalPlugin {
     this.api.log(`Share event from ${username}`, 'info');
 
     const placeholders = { username, nickname: data.nickname || username };
+    this.processLiveHostEvent('share', data).catch(error => this.api.log(`Live host share error: ${error.message}`, 'warn'));
 
     this.emitVrchatIntent('share', {
       username,
@@ -4003,7 +4268,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled && this.config.brain?.autoRespond?.shares) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled && this.config.brain?.autoRespond?.shares) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('share', placeholders);
@@ -4068,6 +4333,7 @@ class AnimazingPalPlugin {
     if (!this.canTriggerEvent('like', username)) return;
 
     const likeCount = data.likeCount || 1;
+    this.processLiveHostEvent('like', data).catch(error => this.api.log(`Live host like error: ${error.message}`, 'warn'));
     const action = this.config.eventActions?.like;
     const threshold = action?.threshold || 10;
 
@@ -4153,7 +4419,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled && this.config.brain?.autoRespond?.like) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled && this.config.brain?.autoRespond?.like) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('like', placeholders);
@@ -4225,6 +4491,7 @@ class AnimazingPalPlugin {
     this.api.log(`Subscribe event from ${username}`, 'info');
 
     const placeholders = { username, nickname: data.nickname || username };
+    this.processLiveHostEvent('subscribe', data).catch(error => this.api.log(`Live host subscribe error: ${error.message}`, 'warn'));
 
     this.emitVrchatIntent('subscribe', {
       username,
@@ -4296,7 +4563,7 @@ class AnimazingPalPlugin {
     }
 
     // Handle response based on standalone mode
-    if (this.brainEngine && this.config.brain?.enabled && this.config.brain?.autoRespond?.subscribe) {
+    if (this.brainEngine && this.config.brain?.enabled && !this.config.brain?.liveHost?.enabled && this.config.brain?.autoRespond?.subscribe) {
       if (this.config.brain.standaloneMode) {
         // Standalone mode: use template-based response
         const message = this.buildStandaloneResponse('subscribe', placeholders);
@@ -4532,6 +4799,10 @@ class AnimazingPalPlugin {
     if (this.viewerbaseSyncTimer) {
       clearTimeout(this.viewerbaseSyncTimer);
       this.viewerbaseSyncTimer = null;
+    }
+    if (this.liveHostSourceTimer) {
+      clearTimeout(this.liveHostSourceTimer);
+      this.liveHostSourceTimer = null;
     }
     this.viewerbaseSyncPending = null;
     this.viewerbaseSyncInFlight = false;

@@ -161,6 +161,7 @@ class BrainEngine {
     );
     const liveHost = normalizeLiveHostConfig(liveHostInput, newConfig);
     this.config.liveHost = liveHost;
+    this.config.enabled = newConfig.enabled === true || liveHost.enabled === true;
     const providerConfig = {
       ...liveHost.providers[liveHost.provider],
       provider: liveHost.provider,
@@ -184,6 +185,14 @@ class BrainEngine {
     if (newConfig.activePersonality) {
       this.setActivePersonality(newConfig.activePersonality);
     }
+  }
+
+  _resolveSystemPrompt(options = {}) {
+    return [
+      this.currentPersonality?.system_prompt,
+      this.config.liveHost?.response?.systemPrompt,
+      options.systemPromptOverride
+    ].filter(Boolean).join('\n\n');
   }
 
   /**
@@ -451,7 +460,7 @@ class BrainEngine {
       const result = await this.gptBrain.generateChatResponse(
         username,
         message,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         {
           memories: contextMemories,
           userInfo: enhancedUserInfo,
@@ -543,7 +552,7 @@ class BrainEngine {
         username,
         giftName,
         giftValue,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         enhancedUserInfo
       );
       
@@ -606,7 +615,7 @@ class BrainEngine {
     try {
       const result = await this.gptBrain.generateFollowResponse(
         username,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         isReturning
       );
       
@@ -654,7 +663,7 @@ class BrainEngine {
     try {
       const result = await this.gptBrain.generateQuickReaction(
         `${username} hat deinen Stream geteilt!`,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         'grateful'
       );
       
@@ -1120,7 +1129,7 @@ class BrainEngine {
     try {
       const result = await this.gptBrain.generateQuickReaction(
         `${username} hat gerade abonniert! Das ist ein besonderer Moment.`,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         'excited'
       );
       
@@ -1155,7 +1164,7 @@ class BrainEngine {
     try {
       const result = await this.gptBrain.generateQuickReaction(
         `Wow, ${likeCount} Likes von ${username}!`,
-        this.currentPersonality.system_prompt,
+        this._resolveSystemPrompt(options),
         'happy'
       );
       
