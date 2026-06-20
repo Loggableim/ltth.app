@@ -32,6 +32,20 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('avatarBundles');
   });
 
+  test('gift mappings use catalog and action dropdowns instead of prompt-only entry', () => {
+    expect(html).toContain('id="giftMappingGift"');
+    expect(html).toContain('id="giftMappingActionType"');
+    expect(html).toContain('id="giftMappingActionValue"');
+    expect(script).toContain('/api/gift-catalog');
+    expect(script).toContain('populateGiftMappingForm');
+    expect(script).not.toContain("prompt('TikTok Gift-Name");
+  });
+
+  test('ChatPal tab is not exposed in the standalone host UI', () => {
+    expect(html).not.toContain('data-tab="chatpal"');
+    expect(html).not.toContain('id="tab-chatpal"');
+  });
+
   test('keeps the main tab bar readable on narrow screens', () => {
     expect(html).toContain('data-animazingpal-tabs');
     expect(html).toContain('overflow-x-auto');

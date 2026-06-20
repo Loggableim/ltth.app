@@ -139,6 +139,58 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test('auto decision mode skips low-signal chat without using random probability', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    Object.assign(plugin.config.brain.liveHost.response, { decisionMode: 'auto', minDecisionScore: 0.55 });
+    Object.assign(plugin.config.brain.liveHost.events.chat, {
+      enabled: true, probability: 1, cooldownMs: 0, brainEnabled: true
+    });
+    plugin.brainEngine = { processChat: jest.fn().mockResolvedValue({ text: 'Soll nicht passieren.' }) };
+
+    const result = await plugin.processLiveHostEvent('chat', { uniqueId: 'lurker', nickname: 'Lurker', comment: 'lol' });
+
+    expect(result).toEqual(expect.objectContaining({ handled: true, responded: false }));
+    expect(plugin.brainEngine.processChat).not.toHaveBeenCalled();
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+  });
+
+  test('auto decision mode responds to high-signal chat questions', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    Object.assign(plugin.config.brain.liveHost.response, { decisionMode: 'auto', minDecisionScore: 0.55 });
+    Object.assign(plugin.config.brain.liveHost.events.chat, {
+      enabled: true, probability: 0, cooldownMs: 0, brainEnabled: true
+    });
+    plugin.brainEngine = { processChat: jest.fn().mockResolvedValue({ text: 'Kurz gesagt: ja.' }) };
+
+    const result = await plugin.processLiveHostEvent('chat', {
+      uniqueId: 'vip-viewer', nickname: 'VIP', comment: '@host kannst du das erklären?', teamMemberLevel: 15
+    });
+
+    expect(result).toEqual(expect.objectContaining({ handled: true, responded: true }));
+    expect(plugin.brainEngine.processChat).toHaveBeenCalledWith('vip-viewer', '@host kannst du das erklären?', expect.objectContaining({
+      decision: expect.objectContaining({ mode: 'auto', reasons: expect.arrayContaining(['question', 'mention', 'supporter']) })
+    }));
+    expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Kurz gesagt: ja.' }));
+  });
+
+  test('triggers situational Animaze actions from available defaults', async () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.animazeData = { emotes: [], specialActions: [], idleAnims: [] };
+    plugin.animazeData.emotes = [{ friendlyName: 'Love', itemName: 'Emote_Hearts' }];
+    plugin.animazeData.specialActions = [{ animName: 'Hello', index: 0 }];
+    plugin.animazeData.idleAnims = [{ animName: 'Explaining 1', index: 18 }];
+    plugin.triggerEmote = jest.fn().mockResolvedValue(true);
+    Object.assign(plugin.config.brain.liveHost.events.gift, {
+      enabled: true, cooldownMs: 0, brainEnabled: false, templateEnabled: false, avatarActionEnabled: true
+    });
+
+    const result = await plugin.processLiveHostEvent('gift', { uniqueId: 'alice', giftName: 'Rose', diamondCount: 1 });
+
+    expect(result).toEqual(expect.objectContaining({ handled: true }));
+    expect(plugin.triggerEmote).toHaveBeenCalledWith('Emote_Hearts');
+  });
+
   test('passes each event prompt into the selected personality response', async () => {
     const { plugin, ttsPlugin } = createPlugin();
     Object.assign(plugin.config.brain.liveHost.events.follow, {

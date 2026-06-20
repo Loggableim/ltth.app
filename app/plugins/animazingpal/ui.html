@@ -162,7 +162,6 @@
       <div class="tab" data-tab="gifts">Gift Mappings</div>
       <div class="tab" data-tab="events">Event Aktionen</div>
       <div class="tab" data-tab="logicmatrix">Logic Matrix</div>
-      <div class="tab" data-tab="chatpal">ChatPal</div>
       <div class="tab" data-tab="personalities">Persönlichkeiten</div>
       <div class="tab" data-tab="memories">Erinnerungen</div>
       <div class="tab" data-tab="viewerbase">Viewerbase</div>
@@ -275,6 +274,29 @@
           <button class="btn btn-success" data-action="add-gift-mapping">+ Mapping hinzufügen</button>
         </div>
         <p class="text-gray-400 mb-4">Verknüpfe TikTok Geschenke mit Animaze Aktionen</p>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 rounded-lg border border-gray-700 bg-gray-900/60 p-3">
+          <label class="block md:col-span-2">
+            <span class="text-gray-400 text-sm">Gift aus Katalog</span>
+            <select class="select" id="giftMappingGift">
+              <option value="">Gift aus Katalog wÃ¤hlen...</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-gray-400 text-sm">Aktionstyp</span>
+            <select class="select" id="giftMappingActionType">
+              <option value="emote">Emote</option>
+              <option value="specialAction">Spezialaktion</option>
+              <option value="pose">Pose</option>
+              <option value="idle">Idle Animation</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-gray-400 text-sm">Aktion</span>
+            <select class="select" id="giftMappingActionValue">
+              <option value="">AuswÃ¤hlen...</option>
+            </select>
+          </label>
+        </div>
         <div id="giftMappingsList" class="space-y-3">
           <p class="text-gray-400">Keine Gift Mappings konfiguriert</p>
         </div>
@@ -571,8 +593,8 @@
       </div>
     </div>
 
-    <!-- Tab Content: ChatPal -->
-    <div id="tab-chatpal" class="tab-content hidden">
+    <!-- Legacy ChatPal settings removed for standalone mode -->
+    <div class="hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Chat Settings -->
         <div class="card">

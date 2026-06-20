@@ -78,6 +78,8 @@ function buildLiveHostDefaults() {
       ollama: providerDefaults('ollama', 'https://ollama.com', 'nemotron-3-nano:30b-cloud')
     },
     response: {
+      decisionMode: 'auto',
+      minDecisionScore: 0.55,
       maxResponsesPerMinute: 10,
       chatProbability: 0.3,
       maxSentences: 3,
@@ -187,6 +189,10 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   }
 
   configured.response.maxResponsesPerMinute = Math.round(clamp(configured.response.maxResponsesPerMinute, 1, 120, 10));
+  configured.response.decisionMode = ['auto', 'probability', 'always', 'off'].includes(configured.response.decisionMode)
+    ? configured.response.decisionMode
+    : defaults.response.decisionMode;
+  configured.response.minDecisionScore = clamp(configured.response.minDecisionScore, 0, 1, defaults.response.minDecisionScore);
   configured.response.chatProbability = clamp(configured.response.chatProbability, 0, 1, 0.3);
   configured.response.maxSentences = Math.round(clamp(configured.response.maxSentences, 1, 10, 3));
   configured.response.maxCharacters = Math.round(clamp(configured.response.maxCharacters, 20, 4000, 500));
@@ -292,7 +298,7 @@ function applyLiveHostPreset(config, preset) {
   if (preset !== 'safe-live') throw new Error(`Unknown live host preset: ${preset}`);
   return normalizeLiveHostConfig(merge(config, {
     enabled: true,
-    response: { maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2 },
+    response: { decisionMode: 'auto', minDecisionScore: 0.55, maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2 },
     providers: { ollama: { timeoutMs: 30000, maxRetries: 2, retryBackoffMs: 1000 } },
     events: {
       chat: { brainEnabled: true, probability: 0.1 },

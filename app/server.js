@@ -303,7 +303,7 @@ app.use('/api', (req, res, next) => {
     return adminAuth(req, res, next);
 });
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve GSAP library for overlays
 app.use('/gsap', express.static(path.join(__dirname, 'node_modules', 'gsap', 'dist')));

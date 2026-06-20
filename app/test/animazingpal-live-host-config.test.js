@@ -11,6 +11,7 @@ describe('AnimazingPal live host configuration', () => {
     const configured = applyLiveHostPreset(buildLiveHostDefaults(), 'safe-live');
 
     expect(configured.response.maxResponsesPerMinute).toBe(4);
+    expect(configured.response.decisionMode).toBe('auto');
     expect(configured.response.chatProbability).toBe(0.1);
     expect(configured.response.maxSentences).toBe(2);
     expect(configured.events.gift.brainEnabled).toBe(true);
@@ -18,6 +19,15 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.providers.ollama.timeoutMs).toBe(30000);
     expect(configured.providers.ollama.maxRetries).toBe(2);
     expect(Object.isFrozen(configured)).toBe(false);
+  });
+
+  test('normalizes automatic host decision settings', () => {
+    const configured = normalizeLiveHostConfig({
+      response: { decisionMode: 'bad-mode', minDecisionScore: 99 }
+    });
+
+    expect(configured.response.decisionMode).toBe('auto');
+    expect(configured.response.minDecisionScore).toBe(1);
   });
 
   test('normalizes numeric fine settings to documented safety bounds', () => {

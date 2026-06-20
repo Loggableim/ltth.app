@@ -6,6 +6,7 @@ let platformData = {};
 let currentPlatformState = null;
 let supportedPlatforms = [];
 let viewerbaseState = null;
+let giftCatalog = [];
 let isConnected = false;
 
 // Toast queue for sequential messages
@@ -16,6 +17,7 @@ let toastShowing = false;
 document.addEventListener('DOMContentLoaded', () => {
   fetchStatus();
   loadPersonalities();
+  loadGiftCatalog();
   
   // Socket events
   socket.on('animazingpal:status', (data) => {
@@ -131,6 +133,8 @@ function setupEventListeners() {
   // Gift mappings
   const addGiftMappingBtn = document.querySelector('[data-action="add-gift-mapping"]');
   if (addGiftMappingBtn) addGiftMappingBtn.addEventListener('click', addGiftMapping);
+  const giftMappingActionType = document.getElementById('giftMappingActionType');
+  if (giftMappingActionType) giftMappingActionType.addEventListener('change', populateGiftMappingForm);
 
   // Memory search
   const memorySearchBtn = document.getElementById('memorySearchBtn');
@@ -311,6 +315,7 @@ function updateStatus(data) {
   // Update Animaze data UI
   updateAnimazeDataUI();
   renderGiftMappings();
+  populateGiftMappingForm();
   updateDynamicActionTypes();
   updatePlatformActionHints();
 }
@@ -426,7 +431,7 @@ function getActionLabel(actionType) {
     specialAction: 'Spezialaktion',
     pose: 'Pose',
     idle: 'Idle Animation',
-    chatMessage: 'ChatPal Nachricht',
+    chatMessage: 'Host-TTS Vorlage',
     hotkey: 'Hotkey',
     expression: 'Expression',
     motion: 'Motion',
@@ -1343,7 +1348,7 @@ function processToastQueue() {
   }, type === 'error' ? 5000 : 3000);
 }
 
-function addGiftMapping() {
+function addGiftMappingPromptLegacy() {
   const giftName = prompt('TikTok Gift-Name oder Gift-ID für das Mapping:');
   if (!giftName) return;
 
@@ -1378,6 +1383,102 @@ function addGiftMapping() {
     actionValue,
     chatMessage,
     useEcho
+  });
+
+  saveGiftMappings(mappings);
+}
+
+async function loadGiftCatalog() {
+  try {
+    const response = await fetch('/api/gift-catalog');
+    const data = await response.json();
+    giftCatalog = (data.catalog || []).map(item => ({
+      id: String(item.id ?? item.giftId ?? item.gift_id ?? ''),
+      name: item.name || item.giftName || item.gift_name || item.id || item.gift_id,
+      coins: item.diamond_count ?? item.diamondCount ?? item.coins ?? item.value
+    })).filter(item => item.id || item.name);
+  } catch (error) {
+    console.warn('Gift catalog unavailable:', error);
+    giftCatalog = [];
+  }
+  populateGiftMappingForm();
+}
+
+function getGiftMappingActionOptions(actionType) {
+  const platformKey = getPlatformKey();
+  switch (actionType) {
+    case 'emote':
+      return platformKey === 'animaze'
+        ? (platformData.emotes || []).map(item => ({ value: item.itemName, label: item.friendlyName || item.itemName }))
+        : (platformData.hotkeys || platformData.expressions || []).map(item => typeof item === 'string'
+          ? { value: item, label: item }
+          : { value: item.hotkeyID || item.name || item.hotkeyName, label: item.name || item.hotkeyName || item.description || item.hotkeyID });
+    case 'specialAction':
+      return platformKey === 'animaze'
+        ? (platformData.specialActions || []).map(item => ({ value: item.index, label: item.animName }))
+        : (platformData.motions || []).map(item => ({ value: item, label: item }));
+    case 'pose':
+      return (platformData.poses || []).map(item => ({ value: item.index, label: item.animName }));
+    case 'idle':
+      return (platformData.idleAnims || []).map(item => ({ value: item.index, label: item.animName }));
+    default:
+      return [];
+  }
+}
+
+function populateGiftMappingForm() {
+  const giftSelect = document.getElementById('giftMappingGift');
+  const typeSelect = document.getElementById('giftMappingActionType');
+  const valueSelect = document.getElementById('giftMappingActionValue');
+  if (!giftSelect || !typeSelect || !valueSelect) return;
+
+  const selectedGift = giftSelect.value;
+  giftSelect.innerHTML = '<option value="">Gift aus Katalog wÃ¤hlen...</option>';
+  giftCatalog.forEach(gift => {
+    const option = document.createElement('option');
+    option.value = gift.id || gift.name;
+    option.textContent = `${gift.name || gift.id}${gift.id ? ` (#${gift.id})` : ''}${gift.coins ? ` · ${gift.coins} Coins` : ''}`;
+    option.dataset.giftName = gift.name || '';
+    giftSelect.appendChild(option);
+  });
+  if ([...giftSelect.options].some(option => option.value === selectedGift)) giftSelect.value = selectedGift;
+
+  const selectedValue = valueSelect.value;
+  valueSelect.innerHTML = '<option value="">AuswÃ¤hlen...</option>';
+  getGiftMappingActionOptions(typeSelect.value || 'emote').forEach(item => {
+    if (item.value === null || item.value === undefined || item.value === '') return;
+    const option = document.createElement('option');
+    option.value = item.value;
+    option.textContent = item.label || item.value;
+    valueSelect.appendChild(option);
+  });
+  if ([...valueSelect.options].some(option => option.value === selectedValue)) valueSelect.value = selectedValue;
+}
+
+function addGiftMapping() {
+  const giftSelect = document.getElementById('giftMappingGift');
+  const actionType = document.getElementById('giftMappingActionType')?.value || 'emote';
+  const rawActionValue = document.getElementById('giftMappingActionValue')?.value || '';
+  const selectedGift = giftSelect?.selectedOptions?.[0];
+  const giftId = giftSelect?.value || '';
+  const giftName = selectedGift?.dataset?.giftName || selectedGift?.textContent?.replace(/\s+\(#.*$/, '').trim() || giftId;
+  if (!giftId && !giftName) {
+    showToast('Bitte ein Gift aus dem Katalog auswÃ¤hlen', 'error');
+    return;
+  }
+  if (!actionType || !rawActionValue) {
+    showToast('Bitte Aktionstyp und Aktion auswÃ¤hlen', 'error');
+    return;
+  }
+
+  const mappings = Array.isArray(currentConfig.giftMappings) ? [...currentConfig.giftMappings] : [];
+  mappings.push({
+    giftId,
+    giftName,
+    actionType,
+    actionValue: normalizeActionValue(actionType, rawActionValue),
+    chatMessage: null,
+    useEcho: null
   });
 
   saveGiftMappings(mappings);

@@ -288,32 +288,32 @@ class AnimazingPalPlugin {
       eventActions: {
         follow: {
           enabled: true,
-          actionType: 'emote',     // 'emote', 'specialAction', 'pose', 'idle', 'chatMessage'
-          actionValue: null,       // itemName for emote, index for others
-          chatMessage: null,       // Optional message to send to ChatPal
+          actionType: 'specialAction', // 'emote', 'specialAction', 'pose', 'idle', 'chatMessage'
+          actionValue: 0,          // itemName for emote, index for others
+          chatMessage: null,
           useEcho: null            // Per-event echo override (null = use global, true/false = override)
         },
         share: {
           enabled: true,
-          actionType: 'emote',
-          actionValue: null,
+          actionType: 'specialAction',
+          actionValue: 6,
           chatMessage: null,
           useEcho: null
         },
         subscribe: {
           enabled: true,
-          actionType: 'specialAction',
-          actionValue: null,
-          chatMessage: 'Thank you {username} for subscribing!',
+          actionType: 'emote',
+          actionValue: 'Emote_Confetti_Template',
+          chatMessage: null,
           useEcho: null
         },
         like: {
-          enabled: false,
-          actionType: null,
-          actionValue: null,
+          enabled: true,
+          actionType: 'emote',
+          actionValue: 'Emote_Hearts',
           chatMessage: null,
           useEcho: null,
-          threshold: 10           // Only trigger after this many likes
+          threshold: 15           // Only trigger after this many likes
         },
         gift: {
           enabled: true,
@@ -323,9 +323,9 @@ class AnimazingPalPlugin {
           useEcho: null
         },
         chat: {
-          enabled: false,
-          actionType: null,
-          actionValue: null,
+          enabled: true,
+          actionType: 'idle',
+          actionValue: 18,
           chatMessage: null,
           useEcho: null
         }
@@ -1021,6 +1021,49 @@ class AnimazingPalPlugin {
       normalized.verboseLogging = normalized.platform.profiles.animaze.verboseLogging;
     }
 
+    normalized.eventActions = this.normalizeStandaloneEventActions(normalized.eventActions, defaults.eventActions);
+
+    return normalized;
+  }
+
+  normalizeStandaloneEventActions(eventActions = {}, defaults = {}) {
+    const standaloneDefaults = {
+      follow: { enabled: true, actionType: 'specialAction', actionValue: 0, chatMessage: null, useEcho: null },
+      share: { enabled: true, actionType: 'specialAction', actionValue: 6, chatMessage: null, useEcho: null },
+      subscribe: { enabled: true, actionType: 'emote', actionValue: 'Emote_Confetti_Template', chatMessage: null, useEcho: null },
+      like: { enabled: true, actionType: 'emote', actionValue: 'Emote_Hearts', chatMessage: null, useEcho: null, threshold: 15 },
+      gift: { enabled: true, actionType: 'emote', actionValue: 'Emote_Hearts', chatMessage: null, useEcho: null },
+      chat: { enabled: true, actionType: 'idle', actionValue: 18, chatMessage: null, useEcho: null }
+    };
+    const legacyDefaults = {
+      follow: { actionType: 'emote', actionValue: null, chatMessage: null },
+      share: { actionType: 'emote', actionValue: null, chatMessage: null },
+      subscribe: { actionType: 'specialAction', actionValue: null, chatMessage: 'Thank you {username} for subscribing!' },
+      like: { enabled: false, actionType: null, actionValue: null, chatMessage: null, threshold: 10 },
+      gift: { actionType: 'emote', actionValue: null, chatMessage: 'Wow, danke {username} für {giftName}!' },
+      chat: { enabled: false, actionType: null, actionValue: null, chatMessage: null }
+    };
+    const normalized = { ...(eventActions || {}) };
+    for (const [eventType, defaultAction] of Object.entries(defaults || {})) {
+      const fallback = standaloneDefaults[eventType] || defaultAction;
+      const current = normalized[eventType] || {};
+      const legacy = legacyDefaults[eventType] || {};
+      const hasActionValue = current.actionValue !== null && current.actionValue !== undefined && current.actionValue !== '';
+      const message = String(current.chatMessage || '');
+      const isKnownLegacyMessage = message === legacy.chatMessage
+        || /^Wow,\s*danke\s+\{username\}.*\{giftName\}!$/i.test(message)
+        || /^Thank you\s+\{username\}\s+for subscribing!$/i.test(message);
+      const hasCustomMessage = current.chatMessage
+        && !isKnownLegacyMessage
+        && !message.toLocaleLowerCase().includes('chatpal');
+      const legacyShape = current.actionType === legacy.actionType
+        && !hasActionValue
+        && !hasCustomMessage
+        && (legacy.enabled === undefined || current.enabled === legacy.enabled);
+      normalized[eventType] = legacyShape || !normalized[eventType]
+        ? { ...fallback }
+        : { ...fallback, ...current };
+    }
     return normalized;
   }
 
@@ -3360,6 +3403,125 @@ class AnimazingPalPlugin {
     return Object.entries(values).reduce((text, [key, value]) => text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)), String(template || ''));
   }
 
+  decideLiveHostResponse(eventType, data = {}, event = {}, liveHost = buildLiveHostDefaults()) {
+    const response = liveHost.response || {};
+    const mode = ['auto', 'probability', 'always', 'off'].includes(response.decisionMode)
+      ? response.decisionMode
+      : 'auto';
+    const reasons = [];
+    const hasResponseChannel = !!event.templateEnabled || !!event.brainEnabled;
+
+    if (!hasResponseChannel) return { mode, respond: false, score: 0, threshold: response.minDecisionScore ?? 0.55, reasons: ['no_response_channel'] };
+    if (mode === 'off') return { mode, respond: false, score: 0, threshold: response.minDecisionScore ?? 0.55, reasons: ['off'] };
+    if (mode === 'always') return { mode, respond: true, score: 1, threshold: response.minDecisionScore ?? 0.55, reasons: ['always'] };
+    if (mode === 'probability') {
+      const probability = Number.isFinite(Number(event.probability)) ? Number(event.probability) : 1;
+      return { mode, respond: Math.random() <= probability, score: probability, threshold: probability, reasons: ['probability'] };
+    }
+
+    let score = 0;
+    const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
+    const likes = Number(data.likeCount) || 0;
+    if (event.templateEnabled && event.template) {
+      score += 0.4;
+      reasons.push('explicit_template');
+    }
+
+    if (eventType === 'chat') {
+      const comment = String(data.comment || '').trim();
+      const lowered = comment.toLocaleLowerCase();
+      if (!comment || /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s!?.]+$/u.test(comment)) {
+        reasons.push('low_signal');
+      }
+      if (/[?？]/.test(comment) || /\b(was|wie|warum|wieso|wann|wo|wer|welche|kannst|kann|why|how|what|when|where|who)\b/i.test(comment)) {
+        score += 0.35;
+        reasons.push('question');
+      }
+      if (/@(?:host|animazingpal)\b/i.test(comment) || /\b(host|avatar|animazingpal)\b/i.test(lowered)) {
+        score += 0.25;
+        reasons.push('mention');
+      }
+      if (Number(data.teamMemberLevel) >= 10 || data.isSubscriber || data.isModerator) {
+        score += 0.2;
+        reasons.push('supporter');
+      }
+      if (comment.length >= 25) {
+        score += 0.1;
+        reasons.push('substantive');
+      }
+      if (/\b(danke|thanks|hilfe|help|erklär|erklaer|explain|meinung|opinion)\b/i.test(lowered)) {
+        score += 0.15;
+        reasons.push('intent');
+      }
+    } else if (eventType === 'gift') {
+      score = 0.75;
+      reasons.push('gift');
+      if (coins >= 10) {
+        score += 0.1;
+        reasons.push('valuable_gift');
+      }
+      if ((Number(data.repeatCount) || 1) > 1) {
+        score += 0.1;
+        reasons.push('repeat_gift');
+      }
+    } else if (['follow', 'share', 'subscribe'].includes(eventType)) {
+      score = 0.8;
+      reasons.push(eventType);
+    } else if (eventType === 'like') {
+      score = likes >= Math.max(10, Number(event.minLikes) || 0) ? 0.6 : 0.35;
+      reasons.push(likes >= Math.max(10, Number(event.minLikes) || 0) ? 'like_burst' : 'like');
+    } else if (eventType === 'join') {
+      score += 0.2;
+      reasons.push('join');
+    }
+
+    const threshold = Number.isFinite(Number(response.minDecisionScore)) ? Number(response.minDecisionScore) : 0.55;
+    return { mode, respond: score >= threshold, score: Math.min(1, score), threshold, reasons };
+  }
+
+  findAnimazeItem(collectionName, candidates) {
+    const data = this.animazeData || this.platformData || {};
+    const collection = Array.isArray(data[collectionName]) ? data[collectionName] : [];
+    const names = candidates.map(name => String(name).toLocaleLowerCase());
+    return collection.find(item => {
+      const label = String(item.friendlyName || item.animName || item.itemName || item.name || '').toLocaleLowerCase();
+      return names.some(candidate => label.includes(candidate));
+    }) || null;
+  }
+
+  selectSituationalAvatarAction(eventType, data = {}) {
+    const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);
+    if (eventType === 'gift') {
+      const giftName = String(data.giftName || '').toLocaleLowerCase();
+      const highValue = coins >= 100;
+      const emote = highValue
+        ? this.findAnimazeItem('emotes', ['money', 'firework', 'confetti'])
+        : giftName.includes('rose') || giftName.includes('heart')
+          ? this.findAnimazeItem('emotes', ['love', 'heart', 'hearts'])
+          : this.findAnimazeItem('emotes', ['confetti', 'love', 'heart']);
+      return emote ? { actionType: 'emote', actionValue: emote.itemName || emote.friendlyName } : null;
+    }
+    if (eventType === 'follow') {
+      const action = this.findAnimazeItem('specialActions', ['short hello', 'hello']);
+      return action ? { actionType: 'specialAction', actionValue: action.index } : null;
+    }
+    if (eventType === 'share' || eventType === 'subscribe') {
+      const action = this.findAnimazeItem('specialActions', ['dance', 'macarena', 'robot']);
+      if (action) return { actionType: 'specialAction', actionValue: action.index };
+      const emote = this.findAnimazeItem('emotes', ['confetti', 'firework']);
+      return emote ? { actionType: 'emote', actionValue: emote.itemName || emote.friendlyName } : null;
+    }
+    if (eventType === 'chat') {
+      const idle = this.findAnimazeItem('idleAnims', ['explaining', 'simple idle']);
+      return idle ? { actionType: 'idle', actionValue: idle.index } : null;
+    }
+    if (eventType === 'like' && (Number(data.likeCount) || 0) >= 10) {
+      const emote = this.findAnimazeItem('emotes', ['love', 'heart']);
+      return emote ? { actionType: 'emote', actionValue: emote.itemName || emote.friendlyName } : null;
+    }
+    return null;
+  }
+
   async processLiveHostEvent(eventType, data = {}) {
     const liveHost = this.config?.brain?.liveHost;
     const event = liveHost?.events?.[eventType];
@@ -3369,12 +3531,26 @@ class AnimazingPalPlugin {
     const likes = Number(data.likeCount) || 0;
     const quantity = Number(data.repeatCount) || 1;
     if (coins < event.minCoins || likes < event.minLikes || quantity < event.minQuantity) return { handled: true, responded: false };
-    if (Math.random() > event.probability) return { handled: true, responded: false };
+    const decision = this.decideLiveHostResponse(eventType, data, event, liveHost);
 
     this.liveHostEventCooldowns ||= new Map();
     const now = Date.now();
     if (now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) return { handled: true, responded: false };
     this.liveHostEventCooldowns.set(eventType, now);
+
+    if (event.avatarActionEnabled && this.isConnected) {
+      const action = this.selectSituationalAvatarAction(eventType, data);
+      if (action) {
+        await this.executeAction(action, {
+          username: data.uniqueId || data.username || 'Viewer',
+          nickname: data.nickname || data.uniqueId || data.username || 'Viewer',
+          giftName: data.giftName || '',
+          count: data.repeatCount || data.likeCount || 1
+        });
+      }
+    }
+
+    if (!decision.respond) return { handled: true, responded: false, decision };
 
     const username = data.uniqueId || data.username || 'Viewer';
     let responded = false;
@@ -3388,12 +3564,12 @@ class AnimazingPalPlugin {
 
     if (event.brainEnabled && this.brainEngine && eventType !== 'join') {
       const method = {
-        chat: () => this.brainEngine.processChat(username, data.comment || '', { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
-        gift: () => this.brainEngine.processGift(username, data.giftName || 'gift', coins || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
-        follow: () => this.brainEngine.processFollow(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
-        share: () => this.brainEngine.processShare(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
-        like: () => this.brainEngine.processLike(username, likes || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt }),
-        subscribe: () => this.brainEngine.processSubscribe(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt })
+        chat: () => this.brainEngine.processChat(username, data.comment || '', { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision }),
+        gift: () => this.brainEngine.processGift(username, data.giftName || 'gift', coins || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision }),
+        follow: () => this.brainEngine.processFollow(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision }),
+        share: () => this.brainEngine.processShare(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision }),
+        like: () => this.brainEngine.processLike(username, likes || 1, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision }),
+        subscribe: () => this.brainEngine.processSubscribe(username, { nickname: data.nickname, forceRespond: true, systemPromptOverride: event.prompt, decision })
       }[eventType];
       const response = method ? await method() : null;
       if (response?.text) {

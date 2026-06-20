@@ -93,6 +93,21 @@
     return [{ value: '', label: 'Globale Host-Stimme' }, ...state.voices.map(voice => ({ value: voice.id, label: voice.name }))];
   }
 
+  function populateGiftMappingForm(selectId = 'giftMappingGift') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const selected = select.value;
+    select.innerHTML = '<option value="">Gift aus Katalog wÃ¤hlen...</option>';
+    state.gifts.forEach(gift => {
+      const option = document.createElement('option');
+      option.value = gift.id || gift.name;
+      option.textContent = `${gift.name || gift.id}${gift.id ? ` (#${gift.id})` : ''}`;
+      option.dataset.giftName = gift.name || '';
+      select.appendChild(option);
+    });
+    if ([...select.options].some(option => option.value === selected)) select.value = selected;
+  }
+
   function deviceOptions() {
     return [
       { value: '', label: 'Standardgerät' },
@@ -121,6 +136,13 @@
         <label class="block mt-3"><span class="text-gray-400 text-sm">Aktive Persönlichkeit</span><select class="select" id="liveHostPersonality"><option value="">Aktuelle Persönlichkeit beibehalten</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select></label>
         ${PROVIDERS.map(providerCard).join('')}<button class="btn btn-secondary mt-3" data-provider-test>Aktiven Provider und Modell testen</button>${actions('providers')}</div></section>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Antwortverhalten</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        ${input('response.decisionMode', 'Entscheidung', { type: 'select', options: [
+          { value: 'auto', label: 'Host entscheidet automatisch' },
+          { value: 'probability', label: 'Wahrscheinlichkeit nutzen' },
+          { value: 'always', label: 'Immer antworten' },
+          { value: 'off', label: 'Nie antworten' }
+        ] })}
+        ${input('response.minDecisionScore', 'Min. Entscheidungs-Score', { type: 'number', min: 0, max: 1, step: 0.01 })}
         ${input('response.maxResponsesPerMinute', 'Antworten/Minute', { type: 'number', min: 1, max: 120 })}
         ${input('response.chatProbability', 'Chat-Wahrscheinlichkeit', { type: 'number', min: 0, max: 1, step: 0.01 })}
         ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
