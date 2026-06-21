@@ -26,7 +26,8 @@ function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostRe
     config: { fishaudioApiKey: 'fish-secret-key' },
     transcribeFishAudio: jest.fn().mockResolvedValue(transcriptResult || {
       text: 'Hallo Chat, hört ihr mich?',
-      confidence: 0.91,
+      duration: 1.25,
+      segments: [{ text: 'Hallo Chat, hört ihr mich?', start: 0, end: 1.25 }],
       provider: 'fish.audio'
     })
   };
@@ -78,7 +79,11 @@ describe('Sidekick ASR upload routes', () => {
       success: true,
       accepted: true,
       delegated: true,
-      transcript: expect.objectContaining({ text: 'Hallo Chat, hört ihr mich?' })
+      transcript: expect.objectContaining({
+        text: 'Hallo Chat, hört ihr mich?',
+        duration: 1.25,
+        provider: 'fish.audio'
+      })
     }));
     expect(response.body.latencyMs).toEqual(expect.any(Number));
     expect(tts.transcribeFishAudio).toHaveBeenCalledWith(expect.any(Buffer), expect.objectContaining({
@@ -111,6 +116,68 @@ describe('Sidekick ASR upload routes', () => {
       reason: 'transcribe-only'
     }));
     expect(plugin.processHostSpeechTranscript).not.toHaveBeenCalled();
+  });
+
+  test('rejects cross-origin browser uploads before calling TTS ASR', async () => {
+    const { app, tts } = createHarness();
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .set('Host', 'localhost:3000')
+      .set('Origin', 'https://evil.example')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(403);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_FORBIDDEN_ORIGIN' })
+    }));
+    expect(tts.transcribeFishAudio).not.toHaveBeenCalled();
+  });
+
+  test('allows same-origin browser uploads through the ASR guard', async () => {
+    const { app, tts } = createHarness();
+
+    await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .set('Host', 'localhost:3000')
+      .set('Origin', 'http://localhost:3000')
+      .field('transcribeOnly', 'true')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(200);
+
+    expect(tts.transcribeFishAudio).toHaveBeenCalledTimes(1);
+  });
+
+  test('rate limits ASR uploads before calling TTS ASR again', async () => {
+    const { app, tts } = createHarness({
+      config: {
+        asr: {
+          rateLimitMax: 2,
+          rateLimitWindowMs: 60000
+        }
+      }
+    });
+
+    for (let index = 0; index < 2; index += 1) {
+      await request(app)
+        .post('/api/sidekick/asr/transcribe')
+        .field('transcribeOnly', 'true')
+        .attach('audio', audioBuffer(), { filename: `host-${index}.webm`, contentType: 'audio/webm' })
+        .expect(200);
+    }
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .field('transcribeOnly', 'true')
+      .attach('audio', audioBuffer(), { filename: 'host-3.webm', contentType: 'audio/webm' })
+      .expect(429);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_RATE_LIMITED' })
+    }));
+    expect(tts.transcribeFishAudio).toHaveBeenCalledTimes(2);
   });
 
   test('returns unavailable when ASR is disabled', async () => {
@@ -170,6 +237,26 @@ describe('Sidekick ASR upload routes', () => {
     }));
   });
 
+  test('rejects multipart field abuse before calling TTS ASR', async () => {
+    const { app, tts } = createHarness();
+    let upload = request(app)
+      .post('/api/sidekick/asr/transcribe');
+
+    for (let index = 0; index < 12; index += 1) {
+      upload = upload.field(`extra${index}`, 'x');
+    }
+
+    const response = await upload
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(400);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_MULTIPART_LIMIT' })
+    }));
+    expect(tts.transcribeFishAudio).not.toHaveBeenCalled();
+  });
+
   test('rejects spoofed audio MIME uploads before calling TTS ASR', async () => {
     const { app, tts } = createHarness();
 
@@ -203,6 +290,25 @@ describe('Sidekick ASR upload routes', () => {
     expect(response.body.diagnostics.language).toBeNull();
     expect(tts.transcribeFishAudio).toHaveBeenCalledWith(expect.any(Buffer), expect.not.objectContaining({
       language: expect.anything()
+    }));
+  });
+
+  test('accepts Safari-compatible MP4 audio uploads with MIME parameters', async () => {
+    const { app, tts } = createHarness();
+    const mp4Audio = Buffer.concat([
+      Buffer.from([0x00, 0x00, 0x00, 0x18]),
+      Buffer.from('ftypM4A ', 'ascii'),
+      Buffer.from([0x00, 0x00, 0x00, 0x00])
+    ]);
+
+    await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .field('transcribeOnly', 'true')
+      .attach('audio', mp4Audio, { filename: 'host.m4a', contentType: 'audio/mp4; codecs=mp4a.40.2' })
+      .expect(200);
+
+    expect(tts.transcribeFishAudio).toHaveBeenCalledWith(expect.any(Buffer), expect.objectContaining({
+      mimeType: 'audio/mp4'
     }));
   });
 

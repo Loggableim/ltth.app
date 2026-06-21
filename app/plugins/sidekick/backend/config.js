@@ -16,6 +16,8 @@ const {
 const ASR_SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 const DEFAULT_ASR_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const ASR_LANGUAGE_PATTERN = /^[a-zA-Z]{2,3}(?:[-_][a-zA-Z]{2,4})?$/;
+const DEFAULT_ASR_RATE_LIMIT_MAX = 10;
+const DEFAULT_ASR_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 function clamp(value, min, max, fallback) {
   const number = Number(value);
@@ -53,7 +55,19 @@ function normalizeAsrConfig(input = {}, conversationConfig = {}) {
     language: normalizeAsrLanguage(source.language),
     minTranscriptChars: hasMinTranscriptChars && Number.isFinite(minTranscriptChars)
       ? Math.round(clamp(minTranscriptChars, 1, 500, DEFAULT_CONVERSATION_COORDINATOR_CONFIG.minHostSpeechChars))
-      : DEFAULT_CONFIG.asr.minTranscriptChars
+      : DEFAULT_CONFIG.asr.minTranscriptChars,
+    rateLimitMax: Math.round(clamp(
+      source.rateLimitMax,
+      1,
+      120,
+      DEFAULT_CONFIG.asr.rateLimitMax
+    )),
+    rateLimitWindowMs: Math.round(clamp(
+      source.rateLimitWindowMs,
+      1000,
+      10 * 60 * 1000,
+      DEFAULT_CONFIG.asr.rateLimitWindowMs
+    ))
   };
 }
 
@@ -81,7 +95,9 @@ const DEFAULT_CONFIG = {
     enabled: true,
     maxAudioBytes: DEFAULT_ASR_MAX_AUDIO_BYTES,
     language: null,
-    minTranscriptChars: null
+    minTranscriptChars: null,
+    rateLimitMax: DEFAULT_ASR_RATE_LIMIT_MAX,
+    rateLimitWindowMs: DEFAULT_ASR_RATE_LIMIT_WINDOW_MS
   },
   
   // Style settings
@@ -356,6 +372,8 @@ module.exports = {
   DEFAULT_ASR_MAX_AUDIO_BYTES,
   ASR_SERVICE_MAX_AUDIO_BYTES,
   ASR_LANGUAGE_PATTERN,
+  DEFAULT_ASR_RATE_LIMIT_MAX,
+  DEFAULT_ASR_RATE_LIMIT_WINDOW_MS,
   normalizeAsrLanguage,
   normalizeAsrConfig
 };

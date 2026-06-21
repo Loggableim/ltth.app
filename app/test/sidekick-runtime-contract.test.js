@@ -82,7 +82,9 @@ describe('Sidekick runtime contracts', () => {
       enabled: true,
       maxAudioBytes: 8 * 1024 * 1024,
       language: null,
-      minTranscriptChars: null
+      minTranscriptChars: null,
+      rateLimitMax: 10,
+      rateLimitWindowMs: 60 * 1000
     });
     expect(config.output.mode).toBeUndefined();
     expect(config.animaze).toBeUndefined();
@@ -209,7 +211,9 @@ describe('Sidekick runtime contracts', () => {
       enabled: false,
       maxAudioBytes: ASR_SERVICE_MAX_AUDIO_BYTES,
       language: 'de-DE',
-      minTranscriptChars: 1
+      minTranscriptChars: 1,
+      rateLimitMax: 10,
+      rateLimitWindowMs: 60 * 1000
     });
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });

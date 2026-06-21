@@ -128,7 +128,7 @@ describe('TTSPlugin Fish.audio ASR method', () => {
       language: 'de',
       maxAudioBytes: 1000
     });
-    expect(api.log).toHaveBeenCalledWith('info', expect.stringContaining('Fish.audio ASR transcription completed'));
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining('Fish.audio ASR transcription completed'), 'info');
   });
 
   test('throws a clear error when no Fish.audio API key is configured', async () => {

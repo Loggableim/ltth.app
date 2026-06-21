@@ -515,7 +515,7 @@ class TTSPlugin {
         const result = await client.transcribe(audioBuffer, options);
 
         if (this.api?.log) {
-            this.api.log('info', `Fish.audio ASR transcription completed (${result.text.length} chars)`);
+            this.api.log(`Fish.audio ASR transcription completed (${result.text.length} chars)`, 'info');
         } else {
             this.logger.info(`Fish.audio ASR transcription completed (${result.text.length} chars)`);
         }

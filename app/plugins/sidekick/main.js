@@ -13,6 +13,7 @@
  * Based on pal_ALONE.py functionality, adapted for LTTH plugin system.
  */
 
+const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const {
@@ -38,9 +39,12 @@ const ASR_SAFE_AUDIO_MIME_TYPES = new Set([
   'audio/wave',
   'audio/x-wav',
   'audio/mpeg',
-  'audio/mp3'
+  'audio/mp3',
+  'audio/mp4',
+  'audio/m4a',
+  'audio/aac'
 ]);
-const ASR_OCTET_AUDIO_EXTENSIONS = new Set(['.webm', '.ogg', '.opus', '.wav', '.mp3', '.mpeg']);
+const ASR_OCTET_AUDIO_EXTENSIONS = new Set(['.webm', '.ogg', '.opus', '.wav', '.mp3', '.mpeg', '.mp4', '.m4a', '.aac']);
 
 /**
  * Sidekick Plugin Class
@@ -83,6 +87,7 @@ class SidekickPlugin {
     this.joinAnnouncerInterval = null;
 
     this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    this.asrRateLimitBuckets = new Map();
   }
   
   /**
@@ -1018,6 +1023,8 @@ class SidekickPlugin {
       enabled: asr.enabled !== false && asr.enabled !== 'false',
       maxAudioBytes,
       language: normalizeAsrLanguage(asr.language),
+      rateLimitMax: this._clampInteger(asr.rateLimitMax, 1, 120, 10),
+      rateLimitWindowMs: this._clampInteger(asr.rateLimitWindowMs, 1000, 10 * 60 * 1000, 60 * 1000),
       minTranscriptChars: Number.isFinite(configuredMin) && configuredMin > 0
         ? Math.min(Math.round(configuredMin), 500)
         : (Number.isFinite(conversationMin) && conversationMin > 0 ? Math.min(Math.round(conversationMin), 500) : 1)
@@ -1056,6 +1063,8 @@ class SidekickPlugin {
       maxAudioBytes: readiness.config.maxAudioBytes,
       language: readiness.config.language,
       minTranscriptChars: readiness.config.minTranscriptChars,
+      rateLimitMax: readiness.config.rateLimitMax,
+      rateLimitWindowMs: readiness.config.rateLimitWindowMs,
       lastTranscriptAt: this.asrDiagnostics.lastTranscriptAt,
       lastError: this.asrDiagnostics.lastError,
       lastLatencyMs: this.asrDiagnostics.lastLatencyMs,
@@ -1068,10 +1077,13 @@ class SidekickPlugin {
       storage: multer.memoryStorage(),
       limits: {
         fileSize: config.maxAudioBytes,
-        files: 1
+        files: 1,
+        fields: 4,
+        parts: 6,
+        fieldSize: 1024
       },
       fileFilter: (req, file, callback) => {
-        const mimeType = String(file.mimetype || '').toLowerCase();
+        const mimeType = this._normalizeAsrMimeType(file.mimetype);
         if (ASR_SAFE_AUDIO_MIME_TYPES.has(mimeType)) {
           return callback(null, true);
         }
@@ -1093,7 +1105,15 @@ class SidekickPlugin {
     }
     this.asrDiagnostics.counters.requests += 1;
 
+    if (!this._isAsrRequestAuthorized(req)) {
+      return this._sendAsrError(res, 403, 'ASR_FORBIDDEN_ORIGIN', 'Sidekick ASR upload rejected by origin policy');
+    }
+
     const readiness = this._getAsrReadiness();
+    if (this._isAsrRateLimited(req, readiness.config)) {
+      return this._sendAsrError(res, 429, 'ASR_RATE_LIMITED', 'Too many Sidekick ASR uploads, please slow down');
+    }
+
     if (!readiness.config.enabled) {
       return this._sendAsrError(res, 503, 'ASR_DISABLED', 'Sidekick ASR is disabled');
     }
@@ -1127,6 +1147,14 @@ class SidekickPlugin {
     if (error?.code === 'ASR_UNSUPPORTED_MIME') {
       return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_MIME', 'Unsupported audio MIME type');
     }
+    if (
+      error?.code === 'LIMIT_FIELD_COUNT' ||
+      error?.code === 'LIMIT_PART_COUNT' ||
+      error?.code === 'LIMIT_FIELD_VALUE' ||
+      error?.code === 'LIMIT_FILE_COUNT'
+    ) {
+      return this._sendAsrError(res, 400, 'ASR_MULTIPART_LIMIT', 'ASR multipart upload exceeds allowed limits');
+    }
     if (error?.code === 'LIMIT_UNEXPECTED_FILE') {
       return this._sendAsrError(res, 400, 'ASR_UNEXPECTED_FILE', `Upload must contain one "${ASR_AUDIO_FIELD}" audio file`);
     }
@@ -1145,7 +1173,8 @@ class SidekickPlugin {
     if (file.size > readiness.config.maxAudioBytes) {
       return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
     }
-    if (!this._hasSafeAudioSignatureForMime(file.buffer, file.mimetype)) {
+    const mimeType = this._normalizeAsrMimeType(file.mimetype);
+    if (!this._hasSafeAudioSignatureForMime(file.buffer, mimeType)) {
       return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_AUDIO_CONTENT', 'Unsupported audio content');
     }
 
@@ -1153,7 +1182,7 @@ class SidekickPlugin {
     try {
       const options = {
         maxAudioBytes: readiness.config.maxAudioBytes,
-        mimeType: file.mimetype,
+        mimeType,
         filename: file.originalname
       };
       if (readiness.config.language) {
@@ -1206,7 +1235,7 @@ class SidekickPlugin {
         provider: transcript?.provider || 'fish.audio',
         confidence: transcript?.confidence,
         language: transcript?.language || readiness.config.language,
-        mimeType: file.mimetype,
+        mimeType,
         audioBytes: file.buffer.length,
         filename: file.originalname,
         latencyMs
@@ -1280,9 +1309,8 @@ class SidekickPlugin {
   _redactAsrTranscript(transcript, text) {
     return {
       text,
-      confidence: transcript?.confidence,
       language: transcript?.language,
-      durationMs: transcript?.durationMs,
+      duration: Number.isFinite(transcript?.duration) ? transcript.duration : undefined,
       provider: transcript?.provider || 'fish.audio'
     };
   }
@@ -1319,6 +1347,96 @@ class SidekickPlugin {
     return text;
   }
 
+  _isAsrRequestAuthorized(req) {
+    if (this._hasValidAsrAdminToken(req)) {
+      return true;
+    }
+
+    const origin = req.get?.('origin') || req.headers?.origin;
+    if (!origin) {
+      return true;
+    }
+
+    const requestHost = String(req.get?.('host') || req.headers?.host || '').toLowerCase();
+    if (!requestHost) {
+      return false;
+    }
+
+    try {
+      const parsedOrigin = new URL(String(origin));
+      const requestProtocol = String(req.get?.('x-forwarded-proto') || req.protocol || 'http')
+        .split(',')[0]
+        .trim()
+        .toLowerCase();
+      return parsedOrigin.host.toLowerCase() === requestHost
+        && parsedOrigin.protocol.replace(':', '').toLowerCase() === requestProtocol;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  _hasValidAsrAdminToken(req) {
+    const expected = process.env.LTTH_ADMIN_TOKEN || process.env.ADMIN_TOKEN || '';
+    if (!expected) return false;
+
+    const headerToken = req.get?.('x-ltth-admin-token') || req.headers?.['x-ltth-admin-token'];
+    const authorization = req.get?.('authorization') || req.headers?.authorization || '';
+    const bearerMatch = String(authorization).match(/^Bearer\s+(.+)$/i);
+    const provided = String(headerToken || bearerMatch?.[1] || '');
+    if (!provided) return false;
+
+    const providedBuffer = Buffer.from(provided, 'utf8');
+    const expectedBuffer = Buffer.from(expected, 'utf8');
+    return providedBuffer.length === expectedBuffer.length
+      && crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+  }
+
+  _isAsrRateLimited(req, config) {
+    if (!this.asrRateLimitBuckets) {
+      this.asrRateLimitBuckets = new Map();
+    }
+
+    const now = Date.now();
+    const windowMs = this._clampInteger(config.rateLimitWindowMs, 1000, 10 * 60 * 1000, 60 * 1000);
+    const maxRequests = this._clampInteger(config.rateLimitMax, 1, 120, 10);
+    const key = this._getAsrRateLimitKey(req);
+    const bucket = this.asrRateLimitBuckets.get(key);
+
+    if (!bucket || now >= bucket.resetAt) {
+      this.asrRateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      this._pruneAsrRateLimitBuckets(now);
+      return false;
+    }
+
+    bucket.count += 1;
+    return bucket.count > maxRequests;
+  }
+
+  _getAsrRateLimitKey(req) {
+    const forwardedFor = String(req.get?.('x-forwarded-for') || req.headers?.['x-forwarded-for'] || '')
+      .split(',')[0]
+      .trim();
+    return forwardedFor || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown';
+  }
+
+  _pruneAsrRateLimitBuckets(now) {
+    for (const [key, bucket] of this.asrRateLimitBuckets.entries()) {
+      if (!bucket || now >= bucket.resetAt) {
+        this.asrRateLimitBuckets.delete(key);
+      }
+    }
+  }
+
+  _clampInteger(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.round(Math.min(max, Math.max(min, number)));
+  }
+
+  _normalizeAsrMimeType(mimeType) {
+    return String(mimeType || '').split(';')[0].trim().toLowerCase();
+  }
+
   _hasAllowedAsrExtension(filename) {
     return ASR_OCTET_AUDIO_EXTENSIONS.has(path.extname(String(filename || '')).toLowerCase());
   }
@@ -1328,12 +1446,13 @@ class SidekickPlugin {
     if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) return true;
     if (buffer.slice(0, 4).toString('ascii') === 'OggS') return true;
     if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WAVE') return true;
+    if (buffer.length >= 12 && buffer.slice(4, 8).toString('ascii') === 'ftyp') return true;
     if (buffer.slice(0, 3).toString('ascii') === 'ID3') return true;
     return buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
   }
 
   _hasSafeAudioSignatureForMime(buffer, mimeType) {
-    const normalizedMime = String(mimeType || '').toLowerCase();
+    const normalizedMime = this._normalizeAsrMimeType(mimeType);
     if (!Buffer.isBuffer(buffer) || buffer.length < 4) return false;
 
     switch (normalizedMime) {
@@ -1352,6 +1471,11 @@ class SidekickPlugin {
       case 'audio/mp3':
         return buffer.slice(0, 3).toString('ascii') === 'ID3'
           || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0);
+      case 'audio/mp4':
+      case 'audio/m4a':
+        return buffer.length >= 12 && buffer.slice(4, 8).toString('ascii') === 'ftyp';
+      case 'audio/aac':
+        return buffer[0] === 0xff && (buffer[1] & 0xf0) === 0xf0;
       case 'application/octet-stream':
         return this._hasSafeAudioSignature(buffer);
       default:
