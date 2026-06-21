@@ -36,6 +36,32 @@ describe('AnimazingPal live host configuration', () => {
     }));
   });
 
+  test('defines explicit safe defaults for every TikTok event', () => {
+    const events = buildLiveHostDefaults().events;
+    const expected = {
+      chat: [true, true, true, 40, 3000, 0],
+      gift: [true, true, true, 100, 1000, 0],
+      follow: [true, true, true, 70, 3000, 0],
+      share: [true, true, true, 65, 3000, 0],
+      like: [true, false, true, 20, 5000, 10],
+      subscribe: [true, true, true, 90, 3000, 0],
+      join: [false, false, false, 10, 5000, 0]
+    };
+
+    for (const [type, values] of Object.entries(expected)) {
+      expect(events[type]).toEqual(expect.objectContaining({
+        enabled: values[0],
+        brainEnabled: values[1],
+        avatarActionEnabled: values[2],
+        priority: values[3],
+        cooldownMs: values[4],
+        minLikes: values[5],
+        templateEnabled: false,
+        voiceId: ''
+      }));
+    }
+  });
+
   test('safe-live preset supplies editable defaults for every live subsystem', () => {
     const configured = applyLiveHostPreset(buildLiveHostDefaults(), 'safe-live');
 

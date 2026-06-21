@@ -214,6 +214,39 @@ describe('AnimazingPal live host integration', () => {
     plugin.stopLiveHostIdleMotion();
   });
 
+  test('section resets clear dependent state without touching unrelated setup', async () => {
+    const routes = [];
+    const plugin = new AnimazingPalPlugin({
+      getSocketIO: () => ({ emit: jest.fn() }),
+      getDatabase: () => ({}),
+      registerRoute: (method, path, handler) => routes.push({ method: method.toLowerCase(), path, handler }),
+      registerSocket: jest.fn(), registerTikTokEvent: jest.fn(), emit: jest.fn(), log: jest.fn(),
+      getConfig: jest.fn(), setConfig: jest.fn(), getPlugin: jest.fn()
+    });
+    plugin.config = plugin.normalizeConfig(plugin.getDefaultConfig());
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'existing-secret';
+    plugin.config.brain.liveHost.provider = 'gemini';
+    plugin.config.brain.liveHost.tts.voiceId = 'saved-fish';
+    plugin.config.brain.liveHost.audio.outputDeviceId = 'saved-cable';
+    plugin.config.brain.liveHost.source.username = 'saved-stream';
+    plugin.config.brain.liveHost.avatarBundles = [{ id: 'rose', avatarName: 'Rose' }];
+    plugin.config.brain.liveHost.activeAvatarBundleId = 'rose';
+    plugin.brainEngine = { configure: jest.fn(), getStatistics: jest.fn(), getPersonalities: jest.fn() };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.path === '/api/animazingpal/live-host/reset');
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    await route.handler({ body: { section: 'avatarBundles' } }, res);
+
+    expect(plugin.config.brain.liveHost.avatarBundles).toEqual([]);
+    expect(plugin.config.brain.liveHost.activeAvatarBundleId).toBe('');
+    expect(plugin.config.brain.liveHost.providers.ollama.apiKey).toBe('existing-secret');
+    expect(plugin.config.brain.liveHost.tts.voiceId).toBe('saved-fish');
+    expect(plugin.config.brain.liveHost.audio.outputDeviceId).toBe('saved-cable');
+    expect(plugin.config.brain.liveHost.source.username).toBe('saved-stream');
+    plugin.stopLiveHostIdleMotion();
+  });
+
   test('routes generated host responses to Fish.audio instead of Animaze ChatPal', async () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;
@@ -231,6 +264,44 @@ describe('AnimazingPal live host integration', () => {
       username: 'alice', eventType: 'gift'
     }));
     expect(plugin.sendChatMessage).not.toHaveBeenCalled();
+  });
+
+  test('routes configured legacy action messages through Fish while Live Host is active', async () => {
+    const { plugin } = createPlugin();
+    plugin.sendChatMessage = jest.fn();
+    plugin.speakHostResponse = jest.fn().mockResolvedValue({ success: true });
+
+    await plugin.executeAction({
+      enabled: true,
+      actionType: 'chatMessage',
+      actionValue: null,
+      chatMessage: 'Willkommen {username}!',
+      useEcho: null
+    }, { username: 'alice' });
+
+    expect(plugin.speakHostResponse).toHaveBeenCalledWith('Willkommen alice!', expect.objectContaining({ username: 'alice' }));
+    expect(plugin.sendChatMessage).not.toHaveBeenCalled();
+  });
+
+  test('does not expose direct ChatPal route or socket controls', () => {
+    const routes = [];
+    const sockets = [];
+    const plugin = new AnimazingPalPlugin({
+      getSocketIO: () => ({ emit: jest.fn() }),
+      getDatabase: () => ({}),
+      registerRoute: (method, path, handler) => routes.push({ method, path, handler }),
+      registerSocket: (name, handler) => sockets.push({ name, handler }),
+      registerTikTokEvent: jest.fn(), emit: jest.fn(), log: jest.fn(),
+      getConfig: jest.fn(), setConfig: jest.fn(), getPlugin: jest.fn()
+    });
+    plugin.config = plugin.normalizeConfig(plugin.getDefaultConfig());
+    plugin.brainEngine = { getStatistics: jest.fn(), getPersonalities: jest.fn() };
+
+    plugin.registerRoutes();
+    plugin.registerSocketEvents();
+
+    expect(routes.map(route => route.path)).not.toContain('/api/animazingpal/chatpal');
+    expect(sockets.map(socket => socket.name)).not.toContain('animazingpal:chatpal');
   });
 
   test('processes configurable event templates through Fish.audio', async () => {
@@ -1343,5 +1414,6 @@ describe('AnimazingPal live host integration', () => {
     }));
     expect(plugin.brainEngine.setStreamerId).toHaveBeenCalledWith('wardalq4');
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, readOnly: true }));
+    plugin.stopLiveHostSourceWatchdog();
   });
 });

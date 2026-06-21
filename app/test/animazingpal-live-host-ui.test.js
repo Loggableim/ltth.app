@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { buildLiveHostDefaults } = require('../plugins/animazingpal/brain/live-host-config');
 
 describe('AnimazingPal live-host configuration UI', () => {
   const html = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.html'), 'utf8');
@@ -13,7 +14,7 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(html).toContain('/plugins/animazingpal/live-host-ui.js');
     expect(script).toContain('data-livehost-save');
     expect(script).toContain('data-livehost-reset');
-    expect(script).toContain('Sicherer Livetest');
+    expect(script).toContain('24/7 Produktionsprofil');
   });
 
   test('covers providers, events, viewer memory, voices, audio and avatar bundles', () => {
@@ -35,6 +36,33 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('response.queueWarnRatio');
   });
 
+  test('every ordinary backend default has a matching editor control', () => {
+    const defaults = buildLiveHostDefaults();
+    const internal = new Set([
+      'source.readOnly', 'tts.engine', 'audio.outputDeviceLabel',
+      'viewerMemory.allowedProfileFields', 'avatarBundles', 'activeAvatarBundleId'
+    ]);
+    const leaves = [];
+    const visit = (value, prefix = '') => {
+      if (Array.isArray(value) || value === null || typeof value !== 'object') {
+        leaves.push(prefix);
+        return;
+      }
+      for (const [key, child] of Object.entries(value)) visit(child, prefix ? `${prefix}.${key}` : key);
+    };
+    visit(defaults);
+
+    for (const field of leaves.filter(field => !internal.has(field) && !field.startsWith('providers.') && !field.startsWith('events.'))) {
+      expect(script).toContain(`'${field}'`);
+    }
+    for (const field of Object.keys(defaults.providers.ollama)) {
+      expect(script).toContain(`\`${'${base}.'}${field}\``);
+    }
+    for (const field of Object.keys(defaults.events.chat)) {
+      expect(script).toContain(`\`${'${base}.'}${field}\``);
+    }
+  });
+
   test('gift mappings use catalog and action dropdowns instead of prompt-only entry', () => {
     expect(html).toContain('id="giftMappingGift"');
     expect(html).toContain('id="giftMappingActionType"');
@@ -44,9 +72,33 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).not.toContain("prompt('TikTok Gift-Name");
   });
 
-  test('ChatPal tab is not exposed in the standalone host UI', () => {
+  test('standalone production UI has no visible or wired ChatPal controls', () => {
     expect(html).not.toContain('data-tab="chatpal"');
     expect(html).not.toContain('id="tab-chatpal"');
+    expect(html).not.toContain('id="chatpalMessage"');
+    expect(html).not.toContain('id="chatpalUseEcho"');
+    expect(html).not.toContain('data-action="send-chatpal"');
+    expect(html).not.toContain('TikTok Chat an ChatPal weiterleiten');
+    expect(html).not.toContain('ChatPal Nachricht (optional)');
+    expect(uiScript).not.toContain('sendChatpalMessage');
+    expect(uiScript).not.toContain('updateChatSettings');
+  });
+
+  test('UI presents one canonical production activation control', () => {
+    expect((script.match(/input\('enabled'/g) || [])).toHaveLength(1);
+    expect(script).toContain('data-livehost-save="enabled"');
+    expect(script).toContain('data-preset="production-24-7"');
+    expect(script).toContain('24/7 Produktionsprofil');
+    expect(script).toContain('Pflicht-Setup');
+    expect(html).toContain('id="settingsPort" value="9000"');
+  });
+
+  test('avatar bundle editor preserves all backend-supported mapping fields', () => {
+    expect(script).toContain('id="bundlePriority"');
+    expect(script).toContain('id="bundleGiftNames"');
+    expect(script).toContain('priority: Number(document.getElementById(\'bundlePriority\')');
+    expect(script).toContain('giftNames:');
+    expect(script).toContain("{ value: 'emote', label: 'Emote bevorzugen' }");
   });
 
   test('keeps the main tab bar readable on narrow screens', () => {

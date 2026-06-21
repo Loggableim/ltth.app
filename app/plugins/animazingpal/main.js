@@ -481,7 +481,7 @@ class AnimazingPalPlugin {
           autoConnect: true,
           autoRefreshData: true,
           chatToAvatar: {
-            enabled: true,
+            enabled: false,
             useEcho: false,
             prefix: '[Live]',
             maxLength: 180
@@ -1264,6 +1264,8 @@ class AnimazingPalPlugin {
           }
         } else if (Object.prototype.hasOwnProperty.call(defaults, section)) {
           const patch = { [section]: defaults[section] };
+          if (section === 'avatarBundles') patch.activeAvatarBundleId = defaults.activeAvatarBundleId;
+          if (section === 'providers') patch.provider = defaults.provider;
           this.config.brain.liveHost = section === 'providers'
             ? mergeLiveHostSecrets(current, patch)
             : normalizeLiveHostConfig(this.mergeConfigPatch(current, patch));
@@ -1543,17 +1545,6 @@ class AnimazingPalPlugin {
       res.json({ success, index });
     });
 
-    // Send message to ChatPal
-    this.api.registerRoute('post', '/api/animazingpal/chatpal', async (req, res) => {
-      const { message, useEcho } = req.body;
-      if (!message) {
-        return res.status(400).json({ success: false, error: 'Message is required' });
-      }
-      
-      const success = await this.sendChatMessage(message, useEcho);
-      res.json({ success, message });
-    });
-
     // Set override behavior
     this.api.registerRoute('post', '/api/animazingpal/override', async (req, res) => {
       const { behavior, value, ...params } = req.body;
@@ -1811,8 +1802,9 @@ class AnimazingPalPlugin {
       try {
         const response = await this.brainEngine.processChat(username, message, { forceRespond: true });
         
-        // Send to Animaze if connected and response generated
-        if (response && this.isConnected) {
+        if (response?.text && this.config.brain?.liveHost?.enabled) {
+          await this.speakHostResponse(response.text, { eventType: 'chat', username, userId: username });
+        } else if (response?.text && this.isConnected) {
           await this.sendChatMessage(response.text, false);
         }
         
@@ -2144,13 +2136,6 @@ class AnimazingPalPlugin {
     this.api.registerSocket('animazingpal:idle', async (data) => {
       if (data && data.index !== undefined) {
         await this.triggerIdle(data.index);
-      }
-    });
-
-    // Client sends ChatPal message
-    this.api.registerSocket('animazingpal:chatpal', async (data) => {
-      if (data && data.message) {
-        await this.sendChatMessage(data.message, data.useEcho);
       }
     });
 
@@ -4791,7 +4776,14 @@ class AnimazingPalPlugin {
         shouldUseEcho = useEcho;
       }
       
-      await this.sendChatMessage(message, shouldUseEcho);
+      if (this.config.brain?.liveHost?.enabled) {
+        await this.speakHostResponse(message, {
+          eventType: placeholders.eventType || 'manual',
+          username: placeholders.username || placeholders.nickname || 'AnimazingPal'
+        });
+      } else {
+        await this.sendChatMessage(message, shouldUseEcho);
+      }
     }
   }
 
@@ -5065,7 +5057,7 @@ class AnimazingPalPlugin {
     }
 
     // Legacy: Forward to ChatPal directly if enabled (without AI)
-    if (this.config.chatToAvatar?.enabled) {
+    if (this.config.chatToAvatar?.enabled && !this.config.brain?.liveHost?.enabled) {
       const prefix = this.config.chatToAvatar.prefix || '';
       let message = prefix ? `${prefix} ${username}: ${comment}` : `${username}: ${comment}`;
 

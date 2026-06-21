@@ -270,9 +270,11 @@
     root.innerHTML = `
       <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
         ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
+        <button class="btn btn-primary" data-livehost-save="enabled">Aktivierung speichern</button>
         <button class="btn btn-primary" data-preflight-check>24/7 Preflight prüfen</button>
-        <button class="btn btn-success" data-preset="safe-live">Sicherer Livetest</button>
+        <button class="btn btn-success" data-preset="production-24-7">24/7 Produktionsprofil</button>
         <button class="btn btn-secondary" data-livehost-reset="all">Alle Einstellungen zurücksetzen</button>
+        <p class="basis-full text-sm text-yellow-300">Pflicht-Setup: TikTok-Kanal, Fish.audio-Stimme und CABLE-Ausgabegerät auswählen; danach den Preflight ausführen.</p>
         <div class="basis-full">${renderPreflightStatus()}</div>
       </div>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">TikTok-LIVE-Ereignisquelle</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -283,7 +285,7 @@
         <p class="text-sm text-gray-400">Nur eingehende Ereignisse. AnimazingPal sendet keine Chats, Likes, Follows oder Gifts an den fremden Kanal.</p>
       </div><button class="btn btn-success mt-3" data-source-connect>Jetzt lesend verbinden</button>${actions('source')}</div></section>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Brain-Provider</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${input('provider', 'Aktiver Provider', { type: 'select', options: PROVIDERS })}${input('enabled', 'Brain aktiv', { type: 'checkbox' })}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${input('provider', 'Aktiver Provider', { type: 'select', options: PROVIDERS })}</div>
         <label class="block mt-3"><span class="text-gray-400 text-sm">Aktive Persönlichkeit</span><select class="select" id="liveHostPersonality"><option value="">Aktuelle Persönlichkeit beibehalten</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select></label>
         ${PROVIDERS.map(providerCard).join('')}<button class="btn btn-secondary mt-3" data-provider-test>Aktiven Provider und Modell testen</button>${actions('providers')}</div></section>
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Antwortverhalten</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -360,6 +362,8 @@
         <select class="select" id="bundleVoice">${voiceOptions().map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('')}</select>
         <input class="input" id="bundleEmotion" placeholder="Emotion"><input class="input" id="bundlePitch" type="number" min="-12" max="12" step="0.1" placeholder="Pitch">
         <input class="input" id="bundleVolume" type="number" min="0" max="100" placeholder="Lautstärke"><input class="input" id="bundleSpeed" type="number" min="0.5" max="2" step="0.05" placeholder="Tempo">
+        <input class="input" id="bundlePriority" type="number" min="0" max="100" placeholder="Queue-Priorität">
+        <input class="input md:col-span-2" id="bundleGiftNames" placeholder="Gift-Namen als Fallback, kommasepariert">
         <select class="select md:col-span-2" id="bundleGifts" multiple size="6">${state.gifts.map(gift => `<option value="${escapeHtml(gift.id)}">${escapeHtml(gift.name)} (#${escapeHtml(gift.id)})</option>`).join('')}</select>
         <button class="btn btn-primary" data-bundle-save>Bundle hinzufügen/aktualisieren</button>
       </div>${actions('avatarBundles')}${actions('avatarSwitch')}</div></section>`;
@@ -373,7 +377,8 @@
         ${input('idleMotion.jitterMs', 'Zufalls-Jitter (ms)', { type: 'number', min: 0, max: 120000 })}
         ${input('idleMotion.actionType', 'Aktionstyp', { type: 'select', options: [
           { value: 'idle', label: 'Idle-Animation bevorzugen' },
-          { value: 'specialAction', label: 'Special Action bevorzugen' }
+          { value: 'specialAction', label: 'Special Action bevorzugen' },
+          { value: 'emote', label: 'Emote bevorzugen' }
         ] })}
         ${input('idleMotion.fallbackToSpecialAction', 'Fallback erlauben', { type: 'checkbox' })}
         ${input('idleMotion.includeEmotes', 'Emotes einbeziehen', { type: 'checkbox' })}
@@ -437,11 +442,10 @@
 
   async function save(section) {
     const patch = section === 'avatarBundles'
-      ? { avatarBundles: state.config.avatarBundles }
+      ? { avatarBundles: state.config.avatarBundles, activeAvatarBundleId: state.config.activeAvatarBundleId }
       : collect(section);
     if (section === 'providers') {
       patch.provider = document.querySelector('[data-lh="provider"]').value;
-      patch.enabled = document.querySelector('[data-lh="enabled"]').checked;
     }
     const body = await request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify(patch) });
     state.config = body.config;
@@ -623,7 +627,9 @@
       pitch: Number(document.getElementById('bundlePitch').value || 0),
       volume: Number(document.getElementById('bundleVolume').value || 80),
       speed: Number(document.getElementById('bundleSpeed').value || 1),
-      giftIds: [...document.getElementById('bundleGifts').selectedOptions].map(option => option.value)
+      priority: Number(document.getElementById('bundlePriority').value || state.config.tts.priority),
+      giftIds: [...document.getElementById('bundleGifts').selectedOptions].map(option => option.value),
+      giftNames: document.getElementById('bundleGiftNames').value.split(',').map(value => value.trim()).filter(Boolean)
     };
     const index = state.config.avatarBundles.findIndex(item => item.id === id);
     if (index >= 0) state.config.avatarBundles[index] = bundle;
@@ -634,7 +640,7 @@
   function editBundle(id) {
     const bundle = state.config.avatarBundles.find(item => item.id === id);
     if (!bundle) return;
-    for (const [field, value] of Object.entries({ bundleId: bundle.id, bundleName: bundle.name, bundleAvatar: bundle.avatarName, bundlePersonality: bundle.personalityId, bundleVoice: bundle.voiceId, bundleEmotion: bundle.emotion, bundlePitch: bundle.pitch, bundleVolume: bundle.volume, bundleSpeed: bundle.speed })) {
+    for (const [field, value] of Object.entries({ bundleId: bundle.id, bundleName: bundle.name, bundleAvatar: bundle.avatarName, bundlePersonality: bundle.personalityId, bundleVoice: bundle.voiceId, bundleEmotion: bundle.emotion, bundlePitch: bundle.pitch, bundleVolume: bundle.volume, bundleSpeed: bundle.speed, bundlePriority: bundle.priority, bundleGiftNames: (bundle.giftNames || []).join(', ') })) {
       const element = document.getElementById(field); if (element) element.value = value ?? '';
     }
     const gifts = new Set(bundle.giftIds || bundle.gifts || []);
@@ -647,7 +653,7 @@
       if (!window.confirm(`Bereich ${button.dataset.livehostReset} wirklich zurücksetzen? API-Keys bleiben erhalten.`)) return;
       try { const body = await request('/api/animazingpal/live-host/reset', { method: 'POST', body: JSON.stringify({ section: button.dataset.livehostReset }) }); state.config = body.config; render(); } catch (error) { notify(error.message, true); }
     });
-    document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify('Preset Sicherer Livetest angewendet'); } catch (error) { notify(error.message, true); } });
+    document.querySelector('[data-preset]')?.addEventListener('click', async event => { try { const body = await request('/api/animazingpal/live-host/preset', { method: 'POST', body: JSON.stringify({ preset: event.currentTarget.dataset.preset }) }); state.config = body.config; render(); notify('24/7 Produktionsprofil angewendet'); } catch (error) { notify(error.message, true); } });
     document.querySelector('[data-speak-test]')?.addEventListener('click', () => request('/api/animazingpal/live-host/speak-test', { method: 'POST', body: JSON.stringify({ text: document.getElementById('liveHostTestText').value }) }).then(() => notify('Sprachtest gestartet')).catch(error => notify(error.message, true)));
     document.querySelector('[data-provider-test]')?.addEventListener('click', async () => {
       try {
@@ -676,7 +682,11 @@
     document.querySelector('[data-preflight-check]')?.addEventListener('click', () => runPreflight().catch(error => notify(error.message, true)));
     document.querySelector('[data-bundle-save]')?.addEventListener('click', saveBundle);
     document.querySelectorAll('[data-bundle-edit]').forEach(button => button.onclick = () => editBundle(button.dataset.bundleEdit));
-    document.querySelectorAll('[data-bundle-delete]').forEach(button => button.onclick = () => { state.config.avatarBundles = state.config.avatarBundles.filter(item => item.id !== button.dataset.bundleDelete); save('avatarBundles').catch(error => notify(error.message, true)); });
+    document.querySelectorAll('[data-bundle-delete]').forEach(button => button.onclick = () => {
+      state.config.avatarBundles = state.config.avatarBundles.filter(item => item.id !== button.dataset.bundleDelete);
+      if (state.config.activeAvatarBundleId === button.dataset.bundleDelete) state.config.activeAvatarBundleId = '';
+      save('avatarBundles').catch(error => notify(error.message, true));
+    });
     document.querySelectorAll('[data-bundle-activate]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/avatar/activate', { method: 'POST', body: JSON.stringify({ bundleId: button.dataset.bundleActivate }) }).then(() => notify('Avatar-Bundle aktiviert')).catch(error => notify(error.message, true)));
     document.querySelectorAll('[data-clear-key]').forEach(button => button.onclick = () => request('/api/animazingpal/live-host/config', { method: 'POST', body: JSON.stringify({ providers: { [button.dataset.clearKey]: { clearApiKey: true } } }) }).then(body => { state.config = body.config; render(); notify('API-Key gelöscht'); }).catch(error => notify(error.message, true)));
   }

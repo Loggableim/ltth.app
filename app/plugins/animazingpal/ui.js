@@ -42,10 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAnimazeDataUI();
   });
   
-  socket.on('animazingpal:chatpal-response', (data) => {
-    showToast(`ChatPal: ${data.response}`);
-  });
-
   socket.on('tts:play', (data) => {
     playAnimazingPalTTS(data);
   });
@@ -162,23 +158,6 @@ function setupEventListeners() {
     });
   }
 
-  // Chat settings
-  const chatEnabled = document.getElementById('chatEnabled');
-  if (chatEnabled) chatEnabled.addEventListener('change', updateChatSettings);
-
-  const chatUseEcho = document.getElementById('chatUseEcho');
-  if (chatUseEcho) chatUseEcho.addEventListener('change', updateChatSettings);
-
-  const chatPrefix = document.getElementById('chatPrefix');
-  if (chatPrefix) chatPrefix.addEventListener('change', updateChatSettings);
-
-  const chatMaxLength = document.getElementById('chatMaxLength');
-  if (chatMaxLength) chatMaxLength.addEventListener('change', updateChatSettings);
-
-  // ChatPal message
-  const sendChatpalBtn = document.querySelector('[data-action="send-chatpal"]');
-  if (sendChatpalBtn) sendChatpalBtn.addEventListener('click', sendChatpalMessage);
-
   // Event actions
   ['follow', 'share', 'subscribe', 'like', 'gift', 'chat'].forEach(event => {
     const enabled = document.getElementById(`${event}Enabled`);
@@ -248,10 +227,6 @@ function setupEventListeners() {
       }
     });
   }
-
-  // Brain settings
-  const saveBrainSettingsBtn = document.getElementById('saveBrainSettingsBtn');
-  if (saveBrainSettingsBtn) saveBrainSettingsBtn.addEventListener('click', saveBrainSettings);
 
   // Logic Matrix
   const addRuleBtn = document.getElementById('addRuleBtn');
@@ -350,7 +325,7 @@ function updateStatus(data) {
   document.getElementById('settingsAutoConnect').checked = activeProfile.autoConnect !== false;
   document.getElementById('settingsReconnect').checked = activeProfile.reconnectOnDisconnect !== false;
   document.getElementById('settingsReconnectDelay').value = activeProfile.reconnectDelay ?? currentConfig.reconnectDelay ?? 5000;
-  document.getElementById('settingsMaxReconnectAttempts').value = activeProfile.maxReconnectAttempts ?? currentConfig.maxReconnectAttempts ?? 10;
+  document.getElementById('settingsMaxReconnectAttempts').value = activeProfile.maxReconnectAttempts ?? currentConfig.maxReconnectAttempts ?? 0;
   document.getElementById('settingsConnectionTimeoutMs').value = activeProfile.connectionTimeoutMs ?? currentConfig.connectionTimeoutMs ?? 10000;
   document.getElementById('settingsVerbose').checked = activeProfile.verboseLogging || currentConfig.verboseLogging || false;
   const settingsAuthToken = document.getElementById('settingsAuthToken');
@@ -363,13 +338,6 @@ function updateStatus(data) {
   togglePlatformSettings(activePlatformKey);
   updateViewerbaseConfigForm(currentConfig.viewerbase || {});
   updateVrchatIntegrationForm(currentConfig.vrchatIntegration || {});
-  
-  // Update chat settings
-  const chatConfig = currentConfig.chatToAvatar || {};
-  document.getElementById('chatEnabled').checked = chatConfig.enabled || false;
-  document.getElementById('chatUseEcho').checked = chatConfig.useEcho !== false;
-  document.getElementById('chatPrefix').value = chatConfig.prefix || '';
-  document.getElementById('chatMaxLength').value = chatConfig.maxLength || 200;
   
   // Update event actions
   updateEventActionUI('follow');
@@ -1204,42 +1172,6 @@ async function loadAvatar(name) {
   showToast(`Avatar/Model geladen: ${name}`);
 }
 
-async function sendChatpalMessage() {
-  const message = document.getElementById('chatpalMessage').value;
-  const useEcho = document.getElementById('chatpalUseEcho').checked;
-  
-  if (!message) {
-    showToast('Bitte eine Nachricht eingeben');
-    return;
-  }
-  
-  await fetch('/api/animazingpal/chatpal', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, useEcho })
-  });
-  
-  document.getElementById('chatpalMessage').value = '';
-  showToast('Nachricht an ChatPal gesendet');
-}
-
-async function updateChatSettings() {
-  const chatToAvatar = {
-    enabled: document.getElementById('chatEnabled').checked,
-    useEcho: document.getElementById('chatUseEcho').checked,
-    prefix: document.getElementById('chatPrefix').value,
-    maxLength: parseInt(document.getElementById('chatMaxLength').value) || 200
-  };
-  
-  await fetch('/api/animazingpal/config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatToAvatar })
-  });
-  
-  showToast('Chat-Einstellungen gespeichert');
-}
-
 async function updateEventAction(event) {
   const enabled = document.getElementById(`${event}Enabled`)?.checked || false;
   const actionType = document.getElementById(`${event}ActionType`)?.value || null;
@@ -1291,7 +1223,7 @@ async function saveSettings() {
     reconnectOnDisconnect: document.getElementById('settingsReconnect').checked,
     reconnectDelay: parseInt(document.getElementById('settingsReconnectDelay').value, 10) || 5000,
     maxReconnectAttempts: Number.isFinite(parseInt(document.getElementById('settingsMaxReconnectAttempts').value, 10))
-      ? parseInt(document.getElementById('settingsMaxReconnectAttempts').value, 10) : 10,
+      ? parseInt(document.getElementById('settingsMaxReconnectAttempts').value, 10) : 0,
     connectionTimeoutMs: parseInt(document.getElementById('settingsConnectionTimeoutMs').value, 10) || 10000,
     verboseLogging: document.getElementById('settingsVerbose').checked
   };

@@ -81,7 +81,7 @@ describe('AnimazingPal Platform Abstraction', function() {
     const applied = plugin.applyPreset('stream-ready');
 
     assert.strictEqual(applied.enabled, true);
-    assert.strictEqual(applied.chatToAvatar.enabled, true);
+    assert.strictEqual(applied.chatToAvatar.enabled, false);
     assert.strictEqual(applied.brain.enabled, true);
     assert.strictEqual(applied.brain.autoRespond.chat, true);
     assert.strictEqual(applied.eventCooldowns.gift, 350);
