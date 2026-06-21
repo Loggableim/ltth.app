@@ -8,6 +8,10 @@
 /**
  * Default configuration values
  */
+const {
+  DEFAULT_CONVERSATION_COORDINATOR_CONFIG
+} = require('./conversation-coordinator');
+
 const DEFAULT_CONFIG = {
   // TikTok settings (read-only, uses main LTTH connection)
   tiktok: {
@@ -19,6 +23,11 @@ const DEFAULT_CONFIG = {
   output: {
     eventType: 'sidekick',
     username: 'Sidekick'
+  },
+
+  // Host/viewer orchestration and echo protection for Sidekick + AnimazingPal.
+  conversation: {
+    ...DEFAULT_CONVERSATION_COORDINATOR_CONFIG
   },
   
   // Style settings

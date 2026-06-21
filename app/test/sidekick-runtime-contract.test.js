@@ -144,6 +144,93 @@ describe('Sidekick runtime contracts', () => {
     expect(plugin.metrics.recordResponse).toHaveBeenCalledTimes(1);
   });
 
+  test('records successful assistant speech for coordinator echo suppression', async () => {
+    const speakHostResponse = jest.fn().mockResolvedValue({ success: true, id: 'speech-1' });
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') return { speakHostResponse };
+        return null;
+      })
+    });
+    const plugin = new SidekickPlugin(api);
+    plugin.config = { output: { eventType: 'sidekick', username: 'Sidekick' } };
+    plugin.conversationCoordinator = { recordSidekickSpeech: jest.fn() };
+    plugin.eventBus = { publishResponseSent: jest.fn() };
+    plugin.metrics = { recordResponse: jest.fn() };
+
+    const success = await plugin._sendOutput('Hallo Testprofil');
+
+    expect(success).toBe(true);
+    expect(plugin.conversationCoordinator.recordSidekickSpeech).toHaveBeenCalledWith('Hallo Testprofil', expect.objectContaining({
+      eventType: 'sidekick',
+      username: 'Sidekick',
+      source: 'sidekick-output'
+    }));
+  });
+
+  test('processes accepted host transcripts through AnimazingPal Sidekick events', async () => {
+    const processSidekickEvent = jest.fn().mockResolvedValue({ handled: true, responded: true });
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') return { processSidekickEvent };
+        return null;
+      })
+    });
+    const plugin = new SidekickPlugin(api);
+    plugin.config = {};
+    plugin.conversationCoordinator = {
+      shouldAcceptHostSpeech: jest.fn().mockReturnValue({
+        accept: true,
+        reason: 'accepted',
+        normalizedText: 'hello chat'
+      }),
+      buildHostSpeechEvent: jest.fn().mockReturnValue({
+        eventType: 'sidekick-host-speech',
+        username: 'Host',
+        message: 'Hello chat',
+        source: 'host-mic'
+      })
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Hello chat', { confidence: 0.91 });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: true,
+      delegated: true,
+      animazingPalResult: { handled: true, responded: true }
+    }));
+    expect(processSidekickEvent).toHaveBeenCalledWith(
+      'sidekick-host-speech',
+      expect.objectContaining({ message: 'Hello chat', source: 'host-mic' }),
+      expect.objectContaining({ reason: 'accepted', source: 'sidekick-host-speech' })
+    );
+  });
+
+  test('rejects echoed host transcripts before AnimazingPal delegation', async () => {
+    const processSidekickEvent = jest.fn();
+    const api = createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    });
+    const plugin = new SidekickPlugin(api);
+    plugin.config = {};
+    plugin.conversationCoordinator = {
+      shouldAcceptHostSpeech: jest.fn().mockReturnValue({
+        accept: false,
+        reason: 'echo',
+        normalizedText: 'hello chat'
+      })
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Hello chat');
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: false,
+      delegated: false,
+      reason: 'echo'
+    }));
+    expect(processSidekickEvent).not.toHaveBeenCalled();
+  });
+
   test('registers concrete memory routes before the uid wildcard', () => {
     const api = createApi();
     const plugin = new SidekickPlugin(api);
@@ -190,5 +277,32 @@ describe('Sidekick runtime contracts', () => {
 
     expect(plugin.memoryStore.updateConfig).toHaveBeenCalledWith(plugin.config);
     expect(status.session.totalEvents).toBe(58);
+  });
+
+  test('status includes conversation coordinator diagnostics', () => {
+    const plugin = new SidekickPlugin(createApi());
+    plugin.config = { muted: false };
+    plugin.conversationCoordinator = {
+      getStatus: jest.fn().mockReturnValue({
+        enabled: true,
+        recentUtteranceCount: 1,
+        lastAcceptedHostSpeechReason: 'accepted',
+        lastRejectedHostSpeechReason: 'echo'
+      })
+    };
+    plugin.deduper = { getStats: jest.fn().mockReturnValue({}) };
+    plugin.rateLimiter = { getStatus: jest.fn().mockReturnValue({}) };
+    plugin.outboxBatcher = { getStatus: jest.fn().mockReturnValue({}) };
+    plugin.metrics = {
+      getSessionStats: jest.fn().mockReturnValue({}),
+      getCurrentRates: jest.fn().mockReturnValue({})
+    };
+
+    expect(plugin._getStatus().conversation).toEqual(expect.objectContaining({
+      enabled: true,
+      recentUtteranceCount: 1,
+      lastAcceptedHostSpeechReason: 'accepted',
+      lastRejectedHostSpeechReason: 'echo'
+    }));
   });
 });

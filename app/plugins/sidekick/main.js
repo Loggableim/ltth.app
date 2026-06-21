@@ -2,7 +2,7 @@
  * Sidekick Plugin - Main Entry Point
  * 
  * Intelligent stream assistant for LTTH with:
- * - Animaze/ChatPal WebSocket integration
+ * - AnimazingPal Brain, avatar and Fish.audio integration
  * - TikTok event processing and analysis
  * - User memory with decay
  * - Message batching and rate limiting
@@ -19,10 +19,10 @@ const MemoryStore = require('./backend/memoryStore');
 const { EventBus, EventTypes } = require('./backend/eventBus');
 const EventDeduper = require('./backend/deduper');
 const { RateLimitManager } = require('./backend/rateLimit');
-const { AnimazeClient } = require('./backend/animazeClient');
 const { ResponseEngine } = require('./backend/responseEngine');
 const OutboxBatcher = require('./backend/outboxBatcher');
 const Metrics = require('./backend/metrics');
+const { ConversationCoordinator } = require('./backend/conversation-coordinator');
 
 /**
  * Sidekick Plugin Class
@@ -48,10 +48,10 @@ class SidekickPlugin {
     this.eventBus = null;
     this.deduper = null;
     this.rateLimiter = null;
-    this.animazeClient = null;
     this.responseEngine = null;
     this.outboxBatcher = null;
     this.metrics = null;
+    this.conversationCoordinator = null;
     
     // Join greeting state
     this.pendingJoins = new Set();
@@ -75,6 +75,9 @@ class SidekickPlugin {
       // Initialize configuration
       this.configManager = new ConfigManager(this.api);
       this.config = this.configManager.load();
+
+      // Initialize host/viewer conversation coordinator
+      this.conversationCoordinator = new ConversationCoordinator(this.config.conversation || {});
       
       // Initialize memory store
       this.memoryStore = new MemoryStore(this.api, this.config);
@@ -94,12 +97,9 @@ class SidekickPlugin {
       // Initialize response engine
       this.responseEngine = new ResponseEngine(this.api, this.config, this.memoryStore);
       
-      // Initialize Animaze client
-      this.animazeClient = new AnimazeClient(this.api, this.config);
-      
       // Initialize outbox batcher
       this.outboxBatcher = new OutboxBatcher(this.api, this.config, (text) => {
-        this._sendToAnimaze(text).catch((error) => {
+        this._sendOutput(text).catch((error) => {
           this.logger.error(`Sidekick output failed: ${error.message}`);
         });
       });
@@ -124,11 +124,6 @@ class SidekickPlugin {
       
       // Start join announcer
       this._startJoinAnnouncer();
-      
-      // Auto-connect to Animaze if enabled
-      if (this.config.animaze?.enabled && this.config.animaze?.autoConnect) {
-        await this.animazeClient.connect();
-      }
       
       this.logger.info('✅ Sidekick Plugin initialized successfully');
       this.logger.info('   - Admin UI: /sidekick/ui');
@@ -164,10 +159,6 @@ class SidekickPlugin {
     this.greetTasks.clear();
     
     // Destroy components
-    if (this.animazeClient) {
-      this.animazeClient.destroy();
-    }
-    
     if (this.outboxBatcher) {
       this.outboxBatcher.destroy();
     }
@@ -321,12 +312,16 @@ class SidekickPlugin {
       });
     });
     
-    // Connect to Animaze
+    // Reuse AnimazingPal's single Animaze connection.
     this.api.registerRoute('post', '/api/sidekick/animaze/connect', async (req, res) => {
       try {
-        const connected = await this.animazeClient.connect();
+        const animazingPal = this._getAnimazingPal();
+        if (!animazingPal || typeof animazingPal.connect !== 'function') {
+          return res.status(503).json({ success: false, error: 'AnimazingPal unavailable' });
+        }
+        const connected = await animazingPal.connect();
         this._emitStatus();
-        res.json({ success: connected, isConnected: this.animazeClient.isConnected });
+        res.json({ success: connected, isConnected: !!animazingPal.isConnected });
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
       }
@@ -334,7 +329,7 @@ class SidekickPlugin {
     
     // Disconnect from Animaze
     this.api.registerRoute('post', '/api/sidekick/animaze/disconnect', (req, res) => {
-      this.animazeClient.disconnect();
+      this._getAnimazingPal()?.disconnect?.();
       this._emitStatus();
       res.json({ success: true, isConnected: false });
     });
@@ -343,7 +338,7 @@ class SidekickPlugin {
     this.api.registerRoute('get', '/api/sidekick/animaze/status', (req, res) => {
       res.json({
         success: true,
-        status: this.animazeClient.getStatus()
+        status: this._getAnimazingPalStatus()
       });
     });
     
@@ -354,7 +349,7 @@ class SidekickPlugin {
         return res.status(400).json({ success: false, error: 'Message required' });
       }
       
-      const success = await this.animazeClient.sendMessage(message);
+      const success = await this._sendOutput(message);
       res.json({ success });
     });
     
@@ -643,8 +638,7 @@ class SidekickPlugin {
       this.memoryStore.updateLastGreet(uid);
     }
     
-    // Add to batch
-    this.outboxBatcher.add(evaluation.response, evaluation.priority);
+    await this._dispatchSelectedEvent('chat', { uniqueId: uid, nickname, comment }, evaluation);
     
     // Set cooldowns
     this.rateLimiter.setGlobalCooldown();
@@ -688,7 +682,7 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateGift(nickname, giftName, repeatCount);
-    this.outboxBatcher.add(evaluation.response, evaluation.priority);
+    this._queueSelectedEvent('gift', data, evaluation);
     
   }
   
@@ -783,7 +777,7 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateFollow(nickname);
-    this.outboxBatcher.add(evaluation.response, evaluation.priority);
+    this._queueSelectedEvent('follow', data, evaluation);
     
   }
   
@@ -818,7 +812,7 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateShare(nickname);
-    this.outboxBatcher.add(evaluation.response, evaluation.priority);
+    this._queueSelectedEvent('share', data, evaluation);
     
   }
   
@@ -853,7 +847,7 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateSubscribe(nickname);
-    this.outboxBatcher.add(evaluation.response, evaluation.priority);
+    this._queueSelectedEvent('subscribe', data, evaluation);
     
   }
   
@@ -925,8 +919,8 @@ class SidekickPlugin {
     // Skip if muted or no pending joins
     if (this.config.muted || this.pendingJoins.size === 0) return;
     
-    // Skip if Animaze is speaking
-    if (this.animazeClient.speechState?.isSpeaking) return;
+    // Skip while the shared AnimazingPal/Fish pipeline is speaking.
+    if (this._getAnimazingPalStatus().isSpeaking) return;
     
     // Check idle time since last output
     const idleRequired = (this.config.joinRules?.minIdleSinceLastOutputSec || 25) * 1000;
@@ -954,36 +948,87 @@ class SidekickPlugin {
   
   // ==================== Utility Methods ====================
   
-  async _sendToAnimaze(text) {
-    if (!text) return false;
+  _getAnimazingPal() {
+    return this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal') || null;
+  }
 
+  _getAnimazingPalStatus() {
+    const animazingPal = this._getAnimazingPal();
+    return {
+      source: 'animazingpal',
+      available: !!animazingPal,
+      isConnected: !!animazingPal?.isConnected,
+      isSpeaking: !!animazingPal?.speechState?.isSpeaking,
+      queueLength: 0
+    };
+  }
+
+  async processHostSpeechTranscript(text, metadata = {}) {
+    if (!this.conversationCoordinator) {
+      this.conversationCoordinator = new ConversationCoordinator(this.config?.conversation || {});
+    }
+
+    const decision = this.conversationCoordinator.shouldAcceptHostSpeech(text, metadata);
+    if (!decision.accept) {
+      this.logger.debug(`Sidekick host speech rejected: ${decision.reason}`);
+      return {
+        accepted: false,
+        delegated: false,
+        reason: decision.reason,
+        decision
+      };
+    }
+
+    const event = this.conversationCoordinator.buildHostSpeechEvent(text, metadata);
+    const animazingPal = this._getAnimazingPal();
+    if (!animazingPal || typeof animazingPal.processSidekickEvent !== 'function') {
+      this.logger.warn('Sidekick host speech skipped: AnimazingPal Brain pipeline unavailable');
+      this.metrics?.recordError?.();
+      return {
+        accepted: true,
+        delegated: false,
+        reason: 'animazingpal-unavailable',
+        decision,
+        event
+      };
+    }
+
+    const animazingPalResult = await animazingPal.processSidekickEvent(event.eventType, event, {
+      ...decision,
+      source: 'sidekick-host-speech'
+    });
+
+    return {
+      accepted: true,
+      delegated: true,
+      decision,
+      event,
+      animazingPalResult
+    };
+  }
+
+  async _sendOutput(text) {
+    if (!text) return false;
     const output = this.config.output || {};
-    let success = false;
-    if ((output.mode || 'animazingpal-fish') === 'animazingpal-fish') {
-      const animazingPal = this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal');
-      if (!animazingPal || typeof animazingPal.speakHostResponse !== 'function') {
-        this.logger.warn('Sidekick output skipped: AnimazingPal speech pipeline unavailable');
-        return false;
-      }
-      const result = await animazingPal.speakHostResponse(text, {
-        eventType: output.eventType || 'sidekick',
-        username: output.username || 'Sidekick',
-        userId: 'sidekick-assistant'
-      });
-      success = result?.success !== false && !result?.blocked;
-    } else if (output.mode === 'animaze-chatpal') {
-      if (!this.config.animaze?.enabled) {
-        this.logger.warn('Sidekick legacy Animaze output is disabled');
-        return false;
-      }
-      success = await this.animazeClient.sendMessage(text, false, 1);
-    } else {
-      this.logger.warn(`Sidekick output skipped: unsupported mode ${output.mode}`);
+    const animazingPal = this._getAnimazingPal();
+    if (!animazingPal || typeof animazingPal.speakHostResponse !== 'function') {
+      this.logger.warn('Sidekick output skipped: AnimazingPal speech pipeline unavailable');
       return false;
     }
+    const result = await animazingPal.speakHostResponse(text, {
+      eventType: output.eventType || 'sidekick',
+      username: output.username || 'Sidekick',
+      userId: 'sidekick-assistant'
+    });
+    const success = result?.success !== false && !result?.blocked;
 
     if (success) {
       this.lastOutputTime = Date.now();
+      this.conversationCoordinator?.recordSidekickSpeech?.(text, {
+        eventType: output.eventType || 'sidekick',
+        username: output.username || 'Sidekick',
+        source: 'sidekick-output'
+      });
       this.eventBus.publishResponseSent(text);
       this.metrics?.recordResponse();
     }
@@ -991,14 +1036,32 @@ class SidekickPlugin {
   }
 
   _syncAnimazingPalMode() {
-    const animazingPal = this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal');
+    const animazingPal = this._getAnimazingPal();
     if (!animazingPal) return false;
-    if ((this.config.output?.mode || 'animazingpal-fish') !== 'animazingpal-fish') {
-      animazingPal.clearLiveHostOperatingModeOverride?.();
-      return true;
-    }
     if (typeof animazingPal.setLiveHostOperatingMode !== 'function') return false;
     return animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
+  }
+
+  async _dispatchSelectedEvent(eventType, data, evaluation = {}) {
+    const animazingPal = this._getAnimazingPal();
+    if (!animazingPal || typeof animazingPal.processSidekickEvent !== 'function') {
+      this.logger.warn('Sidekick decision skipped: AnimazingPal Brain pipeline unavailable');
+      this.metrics?.recordError?.();
+      return { handled: false, responded: false, reason: 'animazingpal-unavailable' };
+    }
+    const event = this.conversationCoordinator?.buildViewerEvent
+      ? this.conversationCoordinator.buildViewerEvent(eventType, data, evaluation)
+      : data;
+    const result = await animazingPal.processSidekickEvent(eventType, event, evaluation);
+    if (result?.responded) this.metrics?.recordResponse();
+    return result;
+  }
+
+  _queueSelectedEvent(eventType, data, evaluation = {}) {
+    this._dispatchSelectedEvent(eventType, data, evaluation).catch((error) => {
+      this.logger.error(`Sidekick ${eventType} dispatch failed: ${error.message}`);
+      this.metrics?.recordError?.();
+    });
   }
   
   _updateComponents() {
@@ -1015,16 +1078,15 @@ class SidekickPlugin {
       this.rateLimiter.updateConfig(this.config);
     }
     
-    if (this.animazeClient) {
-      this.animazeClient.updateConfig(this.config);
-    }
-    
     if (this.responseEngine) {
       this.responseEngine.updateConfig(this.config);
     }
     
     if (this.outboxBatcher) {
       this.outboxBatcher.updateConfig(this.config);
+    }
+    if (this.conversationCoordinator) {
+      this.conversationCoordinator.updateConfig(this.config.conversation || {});
     }
     this._syncAnimazingPalMode();
   }
@@ -1042,14 +1104,15 @@ class SidekickPlugin {
     ].reduce((total, key) => total + (Number(session[key]) || 0), 0);
     return {
       muted: this.config.muted || false,
-      animaze: this.animazeClient.getStatus(),
+      animaze: this._getAnimazingPalStatus(),
       outbox: this.outboxBatcher.getStatus(),
       deduper: this.deduper.getStats(),
       rateLimiter: this.rateLimiter.getStatus(),
       session,
       currentRates: this.metrics.getCurrentRates(),
       pendingJoins: this.pendingJoins.size,
-      activeViewers: this.viewers.size
+      activeViewers: this.viewers.size,
+      conversation: this.conversationCoordinator?.getStatus?.() || null
     };
   }
   
