@@ -20,8 +20,21 @@ function createApi(app, ttsPlugin = null) {
   };
 }
 
-function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostResult } = {}) {
+function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostResult, remoteAddress } = {}) {
   const app = express();
+  if (remoteAddress) {
+    app.use((req, res, next) => {
+      Object.defineProperty(req.socket, 'remoteAddress', {
+        value: remoteAddress,
+        configurable: true
+      });
+      Object.defineProperty(req, 'ip', {
+        value: remoteAddress,
+        configurable: true
+      });
+      next();
+    });
+  }
   const tts = ttsPlugin || {
     config: { fishaudioApiKey: 'fish-secret-key' },
     transcribeFishAudio: jest.fn().mockResolvedValue(transcriptResult || {
@@ -178,6 +191,54 @@ describe('Sidekick ASR upload routes', () => {
       error: expect.objectContaining({ code: 'ASR_RATE_LIMITED' })
     }));
     expect(tts.transcribeFishAudio).toHaveBeenCalledTimes(2);
+  });
+
+  test('rate limits ASR uploads even when X-Forwarded-For rotates', async () => {
+    const { app, tts } = createHarness({
+      config: {
+        asr: {
+          rateLimitMax: 2,
+          rateLimitWindowMs: 60000
+        }
+      }
+    });
+
+    for (let index = 0; index < 2; index += 1) {
+      await request(app)
+        .post('/api/sidekick/asr/transcribe')
+        .set('X-Forwarded-For', `198.51.100.${index + 10}`)
+        .field('transcribeOnly', 'true')
+        .attach('audio', audioBuffer(), { filename: `host-${index}.webm`, contentType: 'audio/webm' })
+        .expect(200);
+    }
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .set('X-Forwarded-For', '198.51.100.99')
+      .field('transcribeOnly', 'true')
+      .attach('audio', audioBuffer(), { filename: 'host-3.webm', contentType: 'audio/webm' })
+      .expect(429);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_RATE_LIMITED' })
+    }));
+    expect(tts.transcribeFishAudio).toHaveBeenCalledTimes(2);
+  });
+
+  test('rejects no-origin non-loopback uploads without an admin token', async () => {
+    const { app, tts } = createHarness({ remoteAddress: '203.0.113.55' });
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(403);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_FORBIDDEN_ORIGIN' })
+    }));
+    expect(tts.transcribeFishAudio).not.toHaveBeenCalled();
   });
 
   test('returns unavailable when ASR is disabled', async () => {

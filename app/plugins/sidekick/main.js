@@ -1354,7 +1354,7 @@ class SidekickPlugin {
 
     const origin = req.get?.('origin') || req.headers?.origin;
     if (!origin) {
-      return true;
+      return this._isAsrLoopbackRequest(req);
     }
 
     const requestHost = String(req.get?.('host') || req.headers?.host || '').toLowerCase();
@@ -1413,10 +1413,24 @@ class SidekickPlugin {
   }
 
   _getAsrRateLimitKey(req) {
-    const forwardedFor = String(req.get?.('x-forwarded-for') || req.headers?.['x-forwarded-for'] || '')
-      .split(',')[0]
-      .trim();
-    return forwardedFor || req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown';
+    return this._getAsrRemoteAddress(req) || 'unknown';
+  }
+
+  _isAsrLoopbackRequest(req) {
+    return this._isLoopbackAsrAddress(this._getAsrRemoteAddress(req));
+  }
+
+  _getAsrRemoteAddress(req) {
+    return String(req.socket?.remoteAddress || req.connection?.remoteAddress || req.ip || '').trim();
+  }
+
+  _isLoopbackAsrAddress(address) {
+    const normalized = String(address || '').trim().toLowerCase();
+    if (!normalized) return false;
+    if (normalized === 'localhost' || normalized === '::1') return true;
+    if (normalized.startsWith('127.')) return true;
+    if (normalized.startsWith('::ffff:127.')) return true;
+    return false;
   }
 
   _pruneAsrRateLimitBuckets(now) {
