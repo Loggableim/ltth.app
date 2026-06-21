@@ -4461,9 +4461,13 @@ class AnimazingPalPlugin {
     };
     if (!event?.enabled) return complete({ handled: false, responded: false, reason: 'event-disabled' });
 
-    const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
-    if (dedupe.duplicate) {
-      return complete({ handled: true, responded: false, duplicate: true, reason: 'duplicate' });
+    const isDelegatedHostSpeech = options.delegated
+      && (data.isHostSpeech === true || data.source === 'host-mic' || options.evaluation?.source === 'sidekick-host-speech');
+    if (!isDelegatedHostSpeech) {
+      const dedupe = this.isDuplicateLiveHostEvent(eventType, data);
+      if (dedupe.duplicate) {
+        return complete({ handled: true, responded: false, duplicate: true, reason: 'duplicate' });
+      }
     }
 
     const coins = (Number(data.diamondCount) || 0) * (Number(data.repeatCount) || 1);

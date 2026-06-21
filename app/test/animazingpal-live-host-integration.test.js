@@ -95,6 +95,43 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.recordLiveHostResponseSlot).not.toHaveBeenCalled();
   });
 
+  test('delegated host speech can retry after failed Fish speech without AP duplicate suppression', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    ttsPlugin.speak
+      .mockResolvedValueOnce({ success: false, error: 'Fish failed' })
+      .mockResolvedValueOnce({ success: true, id: 'tts-retry' });
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.brainEngine = {
+      processChat: jest.fn().mockResolvedValue({ text: 'Host retry answer.' })
+    };
+
+    const hostEvent = {
+      uniqueId: 'host',
+      nickname: 'Host',
+      username: 'Host',
+      comment: 'Kannst du das wiederholen?',
+      isHostSpeech: true,
+      source: 'host-mic'
+    };
+
+    const first = await plugin.processSidekickEvent('chat', hostEvent, { score: 0.9, type: 'host-speech' });
+    const second = await plugin.processSidekickEvent('chat', hostEvent, { score: 0.9, type: 'host-speech' });
+
+    expect(first).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      speechFailed: true
+    }));
+    expect(second).toEqual(expect.objectContaining({
+      handled: true,
+      responded: true,
+      spokenText: 'Host retry answer.'
+    }));
+    expect(second.duplicate).toBeUndefined();
+    expect(ttsPlugin.speak).toHaveBeenCalledTimes(2);
+  });
+
   test('fresh installs use the canonical 24/7 production profile', () => {
     const plugin = Object.create(AnimazingPalPlugin.prototype);
     const defaults = plugin.getDefaultConfig();
