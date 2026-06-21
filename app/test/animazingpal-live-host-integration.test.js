@@ -64,6 +64,37 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test.each([
+    [{ success: false, error: 'Fish failed' }, { speechFailed: true, speechBlocked: false }],
+    [{ success: true, blocked: true, reason: 'tts-plugin-unavailable' }, { speechFailed: false, speechBlocked: true }]
+  ])('delegated sidekick decisions do not report spoken text when Fish speech is not delivered', async (speechResult, flags) => {
+    const { plugin, ttsPlugin } = createPlugin();
+    ttsPlugin.speak.mockResolvedValue(speechResult);
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.ensureLiveHostRuntime = jest.fn();
+    plugin.recordLiveHostSourceEvent = jest.fn();
+    plugin.recordLiveHostEventOutcome = jest.fn();
+    plugin.isDuplicateLiveHostEvent = jest.fn().mockReturnValue({ duplicate: false });
+    plugin.canUseLiveHostResponseSlot = jest.fn().mockReturnValue(true);
+    plugin.recordLiveHostResponseSlot = jest.fn();
+    plugin.brainEngine = {
+      processChat: jest.fn().mockResolvedValue({ text: 'Nicht erfolgreich gesprochen.' })
+    };
+
+    const result = await plugin.processSidekickEvent('chat', {
+      uniqueId: 'testviewer', nickname: 'Test Viewer', comment: 'Wie geht es dir?'
+    }, { score: 0.9, type: 'relevant' });
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      ...flags
+    }));
+    expect(result.spokenText).toBeUndefined();
+    expect(plugin.recordLiveHostResponseSlot).not.toHaveBeenCalled();
+  });
+
   test('fresh installs use the canonical 24/7 production profile', () => {
     const plugin = Object.create(AnimazingPalPlugin.prototype);
     const defaults = plugin.getDefaultConfig();

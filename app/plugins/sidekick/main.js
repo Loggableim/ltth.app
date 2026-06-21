@@ -1022,7 +1022,10 @@ class SidekickPlugin {
     }
 
     const spokenText = animazingPalResult?.spokenText || animazingPalResult?.message || animazingPalResult?.text;
-    if (animazingPalResult?.responded === true || spokenText) {
+    const speechDelivered = animazingPalResult?.responded === true
+      && !animazingPalResult?.speechFailed
+      && !animazingPalResult?.speechBlocked;
+    if (speechDelivered) {
       this.conversationCoordinator.recordHostSpeech?.(text, metadata);
       if (spokenText) {
         this.conversationCoordinator.recordSidekickSpeech?.(spokenText, {

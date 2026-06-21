@@ -359,6 +359,32 @@ describe('Sidekick runtime contracts', () => {
     }));
   });
 
+  test('does not record host speech or AnimazingPal text when delegated speech fails', async () => {
+    const processSidekickEvent = jest.fn().mockResolvedValue({
+      handled: true,
+      responded: false,
+      spokenText: 'Undelivered AP reply',
+      speechFailed: true
+    });
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    }));
+    plugin.config = {};
+    plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
+    plugin.conversationCoordinator = new ConversationCoordinator({
+      minHostSpeechChars: 3,
+      echoWindowMs: 10000
+    });
+    jest.spyOn(plugin.conversationCoordinator, 'recordHostSpeech');
+    jest.spyOn(plugin.conversationCoordinator, 'recordSidekickSpeech');
+
+    const result = await plugin.processHostSpeechTranscript('Host asks something', { now: 1000 });
+
+    expect(result).toEqual(expect.objectContaining({ accepted: true, delegated: true }));
+    expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
+    expect(plugin.conversationCoordinator.recordSidekickSpeech).not.toHaveBeenCalled();
+  });
+
   test('rejects echoed host transcripts before AnimazingPal delegation', async () => {
     const processSidekickEvent = jest.fn();
     const api = createApi({

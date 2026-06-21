@@ -4509,13 +4509,24 @@ class AnimazingPalPlugin {
     const username = data.uniqueId || data.username || 'Viewer';
     let responded = false;
     let spokenText = null;
+    let speechBlocked = false;
+    let speechFailureReason = null;
+    const recordSpeechAttempt = (speechResult, message) => {
+      if (speechResult?.success === false || speechResult?.blocked) {
+        speechBlocked = speechBlocked || !!speechResult?.blocked;
+        speechFailureReason ||= speechResult?.reason || speechResult?.error || 'speech-failed';
+        return false;
+      }
+      responded = true;
+      spokenText = message;
+      this.recordLiveHostResponseSlot();
+      return true;
+    };
     if (event.templateEnabled && event.template) {
       const message = this._formatLiveHostMessage(this._renderLiveHostTemplate(event.template, data));
       if (message) {
-        await this.speakHostResponse(message, { eventType, username, userId: username });
-        responded = true;
-        spokenText = message;
-        this.recordLiveHostResponseSlot();
+        const speechResult = await this.speakHostResponse(message, { eventType, username, userId: username });
+        recordSpeechAttempt(speechResult, message);
       }
     }
 
@@ -4531,14 +4542,18 @@ class AnimazingPalPlugin {
       const response = method ? await method() : null;
       if (response?.text) {
         const message = this._formatLiveHostMessage(response.text);
-        await this.speakHostResponse(message, { eventType, username, userId: username });
-        responded = true;
-        spokenText = message;
-        this.recordLiveHostResponseSlot();
+        const speechResult = await this.speakHostResponse(message, { eventType, username, userId: username });
+        recordSpeechAttempt(speechResult, message);
       }
     }
     const outcome = { handled: true, responded };
     if (options.delegated && spokenText) outcome.spokenText = spokenText;
+    if (!responded && speechFailureReason) {
+      outcome.reason = speechBlocked ? 'speech-blocked' : 'speech-failed';
+      outcome.speechBlocked = speechBlocked;
+      outcome.speechFailed = !speechBlocked;
+      outcome.speechFailureReason = speechFailureReason;
+    }
     return complete(outcome);
   }
 
