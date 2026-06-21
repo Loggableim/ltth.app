@@ -1036,6 +1036,19 @@
       setAsrRecorderStatus('Idle', 'asr-muted');
     }
 
+    function handleUnsafeOverrideChange() {
+      saveHostAsrSettings();
+      updateAsrDeviceWarning();
+      if (selectedAsrDeviceIsBlocked() && document.getElementById('host-asr-enabled').checked) {
+        cancelAsrSegment('unsafe-override-revoked');
+        stopHostAsrStream({ cancelRecorder: true });
+        document.getElementById('host-asr-enabled').checked = false;
+        saveHostAsrSettings();
+        setAsrRecorderStatus('Stopped: unsafe input', 'asr-error');
+        setAsrError('ASR wurde gestoppt, weil das ausgewählte Eingabegerät ohne Risiko-Bestätigung als unsicher erkannt wurde.');
+      }
+    }
+
     function runAsrVadLoop() {
       if (!hostAsrAnalyser || !document.getElementById('host-asr-enabled').checked) return;
 
@@ -1597,10 +1610,7 @@
         startAsrListening();
       }
     });
-    document.getElementById('host-asr-unsafe-override').addEventListener('change', () => {
-      saveHostAsrSettings();
-      updateAsrDeviceWarning();
-    });
+    document.getElementById('host-asr-unsafe-override').addEventListener('change', handleUnsafeOverrideChange);
     document.getElementById('host-asr-enabled').addEventListener('change', (event) => {
       saveHostAsrSettings();
       if (event.target.checked) {

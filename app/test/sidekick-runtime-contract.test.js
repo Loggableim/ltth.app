@@ -92,6 +92,11 @@ describe('Sidekick runtime contracts', () => {
       'segment.shouldUpload',
       'segment.recorder !== hostAsrRecorder',
       'Automatische ASR-Aufnahme läuft',
+      'handleUnsafeOverrideChange',
+      'selectedAsrDeviceIsBlocked() && document.getElementById(\'host-asr-enabled\').checked',
+      'stopHostAsrStream({ cancelRecorder: true',
+      'document.getElementById(\'host-asr-enabled\').checked = false',
+      'ASR wurde gestoppt',
       'enabled: config.asr?.enabled !== false'
     ].forEach(fragment => {
       expect(html).toContain(fragment);
