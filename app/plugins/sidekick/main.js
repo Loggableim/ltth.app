@@ -1198,16 +1198,22 @@ class SidekickPlugin {
       });
     }
 
-    const hostResult = await this.processHostSpeechTranscript(text, {
-      source: 'sidekick-asr',
-      provider: transcript?.provider || 'fish.audio',
-      confidence: transcript?.confidence,
-      language: transcript?.language || readiness.config.language,
-      mimeType: file.mimetype,
-      audioBytes: file.buffer.length,
-      filename: file.originalname,
-      latencyMs
-    });
+    let hostResult;
+    try {
+      hostResult = await this.processHostSpeechTranscript(text, {
+        source: 'sidekick-asr',
+        provider: transcript?.provider || 'fish.audio',
+        confidence: transcript?.confidence,
+        language: transcript?.language || readiness.config.language,
+        mimeType: file.mimetype,
+        audioBytes: file.buffer.length,
+        filename: file.originalname,
+        latencyMs
+      });
+    } catch (error) {
+      this.logger.warn(`Sidekick ASR delegation failed: ${this._sanitizeAsrPublicText(error?.message, 160)}`);
+      return this._sendAsrError(res, 502, 'ASR_DELEGATION_FAILED', 'Sidekick host speech delegation failed', true);
+    }
 
     if (hostResult?.accepted) {
       this.asrDiagnostics.counters.accepted += 1;
@@ -1217,15 +1223,16 @@ class SidekickPlugin {
     if (hostResult?.delegated) {
       this.asrDiagnostics.counters.delegated += 1;
     }
+    const delegation = this._buildAsrDelegationSummary(hostResult);
 
     return res.json({
       success: true,
       transcript: responseTranscript,
-      accepted: !!hostResult?.accepted,
-      delegated: !!hostResult?.delegated,
-      reason: hostResult?.reason || hostResult?.decision?.reason || null,
+      accepted: delegation.accepted,
+      delegated: delegation.delegated,
+      reason: delegation.reason,
       latencyMs,
-      result: hostResult,
+      delegation,
       diagnostics: this._getAsrStatus()
     });
   }
@@ -1239,14 +1246,16 @@ class SidekickPlugin {
       this.asrDiagnostics.counters.errors += 1;
       this.metrics?.recordError?.();
     }
+    const safeCode = this._sanitizeAsrErrorCode(code);
+    const safeMessage = this._sanitizeAsrPublicText(message, 240) || 'Sidekick ASR request failed';
     this.asrDiagnostics.lastError = {
-      code,
-      message,
+      code: safeCode,
+      message: safeMessage,
       at: new Date().toISOString()
     };
     return res.status(status).json({
       success: false,
-      error: { code, message },
+      error: { code: safeCode, message: safeMessage },
       diagnostics: this._getAsrStatus()
     });
   }
@@ -1275,6 +1284,38 @@ class SidekickPlugin {
       durationMs: transcript?.durationMs,
       provider: transcript?.provider || 'fish.audio'
     };
+  }
+
+  _buildAsrDelegationSummary(hostResult) {
+    const nested = hostResult?.animazingPalResult || {};
+    return {
+      accepted: !!hostResult?.accepted,
+      delegated: !!hostResult?.delegated,
+      reason: this._sanitizeAsrPublicText(hostResult?.reason || hostResult?.decision?.reason || null, 120),
+      responded: hostResult?.responded === true || nested.responded === true,
+      blocked: hostResult?.blocked === true || nested.blocked === true,
+      speechFailed: hostResult?.speechFailed === true || nested.speechFailed === true,
+      speechBlocked: hostResult?.speechBlocked === true || nested.speechBlocked === true
+    };
+  }
+
+  _sanitizeAsrErrorCode(code) {
+    const safeCode = String(code || 'ASR_ERROR').toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 80);
+    return safeCode || 'ASR_ERROR';
+  }
+
+  _sanitizeAsrPublicText(value, maxLength = 240) {
+    if (value === null || value === undefined) return null;
+    let text = String(value);
+    text = text.replace(/bearer\s+[a-z0-9._~+/=-]+/gi, 'Bearer [REDACTED]');
+    text = text.replace(/\b(?:sk|pk|rk|fish|token|key)-[a-z0-9._-]{8,}\b/gi, '[REDACTED]');
+    text = text.replace(/\b[a-z0-9._%+-]+:[a-z0-9._~+/=-]{12,}\b/gi, '[REDACTED]');
+    text = text.replace(/\b[a-f0-9]{32,}\b/gi, '[REDACTED]');
+    text = text.replace(/\s+/g, ' ').trim();
+    if (text.length > maxLength) {
+      return `${text.slice(0, maxLength - 1)}…`;
+    }
+    return text;
   }
 
   _hasAllowedAsrExtension(filename) {

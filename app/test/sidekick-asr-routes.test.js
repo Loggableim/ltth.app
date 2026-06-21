@@ -214,6 +214,77 @@ describe('Sidekick ASR upload routes', () => {
     }));
   });
 
+  test('does not leak downstream host delegation secrets in response or ASR status', async () => {
+    const secret = 'sk-live-host-secret-token';
+    const returnedHarness = createHarness({
+      hostResult: {
+        accepted: true,
+        delegated: false,
+        reason: 'animazingpal-error',
+        responded: false,
+        error: `AnimazingPal failed with ${secret}`,
+        event: {
+          message: 'Hallo Chat',
+          apiKey: secret
+        },
+        animazingPalResult: {
+          nestedToken: secret
+        }
+      }
+    });
+
+    const returnedResponse = await request(returnedHarness.app)
+      .post('/api/sidekick/asr/transcribe')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(200);
+
+    expect(JSON.stringify(returnedResponse.body)).not.toContain(secret);
+    expect(returnedResponse.body).toEqual(expect.objectContaining({
+      success: true,
+      delegation: {
+        accepted: true,
+        delegated: false,
+        reason: 'animazingpal-error',
+        responded: false,
+        blocked: false,
+        speechFailed: false,
+        speechBlocked: false
+      }
+    }));
+    expect(returnedResponse.body.result).toBeUndefined();
+
+    const returnedStatus = await request(returnedHarness.app)
+      .get('/api/sidekick/asr/status')
+      .expect(200);
+    expect(JSON.stringify(returnedStatus.body)).not.toContain(secret);
+
+    const thrownHarness = createHarness();
+    thrownHarness.plugin.processHostSpeechTranscript.mockRejectedValue(new Error(`delegation exploded ${secret}`));
+
+    const thrownResponse = await request(thrownHarness.app)
+      .post('/api/sidekick/asr/transcribe')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(502);
+
+    expect(JSON.stringify(thrownResponse.body)).not.toContain(secret);
+    expect(thrownResponse.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({
+        code: 'ASR_DELEGATION_FAILED',
+        message: 'Sidekick host speech delegation failed'
+      })
+    }));
+
+    const thrownStatus = await request(thrownHarness.app)
+      .get('/api/sidekick/asr/status')
+      .expect(200);
+    expect(JSON.stringify(thrownStatus.body)).not.toContain(secret);
+    expect(thrownStatus.body.status.lastError).toEqual(expect.objectContaining({
+      code: 'ASR_DELEGATION_FAILED',
+      message: 'Sidekick host speech delegation failed'
+    }));
+  });
+
   test('reports ASR diagnostics counters and readiness status', async () => {
     const { app } = createHarness();
 
