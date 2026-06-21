@@ -266,6 +266,57 @@ describe('AnimazingPal live host integration', () => {
     expect(hostMemoryCall[1]).not.toHaveProperty('user');
   });
 
+  test('BrainEngine processHostSpeech merges empty host liveContext with stream context', async () => {
+    const brain = Object.create(BrainEngine.prototype);
+    brain.config = {
+      enabled: true,
+      liveHost: normalizeLiveHostConfig({ enabled: true })
+    };
+    brain.currentPersonality = { system_prompt: 'Bleib in Character.' };
+    brain.currentSession = 'session-1';
+    brain.streamContext = {
+      viewerCount: 84,
+      recentEvents: [{ type: 'gift', username: 'vip-viewer' }],
+      mood: 'excited'
+    };
+    brain.gptBrain = {
+      generateHostSpeechResponse: jest.fn().mockResolvedValue({ content: 'Ich sehe den Hype!', cached: false })
+    };
+    brain.memoryDb = {
+      getOrCreateUserProfile: jest.fn(),
+      addInteractionToHistory: jest.fn(),
+      storeConversation: jest.fn(),
+      getConversationHistory: jest.fn().mockReturnValue([]),
+      getInteractionHistory: jest.fn()
+    };
+    brain.viewerMemory = { getViewerContext: jest.fn(), recordMemory: jest.fn() };
+    brain.storeMemory = jest.fn();
+    brain._resolveSystemPrompt = BrainEngine.prototype._resolveSystemPrompt.bind(brain);
+    brain._checkRateLimit = jest.fn().mockReturnValue(true);
+    brain._selectEmotion = jest.fn().mockReturnValue('neutral');
+    brain.logger = { debug: jest.fn(), error: jest.fn() };
+
+    await brain.processHostSpeech('Streamer', 'Was passiert gerade?', {
+      forceRespond: true,
+      liveContext: {}
+    });
+
+    expect(brain.gptBrain.generateHostSpeechResponse).toHaveBeenCalledWith(
+      'Streamer',
+      'Was passiert gerade?',
+      expect.any(String),
+      expect.objectContaining({
+        liveContext: expect.objectContaining({
+          viewerCount: 84,
+          recentEvents: [{ type: 'gift', username: 'vip-viewer' }],
+          mood: 'excited'
+        })
+      })
+    );
+    expect(brain.memoryDb.getOrCreateUserProfile).not.toHaveBeenCalled();
+    expect(brain.viewerMemory.getViewerContext).not.toHaveBeenCalled();
+  });
+
   test('fresh installs use the canonical 24/7 production profile', () => {
     const plugin = Object.create(AnimazingPalPlugin.prototype);
     const defaults = plugin.getDefaultConfig();

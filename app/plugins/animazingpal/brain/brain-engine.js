@@ -535,13 +535,30 @@ class BrainEngine {
         'Rolle: Du bist der Sidekick/Co-Host und antwortest dem Streamer, nicht einem Zuschauer.'
       ].filter(Boolean).join('\n\n');
 
+      const fallbackLiveContext = this.streamContext || {};
+      const providedLiveContext = options.liveContext && typeof options.liveContext === 'object'
+        ? options.liveContext
+        : {};
+      const liveContext = {
+        ...fallbackLiveContext,
+        ...providedLiveContext
+      };
+      if (!Array.isArray(providedLiveContext.recentEvents) || providedLiveContext.recentEvents.length === 0) {
+        liveContext.recentEvents = Array.isArray(fallbackLiveContext.recentEvents)
+          ? fallbackLiveContext.recentEvents
+          : [];
+      }
+      if (providedLiveContext.viewerCount === undefined || providedLiveContext.viewerCount === null) {
+        liveContext.viewerCount = fallbackLiveContext.viewerCount;
+      }
+
       const result = typeof this.gptBrain.generateHostSpeechResponse === 'function'
         ? await this.gptBrain.generateHostSpeechResponse(
           hostName || 'Host',
           message,
           personality,
           {
-            liveContext: options.liveContext || this.streamContext || {},
+            liveContext,
             conversationHistory: conversationHistory.map(c => ({
               role: c.role,
               content: c.content
