@@ -991,14 +991,24 @@ class SidekickPlugin {
     const event = this.conversationCoordinator.buildHostSpeechEvent(text, metadata);
     const animazingPal = this._getAnimazingPal();
     const hasDedicatedHostPipeline = typeof animazingPal?.processSidekickHostSpeech === 'function';
-    const hasFallbackEventPipeline = typeof animazingPal?.processSidekickEvent === 'function';
-    if (!animazingPal || (!hasDedicatedHostPipeline && !hasFallbackEventPipeline)) {
+    if (!animazingPal) {
       this.logger.warn('Sidekick host speech skipped: AnimazingPal Brain pipeline unavailable');
       this.metrics?.recordError?.();
       return {
         accepted: true,
         delegated: false,
         reason: 'animazingpal-unavailable',
+        decision,
+        event
+      };
+    }
+    if (!hasDedicatedHostPipeline) {
+      this.logger.warn('Sidekick host speech skipped: dedicated AnimazingPal host pipeline unavailable');
+      this.metrics?.recordError?.();
+      return {
+        accepted: true,
+        delegated: false,
+        reason: 'host-pipeline-unavailable',
         decision,
         event
       };
@@ -1010,9 +1020,7 @@ class SidekickPlugin {
         ...decision,
         source: 'sidekick-host-speech'
       };
-      animazingPalResult = hasDedicatedHostPipeline
-        ? await animazingPal.processSidekickHostSpeech(event, hostEvaluation)
-        : await animazingPal.processSidekickEvent(event.eventType, event, hostEvaluation);
+      animazingPalResult = await animazingPal.processSidekickHostSpeech(event, hostEvaluation);
     } catch (error) {
       this.logger.warn(`Sidekick host speech delegation failed: ${error.message}`);
       this.metrics?.recordError?.();

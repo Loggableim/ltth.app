@@ -240,7 +240,7 @@ describe('Sidekick runtime contracts', () => {
     expect(processSidekickEvent).not.toHaveBeenCalled();
   });
 
-  test('falls back to AnimazingPal Sidekick event path when dedicated host pipeline is unavailable', async () => {
+  test('does not route host transcripts through generic AnimazingPal Sidekick event path when dedicated host pipeline is unavailable', async () => {
     const processSidekickEvent = jest.fn().mockResolvedValue({ handled: true, responded: true });
     const api = createApi({
       getPluginInstance: jest.fn().mockImplementation((pluginId) => {
@@ -263,21 +263,22 @@ describe('Sidekick runtime contracts', () => {
         comment: 'Hello chat',
         isHostSpeech: true,
         source: 'host-mic'
-      })
+      }),
+      recordHostSpeech: jest.fn(),
+      recordSidekickSpeech: jest.fn()
     };
 
     const result = await plugin.processHostSpeechTranscript('Hello chat', { confidence: 0.91 });
 
     expect(result).toEqual(expect.objectContaining({
       accepted: true,
-      delegated: true,
-      animazingPalResult: { handled: true, responded: true }
+      delegated: false,
+      reason: 'host-pipeline-unavailable',
+      event: expect.objectContaining({ message: 'Hello chat', source: 'host-mic', isHostSpeech: true })
     }));
-    expect(processSidekickEvent).toHaveBeenCalledWith(
-      'chat',
-      expect.objectContaining({ message: 'Hello chat', comment: 'Hello chat', source: 'host-mic', isHostSpeech: true }),
-      expect.objectContaining({ reason: 'accepted', source: 'sidekick-host-speech' })
-    );
+    expect(processSidekickEvent).not.toHaveBeenCalled();
+    expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
+    expect(plugin.conversationCoordinator.recordSidekickSpeech).not.toHaveBeenCalled();
   });
 
   test('does not suppress host transcript retry when AnimazingPal is unavailable', async () => {
@@ -312,9 +313,9 @@ describe('Sidekick runtime contracts', () => {
   });
 
   test('does not suppress host transcript retry when AnimazingPal delegation rejects', async () => {
-    const processSidekickEvent = jest.fn().mockRejectedValue(new Error('AP down'));
+    const processSidekickHostSpeech = jest.fn().mockRejectedValue(new Error('AP down'));
     const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickHostSpeech })
     }));
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn() };
@@ -347,14 +348,14 @@ describe('Sidekick runtime contracts', () => {
   });
 
   test('does not suppress host transcript retry when AnimazingPal returns duplicate without a response', async () => {
-    const processSidekickEvent = jest.fn().mockResolvedValue({
+    const processSidekickHostSpeech = jest.fn().mockResolvedValue({
       handled: true,
       responded: false,
       duplicate: true,
       reason: 'duplicate'
     });
     const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickHostSpeech })
     }));
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn() };
@@ -376,13 +377,13 @@ describe('Sidekick runtime contracts', () => {
   });
 
   test('records host-triggered AnimazingPal spoken text for echo suppression', async () => {
-    const processSidekickEvent = jest.fn().mockResolvedValue({
+    const processSidekickHostSpeech = jest.fn().mockResolvedValue({
       handled: true,
       responded: true,
       spokenText: 'AP reply'
     });
     const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickHostSpeech })
     }));
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
@@ -401,14 +402,14 @@ describe('Sidekick runtime contracts', () => {
   });
 
   test('does not record host speech or AnimazingPal text when delegated speech fails', async () => {
-    const processSidekickEvent = jest.fn().mockResolvedValue({
+    const processSidekickHostSpeech = jest.fn().mockResolvedValue({
       handled: true,
       responded: false,
       spokenText: 'Undelivered AP reply',
       speechFailed: true
     });
     const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickHostSpeech })
     }));
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
