@@ -1305,6 +1305,19 @@ class AnimazingPalPlugin {
       return this._handleAsrUploadRoute(req, res);
     });
 
+    this.api.registerRoute('get', '/api/animazingpal/live-host/stt/status', (req, res) => {
+      try {
+        res.json({ success: true, status: this._getAsrStatus(this._getAsrPreflightOptionsFromRequest(req)) });
+      } catch (error) {
+        this.api.log(`Live Host STT status failed: ${error.message}`, 'warn');
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/stt/transcribe', (req, res) => {
+      return this._handleAsrUploadRoute(req, res);
+    });
+
     this.api.registerRoute('post', '/api/animazingpal/live-host/preflight', (req, res) => {
       try {
         res.json({ success: true, preflight: this.evaluateLiveHostPreflight(req.body || {}) });

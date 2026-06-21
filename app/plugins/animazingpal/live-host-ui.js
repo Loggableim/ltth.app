@@ -705,7 +705,7 @@
   }
 
   async function refreshAsrStatus() {
-    const body = await request(`/api/animazingpal/live-host/asr/status?${getHostMicQuery()}`);
+    const body = await request(`/api/animazingpal/live-host/stt/status?${getHostMicQuery()}`);
     state.asrStatus = body.status || {};
     render();
     return state.asrStatus;
@@ -728,7 +728,7 @@
     const extension = blob.type.includes('ogg') ? 'ogg' : 'webm';
     form.append('audio', blob, `host-stt.${extension}`);
     form.append('transcribeOnly', transcribeOnly ? 'true' : 'false');
-    const response = await fetch(`/api/animazingpal/live-host/asr/transcribe?${getHostMicQuery()}`, {
+    const response = await fetch(`/api/animazingpal/live-host/stt/transcribe?${getHostMicQuery()}`, {
       method: 'POST',
       body: form
     });
@@ -942,7 +942,7 @@
       normalizeStatus(status);
       await loadDevices();
       await loadHostInputDevices(false);
-      state.asrStatus = await request('/api/animazingpal/live-host/asr/status').then(body => body.status || {}).catch(() => ({}));
+      state.asrStatus = await request('/api/animazingpal/live-host/stt/status').then(body => body.status || {}).catch(() => ({}));
       state.loaded = true;
       render();
       startLiveHostHealthRefresh();

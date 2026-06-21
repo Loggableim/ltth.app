@@ -8,6 +8,7 @@ function createPlugin() {
   const plugin = Object.create(AnimazingPalPlugin.prototype);
   plugin.api = {
     getPluginInstance: jest.fn(id => id === 'tts' ? ttsPlugin : null),
+    registerRoute: jest.fn(),
     setConfig: jest.fn(),
     log: jest.fn(),
     emit: jest.fn()
@@ -370,6 +371,56 @@ describe('AnimazingPal live host integration', () => {
       ttsAvailable: true,
       fishConfigured: true
     }));
+  });
+
+  test('fresh host STT defaults are ready for first-run browser microphone use', () => {
+    const { plugin } = createPlugin();
+    const liveHost = plugin.config.brain.liveHost;
+
+    expect(liveHost.asr).toEqual(expect.objectContaining({
+      enabled: true,
+      deviceId: '',
+      unsafeOverride: false,
+      language: 'de',
+      minTranscriptChars: 1,
+      rateLimitMax: 30,
+      silenceTimeoutMs: 1200,
+      maxSegmentMs: 8000
+    }));
+    expect(liveHost.response).toEqual(expect.objectContaining({
+      hostReplyProbability: 1,
+      hostMinConfidence: 0.2,
+      hostContextCooldownMs: 2500,
+      hostOvertalkCooldownMs: 1200,
+      hostLongFormWordLimit: 48
+    }));
+  });
+
+  test('registers STT API aliases in addition to ASR compatibility routes', () => {
+    const { plugin } = createPlugin();
+
+    plugin.registerRoutes();
+
+    expect(plugin.api.registerRoute).toHaveBeenCalledWith(
+      'get',
+      '/api/animazingpal/live-host/stt/status',
+      expect.any(Function)
+    );
+    expect(plugin.api.registerRoute).toHaveBeenCalledWith(
+      'post',
+      '/api/animazingpal/live-host/stt/transcribe',
+      expect.any(Function)
+    );
+    expect(plugin.api.registerRoute).toHaveBeenCalledWith(
+      'get',
+      '/api/animazingpal/live-host/asr/status',
+      expect.any(Function)
+    );
+    expect(plugin.api.registerRoute).toHaveBeenCalledWith(
+      'post',
+      '/api/animazingpal/live-host/asr/transcribe',
+      expect.any(Function)
+    );
   });
 
   test('processHostSpeechTranscript blocks low-confidence host ASR before Brain delegation', async () => {

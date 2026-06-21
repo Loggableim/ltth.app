@@ -109,10 +109,10 @@ function buildLiveHostDefaults() {
       chatProbability: 0.1,
       maxSentences: 2,
       maxCharacters: 500,
-      hostReplyProbability: 0.75,
-      hostMinConfidence: 0.35,
-      hostContextCooldownMs: 6000,
-      hostOvertalkCooldownMs: 1800,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0.2,
+      hostContextCooldownMs: 2500,
+      hostOvertalkCooldownMs: 1200,
       hostLongFormWordLimit: 48,
       language: 'de',
       systemPrompt: '',
@@ -155,10 +155,10 @@ function buildLiveHostDefaults() {
       language: 'de',
       maxAudioBytes: 8 * 1024 * 1024,
       minTranscriptChars: 1,
-      rateLimitMax: 10,
+      rateLimitMax: 30,
       rateLimitWindowMs: 60000,
-      silenceTimeoutMs: 900,
-      maxSegmentMs: 12000
+      silenceTimeoutMs: 1200,
+      maxSegmentMs: 8000
     },
     viewerMemory: {
       enabled: true,
