@@ -238,6 +238,72 @@ describe('Sidekick runtime contracts', () => {
     );
   });
 
+  test('does not suppress host transcript retry when AnimazingPal is unavailable', async () => {
+    const plugin = new SidekickPlugin(createApi());
+    plugin.config = {};
+    plugin.metrics = { recordError: jest.fn() };
+    plugin.conversationCoordinator = {
+      shouldAcceptHostSpeech: jest.fn().mockReturnValue({
+        accept: true,
+        reason: 'accepted',
+        normalizedText: 'hello chat'
+      }),
+      buildHostSpeechEvent: jest.fn().mockReturnValue({
+        eventType: 'chat',
+        username: 'Host',
+        message: 'Hello chat',
+        comment: 'Hello chat',
+        source: 'host-mic',
+        isHostSpeech: true
+      }),
+      recordHostSpeech: jest.fn()
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Hello chat');
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: true,
+      delegated: false,
+      reason: 'animazingpal-unavailable'
+    }));
+    expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
+  });
+
+  test('does not suppress host transcript retry when AnimazingPal delegation rejects', async () => {
+    const processSidekickEvent = jest.fn().mockRejectedValue(new Error('AP down'));
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    }));
+    plugin.config = {};
+    plugin.metrics = { recordError: jest.fn() };
+    plugin.conversationCoordinator = {
+      shouldAcceptHostSpeech: jest.fn().mockReturnValue({
+        accept: true,
+        reason: 'accepted',
+        normalizedText: 'hello chat'
+      }),
+      buildHostSpeechEvent: jest.fn().mockReturnValue({
+        eventType: 'chat',
+        username: 'Host',
+        message: 'Hello chat',
+        comment: 'Hello chat',
+        source: 'host-mic',
+        isHostSpeech: true
+      }),
+      recordHostSpeech: jest.fn()
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Hello chat');
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: true,
+      delegated: false,
+      reason: 'animazingpal-error'
+    }));
+    expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
+    expect(plugin.metrics.recordError).toHaveBeenCalled();
+  });
+
   test('rejects echoed host transcripts before AnimazingPal delegation', async () => {
     const processSidekickEvent = jest.fn();
     const api = createApi({
@@ -261,6 +327,87 @@ describe('Sidekick runtime contracts', () => {
       reason: 'echo'
     }));
     expect(processSidekickEvent).not.toHaveBeenCalled();
+  });
+
+  test('chat delegation rejection is caught and logged without unhandled rejection', async () => {
+    const api = createApi();
+    const plugin = new SidekickPlugin(api);
+    plugin.config = { comment: { minLength: 1, enabled: true } };
+    plugin.deduper = { seen: jest.fn().mockReturnValue(false) };
+    plugin.metrics = {
+      recordChat: jest.fn(),
+      recordDedupeHit: jest.fn(),
+      recordError: jest.fn()
+    };
+    plugin.memoryStore = { rememberEvent: jest.fn(), updateLastGreet: jest.fn() };
+    plugin.eventBus = { publishChat: jest.fn() };
+    plugin.rateLimiter = {
+      canSendGlobal: jest.fn().mockReturnValue(true),
+      isUserOnCooldown: jest.fn().mockReturnValue(false),
+      setGlobalCooldown: jest.fn(),
+      setUserCooldown: jest.fn()
+    };
+    plugin.responseEngine = {
+      evaluateChat: jest.fn().mockReturnValue({ type: 'question', score: 1 })
+    };
+    plugin._dispatchSelectedEvent = jest.fn().mockRejectedValue(new Error('AP failed'));
+
+    plugin._handleChat({ uniqueId: 'alice', nickname: 'Alice', comment: 'hello?' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(plugin._dispatchSelectedEvent).toHaveBeenCalled();
+    expect(api.log).toHaveBeenCalledWith(expect.stringContaining('Sidekick chat dispatch failed'), 'error');
+    expect(plugin.metrics.recordError).toHaveBeenCalled();
+  });
+
+  test('chat cooldown is reserved before async delegation so immediate selected chats do not both delegate', async () => {
+    const plugin = new SidekickPlugin(createApi());
+    plugin.config = { comment: { minLength: 1, enabled: true } };
+    plugin.metrics = { recordError: jest.fn() };
+    let globalAvailable = true;
+    plugin.rateLimiter = {
+      canSendGlobal: jest.fn(() => globalAvailable),
+      isUserOnCooldown: jest.fn().mockReturnValue(false),
+      setGlobalCooldown: jest.fn(() => { globalAvailable = false; }),
+      setUserCooldown: jest.fn()
+    };
+    plugin.responseEngine = {
+      evaluateChat: jest.fn().mockReturnValue({ type: 'question', score: 1 })
+    };
+    plugin._dispatchSelectedEvent = jest.fn(() => new Promise(resolve => setTimeout(() => resolve({ responded: true }), 10)));
+
+    const first = plugin._processComment('alice', 'Alice', 'first?');
+    const second = plugin._processComment('bob', 'Bob', 'second?');
+    await Promise.all([first, second]);
+
+    expect(plugin._dispatchSelectedEvent).toHaveBeenCalledTimes(1);
+    expect(plugin.rateLimiter.setGlobalCooldown).toHaveBeenCalledTimes(1);
+    expect(plugin.rateLimiter.setUserCooldown).toHaveBeenCalledTimes(1);
+  });
+
+  test('records delegated AnimazingPal spoken text for echo suppression', async () => {
+    const processSidekickEvent = jest.fn().mockResolvedValue({
+      handled: true,
+      responded: true,
+      spokenText: 'Antwort vom Host-Brain.'
+    });
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    }));
+    plugin.metrics = { recordResponse: jest.fn(), recordError: jest.fn() };
+    plugin.conversationCoordinator = {
+      buildViewerEvent: jest.fn().mockReturnValue({ eventType: 'chat', uniqueId: 'alice', comment: 'hi' }),
+      recordSidekickSpeech: jest.fn()
+    };
+
+    const result = await plugin._dispatchSelectedEvent('chat', { uniqueId: 'alice', comment: 'hi' }, { type: 'question' });
+
+    expect(result.responded).toBe(true);
+    expect(plugin.conversationCoordinator.recordSidekickSpeech).toHaveBeenCalledWith('Antwort vom Host-Brain.', expect.objectContaining({
+      eventType: 'chat',
+      source: 'animazingpal-delegated-output'
+    }));
   });
 
   test('registers concrete memory routes before the uid wildcard', () => {

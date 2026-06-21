@@ -44,7 +44,29 @@ describe('Sidekick conversation coordinator', () => {
       accept: true,
       normalizedText: 'can you see chat?'
     }));
+    coordinator.recordHostSpeech('Can you see chat?', { now: 1000 });
     expect(coordinator.shouldAcceptHostSpeech('can   you see chat?', { now: 2000 })).toEqual(expect.objectContaining({
+      accept: false,
+      reason: 'duplicate'
+    }));
+  });
+
+  test('accepted host speech is not treated as duplicate until committed', () => {
+    const coordinator = new ConversationCoordinator({
+      echoWindowMs: 10000,
+      minHostSpeechChars: 3
+    });
+
+    expect(coordinator.shouldAcceptHostSpeech('Retry me', { now: 1000 })).toEqual(expect.objectContaining({
+      accept: true
+    }));
+    expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 2000 })).toEqual(expect.objectContaining({
+      accept: true
+    }));
+
+    coordinator.recordHostSpeech('Retry me', { now: 2000 });
+
+    expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 3000 })).toEqual(expect.objectContaining({
       accept: false,
       reason: 'duplicate'
     }));

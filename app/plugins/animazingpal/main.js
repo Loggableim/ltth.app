@@ -4446,13 +4446,13 @@ class AnimazingPalPlugin {
     return null;
   }
 
-  async processLiveHostEvent(eventType, data = {}) {
+  async processLiveHostEvent(eventType, data = {}, options = {}) {
     this.ensureLiveHostRuntime();
     const liveHost = this.config?.brain?.liveHost;
     const event = liveHost?.events?.[eventType];
     if (!liveHost?.enabled) return { handled: false };
-    this.recordLiveHostSourceEvent(eventType);
-    if ((this.liveHostOperatingModeOverride || liveHost.operatingMode || 'standalone') === 'sidekick') {
+    if (!options.delegated) this.recordLiveHostSourceEvent(eventType);
+    if (!options.delegated && (this.liveHostOperatingModeOverride || liveHost.operatingMode || 'standalone') === 'sidekick') {
       return { handled: false, responded: false, reason: 'delegated-to-sidekick' };
     }
     const complete = result => {
@@ -4472,14 +4472,21 @@ class AnimazingPalPlugin {
     if (coins < event.minCoins || likes < event.minLikes || quantity < event.minQuantity) {
       return complete({ handled: true, responded: false, reason: 'minimum-filter' });
     }
-    const decision = this.decideLiveHostResponse(eventType, data, event, liveHost);
+    const decision = options.forceRespond
+      ? {
+        respond: true,
+        score: Number(options.evaluation?.score) || 1,
+        reason: 'sidekick-selected',
+        selection: options.evaluation?.type || 'assistant'
+      }
+      : this.decideLiveHostResponse(eventType, data, event, liveHost);
 
     this.liveHostEventCooldowns ||= new Map();
     const now = Date.now();
-    if (now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) {
+    if (!options.delegated && now - (this.liveHostEventCooldowns.get(eventType) || 0) < event.cooldownMs) {
       return complete({ handled: true, responded: false, reason: 'cooldown' });
     }
-    this.liveHostEventCooldowns.set(eventType, now);
+    if (!options.delegated) this.liveHostEventCooldowns.set(eventType, now);
 
     if (event.avatarActionEnabled && this.isConnected) {
       const action = this.selectSituationalAvatarAction(eventType, data);
@@ -4501,11 +4508,13 @@ class AnimazingPalPlugin {
 
     const username = data.uniqueId || data.username || 'Viewer';
     let responded = false;
+    let spokenText = null;
     if (event.templateEnabled && event.template) {
       const message = this._formatLiveHostMessage(this._renderLiveHostTemplate(event.template, data));
       if (message) {
         await this.speakHostResponse(message, { eventType, username, userId: username });
         responded = true;
+        spokenText = message;
         this.recordLiveHostResponseSlot();
       }
     }
@@ -4521,12 +4530,24 @@ class AnimazingPalPlugin {
       }[eventType];
       const response = method ? await method() : null;
       if (response?.text) {
-        await this.speakHostResponse(this._formatLiveHostMessage(response.text), { eventType, username, userId: username });
+        const message = this._formatLiveHostMessage(response.text);
+        await this.speakHostResponse(message, { eventType, username, userId: username });
         responded = true;
+        spokenText = message;
         this.recordLiveHostResponseSlot();
       }
     }
-    return complete({ handled: true, responded });
+    const outcome = { handled: true, responded };
+    if (options.delegated && spokenText) outcome.spokenText = spokenText;
+    return complete(outcome);
+  }
+
+  processSidekickEvent(eventType, data = {}, evaluation = {}) {
+    return this.processLiveHostEvent(eventType, data, {
+      delegated: true,
+      forceRespond: true,
+      evaluation
+    });
   }
 
   setLiveHostOperatingMode(mode, options = {}) {

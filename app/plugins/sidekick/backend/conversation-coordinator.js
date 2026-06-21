@@ -117,6 +117,21 @@ class ConversationCoordinator {
     return record;
   }
 
+  recordHostSpeech(text, metadata = {}) {
+    const normalizedText = normalizeSpeechText(text);
+    if (!normalizedText) return null;
+
+    const record = {
+      type: 'host',
+      text: cleanSpeechText(text),
+      normalizedText,
+      timestamp: this._getTimestamp(metadata),
+      metadata: this._sanitizeMetadata(metadata)
+    };
+    this._remember(record);
+    return record;
+  }
+
   shouldAcceptHostSpeech(text, metadata = {}) {
     const normalizedText = normalizeSpeechText(text);
     const cleanText = cleanSpeechText(text);
@@ -151,13 +166,6 @@ class ConversationCoordinator {
     };
     this.lastAcceptedHostSpeechReason = decision.reason;
     this.lastHostSpeechDecision = decision;
-    this._remember({
-      type: 'host',
-      text: cleanText,
-      normalizedText,
-      timestamp,
-      metadata: this._sanitizeMetadata(metadata)
-    });
     return decision;
   }
 
@@ -239,7 +247,7 @@ class ConversationCoordinator {
       maxRecentUtterances: this.config.maxRecentUtterances,
       duplicateSimilarity: this.config.duplicateSimilarity,
       hostSpeechEventType: this.config.hostSpeechEventType,
-      viewerEventTypes: this.config.viewerEventTypes,
+      viewerEventTypes: [...this.config.viewerEventTypes],
       recentUtteranceCount: this.recentUtterances.length,
       recentSidekickUtteranceCount,
       recentHostUtteranceCount,

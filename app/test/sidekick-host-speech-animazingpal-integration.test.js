@@ -60,7 +60,11 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       message: 'Kannst du das im Chat sehen?',
       comment: 'Kannst du das im Chat sehen?'
     }));
-    expect(result).toEqual(expect.objectContaining({ handled: true, responded: true }));
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: true,
+      spokenText: 'Antwort vom Host-Brain.'
+    }));
     expect(plugin.brainEngine.processChat).toHaveBeenCalledWith(
       'Streamer',
       'Kannst du das im Chat sehen?',

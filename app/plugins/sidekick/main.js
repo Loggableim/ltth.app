@@ -610,7 +610,10 @@ class SidekickPlugin {
     if (!this.config.comment?.enabled) return;
     
     // Evaluate for response
-    this._processComment(uid, nickname, comment);
+    this._processComment(uid, nickname, comment).catch((error) => {
+      this.logger.error(`Sidekick chat dispatch failed: ${error.message}`);
+      this.metrics?.recordError?.();
+    });
   }
   
   async _processComment(uid, nickname, comment) {
@@ -638,11 +641,17 @@ class SidekickPlugin {
       this.memoryStore.updateLastGreet(uid);
     }
     
-    await this._dispatchSelectedEvent('chat', { uniqueId: uid, nickname, comment }, evaluation);
-    
-    // Set cooldowns
+    // Reserve cooldowns before async delegation so concurrent selected chats
+    // cannot all pass the rate-limit check while the first response is pending.
     this.rateLimiter.setGlobalCooldown();
     this.rateLimiter.setUserCooldown(uid);
+
+    try {
+      await this._dispatchSelectedEvent('chat', { uniqueId: uid, nickname, comment }, evaluation);
+    } catch (error) {
+      this.logger.error(`Sidekick chat dispatch failed: ${error.message}`);
+      this.metrics?.recordError?.();
+    }
     
     // Record response
   }
@@ -993,10 +1002,28 @@ class SidekickPlugin {
       };
     }
 
-    const animazingPalResult = await animazingPal.processSidekickEvent(event.eventType, event, {
-      ...decision,
-      source: 'sidekick-host-speech'
-    });
+    let animazingPalResult;
+    try {
+      animazingPalResult = await animazingPal.processSidekickEvent(event.eventType, event, {
+        ...decision,
+        source: 'sidekick-host-speech'
+      });
+    } catch (error) {
+      this.logger.warn(`Sidekick host speech delegation failed: ${error.message}`);
+      this.metrics?.recordError?.();
+      return {
+        accepted: true,
+        delegated: false,
+        reason: 'animazingpal-error',
+        decision,
+        event,
+        error: error.message
+      };
+    }
+
+    if (animazingPalResult?.handled !== false) {
+      this.conversationCoordinator.recordHostSpeech?.(text, metadata);
+    }
 
     return {
       accepted: true,
@@ -1056,7 +1083,17 @@ class SidekickPlugin {
       return { handled: false, responded: false, reason: 'viewer-event-disabled' };
     }
     const result = await animazingPal.processSidekickEvent(eventType, event, evaluation);
-    if (result?.responded) this.metrics?.recordResponse();
+    if (result?.responded) {
+      this.metrics?.recordResponse();
+      const spokenText = result.spokenText || result.message || result.text;
+      if (spokenText) {
+        this.conversationCoordinator?.recordSidekickSpeech?.(spokenText, {
+          eventType,
+          username: event.username || event.uniqueId || event.nickname || 'Sidekick',
+          source: 'animazingpal-delegated-output'
+        });
+      }
+    }
     return result;
   }
 
