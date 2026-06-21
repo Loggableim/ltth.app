@@ -75,7 +75,7 @@ describe('Sidekick runtime contracts', () => {
       eventType: 'sidekick',
       username: 'Sidekick'
     });
-    expect(config.output[['mo', 'de'].join('')]).toBeUndefined();
+    expect(config.output.mode).toBeUndefined();
     expect(config.animaze).toBeUndefined();
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
@@ -190,7 +190,27 @@ describe('Sidekick runtime contracts', () => {
     expect(manager.update()).toEqual(initial);
     expect(manager.update(null)).toEqual(initial);
     expect(api.setConfig).toHaveBeenCalledTimes(2);
-    expect(manager.getValue(['output', 'mode'].join('.'))).toBeUndefined();
+    expect(manager.getValue('output.mode')).toBeUndefined();
+  });
+
+  test('GCCE status command labels the delegated AnimazingPal output', () => {
+    const plugin = new SidekickPlugin(createApi());
+    plugin.config = {};
+    plugin.metrics = {
+      getSessionStats: jest.fn().mockReturnValue({ totalChats: 1 }),
+      getCurrentRates: jest.fn().mockReturnValue({})
+    };
+    plugin.deduper = { getStats: jest.fn().mockReturnValue({}) };
+    plugin.rateLimiter = { getStatus: jest.fn().mockReturnValue({}) };
+    plugin.outboxBatcher = { getStatus: jest.fn().mockReturnValue({}) };
+
+    const result = plugin._handleSidekickCommand({ args: ['status'], username: 'mod' });
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      message: expect.stringContaining('AnimazingPal: Disconnected')
+    }));
+    expect(result.message).not.toContain('Animaze:');
   });
 
   test('assistant speech uses standalone host speech metadata', async () => {

@@ -312,7 +312,7 @@ class SidekickPlugin {
       });
     });
     
-    // Reuse AnimazingPal's single Animaze connection.
+    // Reuse AnimazingPal's shared output connection.
     this.api.registerRoute('post', '/api/sidekick/animaze/connect', async (req, res) => {
       try {
         const animazingPal = this._getAnimazingPal();
@@ -327,14 +327,14 @@ class SidekickPlugin {
       }
     });
     
-    // Disconnect from Animaze
+    // Disconnect from AnimazingPal output.
     this.api.registerRoute('post', '/api/sidekick/animaze/disconnect', (req, res) => {
       this._getAnimazingPal()?.disconnect?.();
       this._emitStatus();
       res.json({ success: true, isConnected: false });
     });
     
-    // Get Animaze status
+    // Get AnimazingPal output status.
     this.api.registerRoute('get', '/api/sidekick/animaze/status', (req, res) => {
       res.json({
         success: true,
@@ -342,7 +342,7 @@ class SidekickPlugin {
       });
     });
     
-    // Send test message to Animaze
+    // Send test message through AnimazingPal/Fish.audio.
     this.api.registerRoute('post', '/api/sidekick/animaze/test', async (req, res) => {
       const { message } = req.body;
       if (!message) {
@@ -497,7 +497,7 @@ class SidekickPlugin {
         const status = this._getStatus();
         return {
           success: true,
-          message: `Sidekick: ${status.muted ? 'Muted' : 'Active'} | Animaze: ${status.animaze.isConnected ? 'Connected' : 'Disconnected'} | Events: ${status.session.totalEvents}/min`
+          message: `Sidekick: ${status.muted ? 'Muted' : 'Active'} | AnimazingPal: ${status.animaze.isConnected ? 'Connected' : 'Disconnected'} | Events: ${status.session.totalEvents}/min`
         };
         
       case 'mute':

@@ -182,7 +182,7 @@ class ConfigManager {
       this.config.output = this._cloneDefaults().output;
       return;
     }
-    delete this.config.output[['mo', 'de'].join('')];
+    delete this.config.output.mode;
     if (!this.config.output.eventType) {
       this.config.output.eventType = DEFAULT_CONFIG.output.eventType;
     }
