@@ -18,6 +18,11 @@
     ttsStatus: {},
     ttsQueue: {},
     preflight: null,
+    greetingWarmup: {
+      running: false,
+      lastResult: null,
+      lastError: null
+    },
     healthTimer: null,
     healthRefreshing: false,
     lastHealthAt: null,
@@ -380,6 +385,7 @@
         ${input('source.username', 'Öffentlicher LIVE-Kanal')}${input('source.autoConnect', 'Automatisch lesend verbinden', { type: 'checkbox' })}
         <p class="text-sm text-gray-400">Nur eingehende Ereignisse. AnimazingPal sendet keine Chats, Likes, Follows oder Gifts an den fremden Kanal.</p>
       </div><button class="btn btn-success mt-3" data-source-connect>Jetzt lesend verbinden</button>${actions('source')}</div></section>
+      ${renderGreetingWarmup()}
       <section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Brain-Provider</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${input('provider', 'Aktiver Provider', { type: 'select', options: PROVIDERS })}</div>
         <label class="block mt-3"><span class="text-gray-400 text-sm">Aktive Persönlichkeit</span><select class="select" id="liveHostPersonality"><option value="">Aktuelle Persönlichkeit beibehalten</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select></label>
@@ -416,6 +422,36 @@
       ${renderDiagnostics()}
     `;
     bind();
+  }
+
+  function renderGreetingWarmup() {
+    const warmup = state.greetingWarmup || {};
+    const result = warmup.lastResult || null;
+    const streamer = get('viewerMemory.streamerId') || get('source.username') || 'pupcid';
+    const voice = get('tts.voiceId') || 'Globale Host-Stimme';
+    const runningLabel = warmup.running ? 'Warmup läuft...' : 'Top-20 Begrüßungen vorerzeugen';
+    const status = result
+      ? `<div class="mt-3 rounded-lg border ${result.success ? 'border-green-700 bg-green-950/30 text-green-200' : 'border-yellow-700 bg-yellow-950/30 text-yellow-100'} p-3 text-sm">
+          <div class="font-semibold">Letzter Warmup: ${result.success ? 'abgeschlossen' : 'teilweise abgeschlossen'}</div>
+          <div>Streamer: ${escapeHtml(result.streamerId || streamer)} · User gefunden: ${escapeHtml(result.foundUsers ?? 0)} · Generiert: ${escapeHtml(result.generated ?? 0)} · Zielvarianten: ${escapeHtml(result.targetVariants ?? 3)}</div>
+          ${Array.isArray(result.errors) && result.errors.length ? `<div class="text-red-300 mt-1">Fehler: ${escapeHtml(result.errors.map(item => `${item.username}: ${item.error}`).join('; '))}</div>` : ''}
+        </div>`
+      : '<p class="text-xs text-gray-500 mt-3">Noch kein Warmup in dieser Browser-Session ausgeführt.</p>';
+    return `<section class="mt-4"><div class="card">
+      <h2 class="text-xl font-bold mb-3">Begrüßungs-Warmup</h2>
+      <p class="text-sm text-gray-400 mb-3">Erzeugt gecachte Begrüßungsvarianten inklusive Fish.audio-Audio. Danach werden bekannte Viewer ohne neuen LLM-/TTS-Call begrüßt.</p>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <label class="block md:col-span-2"><span class="text-gray-400 text-sm">Streamer-Profil</span><input class="input" id="greetingWarmupStreamer" value="${escapeHtml(streamer)}" placeholder="pupcid"></label>
+        <label class="block"><span class="text-gray-400 text-sm">Top-User Limit</span><input class="input" id="greetingWarmupLimit" type="number" min="1" max="100" value="20"></label>
+        <label class="block"><span class="text-gray-400 text-sm">Varianten/User</span><input class="input" id="greetingWarmupVariants" type="number" min="1" max="3" value="3"></label>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 mt-3">
+        <button class="btn btn-success" data-greeting-warmup ${warmup.running ? 'disabled' : ''}>${escapeHtml(runningLabel)}</button>
+        <span class="text-sm text-gray-400">Stimme: ${escapeHtml(voice)} · Standard: Top-20 × 3 Varianten</span>
+      </div>
+      ${warmup.lastError ? `<p class="text-sm text-red-300 mt-3">Warmup-Fehler: ${escapeHtml(warmup.lastError)}</p>` : ''}
+      ${status}
+    </div></section>`;
   }
 
   function renderTtsAudio() {
@@ -709,6 +745,43 @@
     return state.inputDevices.find(device => device.deviceId === deviceId) || null;
   }
 
+  function buildLiveHostAsrConstraintList(deviceId) {
+    const constraints = [];
+    if (deviceId) {
+      const exactDevice = { deviceId: { exact: deviceId } };
+      const idealDevice = { deviceId: { ideal: deviceId } };
+      constraints.push({ label: 'genau + DSP', audio: { ...exactDevice, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      constraints.push({ label: 'genau', audio: { ...exactDevice } });
+      constraints.push({ label: 'ideal + DSP', audio: { ...idealDevice, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      constraints.push({ label: 'ideal', audio: { ...idealDevice } });
+    }
+    constraints.push({ label: 'Standard + DSP', audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    constraints.push({ label: 'Standard', audio: true });
+    return constraints;
+  }
+
+  async function requestHostAsrStream(deviceId) {
+    let lastError = null;
+    let lastMessages = [];
+    for (const attempt of buildLiveHostAsrConstraintList(deviceId)) {
+      try {
+        return await navigator.mediaDevices.getUserMedia({ audio: attempt.audio });
+      } catch (error) {
+        lastError = error;
+        const detail = error.message || error.name || 'unknown';
+        lastMessages.push(`${attempt.label}: ${detail}`);
+      }
+    }
+    const message = lastError
+      ? `Mikrofon-Konfigurationskonflikt (${lastError.name || 'Error'}): ${lastError.message || 'unbekannt'}.`
+        + ` Versuchte Varianten: ${lastMessages.join(' | ')}`
+      : 'Mikrofon konnte nicht gestartet werden.';
+    const finalError = new Error(message);
+    finalError.name = lastError?.name || 'ConstraintsNotSatisfied';
+    finalError.code = lastError?.name || 'not-satisfied';
+    throw finalError;
+  }
+
   function getHostMicQuery() {
     const device = getSelectedHostMic();
     const params = new URLSearchParams();
@@ -831,7 +904,7 @@
   }
 
   function shouldUploadHostAsrSegment(signal) {
-    const minSpeechMs = Number(get('asr.minSpeechMs', 250)) || 0;
+    const minSpeechMs = Number(get('asr.minSpeechMs', 300)) || 0;
     const rmsThreshold = Number(get('asr.speechRmsThreshold', 0.008)) || 0;
     const peakThreshold = Number(get('asr.speechPeakThreshold', 0.04)) || 0;
     if (!signal || signal.durationMs < minSpeechMs) {
@@ -854,10 +927,7 @@
     if (!navigator.mediaDevices?.getUserMedia || !AudioContextClass) {
       throw new Error('Dieser Browser unterstuetzt getUserMedia/WebAudio nicht.');
     }
-    const constraints = get('asr.deviceId')
-      ? { audio: { deviceId: { exact: get('asr.deviceId') }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }
-      : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await requestHostAsrStream(get('asr.deviceId'));
     const audioContext = new AudioContextClass();
     if (audioContext.state === 'suspended') await audioContext.resume();
     const sourceNode = audioContext.createMediaStreamSource(stream);
@@ -1016,6 +1086,30 @@
     for (const option of document.getElementById('bundleGifts').options) option.selected = gifts.has(option.value);
   }
 
+  async function runGreetingWarmup() {
+    const streamerId = document.getElementById('greetingWarmupStreamer')?.value?.trim() || get('viewerMemory.streamerId') || get('source.username') || 'pupcid';
+    const limit = Math.max(1, Math.min(100, Number(document.getElementById('greetingWarmupLimit')?.value || 20)));
+    const variants = Math.max(1, Math.min(3, Number(document.getElementById('greetingWarmupVariants')?.value || 3)));
+    state.greetingWarmup.running = true;
+    state.greetingWarmup.lastError = null;
+    render();
+    try {
+      const result = await request('/api/animazingpal/live-host/greetings/warm', {
+        method: 'POST',
+        body: JSON.stringify({ streamerId, limit, variants })
+      });
+      state.greetingWarmup.lastResult = result;
+      state.greetingWarmup.lastError = null;
+      notify(`Begrüßungs-Warmup: ${result.generated || 0} Varianten generiert`);
+    } catch (error) {
+      state.greetingWarmup.lastError = error.message;
+      notify(error.message, true);
+    } finally {
+      state.greetingWarmup.running = false;
+      render();
+    }
+  }
+
   function bind() {
     document.querySelectorAll('[data-livehost-save]').forEach(button => button.onclick = () => save(button.dataset.livehostSave).catch(error => notify(error.message, true)));
     document.querySelectorAll('[data-livehost-reset]').forEach(button => button.onclick = async () => {
@@ -1039,6 +1133,7 @@
         notify(`Lesend mit @${result.username} verbunden`);
       } catch (error) { notify(error.message, true); }
     });
+    document.querySelector('[data-greeting-warmup]')?.addEventListener('click', () => runGreetingWarmup().catch(error => notify(error.message, true)));
     document.getElementById('liveHostPersonality')?.addEventListener('change', event => {
       if (!event.target.value) return;
       request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
@@ -1103,6 +1198,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('[data-tab="settings"]')?.addEventListener('click', initialize);
     document.querySelector('[data-tab="livehost"]')?.addEventListener('click', initialize);
     window.addEventListener('animazingpal:tts-playback-state', () => {
       if (state.loaded) render();

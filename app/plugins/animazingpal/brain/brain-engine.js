@@ -20,6 +20,21 @@ const GPTBrainService = require('./gpt-brain-service');
 const { normalizeLiveHostConfig } = require('./live-host-config');
 const ViewerMemoryAdapter = require('./viewer-memory-adapter');
 
+function isLoopbackHost(hostname) {
+  return ['localhost', '127.0.0.1', '::1'].includes(String(hostname || '').toLowerCase());
+}
+
+function providerRequiresApiKey(provider, providerConfig = {}) {
+  if (provider === 'openai' || provider === 'gemini' || provider === 'openrouter') return true;
+  if (provider !== 'ollama') return false;
+  try {
+    const baseUrl = new URL(providerConfig.baseUrl || 'http://localhost:11434');
+    return !isLoopbackHost(baseUrl.hostname);
+  } catch (_) {
+    return true;
+  }
+}
+
 class BrainEngine {
   constructor(api, options = {}) {
     this.api = api;
@@ -81,6 +96,7 @@ class BrainEngine {
     this.currentSession = null;
     this.responseCount = 0;
     this.responseCountResetTime = Date.now();
+    this.lastHostSpeechError = null;
     
     // Personality cache
     this.currentPersonality = null;
@@ -198,16 +214,24 @@ class BrainEngine {
   getHostSpeechReadiness() {
     const liveHostEnabled = this.config.liveHost?.enabled === true;
     const enabled = this.config.enabled === true || liveHostEnabled;
-    const providerConfigured = !!this.gptBrain;
+    const provider = this.config.liveHost?.provider;
+    const providerConfig = provider ? this.config.liveHost?.providers?.[provider] : null;
+    const apiKeyRequired = providerRequiresApiKey(provider, providerConfig);
+    const apiKeyConfigured = !!providerConfig?.apiKey;
+    const providerConfigured = !!this.gptBrain && (!apiKeyRequired || apiKeyConfigured);
     const personalityConfigured = !!this.currentPersonality;
     let reason = null;
     if (!enabled) reason = 'host-brain-disabled';
-    else if (!providerConfigured) reason = 'host-brain-provider-unavailable';
+    else if (!this.gptBrain) reason = 'host-brain-provider-unavailable';
+    else if (apiKeyRequired && !apiKeyConfigured) reason = 'host-brain-api-key-missing';
     else if (!personalityConfigured) reason = 'host-brain-personality-missing';
     return {
       ready: enabled && providerConfigured && personalityConfigured,
       enabled,
       liveHostEnabled,
+      provider,
+      apiKeyRequired,
+      apiKeyConfigured,
       providerConfigured,
       personalityConfigured,
       reason
@@ -322,6 +346,14 @@ class BrainEngine {
     }
     
     this.responseCount++;
+    return true;
+  }
+
+  _releaseRateLimitSlot() {
+    const now = Date.now();
+    if (now - this.responseCountResetTime > 60000) return false;
+    if (this.responseCount <= 0) return false;
+    this.responseCount--;
     return true;
   }
 
@@ -523,6 +555,7 @@ class BrainEngine {
    * Process speech from the streamer/host without treating it as viewer chat.
    */
   async processHostSpeech(hostName, message, options = {}) {
+    this.lastHostSpeechError = null;
     const readiness = this.getHostSpeechReadiness();
     if (!readiness.ready) {
       this.logger.debug(`Host speech brain not ready: ${readiness.reason}`);
@@ -540,10 +573,12 @@ class BrainEngine {
       return null;
     }
 
+    let reservedRateLimitSlot = false;
     if (!this._checkRateLimit()) {
       this.logger.debug('Rate limit reached, skipping host speech response');
       return null;
     }
+    reservedRateLimitSlot = true;
 
     try {
       const conversationHistory = this.memoryDb.getConversationHistory(this.currentSession, 10);
@@ -602,6 +637,9 @@ class BrainEngine {
         );
 
       const emotion = this._selectEmotion();
+      if (!result?.content) {
+        throw new Error('Provider returned no response content');
+      }
       let committed = false;
       const commit = () => {
         if (committed) return false;
@@ -627,6 +665,11 @@ class BrainEngine {
       if (options.deferCommit) response.commit = commit;
       return response;
     } catch (error) {
+      if (reservedRateLimitSlot) this._releaseRateLimitSlot();
+      this.lastHostSpeechError = {
+        message: error?.message || 'Unknown host speech brain error',
+        at: new Date().toISOString()
+      };
       this.logger.error(`Failed to generate host speech response: ${error.message}`);
       return null;
     }
@@ -716,9 +759,8 @@ class BrainEngine {
       return null;
     }
     
-    // Check if returning follower
     const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
-    const isReturning = userProfile.interaction_count > 1;
+    const isReturning = Boolean(options.isReturning) && Number(userProfile.interaction_count || 0) > 1;
     
     // Add to interaction history
     this.memoryDb.addInteractionToHistory(username, 'follow', '', {
