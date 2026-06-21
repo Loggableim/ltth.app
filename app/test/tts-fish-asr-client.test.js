@@ -49,6 +49,10 @@ describe('FishAsrClient', () => {
       'Content-Type': 'application/msgpack'
     });
     expect(requestConfig.responseType).toBe('arraybuffer');
+    expect(FishAsrClient.MAX_RESPONSE_BYTES).toBe(1024 * 1024);
+    expect(FishAsrClient.MAX_REQUEST_BODY_BYTES).toBe(FishAsrClient.SERVICE_MAX_AUDIO_BYTES + 1024 * 1024);
+    expect(requestConfig.maxContentLength).toBe(FishAsrClient.MAX_RESPONSE_BYTES);
+    expect(requestConfig.maxBodyLength).toBe(FishAsrClient.MAX_REQUEST_BODY_BYTES);
   });
 
   test('rejects missing api key before sending audio', async () => {
@@ -110,6 +114,21 @@ describe('FishAsrClient', () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
+  test('validates optional timeout before sending audio', async () => {
+    const client = new FishAsrClient('fish-key', logger);
+
+    await expect(client.transcribe(Buffer.from('audio'), { timeout: 0 })).rejects.toThrow(
+      'timeout must be a finite positive number'
+    );
+    await expect(client.transcribe(Buffer.from('audio'), { timeout: Number.POSITIVE_INFINITY })).rejects.toThrow(
+      'timeout must be a finite positive number'
+    );
+    expect(() => new FishAsrClient('fish-key', logger, { timeout: -1 })).toThrow(
+      'timeout must be a finite positive number'
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   test('decodes MessagePack ASR responses', async () => {
     axios.post.mockResolvedValue({
       status: 200,
@@ -153,6 +172,23 @@ describe('FishAsrClient', () => {
     await expect(client.transcribe(Buffer.from('audio'))).rejects.toThrow('malformed response');
   });
 
+  test('truncates huge upstream error bodies in thrown errors', async () => {
+    const client = new FishAsrClient('fish-key', logger);
+    expect(FishAsrClient.MAX_ERROR_MESSAGE_BYTES).toBe(2048);
+    const hugeMessage = 'x'.repeat(FishAsrClient.MAX_ERROR_MESSAGE_BYTES + 500);
+
+    axios.post.mockRejectedValueOnce({
+      response: {
+        status: 500,
+        data: { message: hugeMessage }
+      }
+    });
+
+    await expect(client.transcribe(Buffer.from('audio'))).rejects.toThrow(
+      `Fish.audio ASR API error (500): ${'x'.repeat(FishAsrClient.MAX_ERROR_MESSAGE_BYTES)}... [truncated]`
+    );
+  });
+
   test('throws clear errors for network failures and malformed response fields', async () => {
     const client = new FishAsrClient('fish-key', logger);
 
@@ -173,5 +209,11 @@ describe('FishAsrClient', () => {
       data: { text: 'bad segments', duration: 1, segments: 'not-an-array' }
     });
     await expect(client.transcribe(Buffer.from('audio'))).rejects.toThrow('malformed response: segments');
+
+    axios.post.mockResolvedValueOnce({
+      status: 200,
+      data: { text: 'bad segment item', duration: 1, segments: [{ text: 'missing times' }] }
+    });
+    await expect(client.transcribe(Buffer.from('audio'))).rejects.toThrow('malformed response: segment 0');
   });
 });

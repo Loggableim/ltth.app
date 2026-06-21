@@ -4,6 +4,9 @@ const msgpack = require('@msgpack/msgpack');
 class FishAsrClient {
   static SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
   static DEFAULT_MAX_AUDIO_BYTES = FishAsrClient.SERVICE_MAX_AUDIO_BYTES;
+  static MAX_RESPONSE_BYTES = 1024 * 1024;
+  static MAX_REQUEST_BODY_BYTES = FishAsrClient.SERVICE_MAX_AUDIO_BYTES + 1024 * 1024;
+  static MAX_ERROR_MESSAGE_BYTES = 2048;
   static LANGUAGE_PATTERN = /^[a-zA-Z]{2,3}(?:[-_][a-zA-Z]{2,4})?$/;
 
   constructor(apiKey, logger, config = {}) {
@@ -19,12 +22,13 @@ class FishAsrClient {
       debug: () => {}
     };
     this.apiUrl = config.apiUrl || 'https://api.fish.audio/v1/asr';
-    this.timeout = config.timeout || 30000;
+    this.timeout = this._resolveTimeout(config.timeout, 30000);
     this.maxAudioBytes = this._resolveConfiguredMaxAudioBytes(config.maxAudioBytes);
   }
 
   async transcribe(audioBuffer, options = {}) {
     const maxAudioBytes = this._resolveCallMaxAudioBytes(options.maxAudioBytes);
+    const timeout = this._resolveTimeout(options.timeout, this.timeout);
     this._validateAudio(audioBuffer, maxAudioBytes);
 
     const payload = {
@@ -43,7 +47,9 @@ class FishAsrClient {
           Accept: 'application/json, application/msgpack'
         },
         responseType: 'arraybuffer',
-        timeout: options.timeout || this.timeout
+        timeout,
+        maxContentLength: FishAsrClient.MAX_RESPONSE_BYTES,
+        maxBodyLength: FishAsrClient.MAX_REQUEST_BODY_BYTES
       });
 
       if (response.status < 200 || response.status >= 300) {
@@ -88,6 +94,18 @@ class FishAsrClient {
 
     if (value > this.maxAudioBytes) {
       throw new Error(`Fish.audio ASR maxAudioBytes cannot exceed configured maxAudioBytes of ${this.maxAudioBytes} bytes`);
+    }
+
+    return value;
+  }
+
+  _resolveTimeout(value, fallback) {
+    if (value === undefined) {
+      return fallback;
+    }
+
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error('Fish.audio ASR timeout must be a finite positive number');
     }
 
     return value;
@@ -154,6 +172,21 @@ class FishAsrClient {
       throw new Error('Fish.audio ASR malformed response: segments');
     }
 
+    response.segments.forEach((segment, index) => {
+      if (
+        !segment ||
+        typeof segment !== 'object' ||
+        typeof segment.text !== 'string' ||
+        typeof segment.start !== 'number' ||
+        !Number.isFinite(segment.start) ||
+        typeof segment.end !== 'number' ||
+        !Number.isFinite(segment.end) ||
+        segment.end < segment.start
+      ) {
+        throw new Error(`Fish.audio ASR malformed response: segment ${index}`);
+      }
+    });
+
     return {
       text: response.text.trim(),
       duration: response.duration,
@@ -168,7 +201,7 @@ class FishAsrClient {
     }
 
     if (typeof data === 'string') {
-      return data;
+      return this._capErrorMessage(data);
     }
 
     if (Buffer.isBuffer(data) || data instanceof Uint8Array) {
@@ -181,12 +214,23 @@ class FishAsrClient {
         try {
           return this._extractErrorMessage(JSON.parse(responseBuffer.toString('utf8')));
         } catch (jsonError) {
-          return responseBuffer.toString('utf8') || 'Unknown error';
+          return this._capErrorMessage(responseBuffer.toString('utf8') || 'Unknown error');
         }
       }
     }
 
-    return data.message || data.error || JSON.stringify(data);
+    return this._capErrorMessage(data.message || data.error || JSON.stringify(data));
+  }
+
+  _capErrorMessage(message) {
+    const sanitized = String(message).replace(/[\u0000-\u001F\u007F]/g, ' ');
+    const bytes = Buffer.from(sanitized, 'utf8');
+
+    if (bytes.length <= FishAsrClient.MAX_ERROR_MESSAGE_BYTES) {
+      return sanitized;
+    }
+
+    return `${bytes.slice(0, FishAsrClient.MAX_ERROR_MESSAGE_BYTES).toString('utf8')}... [truncated]`;
   }
 }
 
