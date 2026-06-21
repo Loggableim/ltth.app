@@ -17,20 +17,8 @@ const DEFAULT_CONFIG = {
   // Speech output. The production default reuses AnimazingPal's Fish.audio
   // pipeline, voice selection and browser audio routing.
   output: {
-    mode: 'animazingpal-fish',
     eventType: 'sidekick',
     username: 'Sidekick'
-  },
-  
-  // Legacy direct Animaze/ChatPal output (explicit opt-in only)
-  animaze: {
-    enabled: false,
-    host: '127.0.0.1',
-    port: 9000,
-    autoConnect: true,
-    reconnectOnDisconnect: true,
-    reconnectDelay: 5000,
-    maxReconnectAttempts: 10
   },
   
   // Style settings
@@ -76,7 +64,7 @@ const DEFAULT_CONFIG = {
     separator: ' • '     // separator between batched items
   },
   
-  // Speech/timing settings (for Animaze integration)
+  // Speech/timing settings for the shared live host output pipeline.
   speech: {
     waitStartTimeoutMs: 1200,  // wait for speech start
     maxSpeechMs: 15000,        // max speech duration to wait
@@ -116,16 +104,20 @@ class ConfigManager {
   load() {
     try {
       const stored = this.api.getConfig('config');
-      if (stored) {
-        // Deep merge stored config with defaults
-        this.config = this._deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), stored);
+      if (this._isPlainObject(stored)) {
+        const beforeNormalize = JSON.stringify(stored);
+        this.config = this._deepMerge(this._cloneDefaults(), stored);
+        this._normalizeStandaloneHostConfig();
+        if (JSON.stringify(this.config) !== beforeNormalize) {
+          this.save();
+        }
       } else {
-        this.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        this.config = this._cloneDefaults();
         this.save();
       }
     } catch (error) {
       this.api.log(`Failed to load config: ${error.message}`, 'error');
-      this.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      this.config = this._cloneDefaults();
     }
     return this.config;
   }
@@ -161,9 +153,31 @@ class ConfigManager {
    * @returns {Object} Updated configuration
    */
   update(updates) {
-    this.config = this._deepMerge(this.config, updates);
+    if (!this.config) {
+      this.load();
+    }
+    if (this._isPlainObject(updates)) {
+      this.config = this._deepMerge(this.config, updates);
+    }
+    this._normalizeStandaloneHostConfig();
     this.save();
     return this.config;
+  }
+
+  _normalizeStandaloneHostConfig() {
+    if (!this.config) return;
+    delete this.config.animaze;
+    if (!this._isPlainObject(this.config.output)) {
+      this.config.output = this._cloneDefaults().output;
+      return;
+    }
+    delete this.config.output.mode;
+    if (!this.config.output.eventType) {
+      this.config.output.eventType = DEFAULT_CONFIG.output.eventType;
+    }
+    if (!this.config.output.username) {
+      this.config.output.username = DEFAULT_CONFIG.output.username;
+    }
   }
   
   /**
@@ -188,6 +202,9 @@ class ConfigManager {
    */
   setValue(path, value) {
     const parts = path.split('.');
+    if (!this.config) {
+      this.load();
+    }
     
     // Guard against prototype pollution
     const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
@@ -210,6 +227,7 @@ class ConfigManager {
     if (!dangerousKeys.includes(finalKey)) {
       obj[finalKey] = value;
     }
+    this._normalizeStandaloneHostConfig();
     this.save();
   }
   
@@ -218,6 +236,9 @@ class ConfigManager {
    * @private
    */
   _deepMerge(target, source) {
+    if (!this._isPlainObject(source)) {
+      return target;
+    }
     const output = { ...target };
     
     // Guard against prototype pollution
@@ -252,7 +273,15 @@ class ConfigManager {
    * @returns {Object} Default configuration
    */
   getDefaults() {
+    return this._cloneDefaults();
+  }
+
+  _cloneDefaults() {
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  }
+
+  _isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 }
 

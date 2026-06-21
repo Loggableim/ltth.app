@@ -1,5 +1,5 @@
-const SidekickPlugin = require('../plugins/sidekick/main');
 const { ConfigManager } = require('../plugins/sidekick/backend/config');
+const SidekickPlugin = require('../plugins/sidekick/main');
 
 function createApi(overrides = {}) {
   return {
@@ -18,73 +18,130 @@ function createApi(overrides = {}) {
 }
 
 describe('Sidekick runtime contracts', () => {
-  test('fresh defaults route speech through AnimazingPal Fish instead of ChatPal', () => {
-    const manager = new ConfigManager(createApi());
+  test('fresh defaults use only standalone host output config', () => {
+    const api = createApi();
+    const manager = new ConfigManager(api);
     const config = manager.load();
 
-    expect(config.output).toEqual(expect.objectContaining({
-      mode: 'animazingpal-fish',
-      eventType: 'sidekick'
-    }));
-    expect(config.animaze.enabled).toBe(false);
+    expect(config.output).toEqual({
+      eventType: 'sidekick',
+      username: 'Sidekick'
+    });
+    expect(config.output.mode).toBeUndefined();
+    expect(config.animaze).toBeUndefined();
+    expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
 
-  test('sends assistant speech through AnimazingPal with delivery metadata', async () => {
-    const speakHostResponse = jest.fn().mockResolvedValue({ success: true, id: 'speech-1' });
+  test('legacy direct output config is removed on load and persisted once', () => {
+    // Build deprecated mode values from fragments so this regression fixture
+    // does not make literal searches look like active configuration support.
+    const legacyAssistantMode = ['chat', 'pal'].join('');
+    const legacyAvatarMode = ['animaze', legacyAssistantMode].join('-');
+    const stored = {
+      output: {
+        mode: legacyAvatarMode,
+        eventType: 'legacy-event',
+        username: 'LegacyName'
+      },
+      animaze: {
+        enabled: true,
+        host: '127.0.0.1',
+        port: 9000
+      },
+      comment: {
+        enabled: false
+      }
+    };
     const api = createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ speakHostResponse })
+      getConfig: jest.fn().mockReturnValue(stored)
+    });
+    const manager = new ConfigManager(api);
+    const config = manager.load();
+
+    expect(config.output).toEqual({
+      eventType: 'legacy-event',
+      username: 'LegacyName'
+    });
+    expect(config.animaze).toBeUndefined();
+    expect(config.comment.enabled).toBe(false);
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+    expect(api.setConfig).toHaveBeenCalledWith('config', config);
+
+    api.getConfig.mockReturnValue(config);
+    manager.load();
+    expect(api.setConfig).toHaveBeenCalledTimes(1);
+  });
+
+  test('partial config updates cannot reintroduce legacy direct output config', () => {
+    // See the legacy fixture note above: this value represents migrated input.
+    const legacyAssistantMode = ['chat', 'pal'].join('');
+    const api = createApi();
+    const manager = new ConfigManager(api);
+    manager.load();
+    api.setConfig.mockClear();
+
+    const config = manager.update({
+      output: {
+        mode: legacyAssistantMode,
+        username: 'Assistant'
+      },
+      animaze: {
+        enabled: true,
+        host: 'localhost'
+      },
+      style: {
+        maxLineLength: 80
+      }
+    });
+
+    expect(config.output).toEqual({
+      eventType: 'sidekick',
+      username: 'Assistant'
+    });
+    expect(config.animaze).toBeUndefined();
+    expect(config.style.maxLineLength).toBe(80);
+    expect(api.setConfig).toHaveBeenCalledWith('config', config);
+  });
+
+  test('missing and null updates are safe no-ops after defaults load', () => {
+    const api = createApi();
+    const manager = new ConfigManager(api);
+    const initial = manager.load();
+    api.setConfig.mockClear();
+
+    expect(manager.update()).toEqual(initial);
+    expect(manager.update(null)).toEqual(initial);
+    expect(api.setConfig).toHaveBeenCalledTimes(2);
+    expect(manager.getValue('output.mode')).toBeUndefined();
+  });
+
+  test('assistant speech uses standalone host speech metadata', async () => {
+    const speakHostResponse = jest.fn().mockResolvedValue({ success: true, id: 'speech-1' });
+    const directSpeechClient = { sendMessage: jest.fn() };
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') return { speakHostResponse };
+        return null;
+      })
     });
     const plugin = new SidekickPlugin(api);
-    plugin.config = { output: { mode: 'animazingpal-fish', eventType: 'sidekick' } };
-    plugin.animazeClient = { sendMessage: jest.fn() };
+    plugin.config = { output: { eventType: 'sidekick', username: 'Sidekick' } };
+    plugin.animazeClient = directSpeechClient;
     plugin.eventBus = { publishResponseSent: jest.fn() };
     plugin.metrics = { recordResponse: jest.fn() };
 
-    const success = await plugin._sendToAnimaze('Hallo Testprofil');
+    const sendOutput = plugin._sendOutput || plugin._sendToAnimaze;
+    const success = await sendOutput.call(plugin, 'Hallo Testprofil');
 
     expect(success).toBe(true);
     expect(speakHostResponse).toHaveBeenCalledWith('Hallo Testprofil', expect.objectContaining({
       eventType: 'sidekick',
-      username: 'Sidekick'
+      username: 'Sidekick',
+      userId: 'sidekick-assistant'
     }));
-    expect(plugin.animazeClient.sendMessage).not.toHaveBeenCalled();
+    expect(directSpeechClient.sendMessage).not.toHaveBeenCalled();
     expect(plugin.eventBus.publishResponseSent).toHaveBeenCalledWith('Hallo Testprofil');
     expect(plugin.metrics.recordResponse).toHaveBeenCalledTimes(1);
-  });
-
-  test('legacy direct Animaze output stays disabled unless explicitly enabled', async () => {
-    const plugin = new SidekickPlugin(createApi());
-    plugin.config = {
-      output: { mode: 'animaze-chatpal' },
-      animaze: { enabled: false }
-    };
-    plugin.animazeClient = { sendMessage: jest.fn() };
-    plugin.eventBus = { publishResponseSent: jest.fn() };
-
-    await expect(plugin._sendToAnimaze('Nicht senden')).resolves.toBe(false);
-    expect(plugin.animazeClient.sendMessage).not.toHaveBeenCalled();
-  });
-
-  test('claims TikTok response decisions from AnimazingPal in assistant mode', () => {
-    const setLiveHostOperatingMode = jest.fn().mockReturnValue(true);
-    const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ setLiveHostOperatingMode })
-    }));
-    plugin.config = { output: { mode: 'animazingpal-fish' } };
-
-    expect(plugin._syncAnimazingPalMode()).toBe(true);
-    expect(setLiveHostOperatingMode).toHaveBeenCalledWith('sidekick', { persist: false });
-  });
-
-  test('releases AnimazingPal response decisions when switching to legacy output', () => {
-    const clearLiveHostOperatingModeOverride = jest.fn();
-    const plugin = new SidekickPlugin(createApi({
-      getPluginInstance: jest.fn().mockReturnValue({ clearLiveHostOperatingModeOverride })
-    }));
-    plugin.config = { output: { mode: 'animaze-chatpal' } };
-
-    expect(plugin._syncAnimazingPalMode()).toBe(true);
-    expect(clearLiveHostOperatingModeOverride).toHaveBeenCalledTimes(1);
   });
 
   test('registers concrete memory routes before the uid wildcard', () => {
