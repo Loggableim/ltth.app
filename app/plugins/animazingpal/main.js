@@ -4452,6 +4452,9 @@ class AnimazingPalPlugin {
     const event = liveHost?.events?.[eventType];
     if (!liveHost?.enabled) return { handled: false };
     this.recordLiveHostSourceEvent(eventType);
+    if ((this.liveHostOperatingModeOverride || liveHost.operatingMode || 'standalone') === 'sidekick') {
+      return { handled: false, responded: false, reason: 'delegated-to-sidekick' };
+    }
     const complete = result => {
       this.recordLiveHostEventOutcome(eventType, result);
       return result;
@@ -4524,6 +4527,23 @@ class AnimazingPalPlugin {
       }
     }
     return complete({ handled: true, responded });
+  }
+
+  setLiveHostOperatingMode(mode, options = {}) {
+    if (!['standalone', 'sidekick'].includes(mode)) return false;
+    if (options.persist === false) {
+      this.liveHostOperatingModeOverride = mode;
+    } else {
+      this.config.brain.liveHost.operatingMode = mode;
+      this.api.setConfig?.('config', this.config);
+    }
+    this.safeEmitStatus?.();
+    return true;
+  }
+
+  clearLiveHostOperatingModeOverride() {
+    this.liveHostOperatingModeOverride = null;
+    this.safeEmitStatus?.();
   }
 
   resolveAvatarBundleForGift(gift = {}) {

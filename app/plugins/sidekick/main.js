@@ -99,8 +99,11 @@ class SidekickPlugin {
       
       // Initialize outbox batcher
       this.outboxBatcher = new OutboxBatcher(this.api, this.config, (text) => {
-        this._sendToAnimaze(text);
+        this._sendToAnimaze(text).catch((error) => {
+          this.logger.error(`Sidekick output failed: ${error.message}`);
+        });
       });
+      this._syncAnimazingPalMode();
       
       // Register routes
       this._registerRoutes();
@@ -184,6 +187,9 @@ class SidekickPlugin {
     if (this.metrics) {
       this.metrics.destroy();
     }
+
+    const animazingPal = this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal');
+    animazingPal?.clearLiveHostOperatingModeOverride?.();
     
     this.logger.info('Sidekick Plugin destroyed');
   }
@@ -254,12 +260,6 @@ class SidekickPlugin {
       });
     });
     
-    // Get user memory
-    this.api.registerRoute('get', '/api/sidekick/memory/:uid', (req, res) => {
-      const user = this.memoryStore.getUser(req.params.uid);
-      res.json({ success: true, user });
-    });
-    
     // Search users
     this.api.registerRoute('get', '/api/sidekick/memory/search', (req, res) => {
       const query = req.query.q || '';
@@ -273,6 +273,12 @@ class SidekickPlugin {
       const limit = parseInt(req.query.limit) || 10;
       const users = this.memoryStore.getTopUsers(limit);
       res.json({ success: true, users });
+    });
+
+    // Keep the wildcard route after every concrete /memory endpoint.
+    this.api.registerRoute('get', '/api/sidekick/memory/:uid', (req, res) => {
+      const user = this.memoryStore.getUser(req.params.uid);
+      res.json({ success: true, user });
     });
     
     // Clear memory
@@ -645,7 +651,6 @@ class SidekickPlugin {
     this.rateLimiter.setUserCooldown(uid);
     
     // Record response
-    this.metrics.recordResponse();
   }
   
   _handleGift(data) {
@@ -685,7 +690,6 @@ class SidekickPlugin {
     const evaluation = this.responseEngine.evaluateGift(nickname, giftName, repeatCount);
     this.outboxBatcher.add(evaluation.response, evaluation.priority);
     
-    this.metrics.recordResponse();
   }
   
   _handleLike(data) {
@@ -781,7 +785,6 @@ class SidekickPlugin {
     const evaluation = this.responseEngine.evaluateFollow(nickname);
     this.outboxBatcher.add(evaluation.response, evaluation.priority);
     
-    this.metrics.recordResponse();
   }
   
   _handleShare(data) {
@@ -817,7 +820,6 @@ class SidekickPlugin {
     const evaluation = this.responseEngine.evaluateShare(nickname);
     this.outboxBatcher.add(evaluation.response, evaluation.priority);
     
-    this.metrics.recordResponse();
   }
   
   _handleSubscribe(data) {
@@ -853,7 +855,6 @@ class SidekickPlugin {
     const evaluation = this.responseEngine.evaluateSubscribe(nickname);
     this.outboxBatcher.add(evaluation.response, evaluation.priority);
     
-    this.metrics.recordResponse();
   }
   
   // ==================== Join Greeting System ====================
@@ -948,26 +949,66 @@ class SidekickPlugin {
     if (evaluation) {
       this.outboxBatcher.add(evaluation.response, evaluation.priority);
       this.lastJoinAnnounceTime = Date.now();
-      this.metrics.recordResponse();
     }
   }
   
   // ==================== Utility Methods ====================
   
   async _sendToAnimaze(text) {
-    if (!text) return;
-    
-    const success = await this.animazeClient.sendMessage(text, false, 1);
+    if (!text) return false;
+
+    const output = this.config.output || {};
+    let success = false;
+    if ((output.mode || 'animazingpal-fish') === 'animazingpal-fish') {
+      const animazingPal = this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal');
+      if (!animazingPal || typeof animazingPal.speakHostResponse !== 'function') {
+        this.logger.warn('Sidekick output skipped: AnimazingPal speech pipeline unavailable');
+        return false;
+      }
+      const result = await animazingPal.speakHostResponse(text, {
+        eventType: output.eventType || 'sidekick',
+        username: output.username || 'Sidekick',
+        userId: 'sidekick-assistant'
+      });
+      success = result?.success !== false && !result?.blocked;
+    } else if (output.mode === 'animaze-chatpal') {
+      if (!this.config.animaze?.enabled) {
+        this.logger.warn('Sidekick legacy Animaze output is disabled');
+        return false;
+      }
+      success = await this.animazeClient.sendMessage(text, false, 1);
+    } else {
+      this.logger.warn(`Sidekick output skipped: unsupported mode ${output.mode}`);
+      return false;
+    }
+
     if (success) {
       this.lastOutputTime = Date.now();
       this.eventBus.publishResponseSent(text);
+      this.metrics?.recordResponse();
     }
+    return success;
+  }
+
+  _syncAnimazingPalMode() {
+    const animazingPal = this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal');
+    if (!animazingPal) return false;
+    if ((this.config.output?.mode || 'animazingpal-fish') !== 'animazingpal-fish') {
+      animazingPal.clearLiveHostOperatingModeOverride?.();
+      return true;
+    }
+    if (typeof animazingPal.setLiveHostOperatingMode !== 'function') return false;
+    return animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
   }
   
   _updateComponents() {
     // Update components with new config
     if (this.deduper) {
       this.deduper.setTTL(this.config.dedupeTtl || 600);
+    }
+
+    if (this.memoryStore?.updateConfig) {
+      this.memoryStore.updateConfig(this.config);
     }
     
     if (this.rateLimiter) {
@@ -985,16 +1026,27 @@ class SidekickPlugin {
     if (this.outboxBatcher) {
       this.outboxBatcher.updateConfig(this.config);
     }
+    this._syncAnimazingPalMode();
   }
   
   _getStatus() {
+    const session = this.metrics.getSessionStats();
+    session.totalEvents = [
+      'totalChats',
+      'totalGifts',
+      'totalLikes',
+      'totalJoins',
+      'totalFollows',
+      'totalShares',
+      'totalSubscribes'
+    ].reduce((total, key) => total + (Number(session[key]) || 0), 0);
     return {
       muted: this.config.muted || false,
       animaze: this.animazeClient.getStatus(),
       outbox: this.outboxBatcher.getStatus(),
       deduper: this.deduper.getStats(),
       rateLimiter: this.rateLimiter.getStatus(),
-      session: this.metrics.getSessionStats(),
+      session,
       currentRates: this.metrics.getCurrentRates(),
       pendingJoins: this.pendingJoins.size,
       activeViewers: this.viewers.size

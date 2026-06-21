@@ -427,7 +427,23 @@
     <!-- Settings Tab -->
     <div id="tab-settings" class="tab-content">
       <div class="card">
-        <h3>🔧 Animaze Verbindung</h3>
+        <h3>Sprachausgabe</h3>
+        <div class="form-group">
+          <label for="output-mode">Ausgabemodus</label>
+          <select id="output-mode">
+            <option value="animazingpal-fish">AnimazingPal + Fish.audio (Standard)</option>
+            <option value="animaze-chatpal">Animaze ChatPal (Legacy)</option>
+          </select>
+          <small>Der Standard nutzt Stimme, Audio-Routing und Avatar-Lipsync aus AnimazingPal.</small>
+        </div>
+        <div class="form-group">
+          <label for="output-username">Name der Assistenz</label>
+          <input type="text" id="output-username" value="Sidekick" maxlength="64">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Legacy: direkte Animaze-Verbindung</h3>
         <div class="grid">
           <div class="form-group">
             <label for="animaze-host">Host</label>
@@ -766,6 +782,8 @@
     
     // Update config UI
     function updateConfigUI() {
+      document.getElementById('output-mode').value = config.output?.mode || 'animazingpal-fish';
+      document.getElementById('output-username').value = config.output?.username || 'Sidekick';
       document.getElementById('animaze-host').value = config.animaze?.host || '127.0.0.1';
       document.getElementById('animaze-port').value = config.animaze?.port || 9000;
       document.getElementById('animaze-enabled').checked = config.animaze?.enabled || false;
@@ -792,6 +810,11 @@
     // Save config
     async function saveConfig() {
       const newConfig = {
+        output: {
+          mode: document.getElementById('output-mode').value,
+          eventType: 'sidekick',
+          username: document.getElementById('output-username').value.trim() || 'Sidekick'
+        },
         animaze: {
           host: document.getElementById('animaze-host').value,
           port: parseInt(document.getElementById('animaze-port').value),

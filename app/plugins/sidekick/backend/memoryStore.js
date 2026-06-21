@@ -22,6 +22,10 @@ class MemoryStore {
     // Initialize database table
     this._initTable();
   }
+
+  updateConfig(config) {
+    this.config = config;
+  }
   
   /**
    * Initialize the database table

@@ -270,7 +270,12 @@
     root.innerHTML = `
       <div class="card flex flex-wrap items-center gap-3"><h2 class="text-xl font-bold flex-1">Intelligenter Live Host</h2>
         ${input('enabled', 'Live Host aktiv', { type: 'checkbox' })}
+        ${input('operatingMode', 'Betriebsmodus', { type: 'select', options: [
+          { value: 'standalone', label: 'Standalone Host' },
+          { value: 'sidekick', label: 'Sidekick / Streamer-Assistent' }
+        ] })}
         <button class="btn btn-primary" data-livehost-save="enabled">Aktivierung speichern</button>
+        <button class="btn btn-primary" data-livehost-save="operatingMode">Modus speichern</button>
         <button class="btn btn-primary" data-preflight-check>24/7 Preflight prüfen</button>
         <button class="btn btn-success" data-preset="production-24-7">24/7 Produktionsprofil</button>
         <button class="btn btn-secondary" data-livehost-reset="all">Alle Einstellungen zurücksetzen</button>

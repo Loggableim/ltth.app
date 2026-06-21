@@ -18,6 +18,19 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  test('sidekick mode delegates TikTok response decisions while keeping speech available', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.ensureLiveHostRuntime = jest.fn();
+    plugin.recordLiveHostSourceEvent = jest.fn();
+
+    const result = await plugin.processLiveHostEvent('chat', { comment: 'Hallo?' });
+
+    expect(result).toEqual({ handled: false, responded: false, reason: 'delegated-to-sidekick' });
+    expect(plugin.recordLiveHostSourceEvent).toHaveBeenCalledWith('chat');
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+  });
+
   test('fresh installs use the canonical 24/7 production profile', () => {
     const plugin = Object.create(AnimazingPalPlugin.prototype);
     const defaults = plugin.getDefaultConfig();

@@ -13,8 +13,16 @@ const DEFAULT_CONFIG = {
   tiktok: {
     // Note: TikTok connection is managed by LTTH core, not this plugin
   },
+
+  // Speech output. The production default reuses AnimazingPal's Fish.audio
+  // pipeline, voice selection and browser audio routing.
+  output: {
+    mode: 'animazingpal-fish',
+    eventType: 'sidekick',
+    username: 'Sidekick'
+  },
   
-  // Animaze/ChatPal WebSocket settings
+  // Legacy direct Animaze/ChatPal output (explicit opt-in only)
   animaze: {
     enabled: false,
     host: '127.0.0.1',

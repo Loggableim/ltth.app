@@ -353,6 +353,11 @@ class AnimazeClient {
     if (!text || !text.trim()) {
       return false;
     }
+
+    if (!this.config.animaze?.enabled) {
+      this.api.log('Direct Animaze/ChatPal output is disabled', 'warn');
+      return false;
+    }
     
     // Trim to max line length
     const maxLen = this.config.style?.maxLineLength || 140;

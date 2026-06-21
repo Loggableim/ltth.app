@@ -86,6 +86,7 @@ function buildEventDefaults(type) {
 function buildLiveHostDefaults() {
   return {
     enabled: true,
+    operatingMode: 'standalone',
     source: {
       username: '',
       readOnly: true,
@@ -210,6 +211,8 @@ function migrateLegacy(legacy = {}) {
 function normalizeLiveHostConfig(input = {}, legacy = {}) {
   const defaults = buildLiveHostDefaults();
   const configured = merge(merge(defaults, migrateLegacy(legacy)), input);
+  configured.operatingMode = ['standalone', 'sidekick'].includes(configured.operatingMode)
+    ? configured.operatingMode : defaults.operatingMode;
   configured.enabled = normalizeBoolean(configured.enabled, defaults.enabled);
   configured.provider = PROVIDERS.includes(configured.provider) ? configured.provider : defaults.provider;
   configured.source.username = safeString(configured.source.username, 100).replace(/^@/, '');

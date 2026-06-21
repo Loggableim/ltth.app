@@ -12,6 +12,7 @@ describe('AnimazingPal live host configuration', () => {
 
     expect(defaults).toEqual(expect.objectContaining({
       enabled: true,
+      operatingMode: 'standalone',
       provider: 'ollama',
       source: expect.objectContaining({
         username: '', autoConnect: true, watchdogIntervalMs: 30000,
@@ -34,6 +35,11 @@ describe('AnimazingPal live host configuration', () => {
       baseUrl: 'https://ollama.com', model: 'nemotron-3-nano:30b-cloud',
       timeoutMs: 30000, maxRetries: 2, retryBackoffMs: 1000, thinking: true
     }));
+  });
+
+  test('normalizes the explicit standalone or sidekick operating mode', () => {
+    expect(normalizeLiveHostConfig({ operatingMode: 'sidekick' }).operatingMode).toBe('sidekick');
+    expect(normalizeLiveHostConfig({ operatingMode: 'invalid' }).operatingMode).toBe('standalone');
   });
 
   test('defines explicit safe defaults for every TikTok event', () => {
