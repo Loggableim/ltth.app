@@ -8,6 +8,7 @@ function createPlugin() {
   const plugin = Object.create(AnimazingPalPlugin.prototype);
   plugin.api = {
     getPluginInstance: jest.fn(id => id === 'tts' ? ttsPlugin : null),
+    setConfig: jest.fn(),
     log: jest.fn(),
     emit: jest.fn()
   };
@@ -21,6 +22,45 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  test('fresh live host config persists standalone while runtime Sidekick override is temporary', () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    plugin.ensureLiveHostRuntime = jest.fn();
+    plugin.recordLiveHostSourceEvent = jest.fn();
+    plugin.safeEmitStatus = jest.fn();
+
+    expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
+
+    const changed = plugin.setLiveHostOperatingMode('sidekick', { persist: false });
+
+    expect(changed).toBe(true);
+    expect(plugin.liveHostOperatingModeOverride).toBe('sidekick');
+    expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
+    expect(plugin.api.setConfig).not.toHaveBeenCalled();
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+
+    plugin.clearLiveHostOperatingModeOverride();
+    expect(plugin.liveHostOperatingModeOverride).toBeNull();
+    expect(plugin.config.brain.liveHost.operatingMode).toBe('standalone');
+  });
+
+  test('destroy clears temporary live host operating mode override', async () => {
+    const { plugin } = createPlugin();
+    plugin.liveHostOperatingModeOverride = 'sidekick';
+    plugin.brainEngine = null;
+    plugin.disconnect = jest.fn();
+    plugin.stopLiveHostIdleMotion = jest.fn();
+    plugin.lastEventTimes = new Map();
+    plugin.pendingRequests = new Map();
+    plugin.stopLiveHostSourceWatchdog = jest.fn();
+    plugin.viewerbaseSyncTimer = null;
+    plugin.liveHostSourceTimer = null;
+    plugin.liveHostEventDeduper = null;
+
+    await plugin.destroy();
+
+    expect(plugin.liveHostOperatingModeOverride).toBeNull();
+  });
+
   test('sidekick mode delegates TikTok response decisions while keeping speech available', async () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.config.brain.liveHost.operatingMode = 'sidekick';

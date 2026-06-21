@@ -66,7 +66,10 @@ describe('Sidekick runtime contracts', () => {
       'host-asr-unsafe-override',
       'btn-asr-test',
       'host-asr-last-transcript',
+      'host-preflight-status',
+      'host-preflight-checks',
       '/api/sidekick/asr/status',
+      '/api/sidekick/preflight',
       '/api/sidekick/asr/transcribe',
       'navigator.mediaDevices.enumerateDevices',
       'navigator.mediaDevices.getUserMedia',
@@ -417,6 +420,83 @@ describe('Sidekick runtime contracts', () => {
       expect.objectContaining({ reason: 'accepted', source: 'sidekick-host-speech' })
     );
     expect(processSidekickEvent).not.toHaveBeenCalled();
+  });
+
+  test('host mode preflight reports actionable blocked checks without leaking Fish secrets', () => {
+    const secret = 'fish-super-secret-token';
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'tts') {
+          return {
+            config: { fishaudioApiKey: secret },
+            transcribeFishAudio: jest.fn()
+          };
+        }
+        if (pluginId === 'animazingpal') {
+          return {
+            speakHostResponse: jest.fn()
+          };
+        }
+        return null;
+      })
+    }));
+    plugin.config = {
+      asr: { enabled: true },
+      conversation: { enabled: false }
+    };
+
+    const preflight = plugin._getHostModePreflight();
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'animazingpal.available', status: 'ok' }),
+      expect.objectContaining({ id: 'animazingpal.hostPipeline', status: 'error' }),
+      expect.objectContaining({ id: 'tts.fishConfigured', status: 'ok' }),
+      expect.objectContaining({ id: 'conversation.enabled', status: 'error' })
+    ]));
+    expect(JSON.stringify(preflight)).not.toContain(secret);
+  });
+
+  test('runtime mode sync only applies a non-persistent Sidekick override after preflight passes', () => {
+    const blockedSetMode = jest.fn();
+    const blockedPlugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') {
+          return { setLiveHostOperatingMode: blockedSetMode, speakHostResponse: jest.fn() };
+        }
+        if (pluginId === 'tts') {
+          return { config: { fishaudioApiKey: 'fish-key' }, transcribeFishAudio: jest.fn() };
+        }
+        return null;
+      })
+    }));
+    blockedPlugin.config = { asr: { enabled: true }, conversation: { enabled: true } };
+
+    expect(blockedPlugin._syncAnimazingPalMode()).toBe(false);
+    expect(blockedSetMode).not.toHaveBeenCalled();
+
+    const setMode = jest.fn().mockReturnValue(true);
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') {
+          return {
+            setLiveHostOperatingMode: setMode,
+            processSidekickHostSpeech: jest.fn(),
+            speakHostResponse: jest.fn()
+          };
+        }
+        if (pluginId === 'tts') {
+          return { config: { fishaudioApiKey: 'fish-key' }, transcribeFishAudio: jest.fn() };
+        }
+        return null;
+      })
+    });
+    const readyPlugin = new SidekickPlugin(api);
+    readyPlugin.config = { asr: { enabled: true }, conversation: { enabled: true } };
+
+    expect(readyPlugin._syncAnimazingPalMode()).toBe(true);
+    expect(setMode).toHaveBeenCalledWith('sidekick', { persist: false });
+    expect(api.setConfig).not.toHaveBeenCalled();
   });
 
   test('does not route host transcripts through generic AnimazingPal Sidekick event path when dedicated host pipeline is unavailable', async () => {

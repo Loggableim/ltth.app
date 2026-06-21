@@ -231,6 +231,13 @@ class SidekickPlugin {
       });
     });
 
+    this.api.registerRoute('get', '/api/sidekick/preflight', (req, res) => {
+      res.json({
+        success: true,
+        preflight: this._getHostModePreflight()
+      });
+    });
+
     this.api.registerRoute('get', '/api/sidekick/asr/status', (req, res) => {
       res.json({
         success: true,
@@ -1035,10 +1042,44 @@ class SidekickPlugin {
     return this.api.getPluginInstance?.('tts') || this.api.getPlugin?.('tts') || null;
   }
 
+  _getTtsFishStatus(tts = this._getTtsPlugin()) {
+    let safeStatus = null;
+    try {
+      if (typeof tts?.getSafeStatus === 'function') {
+        safeStatus = tts.getSafeStatus();
+      } else if (typeof tts?.getStatus === 'function') {
+        safeStatus = tts.getStatus();
+      }
+    } catch (error) {
+      safeStatus = null;
+    }
+
+    const safeConfig = safeStatus?.config || {};
+    const fishConfigured = Boolean(
+      safeStatus?.fishConfigured ||
+      safeStatus?.fishaudioConfigured ||
+      safeStatus?.engines?.fishaudio ||
+      safeStatus?.engines?.fishAudio ||
+      safeConfig.fishaudioApiKeyConfigured ||
+      safeConfig.fishAudioApiKeyConfigured ||
+      tts?.engines?.fishaudio ||
+      tts?.config?.fishaudioApiKey
+    );
+
+    return {
+      available: !!tts,
+      initialized: !!tts && tts.isInitialized !== false && tts.initialized !== false,
+      defaultEngine: String(safeConfig.defaultEngine || tts?.config?.defaultEngine || '').slice(0, 80) || null,
+      fishConfigured,
+      asrAvailable: typeof tts?.transcribeFishAudio === 'function'
+    };
+  }
+
   _getAsrReadiness() {
     const tts = this._getTtsPlugin();
-    const ttsAvailable = typeof tts?.transcribeFishAudio === 'function';
-    const fishConfigured = !!tts?.config?.fishaudioApiKey;
+    const fishStatus = this._getTtsFishStatus(tts);
+    const ttsAvailable = fishStatus.asrAvailable;
+    const fishConfigured = fishStatus.fishConfigured;
     const config = this._getAsrRuntimeConfig();
 
     return {
@@ -1050,16 +1091,150 @@ class SidekickPlugin {
     };
   }
 
+  _getHostModePreflight(options = {}) {
+    const checks = [];
+    const add = (id, status, label, detail, action = null) => {
+      checks.push({
+        id,
+        status,
+        label,
+        detail: this._sanitizeAsrPublicText(detail, 240),
+        ...(action ? { action: this._sanitizeAsrPublicText(action, 240) } : {})
+      });
+    };
+
+    const animazingPal = this._getAnimazingPal();
+    const tts = this._getTtsPlugin();
+    const fishStatus = this._getTtsFishStatus(tts);
+    const asrConfig = this._getAsrRuntimeConfig();
+    const requireAsr = options.requireAsr !== false;
+    const coordinatorStatus = this.conversationCoordinator?.getStatus?.();
+    const conversationEnabled = coordinatorStatus
+      ? coordinatorStatus.enabled !== false
+      : this.config?.conversation?.enabled !== false;
+
+    add(
+      'animazingpal.available',
+      animazingPal ? 'ok' : 'error',
+      'AnimazingPal',
+      animazingPal ? 'AnimazingPal plugin is available.' : 'AnimazingPal plugin is not available.',
+      animazingPal ? null : 'Enable AnimazingPal and reload Sidekick.'
+    );
+
+    const hasHostPipeline = typeof animazingPal?.processSidekickHostSpeech === 'function';
+    const hasSpeechPipeline = typeof animazingPal?.speakHostResponse === 'function';
+    add(
+      'animazingpal.hostPipeline',
+      hasHostPipeline && hasSpeechPipeline ? 'ok' : 'error',
+      'AnimazingPal host pipeline',
+      hasHostPipeline && hasSpeechPipeline
+        ? 'Dedicated host speech and Fish speech pipeline methods are available.'
+        : 'Dedicated host speech or speech output pipeline is missing.',
+      hasHostPipeline && hasSpeechPipeline ? null : 'Update/enable AnimazingPal so processSidekickHostSpeech and speakHostResponse are available.'
+    );
+
+    add(
+      'tts.plugin',
+      fishStatus.available && fishStatus.initialized ? 'ok' : 'error',
+      'TTS plugin',
+      fishStatus.available
+        ? (fishStatus.initialized ? 'TTS plugin is available.' : 'TTS plugin is not initialized.')
+        : 'TTS plugin is not available.',
+      fishStatus.available && fishStatus.initialized ? null : 'Enable the TTS plugin and reload Sidekick.'
+    );
+
+    add(
+      'tts.fishConfigured',
+      fishStatus.fishConfigured ? 'ok' : 'error',
+      'Fish.audio',
+      fishStatus.fishConfigured
+        ? 'Fish.audio is configured.'
+        : 'Fish.audio is not configured for TTS/ASR.',
+      fishStatus.fishConfigured ? null : 'Configure the Fish.audio API key in the TTS plugin.'
+    );
+
+    if (requireAsr) {
+      add(
+        'asr.backend',
+        asrConfig.enabled && fishStatus.asrAvailable ? 'ok' : 'error',
+        'ASR backend',
+        asrConfig.enabled
+          ? (fishStatus.asrAvailable ? 'ASR backend is enabled and Fish.audio transcription is available.' : 'Fish.audio transcription method is unavailable.')
+          : 'Sidekick ASR backend is disabled.',
+        asrConfig.enabled && fishStatus.asrAvailable ? null : 'Enable Sidekick ASR and make sure the TTS plugin exposes Fish.audio ASR.'
+      );
+    } else {
+      add(
+        'asr.backend',
+        asrConfig.enabled && fishStatus.asrAvailable ? 'ok' : 'warn',
+        'ASR backend',
+        asrConfig.enabled
+          ? (fishStatus.asrAvailable ? 'ASR backend is available.' : 'ASR backend is enabled but transcription is unavailable.')
+          : 'Sidekick ASR backend is disabled; viewer-event delegation can still run.',
+        asrConfig.enabled && fishStatus.asrAvailable ? null : 'Enable ASR before starting host microphone listening.'
+      );
+    }
+
+    add(
+      'conversation.enabled',
+      conversationEnabled ? 'ok' : 'error',
+      'Conversation coordinator',
+      conversationEnabled
+        ? 'Conversation coordinator is enabled.'
+        : 'Conversation coordinator is disabled.',
+      conversationEnabled ? null : 'Enable the Sidekick conversation coordinator.'
+    );
+
+    const microphone = options.microphone || options.browser?.microphone || null;
+    if (microphone) {
+      if (microphone.blocked && !microphone.unsafeOverride) {
+        add(
+          'microphone.device',
+          'error',
+          'Microphone device',
+          'Selected input looks like loopback/monitor audio and unsafe override is not enabled.',
+          'Choose a real microphone or explicitly accept the loopback risk.'
+        );
+      } else if (microphone.blocked && microphone.unsafeOverride) {
+        add(
+          'microphone.device',
+          'warn',
+          'Microphone device',
+          'Unsafe microphone override is enabled for a loopback-looking device.',
+          'Prefer a real microphone to avoid feedback.'
+        );
+      } else {
+        add('microphone.device', 'ok', 'Microphone device', 'Selected microphone is not known to be unsafe.');
+      }
+    }
+
+    const summary = checks.reduce((acc, check) => {
+      acc[check.status === 'error' ? 'errors' : check.status === 'warn' ? 'warnings' : 'ok'] += 1;
+      return acc;
+    }, { ok: 0, warnings: 0, errors: 0 });
+
+    return {
+      ready: summary.errors === 0,
+      blocked: summary.errors > 0,
+      checkedAt: new Date().toISOString(),
+      summary,
+      checks,
+      nextSteps: checks.filter(check => check.status === 'error' && check.action).map(check => check.action)
+    };
+  }
+
   _getAsrStatus() {
     if (!this.asrDiagnostics) {
       this.asrDiagnostics = this._createEmptyAsrDiagnostics();
     }
     const readiness = this._getAsrReadiness();
+    const hostPreflight = this._getHostModePreflight();
     return {
       enabled: readiness.config.enabled,
-      ready: readiness.ready,
+      ready: readiness.ready && hostPreflight.ready,
       ttsAvailable: readiness.ttsAvailable,
       fishConfigured: readiness.fishConfigured,
+      hostPreflight,
       maxAudioBytes: readiness.config.maxAudioBytes,
       language: readiness.config.language,
       minTranscriptChars: readiness.config.minTranscriptChars,
@@ -1178,6 +1353,21 @@ class SidekickPlugin {
       return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_AUDIO_CONTENT', 'Unsupported audio content');
     }
 
+    const transcribeOnly = this._isTruthyRequestValue(req.body?.transcribeOnly || req.query?.transcribeOnly);
+    if (!transcribeOnly) {
+      const hostPreflight = this._getHostModePreflight();
+      if (!hostPreflight.ready) {
+        const firstError = hostPreflight.checks.find(check => check.status === 'error');
+        return this._sendAsrError(
+          res,
+          503,
+          'ASR_HOST_PREFLIGHT_BLOCKED',
+          firstError?.detail || 'Sidekick host preflight blocked ASR delegation',
+          true
+        );
+      }
+    }
+
     let transcript;
     try {
       const options = {
@@ -1202,7 +1392,6 @@ class SidekickPlugin {
     this.asrDiagnostics.lastError = null;
 
     const responseTranscript = this._redactAsrTranscript(transcript, text);
-    const transcribeOnly = this._isTruthyRequestValue(req.body?.transcribeOnly || req.query?.transcribeOnly);
     if (transcribeOnly) {
       return res.json({
         success: true,
@@ -1635,7 +1824,13 @@ class SidekickPlugin {
     const animazingPal = this._getAnimazingPal();
     if (!animazingPal) return false;
     if (typeof animazingPal.setLiveHostOperatingMode !== 'function') return false;
-    return animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
+    const preflight = this._getHostModePreflight({ requireAsr: false });
+    if (!preflight.ready) {
+      animazingPal.clearLiveHostOperatingModeOverride?.();
+      this.logger.warn(`Sidekick host mode not activated: ${preflight.nextSteps[0] || 'preflight blocked'}`);
+      return false;
+    }
+    return !!animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
   }
 
   async _dispatchSelectedEvent(eventType, data, evaluation = {}) {
@@ -1721,7 +1916,8 @@ class SidekickPlugin {
       currentRates: this.metrics.getCurrentRates(),
       pendingJoins: this.pendingJoins.size,
       activeViewers: this.viewers.size,
-      conversation: this.conversationCoordinator?.getStatus?.() || null
+      conversation: this.conversationCoordinator?.getStatus?.() || null,
+      hostPreflight: this._getHostModePreflight({ requireAsr: false })
     };
   }
   

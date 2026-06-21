@@ -2,7 +2,7 @@ const express = require('express');
 const request = require('supertest');
 const SidekickPlugin = require('../plugins/sidekick/main');
 
-function createApi(app, ttsPlugin = null) {
+function createApi(app, plugins = {}) {
   return {
     getSocketIO: () => ({ emit: jest.fn() }),
     getDatabase: () => ({}),
@@ -14,13 +14,13 @@ function createApi(app, ttsPlugin = null) {
     }),
     registerSocket: jest.fn(),
     registerTikTokEvent: jest.fn(),
-    getPluginInstance: jest.fn((pluginId) => (pluginId === 'tts' ? ttsPlugin : null)),
-    getPlugin: jest.fn((pluginId) => (pluginId === 'tts' ? ttsPlugin : null)),
+    getPluginInstance: jest.fn((pluginId) => plugins[pluginId] || null),
+    getPlugin: jest.fn((pluginId) => plugins[pluginId] || null),
     log: jest.fn()
   };
 }
 
-function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostResult, remoteAddress } = {}) {
+function createHarness({ config = {}, ttsPlugin = null, animazingPalPlugin = null, transcriptResult, hostResult, remoteAddress } = {}) {
   const app = express();
   if (remoteAddress) {
     app.use((req, res, next) => {
@@ -44,7 +44,11 @@ function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostRe
       provider: 'fish.audio'
     })
   };
-  const api = createApi(app, tts);
+  const animazingPal = animazingPalPlugin || {
+    processSidekickHostSpeech: jest.fn(),
+    speakHostResponse: jest.fn()
+  };
+  const api = createApi(app, { tts, animazingpal: animazingPal });
   const plugin = new SidekickPlugin(api);
   plugin.config = {
     asr: {
@@ -72,7 +76,7 @@ function createHarness({ config = {}, ttsPlugin = null, transcriptResult, hostRe
     reason: 'accepted'
   });
   plugin._registerRoutes();
-  return { app, api, plugin, tts };
+  return { app, api, plugin, tts, animazingPal };
 }
 
 function audioBuffer() {
@@ -268,6 +272,34 @@ describe('Sidekick ASR upload routes', () => {
       success: false,
       error: expect.objectContaining({ code: 'ASR_TTS_UNAVAILABLE' })
     }));
+  });
+
+  test('fails closed before Fish ASR when host delegation preflight is blocked', async () => {
+    const { app, plugin, tts } = createHarness({
+      animazingPalPlugin: {
+        speakHostResponse: jest.fn()
+      }
+    });
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(503);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_HOST_PREFLIGHT_BLOCKED' }),
+      diagnostics: expect.objectContaining({
+        hostPreflight: expect.objectContaining({
+          ready: false,
+          checks: expect.arrayContaining([
+            expect.objectContaining({ id: 'animazingpal.hostPipeline', status: 'error' })
+          ])
+        })
+      })
+    }));
+    expect(tts.transcribeFishAudio).not.toHaveBeenCalled();
+    expect(plugin.processHostSpeechTranscript).not.toHaveBeenCalled();
   });
 
   test('rejects requests without an audio file', async () => {
@@ -513,6 +545,12 @@ describe('Sidekick ASR upload routes', () => {
         ttsAvailable: true,
         fishConfigured: true,
         ready: true,
+        hostPreflight: expect.objectContaining({
+          ready: true,
+          checks: expect.arrayContaining([
+            expect.objectContaining({ id: 'animazingpal.hostPipeline', status: 'ok' })
+          ])
+        }),
         maxAudioBytes: 1024 * 1024,
         language: 'de',
         lastTranscriptAt: expect.any(String),

@@ -6076,6 +6076,7 @@ class AnimazingPalPlugin {
 
   async destroy() {
     this.api.log('Destroying AnimazingPal Plugin...', 'info');
+    this.clearLiveHostOperatingModeOverride();
     
     // Shutdown brain engine
     if (this.brainEngine) {

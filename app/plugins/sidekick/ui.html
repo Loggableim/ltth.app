@@ -506,6 +506,10 @@
           <p>Letztes Transcript: <strong id="host-asr-last-transcript">-</strong></p>
           <p>Letzter Fehler: <strong id="host-asr-last-error" class="asr-muted">-</strong></p>
         </div>
+        <div class="asr-warning" style="margin-top: 15px;">
+          <p>Host Preflight: <strong id="host-preflight-status">Unknown</strong></p>
+          <ul id="host-preflight-checks" style="margin-left: 20px; margin-top: 8px;"></ul>
+        </div>
       </div>
 
       <div class="grid">
@@ -1020,6 +1024,14 @@
 
     async function startAsrListening() {
       saveHostAsrSettings();
+      await fetchHostPreflight();
+      if (asrStatus.hostPreflight && asrStatus.hostPreflight.ready === false) {
+        document.getElementById('host-asr-enabled').checked = false;
+        saveHostAsrSettings();
+        setAsrRecorderStatus('Blocked by preflight', 'asr-error');
+        setAsrError('Host Preflight blockiert ASR Listening. Bitte die angezeigten Schritte beheben.');
+        return;
+      }
       const stream = await requestAsrPermission();
       if (!stream) {
         document.getElementById('host-asr-enabled').checked = false;
@@ -1246,6 +1258,23 @@
       }
     }
 
+    async function fetchHostPreflight() {
+      try {
+        const res = await fetch('/api/sidekick/preflight');
+        const data = await res.json();
+        if (data.success) {
+          asrStatus.hostPreflight = data.preflight || null;
+          updateHostPreflightUI();
+        }
+      } catch (err) {
+        asrStatus.hostPreflight = {
+          ready: false,
+          checks: [{ id: 'preflight.route', status: 'error', label: 'Preflight', detail: err.message }]
+        };
+        updateHostPreflightUI();
+      }
+    }
+
     function updateAsrStatusUI() {
       document.getElementById('host-asr-enabled-status').textContent = asrStatus.enabled ? 'Enabled' : 'Disabled';
       document.getElementById('host-asr-enabled-status').className = asrStatus.enabled ? 'asr-ok' : 'asr-error';
@@ -1269,6 +1298,42 @@
       if (Number.isFinite(asrStatus.minTranscriptChars)) {
         document.getElementById('host-asr-min-transcript').value = asrStatus.minTranscriptChars;
       }
+      updateHostPreflightUI();
+    }
+
+    function updateHostPreflightUI() {
+      const preflight = asrStatus.hostPreflight || {};
+      const checks = Array.isArray(preflight.checks) ? [...preflight.checks] : [];
+      const listeningEnabled = document.getElementById('host-asr-enabled').checked;
+      const unsafeBlocked = selectedAsrDeviceIsBlocked();
+      const unsafeOverride = document.getElementById('host-asr-unsafe-override').checked;
+      if (listeningEnabled && unsafeBlocked && !unsafeOverride) {
+        checks.push({
+          id: 'ui.microphone.device',
+          status: 'error',
+          label: 'Mikrofon',
+          detail: 'Das gewählte Eingabegerät sieht nach Loopback/Monitor aus und ist blockiert.',
+          action: 'Echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.'
+        });
+      } else if (listeningEnabled && unsafeBlocked && unsafeOverride) {
+        checks.push({
+          id: 'ui.microphone.override',
+          status: 'warn',
+          label: 'Mikrofon',
+          detail: 'Unsichere Mikrofon-Override ist aktiv.',
+          action: 'Wenn möglich echtes Mikrofon verwenden.'
+        });
+      }
+
+      const hasError = checks.some(check => check.status === 'error');
+      const statusEl = document.getElementById('host-preflight-status');
+      statusEl.textContent = hasError ? 'Blocked' : (preflight.ready ? 'Ready' : 'Warnings');
+      statusEl.className = hasError ? 'asr-error' : (preflight.ready ? 'asr-ok' : 'asr-warning');
+      const list = document.getElementById('host-preflight-checks');
+      const visibleChecks = checks.filter(check => check.status !== 'ok').slice(0, 8);
+      list.innerHTML = visibleChecks.length
+        ? visibleChecks.map(check => `<li class="${check.status === 'error' ? 'asr-error' : 'asr-warning'}"><strong>${check.label || check.id}:</strong> ${check.detail || ''}${check.action ? ` — ${check.action}` : ''}</li>`).join('')
+        : '<li class="asr-ok">Alle Host-Abhängigkeiten sind bereit.</li>';
     }
     
     // Update status UI
@@ -1660,6 +1725,7 @@
     fetchStatus();
     fetchConfig();
     fetchAsrStatus();
+    fetchHostPreflight();
     fetchMemoryStats();
     fetchTopUsers();
     fetchEvents();
@@ -1668,6 +1734,7 @@
     // Periodic updates
     setInterval(fetchStatus, 2000);
     setInterval(fetchAsrStatus, 5000);
+    setInterval(fetchHostPreflight, 5000);
     setInterval(() => {
       fetchMemoryStats();
       fetchTopUsers();
