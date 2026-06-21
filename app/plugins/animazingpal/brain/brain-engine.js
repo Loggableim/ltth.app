@@ -195,6 +195,25 @@ class BrainEngine {
     ].filter(Boolean).join('\n\n');
   }
 
+  getHostSpeechReadiness() {
+    const liveHostEnabled = this.config.liveHost?.enabled === true;
+    const enabled = this.config.enabled === true || liveHostEnabled;
+    const providerConfigured = !!this.gptBrain;
+    const personalityConfigured = !!this.currentPersonality;
+    let reason = null;
+    if (!enabled) reason = 'host-brain-disabled';
+    else if (!providerConfigured) reason = 'host-brain-provider-unavailable';
+    else if (!personalityConfigured) reason = 'host-brain-personality-missing';
+    return {
+      ready: enabled && providerConfigured && personalityConfigured,
+      enabled,
+      liveHostEnabled,
+      providerConfigured,
+      personalityConfigured,
+      reason
+    };
+  }
+
   /**
    * Load the active personality
    */
@@ -504,7 +523,9 @@ class BrainEngine {
    * Process speech from the streamer/host without treating it as viewer chat.
    */
   async processHostSpeech(hostName, message, options = {}) {
-    if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
+    const readiness = this.getHostSpeechReadiness();
+    if (!readiness.ready) {
+      this.logger.debug(`Host speech brain not ready: ${readiness.reason}`);
       return null;
     }
 

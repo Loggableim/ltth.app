@@ -536,6 +536,68 @@ describe('AnimazingPal live host integration', () => {
     expect(hostMemoryCall[1]).not.toHaveProperty('user');
   });
 
+  test('BrainEngine processHostSpeech runs for live host even when legacy brain toggle is off', async () => {
+    const brain = Object.create(BrainEngine.prototype);
+    brain.config = {
+      enabled: false,
+      liveHost: normalizeLiveHostConfig({ enabled: true })
+    };
+    brain.currentPersonality = { system_prompt: 'Bleib in Character.' };
+    brain.currentSession = 'session-1';
+    brain.gptBrain = {
+      generateHostSpeechResponse: jest.fn().mockResolvedValue({ content: 'Ich antworte als Co-Host.', cached: false })
+    };
+    brain.memoryDb = {
+      storeConversation: jest.fn(),
+      getConversationHistory: jest.fn().mockReturnValue([])
+    };
+    brain.storeMemory = jest.fn();
+    brain._resolveSystemPrompt = BrainEngine.prototype._resolveSystemPrompt.bind(brain);
+    brain._checkRateLimit = jest.fn().mockReturnValue(true);
+    brain._selectEmotion = jest.fn().mockReturnValue('neutral');
+    brain.logger = { debug: jest.fn(), error: jest.fn() };
+
+    const result = await brain.processHostSpeech('Streamer', 'Kannst du reagieren?', { forceRespond: true });
+
+    expect(result).toEqual(expect.objectContaining({
+      text: 'Ich antworte als Co-Host.'
+    }));
+    expect(brain.gptBrain.generateHostSpeechResponse).toHaveBeenCalled();
+  });
+
+  test('processSidekickHostSpeech reports concrete host brain readiness failures', async () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.ensureLiveHostRuntime = jest.fn();
+    plugin.recordLiveHostEventOutcome = jest.fn(result => result);
+    plugin.canUseLiveHostResponseSlot = jest.fn().mockReturnValue(true);
+    plugin.brainEngine = {
+      getHostSpeechReadiness: jest.fn().mockReturnValue({
+        ready: false,
+        reason: 'host-brain-provider-unavailable',
+        enabled: true,
+        providerConfigured: false,
+        personalityConfigured: true
+      }),
+      processHostSpeech: jest.fn()
+    };
+
+    const result = await plugin.processSidekickHostSpeech({
+      username: 'Streamer',
+      message: 'Kannst du reagieren?',
+      source: 'host-mic',
+      isHostSpeech: true
+    }, { respond: true, score: 0.9, type: 'host-speech' });
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      reason: 'host-brain-provider-unavailable',
+      brainReadiness: expect.objectContaining({ ready: false })
+    }));
+    expect(plugin.brainEngine.processHostSpeech).not.toHaveBeenCalled();
+  });
+
   test('BrainEngine processHostSpeech can defer assistant host-response memory until commit', async () => {
     const brain = Object.create(BrainEngine.prototype);
     brain.config = {

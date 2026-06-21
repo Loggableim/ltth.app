@@ -5508,6 +5508,18 @@ class AnimazingPalPlugin {
     if (typeof this.brainEngine.processHostSpeech !== 'function') {
       return complete({ handled: true, responded: false, decision, reason: 'host-brain-unavailable' });
     }
+    if (typeof this.brainEngine.getHostSpeechReadiness === 'function') {
+      const brainReadiness = this.brainEngine.getHostSpeechReadiness();
+      if (!brainReadiness.ready) {
+        return complete({
+          handled: true,
+          responded: false,
+          decision,
+          reason: brainReadiness.reason || 'host-brain-unavailable',
+          brainReadiness
+        });
+      }
+    }
 
     const response = await this.brainEngine.processHostSpeech(username, message, {
       nickname: data.nickname,
