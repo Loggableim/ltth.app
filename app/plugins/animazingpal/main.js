@@ -1193,7 +1193,7 @@ class AnimazingPalPlugin {
       res.json({
         success: true,
         config: sanitizeLiveHostConfig(this.config.brain.liveHost),
-        presets: ['safe-live']
+        presets: ['safe-live', 'production-24-7']
       });
     });
 
@@ -1237,7 +1237,42 @@ class AnimazingPalPlugin {
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/preset', async (req, res) => {
       try {
-        this.config.brain.liveHost = applyLiveHostPreset(this.config.brain.liveHost, req.body?.preset || 'safe-live');
+        const preset = req.body?.preset || 'safe-live';
+        const liveHost = applyLiveHostPreset(this.config.brain.liveHost, preset);
+
+        if (['safe-live', 'production-24-7'].includes(preset)) {
+          const animazeProfile = {
+            ...this.getPlatformProfile('animaze'),
+            port: 9000,
+            autoConnect: true,
+            reconnectOnDisconnect: true,
+            reconnectDelay: 5000,
+            maxReconnectAttempts: 0,
+            connectionTimeoutMs: 10000,
+            autoRefreshData: true
+          };
+          this.config = this.normalizeConfig(this.mergeConfigPatch(this.config, {
+            enabled: true,
+            platform: {
+              active: 'animaze',
+              profiles: { animaze: animazeProfile }
+            },
+            host: animazeProfile.host,
+            port: animazeProfile.port,
+            autoConnect: animazeProfile.autoConnect,
+            reconnectOnDisconnect: animazeProfile.reconnectOnDisconnect,
+            reconnectDelay: animazeProfile.reconnectDelay,
+            maxReconnectAttempts: animazeProfile.maxReconnectAttempts,
+            connectionTimeoutMs: animazeProfile.connectionTimeoutMs,
+            autoRefreshData: animazeProfile.autoRefreshData,
+            brain: { liveHost }
+          }));
+          this.maxReconnectAttempts = this.config.maxReconnectAttempts;
+          this.platformAdapter = this.getActivePlatformAdapter();
+        } else {
+          this.config.brain.liveHost = liveHost;
+        }
+
         this.api.setConfig('config', this.config);
         this.brainEngine?.configure({ ...this.config.brain, liveHost: this.config.brain.liveHost });
         this.startLiveHostIdleMotion();

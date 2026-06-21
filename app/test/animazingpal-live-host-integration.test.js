@@ -247,6 +247,50 @@ describe('AnimazingPal live host integration', () => {
     plugin.stopLiveHostIdleMotion();
   });
 
+  test('24/7 production preset also applies unattended Animaze connection defaults', async () => {
+    const routes = [];
+    const plugin = new AnimazingPalPlugin({
+      getSocketIO: () => ({ emit: jest.fn() }),
+      getDatabase: () => ({}),
+      registerRoute: (method, path, handler) => routes.push({ method: method.toLowerCase(), path, handler }),
+      registerSocket: jest.fn(), registerTikTokEvent: jest.fn(), emit: jest.fn(), log: jest.fn(),
+      getConfig: jest.fn(), setConfig: jest.fn(), getPlugin: jest.fn()
+    });
+    plugin.config = plugin.normalizeConfig(plugin.getDefaultConfig());
+    plugin.config.enabled = false;
+    plugin.config.port = 8008;
+    plugin.config.maxReconnectAttempts = 10;
+    plugin.config.platform.profiles.animaze.port = 8008;
+    plugin.config.platform.profiles.animaze.maxReconnectAttempts = 10;
+    plugin.brainEngine = { configure: jest.fn(), getStatistics: jest.fn(), getPersonalities: jest.fn() };
+    plugin.registerRoutes();
+    const route = routes.find(item => item.path === '/api/animazingpal/live-host/preset');
+    const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+    await route.handler({ body: { preset: 'production-24-7' } }, res);
+
+    expect(plugin.config).toEqual(expect.objectContaining({
+      enabled: true,
+      port: 9000,
+      autoConnect: true,
+      reconnectOnDisconnect: true,
+      reconnectDelay: 5000,
+      maxReconnectAttempts: 0,
+      connectionTimeoutMs: 10000
+    }));
+    expect(plugin.config.platform.profiles.animaze).toEqual(expect.objectContaining({
+      port: 9000,
+      autoConnect: true,
+      reconnectOnDisconnect: true,
+      reconnectDelay: 5000,
+      maxReconnectAttempts: 0,
+      connectionTimeoutMs: 10000
+    }));
+    expect(plugin.maxReconnectAttempts).toBe(0);
+    plugin.stopLiveHostIdleMotion();
+    plugin.stopLiveHostSourceWatchdog();
+  });
+
   test('routes generated host responses to Fish.audio instead of Animaze ChatPal', async () => {
     const { plugin } = createPlugin();
     plugin.isConnected = true;
