@@ -14,7 +14,11 @@
  */
 
 const path = require('path');
-const { ConfigManager } = require('./backend/config');
+const multer = require('multer');
+const {
+  ConfigManager,
+  ASR_SERVICE_MAX_AUDIO_BYTES
+} = require('./backend/config');
 const MemoryStore = require('./backend/memoryStore');
 const { EventBus, EventTypes } = require('./backend/eventBus');
 const EventDeduper = require('./backend/deduper');
@@ -23,6 +27,19 @@ const { ResponseEngine } = require('./backend/responseEngine');
 const OutboxBatcher = require('./backend/outboxBatcher');
 const Metrics = require('./backend/metrics');
 const { ConversationCoordinator } = require('./backend/conversation-coordinator');
+
+const ASR_AUDIO_FIELD = 'audio';
+const ASR_SAFE_AUDIO_MIME_TYPES = new Set([
+  'audio/webm',
+  'audio/ogg',
+  'audio/opus',
+  'audio/wav',
+  'audio/wave',
+  'audio/x-wav',
+  'audio/mpeg',
+  'audio/mp3'
+]);
+const ASR_OCTET_AUDIO_EXTENSIONS = new Set(['.webm', '.ogg', '.opus', '.wav', '.mp3', '.mpeg']);
 
 /**
  * Sidekick Plugin Class
@@ -63,6 +80,8 @@ class SidekickPlugin {
     // Cleanup timer
     this.cleanupInterval = null;
     this.joinAnnouncerInterval = null;
+
+    this.asrDiagnostics = this._createEmptyAsrDiagnostics();
   }
   
   /**
@@ -204,6 +223,17 @@ class SidekickPlugin {
         success: true,
         status: this._getStatus()
       });
+    });
+
+    this.api.registerRoute('get', '/api/sidekick/asr/status', (req, res) => {
+      res.json({
+        success: true,
+        status: this._getAsrStatus()
+      });
+    });
+
+    this.api.registerRoute('post', '/api/sidekick/asr/transcribe', (req, res) => {
+      return this._handleAsrUploadRoute(req, res);
     });
     
     // Get configuration
@@ -956,7 +986,314 @@ class SidekickPlugin {
   }
   
   // ==================== Utility Methods ====================
-  
+
+  _createEmptyAsrDiagnostics() {
+    return {
+      counters: {
+        requests: 0,
+        transcribed: 0,
+        accepted: 0,
+        rejected: 0,
+        delegated: 0,
+        errors: 0
+      },
+      lastTranscriptAt: null,
+      lastError: null,
+      lastLatencyMs: null
+    };
+  }
+
+  _getAsrRuntimeConfig() {
+    const asr = this.config?.asr || {};
+    const conversation = this.config?.conversation || {};
+    const configuredMax = Number(asr.maxAudioBytes);
+    const maxAudioBytes = Number.isFinite(configuredMax) && configuredMax > 0
+      ? Math.min(Math.round(configuredMax), ASR_SERVICE_MAX_AUDIO_BYTES)
+      : 8 * 1024 * 1024;
+    const configuredMin = Number(asr.minTranscriptChars);
+    const conversationMin = Number(conversation.minHostSpeechChars);
+
+    return {
+      enabled: asr.enabled !== false && asr.enabled !== 'false',
+      maxAudioBytes,
+      language: typeof asr.language === 'string' && asr.language.trim() ? asr.language.trim() : null,
+      minTranscriptChars: Number.isFinite(configuredMin) && configuredMin > 0
+        ? Math.min(Math.round(configuredMin), 500)
+        : (Number.isFinite(conversationMin) && conversationMin > 0 ? Math.min(Math.round(conversationMin), 500) : 1)
+    };
+  }
+
+  _getTtsPlugin() {
+    return this.api.getPluginInstance?.('tts') || this.api.getPlugin?.('tts') || null;
+  }
+
+  _getAsrReadiness() {
+    const tts = this._getTtsPlugin();
+    const ttsAvailable = typeof tts?.transcribeFishAudio === 'function';
+    const fishConfigured = !!tts?.config?.fishaudioApiKey;
+    const config = this._getAsrRuntimeConfig();
+
+    return {
+      config,
+      tts,
+      ttsAvailable,
+      fishConfigured,
+      ready: config.enabled && ttsAvailable && fishConfigured
+    };
+  }
+
+  _getAsrStatus() {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    const readiness = this._getAsrReadiness();
+    return {
+      enabled: readiness.config.enabled,
+      ready: readiness.ready,
+      ttsAvailable: readiness.ttsAvailable,
+      fishConfigured: readiness.fishConfigured,
+      maxAudioBytes: readiness.config.maxAudioBytes,
+      language: readiness.config.language,
+      minTranscriptChars: readiness.config.minTranscriptChars,
+      lastTranscriptAt: this.asrDiagnostics.lastTranscriptAt,
+      lastError: this.asrDiagnostics.lastError,
+      lastLatencyMs: this.asrDiagnostics.lastLatencyMs,
+      counters: { ...this.asrDiagnostics.counters }
+    };
+  }
+
+  _createAsrUploadMiddleware(config) {
+    return multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fileSize: config.maxAudioBytes,
+        files: 1
+      },
+      fileFilter: (req, file, callback) => {
+        const mimeType = String(file.mimetype || '').toLowerCase();
+        if (ASR_SAFE_AUDIO_MIME_TYPES.has(mimeType)) {
+          return callback(null, true);
+        }
+
+        if (mimeType === 'application/octet-stream' && this._hasAllowedAsrExtension(file.originalname)) {
+          return callback(null, true);
+        }
+
+        const error = new Error('Unsupported audio MIME type');
+        error.code = 'ASR_UNSUPPORTED_MIME';
+        return callback(error);
+      }
+    }).single(ASR_AUDIO_FIELD);
+  }
+
+  _handleAsrUploadRoute(req, res) {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    this.asrDiagnostics.counters.requests += 1;
+
+    const readiness = this._getAsrReadiness();
+    if (!readiness.config.enabled) {
+      return this._sendAsrError(res, 503, 'ASR_DISABLED', 'Sidekick ASR is disabled');
+    }
+    if (!readiness.ttsAvailable) {
+      return this._sendAsrError(res, 503, 'ASR_TTS_UNAVAILABLE', 'TTS plugin ASR is unavailable');
+    }
+
+    const upload = this._createAsrUploadMiddleware(readiness.config);
+    return new Promise((resolve) => {
+      upload(req, res, async (uploadError) => {
+        try {
+          if (uploadError) {
+            this._handleAsrUploadError(res, uploadError);
+            return;
+          }
+          await this._handleAsrTranscribeRequest(req, res, readiness);
+        } catch (error) {
+          this.logger.warn(`Sidekick ASR route failed: ${error.message}`);
+          this._sendAsrError(res, 500, 'ASR_ROUTE_ERROR', 'Sidekick ASR route failed');
+        } finally {
+          resolve();
+        }
+      });
+    });
+  }
+
+  _handleAsrUploadError(res, error) {
+    if (error?.code === 'LIMIT_FILE_SIZE') {
+      return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
+    }
+    if (error?.code === 'ASR_UNSUPPORTED_MIME') {
+      return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_MIME', 'Unsupported audio MIME type');
+    }
+    if (error?.code === 'LIMIT_UNEXPECTED_FILE') {
+      return this._sendAsrError(res, 400, 'ASR_UNEXPECTED_FILE', `Upload must contain one "${ASR_AUDIO_FIELD}" audio file`);
+    }
+    return this._sendAsrError(res, 400, 'ASR_UPLOAD_INVALID', 'Invalid ASR upload');
+  }
+
+  async _handleAsrTranscribeRequest(req, res, readiness) {
+    const startedAt = Date.now();
+    const file = req.file;
+    if (!file) {
+      return this._sendAsrError(res, 400, 'ASR_UPLOAD_REQUIRED', `Upload must contain an "${ASR_AUDIO_FIELD}" audio file`);
+    }
+    if (!Buffer.isBuffer(file.buffer) || file.buffer.length === 0) {
+      return this._sendAsrError(res, 400, 'ASR_UPLOAD_EMPTY', 'Uploaded audio file is empty');
+    }
+    if (file.size > readiness.config.maxAudioBytes) {
+      return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
+    }
+    if (String(file.mimetype || '').toLowerCase() === 'application/octet-stream' && !this._hasSafeAudioSignature(file.buffer)) {
+      return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_AUDIO_CONTENT', 'Unsupported audio content');
+    }
+
+    let transcript;
+    try {
+      const options = {
+        maxAudioBytes: readiness.config.maxAudioBytes,
+        mimeType: file.mimetype,
+        filename: file.originalname
+      };
+      if (readiness.config.language) {
+        options.language = readiness.config.language;
+      }
+      transcript = await readiness.tts.transcribeFishAudio(file.buffer, options);
+    } catch (error) {
+      const sanitized = this._sanitizeAsrError(error);
+      return this._sendAsrError(res, sanitized.status, sanitized.code, sanitized.message, true);
+    }
+
+    const text = String(transcript?.text || '').trim();
+    const latencyMs = Date.now() - startedAt;
+    this.asrDiagnostics.counters.transcribed += 1;
+    this.asrDiagnostics.lastTranscriptAt = new Date().toISOString();
+    this.asrDiagnostics.lastLatencyMs = latencyMs;
+    this.asrDiagnostics.lastError = null;
+
+    const responseTranscript = this._redactAsrTranscript(transcript, text);
+    const transcribeOnly = this._isTruthyRequestValue(req.body?.transcribeOnly || req.query?.transcribeOnly);
+    if (transcribeOnly) {
+      return res.json({
+        success: true,
+        transcript: responseTranscript,
+        accepted: false,
+        delegated: false,
+        reason: 'transcribe-only',
+        latencyMs,
+        diagnostics: this._getAsrStatus()
+      });
+    }
+
+    if (text.length < readiness.config.minTranscriptChars) {
+      this.asrDiagnostics.counters.rejected += 1;
+      return res.json({
+        success: true,
+        transcript: responseTranscript,
+        accepted: false,
+        delegated: false,
+        reason: 'transcript-too-short',
+        latencyMs,
+        diagnostics: this._getAsrStatus()
+      });
+    }
+
+    const hostResult = await this.processHostSpeechTranscript(text, {
+      source: 'sidekick-asr',
+      provider: transcript?.provider || 'fish.audio',
+      confidence: transcript?.confidence,
+      language: transcript?.language || readiness.config.language,
+      mimeType: file.mimetype,
+      audioBytes: file.buffer.length,
+      filename: file.originalname,
+      latencyMs
+    });
+
+    if (hostResult?.accepted) {
+      this.asrDiagnostics.counters.accepted += 1;
+    } else {
+      this.asrDiagnostics.counters.rejected += 1;
+    }
+    if (hostResult?.delegated) {
+      this.asrDiagnostics.counters.delegated += 1;
+    }
+
+    return res.json({
+      success: true,
+      transcript: responseTranscript,
+      accepted: !!hostResult?.accepted,
+      delegated: !!hostResult?.delegated,
+      reason: hostResult?.reason || hostResult?.decision?.reason || null,
+      latencyMs,
+      result: hostResult,
+      diagnostics: this._getAsrStatus()
+    });
+  }
+
+  _sendAsrError(res, status, code, message, countAsError = false) {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    this.asrDiagnostics.counters.rejected += 1;
+    if (countAsError || status >= 500) {
+      this.asrDiagnostics.counters.errors += 1;
+      this.metrics?.recordError?.();
+    }
+    this.asrDiagnostics.lastError = {
+      code,
+      message,
+      at: new Date().toISOString()
+    };
+    return res.status(status).json({
+      success: false,
+      error: { code, message },
+      diagnostics: this._getAsrStatus()
+    });
+  }
+
+  _sanitizeAsrError(error) {
+    const message = String(error?.message || '');
+    if (/api key|not configured|missing key/i.test(message)) {
+      return {
+        status: 503,
+        code: 'ASR_FISH_UNCONFIGURED',
+        message: 'Fish.audio ASR API key is not configured'
+      };
+    }
+    return {
+      status: 502,
+      code: 'ASR_TRANSCRIPTION_FAILED',
+      message: 'Fish.audio ASR transcription failed'
+    };
+  }
+
+  _redactAsrTranscript(transcript, text) {
+    return {
+      text,
+      confidence: transcript?.confidence,
+      language: transcript?.language,
+      durationMs: transcript?.durationMs,
+      provider: transcript?.provider || 'fish.audio'
+    };
+  }
+
+  _hasAllowedAsrExtension(filename) {
+    return ASR_OCTET_AUDIO_EXTENSIONS.has(path.extname(String(filename || '')).toLowerCase());
+  }
+
+  _hasSafeAudioSignature(buffer) {
+    if (!Buffer.isBuffer(buffer) || buffer.length < 4) return false;
+    if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) return true;
+    if (buffer.slice(0, 4).toString('ascii') === 'OggS') return true;
+    if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WAVE') return true;
+    if (buffer.slice(0, 3).toString('ascii') === 'ID3') return true;
+    return buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
+  }
+
+  _isTruthyRequestValue(value) {
+    return value === true || value === 'true' || value === '1' || value === 1 || value === 'yes';
+  }
+
   _getAnimazingPal() {
     return this.api.getPluginInstance?.('animazingpal') || this.api.getPlugin?.('animazingpal') || null;
   }

@@ -1,4 +1,7 @@
-const { ConfigManager } = require('../plugins/sidekick/backend/config');
+const {
+  ConfigManager,
+  ASR_SERVICE_MAX_AUDIO_BYTES
+} = require('../plugins/sidekick/backend/config');
 const { ConversationCoordinator } = require('../plugins/sidekick/backend/conversation-coordinator');
 const SidekickPlugin = require('../plugins/sidekick/main');
 const fs = require('fs');
@@ -74,6 +77,12 @@ describe('Sidekick runtime contracts', () => {
     expect(config.output).toEqual({
       eventType: 'sidekick',
       username: 'Sidekick'
+    });
+    expect(config.asr).toEqual({
+      enabled: true,
+      maxAudioBytes: 8 * 1024 * 1024,
+      language: null,
+      minTranscriptChars: null
     });
     expect(config.output.mode).toBeUndefined();
     expect(config.animaze).toBeUndefined();
@@ -178,6 +187,30 @@ describe('Sidekick runtime contracts', () => {
       hostSpeechEventType: 'chat',
       viewerEventTypes: ['gift', 'chat']
     }));
+    expect(api.setConfig).toHaveBeenCalledWith('config', config);
+  });
+
+  test('ASR config updates are normalized and capped below Fish.audio service limits', () => {
+    const api = createApi();
+    const manager = new ConfigManager(api);
+    manager.load();
+    api.setConfig.mockClear();
+
+    const config = manager.update({
+      asr: {
+        enabled: 'false',
+        maxAudioBytes: ASR_SERVICE_MAX_AUDIO_BYTES + 12345,
+        language: 'de-DE',
+        minTranscriptChars: -50
+      }
+    });
+
+    expect(config.asr).toEqual({
+      enabled: false,
+      maxAudioBytes: ASR_SERVICE_MAX_AUDIO_BYTES,
+      language: 'de-DE',
+      minTranscriptChars: 1
+    });
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
 

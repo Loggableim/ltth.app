@@ -13,6 +13,44 @@ const {
   normalizeConversationConfig
 } = require('./conversation-coordinator');
 
+const ASR_SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+const DEFAULT_ASR_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
+
+function clamp(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function toBoolean(value, fallback) {
+  if (value === true || value === 'true') return true;
+  if (value === false || value === 'false') return false;
+  return fallback;
+}
+
+function normalizeAsrConfig(input = {}, conversationConfig = {}) {
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  const language = typeof source.language === 'string' ? source.language.trim() : '';
+  const hasMinTranscriptChars = source.minTranscriptChars !== undefined
+    && source.minTranscriptChars !== null
+    && source.minTranscriptChars !== '';
+  const minTranscriptChars = Number(source.minTranscriptChars);
+
+  return {
+    enabled: toBoolean(source.enabled, DEFAULT_CONFIG.asr.enabled),
+    maxAudioBytes: Math.round(clamp(
+      source.maxAudioBytes,
+      1,
+      ASR_SERVICE_MAX_AUDIO_BYTES,
+      DEFAULT_CONFIG.asr.maxAudioBytes
+    )),
+    language: /^[a-zA-Z-]{2,16}$/.test(language) ? language : null,
+    minTranscriptChars: hasMinTranscriptChars && Number.isFinite(minTranscriptChars)
+      ? Math.round(clamp(minTranscriptChars, 1, 500, DEFAULT_CONVERSATION_COORDINATOR_CONFIG.minHostSpeechChars))
+      : DEFAULT_CONFIG.asr.minTranscriptChars
+  };
+}
+
 const DEFAULT_CONFIG = {
   // TikTok settings (read-only, uses main LTTH connection)
   tiktok: {
@@ -29,6 +67,15 @@ const DEFAULT_CONFIG = {
   // Host/viewer orchestration and echo protection for Sidekick + AnimazingPal.
   conversation: {
     ...DEFAULT_CONVERSATION_COORDINATOR_CONFIG
+  },
+
+  // Host microphone speech recognition via the TTS plugin's Fish.audio ASR
+  // client. Audio stays in memory and is never written to plugin directories.
+  asr: {
+    enabled: true,
+    maxAudioBytes: DEFAULT_ASR_MAX_AUDIO_BYTES,
+    language: null,
+    minTranscriptChars: null
   },
   
   // Style settings
@@ -178,6 +225,7 @@ class ConfigManager {
     if (!this.config) return;
     delete this.config.animaze;
     this.config.conversation = normalizeConversationConfig(this.config.conversation || DEFAULT_CONFIG.conversation);
+    this.config.asr = normalizeAsrConfig(this.config.asr || DEFAULT_CONFIG.asr, this.config.conversation);
     if (!this._isPlainObject(this.config.output)) {
       this.config.output = this._cloneDefaults().output;
       return;
@@ -296,4 +344,10 @@ class ConfigManager {
   }
 }
 
-module.exports = { ConfigManager, DEFAULT_CONFIG };
+module.exports = {
+  ConfigManager,
+  DEFAULT_CONFIG,
+  DEFAULT_ASR_MAX_AUDIO_BYTES,
+  ASR_SERVICE_MAX_AUDIO_BYTES,
+  normalizeAsrConfig
+};
