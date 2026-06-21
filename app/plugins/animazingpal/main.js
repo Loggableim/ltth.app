@@ -94,13 +94,54 @@ function isHostGreeting(text) {
   return /^(hey|hi|hallo|servus|moin|guten tag|guten abend|guten morgen|hello|yo)\b/i.test(cleanHostSpeechText(text));
 }
 
-function buildHostSpeechFeatures(text, response = {}) {
+function escapeHostSpeechRegex(text) {
+  return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findAddressedSidekickName(text, names = []) {
+  const clean = cleanHostSpeechText(text).toLocaleLowerCase();
+  for (const name of names) {
+    const normalizedName = cleanHostSpeechText(name, 80).toLocaleLowerCase();
+    if (!normalizedName || normalizedName.length < 2) continue;
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}_])${escapeHostSpeechRegex(normalizedName)}([^\\p{L}\\p{N}_]|$)`, 'iu');
+    if (pattern.test(clean)) return name;
+  }
+  return null;
+}
+
+function getLiveHostSidekickNames(liveHost = {}) {
+  const names = [];
+  const activeBundle = Array.isArray(liveHost.avatarBundles)
+    ? liveHost.avatarBundles.find(bundle => bundle.id === liveHost.activeAvatarBundleId)
+    : null;
+  if (activeBundle?.sidekickName) names.push(activeBundle.sidekickName);
+  if (liveHost.response?.sidekickName) names.push(liveHost.response.sidekickName);
+  return [...new Set(names.map(name => cleanHostSpeechText(name, 80)).filter(Boolean))];
+}
+
+function isHostDirectResponseRequest(text) {
+  const clean = cleanHostSpeechText(text).toLocaleLowerCase();
+  if (!clean) return false;
+  if (/\b(nicht|kein|keine|don't|do not|never)\s+(antwort|antworten|antworte|reagier|reagiere|rede|sprich|reply|answer|respond)\b/i.test(clean)) {
+    return false;
+  }
+  return /\b(antworte|antworten|reagier|reagiere|reaktion|sag|erzähl|erzaehl|sprich|rede|kommentier|kommentiere|reply|answer|respond|say|tell|comment)\b/i.test(clean)
+    || /\b(wenn du (das|diese frage|mich) hörst|wenn du (das|diese frage|mich) hoerst|can you hear me|if you hear this)\b/i.test(clean)
+    || /\b(jetzt|bitte|please)\s+(antworte|antworten|reagier|reagiere|reply|answer|respond)\b/i.test(clean);
+}
+
+function buildHostSpeechFeatures(text, response = {}, liveHost = {}) {
   const clean = cleanHostSpeechText(text);
   const wordCount = countHostSpeechWords(clean);
   const longFormLimit = Math.max(1, Number(response.hostLongFormWordLimit) || 48);
+  const matchedSidekickName = findAddressedSidekickName(clean, getLiveHostSidekickNames(liveHost));
+  const isDirectRequest = isHostDirectResponseRequest(clean);
   return {
     isQuestion: hasHostQuestionStructure(clean),
     isGreeting: isHostGreeting(clean),
+    isDirectRequest,
+    isAddressedByName: !!matchedSidekickName,
+    matchedSidekickName,
     isLongForm: wordCount > longFormLimit,
     wordCount,
     charCount: clean.length
@@ -111,6 +152,7 @@ function computeHostSpeechScore(features) {
   let score = 0.45;
   if (features.isQuestion) score += 0.35;
   if (features.isGreeting) score += 0.15;
+  if (features.isDirectRequest || features.isAddressedByName) score += 0.45;
   if (features.isLongForm) score -= 0.35;
   return clampNumber(score, 0, 1, 0.45);
 }
@@ -5311,7 +5353,7 @@ class AnimazingPalPlugin {
     const timestamp = Number(metadata.timestamp) || Date.now();
     const cleanText = cleanHostSpeechText(text);
     const normalizedText = normalizeHostSpeechText(cleanText);
-    const features = buildHostSpeechFeatures(cleanText, response);
+    const features = buildHostSpeechFeatures(cleanText, response, liveHost);
     const confidence = Number(metadata.confidence);
     const reject = (reason, score = 0, extraFeatures = features) => {
       const decision = {
@@ -5339,7 +5381,7 @@ class AnimazingPalPlugin {
     if (cleanText.length < Math.max(1, Number(asr.minTranscriptChars) || 1)) return reject('too_short', 0);
 
     const contextCooldownMs = Math.max(0, Number(response.hostContextCooldownMs) || 0);
-    if (contextCooldownMs > 0 && this.lastHostSpeechDecision?.respond === true && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < contextCooldownMs) {
+    if (!features.isDirectRequest && !features.isAddressedByName && contextCooldownMs > 0 && this.lastHostSpeechDecision?.respond === true && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < contextCooldownMs) {
       return reject('active_pause', 0);
     }
 
@@ -5357,10 +5399,11 @@ class AnimazingPalPlugin {
     if (confidenceValue !== null && confidenceValue < Number(response.hostMinConfidence)) {
       return reject('low_confidence', confidenceValue, { ...features, confidence: confidenceValue });
     }
-    if (score < Number(response.hostMinConfidence)) {
+    const minDecisionScore = Number(response.minDecisionScore);
+    if (score < (Number.isFinite(minDecisionScore) ? minDecisionScore : 0.55)) {
       return reject('low_score', score, { ...features, confidence: confidenceValue });
     }
-    if (Math.random() > (Number(response.hostReplyProbability) * score)) {
+    if (!features.isDirectRequest && !features.isAddressedByName && Math.random() > (Number(response.hostReplyProbability) * score)) {
       return reject('low_score', score, { ...features, confidence: confidenceValue });
     }
 

@@ -114,6 +114,7 @@ function buildLiveHostDefaults() {
       hostContextCooldownMs: 2500,
       hostOvertalkCooldownMs: 1200,
       hostLongFormWordLimit: 48,
+      sidekickName: 'AnimazingPal',
       language: 'de',
       systemPrompt: '',
       cacheEnabled: true,
@@ -268,6 +269,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.hostContextCooldownMs = Math.round(clamp(configured.response.hostContextCooldownMs, 0, 60 * 60 * 1000, defaults.response.hostContextCooldownMs));
   configured.response.hostOvertalkCooldownMs = Math.round(clamp(configured.response.hostOvertalkCooldownMs, 0, 5 * 60 * 1000, defaults.response.hostOvertalkCooldownMs));
   configured.response.hostLongFormWordLimit = Math.round(clamp(configured.response.hostLongFormWordLimit, 1, 500, defaults.response.hostLongFormWordLimit));
+  configured.response.sidekickName = safeString(configured.response.sidekickName, 80, defaults.response.sidekickName);
   configured.response.chatProbability = clamp(configured.response.chatProbability, 0, 1, defaults.response.chatProbability);
   configured.response.maxSentences = Math.round(clamp(configured.response.maxSentences, 1, 10, defaults.response.maxSentences));
   configured.response.maxCharacters = Math.round(clamp(configured.response.maxCharacters, 20, 4000, 500));
@@ -363,6 +365,7 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
         id,
         name: safeString(bundle.name || id, 120),
         avatarName: safeString(bundle.avatarName, 200),
+        sidekickName: safeString(bundle.sidekickName, 80),
         personalityId: safeString(bundle.personalityId, 100),
         voiceId: safeString(bundle.voiceId, 200),
         emotion: safeString(bundle.emotion, 40),

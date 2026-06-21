@@ -399,6 +399,7 @@
         ${input('response.hostContextCooldownMs', 'Host-STT aktive Pause (ms)', { type: 'number', min: 0, max: 3600000 })}
         ${input('response.hostOvertalkCooldownMs', 'Anti-Overtalk (ms)', { type: 'number', min: 0, max: 300000 })}
         ${input('response.hostLongFormWordLimit', 'Langform-Wortlimit', { type: 'number', min: 1, max: 500 })}
+        ${input('response.sidekickName', 'Sidekick-Name global')}
         ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
         ${input('response.language', 'Sprache')}${input('response.cacheEnabled', 'Cache aktiv', { type: 'checkbox' })}
         ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
@@ -456,9 +457,10 @@
         ${input('avatarSwitch.enabled', 'Auto-Switch aktiv', { type: 'checkbox' })}${input('avatarSwitch.persistUntilNextSwitch', 'Bis zum nächsten Switch aktiv', { type: 'checkbox' })}
         ${input('avatarSwitch.revertAfterMs', 'Zurücksetzen nach ms', { type: 'number', min: 0 })}${input('avatarSwitch.matchGiftNameFallback', 'Gift-Name-Fallback', { type: 'checkbox' })}${input('avatarSwitch.waitForRepeatEnd', 'Streak-Ende abwarten', { type: 'checkbox' })}
       </div>
-      <div id="avatarBundleList" class="mt-4 space-y-2">${bundles.length ? bundles.map(bundle => `<div class="flex items-center gap-2 bg-gray-800 p-2 rounded"><strong class="flex-1">${escapeHtml(bundle.name || bundle.id)}</strong><span class="text-gray-400">${escapeHtml((bundle.giftIds || bundle.gifts || []).join(', '))}</span><button class="btn btn-secondary" data-bundle-edit="${escapeHtml(bundle.id)}">Bearbeiten</button><button class="btn btn-success" data-bundle-activate="${escapeHtml(bundle.id)}">Aktivieren</button><button class="btn btn-danger" data-bundle-delete="${escapeHtml(bundle.id)}">Löschen</button></div>`).join('') : '<p class="text-gray-400">Noch keine Bundles.</p>'}</div>
+      <div id="avatarBundleList" class="mt-4 space-y-2">${bundles.length ? bundles.map(bundle => `<div class="flex items-center gap-2 bg-gray-800 p-2 rounded"><strong class="flex-1">${escapeHtml(bundle.name || bundle.id)}${bundle.sidekickName ? ` (${escapeHtml(bundle.sidekickName)})` : ''}</strong><span class="text-gray-400">${escapeHtml((bundle.giftIds || bundle.gifts || []).join(', '))}</span><button class="btn btn-secondary" data-bundle-edit="${escapeHtml(bundle.id)}">Bearbeiten</button><button class="btn btn-success" data-bundle-activate="${escapeHtml(bundle.id)}">Aktivieren</button><button class="btn btn-danger" data-bundle-delete="${escapeHtml(bundle.id)}">Löschen</button></div>`).join('') : '<p class="text-gray-400">Noch keine Bundles.</p>'}</div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
         <input class="input" id="bundleId" placeholder="Bundle-ID"><input class="input" id="bundleName" placeholder="Anzeigename">
+        <input class="input" id="bundleSidekickName" placeholder="Sidekick-Name für diesen Avatar">
         <select class="select" id="bundleAvatar"><option value="">Avatar wählen</option>${state.avatars.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundlePersonality"><option value="">Persönlichkeit wählen</option>${state.personalities.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('')}</select>
         <select class="select" id="bundleVoice">${voiceOptions().map(item => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`).join('')}</select>
@@ -986,6 +988,7 @@
     if (!id) return notify('Bundle-ID fehlt', true);
     const bundle = {
       id, name: document.getElementById('bundleName').value.trim() || id,
+      sidekickName: document.getElementById('bundleSidekickName').value.trim(),
       avatarName: document.getElementById('bundleAvatar').value,
       personalityId: document.getElementById('bundlePersonality').value,
       voiceId: document.getElementById('bundleVoice').value,
@@ -1006,7 +1009,7 @@
   function editBundle(id) {
     const bundle = state.config.avatarBundles.find(item => item.id === id);
     if (!bundle) return;
-    for (const [field, value] of Object.entries({ bundleId: bundle.id, bundleName: bundle.name, bundleAvatar: bundle.avatarName, bundlePersonality: bundle.personalityId, bundleVoice: bundle.voiceId, bundleEmotion: bundle.emotion, bundlePitch: bundle.pitch, bundleVolume: bundle.volume, bundleSpeed: bundle.speed, bundlePriority: bundle.priority, bundleGiftNames: (bundle.giftNames || []).join(', ') })) {
+    for (const [field, value] of Object.entries({ bundleId: bundle.id, bundleName: bundle.name, bundleSidekickName: bundle.sidekickName, bundleAvatar: bundle.avatarName, bundlePersonality: bundle.personalityId, bundleVoice: bundle.voiceId, bundleEmotion: bundle.emotion, bundlePitch: bundle.pitch, bundleVolume: bundle.volume, bundleSpeed: bundle.speed, bundlePriority: bundle.priority, bundleGiftNames: (bundle.giftNames || []).join(', ') })) {
       const element = document.getElementById(field); if (element) element.value = value ?? '';
     }
     const gifts = new Set(bundle.giftIds || bundle.gifts || []);

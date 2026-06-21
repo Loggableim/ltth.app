@@ -480,6 +480,85 @@ describe('AnimazingPal live host integration', () => {
     expect(ttsPlugin.speak).not.toHaveBeenCalled();
   });
 
+  test('host speech decision accepts direct German answer requests from Host-STT', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.response.hostReplyProbability = 1;
+    plugin.config.brain.liveHost.response.hostMinConfidence = 0.2;
+    plugin.config.brain.liveHost.response.minDecisionScore = 0.55;
+    plugin.lastHostSpeechDecision = null;
+    plugin.lastHostSpeechDecisionAt = null;
+    plugin.liveHostHostSpeechHistory = [];
+
+    const decision = plugin.shouldAcceptHostSpeech('Jedenfalls antworten, wenn du diese Frage hörst. Jetzt antworten.', {
+      source: 'animazingpal-host-asr',
+      timestamp: 100000
+    });
+
+    expect(decision).toEqual(expect.objectContaining({
+      accept: true,
+      respond: true,
+      reason: 'accepted',
+      score: expect.any(Number),
+      features: expect.objectContaining({
+        isDirectRequest: true
+      })
+    }));
+    expect(decision.score).toBeGreaterThanOrEqual(0.55);
+  });
+
+  test('host speech decision accepts active avatar sidekick name address', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.response.hostReplyProbability = 0;
+    plugin.config.brain.liveHost.response.minDecisionScore = 0.55;
+    plugin.config.brain.liveHost.response.sidekickName = 'Pal';
+    plugin.config.brain.liveHost.avatarBundles = [
+      { id: 'luna-bundle', name: 'Moon Avatar', sidekickName: 'Luna' }
+    ];
+    plugin.config.brain.liveHost.activeAvatarBundleId = 'luna-bundle';
+    plugin.lastHostSpeechDecision = null;
+    plugin.lastHostSpeechDecisionAt = null;
+    plugin.liveHostHostSpeechHistory = [];
+
+    const decision = plugin.shouldAcceptHostSpeech('Luna, was meinst du dazu?', {
+      source: 'animazingpal-host-asr',
+      timestamp: 100000
+    });
+
+    expect(decision).toEqual(expect.objectContaining({
+      accept: true,
+      respond: true,
+      reason: 'accepted',
+      features: expect.objectContaining({
+        isAddressedByName: true,
+        matchedSidekickName: 'Luna'
+      })
+    }));
+  });
+
+  test('host speech score gate uses minDecisionScore instead of ASR confidence threshold', () => {
+    const { plugin } = createPlugin();
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.1);
+    plugin.config.brain.liveHost.response.hostReplyProbability = 1;
+    plugin.config.brain.liveHost.response.hostMinConfidence = 0.9;
+    plugin.config.brain.liveHost.response.minDecisionScore = 0.4;
+    plugin.lastHostSpeechDecision = null;
+    plugin.lastHostSpeechDecisionAt = null;
+    plugin.liveHostHostSpeechHistory = [];
+
+    const decision = plugin.shouldAcceptHostSpeech('kurzer kommentar', {
+      source: 'animazingpal-host-asr',
+      timestamp: 100000
+    });
+
+    expect(decision).toEqual(expect.objectContaining({
+      accept: true,
+      respond: true,
+      reason: 'accepted',
+      score: 0.45
+    }));
+    randomSpy.mockRestore();
+  });
+
   test('BrainEngine processHostSpeech avoids viewer profiles and viewer memory writes', async () => {
     const brain = Object.create(BrainEngine.prototype);
     brain.config = {
