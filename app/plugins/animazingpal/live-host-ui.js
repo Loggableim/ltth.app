@@ -26,6 +26,11 @@
       recording: false,
       stream: null,
       recorder: null,
+      audioContext: null,
+      sourceNode: null,
+      processorNode: null,
+      wavChunks: [],
+      wavSampleRate: 16000,
       segmentTimer: null,
       lastTranscript: null,
       lastUpload: null,
@@ -712,22 +717,15 @@
     return state.asrStatus;
   }
 
-  function getSupportedAsrMimeType() {
-    const candidates = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/ogg;codecs=opus',
-      'audio/ogg'
-    ];
-    if (!window.MediaRecorder?.isTypeSupported) return '';
-    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
-  }
-
   async function uploadHostAsrBlob(blob, transcribeOnly = false) {
     if (!blob || blob.size === 0) return null;
     const form = new FormData();
-    const extension = blob.type.includes('ogg') ? 'ogg' : 'webm';
-    form.append('audio', blob, `host-stt.${extension}`);
+    if (blob.type === 'audio/wav') {
+      form.append('audio', blob, 'host-stt.wav');
+    } else {
+      const extension = blob.type.includes('ogg') ? 'ogg' : 'webm';
+      form.append('audio', blob, `host-stt.${extension}`);
+    }
     form.append('transcribeOnly', transcribeOnly ? 'true' : 'false');
     const response = await fetch(`/api/animazingpal/live-host/stt/transcribe?${getHostMicQuery()}`, {
       method: 'POST',
@@ -745,6 +743,66 @@
     return body;
   }
 
+  function mergeHostAsrSamples(chunks) {
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const samples = new Float32Array(totalLength);
+    let offset = 0;
+    chunks.forEach(chunk => {
+      samples.set(chunk, offset);
+      offset += chunk.length;
+    });
+    return samples;
+  }
+
+  function downsampleHostAsrSamples(samples, inputRate, targetRate = 16000) {
+    if (!samples.length || !Number.isFinite(inputRate) || inputRate <= targetRate) return samples;
+    const ratio = inputRate / targetRate;
+    const length = Math.floor(samples.length / ratio);
+    const result = new Float32Array(length);
+    for (let index = 0; index < length; index += 1) {
+      const start = Math.floor(index * ratio);
+      const end = Math.min(samples.length, Math.floor((index + 1) * ratio));
+      let sum = 0;
+      for (let sourceIndex = start; sourceIndex < end; sourceIndex += 1) sum += samples[sourceIndex];
+      result[index] = sum / Math.max(1, end - start);
+    }
+    return result;
+  }
+
+  function encodeHostAsrWav(chunks, sampleRate) {
+    const samples = downsampleHostAsrSamples(mergeHostAsrSamples(chunks), sampleRate, 16000);
+    const wavSampleRate = sampleRate > 16000 ? 16000 : sampleRate;
+    const dataBytes = samples.length * 2;
+    const buffer = new ArrayBuffer(44 + dataBytes);
+    const view = new DataView(buffer);
+    const writeAscii = (offset, text) => {
+      for (let index = 0; index < text.length; index += 1) view.setUint8(offset + index, text.charCodeAt(index));
+    };
+
+    writeAscii(0, 'RIFF');
+    view.setUint32(4, 36 + dataBytes, true);
+    writeAscii(8, 'WAVE');
+    writeAscii(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, wavSampleRate, true);
+    view.setUint32(28, wavSampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeAscii(36, 'data');
+    view.setUint32(40, dataBytes, true);
+
+    let offset = 44;
+    for (let index = 0; index < samples.length; index += 1) {
+      const sample = Math.max(-1, Math.min(1, samples[index]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+
+    return buffer;
+  }
+
   async function startHostAsr() {
     await save('asr');
     await loadHostInputDevices(false);
@@ -752,60 +810,66 @@
     if (device && isUnsafeHostMic(device) && !get('asr.unsafeOverride')) {
       throw new Error('Ausgewaehltes Host-Mikrofon wirkt wie Loopback/Monitor. Override aktivieren oder echtes Mikrofon waehlen.');
     }
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      throw new Error('Dieser Browser unterstuetzt MediaRecorder/getUserMedia nicht.');
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!navigator.mediaDevices?.getUserMedia || !AudioContextClass) {
+      throw new Error('Dieser Browser unterstuetzt getUserMedia/WebAudio nicht.');
     }
     const constraints = get('asr.deviceId')
       ? { audio: { deviceId: { exact: get('asr.deviceId') }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }
       : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    const mimeType = getSupportedAsrMimeType();
+    const audioContext = new AudioContextClass();
+    if (audioContext.state === 'suspended') await audioContext.resume();
+    const sourceNode = audioContext.createMediaStreamSource(stream);
+    const processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+    processorNode.onaudioprocess = event => {
+      if (!state.hostAsr.recording) return;
+      const input = event.inputBuffer.getChannelData(0);
+      state.hostAsr.wavChunks.push(new Float32Array(input));
+      const output = event.outputBuffer.getChannelData(0);
+      output.fill(0);
+    };
+    sourceNode.connect(processorNode);
+    processorNode.connect(audioContext.destination);
     state.hostAsr.stream = stream;
+    state.hostAsr.audioContext = audioContext;
+    state.hostAsr.sourceNode = sourceNode;
+    state.hostAsr.processorNode = processorNode;
+    state.hostAsr.wavSampleRate = audioContext.sampleRate;
+    state.hostAsr.wavChunks = [];
     state.hostAsr.recording = true;
-    startHostAsrSegment(mimeType);
+    startHostAsrSegment();
     await refreshAsrStatus();
     notify('Host-STT gestartet');
   }
 
-  function startHostAsrSegment(mimeType = getSupportedAsrMimeType()) {
+  function startHostAsrSegment() {
     if (!state.hostAsr.recording || !state.hostAsr.stream) return;
-    const recorder = new MediaRecorder(state.hostAsr.stream, mimeType ? { mimeType } : undefined);
-    const chunks = [];
-    recorder.ondataavailable = event => {
-      if (event.data && event.data.size > 0) chunks.push(event.data);
-    };
-    recorder.onstop = () => {
-      if (state.hostAsr.segmentTimer) {
-        clearTimeout(state.hostAsr.segmentTimer);
-        state.hostAsr.segmentTimer = null;
-      }
-      const blob = chunks.length ? new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }) : null;
-      if (blob && blob.size > 0) {
-        uploadHostAsrBlob(blob, false)
-          .then(() => {
-            if (state.hostAsr.recording) render();
-          })
-          .catch(error => {
-            state.hostAsr.lastError = error.message;
-            render();
-          })
-          .finally(() => {
-            if (state.hostAsr.recording) startHostAsrSegment(mimeType);
-          });
-      } else if (state.hostAsr.recording) {
-        startHostAsrSegment(mimeType);
-      }
-    };
-    recorder.onerror = event => {
-      state.hostAsr.lastError = event.error?.message || 'MediaRecorder error';
-      render();
-    };
-    state.hostAsr.recorder = recorder;
-    recorder.start();
     const segmentMs = Math.max(1000, Number(get('asr.maxSegmentMs', 8000)) || 8000);
     state.hostAsr.segmentTimer = setTimeout(() => {
-      if (recorder.state !== 'inactive') recorder.stop();
+      flushHostAsrSegment();
     }, segmentMs);
+  }
+
+  function flushHostAsrSegment() {
+    if (state.hostAsr.segmentTimer) {
+      clearTimeout(state.hostAsr.segmentTimer);
+      state.hostAsr.segmentTimer = null;
+    }
+    const chunks = state.hostAsr.wavChunks || [];
+    state.hostAsr.wavChunks = [];
+    if (state.hostAsr.recording) startHostAsrSegment();
+    if (!chunks.length) return;
+    const wavBuffer = encodeHostAsrWav(chunks, state.hostAsr.wavSampleRate || 16000);
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    uploadHostAsrBlob(blob, false)
+      .then(() => {
+        if (state.hostAsr.recording) render();
+      })
+      .catch(error => {
+        state.hostAsr.lastError = error.message;
+        render();
+      });
   }
 
   function stopHostAsr() {
@@ -813,12 +877,19 @@
       clearTimeout(state.hostAsr.segmentTimer);
       state.hostAsr.segmentTimer = null;
     }
-    const recorder = state.hostAsr.recorder;
-    if (recorder && recorder.state !== 'inactive') recorder.stop();
+    const wasRecording = state.hostAsr.recording;
+    state.hostAsr.recording = false;
+    if (wasRecording) flushHostAsrSegment();
+    state.hostAsr.processorNode?.disconnect?.();
+    state.hostAsr.sourceNode?.disconnect?.();
+    state.hostAsr.audioContext?.close?.().catch(() => {});
     state.hostAsr.stream?.getTracks?.().forEach(track => track.stop());
     state.hostAsr.stream = null;
     state.hostAsr.recorder = null;
-    state.hostAsr.recording = false;
+    state.hostAsr.audioContext = null;
+    state.hostAsr.sourceNode = null;
+    state.hostAsr.processorNode = null;
+    state.hostAsr.wavChunks = [];
     render();
     notify('Host-STT gestoppt');
   }

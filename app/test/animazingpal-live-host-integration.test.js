@@ -2,6 +2,8 @@ const AnimazingPalPlugin = require('../plugins/animazingpal/main');
 const BrainEngine = require('../plugins/animazingpal/brain/brain-engine');
 const { normalizeLiveHostConfig } = require('../plugins/animazingpal/brain/live-host-config');
 const SpeechState = require('../plugins/animazingpal/brain/speech-state');
+const fs = require('fs');
+const path = require('path');
 
 function createPlugin() {
   const ttsPlugin = { speak: jest.fn().mockResolvedValue({ success: true, id: 'tts-1' }) };
@@ -23,6 +25,14 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  test('live host UI uploads Host-STT microphone segments as WAV for Fish.audio compatibility', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/live-host-ui.js'), 'utf8');
+
+    expect(ui).toContain('encodeHostAsrWav');
+    expect(ui).toContain("new Blob([wavBuffer], { type: 'audio/wav' })");
+    expect(ui).toContain("form.append('audio', blob, 'host-stt.wav')");
+  });
+
   test('fresh live host config persists standalone while runtime Sidekick override is temporary', () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.ensureLiveHostRuntime = jest.fn();
