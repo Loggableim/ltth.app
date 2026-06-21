@@ -12,6 +12,8 @@
     avatars: [],
     personalities: [],
     devices: [],
+    inputDevices: [],
+    asrStatus: {},
     status: {},
     ttsStatus: {},
     ttsQueue: {},
@@ -19,7 +21,15 @@
     healthTimer: null,
     healthRefreshing: false,
     lastHealthAt: null,
-    loaded: false
+    loaded: false,
+    hostAsr: {
+      recording: false,
+      stream: null,
+      recorder: null,
+      lastTranscript: null,
+      lastUpload: null,
+      lastError: null
+    }
   };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -142,6 +152,29 @@
     return options;
   }
 
+  function hostInputOptions() {
+    const options = [
+      { value: '', label: 'Browser-Standardmikrofon' },
+      ...state.inputDevices.map(device => ({
+        value: device.deviceId,
+        label: device.label || device.deviceId
+      }))
+    ];
+    const configuredId = get('asr.deviceId');
+    if (configuredId && !options.some(option => option.value === configuredId)) {
+      options.splice(1, 0, {
+        value: configuredId,
+        label: `${get('asr.deviceLabel') || configuredId} (nicht freigegeben / neu auswaehlen)`
+      });
+    }
+    return options;
+  }
+
+  function isUnsafeHostMic(device = {}) {
+    const label = String(device.label || '').toLocaleLowerCase();
+    return /\b(cable|vb-audio|monitor|loopback|stereo mix|wasapi|output|speaker|lautsprecher)\b/.test(label);
+  }
+
   function supportsSinkId() {
     return typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
   }
@@ -219,6 +252,51 @@
       ${idleMotion ? `<p class="text-xs ${idleMotion.success ? 'text-green-400' : 'text-yellow-300'} mt-2">Letzte Auto-Idle-Motion: ${escapeHtml(idleMotion.reason || 'unbekannt')}${idleMotion.name ? ` · ${escapeHtml(idleMotion.name)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine automatische Idle-Motion in dieser Laufzeit.</p>'}
       ${diagnostics.lastRateLimitedAt ? `<p class="text-xs text-yellow-300 mt-2">Letztes Rate-Limit: ${escapeHtml(diagnostics.lastRateLimitedAt)}</p>` : ''}
     </div>`;
+  }
+
+  function renderHostAsr() {
+    const status = state.asrStatus.status || state.asrStatus || {};
+    const counters = status.counters || {};
+    const lastDecision = status.lastDecision || state.status.liveHostRuntime?.diagnostics?.lastHostSpeechDecision || null;
+    const lastUpload = state.hostAsr.lastUpload || {};
+    const selectedDevice = state.inputDevices.find(device => device.deviceId === get('asr.deviceId')) || {};
+    const unsafeSelected = selectedDevice.deviceId ? isUnsafeHostMic(selectedDevice) : false;
+    const readyClass = status.ready ? 'text-green-400' : 'text-yellow-300';
+    const recordingClass = state.hostAsr.recording ? 'text-green-400' : 'text-gray-400';
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Host-STT / Streamer-Mikrofon</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        ${input('asr.enabled', 'Host-STT aktiv', { type: 'checkbox' })}
+        ${input('asr.deviceId', 'Mikrofon fuer Streamer -> AI Host', { type: 'select', options: hostInputOptions() })}
+        ${input('asr.unsafeOverride', 'Loopback-Risiko erlauben', { type: 'checkbox' })}
+        ${input('asr.language', 'STT-Sprache')}
+        ${input('asr.silenceTimeoutMs', 'Stille-Fenster (ms)', { type: 'number', min: 250, max: 5000 })}
+        ${input('asr.maxSegmentMs', 'Segmentlaenge (ms)', { type: 'number', min: 1000, max: 30000 })}
+        ${input('asr.minTranscriptChars', 'Min. Zeichen', { type: 'number', min: 1, max: 500 })}
+        ${input('asr.maxAudioBytes', 'Max. Audio Bytes', { type: 'number', min: 1024, max: 8388608 })}
+        ${input('asr.rateLimitMax', 'Uploads/Fenster', { type: 'number', min: 1, max: 120 })}
+        ${input('asr.rateLimitWindowMs', 'Rate-Fenster (ms)', { type: 'number', min: 1000, max: 3600000 })}
+      </div>
+      <div class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm mt-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div>Backend: <strong class="${readyClass}">${status.ready ? 'bereit' : 'nicht bereit'}</strong></div>
+          <div>Aufnahme: <strong class="${recordingClass}">${state.hostAsr.recording ? 'laeuft' : 'gestoppt'}</strong></div>
+          <div>Fish.audio: <strong class="${status.fishConfigured ? 'text-green-400' : 'text-red-300'}">${status.fishConfigured ? 'konfiguriert' : 'fehlt'}</strong></div>
+          <div>Transkripte/Akzeptiert: <strong>${escapeHtml(counters.transcribed ?? 0)} / ${escapeHtml(counters.accepted ?? 0)}</strong></div>
+          <div>Blockiert/Fehler: <strong>${escapeHtml(counters.rejected ?? 0)} / ${escapeHtml(counters.errors ?? 0)}</strong></div>
+          <div>Latenz: <strong>${escapeHtml(status.lastLatencyMs ?? lastUpload.latencyMs ?? '-')}ms</strong></div>
+        </div>
+        ${unsafeSelected && !get('asr.unsafeOverride') ? '<p class="text-xs text-red-300 mt-2">Ausgewaehltes Geraet wirkt wie Loopback/Monitor. Fuer echte Streamer-Kommunikation ein physisches Mikrofon waehlen oder Override bewusst aktivieren.</p>' : ''}
+        ${state.hostAsr.lastTranscript ? `<p class="text-xs text-gray-300 mt-2">Letztes Transkript: ${escapeHtml(state.hostAsr.lastTranscript)}</p>` : ''}
+        ${lastDecision ? `<p class="text-xs ${lastDecision.respond === false ? 'text-yellow-300' : 'text-green-400'} mt-2">Letzte Host-Decision: ${lastDecision.respond === false ? 'nicht antworten' : 'antworten'} - ${escapeHtml(lastDecision.reason || 'unknown')} - Score ${escapeHtml(lastDecision.score ?? '-')}</p>` : '<p class="text-xs text-gray-400 mt-2">Noch keine Host-Decision.</p>'}
+        ${state.hostAsr.lastError ? `<p class="text-xs text-red-300 mt-2">STT-Fehler: ${escapeHtml(state.hostAsr.lastError)}</p>` : ''}
+      </div>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-secondary" data-refresh-input-devices>Host-Mikros aktualisieren/freigeben</button>
+        <button class="btn btn-secondary" data-asr-status>STT-Status pruefen</button>
+        <button class="btn btn-success" data-asr-start ${state.hostAsr.recording ? 'disabled' : ''}>Host-STT starten</button>
+        <button class="btn btn-danger" data-asr-stop ${state.hostAsr.recording ? '' : 'disabled'}>Host-STT stoppen</button>
+      </div>
+      ${actions('asr')}</div></section>`;
   }
 
   function renderPreflightStatus() {
@@ -303,6 +381,11 @@
         ${input('response.minDecisionScore', 'Min. Entscheidungs-Score', { type: 'number', min: 0, max: 1, step: 0.01 })}
         ${input('response.maxResponsesPerMinute', 'Antworten/Minute', { type: 'number', min: 1, max: 120 })}
         ${input('response.chatProbability', 'Chat-Wahrscheinlichkeit', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input('response.hostReplyProbability', 'Host-STT Antwortgate', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input('response.hostMinConfidence', 'Host-STT Mindestconfidence', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input('response.hostContextCooldownMs', 'Host-STT aktive Pause (ms)', { type: 'number', min: 0, max: 3600000 })}
+        ${input('response.hostOvertalkCooldownMs', 'Anti-Overtalk (ms)', { type: 'number', min: 0, max: 300000 })}
+        ${input('response.hostLongFormWordLimit', 'Langform-Wortlimit', { type: 'number', min: 1, max: 500 })}
         ${input('response.maxSentences', 'Max. Sätze', { type: 'number', min: 1, max: 10 })}${input('response.maxCharacters', 'Max. Zeichen', { type: 'number', min: 20, max: 4000 })}
         ${input('response.language', 'Sprache')}${input('response.cacheEnabled', 'Cache aktiv', { type: 'checkbox' })}
         ${input('response.cacheTtlMs', 'Cache TTL (ms)', { type: 'number', min: 0 })}${input('response.contextMessages', 'Kontextnachrichten', { type: 'number', min: 0, max: 100 })}
@@ -310,6 +393,7 @@
         ${input('response.speakCooldownMs', 'Sprech-Cooldown (ms)', { type: 'number', min: 0, max: 60000 })}
         ${input('response.silenceWarnAfterEvents', 'Silence-Warnung nach Events', { type: 'number', min: 1, max: 1000 })}
       </div><div class="mt-3">${textarea('response.systemPrompt', 'Systemprompt', 5)}</div>${actions('response')}</div></section>
+      ${renderHostAsr()}
       <section class="mt-4"><h2 class="text-xl font-bold mb-3">Ereignisse</h2><div class="grid grid-cols-1 gap-3">${EVENTS.map(eventCard).join('')}</div>${actions('events')}</section>
       ${renderTtsAudio()}
       ${renderMemory()}
@@ -429,6 +513,10 @@
       const device = document.querySelector('[data-lh="audio.outputDeviceId"]');
       set(patch, 'audio.outputDeviceLabel', device?.selectedOptions?.[0]?.textContent || '');
     }
+    if (section === 'asr' || section === 'all') {
+      const device = document.querySelector('[data-lh="asr.deviceId"]');
+      set(patch, 'asr.deviceLabel', device?.selectedOptions?.[0]?.textContent || '');
+    }
     return patch;
   }
 
@@ -483,6 +571,26 @@
     } catch (error) {
       notify(`Audiogeräte nicht lesbar: ${error.message}`, true);
       return [];
+    }
+  }
+
+  async function loadHostInputDevices(requestPermission = false) {
+    if (!navigator.mediaDevices?.enumerateDevices) return [];
+    let permissionStream = null;
+    try {
+      if (requestPermission && navigator.mediaDevices.getUserMedia) {
+        permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      state.inputDevices = devices
+        .filter(device => device.kind === 'audioinput')
+        .map(device => ({ deviceId: device.deviceId, label: device.label || device.deviceId, source: 'browser' }));
+      return state.inputDevices;
+    } catch (error) {
+      notify(`Host-Mikrofone nicht lesbar: ${error.message}`, true);
+      return state.inputDevices || [];
+    } finally {
+      permissionStream?.getTracks?.().forEach(track => track.stop());
     }
   }
 
@@ -579,6 +687,111 @@
     notify(result.success
       ? 'TTS Probe ok'
       : `TTS Probe fehlgeschlagen: ${result.error || 'unbekannt'}`, !result.success);
+  }
+
+  function getSelectedHostMic() {
+    const deviceId = get('asr.deviceId');
+    return state.inputDevices.find(device => device.deviceId === deviceId) || null;
+  }
+
+  function getHostMicQuery() {
+    const device = getSelectedHostMic();
+    const params = new URLSearchParams();
+    params.set('micDeviceId', get('asr.deviceId') || '');
+    params.set('micLabel', device?.label || get('asr.deviceLabel') || '');
+    params.set('micBlocked', device ? String(isUnsafeHostMic(device)) : 'false');
+    params.set('micUnsafeOverride', String(get('asr.unsafeOverride', false)));
+    return params.toString();
+  }
+
+  async function refreshAsrStatus() {
+    const body = await request(`/api/animazingpal/live-host/asr/status?${getHostMicQuery()}`);
+    state.asrStatus = body.status || {};
+    render();
+    return state.asrStatus;
+  }
+
+  function getSupportedAsrMimeType() {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg'
+    ];
+    if (!window.MediaRecorder?.isTypeSupported) return '';
+    return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
+  async function uploadHostAsrBlob(blob, transcribeOnly = false) {
+    if (!blob || blob.size === 0) return null;
+    const form = new FormData();
+    const extension = blob.type.includes('ogg') ? 'ogg' : 'webm';
+    form.append('audio', blob, `host-stt.${extension}`);
+    form.append('transcribeOnly', transcribeOnly ? 'true' : 'false');
+    const response = await fetch(`/api/animazingpal/live-host/asr/transcribe?${getHostMicQuery()}`, {
+      method: 'POST',
+      body: form
+    });
+    const body = await response.json();
+    if (!response.ok || body.success === false) {
+      const error = body.error?.message || body.error || `HTTP ${response.status}`;
+      throw new Error(error);
+    }
+    state.asrStatus = body.diagnostics || state.asrStatus || {};
+    state.hostAsr.lastUpload = body;
+    state.hostAsr.lastTranscript = body.transcript?.text || state.hostAsr.lastTranscript;
+    state.hostAsr.lastError = null;
+    return body;
+  }
+
+  async function startHostAsr() {
+    await save('asr');
+    await loadHostInputDevices(false);
+    const device = getSelectedHostMic();
+    if (device && isUnsafeHostMic(device) && !get('asr.unsafeOverride')) {
+      throw new Error('Ausgewaehltes Host-Mikrofon wirkt wie Loopback/Monitor. Override aktivieren oder echtes Mikrofon waehlen.');
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      throw new Error('Dieser Browser unterstuetzt MediaRecorder/getUserMedia nicht.');
+    }
+    const constraints = get('asr.deviceId')
+      ? { audio: { deviceId: { exact: get('asr.deviceId') }, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }
+      : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const mimeType = getSupportedAsrMimeType();
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    recorder.ondataavailable = event => {
+      if (!event.data || event.data.size === 0) return;
+      uploadHostAsrBlob(event.data, false)
+        .then(() => {
+          if (state.hostAsr.recording) render();
+        })
+        .catch(error => {
+          state.hostAsr.lastError = error.message;
+          render();
+        });
+    };
+    recorder.onerror = event => {
+      state.hostAsr.lastError = event.error?.message || 'MediaRecorder error';
+      render();
+    };
+    state.hostAsr.stream = stream;
+    state.hostAsr.recorder = recorder;
+    state.hostAsr.recording = true;
+    recorder.start(Math.max(1000, Number(get('asr.maxSegmentMs', 12000)) || 12000));
+    await refreshAsrStatus();
+    notify('Host-STT gestartet');
+  }
+
+  function stopHostAsr() {
+    const recorder = state.hostAsr.recorder;
+    if (recorder && recorder.state !== 'inactive') recorder.stop();
+    state.hostAsr.stream?.getTracks?.().forEach(track => track.stop());
+    state.hostAsr.stream = null;
+    state.hostAsr.recorder = null;
+    state.hostAsr.recording = false;
+    render();
+    notify('Host-STT gestoppt');
   }
 
   function startLiveHostHealthRefresh() {
@@ -680,6 +893,14 @@
       request('/api/animazingpal/brain/personality/set', { method: 'POST', body: JSON.stringify({ personality: event.target.value }) }).then(() => notify('Persönlichkeit aktiviert')).catch(error => notify(error.message, true));
     });
     document.querySelector('[data-refresh-devices]')?.addEventListener('click', () => loadDevices().then(render));
+    document.querySelector('[data-refresh-input-devices]')?.addEventListener('click', () => loadHostInputDevices(true).then(render));
+    document.querySelector('[data-asr-status]')?.addEventListener('click', () => refreshAsrStatus().then(() => notify('Host-STT Status aktualisiert')).catch(error => notify(error.message, true)));
+    document.querySelector('[data-asr-start]')?.addEventListener('click', () => startHostAsr().catch(error => {
+      state.hostAsr.lastError = error.message;
+      render();
+      notify(error.message, true);
+    }));
+    document.querySelector('[data-asr-stop]')?.addEventListener('click', stopHostAsr);
     document.querySelector('[data-refresh-livehost-health]')?.addEventListener('click', () => refreshLiveHostHealth().catch(error => notify(error.message, true)));
     document.querySelector('[data-movement-test]')?.addEventListener('click', () => runMovementTest().catch(error => notify(error.message, true)));
     document.querySelector('[data-tts-probe]')?.addEventListener('click', () => runTtsProbe().catch(error => notify(error.message, true)));
@@ -720,6 +941,8 @@
       state.personalities = (personalities.personalities || []).map(item => ({ id: item.name || item.id, name: item.displayName || item.name || item.id }));
       normalizeStatus(status);
       await loadDevices();
+      await loadHostInputDevices(false);
+      state.asrStatus = await request('/api/animazingpal/live-host/asr/status').then(body => body.status || {}).catch(() => ({}));
       state.loaded = true;
       render();
       startLiveHostHealthRefresh();

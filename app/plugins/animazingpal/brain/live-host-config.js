@@ -109,6 +109,11 @@ function buildLiveHostDefaults() {
       chatProbability: 0.1,
       maxSentences: 2,
       maxCharacters: 500,
+      hostReplyProbability: 0.75,
+      hostMinConfidence: 0.35,
+      hostContextCooldownMs: 6000,
+      hostOvertalkCooldownMs: 1800,
+      hostLongFormWordLimit: 48,
       language: 'de',
       systemPrompt: '',
       cacheEnabled: true,
@@ -141,6 +146,19 @@ function buildLiveHostDefaults() {
       monitoringEnabled: false,
       monitoringVolume: 30,
       missingDeviceBehavior: 'mute'
+    },
+    asr: {
+      enabled: true,
+      deviceId: '',
+      deviceLabel: '',
+      unsafeOverride: false,
+      language: 'de',
+      maxAudioBytes: 8 * 1024 * 1024,
+      minTranscriptChars: 1,
+      rateLimitMax: 10,
+      rateLimitWindowMs: 60000,
+      silenceTimeoutMs: 900,
+      maxSegmentMs: 12000
     },
     viewerMemory: {
       enabled: true,
@@ -242,6 +260,11 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
     ? configured.response.decisionMode
     : defaults.response.decisionMode;
   configured.response.minDecisionScore = clamp(configured.response.minDecisionScore, 0, 1, defaults.response.minDecisionScore);
+  configured.response.hostReplyProbability = clamp(configured.response.hostReplyProbability, 0, 1, defaults.response.hostReplyProbability);
+  configured.response.hostMinConfidence = clamp(configured.response.hostMinConfidence, 0, 1, defaults.response.hostMinConfidence);
+  configured.response.hostContextCooldownMs = Math.round(clamp(configured.response.hostContextCooldownMs, 0, 60 * 60 * 1000, defaults.response.hostContextCooldownMs));
+  configured.response.hostOvertalkCooldownMs = Math.round(clamp(configured.response.hostOvertalkCooldownMs, 0, 5 * 60 * 1000, defaults.response.hostOvertalkCooldownMs));
+  configured.response.hostLongFormWordLimit = Math.round(clamp(configured.response.hostLongFormWordLimit, 1, 500, defaults.response.hostLongFormWordLimit));
   configured.response.chatProbability = clamp(configured.response.chatProbability, 0, 1, defaults.response.chatProbability);
   configured.response.maxSentences = Math.round(clamp(configured.response.maxSentences, 1, 10, defaults.response.maxSentences));
   configured.response.maxCharacters = Math.round(clamp(configured.response.maxCharacters, 20, 4000, 500));
@@ -272,6 +295,17 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
     ? configured.tts.fallbackBehavior : defaults.tts.fallbackBehavior;
   configured.audio.monitoringEnabled = normalizeBoolean(configured.audio.monitoringEnabled, defaults.audio.monitoringEnabled);
   configured.audio.monitoringVolume = clamp(configured.audio.monitoringVolume, 0, 100, 30);
+  configured.asr.enabled = normalizeBoolean(configured.asr.enabled, defaults.asr.enabled);
+  configured.asr.deviceId = safeString(configured.asr.deviceId, 500);
+  configured.asr.deviceLabel = safeString(configured.asr.deviceLabel, 500);
+  configured.asr.unsafeOverride = normalizeBoolean(configured.asr.unsafeOverride, defaults.asr.unsafeOverride);
+  configured.asr.language = safeString(configured.asr.language, 20, 'de');
+  configured.asr.maxAudioBytes = Math.round(clamp(configured.asr.maxAudioBytes, 1024, 8 * 1024 * 1024, defaults.asr.maxAudioBytes));
+  configured.asr.minTranscriptChars = Math.round(clamp(configured.asr.minTranscriptChars, 1, 500, defaults.asr.minTranscriptChars));
+  configured.asr.rateLimitMax = Math.round(clamp(configured.asr.rateLimitMax, 1, 120, defaults.asr.rateLimitMax));
+  configured.asr.rateLimitWindowMs = Math.round(clamp(configured.asr.rateLimitWindowMs, 1000, 60 * 60 * 1000, defaults.asr.rateLimitWindowMs));
+  configured.asr.silenceTimeoutMs = Math.round(clamp(configured.asr.silenceTimeoutMs, 250, 5000, defaults.asr.silenceTimeoutMs));
+  configured.asr.maxSegmentMs = Math.round(clamp(configured.asr.maxSegmentMs, 1000, 30000, defaults.asr.maxSegmentMs));
   configured.viewerMemory.enabled = normalizeBoolean(configured.viewerMemory.enabled, defaults.viewerMemory.enabled);
   configured.viewerMemory.writeMemories = normalizeBoolean(configured.viewerMemory.writeMemories, defaults.viewerMemory.writeMemories);
   configured.viewerMemory.includeInsights = normalizeBoolean(configured.viewerMemory.includeInsights, defaults.viewerMemory.includeInsights);
@@ -405,6 +439,7 @@ function applyLiveHostPreset(config, preset) {
   production.tts.voiceId = current.tts.voiceId;
   production.audio.outputDeviceId = current.audio.outputDeviceId;
   production.audio.outputDeviceLabel = current.audio.outputDeviceLabel;
+  production.asr = current.asr;
   production.viewerMemory.streamerId = current.viewerMemory.streamerId;
   production.avatarBundles = current.avatarBundles;
   production.activeAvatarBundleId = current.activeAvatarBundleId;

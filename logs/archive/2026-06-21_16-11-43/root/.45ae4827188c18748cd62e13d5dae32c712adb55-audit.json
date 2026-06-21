@@ -6,9 +6,9 @@
     "auditLog": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\.45ae4827188c18748cd62e13d5dae32c712adb55-audit.json",
     "files": [
         {
-            "date": 1782051111381,
+            "date": 1782047626034,
             "name": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\app-2026-06-21.log",
-            "hash": "66be02155e6cfe42b86776c2f35e4267b1a13a26ac4e240ce8ffe57771442c19"
+            "hash": "69d94a5bcf4e6f529fcd3f87f60c2b804abcbae72a2a4453c03ffc4f284ddf2a"
         }
     ],
     "hashType": "sha256"

@@ -1129,10 +1129,10 @@
                     </div>
                     <div class="maintenance-controls">
                         <div class="manual-controls-title">Datenbank-Wartung</div>
-                        <button class="manual-btn secondary" id="vacuumDbBtn" type="button">Datenbank komprimieren (VACUUM)</button>
+                        <button class="manual-btn secondary" id="vacuumDbBtn" type="button">Datenbank bereinigen (VACUUM/90 Tage)</button>
                         <button class="manual-btn secondary" id="profileRepairBtn" type="button">Profil reparieren</button>
                         <button class="manual-btn secondary" id="profileRestoreBtn" type="button">Letztes Profil-Backup wiederherstellen</button>
-                        <div class="maintenance-note" id="vacuumHint">Server vorher stoppen. VACUUM gibt freien Speicher nach geloeschten Detail-Logs frei.</div>
+                        <div class="maintenance-note" id="vacuumHint">Server vorher stoppen. StandardmÃ¤ssig werden Nutzer mit InaktivitÃ¤t >90 Tage entfernt, danach VACUUM ausgefÃ¼hrt.</div>
                     </div>
                     <div class="manual-status" id="manualStatus">Port 3000 wird automatisch versucht; bei Belegung nutzt der Server einen freien Folgeport.</div>
                 </div>
@@ -1476,19 +1476,41 @@
         });
 
         document.getElementById('vacuumDbBtn').addEventListener('click', async () => {
-            if (!confirm('Datenbank jetzt komprimieren? Der Server muss gestoppt sein. Der Vorgang kann mehrere Minuten dauern.')) {
+            if (!confirm('Datenbank jetzt bereinigen (InaktivitÃ¤t >90 Tage entfernen + VACUUM). Der Server muss gestoppt sein. Der Vorgang kann mehrere Minuten dauern.')) {
                 return;
             }
             try {
                 vacuumInProgress = true;
                 if (vacuumDbBtn) vacuumDbBtn.disabled = true;
                 setManualStatus('VACUUM laeuft... bitte Launcher offen lassen.');
-                const result = await postLauncherAction('/api/launcher/vacuum-database');
+                const result = await (async () => {
+                    const response = await fetch('/api/launcher/vacuum-database', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ cleanupDays: 90 })
+                    });
+                    const text = await response.text();
+                    if (!response.ok) {
+                        throw new Error(text || response.statusText);
+                    }
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return {};
+                    }
+                })();
                 const freed = Number(result.freedBytes || 0);
                 const freedText = freed >= 0
                     ? 'freigegeben: ' + formatBytes(freed)
                     : 'Groesse veraendert: +' + formatBytes(Math.abs(freed));
-                setManualStatus('VACUUM fertig fuer Profil ' + (result.profile || 'aktiv') + ' - ' + freedText + '. Dauer: ' + Math.round((result.durationMillis || 0) / 1000) + 's.');
+                const cleanupUsers = Number(result.cleanupDeletedUsers || 0);
+                const cleanupText = cleanupUsers > 0
+                    ? ' / Cleanup: ' + cleanupUsers + ' inaktive User (>' + Number(result.cleanupDays || 0) + ' Tage) gelöscht'
+                    : (Number(result.cleanupDays || 0) > 0 ? ' / Cleanup: keine inaktiven User zu löschen' : '');
+                const modeText = result.vacuumPerformed === false ? ' (ohne VACUUM)' : '';
+                setManualStatus('VACUUM fertig fuer Profil ' + (result.profile || 'aktiv') + ' - ' + freedText + modeText + '. Dauer: ' + Math.round((result.durationMillis || 0) / 1000) + 's.' + cleanupText + '.');
             } catch (error) {
                 setManualStatus('VACUUM fehlgeschlagen: ' + error.message);
             } finally {

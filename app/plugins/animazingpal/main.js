@@ -20,6 +20,7 @@
 
 const WebSocket = require('ws');
 const path = require('path');
+const multer = require('multer');
 const BrainEngine = require('./brain/brain-engine');
 const {
   buildLiveHostDefaults,
@@ -36,6 +37,83 @@ const {
 const { listAudioOutputDevices } = require('./brain/audio-devices');
 const EventDeduper = require('./brain/event-deduper');
 const SpeechState = require('./brain/speech-state');
+
+const ASR_AUDIO_FIELD = 'audio';
+const ASR_SAFE_AUDIO_MIME_TYPES = new Set([
+  'audio/webm',
+  'audio/ogg',
+  'audio/opus',
+  'audio/wav',
+  'audio/wave',
+  'audio/x-wav',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/mp4',
+  'audio/m4a',
+  'audio/aac'
+]);
+const ASR_OCTET_AUDIO_EXTENSIONS = new Set([
+  '.webm',
+  '.ogg',
+  '.opus',
+  '.wav',
+  '.mp3',
+  '.mpeg',
+  '.mp4',
+  '.m4a',
+  '.aac'
+]);
+const ASR_SERVICE_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function cleanHostSpeechText(text, maximum = 500) {
+  return String(text ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ').slice(0, maximum);
+}
+
+function normalizeHostSpeechText(text) {
+  return cleanHostSpeechText(text).toLocaleLowerCase();
+}
+
+function countHostSpeechWords(text) {
+  return cleanHostSpeechText(text, 2000).split(/\s+/).filter(Boolean).length;
+}
+
+function hasHostQuestionStructure(text) {
+  const clean = cleanHostSpeechText(text);
+  if (!clean) return false;
+  if (clean.endsWith('?')) return true;
+  return /^(wer|was|wie|wann|wo|wieso|warum|weshalb|kann|koennen|k.nnen|kannst|sind|war|is|are|do|does|did|can|could|would|should|who|what|where|when|why|which)\b/i.test(clean);
+}
+
+function isHostGreeting(text) {
+  return /^(hey|hi|hallo|servus|moin|guten tag|guten abend|guten morgen|hello|yo)\b/i.test(cleanHostSpeechText(text));
+}
+
+function buildHostSpeechFeatures(text, response = {}) {
+  const clean = cleanHostSpeechText(text);
+  const wordCount = countHostSpeechWords(clean);
+  const longFormLimit = Math.max(1, Number(response.hostLongFormWordLimit) || 48);
+  return {
+    isQuestion: hasHostQuestionStructure(clean),
+    isGreeting: isHostGreeting(clean),
+    isLongForm: wordCount > longFormLimit,
+    wordCount,
+    charCount: clean.length
+  };
+}
+
+function computeHostSpeechScore(features) {
+  let score = 0.45;
+  if (features.isQuestion) score += 0.35;
+  if (features.isGreeting) score += 0.15;
+  if (features.isLongForm) score -= 0.35;
+  return clampNumber(score, 0, 1, 0.45);
+}
 
 class AnimazingPalPlugin {
   constructor(api) {
@@ -68,11 +146,16 @@ class AnimazingPalPlugin {
       processedEvents: 0,
       respondedEvents: 0,
       skippedEvents: 0,
-      idleMotionSkipped: 0
+      idleMotionSkipped: 0,
+      lastHostSpeechDecision: null,
+      lastHostSpeechDecisionAt: null
     };
     this.liveHostIdleMotionTimer = null;
     this.liveHostLastAvatarActionAt = 0;
     this.liveHostIdleMotionSequence = 0;
+    this.liveHostHostSpeechHistory = [];
+    this.lastHostSpeechDecisionAt = null;
+    this.lastHostSpeechDecision = null;
     this.liveHostBrowserHeartbeat = null;
     this.liveHostSourceWatchdogTimer = null;
     this.liveHostSourceReconnectInFlight = false;
@@ -144,6 +227,9 @@ class AnimazingPalPlugin {
       lastReason: null,
       queueLength: 0
     };
+
+    this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    this.asrRateLimitBuckets = new Map();
   }
 
   async init() {
@@ -1204,6 +1290,19 @@ class AnimazingPalPlugin {
         this.api.log(`Audio device discovery failed: ${error.message}`, 'warn');
         res.json({ success: true, devices: [] });
       }
+    });
+
+    this.api.registerRoute('get', '/api/animazingpal/live-host/asr/status', (req, res) => {
+      try {
+        res.json({ success: true, status: this._getAsrStatus(this._getAsrPreflightOptionsFromRequest(req)) });
+      } catch (error) {
+        this.api.log(`Live Host ASR status failed: ${error.message}`, 'warn');
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.api.registerRoute('post', '/api/animazingpal/live-host/asr/transcribe', (req, res) => {
+      return this._handleAsrUploadRoute(req, res);
     });
 
     this.api.registerRoute('post', '/api/animazingpal/live-host/preflight', (req, res) => {
@@ -3602,6 +3701,12 @@ class AnimazingPalPlugin {
     if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'idleMotionSkipped')) {
       this.liveHostDiagnostics.idleMotionSkipped = 0;
     }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastHostSpeechDecision')) {
+      this.liveHostDiagnostics.lastHostSpeechDecision = null;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.liveHostDiagnostics, 'lastHostSpeechDecisionAt')) {
+      this.liveHostDiagnostics.lastHostSpeechDecisionAt = null;
+    }
     if (!this.speechState) {
       this.speechState = new SpeechState();
     }
@@ -4569,6 +4674,723 @@ class AnimazingPalPlugin {
     });
   }
 
+  _createEmptyAsrDiagnostics() {
+    return {
+      counters: {
+        requests: 0,
+        transcribed: 0,
+        accepted: 0,
+        rejected: 0,
+        delegated: 0,
+        errors: 0
+      },
+      lastTranscriptAt: null,
+      lastError: null,
+      lastLatencyMs: null,
+      lastDecision: null
+    };
+  }
+
+  _getAsrRuntimeConfig() {
+    const asr = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {}).asr || {};
+    const configuredMax = Number(asr.maxAudioBytes);
+    const maxAudioBytes = Number.isFinite(configuredMax) && configuredMax > 0
+      ? Math.min(Math.round(configuredMax), ASR_SERVICE_MAX_AUDIO_BYTES)
+      : ASR_SERVICE_MAX_AUDIO_BYTES;
+    return {
+      enabled: asr.enabled !== false && asr.enabled !== 'false',
+      deviceId: this._sanitizeAsrPublicText(asr.deviceId, 256) || '',
+      deviceLabel: this._sanitizeAsrPublicText(asr.deviceLabel, 256) || '',
+      unsafeOverride: asr.unsafeOverride === true || asr.unsafeOverride === 'true',
+      language: this._sanitizeAsrPublicText(asr.language, 20) || 'de',
+      maxAudioBytes,
+      minTranscriptChars: this._clampInteger(asr.minTranscriptChars, 1, 500, 1),
+      rateLimitMax: this._clampInteger(asr.rateLimitMax, 1, 120, 10),
+      rateLimitWindowMs: this._clampInteger(asr.rateLimitWindowMs, 1000, 60 * 60 * 1000, 60000),
+      silenceTimeoutMs: this._clampInteger(asr.silenceTimeoutMs, 250, 5000, 900),
+      maxSegmentMs: this._clampInteger(asr.maxSegmentMs, 1000, 30000, 12000)
+    };
+  }
+
+  _getTtsPlugin() {
+    return this.api.getPluginInstance?.('tts') || this.api.getPlugin?.('tts') || null;
+  }
+
+  _getTtsFishStatus(tts = this._getTtsPlugin()) {
+    let safeStatus = null;
+    try {
+      if (typeof tts?.getSafeStatus === 'function') {
+        safeStatus = tts.getSafeStatus();
+      } else if (typeof tts?.getStatus === 'function') {
+        safeStatus = tts.getStatus();
+      }
+    } catch (error) {
+      safeStatus = null;
+    }
+
+    const safeConfig = safeStatus?.config || {};
+    const fishConfigured = Boolean(
+      safeStatus?.fishConfigured ||
+      safeStatus?.fishaudioConfigured ||
+      safeStatus?.engines?.fishaudio ||
+      safeStatus?.engines?.fishAudio ||
+      safeConfig.fishaudioApiKeyConfigured ||
+      safeConfig.fishAudioApiKeyConfigured ||
+      tts?.engines?.fishaudio ||
+      tts?.config?.fishaudioApiKey
+    );
+
+    return {
+      available: !!tts,
+      initialized: !!tts && tts.isInitialized !== false && tts.initialized !== false,
+      defaultEngine: String(safeConfig.defaultEngine || tts?.config?.defaultEngine || '').slice(0, 80) || null,
+      fishConfigured,
+      asrAvailable: typeof tts?.transcribeFishAudio === 'function'
+    };
+  }
+
+  _getAsrReadiness() {
+    const tts = this._getTtsPlugin();
+    const fishStatus = this._getTtsFishStatus(tts);
+    const config = this._getAsrRuntimeConfig();
+    return {
+      config,
+      tts,
+      ttsAvailable: fishStatus.asrAvailable,
+      fishConfigured: fishStatus.fishConfigured,
+      ready: config.enabled && fishStatus.asrAvailable && fishStatus.fishConfigured
+    };
+  }
+
+  _getAsrPreflight(options = {}) {
+    const checks = [];
+    const add = (id, status, label, detail, action = null) => {
+      checks.push({
+        id,
+        status,
+        label,
+        detail: this._sanitizeAsrPublicText(detail, 240),
+        ...(action ? { action: this._sanitizeAsrPublicText(action, 240) } : {})
+      });
+    };
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const readiness = this._getAsrReadiness();
+
+    add(
+      'liveHost.enabled',
+      liveHost.enabled ? 'ok' : 'error',
+      'Live Host',
+      liveHost.enabled ? 'AnimazingPal Live Host ist aktiv.' : 'AnimazingPal Live Host ist deaktiviert.',
+      liveHost.enabled ? null : 'Live Host aktivieren.'
+    );
+    add(
+      'tts.fishAsr',
+      readiness.ttsAvailable && readiness.fishConfigured ? 'ok' : 'error',
+      'Fish.audio STT',
+      readiness.ttsAvailable
+        ? (readiness.fishConfigured ? 'Fish.audio Transkription ist verfuegbar.' : 'Fish.audio ist nicht konfiguriert.')
+        : 'TTS Plugin stellt keine Fish.audio Transkription bereit.',
+      readiness.ttsAvailable && readiness.fishConfigured ? null : 'Fish.audio API-Key im TTS Plugin pruefen.'
+    );
+    add(
+      'brain.hostSpeech',
+      this.brainEngine && typeof this.brainEngine.processHostSpeech === 'function' ? 'ok' : 'error',
+      'Host-Brain',
+      this.brainEngine && typeof this.brainEngine.processHostSpeech === 'function'
+        ? 'Host-Speech Pipeline ist verfuegbar.'
+        : 'Host-Speech Pipeline ist nicht verfuegbar.',
+      this.brainEngine && typeof this.brainEngine.processHostSpeech === 'function' ? null : 'Brain Engine initialisieren.'
+    );
+
+    const microphone = options.microphone || options.browser?.microphone || null;
+    if (microphone) {
+      const blocked = this._isTruthyRequestValue(microphone.blocked);
+      const unsafeOverride = this._isTruthyRequestValue(microphone.unsafeOverride) || readiness.config.unsafeOverride;
+      if (blocked && !unsafeOverride) {
+        add('microphone.device', 'error', 'Host-Mikrofon', 'Ausgewaehltes Mikrofon wirkt wie Loopback/Monitor und Override ist aus.', 'Echtes Mikrofon waehlen oder Risiko-Override aktivieren.');
+      } else if (blocked && unsafeOverride) {
+        add('microphone.device', 'warn', 'Host-Mikrofon', 'Loopback-verdacht akzeptiert, Override ist aktiv.', 'Feedback-Schleife manuell ausschliessen.');
+      } else {
+        add('microphone.device', readiness.config.deviceId ? 'ok' : 'warn', 'Host-Mikrofon', readiness.config.deviceId ? 'Host-Mikrofon ist gespeichert.' : 'Noch kein Host-Mikrofon gespeichert.', 'Mikrofon in der UI auswaehlen und speichern.');
+      }
+    }
+
+    const summary = checks.reduce((acc, check) => {
+      acc[check.status === 'error' ? 'errors' : check.status === 'warn' ? 'warnings' : 'ok'] += 1;
+      return acc;
+    }, { ok: 0, warnings: 0, errors: 0 });
+
+    return {
+      ready: summary.errors === 0,
+      checkedAt: new Date().toISOString(),
+      summary,
+      checks
+    };
+  }
+
+  _getAsrPreflightOptionsFromRequest(req = {}) {
+    const query = req.query || {};
+    const config = this._getAsrRuntimeConfig();
+    return {
+      microphone: {
+        blocked: this._isTruthyRequestValue(query.micBlocked),
+        unsafeOverride: this._isTruthyRequestValue(query.micUnsafeOverride) || config.unsafeOverride,
+        label: this._sanitizeAsrPublicText(query.micLabel || config.deviceLabel, 120) || '',
+        deviceId: this._sanitizeAsrPublicText(query.micDeviceId || config.deviceId, 120) || ''
+      }
+    };
+  }
+
+  _getAsrStatus(preflightOptions = {}) {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    const readiness = this._getAsrReadiness();
+    const preflight = this._getAsrPreflight(preflightOptions);
+    return {
+      enabled: readiness.config.enabled,
+      ready: readiness.ready && preflight.ready,
+      ttsAvailable: readiness.ttsAvailable,
+      fishConfigured: readiness.fishConfigured,
+      preflight,
+      maxAudioBytes: readiness.config.maxAudioBytes,
+      language: readiness.config.language,
+      minTranscriptChars: readiness.config.minTranscriptChars,
+      deviceId: readiness.config.deviceId,
+      deviceLabel: readiness.config.deviceLabel,
+      unsafeOverride: readiness.config.unsafeOverride,
+      silenceTimeoutMs: readiness.config.silenceTimeoutMs,
+      maxSegmentMs: readiness.config.maxSegmentMs,
+      rateLimitMax: readiness.config.rateLimitMax,
+      rateLimitWindowMs: readiness.config.rateLimitWindowMs,
+      lastTranscriptAt: this.asrDiagnostics.lastTranscriptAt,
+      lastError: this.asrDiagnostics.lastError,
+      lastLatencyMs: this.asrDiagnostics.lastLatencyMs,
+      lastDecision: this.asrDiagnostics.lastDecision || this.lastHostSpeechDecision || null,
+      counters: { ...this.asrDiagnostics.counters }
+    };
+  }
+
+  _createAsrUploadMiddleware(config) {
+    return multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fileSize: config.maxAudioBytes,
+        files: 1,
+        fields: 8,
+        parts: 10,
+        fieldSize: 2048
+      },
+      fileFilter: (req, file, callback) => {
+        const mimeType = this._normalizeAsrMimeType(file.mimetype);
+        if (ASR_SAFE_AUDIO_MIME_TYPES.has(mimeType)) return callback(null, true);
+        if (mimeType === 'application/octet-stream' && this._hasAllowedAsrExtension(file.originalname)) return callback(null, true);
+        const error = new Error('Unsupported audio MIME type');
+        error.code = 'ASR_UNSUPPORTED_MIME';
+        return callback(error);
+      }
+    }).single(ASR_AUDIO_FIELD);
+  }
+
+  _handleAsrUploadRoute(req, res) {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    this.asrDiagnostics.counters.requests += 1;
+
+    if (!this._isAsrRequestAuthorized(req)) {
+      return this._sendAsrError(res, 403, 'ASR_FORBIDDEN_ORIGIN', 'AnimazingPal ASR upload rejected by origin policy');
+    }
+
+    const readiness = this._getAsrReadiness();
+    if (this._isAsrRateLimited(req, readiness.config)) {
+      return this._sendAsrError(res, 429, 'ASR_RATE_LIMITED', 'Too many AnimazingPal ASR uploads, please slow down');
+    }
+    if (!readiness.config.enabled) {
+      return this._sendAsrError(res, 503, 'ASR_DISABLED', 'AnimazingPal Host-STT is disabled');
+    }
+    if (!readiness.ttsAvailable || !readiness.fishConfigured) {
+      return this._sendAsrError(res, 503, 'ASR_TTS_UNAVAILABLE', 'Fish.audio ASR is unavailable or unconfigured');
+    }
+
+    const upload = this._createAsrUploadMiddleware(readiness.config);
+    return new Promise(resolve => {
+      upload(req, res, async uploadError => {
+        try {
+          if (uploadError) {
+            this._handleAsrUploadError(res, uploadError);
+            return;
+          }
+          await this._handleAsrTranscribeRequest(req, res, readiness);
+        } catch (error) {
+          this.api.log(`AnimazingPal ASR route failed: ${error.message}`, 'warn');
+          this._sendAsrError(res, 500, 'ASR_ROUTE_ERROR', 'AnimazingPal ASR route failed', true);
+        } finally {
+          resolve();
+        }
+      });
+    });
+  }
+
+  _handleAsrUploadError(res, error) {
+    if (error?.code === 'LIMIT_FILE_SIZE') {
+      return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
+    }
+    if (error?.code === 'ASR_UNSUPPORTED_MIME') {
+      return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_MIME', 'Unsupported audio MIME type');
+    }
+    if (['LIMIT_FIELD_COUNT', 'LIMIT_PART_COUNT', 'LIMIT_FIELD_VALUE', 'LIMIT_FILE_COUNT'].includes(error?.code)) {
+      return this._sendAsrError(res, 400, 'ASR_MULTIPART_LIMIT', 'ASR multipart upload exceeds allowed limits');
+    }
+    if (error?.code === 'LIMIT_UNEXPECTED_FILE') {
+      return this._sendAsrError(res, 400, 'ASR_UNEXPECTED_FILE', `Upload must contain one "${ASR_AUDIO_FIELD}" audio file`);
+    }
+    return this._sendAsrError(res, 400, 'ASR_UPLOAD_INVALID', 'Invalid ASR upload');
+  }
+
+  async _handleAsrTranscribeRequest(req, res, readiness) {
+    const startedAt = Date.now();
+    const file = req.file;
+    if (!file) return this._sendAsrError(res, 400, 'ASR_UPLOAD_REQUIRED', `Upload must contain an "${ASR_AUDIO_FIELD}" audio file`);
+    if (!Buffer.isBuffer(file.buffer) || file.buffer.length === 0) return this._sendAsrError(res, 400, 'ASR_UPLOAD_EMPTY', 'Uploaded audio file is empty');
+    if (file.size > readiness.config.maxAudioBytes) return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
+
+    const mimeType = this._normalizeAsrMimeType(file.mimetype);
+    if (!this._hasSafeAudioSignatureForMime(file.buffer, mimeType)) {
+      return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_AUDIO_CONTENT', 'Unsupported audio content');
+    }
+
+    const transcribeOnly = this._isTruthyRequestValue(req.body?.transcribeOnly || req.query?.transcribeOnly);
+    if (!transcribeOnly) {
+      const preflight = this._getAsrPreflight(this._getAsrPreflightOptionsFromRequest(req));
+      if (!preflight.ready) {
+        const firstError = preflight.checks.find(check => check.status === 'error');
+        return this._sendAsrError(res, 503, 'ASR_HOST_PREFLIGHT_BLOCKED', firstError?.detail || 'AnimazingPal Host-STT preflight blocked delegation', true);
+      }
+    }
+
+    let transcript;
+    try {
+      const options = {
+        maxAudioBytes: readiness.config.maxAudioBytes,
+        mimeType,
+        filename: file.originalname
+      };
+      if (readiness.config.language) options.language = readiness.config.language;
+      transcript = await readiness.tts.transcribeFishAudio(file.buffer, options);
+    } catch (error) {
+      const sanitized = this._sanitizeAsrError(error);
+      return this._sendAsrError(res, sanitized.status, sanitized.code, sanitized.message, true);
+    }
+
+    const text = String(transcript?.text || '').trim();
+    const latencyMs = Date.now() - startedAt;
+    this.asrDiagnostics.counters.transcribed += 1;
+    this.asrDiagnostics.lastTranscriptAt = new Date().toISOString();
+    this.asrDiagnostics.lastLatencyMs = latencyMs;
+    this.asrDiagnostics.lastError = null;
+
+    const responseTranscript = this._redactAsrTranscript(transcript, text);
+    if (transcribeOnly) {
+      return res.json({
+        success: true,
+        transcript: responseTranscript,
+        accepted: false,
+        delegated: false,
+        reason: 'transcribe-only',
+        latencyMs,
+        diagnostics: this._getAsrStatus(this._getAsrPreflightOptionsFromRequest(req))
+      });
+    }
+
+    if (text.length < readiness.config.minTranscriptChars) {
+      this.asrDiagnostics.counters.rejected += 1;
+      return res.json({
+        success: true,
+        transcript: responseTranscript,
+        accepted: false,
+        delegated: false,
+        reason: 'transcript-too-short',
+        latencyMs,
+        diagnostics: this._getAsrStatus(this._getAsrPreflightOptionsFromRequest(req))
+      });
+    }
+
+    let hostResult;
+    try {
+      hostResult = await this.processHostSpeechTranscript(text, {
+        source: 'animazingpal-host-asr',
+        provider: transcript?.provider || 'fish.audio',
+        confidence: transcript?.confidence,
+        language: transcript?.language || readiness.config.language,
+        mimeType,
+        audioBytes: file.buffer.length,
+        filename: file.originalname,
+        latencyMs
+      });
+    } catch (error) {
+      this.api.log(`AnimazingPal ASR delegation failed: ${this._sanitizeAsrPublicText(error?.message, 160)}`, 'warn');
+      return this._sendAsrError(res, 502, 'ASR_DELEGATION_FAILED', 'AnimazingPal host speech delegation failed', true);
+    }
+
+    if (hostResult?.accepted) this.asrDiagnostics.counters.accepted += 1;
+    else this.asrDiagnostics.counters.rejected += 1;
+    if (hostResult?.delegated) this.asrDiagnostics.counters.delegated += 1;
+    this.asrDiagnostics.lastDecision = hostResult?.decision || null;
+    const delegation = this._buildAsrDelegationSummary(hostResult);
+
+    return res.json({
+      success: true,
+      transcript: responseTranscript,
+      accepted: delegation.accepted,
+      delegated: delegation.delegated,
+      reason: delegation.reason,
+      latencyMs,
+      delegation,
+      diagnostics: this._getAsrStatus(this._getAsrPreflightOptionsFromRequest(req))
+    });
+  }
+
+  _sendAsrError(res, status, code, message, countAsError = false) {
+    if (!this.asrDiagnostics) {
+      this.asrDiagnostics = this._createEmptyAsrDiagnostics();
+    }
+    this.asrDiagnostics.counters.rejected += 1;
+    if (countAsError || status >= 500) this.asrDiagnostics.counters.errors += 1;
+    const safeCode = this._sanitizeAsrErrorCode(code);
+    const safeMessage = this._sanitizeAsrPublicText(message, 240) || 'AnimazingPal ASR request failed';
+    this.asrDiagnostics.lastError = { code: safeCode, message: safeMessage, at: new Date().toISOString() };
+    return res.status(status).json({
+      success: false,
+      error: { code: safeCode, message: safeMessage },
+      diagnostics: this._getAsrStatus()
+    });
+  }
+
+  _sanitizeAsrError(error) {
+    const message = String(error?.message || '');
+    if (/api key|not configured|missing key/i.test(message)) {
+      return { status: 503, code: 'ASR_FISH_UNCONFIGURED', message: 'Fish.audio ASR API key is not configured' };
+    }
+    return { status: 502, code: 'ASR_TRANSCRIPTION_FAILED', message: 'Fish.audio ASR transcription failed' };
+  }
+
+  _redactAsrTranscript(transcript, text) {
+    return {
+      text,
+      language: transcript?.language,
+      duration: Number.isFinite(transcript?.duration) ? transcript.duration : undefined,
+      provider: transcript?.provider || 'fish.audio'
+    };
+  }
+
+  _buildAsrDelegationSummary(hostResult) {
+    return {
+      accepted: !!hostResult?.accepted,
+      delegated: !!hostResult?.delegated,
+      reason: this._sanitizeAsrPublicText(hostResult?.reason || hostResult?.decision?.reason || null, 120),
+      responded: hostResult?.responded === true,
+      speechFailed: hostResult?.speechFailed === true,
+      speechBlocked: hostResult?.speechBlocked === true
+    };
+  }
+
+  _sanitizeAsrErrorCode(code) {
+    const safeCode = String(code || 'ASR_ERROR').toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 80);
+    return safeCode || 'ASR_ERROR';
+  }
+
+  _sanitizeAsrPublicText(value, maxLength = 240) {
+    if (value === null || value === undefined) return null;
+    let text = String(value);
+    text = text.replace(/bearer\s+[a-z0-9._~+/=-]+/gi, 'Bearer [REDACTED]');
+    text = text.replace(/\b(?:sk|pk|rk|fish|token|key)-[a-z0-9._-]{8,}\b/gi, '[REDACTED]');
+    text = text.replace(/\b[a-z0-9._%+-]+:[a-z0-9._~+/=-]{12,}\b/gi, '[REDACTED]');
+    text = text.replace(/\b[a-f0-9]{32,}\b/gi, '[REDACTED]');
+    text = text.replace(/\s+/g, ' ').trim();
+    return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
+  }
+
+  _isAsrRequestAuthorized(req) {
+    const origin = req.get?.('origin') || req.headers?.origin;
+    if (!origin) return this._isAsrLoopbackRequest(req);
+    const requestHost = String(req.get?.('host') || req.headers?.host || '').toLowerCase();
+    if (!requestHost) return false;
+    try {
+      const parsedOrigin = new URL(String(origin));
+      const requestProtocol = String(req.get?.('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim().toLowerCase();
+      return parsedOrigin.host.toLowerCase() === requestHost
+        && parsedOrigin.protocol.replace(':', '').toLowerCase() === requestProtocol;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  _isAsrRateLimited(req, config) {
+    if (!this.asrRateLimitBuckets) this.asrRateLimitBuckets = new Map();
+    const now = Date.now();
+    const windowMs = this._clampInteger(config.rateLimitWindowMs, 1000, 60 * 60 * 1000, 60000);
+    const maxRequests = this._clampInteger(config.rateLimitMax, 1, 120, 10);
+    const key = this._getAsrRateLimitKey(req);
+    const bucket = this.asrRateLimitBuckets.get(key);
+    if (!bucket || now >= bucket.resetAt) {
+      this.asrRateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      this._pruneAsrRateLimitBuckets(now);
+      return false;
+    }
+    bucket.count += 1;
+    return bucket.count > maxRequests;
+  }
+
+  _getAsrRateLimitKey(req) {
+    return this._getAsrRemoteAddress(req) || 'unknown';
+  }
+
+  _isAsrLoopbackRequest(req) {
+    return this._isLoopbackAsrAddress(this._getAsrRemoteAddress(req));
+  }
+
+  _getAsrRemoteAddress(req) {
+    return String(req.socket?.remoteAddress || req.connection?.remoteAddress || req.ip || '').trim();
+  }
+
+  _isLoopbackAsrAddress(address) {
+    const normalized = String(address || '').trim().toLowerCase();
+    return normalized === 'localhost' || normalized === '::1' || normalized.startsWith('127.') || normalized.startsWith('::ffff:127.');
+  }
+
+  _pruneAsrRateLimitBuckets(now) {
+    for (const [key, bucket] of this.asrRateLimitBuckets.entries()) {
+      if (!bucket || now >= bucket.resetAt) this.asrRateLimitBuckets.delete(key);
+    }
+  }
+
+  _clampInteger(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.round(Math.min(max, Math.max(min, number)));
+  }
+
+  _normalizeAsrMimeType(mimeType) {
+    return String(mimeType || '').split(';')[0].trim().toLowerCase();
+  }
+
+  _hasAllowedAsrExtension(filename) {
+    return ASR_OCTET_AUDIO_EXTENSIONS.has(path.extname(String(filename || '')).toLowerCase());
+  }
+
+  _hasSafeAudioSignature(buffer) {
+    if (!Buffer.isBuffer(buffer) || buffer.length < 4) return false;
+    if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) return true;
+    if (buffer.slice(0, 4).toString('ascii') === 'OggS') return true;
+    if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WAVE') return true;
+    if (buffer.length >= 12 && buffer.slice(4, 8).toString('ascii') === 'ftyp') return true;
+    if (buffer.slice(0, 3).toString('ascii') === 'ID3') return true;
+    return buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
+  }
+
+  _hasSafeAudioSignatureForMime(buffer, mimeType) {
+    const normalizedMime = this._normalizeAsrMimeType(mimeType);
+    if (!Buffer.isBuffer(buffer) || buffer.length < 4) return false;
+    switch (normalizedMime) {
+      case 'audio/webm':
+        return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+      case 'audio/ogg':
+      case 'audio/opus':
+        return buffer.slice(0, 4).toString('ascii') === 'OggS';
+      case 'audio/wav':
+      case 'audio/wave':
+      case 'audio/x-wav':
+        return buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WAVE';
+      case 'audio/mpeg':
+      case 'audio/mp3':
+        return buffer.slice(0, 3).toString('ascii') === 'ID3' || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0);
+      case 'audio/mp4':
+      case 'audio/m4a':
+        return buffer.length >= 12 && buffer.slice(4, 8).toString('ascii') === 'ftyp';
+      case 'audio/aac':
+        return buffer[0] === 0xff && (buffer[1] & 0xf0) === 0xf0;
+      case 'application/octet-stream':
+        return this._hasSafeAudioSignature(buffer);
+      default:
+        return false;
+    }
+  }
+
+  _isTruthyRequestValue(value) {
+    return value === true || value === 'true' || value === '1' || value === 1 || value === 'yes' || value === 'on';
+  }
+
+  _rememberLiveHostSpeech(type, text, metadata = {}) {
+    const normalizedText = normalizeHostSpeechText(text);
+    if (!normalizedText) return null;
+    if (!Array.isArray(this.liveHostHostSpeechHistory)) this.liveHostHostSpeechHistory = [];
+    const record = {
+      type,
+      text: cleanHostSpeechText(text),
+      normalizedText,
+      timestamp: Number(metadata.timestamp) || Date.now(),
+      metadata: {
+        source: this._sanitizeAsrPublicText(metadata.source, 80),
+        confidence: Number.isFinite(Number(metadata.confidence)) ? Number(metadata.confidence) : null
+      }
+    };
+    this.liveHostHostSpeechHistory.push(record);
+    const cutoff = Date.now() - 300000;
+    this.liveHostHostSpeechHistory = this.liveHostHostSpeechHistory
+      .filter(item => item.timestamp >= cutoff)
+      .slice(-40);
+    return record;
+  }
+
+  _hasRecentLiveHostSpeechMatch(normalizedText, type, timestamp, windowMs) {
+    if (!normalizedText || !Array.isArray(this.liveHostHostSpeechHistory)) return false;
+    return this.liveHostHostSpeechHistory.some(item =>
+      item.type === type
+      && item.normalizedText === normalizedText
+      && timestamp - item.timestamp >= 0
+      && timestamp - item.timestamp <= windowMs
+    );
+  }
+
+  _getMostRecentLiveHostSpeechTimestamp(types, timestamp) {
+    if (!Array.isArray(this.liveHostHostSpeechHistory)) return null;
+    const allowed = new Set(types);
+    const matches = this.liveHostHostSpeechHistory
+      .filter(item => allowed.has(item.type) && item.timestamp <= timestamp)
+      .map(item => item.timestamp);
+    return matches.length ? Math.max(...matches) : null;
+  }
+
+  shouldAcceptHostSpeech(text, metadata = {}) {
+    this.ensureLiveHostRuntime();
+    const liveHost = normalizeLiveHostConfig(this.config?.brain?.liveHost || {}, this.config?.brain || {});
+    const response = liveHost.response || {};
+    const asr = liveHost.asr || {};
+    const timestamp = Number(metadata.timestamp) || Date.now();
+    const cleanText = cleanHostSpeechText(text);
+    const normalizedText = normalizeHostSpeechText(cleanText);
+    const features = buildHostSpeechFeatures(cleanText, response);
+    const confidence = Number(metadata.confidence);
+    const reject = (reason, score = 0, extraFeatures = features) => {
+      const decision = {
+        accept: false,
+        respond: false,
+        score,
+        reason,
+        selection: 'host-speech',
+        type: 'host',
+        features: extraFeatures,
+        normalizedText,
+        ...(Number.isFinite(confidence) ? { confidence } : {})
+      };
+      this.lastHostSpeechDecision = decision;
+      this.lastHostSpeechDecisionAt = timestamp;
+      this.liveHostDiagnostics ||= {};
+      this.liveHostDiagnostics.lastHostSpeechDecision = decision;
+      this.liveHostDiagnostics.lastHostSpeechDecisionAt = new Date(timestamp).toISOString();
+      return decision;
+    };
+
+    if (!liveHost.enabled) return reject('live-host-disabled');
+    if (!asr.enabled) return reject('asr-disabled');
+    if (!normalizedText) return reject('empty');
+    if (cleanText.length < Math.max(1, Number(asr.minTranscriptChars) || 1)) return reject('too_short', 0);
+
+    const contextCooldownMs = Math.max(0, Number(response.hostContextCooldownMs) || 0);
+    if (contextCooldownMs > 0 && this.lastHostSpeechDecision?.respond === true && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < contextCooldownMs) {
+      return reject('active_pause', 0);
+    }
+
+    const overtalkCooldownMs = Math.max(0, Number(response.hostOvertalkCooldownMs) || 0);
+    const lastRelated = this._getMostRecentLiveHostSpeechTimestamp(['host', 'assistant'], timestamp);
+    if (this.speechState?.isSpeaking?.()) return reject('overtalk', 0);
+    if (overtalkCooldownMs > 0 && Number.isFinite(lastRelated) && (timestamp - lastRelated) < overtalkCooldownMs) {
+      return reject('overtalk', 0);
+    }
+
+    if (features.isLongForm) return reject('context_unclear', 0, { ...features, isLongForm: true });
+
+    const score = computeHostSpeechScore(features);
+    const confidenceValue = Number.isFinite(confidence) ? confidence : null;
+    if (confidenceValue !== null && confidenceValue < Number(response.hostMinConfidence)) {
+      return reject('low_confidence', confidenceValue, { ...features, confidence: confidenceValue });
+    }
+    if (score < Number(response.hostMinConfidence)) {
+      return reject('low_score', score, { ...features, confidence: confidenceValue });
+    }
+    if (Math.random() > (Number(response.hostReplyProbability) * score)) {
+      return reject('low_score', score, { ...features, confidence: confidenceValue });
+    }
+
+    const echoWindowMs = Math.max(1000, Number(response.hostContextCooldownMs) || 12000);
+    if (this._hasRecentLiveHostSpeechMatch(normalizedText, 'assistant', timestamp, echoWindowMs)) return reject('echo', score);
+    if (this._hasRecentLiveHostSpeechMatch(normalizedText, 'host', timestamp, echoWindowMs)) return reject('duplicate', score);
+
+    const decision = {
+      accept: true,
+      respond: true,
+      score,
+      reason: 'accepted',
+      selection: 'host-speech',
+      type: 'host',
+      features,
+      normalizedText,
+      ...(confidenceValue !== null ? { confidence: confidenceValue } : {})
+    };
+    this.lastHostSpeechDecision = decision;
+    this.lastHostSpeechDecisionAt = timestamp;
+    this.liveHostDiagnostics ||= {};
+    this.liveHostDiagnostics.lastHostSpeechDecision = decision;
+    this.liveHostDiagnostics.lastHostSpeechDecisionAt = new Date(timestamp).toISOString();
+    return decision;
+  }
+
+  buildHostSpeechEvent(text, metadata = {}) {
+    const message = cleanHostSpeechText(text, 500);
+    const username = cleanHostSpeechText(metadata.hostName || metadata.username || 'Host', 64) || 'Host';
+    return {
+      eventType: 'chat',
+      username,
+      userId: cleanHostSpeechText(metadata.userId || 'animazingpal-host', 128) || 'animazingpal-host',
+      uniqueId: username,
+      nickname: username,
+      message,
+      comment: message,
+      source: cleanHostSpeechText(metadata.source || 'host-mic', 64) || 'host-mic',
+      isHostSpeech: true,
+      confidence: metadata.confidence,
+      language: metadata.language,
+      provider: metadata.provider
+    };
+  }
+
+  async processHostSpeechTranscript(text, metadata = {}) {
+    const decision = this.shouldAcceptHostSpeech(text, metadata);
+    if (decision.respond === false || decision.accept === false) {
+      this.api.log(`AnimazingPal host speech rejected: ${decision.reason}`, 'debug');
+      return { accepted: false, delegated: false, reason: decision.reason, score: decision.score, decision };
+    }
+
+    const event = this.buildHostSpeechEvent(text, metadata);
+    const result = await this.processSidekickHostSpeech(event, {
+      ...decision,
+      source: metadata.source || 'animazingpal-host-asr'
+    });
+
+    return {
+      accepted: true,
+      delegated: true,
+      responded: result?.responded === true,
+      reason: result?.reason || decision.reason,
+      speechFailed: result?.speechFailed === true,
+      speechBlocked: result?.speechBlocked === true,
+      decision,
+      event,
+      ...result
+    };
+  }
+
   async processSidekickHostSpeech(data = {}, evaluation = {}) {
     this.ensureLiveHostRuntime();
     const liveHost = this.config?.brain?.liveHost;
@@ -4592,14 +5414,36 @@ class AnimazingPalPlugin {
     const message = String(data.message || data.comment || data.text || '').trim();
     if (!message) return complete({ handled: true, responded: false, reason: 'empty-host-speech' });
 
-    const decision = {
-      respond: true,
-      score: Number(evaluation?.score) || 1,
-      reason: evaluation?.reason || 'sidekick-selected',
-      selection: evaluation?.type || 'host-speech'
-    };
-    if (evaluation?.respond === false) {
-      return complete({ handled: true, responded: false, decision, reason: evaluation.reason || 'decision-blocked' });
+    const hasExplicitEvaluation = evaluation?.respond === true
+      || evaluation?.respond === false
+      || evaluation?.score !== undefined
+      || evaluation?.type !== undefined
+      || evaluation?.selection !== undefined;
+    const decision = hasExplicitEvaluation
+      ? {
+        accept: evaluation.accept !== false && evaluation.respond !== false,
+        respond: evaluation.respond !== false,
+        score: Number.isFinite(Number(evaluation?.score)) ? Number(evaluation.score) : 1,
+        reason: evaluation?.reason || (evaluation.respond === false ? 'decision-blocked' : (String(evaluation?.source || '').includes('sidekick') ? 'sidekick-selected' : 'accepted')),
+        selection: evaluation?.selection || evaluation?.type || 'host-speech',
+        type: evaluation?.type || 'host',
+        features: evaluation?.features || null,
+        confidence: evaluation?.confidence
+      }
+      : this.shouldAcceptHostSpeech(message, {
+        source: data.source || 'host-mic',
+        confidence: data.confidence,
+        language: data.language,
+        provider: data.provider,
+        username
+      });
+    this.lastHostSpeechDecision = decision;
+    this.lastHostSpeechDecisionAt = Date.now();
+    this.liveHostDiagnostics ||= {};
+    this.liveHostDiagnostics.lastHostSpeechDecision = decision;
+    this.liveHostDiagnostics.lastHostSpeechDecisionAt = new Date().toISOString();
+    if (decision.respond === false || decision.accept === false) {
+      return complete({ handled: true, responded: false, decision, reason: decision.reason || 'decision-blocked' });
     }
 
     if (event.avatarActionEnabled && this.isConnected) {
@@ -4626,9 +5470,9 @@ class AnimazingPalPlugin {
 
     const response = await this.brainEngine.processHostSpeech(username, message, {
       nickname: data.nickname,
-      forceRespond: false,
+      forceRespond: true,
       deferCommit: true,
-      source: evaluation.source || 'sidekick-host-speech',
+      source: evaluation.source || data.source || 'animazingpal-host-asr',
       systemPromptOverride: event.prompt,
       decision,
       liveContext: {
@@ -4661,6 +5505,13 @@ class AnimazingPalPlugin {
     }
 
     this.recordLiveHostResponseSlot();
+    this._rememberLiveHostSpeech('host', message, {
+      source: data.source || evaluation.source || 'host-mic',
+      confidence: data.confidence ?? evaluation.confidence
+    });
+    this._rememberLiveHostSpeech('assistant', spokenText, {
+      source: 'animazingpal-host-speech-output'
+    });
     if (typeof response.commit === 'function') {
       try {
         response.commit();

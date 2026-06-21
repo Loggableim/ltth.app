@@ -512,7 +512,10 @@ class BrainEngine {
       return null;
     }
 
-    if (!options.forceRespond && !this.config.autoRespond?.chat) {
+    const shouldRespond = options.forceRespond === true
+      || options.decision?.respond === true
+      || this.config.autoRespond?.chat;
+    if (!shouldRespond) {
       return null;
     }
 

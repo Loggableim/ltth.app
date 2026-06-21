@@ -191,14 +191,28 @@ type ServerHealthInfo struct {
 	Port    int    `json:"port"`
 }
 
-type VacuumResult struct {
+type VacuumMaintenanceResult struct {
 	Success         bool   `json:"success"`
-	Profile         string `json:"profile"`
-	DatabasePath    string `json:"databasePath"`
-	SizeBeforeBytes int64  `json:"sizeBeforeBytes"`
-	SizeAfterBytes  int64  `json:"sizeAfterBytes"`
-	FreedBytes      int64  `json:"freedBytes"`
-	DurationMillis  int64  `json:"durationMillis"`
+	DeletedUsers    int64  `json:"deletedUsers"`
+	CleanupDays     int    `json:"cleanupDays"`
+	CleanupDryRun   bool   `json:"cleanupDryRun"`
+	VacuumPerformed bool   `json:"vacuumPerformed"`
+	Error           string `json:"error"`
+}
+
+type VacuumResult struct {
+	Success              bool   `json:"success"`
+	Profile              string `json:"profile"`
+	DatabasePath         string `json:"databasePath"`
+	SizeBeforeBytes      int64  `json:"sizeBeforeBytes"`
+	SizeAfterBytes       int64  `json:"sizeAfterBytes"`
+	FreedBytes           int64  `json:"freedBytes"`
+	DurationMillis       int64  `json:"durationMillis"`
+	CleanupDays          int    `json:"cleanupDays"`
+	CleanupDryRun        bool   `json:"cleanupDryRun"`
+	CleanupDeletedUsers  int64  `json:"cleanupDeletedUsers"`
+	VacuumPerformed      bool   `json:"vacuumPerformed"`
+	MaintenanceScriptOut string `json:"maintenanceScriptOutput"`
 }
 
 func NewLauncher() *Launcher {
@@ -970,11 +984,17 @@ func (l *Launcher) createProfileBackup(profileName string, reason string) (strin
 	if reason == "" {
 		reason = "maintenance"
 	}
-	if _, err := resolveProfileDatabasePath(l.userConfigsDir, profileName); err != nil {
+	dbPath, err := resolveProfileDatabasePath(l.userConfigsDir, profileName)
+	if err != nil && l.appDir != "" {
+		legacyDir := filepath.Join(l.appDir, "user_configs")
+		if filepath.Clean(legacyDir) != filepath.Clean(l.userConfigsDir) {
+			dbPath, err = resolveProfileDatabasePath(legacyDir, profileName)
+		}
+	}
+	if err != nil {
 		return "", err
 	}
 
-	dbPath := filepath.Join(l.userConfigsDir, strings.TrimSpace(profileName)+".db")
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	backupDir := filepath.Join(l.configDir, "profile-backups", strings.TrimSpace(profileName), timestamp+"-"+reason)
 	backupPath := filepath.Join(backupDir, filepath.Base(dbPath))
@@ -1695,6 +1715,12 @@ func (l *Launcher) rollbackLastUpdate() (map[string]interface{}, error) {
 	return map[string]interface{}{"success": true, "backup": latest.Name(), "failedApp": failedApp}, nil
 }
 
+type vacuumMaintenanceOptions struct {
+	CleanupDays int
+	DryRun      bool
+	SkipVacuum  bool
+}
+
 func sqliteVacuumScript() string {
 	return `
 const dbPath = process.env.LTTH_VACUUM_DB;
@@ -1702,15 +1728,86 @@ if (!dbPath) {
   throw new Error('LTTH_VACUUM_DB is missing');
 }
 const Database = require('better-sqlite3');
+
+function parseBoolean(rawValue, defaultValue) {
+  if (typeof rawValue !== 'string') {
+    return defaultValue;
+  }
+  const normalized = rawValue.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return defaultValue;
+}
+
+const cleanupDays = Number(process.env.LTTH_VACUUM_CLEANUP_DAYS || '0');
+const cleanupDryRun = parseBoolean(process.env.LTTH_VACUUM_DRY_RUN, false);
+const skipVacuum = parseBoolean(process.env.LTTH_VACUUM_SKIP, false);
+const output = {
+  success: true,
+  deletedUsers: 0,
+  cleanupDays: 0,
+  cleanupDryRun: cleanupDryRun,
+  vacuumPerformed: false,
+  error: ''
+};
+
+function normalizeCleanupDays(raw) {
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return 0;
+  }
+  const value = Math.floor(raw);
+  return value > 0 ? value : 0;
+}
+
 const db = new Database(dbPath, { fileMustExist: true });
 try {
+  const activeCleanupDays = normalizeCleanupDays(cleanupDays);
+  if (activeCleanupDays > 0) {
+    const cutoff = '-' + activeCleanupDays + ' days';
+    const whereClause = 'last_seen_at IS NOT NULL AND last_seen_at < datetime("now", ?)';
+    const tableExists = db.prepare('SELECT name FROM sqlite_master WHERE type = "table" AND name = "user_statistics"').get();
+    output.cleanupDays = activeCleanupDays;
+    if (!tableExists) {
+      output.deletedUsers = 0;
+    } else {
+      const count = db.prepare('SELECT COUNT(*) as count FROM user_statistics WHERE ' + whereClause).get(cutoff).count || 0;
+      if (cleanupDryRun) {
+        output.deletedUsers = Number(count);
+      } else if (count > 0) {
+        const deleteResult = db.prepare('DELETE FROM user_statistics WHERE ' + whereClause).run(cutoff);
+        output.deletedUsers = Number(deleteResult.changes || 0);
+      } else {
+        output.deletedUsers = 0;
+      }
+    }
+  } else {
+    output.cleanupDays = activeCleanupDays;
+  }
+
   db.pragma('busy_timeout = 30000');
-  db.pragma('wal_checkpoint(TRUNCATE)');
-  db.exec('VACUUM');
-  db.pragma('optimize');
+  if (!skipVacuum) {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    db.exec('VACUUM');
+    db.pragma('optimize');
+    output.vacuumPerformed = true;
+  }
+} catch (error) {
+  output.success = false;
+  output.error = String(error && (error.message || error.stack || error));
+  if (error && error.stack) {
+    console.error(error.stack);
+  } else if (output.error) {
+    console.error(output.error);
+  }
+  process.exitCode = 1;
 } finally {
   db.close();
 }
+console.log(JSON.stringify(output));
 `
 }
 
@@ -1728,7 +1825,35 @@ func (l *Launcher) nodeExecutableForMaintenance() string {
 	return nodePath
 }
 
-func (l *Launcher) vacuumActiveProfileDatabase() (VacuumResult, error) {
+func parseMaintenanceScriptOutput(rawOutput string) (VacuumMaintenanceResult, error) {
+	output := VacuumMaintenanceResult{}
+	trimmed := strings.TrimSpace(rawOutput)
+	if trimmed == "" {
+		return output, fmt.Errorf("maintenance script returned no output")
+	}
+	start := strings.Index(trimmed, "{")
+	end := strings.LastIndex(trimmed, "}")
+	if start == -1 || end == -1 || end <= start {
+		return output, fmt.Errorf("maintenance script output not JSON: %s", trimmed)
+	}
+	fragment := trimmed[start : end+1]
+	if err := json.Unmarshal([]byte(fragment), &output); err != nil {
+		return output, fmt.Errorf("unable to parse maintenance output: %w: %s", err, trimmed)
+	}
+	return output, nil
+}
+
+func sanitizeVacuumRequestDays(value int) (int, error) {
+	if value < 0 {
+		return 0, fmt.Errorf("cleanup days cannot be negative")
+	}
+	if value > 3650 {
+		return 0, fmt.Errorf("cleanup days too high")
+	}
+	return value, nil
+}
+
+func (l *Launcher) vacuumActiveProfileDatabase(options vacuumMaintenanceOptions) (VacuumResult, error) {
 	result := VacuumResult{}
 
 	profileName, dbPath, err := l.activeProfileDatabasePath()
@@ -1743,10 +1868,31 @@ func (l *Launcher) vacuumActiveProfileDatabase() (VacuumResult, error) {
 	if l.appDir == "" {
 		return result, fmt.Errorf("app directory is not configured")
 	}
+	if !l.checkNodeModules() {
+		return result, fmt.Errorf("node_modules not found at %s", filepath.Join(l.appDir, "node_modules"))
+	}
+	if err := l.verifyNativeModulesWithPath(nodePath); err != nil {
+		l.logAndSync("[WARNING] Native module verification failed before vacuum: %v", err)
+		if err := l.rebuildNativeModulesWithPath(nodePath); err != nil {
+			return result, fmt.Errorf("native modules verification failed: %w", err)
+		}
+		if err := l.verifyNativeModulesWithPath(nodePath); err != nil {
+			return result, fmt.Errorf("native modules still invalid after rebuild: %w", err)
+		}
+	}
+
+	cleanupDays, err := sanitizeVacuumRequestDays(options.CleanupDays)
+	if err != nil {
+		return result, err
+	}
+	options.CleanupDays = cleanupDays
 
 	result.Profile = profileName
 	result.DatabasePath = dbPath
 	result.SizeBeforeBytes = databaseFootprintBytes(dbPath)
+	result.CleanupDays = options.CleanupDays
+	result.CleanupDryRun = options.DryRun
+	result.VacuumPerformed = !options.SkipVacuum
 	if backupPath, err := l.createProfileBackup(profileName, "vacuum"); err != nil {
 		return result, fmt.Errorf("backup before vacuum failed: %w", err)
 	} else {
@@ -1755,17 +1901,40 @@ func (l *Launcher) vacuumActiveProfileDatabase() (VacuumResult, error) {
 
 	cmd := hiddenCommand(nodePath, "-e", sqliteVacuumScript())
 	cmd.Dir = l.appDir
-	cmd.Env = append(sanitizeNodeEnvironment(os.Environ()), "LTTH_VACUUM_DB="+dbPath)
+	cmd.Env = append(
+		sanitizeNodeEnvironment(os.Environ()),
+		"LTTH_VACUUM_DB="+dbPath,
+		fmt.Sprintf("LTTH_VACUUM_CLEANUP_DAYS=%d", options.CleanupDays),
+		fmt.Sprintf("LTTH_VACUUM_DRY_RUN=%t", options.DryRun),
+		fmt.Sprintf("LTTH_VACUUM_SKIP=%t", options.SkipVacuum),
+	)
 	setSysProcAttr(cmd)
 
 	startedAt := time.Now()
 	output, err := cmd.CombinedOutput()
+	result.MaintenanceScriptOut = strings.TrimSpace(string(output))
 	result.DurationMillis = time.Since(startedAt).Milliseconds()
 	result.SizeAfterBytes = databaseFootprintBytes(dbPath)
 	result.FreedBytes = result.SizeBeforeBytes - result.SizeAfterBytes
 
+	maintenance, parseErr := parseMaintenanceScriptOutput(result.MaintenanceScriptOut)
+	if parseErr == nil {
+		result.CleanupDeletedUsers = maintenance.DeletedUsers
+		result.CleanupDays = maintenance.CleanupDays
+		result.CleanupDryRun = maintenance.CleanupDryRun
+		result.VacuumPerformed = maintenance.VacuumPerformed
+		if !maintenance.Success {
+			err = fmt.Errorf("%s", maintenance.Error)
+		}
+	} else {
+		l.logAndSync("[WARNING] Could not parse maintenance script output: %v", parseErr)
+		if err == nil && options.SkipVacuum {
+			result.VacuumPerformed = false
+		}
+	}
+
 	if err != nil {
-		detail := strings.TrimSpace(string(output))
+		detail := strings.TrimSpace(result.MaintenanceScriptOut)
 		if detail == "" {
 			detail = err.Error()
 		}
@@ -2048,13 +2217,17 @@ func sanitizeNodeEnvironment(env []string) []string {
 	return sanitized
 }
 
-func (l *Launcher) verifyNativeModules() error {
-	if l.nodePath == "" {
+func (l *Launcher) verifyNativeModulesWithPath(nodePath string) error {
+	nodePath = strings.TrimSpace(nodePath)
+	if nodePath == "" {
+		nodePath = strings.TrimSpace(l.nodePath)
+	}
+	if nodePath == "" {
 		return fmt.Errorf("Node.js path is empty")
 	}
 
 	script := "const Database = require('better-sqlite3'); const db = new Database(':memory:'); db.close(); console.log('native-modules-ok')"
-	cmd := hiddenCommand(l.nodePath, "-e", script)
+	cmd := hiddenCommand(nodePath, "-e", script)
 	cmd.Dir = l.appDir
 	cmd.Env = sanitizeNodeEnvironment(os.Environ())
 
@@ -2065,6 +2238,10 @@ func (l *Launcher) verifyNativeModules() error {
 
 	l.logAndSync("[SUCCESS] Native Node modules verified: %s", strings.TrimSpace(string(output)))
 	return nil
+}
+
+func (l *Launcher) verifyNativeModules() error {
+	return l.verifyNativeModulesWithPath(l.nodePath)
 }
 
 func (l *Launcher) installDependencies() error {
@@ -3187,7 +3364,27 @@ func (l *Launcher) resolveNpmPath() string {
 
 // rebuildNativeModules runs `npm rebuild better-sqlite3` in the app directory.
 func (l *Launcher) rebuildNativeModules() error {
+	return l.rebuildNativeModulesWithPath(l.nodePath)
+}
+
+func (l *Launcher) resolveNpmPathForNode(nodePath string) string {
+	if runtime.GOOS == "windows" {
+		if nodePath != "" && strings.Contains(strings.ToLower(filepath.ToSlash(nodePath)), "/runtime/node/") {
+			return filepath.Join(filepath.Dir(nodePath), "npm.cmd")
+		}
+		return "npm.cmd"
+	}
+	if nodePath != "" && strings.Contains(strings.ToLower(filepath.ToSlash(nodePath)), "/runtime/node/") {
+		return filepath.Join(filepath.Dir(nodePath), "bin", "npm")
+	}
+	return "npm"
+}
+
+func (l *Launcher) rebuildNativeModulesWithPath(nodePath string) error {
 	npmPath := l.resolveNpmPath()
+	if nodePath = strings.TrimSpace(nodePath); nodePath != "" {
+		npmPath = l.resolveNpmPathForNode(nodePath)
+	}
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/C", npmPath, "rebuild", "better-sqlite3")
@@ -4505,8 +4702,46 @@ func main() {
 			return
 		}
 
+		var cleanupReq struct {
+			CleanupDays *int `json:"cleanupDays"`
+			DryRun      bool `json:"dryRun"`
+			SkipVacuum  bool `json:"skipVacuum"`
+		}
+		cleanupDaysSpecified := false
+		if r.Body != nil {
+			decoder := json.NewDecoder(io.LimitReader(r.Body, 1024))
+			if err := decoder.Decode(&cleanupReq); err != nil && err != io.EOF {
+				http.Error(w, "Invalid request payload", http.StatusBadRequest)
+				return
+			}
+			if cleanupReq.CleanupDays != nil {
+				cleanupDaysSpecified = true
+			}
+		}
+
+		cleanupDays := 0
+		if cleanupReq.CleanupDays != nil {
+			cleanupDays = *cleanupReq.CleanupDays
+		}
+
+		if !cleanupDaysSpecified {
+			if value := strings.TrimSpace(r.URL.Query().Get("cleanupDays")); value != "" {
+				if parsed, parseErr := strconv.Atoi(value); parseErr == nil && parsed >= 0 {
+					cleanupDays = parsed
+					cleanupDaysSpecified = true
+				}
+			}
+		}
+		if !cleanupDaysSpecified {
+			cleanupDays = 90
+		}
+
 		launcher.logAndSync("[MAINTENANCE] SQLite VACUUM requested for active profile")
-		result, err := launcher.vacuumActiveProfileDatabase()
+		result, err := launcher.vacuumActiveProfileDatabase(vacuumMaintenanceOptions{
+			CleanupDays: cleanupDays,
+			DryRun:      cleanupReq.DryRun,
+			SkipVacuum:  cleanupReq.SkipVacuum,
+		})
 		if err != nil {
 			launcher.logAndSync("[ERROR] SQLite VACUUM failed: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)

@@ -339,6 +339,60 @@ describe('AnimazingPal live host integration', () => {
     expect(ttsPlugin.speak).toHaveBeenCalledTimes(2);
   });
 
+  test('host ASR status exposes persisted microphone settings and Fish readiness', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.asr.deviceId = 'host-mic-1';
+    plugin.config.brain.liveHost.asr.deviceLabel = 'Streamer Mic';
+    plugin.brainEngine = {
+      processHostSpeech: jest.fn()
+    };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? {
+        isInitialized: true,
+        config: { fishaudioApiKey: 'fish-key' },
+        transcribeFishAudio: jest.fn()
+      }
+      : null);
+
+    const status = plugin._getAsrStatus({
+      microphone: {
+        deviceId: 'host-mic-1',
+        label: 'Streamer Mic',
+        blocked: false,
+        unsafeOverride: false
+      }
+    });
+
+    expect(status).toEqual(expect.objectContaining({
+      ready: true,
+      deviceId: 'host-mic-1',
+      deviceLabel: 'Streamer Mic',
+      ttsAvailable: true,
+      fishConfigured: true
+    }));
+  });
+
+  test('processHostSpeechTranscript blocks low-confidence host ASR before Brain delegation', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    plugin.brainEngine = {
+      processHostSpeech: jest.fn()
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Kannst du reagieren?', {
+      confidence: 0.1,
+      source: 'animazingpal-host-asr'
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: false,
+      delegated: false,
+      reason: 'low_confidence',
+      decision: expect.objectContaining({ respond: false })
+    }));
+    expect(plugin.brainEngine.processHostSpeech).not.toHaveBeenCalled();
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+  });
+
   test('BrainEngine processHostSpeech avoids viewer profiles and viewer memory writes', async () => {
     const brain = Object.create(BrainEngine.prototype);
     brain.config = {
