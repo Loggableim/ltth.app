@@ -1,4 +1,5 @@
 const { ConfigManager } = require('../plugins/sidekick/backend/config');
+const { ConversationCoordinator } = require('../plugins/sidekick/backend/conversation-coordinator');
 const SidekickPlugin = require('../plugins/sidekick/main');
 
 function createApi(overrides = {}) {
@@ -302,6 +303,60 @@ describe('Sidekick runtime contracts', () => {
     }));
     expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
     expect(plugin.metrics.recordError).toHaveBeenCalled();
+  });
+
+  test('does not suppress host transcript retry when AnimazingPal returns duplicate without a response', async () => {
+    const processSidekickEvent = jest.fn().mockResolvedValue({
+      handled: true,
+      responded: false,
+      duplicate: true,
+      reason: 'duplicate'
+    });
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    }));
+    plugin.config = {};
+    plugin.metrics = { recordError: jest.fn() };
+    plugin.conversationCoordinator = new ConversationCoordinator({
+      minHostSpeechChars: 3,
+      echoWindowMs: 10000
+    });
+
+    const result = await plugin.processHostSpeechTranscript('Retry this host line', { now: 1000 });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: true,
+      delegated: true,
+      animazingPalResult: expect.objectContaining({ duplicate: true, responded: false })
+    }));
+    expect(plugin.conversationCoordinator.shouldAcceptHostSpeech('retry this host line', { now: 2000 })).toEqual(expect.objectContaining({
+      accept: true
+    }));
+  });
+
+  test('records host-triggered AnimazingPal spoken text for echo suppression', async () => {
+    const processSidekickEvent = jest.fn().mockResolvedValue({
+      handled: true,
+      responded: true,
+      spokenText: 'AP reply'
+    });
+    const plugin = new SidekickPlugin(createApi({
+      getPluginInstance: jest.fn().mockReturnValue({ processSidekickEvent })
+    }));
+    plugin.config = {};
+    plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
+    plugin.conversationCoordinator = new ConversationCoordinator({
+      minHostSpeechChars: 3,
+      echoWindowMs: 10000
+    });
+
+    const result = await plugin.processHostSpeechTranscript('Host asks something', { now: 1000 });
+
+    expect(result).toEqual(expect.objectContaining({ accepted: true, delegated: true }));
+    expect(plugin.conversationCoordinator.shouldAcceptHostSpeech('AP reply', { now: 2000 })).toEqual(expect.objectContaining({
+      accept: false,
+      reason: 'echo'
+    }));
   });
 
   test('rejects echoed host transcripts before AnimazingPal delegation', async () => {

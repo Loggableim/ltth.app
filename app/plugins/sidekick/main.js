@@ -1021,8 +1021,17 @@ class SidekickPlugin {
       };
     }
 
-    if (animazingPalResult?.handled !== false) {
+    const spokenText = animazingPalResult?.spokenText || animazingPalResult?.message || animazingPalResult?.text;
+    if (animazingPalResult?.responded === true || spokenText) {
       this.conversationCoordinator.recordHostSpeech?.(text, metadata);
+      if (spokenText) {
+        this.conversationCoordinator.recordSidekickSpeech?.(spokenText, {
+          ...metadata,
+          eventType: event.eventType,
+          username: event.username || 'Host',
+          source: 'animazingpal-host-speech-output'
+        });
+      }
     }
 
     return {

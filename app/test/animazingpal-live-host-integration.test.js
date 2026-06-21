@@ -1,5 +1,6 @@
 const AnimazingPalPlugin = require('../plugins/animazingpal/main');
 const { normalizeLiveHostConfig } = require('../plugins/animazingpal/brain/live-host-config');
+const SpeechState = require('../plugins/animazingpal/brain/speech-state');
 
 function createPlugin() {
   const ttsPlugin = { speak: jest.fn().mockResolvedValue({ success: true, id: 'tts-1' }) };
@@ -14,6 +15,7 @@ function createPlugin() {
     enabled: true,
     tts: { voiceId: 'fish-host', emotion: 'happy', pitch: 2, volume: 73, speed: 1.1, priority: 91 }
   });
+  plugin.speechState = new SpeechState();
   return { plugin, ttsPlugin };
 }
 
@@ -29,6 +31,37 @@ describe('AnimazingPal live host integration', () => {
     expect(result).toEqual({ handled: false, responded: false, reason: 'delegated-to-sidekick' });
     expect(plugin.recordLiveHostSourceEvent).toHaveBeenCalledWith('chat');
     expect(ttsPlugin.speak).not.toHaveBeenCalled();
+  });
+
+  test('delegated sidekick decisions use the configured Brain, viewer memory path and Fish speech', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.ensureLiveHostRuntime = jest.fn();
+    plugin.recordLiveHostSourceEvent = jest.fn();
+    plugin.recordLiveHostEventOutcome = jest.fn();
+    plugin.isDuplicateLiveHostEvent = jest.fn().mockReturnValue({ duplicate: false });
+    plugin.canUseLiveHostResponseSlot = jest.fn().mockReturnValue(true);
+    plugin.recordLiveHostResponseSlot = jest.fn();
+    plugin.brainEngine = {
+      processChat: jest.fn().mockResolvedValue({ text: 'Willkommen zurück, Testviewer!' })
+    };
+
+    const result = await plugin.processSidekickEvent('chat', {
+      uniqueId: 'testviewer', nickname: 'Test Viewer', comment: 'Wie geht es dir?'
+    }, { score: 0.9, type: 'relevant' });
+
+    expect(result).toEqual(expect.objectContaining({ handled: true, responded: true }));
+    expect(plugin.brainEngine.processChat).toHaveBeenCalledWith(
+      'testviewer',
+      'Wie geht es dir?',
+      expect.objectContaining({ forceRespond: true, decision: expect.objectContaining({ reason: 'sidekick-selected' }) })
+    );
+    expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: 'Willkommen zurück, Testviewer!',
+      engine: 'fishaudio',
+      username: 'testviewer'
+    }));
   });
 
   test('fresh installs use the canonical 24/7 production profile', () => {
