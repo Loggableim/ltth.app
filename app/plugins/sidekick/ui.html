@@ -341,7 +341,7 @@
       🤖 Sidekick
       <span id="status-badge" class="badge badge-success">Active</span>
     </h1>
-    <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit Animaze Integration</p>
+    <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
 
     <div class="tabs">
       <button class="tab active" data-tab="status">Status</button>
@@ -358,7 +358,7 @@
           <h3>🔌 Verbindungen</h3>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="animaze-status-indicator"></span>
-            <span>Animaze: <span id="animaze-status-text">Disconnected</span></span>
+            <span>AnimazingPal: <span id="animaze-status-text">Disconnected</span></span>
           </div>
           <div class="inline-row" style="margin-top: 10px;">
             <button id="btn-connect" class="btn-primary">Verbinden</button>
@@ -428,41 +428,10 @@
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h3>Sprachausgabe</h3>
-        <div class="form-group">
-          <label for="output-mode">Ausgabemodus</label>
-          <select id="output-mode">
-            <option value="animazingpal-fish">AnimazingPal + Fish.audio (Standard)</option>
-            <option value="animaze-chatpal">Animaze ChatPal (Legacy)</option>
-          </select>
-          <small>Der Standard nutzt Stimme, Audio-Routing und Avatar-Lipsync aus AnimazingPal.</small>
-        </div>
+        <p style="color: #aaa; margin-bottom: 15px;">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
         <div class="form-group">
           <label for="output-username">Name der Assistenz</label>
           <input type="text" id="output-username" value="Sidekick" maxlength="64">
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Legacy: direkte Animaze-Verbindung</h3>
-        <div class="grid">
-          <div class="form-group">
-            <label for="animaze-host">Host</label>
-            <input type="text" id="animaze-host" value="127.0.0.1">
-          </div>
-          <div class="form-group">
-            <label for="animaze-port">Port</label>
-            <input type="number" id="animaze-port" value="9000">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="animaze-enabled"> Animaze aktiviert
-          </label>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="animaze-autoconnect"> Auto-Connect beim Start
-          </label>
         </div>
       </div>
 
@@ -727,7 +696,7 @@
         badge.textContent = 'Active';
       }
       
-      // Animaze connection
+      // AnimazingPal connection
       const animazeIndicator = document.getElementById('animaze-status-indicator');
       const animazeText = document.getElementById('animaze-status-text');
       if (status.animaze?.isConnected) {
@@ -782,12 +751,7 @@
     
     // Update config UI
     function updateConfigUI() {
-      document.getElementById('output-mode').value = config.output?.mode || 'animazingpal-fish';
       document.getElementById('output-username').value = config.output?.username || 'Sidekick';
-      document.getElementById('animaze-host').value = config.animaze?.host || '127.0.0.1';
-      document.getElementById('animaze-port').value = config.animaze?.port || 9000;
-      document.getElementById('animaze-enabled').checked = config.animaze?.enabled || false;
-      document.getElementById('animaze-autoconnect').checked = config.animaze?.autoConnect || false;
       
       document.getElementById('comment-enabled').checked = config.comment?.enabled !== false;
       document.getElementById('reply-threshold').value = config.comment?.replyThreshold || 0.6;
@@ -811,15 +775,8 @@
     async function saveConfig() {
       const newConfig = {
         output: {
-          mode: document.getElementById('output-mode').value,
           eventType: 'sidekick',
           username: document.getElementById('output-username').value.trim() || 'Sidekick'
-        },
-        animaze: {
-          host: document.getElementById('animaze-host').value,
-          port: parseInt(document.getElementById('animaze-port').value),
-          enabled: document.getElementById('animaze-enabled').checked,
-          autoConnect: document.getElementById('animaze-autoconnect').checked
         },
         comment: {
           enabled: document.getElementById('comment-enabled').checked,

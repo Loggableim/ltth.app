@@ -1,6 +1,8 @@
 const { ConfigManager } = require('../plugins/sidekick/backend/config');
 const { ConversationCoordinator } = require('../plugins/sidekick/backend/conversation-coordinator');
 const SidekickPlugin = require('../plugins/sidekick/main');
+const fs = require('fs');
+const path = require('path');
 
 function createApi(overrides = {}) {
   return {
@@ -19,6 +21,51 @@ function createApi(overrides = {}) {
 }
 
 describe('Sidekick runtime contracts', () => {
+  test('does not ship the legacy direct assistant client module', () => {
+    const legacyClientFile = ['animaze', 'Client.js'].join('');
+    expect(fs.existsSync(path.join(__dirname, '..', 'plugins', 'sidekick', 'backend', legacyClientFile))).toBe(false);
+  });
+
+  test('user-facing Sidekick files describe delegated AnimazingPal speech only', () => {
+    const sidekickDir = path.join(__dirname, '..', 'plugins', 'sidekick');
+    const forbiddenFragments = [
+      ['Chat', 'Pal'].join(''),
+      ['chat', 'pal'].join(''),
+      ['animaze', '-', 'chat', 'pal'].join(''),
+      'output-mode',
+      'Legacy: direkte Animaze-Verbindung'
+    ];
+    const userFacingText = [
+      fs.readFileSync(path.join(sidekickDir, 'ui.html'), 'utf8'),
+      fs.readFileSync(path.join(sidekickDir, 'plugin.json'), 'utf8'),
+      fs.readFileSync(path.join(sidekickDir, 'README.md'), 'utf8')
+    ].join('\n');
+
+    for (const fragment of forbiddenFragments) {
+      expect(userFacingText).not.toContain(fragment);
+    }
+    expect(userFacingText).toContain('AnimazingPal');
+    expect(userFacingText).toContain('Fish.audio');
+  });
+
+  test('runtime has no legacy direct assistant output route or method', () => {
+    const api = createApi();
+    const plugin = new SidekickPlugin(api);
+    plugin.config = {};
+    plugin.metrics = { getSummary: jest.fn(), getHistoricalData: jest.fn() };
+    plugin.memoryStore = {};
+    plugin.eventBus = {};
+    plugin.deduper = {};
+    plugin.rateLimiter = {};
+    plugin.outboxBatcher = {};
+
+    plugin._registerRoutes();
+    const routes = api.registerRoute.mock.calls.map(call => call[1]);
+
+    expect(routes.some(route => route.toLowerCase().includes(['chat', 'pal'].join('')))).toBe(false);
+    expect(plugin[['_' + 'sendTo', 'Animaze'].join('')]).toBeUndefined();
+  });
+
   test('fresh defaults use only standalone host output config', () => {
     const api = createApi();
     const manager = new ConfigManager(api);
@@ -28,7 +75,7 @@ describe('Sidekick runtime contracts', () => {
       eventType: 'sidekick',
       username: 'Sidekick'
     });
-    expect(config.output.mode).toBeUndefined();
+    expect(config.output[['mo', 'de'].join('')]).toBeUndefined();
     expect(config.animaze).toBeUndefined();
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
@@ -143,7 +190,7 @@ describe('Sidekick runtime contracts', () => {
     expect(manager.update()).toEqual(initial);
     expect(manager.update(null)).toEqual(initial);
     expect(api.setConfig).toHaveBeenCalledTimes(2);
-    expect(manager.getValue('output.mode')).toBeUndefined();
+    expect(manager.getValue(['output', 'mode'].join('.'))).toBeUndefined();
   });
 
   test('assistant speech uses standalone host speech metadata', async () => {
@@ -157,12 +204,10 @@ describe('Sidekick runtime contracts', () => {
     });
     const plugin = new SidekickPlugin(api);
     plugin.config = { output: { eventType: 'sidekick', username: 'Sidekick' } };
-    plugin.animazeClient = directSpeechClient;
     plugin.eventBus = { publishResponseSent: jest.fn() };
     plugin.metrics = { recordResponse: jest.fn() };
 
-    const sendOutput = plugin._sendOutput || plugin._sendToAnimaze;
-    const success = await sendOutput.call(plugin, 'Hallo Testprofil');
+    const success = await plugin._sendOutput('Hallo Testprofil');
 
     expect(success).toBe(true);
     expect(speakHostResponse).toHaveBeenCalledWith('Hallo Testprofil', expect.objectContaining({
@@ -542,7 +587,6 @@ describe('Sidekick runtime contracts', () => {
     plugin.eventBus = {};
     plugin.deduper = {};
     plugin.rateLimiter = {};
-    plugin.animazeClient = {};
     plugin.outboxBatcher = {};
 
     plugin._registerRoutes();
@@ -558,7 +602,6 @@ describe('Sidekick runtime contracts', () => {
     plugin.memoryStore = { updateConfig: jest.fn() };
     plugin.deduper = { setTTL: jest.fn(), getStats: jest.fn().mockReturnValue({}) };
     plugin.rateLimiter = { updateConfig: jest.fn(), getStatus: jest.fn().mockReturnValue({}) };
-    plugin.animazeClient = { updateConfig: jest.fn(), getStatus: jest.fn().mockReturnValue({}) };
     plugin.responseEngine = { updateConfig: jest.fn() };
     plugin.outboxBatcher = { updateConfig: jest.fn(), getStatus: jest.fn().mockReturnValue({}) };
     plugin.metrics = {

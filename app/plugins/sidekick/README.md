@@ -1,18 +1,18 @@
 # Sidekick Plugin
 
-Intelligenter Stream-Assistent für LTTH mit Animaze/ChatPal Integration, Event-Analyse und automatischen Reaktionen.
+Intelligenter Stream-Assistent für LTTH. Sidekick bewertet TikTok LIVE Events, wählt passende Antworten aus und delegiert Sprache, Fish.audio-Stimme, Audio-Routing und Avatar-Reaktionen an AnimazingPal.
 
 ## Features
 
-- **Animaze/ChatPal WebSocket Integration**: Sendet Nachrichten an den Animaze ChatPal für TTS-Ausgabe
-- **TikTok Event-Verarbeitung**: Verarbeitet Chat, Gifts, Likes, Joins, Follows, Shares, Subscribes
-- **User Memory System**: Speichert Benutzerinteraktionen mit automatischem Decay
-- **Event Deduplication**: Verhindert doppelte Event-Verarbeitung mit TTL-basierter Dedupe
-- **Rate Limiting**: Token Bucket und Per-User Cooldowns
-- **Message Batching**: Fasst mehrere Nachrichten zu einem Output zusammen
-- **Relevanz-Scoring**: Bewertet Chat-Nachrichten für intelligente Antworten
-- **Stream Analytics**: Echtzeit-Metriken und historische Daten
-- **GCCE Integration**: Chat-Befehle über das GCCE-System
+- **AnimazingPal/Fish.audio Delegation**: Sidekick nutzt die gemeinsame AnimazingPal Live-Host-Pipeline für gesprochene Antworten und Avatar-Ausgabe.
+- **TikTok Event-Verarbeitung**: Verarbeitet Chat, Gifts, Likes, Joins, Follows, Shares und Subscribes.
+- **User Memory System**: Speichert Benutzerinteraktionen mit automatischem Decay.
+- **Event Deduplication**: Verhindert doppelte Event-Verarbeitung mit TTL-basierter Dedupe.
+- **Rate Limiting**: Token Bucket und Per-User Cooldowns.
+- **Message Batching**: Fasst mehrere Nachrichten zu einem Output zusammen.
+- **Relevanz-Scoring**: Bewertet Chat-Nachrichten für intelligente Antworten.
+- **Stream Analytics**: Echtzeit-Metriken und historische Daten.
+- **GCCE Integration**: Chat-Befehle über das GCCE-System.
 
 ## Installation
 
@@ -23,17 +23,19 @@ Das Plugin wird automatisch geladen, wenn es im `plugins/sidekick` Verzeichnis v
 Zugriff über: `/sidekick/ui`
 
 Features:
-- Status-Übersicht (Verbindungen, Queue, Statistiken)
-- Einstellungen (Animaze, Chat, Join Greetings, Batching)
-- Memory-Verwaltung (Top User, Suche, Löschen)
-- Analytics (Live Rates, Top Gifter)
-- Event Log (Filterbar nach Typ)
+
+- Status-Übersicht für Sidekick, AnimazingPal-Verbindung, Queue und Statistiken
+- Einstellungen für Assistenzname, Chat-Verarbeitung, Join Greetings und Batching
+- Memory-Verwaltung mit Top Usern, Suche und Löschen
+- Analytics mit Live Rates und Top Giftern
+- Event Log mit Filter nach Typ
 
 ## OBS Overlay
 
 URL: `/overlay/sidekick/hud`
 
 Query-Parameter:
+
 - `position`: `top-left`, `top-right`, `bottom-left`, `bottom-right` (Standard: `top-right`)
 - `minimal`: `true` für kompakte Ansicht
 - `events`: `false` um Events auszublenden
@@ -61,12 +63,14 @@ Kurzform: `!sk <subcommand>`
 - `POST /api/sidekick/mute` - Mute togglen
 - `POST /api/sidekick/reset` - Session zurücksetzen
 
-### Animaze
+### AnimazingPal Bridge
 
-- `GET /api/sidekick/animaze/status` - Verbindungsstatus
-- `POST /api/sidekick/animaze/connect` - Verbinden
-- `POST /api/sidekick/animaze/disconnect` - Trennen
-- `POST /api/sidekick/animaze/test` - Test-Nachricht senden
+Diese Endpoints steuern die gemeinsame AnimazingPal-Verbindung und sprechen Testausgaben über die gemeinsame Fish.audio-Pipeline.
+
+- `GET /api/sidekick/animaze/status` - Status der AnimazingPal-Ausgabe
+- `POST /api/sidekick/animaze/connect` - AnimazingPal verbinden
+- `POST /api/sidekick/animaze/disconnect` - AnimazingPal trennen
+- `POST /api/sidekick/animaze/test` - Test-Nachricht über AnimazingPal/Fish.audio sprechen
 
 ### Memory
 
@@ -96,8 +100,8 @@ Die Konfiguration wird in der LTTH-Datenbank gespeichert und kann über die UI o
 
 ### Wichtige Einstellungen
 
-- `animaze.enabled`: Animaze-Integration aktivieren
-- `animaze.host`/`port`: WebSocket-Verbindungsdetails
+- `output.eventType`: Event-Typ für Sidekick-Ausgaben an AnimazingPal
+- `output.username`: Anzeigename der Assistenz
 - `comment.enabled`: Chat-Verarbeitung aktivieren
 - `comment.replyThreshold`: Relevanz-Schwellenwert (0-1)
 - `comment.globalCooldown`: Globaler Cooldown in Sekunden
@@ -113,7 +117,7 @@ Die Konfiguration wird in der LTTH-Datenbank gespeichert und kann über die UI o
 
 ### Architektur
 
-```
+```text
 sidekick/
 ├── main.js              # Plugin Entry Point
 ├── plugin.json          # Plugin Manifest
@@ -124,13 +128,14 @@ sidekick/
 │   ├── eventBus.js      # Event System
 │   ├── deduper.js       # Event Deduplication
 │   ├── rateLimit.js     # Rate Limiting
-│   ├── animazeClient.js # WebSocket Client
 │   ├── responseEngine.js # Relevanz-Scoring
 │   ├── outboxBatcher.js # Message Batching
 │   └── metrics.js       # Analytics
 └── overlay/
     └── sidekick-hud.html # OBS Overlay
 ```
+
+Sidekick erzeugt keine eigene Avatar- oder Sprachverbindung. Ausgewählte Viewer-Events und Host-Speech werden an AnimazingPal delegiert; AnimazingPal übernimmt Brain-Verarbeitung, Fish.audio-Ausgabe und Avatar-Aktion.
 
 ### Datenbank-Tabellen
 
