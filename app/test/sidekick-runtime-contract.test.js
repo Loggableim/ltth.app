@@ -70,6 +70,9 @@ describe('Sidekick runtime contracts', () => {
       'host-preflight-checks',
       '/api/sidekick/asr/status',
       '/api/sidekick/preflight',
+      'buildHostPreflightQuery',
+      'micBlocked',
+      'micUnsafeOverride',
       '/api/sidekick/asr/transcribe',
       'navigator.mediaDevices.enumerateDevices',
       'navigator.mediaDevices.getUserMedia',
@@ -497,6 +500,99 @@ describe('Sidekick runtime contracts', () => {
     expect(readyPlugin._syncAnimazingPalMode()).toBe(true);
     expect(setMode).toHaveBeenCalledWith('sidekick', { persist: false });
     expect(api.setConfig).not.toHaveBeenCalled();
+  });
+
+  test('status retry applies runtime Sidekick override after dependencies become ready', () => {
+    const setMode = jest.fn().mockReturnValue(true);
+    const api = createApi();
+    const plugin = new SidekickPlugin(api);
+    plugin.config = { asr: { enabled: true }, conversation: { enabled: true } };
+    plugin.deduper = { getStats: jest.fn().mockReturnValue({}) };
+    plugin.rateLimiter = { getStatus: jest.fn().mockReturnValue({}) };
+    plugin.outboxBatcher = { getStatus: jest.fn().mockReturnValue({}) };
+    plugin.metrics = {
+      getSessionStats: jest.fn().mockReturnValue({}),
+      getCurrentRates: jest.fn().mockReturnValue({})
+    };
+
+    api.getPluginInstance.mockImplementation((pluginId) => {
+      if (pluginId === 'animazingpal') {
+        return { setLiveHostOperatingMode: setMode, speakHostResponse: jest.fn() };
+      }
+      if (pluginId === 'tts') {
+        return { config: { fishaudioApiKey: 'fish-key' }, transcribeFishAudio: jest.fn() };
+      }
+      return null;
+    });
+
+    expect(plugin._syncAnimazingPalMode()).toBe(false);
+    expect(setMode).not.toHaveBeenCalled();
+
+    api.getPluginInstance.mockImplementation((pluginId) => {
+      if (pluginId === 'animazingpal') {
+        return {
+          setLiveHostOperatingMode: setMode,
+          processSidekickHostSpeech: jest.fn(),
+          speakHostResponse: jest.fn()
+        };
+      }
+      if (pluginId === 'tts') {
+        return { config: { fishaudioApiKey: 'fish-key' }, transcribeFishAudio: jest.fn() };
+      }
+      return null;
+    });
+
+    const status = plugin._getStatus();
+
+    expect(status.hostPreflight.ready).toBe(true);
+    expect(setMode).toHaveBeenCalledWith('sidekick', { persist: false });
+    expect(api.setConfig).not.toHaveBeenCalled();
+  });
+
+  test('preflight route reflects unsafe microphone query metadata in backend diagnostics', () => {
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') {
+          return {
+            processSidekickHostSpeech: jest.fn(),
+            speakHostResponse: jest.fn()
+          };
+        }
+        if (pluginId === 'tts') {
+          return { config: { fishaudioApiKey: 'fish-key' }, transcribeFishAudio: jest.fn() };
+        }
+        return null;
+      })
+    });
+    const plugin = new SidekickPlugin(api);
+    plugin.config = { asr: { enabled: true }, conversation: { enabled: true } };
+    plugin.metrics = { getSummary: jest.fn(), getHistoricalData: jest.fn() };
+    plugin.memoryStore = {};
+    plugin.eventBus = {};
+    plugin.deduper = {};
+    plugin.rateLimiter = {};
+    plugin.outboxBatcher = {};
+    plugin._registerRoutes();
+    const route = api.registerRoute.mock.calls.find(call => call[1] === '/api/sidekick/preflight');
+    const res = { json: jest.fn() };
+
+    route[2]({
+      query: {
+        micBlocked: 'true',
+        micUnsafeOverride: 'false',
+        micLabel: 'CABLE Input'
+      }
+    }, res);
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      preflight: expect.objectContaining({
+        ready: false,
+        checks: expect.arrayContaining([
+          expect.objectContaining({ id: 'microphone.device', status: 'error' })
+        ])
+      })
+    }));
   });
 
   test('does not route host transcripts through generic AnimazingPal Sidekick event path when dedicated host pipeline is unavailable', async () => {

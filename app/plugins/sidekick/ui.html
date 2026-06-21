@@ -878,6 +878,31 @@
         && !document.getElementById('host-asr-unsafe-override').checked;
     }
 
+    function buildHostPreflightQuery() {
+      const option = getSelectedAsrDeviceOption();
+      const params = new URLSearchParams();
+      if (option) {
+        params.set('micDeviceId', document.getElementById('host-asr-device').value || '');
+        params.set('micLabel', option.textContent || '');
+        params.set('micBlocked', option?.dataset?.unsafe === 'true' ? 'true' : 'false');
+        params.set('micUnsafeOverride', document.getElementById('host-asr-unsafe-override').checked ? 'true' : 'false');
+      }
+      return params.toString();
+    }
+
+    function appendPreflightCheckItem(list, check) {
+      const item = document.createElement('li');
+      item.className = check.status === 'error' ? 'asr-error' : 'asr-warning';
+      const label = document.createElement('strong');
+      label.textContent = `${check.label || check.id}:`;
+      item.appendChild(label);
+      item.appendChild(document.createTextNode(` ${check.detail || ''}`));
+      if (check.action) {
+        item.appendChild(document.createTextNode(` — ${check.action}`));
+      }
+      list.appendChild(item);
+    }
+
     function updateAsrDeviceWarning() {
       const warning = document.getElementById('host-asr-device-warning');
       const option = getSelectedAsrDeviceOption();
@@ -1247,7 +1272,8 @@
 
     async function fetchAsrStatus() {
       try {
-        const res = await fetch('/api/sidekick/asr/status');
+        const query = buildHostPreflightQuery();
+        const res = await fetch(`/api/sidekick/asr/status${query ? `?${query}` : ''}`);
         const data = await res.json();
         if (data.success) {
           asrStatus = data.status || {};
@@ -1260,7 +1286,8 @@
 
     async function fetchHostPreflight() {
       try {
-        const res = await fetch('/api/sidekick/preflight');
+        const query = buildHostPreflightQuery();
+        const res = await fetch(`/api/sidekick/preflight${query ? `?${query}` : ''}`);
         const data = await res.json();
         if (data.success) {
           asrStatus.hostPreflight = data.preflight || null;
@@ -1331,9 +1358,15 @@
       statusEl.className = hasError ? 'asr-error' : (preflight.ready ? 'asr-ok' : 'asr-warning');
       const list = document.getElementById('host-preflight-checks');
       const visibleChecks = checks.filter(check => check.status !== 'ok').slice(0, 8);
-      list.innerHTML = visibleChecks.length
-        ? visibleChecks.map(check => `<li class="${check.status === 'error' ? 'asr-error' : 'asr-warning'}"><strong>${check.label || check.id}:</strong> ${check.detail || ''}${check.action ? ` — ${check.action}` : ''}</li>`).join('')
-        : '<li class="asr-ok">Alle Host-Abhängigkeiten sind bereit.</li>';
+      list.replaceChildren();
+      if (visibleChecks.length) {
+        visibleChecks.forEach(check => appendPreflightCheckItem(list, check));
+      } else {
+        const item = document.createElement('li');
+        item.className = 'asr-ok';
+        item.textContent = 'Alle Host-Abhängigkeiten sind bereit.';
+        list.appendChild(item);
+      }
     }
     
     // Update status UI

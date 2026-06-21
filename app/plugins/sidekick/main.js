@@ -88,6 +88,10 @@ class SidekickPlugin {
 
     this.asrDiagnostics = this._createEmptyAsrDiagnostics();
     this.asrRateLimitBuckets = new Map();
+    this.hostModeSyncTimer = null;
+    this.hostModeSyncAttempts = 0;
+    this.hostModeRuntimeOverrideApplied = false;
+    this.destroyed = false;
   }
   
   /**
@@ -128,7 +132,7 @@ class SidekickPlugin {
           this.logger.error(`Sidekick output failed: ${error.message}`);
         });
       });
-      this._syncAnimazingPalMode();
+      this._maybeSyncAnimazingPalMode({ scheduleRetry: true });
       
       // Register routes
       this._registerRoutes();
@@ -165,6 +169,7 @@ class SidekickPlugin {
    */
   async destroy() {
     this.logger.info('Destroying Sidekick Plugin...');
+    this.destroyed = true;
     
     // Clear timers
     if (this.cleanupInterval) {
@@ -175,6 +180,11 @@ class SidekickPlugin {
     if (this.joinAnnouncerInterval) {
       clearInterval(this.joinAnnouncerInterval);
       this.joinAnnouncerInterval = null;
+    }
+
+    if (this.hostModeSyncTimer) {
+      clearTimeout(this.hostModeSyncTimer);
+      this.hostModeSyncTimer = null;
     }
     
     // Clear greet tasks
@@ -232,16 +242,19 @@ class SidekickPlugin {
     });
 
     this.api.registerRoute('get', '/api/sidekick/preflight', (req, res) => {
+      const options = this._getHostPreflightOptionsFromRequest(req);
+      this._maybeSyncAnimazingPalMode({ scheduleRetry: false, preflightOptions: options, logBlocked: false });
       res.json({
         success: true,
-        preflight: this._getHostModePreflight()
+        preflight: this._getHostModePreflight(options)
       });
     });
 
     this.api.registerRoute('get', '/api/sidekick/asr/status', (req, res) => {
+      const options = this._getHostPreflightOptionsFromRequest(req);
       res.json({
         success: true,
-        status: this._getAsrStatus()
+        status: this._getAsrStatus(options)
       });
     });
 
@@ -363,6 +376,7 @@ class SidekickPlugin {
           return res.status(503).json({ success: false, error: 'AnimazingPal unavailable' });
         }
         const connected = await animazingPal.connect();
+        this._maybeSyncAnimazingPalMode({ scheduleRetry: true });
         this._emitStatus();
         res.json({ success: connected, isConnected: !!animazingPal.isConnected });
       } catch (error) {
@@ -1223,12 +1237,30 @@ class SidekickPlugin {
     };
   }
 
-  _getAsrStatus() {
+  _getHostPreflightOptionsFromRequest(req = {}) {
+    const query = req.query || {};
+    const hasMicMetadata = Object.prototype.hasOwnProperty.call(query, 'micBlocked')
+      || Object.prototype.hasOwnProperty.call(query, 'micUnsafeOverride')
+      || Object.prototype.hasOwnProperty.call(query, 'micLabel')
+      || Object.prototype.hasOwnProperty.call(query, 'micDeviceId');
+    if (!hasMicMetadata) return {};
+
+    return {
+      microphone: {
+        blocked: this._isTruthyRequestValue(query.micBlocked),
+        unsafeOverride: this._isTruthyRequestValue(query.micUnsafeOverride),
+        label: this._sanitizeAsrPublicText(query.micLabel, 120),
+        deviceId: this._sanitizeAsrPublicText(query.micDeviceId, 120)
+      }
+    };
+  }
+
+  _getAsrStatus(preflightOptions = {}) {
     if (!this.asrDiagnostics) {
       this.asrDiagnostics = this._createEmptyAsrDiagnostics();
     }
     const readiness = this._getAsrReadiness();
-    const hostPreflight = this._getHostModePreflight();
+    const hostPreflight = this._getHostModePreflight(preflightOptions);
     return {
       enabled: readiness.config.enabled,
       ready: readiness.ready && hostPreflight.ready,
@@ -1820,17 +1852,55 @@ class SidekickPlugin {
     return success;
   }
 
-  _syncAnimazingPalMode() {
+  _syncAnimazingPalMode(options = {}) {
     const animazingPal = this._getAnimazingPal();
     if (!animazingPal) return false;
     if (typeof animazingPal.setLiveHostOperatingMode !== 'function') return false;
-    const preflight = this._getHostModePreflight({ requireAsr: false });
+    const preflight = this._getHostModePreflight({
+      requireAsr: false,
+      ...(options.preflightOptions || {})
+    });
     if (!preflight.ready) {
       animazingPal.clearLiveHostOperatingModeOverride?.();
-      this.logger.warn(`Sidekick host mode not activated: ${preflight.nextSteps[0] || 'preflight blocked'}`);
+      if (options.logBlocked !== false) {
+        this.logger.warn(`Sidekick host mode not activated: ${preflight.nextSteps[0] || 'preflight blocked'}`);
+      }
       return false;
     }
-    return !!animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
+    const applied = !!animazingPal.setLiveHostOperatingMode('sidekick', { persist: false });
+    if (applied) {
+      this.hostModeRuntimeOverrideApplied = true;
+      this.hostModeSyncAttempts = 0;
+      if (this.hostModeSyncTimer) {
+        clearTimeout(this.hostModeSyncTimer);
+        this.hostModeSyncTimer = null;
+      }
+    }
+    return applied;
+  }
+
+  _maybeSyncAnimazingPalMode(options = {}) {
+    if (this.destroyed || this.hostModeRuntimeOverrideApplied) return this.hostModeRuntimeOverrideApplied;
+    const applied = this._syncAnimazingPalMode({
+      preflightOptions: options.preflightOptions,
+      logBlocked: options.logBlocked
+    });
+    if (!applied && options.scheduleRetry !== false) {
+      this._scheduleHostModeSyncRetry();
+    }
+    return applied;
+  }
+
+  _scheduleHostModeSyncRetry() {
+    if (this.destroyed || this.hostModeSyncTimer || this.hostModeRuntimeOverrideApplied) return false;
+    if (this.hostModeSyncAttempts >= 8) return false;
+    this.hostModeSyncAttempts += 1;
+    const delayMs = Math.min(15000, 1000 * this.hostModeSyncAttempts);
+    this.hostModeSyncTimer = setTimeout(() => {
+      this.hostModeSyncTimer = null;
+      this._maybeSyncAnimazingPalMode({ scheduleRetry: true });
+    }, delayMs);
+    return true;
   }
 
   async _dispatchSelectedEvent(eventType, data, evaluation = {}) {
@@ -1896,6 +1966,7 @@ class SidekickPlugin {
   }
   
   _getStatus() {
+    this._maybeSyncAnimazingPalMode({ scheduleRetry: false, logBlocked: false });
     const session = this.metrics.getSessionStats();
     session.totalEvents = [
       'totalChats',
