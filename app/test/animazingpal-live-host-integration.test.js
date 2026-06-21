@@ -423,6 +423,18 @@ describe('AnimazingPal live host integration', () => {
     );
   });
 
+  test('host ASR exposes sanitized upstream Fish.audio errors for diagnosis', () => {
+    const { plugin } = createPlugin();
+
+    const sanitized = plugin._sanitizeAsrError(new Error('Fish.audio ASR API error (422): invalid token fish-secret-1234567890'));
+
+    expect(sanitized).toEqual({
+      status: 502,
+      code: 'ASR_FISH_API_ERROR',
+      message: 'Fish.audio ASR API error (422): invalid token [REDACTED]'
+    });
+  });
+
   test('processHostSpeechTranscript blocks low-confidence host ASR before Brain delegation', async () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.brainEngine = {

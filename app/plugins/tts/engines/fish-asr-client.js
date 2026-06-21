@@ -1,5 +1,6 @@
 const axios = require('axios');
 const msgpack = require('@msgpack/msgpack');
+const FormData = require('form-data');
 
 class FishAsrClient {
   static SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
@@ -31,44 +32,140 @@ class FishAsrClient {
     const timeout = this._resolveTimeout(options.timeout, this.timeout);
     this._validateAudio(audioBuffer, maxAudioBytes);
 
-    const payload = {
-      audio: audioBuffer
-    };
-
-    if (options.language !== undefined) {
-      payload.language = this._validateLanguage(options.language);
-    }
+    const requestOptions = this._normalizeRequestOptions(options);
 
     try {
-      const response = await axios.post(this.apiUrl, msgpack.encode(payload), {
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/msgpack',
-          Accept: 'application/json, application/msgpack'
-        },
-        responseType: 'arraybuffer',
-        timeout,
-        maxContentLength: FishAsrClient.MAX_RESPONSE_BYTES,
-        maxBodyLength: FishAsrClient.MAX_REQUEST_BODY_BYTES
-      });
-
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(`Fish.audio ASR API error (${response.status}): ${this._extractErrorMessage(response.data)}`);
-      }
-
-      return this._normalizeResponse(this._decodeResponse(response.data));
+      return this._decodeTranscriptionResponse(await this._postMessagePack(audioBuffer, requestOptions, timeout));
     } catch (error) {
-      if (error.response) {
-        const status = error.response.status || 'unknown';
-        throw new Error(`Fish.audio ASR API error (${status}): ${this._extractErrorMessage(error.response.data)}`);
+      const normalizedError = this._normalizeRequestError(error);
+      if (!this._shouldRetryAsMultipart(normalizedError)) {
+        throw normalizedError;
       }
 
-      if (error.request) {
-        throw new Error(`Fish.audio ASR network error: ${error.message}`);
+      this.logger.warn(`Fish.audio ASR MessagePack request failed (${normalizedError.fishAudioStatus}); retrying multipart form-data`);
+      try {
+        return this._decodeTranscriptionResponse(await this._postMultipart(audioBuffer, requestOptions, timeout));
+      } catch (multipartError) {
+        throw this._normalizeRequestError(multipartError);
       }
+    }
+  }
 
+  async _postMessagePack(audioBuffer, options, timeout) {
+    const payload = {
+      audio: audioBuffer,
+      ignore_timestamps: options.ignoreTimestamps
+    };
+
+    if (options.language) {
+      payload.language = options.language;
+    }
+
+    return axios.post(this.apiUrl, msgpack.encode(payload), {
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/msgpack',
+        Accept: 'application/json, application/msgpack'
+      },
+      responseType: 'arraybuffer',
+      timeout,
+      maxContentLength: FishAsrClient.MAX_RESPONSE_BYTES,
+      maxBodyLength: FishAsrClient.MAX_REQUEST_BODY_BYTES
+    });
+  }
+
+  async _postMultipart(audioBuffer, options, timeout) {
+    const form = new FormData();
+    form.append('audio', audioBuffer, {
+      filename: options.filename || 'audio.webm',
+      contentType: options.mimeType || 'application/octet-stream',
+      knownLength: audioBuffer.length
+    });
+    if (options.language) form.append('language', options.language);
+    form.append('ignore_timestamps', String(options.ignoreTimestamps));
+
+    return axios.post(this.apiUrl, form, {
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        Accept: 'application/json, application/msgpack',
+        ...form.getHeaders()
+      },
+      responseType: 'arraybuffer',
+      timeout,
+      maxContentLength: FishAsrClient.MAX_RESPONSE_BYTES,
+      maxBodyLength: FishAsrClient.MAX_REQUEST_BODY_BYTES
+    });
+  }
+
+  _decodeTranscriptionResponse(response) {
+    if (response.status < 200 || response.status >= 300) {
+      const error = new Error(`Fish.audio ASR API error (${response.status}): ${this._extractErrorMessage(response.data)}`);
+      error.fishAudioStatus = Number(response.status);
+      error.fishAudioApiError = true;
       throw error;
     }
+
+    return this._normalizeResponse(this._decodeResponse(response.data));
+  }
+
+  _normalizeRequestOptions(options) {
+    return {
+      language: options.language === undefined ? null : this._validateLanguage(options.language),
+      ignoreTimestamps: this._resolveIgnoreTimestamps(options.ignoreTimestamps ?? options.ignore_timestamps),
+      mimeType: this._validateMimeType(options.mimeType),
+      filename: this._validateFilename(options.filename)
+    };
+  }
+
+  _resolveIgnoreTimestamps(value) {
+    if (value === undefined || value === null) return true;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    }
+    throw new Error('Fish.audio ASR ignore_timestamps must be a boolean');
+  }
+
+  _validateMimeType(mimeType) {
+    if (mimeType === undefined || mimeType === null || mimeType === '') return null;
+    if (typeof mimeType !== 'string') {
+      throw new Error('Fish.audio ASR mimeType must be a string when provided');
+    }
+    return mimeType.trim().slice(0, 120) || null;
+  }
+
+  _validateFilename(filename) {
+    if (filename === undefined || filename === null || filename === '') return null;
+    if (typeof filename !== 'string') {
+      throw new Error('Fish.audio ASR filename must be a string when provided');
+    }
+    return filename.trim().replace(/[^\w .()-]/g, '_').slice(0, 160) || null;
+  }
+
+  _normalizeRequestError(error) {
+    if (error?.fishAudioApiError || error?.fishAudioNetworkError) return error;
+
+    if (error?.response) {
+      const status = error.response.status || 'unknown';
+      const normalized = new Error(`Fish.audio ASR API error (${status}): ${this._extractErrorMessage(error.response.data)}`);
+      normalized.fishAudioStatus = Number(status);
+      normalized.fishAudioApiError = true;
+      return normalized;
+    }
+
+    if (error?.request) {
+      const normalized = new Error(`Fish.audio ASR network error: ${error.message}`);
+      normalized.fishAudioNetworkError = true;
+      return normalized;
+    }
+
+    return error;
+  }
+
+  _shouldRetryAsMultipart(error) {
+    return error?.fishAudioApiError && [400, 415, 422].includes(error.fishAudioStatus);
   }
 
   _resolveConfiguredMaxAudioBytes(value) {

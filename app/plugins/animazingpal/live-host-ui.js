@@ -26,6 +26,7 @@
       recording: false,
       stream: null,
       recorder: null,
+      segmentTimer: null,
       lastTranscript: null,
       lastUpload: null,
       lastError: null
@@ -759,31 +760,59 @@
       : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     const mimeType = getSupportedAsrMimeType();
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    state.hostAsr.stream = stream;
+    state.hostAsr.recording = true;
+    startHostAsrSegment(mimeType);
+    await refreshAsrStatus();
+    notify('Host-STT gestartet');
+  }
+
+  function startHostAsrSegment(mimeType = getSupportedAsrMimeType()) {
+    if (!state.hostAsr.recording || !state.hostAsr.stream) return;
+    const recorder = new MediaRecorder(state.hostAsr.stream, mimeType ? { mimeType } : undefined);
+    const chunks = [];
     recorder.ondataavailable = event => {
-      if (!event.data || event.data.size === 0) return;
-      uploadHostAsrBlob(event.data, false)
-        .then(() => {
-          if (state.hostAsr.recording) render();
-        })
-        .catch(error => {
-          state.hostAsr.lastError = error.message;
-          render();
-        });
+      if (event.data && event.data.size > 0) chunks.push(event.data);
+    };
+    recorder.onstop = () => {
+      if (state.hostAsr.segmentTimer) {
+        clearTimeout(state.hostAsr.segmentTimer);
+        state.hostAsr.segmentTimer = null;
+      }
+      const blob = chunks.length ? new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' }) : null;
+      if (blob && blob.size > 0) {
+        uploadHostAsrBlob(blob, false)
+          .then(() => {
+            if (state.hostAsr.recording) render();
+          })
+          .catch(error => {
+            state.hostAsr.lastError = error.message;
+            render();
+          })
+          .finally(() => {
+            if (state.hostAsr.recording) startHostAsrSegment(mimeType);
+          });
+      } else if (state.hostAsr.recording) {
+        startHostAsrSegment(mimeType);
+      }
     };
     recorder.onerror = event => {
       state.hostAsr.lastError = event.error?.message || 'MediaRecorder error';
       render();
     };
-    state.hostAsr.stream = stream;
     state.hostAsr.recorder = recorder;
-    state.hostAsr.recording = true;
-    recorder.start(Math.max(1000, Number(get('asr.maxSegmentMs', 12000)) || 12000));
-    await refreshAsrStatus();
-    notify('Host-STT gestartet');
+    recorder.start();
+    const segmentMs = Math.max(1000, Number(get('asr.maxSegmentMs', 8000)) || 8000);
+    state.hostAsr.segmentTimer = setTimeout(() => {
+      if (recorder.state !== 'inactive') recorder.stop();
+    }, segmentMs);
   }
 
   function stopHostAsr() {
+    if (state.hostAsr.segmentTimer) {
+      clearTimeout(state.hostAsr.segmentTimer);
+      state.hostAsr.segmentTimer = null;
+    }
     const recorder = state.hostAsr.recorder;
     if (recorder && recorder.state !== 'inactive') recorder.stop();
     state.hostAsr.stream?.getTracks?.().forEach(track => track.stop());

@@ -5085,6 +5085,34 @@ class AnimazingPalPlugin {
     if (/api key|not configured|missing key/i.test(message)) {
       return { status: 503, code: 'ASR_FISH_UNCONFIGURED', message: 'Fish.audio ASR API key is not configured' };
     }
+    if (/^Fish\.audio ASR API error/i.test(message)) {
+      return {
+        status: 502,
+        code: 'ASR_FISH_API_ERROR',
+        message: this._sanitizeAsrPublicText(message, 240) || 'Fish.audio ASR API error'
+      };
+    }
+    if (/^Fish\.audio ASR network error/i.test(message)) {
+      return {
+        status: 502,
+        code: 'ASR_FISH_NETWORK_ERROR',
+        message: this._sanitizeAsrPublicText(message, 240) || 'Fish.audio ASR network error'
+      };
+    }
+    if (/^Fish\.audio ASR malformed response/i.test(message)) {
+      return {
+        status: 502,
+        code: 'ASR_FISH_MALFORMED_RESPONSE',
+        message: this._sanitizeAsrPublicText(message, 240) || 'Fish.audio ASR malformed response'
+      };
+    }
+    if (/^Fish\.audio ASR (audio|maxAudioBytes|language|timeout|mimeType|filename|ignore_timestamps)/i.test(message)) {
+      return {
+        status: 400,
+        code: 'ASR_FISH_REQUEST_INVALID',
+        message: this._sanitizeAsrPublicText(message, 240) || 'Fish.audio ASR request invalid'
+      };
+    }
     return { status: 502, code: 'ASR_TRANSCRIPTION_FAILED', message: 'Fish.audio ASR transcription failed' };
   }
 

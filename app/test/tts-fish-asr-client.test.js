@@ -44,6 +44,7 @@ describe('FishAsrClient', () => {
     expect(url).toBe('https://api.fish.audio/v1/asr');
     expect(Buffer.from(decodedPayload.audio)).toEqual(audio);
     expect(decodedPayload.language).toBe('en');
+    expect(decodedPayload.ignore_timestamps).toBe(true);
     expect(requestConfig.headers).toMatchObject({
       Authorization: 'Bearer fish-key',
       'Content-Type': 'application/msgpack'
@@ -53,6 +54,74 @@ describe('FishAsrClient', () => {
     expect(FishAsrClient.MAX_REQUEST_BODY_BYTES).toBe(FishAsrClient.SERVICE_MAX_AUDIO_BYTES + 1024 * 1024);
     expect(requestConfig.maxContentLength).toBe(FishAsrClient.MAX_RESPONSE_BYTES);
     expect(requestConfig.maxBodyLength).toBe(FishAsrClient.MAX_REQUEST_BODY_BYTES);
+  });
+
+  test('allows precise timestamp requests when explicitly configured', async () => {
+    axios.post.mockResolvedValue({
+      status: 200,
+      data: {
+        text: 'timed host',
+        duration: 1,
+        segments: [{ text: 'timed host', start: 0, end: 1 }]
+      }
+    });
+
+    const client = new FishAsrClient('fish-key', logger);
+    await client.transcribe(Buffer.from('audio'), { ignoreTimestamps: false });
+
+    const decodedPayload = msgpack.decode(axios.post.mock.calls[0][1]);
+    expect(decodedPayload.ignore_timestamps).toBe(false);
+  });
+
+  test('retries validation payload failures as multipart form-data', async () => {
+    axios.post
+      .mockRejectedValueOnce({
+        response: {
+          status: 422,
+          data: { message: 'invalid msgpack audio payload' }
+        }
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        data: {
+          text: 'multipart host',
+          duration: 0.75,
+          segments: [{ text: 'multipart host', start: 0, end: 0.75 }]
+        }
+      });
+
+    const client = new FishAsrClient('fish-key', logger);
+    const result = await client.transcribe(Buffer.from('webm audio'), {
+      language: 'de',
+      mimeType: 'audio/webm',
+      filename: 'host.webm'
+    });
+
+    expect(result.text).toBe('multipart host');
+    expect(axios.post).toHaveBeenCalledTimes(2);
+    expect(axios.post.mock.calls[0][2].headers['Content-Type']).toBe('application/msgpack');
+    expect(axios.post.mock.calls[1][2].headers).toMatchObject({
+      Authorization: 'Bearer fish-key'
+    });
+    expect(
+      axios.post.mock.calls[1][2].headers['Content-Type'] || axios.post.mock.calls[1][2].headers['content-type']
+    ).toMatch(/^multipart\/form-data; boundary=/);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('retrying multipart')
+    );
+  });
+
+  test('does not retry authentication failures as multipart form-data', async () => {
+    axios.post.mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: { message: 'invalid token' }
+      }
+    });
+
+    const client = new FishAsrClient('fish-key', logger);
+    await expect(client.transcribe(Buffer.from('audio'))).rejects.toThrow('Fish.audio ASR API error (401): invalid token');
+    expect(axios.post).toHaveBeenCalledTimes(1);
   });
 
   test('rejects missing api key before sending audio', async () => {
