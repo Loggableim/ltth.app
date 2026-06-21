@@ -6,6 +6,7 @@ const SpeechifyEngine = require('./engines/speechify-engine');
 const ElevenLabsEngine = require('./engines/elevenlabs-engine');
 const OpenAIEngine = require('./engines/openai-engine');
 const FishSpeechEngine = require('./engines/fishspeech-engine');
+const FishAsrClient = require('./engines/fish-asr-client');
 const SiliconFlowEngine = require('./engines/siliconflow-engine');
 const LanguageDetector = require('./utils/language-detector');
 const ProfanityFilter = require('./utils/profanity-filter');
@@ -494,6 +495,32 @@ class TTSPlugin {
         
         // Remove emojis and clean up extra whitespace
         return text.replace(TTSPlugin.EMOJI_PATTERN, '').replace(/\s+/g, ' ').trim();
+    }
+
+    /**
+     * Transcribe host microphone audio through Fish.audio ASR for internal plugin consumers.
+     * This intentionally does not register a public route or expose the API key in status/config responses.
+     */
+    async transcribeFishAudio(audioBuffer, options = {}) {
+        if (!this.config.fishaudioApiKey) {
+            throw new Error('Fish.audio ASR API key is not configured');
+        }
+
+        const configuredMax = Number(this.config.fishAudioAsrMaxBytes);
+        const client = new FishAsrClient(this.config.fishaudioApiKey, this.logger, {
+            maxAudioBytes: Number.isFinite(configuredMax) && configuredMax > 0 ? configuredMax : undefined,
+            timeout: options.timeout
+        });
+
+        const result = await client.transcribe(audioBuffer, options);
+
+        if (this.api?.log) {
+            this.api.log('info', `Fish.audio ASR transcription completed (${result.text.length} chars)`);
+        } else {
+            this.logger.info(`Fish.audio ASR transcription completed (${result.text.length} chars)`);
+        }
+
+        return result;
     }
 
     /**
