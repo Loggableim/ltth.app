@@ -2,7 +2,9 @@ const axios = require('axios');
 const msgpack = require('@msgpack/msgpack');
 
 class FishAsrClient {
-  static DEFAULT_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+  static SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+  static DEFAULT_MAX_AUDIO_BYTES = FishAsrClient.SERVICE_MAX_AUDIO_BYTES;
+  static LANGUAGE_PATTERN = /^[a-zA-Z]{2,3}(?:[-_][a-zA-Z]{2,4})?$/;
 
   constructor(apiKey, logger, config = {}) {
     if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
@@ -18,11 +20,11 @@ class FishAsrClient {
     };
     this.apiUrl = config.apiUrl || 'https://api.fish.audio/v1/asr';
     this.timeout = config.timeout || 30000;
-    this.maxAudioBytes = this._resolveMaxAudioBytes(config.maxAudioBytes);
+    this.maxAudioBytes = this._resolveConfiguredMaxAudioBytes(config.maxAudioBytes);
   }
 
   async transcribe(audioBuffer, options = {}) {
-    const maxAudioBytes = this._resolveMaxAudioBytes(options.maxAudioBytes, this.maxAudioBytes);
+    const maxAudioBytes = this._resolveCallMaxAudioBytes(options.maxAudioBytes);
     this._validateAudio(audioBuffer, maxAudioBytes);
 
     const payload = {
@@ -30,14 +32,7 @@ class FishAsrClient {
     };
 
     if (options.language !== undefined) {
-      if (typeof options.language !== 'string') {
-        throw new Error('Fish.audio ASR language must be a string when provided');
-      }
-
-      const language = options.language.trim();
-      if (language) {
-        payload.language = language;
-      }
+      payload.language = this._validateLanguage(options.language);
     }
 
     try {
@@ -70,13 +65,32 @@ class FishAsrClient {
     }
   }
 
-  _resolveMaxAudioBytes(value, fallback = FishAsrClient.DEFAULT_MAX_AUDIO_BYTES) {
-    const defaultMax = Math.min(fallback, FishAsrClient.DEFAULT_MAX_AUDIO_BYTES);
-    if (!Number.isFinite(value) || value <= 0) {
-      return defaultMax;
+  _resolveConfiguredMaxAudioBytes(value) {
+    if (value === undefined) {
+      return FishAsrClient.SERVICE_MAX_AUDIO_BYTES;
     }
 
-    return Math.min(value, defaultMax);
+    if (!Number.isFinite(value) || value <= 0 || value > FishAsrClient.SERVICE_MAX_AUDIO_BYTES) {
+      throw new Error(`Fish.audio ASR maxAudioBytes must be between 1 and ${FishAsrClient.SERVICE_MAX_AUDIO_BYTES} bytes`);
+    }
+
+    return value;
+  }
+
+  _resolveCallMaxAudioBytes(value) {
+    if (value === undefined) {
+      return this.maxAudioBytes;
+    }
+
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`Fish.audio ASR maxAudioBytes must be between 1 and ${this.maxAudioBytes} bytes`);
+    }
+
+    if (value > this.maxAudioBytes) {
+      throw new Error(`Fish.audio ASR maxAudioBytes cannot exceed configured maxAudioBytes of ${this.maxAudioBytes} bytes`);
+    }
+
+    return value;
   }
 
   _validateAudio(audioBuffer, maxAudioBytes) {
@@ -87,6 +101,23 @@ class FishAsrClient {
     if (audioBuffer.length > maxAudioBytes) {
       throw new Error(`Fish.audio ASR audio exceeds ${maxAudioBytes} bytes`);
     }
+  }
+
+  _validateLanguage(language) {
+    if (typeof language !== 'string') {
+      throw new Error('Fish.audio ASR language must be a string when provided');
+    }
+
+    const trimmedLanguage = language.trim();
+    if (trimmedLanguage.length < 1 || trimmedLanguage.length > 16) {
+      throw new Error('Fish.audio ASR language must be 1-16 characters');
+    }
+
+    if (!FishAsrClient.LANGUAGE_PATTERN.test(trimmedLanguage)) {
+      throw new Error('Fish.audio ASR language must be an ISO-style language tag');
+    }
+
+    return trimmedLanguage;
   }
 
   _decodeResponse(data) {
@@ -115,10 +146,18 @@ class FishAsrClient {
       throw new Error('Fish.audio ASR malformed response: missing text');
     }
 
+    if (typeof response.duration !== 'number' || !Number.isFinite(response.duration)) {
+      throw new Error('Fish.audio ASR malformed response: duration');
+    }
+
+    if (!Array.isArray(response.segments)) {
+      throw new Error('Fish.audio ASR malformed response: segments');
+    }
+
     return {
       text: response.text.trim(),
       duration: response.duration,
-      segments: Array.isArray(response.segments) ? response.segments : [],
+      segments: response.segments,
       provider: 'fish.audio'
     };
   }
