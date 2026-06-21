@@ -17,7 +17,8 @@ const path = require('path');
 const multer = require('multer');
 const {
   ConfigManager,
-  ASR_SERVICE_MAX_AUDIO_BYTES
+  ASR_SERVICE_MAX_AUDIO_BYTES,
+  normalizeAsrLanguage
 } = require('./backend/config');
 const MemoryStore = require('./backend/memoryStore');
 const { EventBus, EventTypes } = require('./backend/eventBus');
@@ -1016,7 +1017,7 @@ class SidekickPlugin {
     return {
       enabled: asr.enabled !== false && asr.enabled !== 'false',
       maxAudioBytes,
-      language: typeof asr.language === 'string' && asr.language.trim() ? asr.language.trim() : null,
+      language: normalizeAsrLanguage(asr.language),
       minTranscriptChars: Number.isFinite(configuredMin) && configuredMin > 0
         ? Math.min(Math.round(configuredMin), 500)
         : (Number.isFinite(conversationMin) && conversationMin > 0 ? Math.min(Math.round(conversationMin), 500) : 1)
@@ -1144,7 +1145,7 @@ class SidekickPlugin {
     if (file.size > readiness.config.maxAudioBytes) {
       return this._sendAsrError(res, 413, 'ASR_UPLOAD_TOO_LARGE', 'Audio upload exceeds the configured ASR limit');
     }
-    if (String(file.mimetype || '').toLowerCase() === 'application/octet-stream' && !this._hasSafeAudioSignature(file.buffer)) {
+    if (!this._hasSafeAudioSignatureForMime(file.buffer, file.mimetype)) {
       return this._sendAsrError(res, 415, 'ASR_UNSUPPORTED_AUDIO_CONTENT', 'Unsupported audio content');
     }
 
@@ -1329,6 +1330,33 @@ class SidekickPlugin {
     if (buffer.length >= 12 && buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WAVE') return true;
     if (buffer.slice(0, 3).toString('ascii') === 'ID3') return true;
     return buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0;
+  }
+
+  _hasSafeAudioSignatureForMime(buffer, mimeType) {
+    const normalizedMime = String(mimeType || '').toLowerCase();
+    if (!Buffer.isBuffer(buffer) || buffer.length < 4) return false;
+
+    switch (normalizedMime) {
+      case 'audio/webm':
+        return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+      case 'audio/ogg':
+      case 'audio/opus':
+        return buffer.slice(0, 4).toString('ascii') === 'OggS';
+      case 'audio/wav':
+      case 'audio/wave':
+      case 'audio/x-wav':
+        return buffer.length >= 12
+          && buffer.slice(0, 4).toString('ascii') === 'RIFF'
+          && buffer.slice(8, 12).toString('ascii') === 'WAVE';
+      case 'audio/mpeg':
+      case 'audio/mp3':
+        return buffer.slice(0, 3).toString('ascii') === 'ID3'
+          || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0);
+      case 'application/octet-stream':
+        return this._hasSafeAudioSignature(buffer);
+      default:
+        return false;
+    }
   }
 
   _isTruthyRequestValue(value) {

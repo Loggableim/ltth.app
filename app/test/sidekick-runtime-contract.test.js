@@ -214,6 +214,29 @@ describe('Sidekick runtime contracts', () => {
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
 
+  test('ASR config clears language values rejected by the Fish.audio ASR client', () => {
+    const api = createApi();
+    const manager = new ConfigManager(api);
+    manager.load();
+    api.setConfig.mockClear();
+
+    const invalidConfig = manager.update({
+      asr: {
+        language: 'english'
+      }
+    });
+
+    expect(invalidConfig.asr.language).toBeNull();
+
+    const validConfig = manager.update({
+      asr: {
+        language: 'pt-BR'
+      }
+    });
+
+    expect(validConfig.asr.language).toBe('pt-BR');
+  });
+
   test('missing and null updates are safe no-ops after defaults load', () => {
     const api = createApi();
     const manager = new ConfigManager(api);

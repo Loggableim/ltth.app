@@ -15,6 +15,7 @@ const {
 
 const ASR_SERVICE_MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 const DEFAULT_ASR_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
+const ASR_LANGUAGE_PATTERN = /^[a-zA-Z]{2,3}(?:[-_][a-zA-Z]{2,4})?$/;
 
 function clamp(value, min, max, fallback) {
   const number = Number(value);
@@ -28,9 +29,14 @@ function toBoolean(value, fallback) {
   return fallback;
 }
 
+function normalizeAsrLanguage(value) {
+  const language = typeof value === 'string' ? value.trim() : '';
+  if (language.length < 1 || language.length > 16) return null;
+  return ASR_LANGUAGE_PATTERN.test(language) ? language : null;
+}
+
 function normalizeAsrConfig(input = {}, conversationConfig = {}) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  const language = typeof source.language === 'string' ? source.language.trim() : '';
   const hasMinTranscriptChars = source.minTranscriptChars !== undefined
     && source.minTranscriptChars !== null
     && source.minTranscriptChars !== '';
@@ -44,7 +50,7 @@ function normalizeAsrConfig(input = {}, conversationConfig = {}) {
       ASR_SERVICE_MAX_AUDIO_BYTES,
       DEFAULT_CONFIG.asr.maxAudioBytes
     )),
-    language: /^[a-zA-Z-]{2,16}$/.test(language) ? language : null,
+    language: normalizeAsrLanguage(source.language),
     minTranscriptChars: hasMinTranscriptChars && Number.isFinite(minTranscriptChars)
       ? Math.round(clamp(minTranscriptChars, 1, 500, DEFAULT_CONVERSATION_COORDINATOR_CONFIG.minHostSpeechChars))
       : DEFAULT_CONFIG.asr.minTranscriptChars
@@ -349,5 +355,7 @@ module.exports = {
   DEFAULT_CONFIG,
   DEFAULT_ASR_MAX_AUDIO_BYTES,
   ASR_SERVICE_MAX_AUDIO_BYTES,
+  ASR_LANGUAGE_PATTERN,
+  normalizeAsrLanguage,
   normalizeAsrConfig
 };

@@ -170,6 +170,42 @@ describe('Sidekick ASR upload routes', () => {
     }));
   });
 
+  test('rejects spoofed audio MIME uploads before calling TTS ASR', async () => {
+    const { app, tts } = createHarness();
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .attach('audio', Buffer.from('this is not a webm container'), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(415);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: false,
+      error: expect.objectContaining({ code: 'ASR_UNSUPPORTED_AUDIO_CONTENT' })
+    }));
+    expect(tts.transcribeFishAudio).not.toHaveBeenCalled();
+  });
+
+  test('drops invalid ASR language before calling TTS ASR', async () => {
+    const { app, tts } = createHarness({
+      config: {
+        asr: {
+          language: 'english'
+        }
+      }
+    });
+
+    const response = await request(app)
+      .post('/api/sidekick/asr/transcribe')
+      .field('transcribeOnly', 'true')
+      .attach('audio', audioBuffer(), { filename: 'host.webm', contentType: 'audio/webm' })
+      .expect(200);
+
+    expect(response.body.diagnostics.language).toBeNull();
+    expect(tts.transcribeFishAudio).toHaveBeenCalledWith(expect.any(Buffer), expect.not.objectContaining({
+      language: expect.anything()
+    }));
+  });
+
   test('rejects uploads over the configured size limit', async () => {
     const { app } = createHarness({ config: { asr: { maxAudioBytes: 4 } } });
 
