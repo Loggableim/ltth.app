@@ -577,18 +577,31 @@ class BrainEngine {
           }
         );
 
-      this.memoryDb.storeConversation(this.currentSession, 'assistant', result.content, null, this._selectEmotion());
-      this.storeMemory(`Ich antwortete Host ${hostName || 'Host'}: "${result.content}"`, {
-        type: 'host_response',
-        event: 'host_speech_response',
-        importance: 0.3
-      });
+      const emotion = this._selectEmotion();
+      let committed = false;
+      const commit = () => {
+        if (committed) return false;
+        committed = true;
+        this.memoryDb.storeConversation(this.currentSession, 'assistant', result.content, null, emotion);
+        this.storeMemory(`Ich antwortete Host ${hostName || 'Host'}: "${result.content}"`, {
+          type: 'host_response',
+          event: 'host_speech_response',
+          importance: 0.3
+        });
+        return true;
+      };
 
-      return {
+      if (!options.deferCommit) {
+        commit();
+      }
+
+      const response = {
         text: result.content,
-        emotion: this._selectEmotion(),
+        emotion,
         cached: result.cached
       };
+      if (options.deferCommit) response.commit = commit;
+      return response;
     } catch (error) {
       this.logger.error(`Failed to generate host speech response: ${error.message}`);
       return null;

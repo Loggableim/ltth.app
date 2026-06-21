@@ -173,6 +173,95 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.recordLiveHostResponseSlot).not.toHaveBeenCalled();
   });
 
+  test('processSidekickHostSpeech commits host brain response only after successful Fish speech', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    const commit = jest.fn();
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.recordLiveHostResponseSlot = jest.fn();
+    plugin.brainEngine = {
+      processHostSpeech: jest.fn().mockResolvedValue({ text: 'Jetzt gesprochen.', commit }),
+      processChat: jest.fn()
+    };
+
+    const result = await plugin.processSidekickHostSpeech({
+      username: 'Streamer',
+      message: 'Sag was dazu.',
+      source: 'host-mic',
+      isHostSpeech: true
+    }, { score: 0.9, type: 'host-speech' });
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: true,
+      spokenText: 'Jetzt gesprochen.'
+    }));
+    expect(plugin.brainEngine.processHostSpeech).toHaveBeenCalledWith(
+      'Streamer',
+      'Sag was dazu.',
+      expect.objectContaining({ deferCommit: true })
+    );
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(plugin.recordLiveHostResponseSlot).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([
+    [{ success: false, error: 'Fish failed' }, { speechFailed: true }],
+    [{ success: true, blocked: true, reason: 'queue-full' }, { speechBlocked: true }]
+  ])('processSidekickHostSpeech does not commit host brain response when Fish speech is not delivered', async (speechResult, expectedFlags) => {
+    const { plugin, ttsPlugin } = createPlugin();
+    const commit = jest.fn();
+    ttsPlugin.speak.mockResolvedValue(speechResult);
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.recordLiveHostResponseSlot = jest.fn();
+    plugin.brainEngine = {
+      processHostSpeech: jest.fn().mockResolvedValue({ text: 'Nicht wirklich gesprochen.', commit }),
+      processChat: jest.fn()
+    };
+
+    const result = await plugin.processSidekickHostSpeech({
+      username: 'Streamer',
+      message: 'Sag was dazu.',
+      source: 'host-mic',
+      isHostSpeech: true
+    }, { score: 0.9, type: 'host-speech' });
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      ...expectedFlags
+    }));
+    expect(result.spokenText).toBeUndefined();
+    expect(commit).not.toHaveBeenCalled();
+    expect(plugin.recordLiveHostResponseSlot).not.toHaveBeenCalled();
+  });
+
+  test('processSidekickHostSpeech does not fallback to viewer chat path when host brain method is unavailable', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    plugin.config.brain.liveHost.operatingMode = 'sidekick';
+    plugin.config.brain.liveHost.events.chat.cooldownMs = 0;
+    plugin.recordLiveHostEventOutcome = jest.fn();
+    plugin.brainEngine = {
+      processChat: jest.fn().mockResolvedValue({ text: 'Wrong path.' })
+    };
+
+    const result = await plugin.processSidekickHostSpeech({
+      username: 'Streamer',
+      message: 'Bitte antworte.',
+      source: 'host-mic',
+      isHostSpeech: true
+    }, { score: 0.9, type: 'host-speech' });
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      reason: 'host-brain-unavailable'
+    }));
+    expect(plugin.brainEngine.processChat).not.toHaveBeenCalled();
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
+  });
+
   test('delegated host speech can retry after failed Fish speech without AP duplicate suppression', async () => {
     const { plugin, ttsPlugin } = createPlugin();
     ttsPlugin.speak
@@ -266,6 +355,55 @@ describe('AnimazingPal live host integration', () => {
     expect(hostMemoryCall[1]).not.toHaveProperty('user');
   });
 
+  test('BrainEngine processHostSpeech can defer assistant host-response memory until commit', async () => {
+    const brain = Object.create(BrainEngine.prototype);
+    brain.config = {
+      enabled: true,
+      liveHost: normalizeLiveHostConfig({ enabled: true })
+    };
+    brain.currentPersonality = { system_prompt: 'Bleib in Character.' };
+    brain.currentSession = 'session-1';
+    brain.gptBrain = {
+      generateHostSpeechResponse: jest.fn().mockResolvedValue({ content: 'Bin dabei.', cached: false })
+    };
+    brain.memoryDb = {
+      getOrCreateUserProfile: jest.fn(),
+      addInteractionToHistory: jest.fn(),
+      storeConversation: jest.fn(),
+      getConversationHistory: jest.fn().mockReturnValue([]),
+      getInteractionHistory: jest.fn()
+    };
+    brain.viewerMemory = { getViewerContext: jest.fn(), recordMemory: jest.fn() };
+    brain.storeMemory = jest.fn();
+    brain._resolveSystemPrompt = BrainEngine.prototype._resolveSystemPrompt.bind(brain);
+    brain._checkRateLimit = jest.fn().mockReturnValue(true);
+    brain._selectEmotion = jest.fn().mockReturnValue('neutral');
+    brain.logger = { debug: jest.fn(), error: jest.fn() };
+
+    const result = await brain.processHostSpeech('Streamer', 'Was denkst du?', {
+      forceRespond: true,
+      deferCommit: true
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      text: 'Bin dabei.',
+      emotion: 'neutral',
+      cached: false,
+      commit: expect.any(Function)
+    }));
+    expect(brain.memoryDb.storeConversation).toHaveBeenCalledTimes(1);
+    expect(brain.memoryDb.storeConversation).toHaveBeenCalledWith('session-1', 'user', 'Was denkst du?', 'Streamer');
+    expect(brain.storeMemory).toHaveBeenCalledTimes(1);
+    expect(brain.storeMemory).toHaveBeenCalledWith(expect.stringContaining('Host Streamer sagte'), expect.objectContaining({ event: 'host_speech' }));
+
+    result.commit();
+
+    expect(brain.memoryDb.storeConversation).toHaveBeenCalledWith('session-1', 'assistant', 'Bin dabei.', null, 'neutral');
+    expect(brain.storeMemory).toHaveBeenCalledWith(expect.stringContaining('Ich antwortete Host Streamer'), expect.objectContaining({
+      event: 'host_speech_response'
+    }));
+  });
+
   test('BrainEngine processHostSpeech merges empty host liveContext with stream context', async () => {
     const brain = Object.create(BrainEngine.prototype);
     brain.config = {
@@ -355,6 +493,20 @@ describe('AnimazingPal live host integration', () => {
       source: 'animazingpal', teamLevel: 99, priority: 70, emotion: 'happy', pitch: 2, volume: 73, speed: 1.1
     }));
     expect(result.success).toBe(true);
+  });
+
+  test('emits host speech success false when Fish speech is blocked', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+    ttsPlugin.speak.mockResolvedValue({ success: true, blocked: true, reason: 'queue-full' });
+
+    const result = await plugin.speakHostResponse('Bitte später.', { username: 'viewer', eventType: 'follow' });
+
+    expect(result).toEqual(expect.objectContaining({ blocked: true }));
+    expect(plugin.api.emit).toHaveBeenCalledWith('animazingpal:host-speech', expect.objectContaining({
+      eventType: 'follow',
+      username: 'viewer',
+      success: false
+    }));
   });
 
   test('dry-runs the live-host TTS probe without enqueueing speech', async () => {

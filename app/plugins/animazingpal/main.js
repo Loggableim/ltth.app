@@ -3495,7 +3495,7 @@ class AnimazingPalPlugin {
       this.api.emit('animazingpal:host-speech', {
         eventType: options.eventType || 'manual',
         username: request.username,
-        success: result?.success !== false,
+        success: result?.success !== false && !result?.blocked,
         id: result?.id || null
       });
       return result;
@@ -4617,29 +4617,22 @@ class AnimazingPalPlugin {
       }
     }
 
-    let response = null;
-    if (typeof this.brainEngine.processHostSpeech === 'function') {
-      response = await this.brainEngine.processHostSpeech(username, message, {
-        nickname: data.nickname,
-        forceRespond: true,
-        source: evaluation.source || 'sidekick-host-speech',
-        systemPromptOverride: event.prompt,
-        decision,
-        liveContext: {
-          recentEvents: Array.isArray(data.recentEvents) ? data.recentEvents : [],
-          viewerCount: data.viewerCount
-        }
-      });
-    } else if (typeof this.brainEngine.processChat === 'function') {
-      response = await this.brainEngine.processChat(username, message, {
-        nickname: data.nickname,
-        forceRespond: true,
-        systemPromptOverride: event.prompt,
-        decision,
-        isHostSpeech: true,
-        source: evaluation.source || 'sidekick-host-speech'
-      });
+    if (typeof this.brainEngine.processHostSpeech !== 'function') {
+      return complete({ handled: true, responded: false, decision, reason: 'host-brain-unavailable' });
     }
+
+    const response = await this.brainEngine.processHostSpeech(username, message, {
+      nickname: data.nickname,
+      forceRespond: true,
+      deferCommit: true,
+      source: evaluation.source || 'sidekick-host-speech',
+      systemPromptOverride: event.prompt,
+      decision,
+      liveContext: {
+        recentEvents: Array.isArray(data.recentEvents) ? data.recentEvents : [],
+        viewerCount: data.viewerCount
+      }
+    });
 
     if (!response?.text) {
       return complete({ handled: true, responded: false, decision, reason: 'no-brain-response' });
@@ -4665,6 +4658,13 @@ class AnimazingPalPlugin {
     }
 
     this.recordLiveHostResponseSlot();
+    if (typeof response.commit === 'function') {
+      try {
+        response.commit();
+      } catch (error) {
+        this.api.log(`Failed to commit host speech response memory: ${error.message}`, 'warn');
+      }
+    }
     return complete({
       handled: true,
       responded: true,

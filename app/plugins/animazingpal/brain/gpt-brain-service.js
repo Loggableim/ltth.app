@@ -294,10 +294,10 @@ Antworte auf Chat-Nachrichten NATÜRLICH und AUTHENTISCH.
    * Generate a co-host response to the streamer/host.
    */
   async generateHostSpeechResponse(hostName, message, personality, context = {}) {
-    let systemPrompt = `Du bist der KI-Sidekick und Co-Host eines Livestreams mit folgender PersÃ¶nlichkeit: ${personality}
+    let systemPrompt = `Du bist der KI-Sidekick und Co-Host eines Livestreams mit folgender Persoenlichkeit: ${personality}
 
 Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
-- Halte die Antwort kurz, natÃ¼rlich und TTS-tauglich (1-2 SÃ¤tze)
+- Halte die Antwort kurz, natuerlich und TTS-tauglich (1-2 Saetze)
 - Sei ein hilfreicher Co-Host mit Live-Stream-Bewusstsein
 - Erfinde keine Zuschauerprofile und speichere den Host nicht als Viewer
 - Wenn Live-Events relevant sind, beziehe sie locker ein`;
@@ -312,7 +312,7 @@ Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
       const eventText = recentEvents
         .map(event => `${event.type || event.eventType || 'event'} von ${event.username || event.uniqueId || event.nickname || 'jemandem'}`)
         .join(', ');
-      systemPrompt += `\nKÃ¼rzliche Live-Events: ${eventText}.`;
+      systemPrompt += `\nKuerzliche Live-Events: ${eventText}.`;
     }
 
     const situation = `${hostName || 'Host'} sagt zum Sidekick: "${message}"`;
