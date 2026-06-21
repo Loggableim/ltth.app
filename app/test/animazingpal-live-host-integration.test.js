@@ -33,6 +33,17 @@ describe('AnimazingPal live host integration', () => {
     expect(ui).toContain("form.append('audio', blob, 'host-stt.wav')");
   });
 
+  test('live host UI gates silent Host-STT segments before Fish.audio upload', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/live-host-ui.js'), 'utf8');
+
+    expect(ui).toContain('analyzeHostAsrSignal');
+    expect(ui).toContain('shouldUploadHostAsrSegment');
+    expect(ui).toContain("reason: 'silence-gated'");
+    expect(ui).toContain("input('asr.speechRmsThreshold'");
+    expect(ui).toContain("input('asr.speechPeakThreshold'");
+    expect(ui).toContain("input('asr.minSpeechMs'");
+  });
+
   test('fresh live host config persists standalone while runtime Sidekick override is temporary', () => {
     const { plugin, ttsPlugin } = createPlugin();
     plugin.ensureLiveHostRuntime = jest.fn();
@@ -395,7 +406,10 @@ describe('AnimazingPal live host integration', () => {
       minTranscriptChars: 1,
       rateLimitMax: 30,
       silenceTimeoutMs: 1200,
-      maxSegmentMs: 8000
+      maxSegmentMs: 8000,
+      speechRmsThreshold: 0.008,
+      speechPeakThreshold: 0.04,
+      minSpeechMs: 250
     }));
     expect(liveHost.response).toEqual(expect.objectContaining({
       hostReplyProbability: 1,

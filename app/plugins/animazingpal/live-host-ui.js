@@ -34,6 +34,8 @@
       segmentTimer: null,
       lastTranscript: null,
       lastUpload: null,
+      lastSignal: null,
+      lastSkip: null,
       lastError: null
     }
   };
@@ -278,6 +280,9 @@
         ${input('asr.silenceTimeoutMs', 'Stille-Fenster (ms)', { type: 'number', min: 250, max: 5000 })}
         ${input('asr.maxSegmentMs', 'Segmentlaenge (ms)', { type: 'number', min: 1000, max: 30000 })}
         ${input('asr.minTranscriptChars', 'Min. Zeichen', { type: 'number', min: 1, max: 500 })}
+        ${input('asr.speechRmsThreshold', 'Speech RMS Schwelle', { type: 'number', min: 0, max: 0.25, step: 0.001 })}
+        ${input('asr.speechPeakThreshold', 'Speech Peak Schwelle', { type: 'number', min: 0, max: 1, step: 0.001 })}
+        ${input('asr.minSpeechMs', 'Min. Sprachdauer (ms)', { type: 'number', min: 0, max: 5000 })}
         ${input('asr.maxAudioBytes', 'Max. Audio Bytes', { type: 'number', min: 1024, max: 8388608 })}
         ${input('asr.rateLimitMax', 'Uploads/Fenster', { type: 'number', min: 1, max: 120 })}
         ${input('asr.rateLimitWindowMs', 'Rate-Fenster (ms)', { type: 'number', min: 1000, max: 3600000 })}
@@ -293,6 +298,8 @@
         </div>
         ${unsafeSelected && !get('asr.unsafeOverride') ? '<p class="text-xs text-red-300 mt-2">Ausgewaehltes Geraet wirkt wie Loopback/Monitor. Fuer echte Streamer-Kommunikation ein physisches Mikrofon waehlen oder Override bewusst aktivieren.</p>' : ''}
         ${state.hostAsr.lastTranscript ? `<p class="text-xs text-gray-300 mt-2">Letztes Transkript: ${escapeHtml(state.hostAsr.lastTranscript)}</p>` : ''}
+        ${state.hostAsr.lastSignal ? `<p class="text-xs text-gray-400 mt-2">Letztes Mikrofonsignal: RMS ${escapeHtml(state.hostAsr.lastSignal.rms)} / Peak ${escapeHtml(state.hostAsr.lastSignal.peak)} / ${escapeHtml(state.hostAsr.lastSignal.durationMs)} ms</p>` : ''}
+        ${state.hostAsr.lastSkip ? `<p class="text-xs text-yellow-300 mt-2">Letztes Segment nicht hochgeladen: ${escapeHtml(state.hostAsr.lastSkip.reason)}</p>` : ''}
         ${lastDecision ? `<p class="text-xs ${lastDecision.respond === false ? 'text-yellow-300' : 'text-green-400'} mt-2">Letzte Host-Decision: ${lastDecision.respond === false ? 'nicht antworten' : 'antworten'} - ${escapeHtml(lastDecision.reason || 'unknown')} - Score ${escapeHtml(lastDecision.score ?? '-')}</p>` : '<p class="text-xs text-gray-400 mt-2">Noch keine Host-Decision.</p>'}
         ${state.hostAsr.lastError ? `<p class="text-xs text-red-300 mt-2">STT-Fehler: ${escapeHtml(state.hostAsr.lastError)}</p>` : ''}
       </div>
@@ -803,6 +810,37 @@
     return buffer;
   }
 
+  function analyzeHostAsrSignal(chunks, sampleRate) {
+    const samples = mergeHostAsrSamples(chunks);
+    if (!samples.length) return { rms: 0, peak: 0, durationMs: 0, samples: 0 };
+    let sumSquares = 0;
+    let peak = 0;
+    for (let index = 0; index < samples.length; index += 1) {
+      const value = samples[index];
+      sumSquares += value * value;
+      peak = Math.max(peak, Math.abs(value));
+    }
+    return {
+      rms: Number(Math.sqrt(sumSquares / samples.length).toFixed(5)),
+      peak: Number(peak.toFixed(5)),
+      durationMs: Math.round((samples.length / Math.max(1, sampleRate || 16000)) * 1000),
+      samples: samples.length
+    };
+  }
+
+  function shouldUploadHostAsrSegment(signal) {
+    const minSpeechMs = Number(get('asr.minSpeechMs', 250)) || 0;
+    const rmsThreshold = Number(get('asr.speechRmsThreshold', 0.008)) || 0;
+    const peakThreshold = Number(get('asr.speechPeakThreshold', 0.04)) || 0;
+    if (!signal || signal.durationMs < minSpeechMs) {
+      return { upload: false, reason: 'too-short' };
+    }
+    if (signal.rms < rmsThreshold && signal.peak < peakThreshold) {
+      return { upload: false, reason: 'silence-gated' };
+    }
+    return { upload: true, reason: 'speech-detected' };
+  }
+
   async function startHostAsr() {
     await save('asr');
     await loadHostInputDevices(false);
@@ -860,6 +898,16 @@
     state.hostAsr.wavChunks = [];
     if (state.hostAsr.recording) startHostAsrSegment();
     if (!chunks.length) return;
+    const signal = analyzeHostAsrSignal(chunks, state.hostAsr.wavSampleRate || 16000);
+    state.hostAsr.lastSignal = signal;
+    const gate = shouldUploadHostAsrSegment(signal);
+    if (!gate.upload) {
+      state.hostAsr.lastSkip = { reason: gate.reason, signal, at: new Date().toISOString() };
+      state.hostAsr.lastError = null;
+      render();
+      return;
+    }
+    state.hostAsr.lastSkip = null;
     const wavBuffer = encodeHostAsrWav(chunks, state.hostAsr.wavSampleRate || 16000);
     const blob = new Blob([wavBuffer], { type: 'audio/wav' });
     uploadHostAsrBlob(blob, false)

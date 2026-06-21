@@ -158,7 +158,10 @@ function buildLiveHostDefaults() {
       rateLimitMax: 30,
       rateLimitWindowMs: 60000,
       silenceTimeoutMs: 1200,
-      maxSegmentMs: 8000
+      maxSegmentMs: 8000,
+      speechRmsThreshold: 0.008,
+      speechPeakThreshold: 0.04,
+      minSpeechMs: 250
     },
     viewerMemory: {
       enabled: true,
@@ -306,6 +309,9 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.asr.rateLimitWindowMs = Math.round(clamp(configured.asr.rateLimitWindowMs, 1000, 60 * 60 * 1000, defaults.asr.rateLimitWindowMs));
   configured.asr.silenceTimeoutMs = Math.round(clamp(configured.asr.silenceTimeoutMs, 250, 5000, defaults.asr.silenceTimeoutMs));
   configured.asr.maxSegmentMs = Math.round(clamp(configured.asr.maxSegmentMs, 1000, 30000, defaults.asr.maxSegmentMs));
+  configured.asr.speechRmsThreshold = clamp(configured.asr.speechRmsThreshold, 0, 0.25, defaults.asr.speechRmsThreshold);
+  configured.asr.speechPeakThreshold = clamp(configured.asr.speechPeakThreshold, 0, 1, defaults.asr.speechPeakThreshold);
+  configured.asr.minSpeechMs = Math.round(clamp(configured.asr.minSpeechMs, 0, 5000, defaults.asr.minSpeechMs));
   configured.viewerMemory.enabled = normalizeBoolean(configured.viewerMemory.enabled, defaults.viewerMemory.enabled);
   configured.viewerMemory.writeMemories = normalizeBoolean(configured.viewerMemory.writeMemories, defaults.viewerMemory.writeMemories);
   configured.viewerMemory.includeInsights = normalizeBoolean(configured.viewerMemory.includeInsights, defaults.viewerMemory.includeInsights);
