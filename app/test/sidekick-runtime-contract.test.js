@@ -51,6 +51,37 @@ describe('Sidekick runtime contracts', () => {
     expect(userFacingText).toContain('Fish.audio');
   });
 
+  test('Sidekick UI exposes host microphone ASR controls and browser upload hooks', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'sidekick', 'ui.html'), 'utf8');
+
+    [
+      'host-asr-enabled',
+      'btn-asr-permission',
+      'host-asr-device',
+      'host-asr-language',
+      'host-asr-max-bytes',
+      'host-asr-min-transcript',
+      'host-asr-silence-timeout',
+      'host-asr-max-segment',
+      'host-asr-unsafe-override',
+      'btn-asr-test',
+      'host-asr-last-transcript',
+      '/api/sidekick/asr/status',
+      '/api/sidekick/asr/transcribe',
+      'navigator.mediaDevices.enumerateDevices',
+      'navigator.mediaDevices.getUserMedia',
+      'new MediaRecorder',
+      'audio/webm;codecs=opus',
+      "formData.append('audio'",
+      'transcribeOnly',
+      'isUnsafeAudioInputDevice'
+    ].forEach(fragment => {
+      expect(html).toContain(fragment);
+    });
+
+    expect(html).toMatch(/CABLE|VB-Audio|loopback|stereo mix|speaker|monitor/i);
+  });
+
   test('runtime has no legacy direct assistant output route or method', () => {
     const api = createApi();
     const plugin = new SidekickPlugin(api);

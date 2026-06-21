@@ -320,6 +320,48 @@
       color: #666;
     }
 
+    .help-text {
+      color: #aaa;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .asr-warning {
+      background: rgba(255, 152, 0, 0.12);
+      border: 1px solid #ff9800;
+      border-radius: 5px;
+      color: #ffd08a;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .asr-error {
+      color: #ff8a80;
+    }
+
+    .asr-ok {
+      color: #8bc34a;
+    }
+
+    .asr-muted {
+      color: #aaa;
+    }
+
+    .asr-meter {
+      height: 8px;
+      background: #1a1a2e;
+      border-radius: 4px;
+      overflow: hidden;
+      min-width: 160px;
+    }
+
+    .asr-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: #4CAF50;
+      transition: width 0.1s linear;
+    }
+
     @media (max-width: 768px) {
       .grid {
         grid-template-columns: 1fr;
@@ -386,6 +428,83 @@
               <button id="btn-test" class="btn-primary">Senden</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="card" id="host-asr-panel">
+        <h3>🎙️ Host-Mic / Fish ASR</h3>
+        <p class="help-text" style="margin-bottom: 15px;">
+          Hört auf ein echtes Host-Mikrofon, sendet kurze Sprachsegmente an Fish.audio ASR und gibt erkannte Host-Sprache an die Sidekick-Konversation weiter.
+          Wähle nicht den CABLE-/Loopback-Ausgang, sonst kann Feedback entstehen.
+        </p>
+        <div class="grid">
+          <div>
+            <div class="form-group">
+              <label for="host-asr-enabled">
+                <input type="checkbox" id="host-asr-enabled"> ASR Listening im Browser aktivieren
+              </label>
+            </div>
+            <div class="inline-row">
+              <button id="btn-asr-permission" class="btn-primary">Mikrofon erlauben / Geräte laden</button>
+              <button id="btn-asr-refresh" class="btn-secondary">Status aktualisieren</button>
+              <button id="btn-asr-test" class="btn-warning">Test-Aufnahme starten</button>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+              <label for="host-asr-device">Audio-Eingabegerät</label>
+              <select id="host-asr-device">
+                <option value="">Geräte laden...</option>
+              </select>
+            </div>
+            <div id="host-asr-device-warning" class="asr-warning" style="display: none;"></div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="host-asr-unsafe-override">
+                <input type="checkbox" id="host-asr-unsafe-override"> Ich verstehe: dieses Gerät kann Loopback/Feedback verursachen
+              </label>
+            </div>
+          </div>
+          <div>
+            <div class="grid">
+              <div class="form-group">
+                <label for="host-asr-language">Sprache (optional, z.B. de-DE)</label>
+                <input type="text" id="host-asr-language" maxlength="16" placeholder="Auto">
+              </div>
+              <div class="form-group">
+                <label for="host-asr-max-bytes">Max Audio Bytes</label>
+                <input type="number" id="host-asr-max-bytes" min="1" value="8388608">
+              </div>
+              <div class="form-group">
+                <label for="host-asr-min-transcript">Min. Transcript-Zeichen</label>
+                <input type="number" id="host-asr-min-transcript" min="1" value="3">
+              </div>
+              <div class="form-group">
+                <label for="host-asr-silence-timeout">Silence Timeout (ms)</label>
+                <input type="number" id="host-asr-silence-timeout" min="250" max="5000" value="900">
+              </div>
+              <div class="form-group">
+                <label for="host-asr-max-segment">Max Segment (ms)</label>
+                <input type="number" id="host-asr-max-segment" min="1000" max="30000" value="12000">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 15px;">
+          <div>
+            <p>ASR: <strong id="host-asr-enabled-status">Unknown</strong></p>
+            <p>TTS/Fish bereit: <strong id="host-asr-ready-status">Unknown</strong></p>
+            <p>Recorder: <strong id="host-asr-recorder-status">Idle</strong></p>
+          </div>
+          <div>
+            <p>Requests: <strong id="host-asr-requests">0</strong> · Transkribiert: <strong id="host-asr-transcribed">0</strong> · Delegiert: <strong id="host-asr-delegated">0</strong></p>
+            <p>Letzte Latenz: <strong id="host-asr-latency">-</strong></p>
+            <div class="inline-row">
+              <span>Level</span>
+              <div class="asr-meter"><div class="asr-meter-fill" id="host-asr-meter"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <p>Letztes Transcript: <strong id="host-asr-last-transcript">-</strong></p>
+          <p>Letzter Fehler: <strong id="host-asr-last-error" class="asr-muted">-</strong></p>
         </div>
       </div>
 
@@ -645,6 +764,35 @@
     // State
     let config = {};
     let status = {};
+    let asrStatus = {};
+    let hostAsrStream = null;
+    let hostAsrAudioContext = null;
+    let hostAsrAnalyser = null;
+    let hostAsrRecorder = null;
+    let hostAsrChunks = [];
+    let hostAsrVadFrame = null;
+    let hostAsrRecordingStartedAt = 0;
+    let hostAsrLastVoiceAt = 0;
+    let hostAsrHadVoice = false;
+    let hostAsrManualMode = false;
+    let hostAsrUploading = false;
+
+    const hostAsrStorageKey = 'sidekickHostAsrSettings';
+    const hostAsrUnsafePattern = /\b(cable|vb-audio|loopback|stereo mix|what u hear|output|speaker|speakers|monitor|desktop audio)\b/i;
+    const hostAsrMimePreferences = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4'
+    ];
+    const hostAsrDefaults = {
+      enabled: false,
+      deviceId: '',
+      unsafeOverride: false,
+      silenceTimeoutMs: 900,
+      maxSegmentMs: 12000
+    };
+    let hostAsrSettings = loadHostAsrSettings();
     
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
@@ -681,6 +829,378 @@
         }
       } catch (err) {
         console.error('Failed to fetch config:', err);
+      }
+    }
+
+    function loadHostAsrSettings() {
+      try {
+        return {
+          ...hostAsrDefaults,
+          ...JSON.parse(localStorage.getItem(hostAsrStorageKey) || '{}')
+        };
+      } catch (err) {
+        return { ...hostAsrDefaults };
+      }
+    }
+
+    function saveHostAsrSettings() {
+      hostAsrSettings = {
+        ...hostAsrSettings,
+        enabled: document.getElementById('host-asr-enabled').checked,
+        deviceId: document.getElementById('host-asr-device').value,
+        unsafeOverride: document.getElementById('host-asr-unsafe-override').checked,
+        silenceTimeoutMs: readNumberInput('host-asr-silence-timeout', 900),
+        maxSegmentMs: readNumberInput('host-asr-max-segment', 12000)
+      };
+      localStorage.setItem(hostAsrStorageKey, JSON.stringify(hostAsrSettings));
+    }
+
+    function readNumberInput(id, fallback) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
+    }
+
+    function isUnsafeAudioInputDevice(device) {
+      const label = String(device?.label || '');
+      return hostAsrUnsafePattern.test(label);
+    }
+
+    function getSelectedAsrDeviceOption() {
+      const select = document.getElementById('host-asr-device');
+      return select.options[select.selectedIndex] || null;
+    }
+
+    function selectedAsrDeviceIsBlocked() {
+      const option = getSelectedAsrDeviceOption();
+      return option?.dataset?.unsafe === 'true'
+        && !document.getElementById('host-asr-unsafe-override').checked;
+    }
+
+    function updateAsrDeviceWarning() {
+      const warning = document.getElementById('host-asr-device-warning');
+      const option = getSelectedAsrDeviceOption();
+      if (option?.dataset?.unsafe === 'true') {
+        warning.style.display = 'block';
+        warning.textContent = 'Warnung: Dieses Gerät klingt nach CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. Für Host-ASR bitte ein echtes Mikrofon wählen oder die Risiko-Bestätigung aktivieren.';
+      } else {
+        warning.style.display = 'none';
+        warning.textContent = '';
+      }
+    }
+
+    function setAsrRecorderStatus(text, className = '') {
+      const el = document.getElementById('host-asr-recorder-status');
+      el.textContent = text;
+      el.className = className;
+    }
+
+    function setAsrError(message) {
+      const el = document.getElementById('host-asr-last-error');
+      el.textContent = message || '-';
+      el.className = message ? 'asr-error' : 'asr-muted';
+    }
+
+    function setAsrTranscript(text) {
+      document.getElementById('host-asr-last-transcript').textContent = text || '-';
+    }
+
+    function getSupportedAsrMimeType() {
+      if (typeof MediaRecorder === 'undefined') return '';
+      return hostAsrMimePreferences.find(type => MediaRecorder.isTypeSupported(type)) || '';
+    }
+
+    function getAsrAudioExtension(mimeType) {
+      if (mimeType.includes('ogg')) return 'ogg';
+      if (mimeType.includes('mp4')) return 'mp4';
+      return 'webm';
+    }
+
+    async function refreshAsrDevices() {
+      const select = document.getElementById('host-asr-device');
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        select.innerHTML = '<option value="">MediaDevices nicht verfügbar</option>';
+        setAsrError('Browser unterstützt enumerateDevices nicht oder die Seite ist nicht sicher geladen.');
+        return;
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      const selected = hostAsrSettings.deviceId || select.value;
+      select.innerHTML = '';
+
+      if (audioInputs.length === 0) {
+        select.innerHTML = '<option value="">Keine Mikrofone gefunden</option>';
+        updateAsrDeviceWarning();
+        return;
+      }
+
+      audioInputs.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || `Mikrofon ${index + 1} (Berechtigung nötig für Namen)`;
+        option.dataset.unsafe = isUnsafeAudioInputDevice(device) ? 'true' : 'false';
+        select.appendChild(option);
+      });
+
+      if (selected && Array.from(select.options).some(option => option.value === selected)) {
+        select.value = selected;
+      }
+      saveHostAsrSettings();
+      updateAsrDeviceWarning();
+    }
+
+    async function requestAsrPermission() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setAsrError('Browser unterstützt getUserMedia nicht oder Mikrofonzugriff ist blockiert.');
+        return null;
+      }
+      if (selectedAsrDeviceIsBlocked()) {
+        setAsrError('Unsicheres Eingabegerät blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
+        return null;
+      }
+
+      try {
+        const stream = await openHostAsrStream();
+        setAsrError('');
+        setAsrRecorderStatus('Mikrofon bereit', 'asr-ok');
+        await refreshAsrDevices();
+        if (selectedAsrDeviceIsBlocked()) {
+          stopHostAsrStream();
+          setAsrError('Unsicheres Eingabegerät nach Berechtigung erkannt und blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
+          setAsrRecorderStatus('Unsafe device blocked', 'asr-error');
+          return null;
+        }
+        return stream;
+      } catch (err) {
+        setAsrError(`Mikrofonzugriff fehlgeschlagen: ${err.message}`);
+        setAsrRecorderStatus('Permission fehlt', 'asr-error');
+        return null;
+      }
+    }
+
+    async function openHostAsrStream() {
+      stopHostAsrStream();
+      const deviceId = document.getElementById('host-asr-device').value;
+      const audio = deviceId ? { deviceId: { exact: deviceId } } : true;
+      hostAsrStream = await navigator.mediaDevices.getUserMedia({ audio });
+      hostAsrAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = hostAsrAudioContext.createMediaStreamSource(hostAsrStream);
+      hostAsrAnalyser = hostAsrAudioContext.createAnalyser();
+      hostAsrAnalyser.fftSize = 1024;
+      source.connect(hostAsrAnalyser);
+      return hostAsrStream;
+    }
+
+    function stopHostAsrStream() {
+      if (hostAsrVadFrame) {
+        cancelAnimationFrame(hostAsrVadFrame);
+        hostAsrVadFrame = null;
+      }
+      if (hostAsrRecorder && hostAsrRecorder.state !== 'inactive') {
+        hostAsrRecorder.stop();
+      }
+      hostAsrRecorder = null;
+      if (hostAsrStream) {
+        hostAsrStream.getTracks().forEach(track => track.stop());
+        hostAsrStream = null;
+      }
+      if (hostAsrAudioContext) {
+        hostAsrAudioContext.close().catch(() => {});
+        hostAsrAudioContext = null;
+      }
+      hostAsrAnalyser = null;
+      document.getElementById('host-asr-meter').style.width = '0%';
+    }
+
+    async function startAsrListening() {
+      saveHostAsrSettings();
+      const stream = await requestAsrPermission();
+      if (!stream) {
+        document.getElementById('host-asr-enabled').checked = false;
+        saveHostAsrSettings();
+        return;
+      }
+      setAsrRecorderStatus('Listening', 'asr-ok');
+      runAsrVadLoop();
+    }
+
+    function stopAsrListening() {
+      saveHostAsrSettings();
+      stopHostAsrStream();
+      setAsrRecorderStatus('Idle', 'asr-muted');
+    }
+
+    function runAsrVadLoop() {
+      if (!hostAsrAnalyser || !document.getElementById('host-asr-enabled').checked) return;
+
+      const data = new Uint8Array(hostAsrAnalyser.fftSize);
+      const tick = () => {
+        if (!hostAsrAnalyser || !document.getElementById('host-asr-enabled').checked) return;
+        hostAsrAnalyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 1) {
+          const centered = (data[i] - 128) / 128;
+          sum += centered * centered;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        document.getElementById('host-asr-meter').style.width = `${Math.min(100, Math.round(rms * 500))}%`;
+
+        const now = Date.now();
+        const silenceTimeoutMs = readNumberInput('host-asr-silence-timeout', 900);
+        const maxSegmentMs = readNumberInput('host-asr-max-segment', 12000);
+        const hasVoice = rms > 0.018;
+        if (hasVoice) {
+          hostAsrLastVoiceAt = now;
+          hostAsrHadVoice = true;
+          if (!hostAsrRecorder || hostAsrRecorder.state === 'inactive') {
+            startAsrSegment(false);
+          }
+        }
+
+        if (hostAsrRecorder?.state === 'recording' && !hostAsrManualMode) {
+          const silentTooLong = hostAsrHadVoice && now - hostAsrLastVoiceAt > silenceTimeoutMs;
+          const segmentTooLong = now - hostAsrRecordingStartedAt > maxSegmentMs;
+          if (silentTooLong || segmentTooLong) {
+            stopAsrSegment();
+          }
+        }
+
+        hostAsrVadFrame = requestAnimationFrame(tick);
+      };
+
+      hostAsrVadFrame = requestAnimationFrame(tick);
+    }
+
+    function startAsrSegment(manualMode) {
+      if (!hostAsrStream || hostAsrUploading) return;
+      if (typeof MediaRecorder === 'undefined') {
+        setAsrError('MediaRecorder wird von diesem Browser nicht unterstützt.');
+        return;
+      }
+      const mimeType = getSupportedAsrMimeType();
+      if (!mimeType) {
+        setAsrError('Kein unterstütztes Aufnahmeformat gefunden (webm/ogg/mp4).');
+        return;
+      }
+
+      hostAsrChunks = [];
+      hostAsrManualMode = manualMode;
+      hostAsrHadVoice = manualMode;
+      hostAsrRecordingStartedAt = Date.now();
+      hostAsrLastVoiceAt = Date.now();
+      hostAsrRecorder = new MediaRecorder(hostAsrStream, { mimeType });
+      hostAsrRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) {
+          hostAsrChunks.push(event.data);
+        }
+      });
+      hostAsrRecorder.addEventListener('stop', () => {
+        const durationMs = Date.now() - hostAsrRecordingStartedAt;
+        const blob = new Blob(hostAsrChunks, { type: mimeType });
+        hostAsrChunks = [];
+        if (!manualMode && (durationMs < 450 || blob.size < 1024 || !hostAsrHadVoice)) {
+          setAsrRecorderStatus('Listening', 'asr-ok');
+          return;
+        }
+        uploadAsrBlob(blob, manualMode).catch(err => {
+          setAsrError(`ASR Upload fehlgeschlagen: ${err.message}`);
+          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle');
+        });
+      });
+      hostAsrRecorder.start();
+      setAsrRecorderStatus(manualMode ? 'Test recording...' : 'Recording speech...', 'asr-ok');
+    }
+
+    function stopAsrSegment() {
+      if (hostAsrRecorder && hostAsrRecorder.state === 'recording') {
+        hostAsrRecorder.stop();
+      }
+    }
+
+    async function toggleAsrTestRecording() {
+      if (hostAsrRecorder?.state === 'recording' && hostAsrManualMode) {
+        stopAsrSegment();
+        document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme starten';
+        return;
+      }
+
+      const stream = hostAsrStream || await requestAsrPermission();
+      if (!stream) return;
+      document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme stoppen';
+      startAsrSegment(true);
+    }
+
+    async function uploadAsrBlob(blob, transcribeOnly) {
+      if (!blob || blob.size < 1) {
+        setAsrError('Aufnahme war leer und wurde nicht hochgeladen.');
+        return;
+      }
+      hostAsrUploading = true;
+      setAsrRecorderStatus('Uploading ASR...', 'asr-ok');
+      const formData = new FormData();
+      const extension = getAsrAudioExtension(blob.type || 'audio/webm');
+      formData.append('audio', blob, `host-mic.${extension}`);
+      if (transcribeOnly) {
+        formData.append('transcribeOnly', 'true');
+      }
+
+      try {
+        const res = await fetch('/api/sidekick/asr/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          const code = data.error?.code || `HTTP_${res.status}`;
+          const message = data.error?.message || res.statusText || 'ASR request failed';
+          throw new Error(`${code}: ${message}`);
+        }
+        asrStatus = data.diagnostics || asrStatus;
+        updateAsrStatusUI();
+        setAsrTranscript(data.transcript?.text || '');
+        setAsrError('');
+      } finally {
+        hostAsrUploading = false;
+        document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme starten';
+        setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle', document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
+      }
+    }
+
+    async function fetchAsrStatus() {
+      try {
+        const res = await fetch('/api/sidekick/asr/status');
+        const data = await res.json();
+        if (data.success) {
+          asrStatus = data.status || {};
+          updateAsrStatusUI();
+        }
+      } catch (err) {
+        setAsrError(`ASR Status konnte nicht geladen werden: ${err.message}`);
+      }
+    }
+
+    function updateAsrStatusUI() {
+      document.getElementById('host-asr-enabled-status').textContent = asrStatus.enabled ? 'Enabled' : 'Disabled';
+      document.getElementById('host-asr-enabled-status').className = asrStatus.enabled ? 'asr-ok' : 'asr-error';
+      document.getElementById('host-asr-ready-status').textContent = asrStatus.ready
+        ? 'Ready'
+        : `Not ready (TTS: ${asrStatus.ttsAvailable ? 'ok' : 'missing'}, Fish: ${asrStatus.fishConfigured ? 'ok' : 'not configured'})`;
+      document.getElementById('host-asr-ready-status').className = asrStatus.ready ? 'asr-ok' : 'asr-warning';
+      document.getElementById('host-asr-requests').textContent = asrStatus.counters?.requests || 0;
+      document.getElementById('host-asr-transcribed').textContent = asrStatus.counters?.transcribed || 0;
+      document.getElementById('host-asr-delegated').textContent = asrStatus.counters?.delegated || 0;
+      document.getElementById('host-asr-latency').textContent = asrStatus.lastLatencyMs ? `${asrStatus.lastLatencyMs} ms` : '-';
+      if (asrStatus.lastError) {
+        setAsrError(`${asrStatus.lastError.code}: ${asrStatus.lastError.message}`);
+      }
+      if (Number.isFinite(asrStatus.maxAudioBytes)) {
+        document.getElementById('host-asr-max-bytes').value = asrStatus.maxAudioBytes;
+      }
+      if (asrStatus.language) {
+        document.getElementById('host-asr-language').value = asrStatus.language;
+      }
+      if (Number.isFinite(asrStatus.minTranscriptChars)) {
+        document.getElementById('host-asr-min-transcript').value = asrStatus.minTranscriptChars;
       }
     }
     
@@ -769,6 +1289,14 @@
       document.getElementById('batch-max-items').value = config.outbox?.maxItems || 8;
       document.getElementById('batch-max-chars').value = config.outbox?.maxChars || 320;
       document.getElementById('batch-separator').value = config.outbox?.separator || ' • ';
+
+      document.getElementById('host-asr-language').value = config.asr?.language || '';
+      document.getElementById('host-asr-max-bytes').value = config.asr?.maxAudioBytes || 8388608;
+      document.getElementById('host-asr-min-transcript').value = config.asr?.minTranscriptChars || config.conversation?.minHostSpeechChars || 3;
+      document.getElementById('host-asr-enabled').checked = !!hostAsrSettings.enabled;
+      document.getElementById('host-asr-unsafe-override').checked = !!hostAsrSettings.unsafeOverride;
+      document.getElementById('host-asr-silence-timeout').value = hostAsrSettings.silenceTimeoutMs || 900;
+      document.getElementById('host-asr-max-segment').value = hostAsrSettings.maxSegmentMs || 12000;
     }
     
     // Save config
@@ -777,6 +1305,12 @@
         output: {
           eventType: 'sidekick',
           username: document.getElementById('output-username').value.trim() || 'Sidekick'
+        },
+        asr: {
+          enabled: true,
+          language: document.getElementById('host-asr-language').value.trim() || null,
+          maxAudioBytes: parseInt(document.getElementById('host-asr-max-bytes').value),
+          minTranscriptChars: parseInt(document.getElementById('host-asr-min-transcript').value)
         },
         comment: {
           enabled: document.getElementById('comment-enabled').checked,
@@ -995,6 +1529,35 @@
       });
       document.getElementById('test-message').value = '';
     });
+
+    document.getElementById('btn-asr-permission').addEventListener('click', requestAsrPermission);
+    document.getElementById('btn-asr-refresh').addEventListener('click', async () => {
+      await refreshAsrDevices();
+      await fetchAsrStatus();
+    });
+    document.getElementById('btn-asr-test').addEventListener('click', toggleAsrTestRecording);
+    document.getElementById('host-asr-device').addEventListener('change', () => {
+      saveHostAsrSettings();
+      updateAsrDeviceWarning();
+      if (document.getElementById('host-asr-enabled').checked) {
+        startAsrListening();
+      }
+    });
+    document.getElementById('host-asr-unsafe-override').addEventListener('change', () => {
+      saveHostAsrSettings();
+      updateAsrDeviceWarning();
+    });
+    document.getElementById('host-asr-enabled').addEventListener('change', (event) => {
+      saveHostAsrSettings();
+      if (event.target.checked) {
+        startAsrListening();
+      } else {
+        stopAsrListening();
+      }
+    });
+    ['host-asr-silence-timeout', 'host-asr-max-segment'].forEach(id => {
+      document.getElementById(id).addEventListener('change', saveHostAsrSettings);
+    });
     
     document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
     
@@ -1021,8 +1584,18 @@
     });
     
     // Initial load
+    document.getElementById('host-asr-enabled').checked = !!hostAsrSettings.enabled;
+    document.getElementById('host-asr-unsafe-override').checked = !!hostAsrSettings.unsafeOverride;
+    document.getElementById('host-asr-silence-timeout').value = hostAsrSettings.silenceTimeoutMs || 900;
+    document.getElementById('host-asr-max-segment').value = hostAsrSettings.maxSegmentMs || 12000;
+    refreshAsrDevices().then(() => {
+      if (hostAsrSettings.enabled) {
+        startAsrListening();
+      }
+    }).catch(err => setAsrError(`Geräteliste konnte nicht geladen werden: ${err.message}`));
     fetchStatus();
     fetchConfig();
+    fetchAsrStatus();
     fetchMemoryStats();
     fetchTopUsers();
     fetchEvents();
@@ -1030,6 +1603,7 @@
     
     // Periodic updates
     setInterval(fetchStatus, 2000);
+    setInterval(fetchAsrStatus, 5000);
     setInterval(() => {
       fetchMemoryStats();
       fetchTopUsers();
