@@ -103,6 +103,36 @@ describe('Sidekick runtime contracts', () => {
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
 
+  test('conversation config updates are normalized before persistence', () => {
+    const api = createApi();
+    const manager = new ConfigManager(api);
+    manager.load();
+    api.setConfig.mockClear();
+
+    const config = manager.update({
+      conversation: {
+        enabled: 'false',
+        hostName: 'H'.repeat(120),
+        minHostSpeechChars: -1,
+        echoWindowMs: 999999999,
+        maxRecentUtterances: 9999,
+        hostSpeechEventType: 'sidekick-host-speech',
+        viewerEventTypes: ['gift', 'unknown', 'chat', 'chat']
+      }
+    });
+
+    expect(config.conversation).toEqual(expect.objectContaining({
+      enabled: false,
+      hostName: 'H'.repeat(64),
+      minHostSpeechChars: 1,
+      echoWindowMs: 300000,
+      maxRecentUtterances: 200,
+      hostSpeechEventType: 'chat',
+      viewerEventTypes: ['gift', 'chat']
+    }));
+    expect(api.setConfig).toHaveBeenCalledWith('config', config);
+  });
+
   test('missing and null updates are safe no-ops after defaults load', () => {
     const api = createApi();
     const manager = new ConfigManager(api);
@@ -185,9 +215,11 @@ describe('Sidekick runtime contracts', () => {
         normalizedText: 'hello chat'
       }),
       buildHostSpeechEvent: jest.fn().mockReturnValue({
-        eventType: 'sidekick-host-speech',
+        eventType: 'chat',
         username: 'Host',
         message: 'Hello chat',
+        comment: 'Hello chat',
+        isHostSpeech: true,
         source: 'host-mic'
       })
     };
@@ -200,8 +232,8 @@ describe('Sidekick runtime contracts', () => {
       animazingPalResult: { handled: true, responded: true }
     }));
     expect(processSidekickEvent).toHaveBeenCalledWith(
-      'sidekick-host-speech',
-      expect.objectContaining({ message: 'Hello chat', source: 'host-mic' }),
+      'chat',
+      expect.objectContaining({ message: 'Hello chat', comment: 'Hello chat', source: 'host-mic', isHostSpeech: true }),
       expect.objectContaining({ reason: 'accepted', source: 'sidekick-host-speech' })
     );
   });

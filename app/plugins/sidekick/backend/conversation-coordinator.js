@@ -6,38 +6,91 @@
  * Sidekick viewer memory store here.
  */
 
+const SUPPORTED_EVENT_TYPES = ['chat', 'gift', 'follow', 'share', 'like', 'subscribe', 'join'];
+
 const DEFAULT_CONVERSATION_COORDINATOR_CONFIG = {
   enabled: true,
   hostName: 'Host',
   minHostSpeechChars: 3,
   echoWindowMs: 12000,
   maxRecentUtterances: 20,
+  // Reserved for a future fuzzy duplicate implementation. Current protection
+  // intentionally uses exact normalized matches for deterministic safety.
   duplicateSimilarity: 1,
-  hostSpeechEventType: 'sidekick-host-speech',
+  hostSpeechEventType: 'chat',
   viewerEventTypes: ['chat', 'gift', 'follow', 'share', 'subscribe', 'like']
 };
 
 function normalizeSpeechText(text) {
-  return String(text || '')
+  return safeString(text, 500)
     .normalize('NFKC')
     .trim()
     .replace(/\s+/g, ' ')
     .toLocaleLowerCase();
 }
 
-function cleanSpeechText(text) {
-  return String(text || '')
+function cleanSpeechText(text, maximum = 500) {
+  return safeString(text, maximum)
     .normalize('NFKC')
     .trim()
     .replace(/\s+/g, ' ');
 }
 
+function clamp(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function safeString(value, maximum, fallback = '') {
+  return String(value ?? fallback).trim().slice(0, maximum);
+}
+
+function normalizeBoolean(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  if (value === 1 || value === '1' || value === 'true' || value === 'on') return true;
+  if (value === 0 || value === '0' || value === 'false' || value === 'off' || value === '') return false;
+  return fallback;
+}
+
+function normalizeConversationConfig(config = {}) {
+  const input = config && typeof config === 'object' && !Array.isArray(config) ? config : {};
+  const defaults = DEFAULT_CONVERSATION_COORDINATOR_CONFIG;
+  const viewerEventTypes = Array.isArray(input.viewerEventTypes)
+    ? [...new Set(input.viewerEventTypes.filter(type => SUPPORTED_EVENT_TYPES.includes(type)))]
+    : defaults.viewerEventTypes;
+
+  return {
+    enabled: normalizeBoolean(input.enabled, defaults.enabled),
+    hostName: safeString(input.hostName, 64, defaults.hostName) || defaults.hostName,
+    minHostSpeechChars: Math.round(clamp(input.minHostSpeechChars, 1, 500, defaults.minHostSpeechChars)),
+    echoWindowMs: Math.round(clamp(input.echoWindowMs, 1000, 300000, defaults.echoWindowMs)),
+    maxRecentUtterances: Math.round(clamp(input.maxRecentUtterances, 1, 200, defaults.maxRecentUtterances)),
+    duplicateSimilarity: clamp(input.duplicateSimilarity, 0, 1, defaults.duplicateSimilarity),
+    hostSpeechEventType: SUPPORTED_EVENT_TYPES.includes(input.hostSpeechEventType) ? input.hostSpeechEventType : defaults.hostSpeechEventType,
+    viewerEventTypes: viewerEventTypes.length > 0 ? viewerEventTypes : defaults.viewerEventTypes
+  };
+}
+
+function sanitizeDecision(decision = {}) {
+  if (!decision || typeof decision !== 'object' || Array.isArray(decision)) return {};
+  const sanitized = {};
+  if (decision.respond !== undefined) sanitized.respond = normalizeBoolean(decision.respond, false);
+  if (decision.score !== undefined) sanitized.score = clamp(decision.score, 0, 1, 0);
+  for (const key of ['reason', 'type', 'selection']) {
+    if (decision[key] !== undefined && decision[key] !== null) {
+      sanitized[key] = safeString(decision[key], 80);
+    }
+  }
+  if (decision.priority !== undefined) {
+    sanitized.priority = Math.round(clamp(decision.priority, 0, 100, 0));
+  }
+  return sanitized;
+}
+
 class ConversationCoordinator {
   constructor(config = {}) {
-    this.config = {
-      ...DEFAULT_CONVERSATION_COORDINATOR_CONFIG,
-      ...(config || {})
-    };
+    this.config = normalizeConversationConfig(config);
     this.recentUtterances = [];
     this.lastAcceptedHostSpeechReason = null;
     this.lastRejectedHostSpeechReason = null;
@@ -45,10 +98,7 @@ class ConversationCoordinator {
   }
 
   updateConfig(config = {}) {
-    this.config = {
-      ...DEFAULT_CONVERSATION_COORDINATOR_CONFIG,
-      ...(config || {})
-    };
+    this.config = normalizeConversationConfig(config);
     this._prune(Date.now());
   }
 
@@ -112,51 +162,67 @@ class ConversationCoordinator {
   }
 
   buildHostSpeechEvent(text, metadata = {}) {
+    const message = cleanSpeechText(text, 500);
+    const username = cleanSpeechText(this.config.hostName, 64) || DEFAULT_CONVERSATION_COORDINATOR_CONFIG.hostName;
     const event = {
-      eventType: this.config.hostSpeechEventType || DEFAULT_CONVERSATION_COORDINATOR_CONFIG.hostSpeechEventType,
-      username: cleanSpeechText(this.config.hostName) || DEFAULT_CONVERSATION_COORDINATOR_CONFIG.hostName,
-      userId: metadata.userId || 'sidekick-host',
-      message: cleanSpeechText(text),
-      source: metadata.source || 'host-mic'
+      eventType: this.config.hostSpeechEventType,
+      username,
+      userId: safeString(metadata.userId, 128, 'sidekick-host') || 'sidekick-host',
+      uniqueId: username,
+      nickname: username,
+      message,
+      comment: message,
+      source: safeString(metadata.source, 32, 'host-mic') || 'host-mic',
+      isHostSpeech: true
     };
 
-    for (const key of ['confidence', 'language', 'provider', 'startedAt', 'endedAt']) {
-      if (metadata[key] !== undefined && metadata[key] !== null) {
-        event[key] = metadata[key];
-      }
+    if (metadata.confidence !== undefined && metadata.confidence !== null) {
+      event.confidence = clamp(metadata.confidence, 0, 1, 0);
+    }
+    if (metadata.language !== undefined && metadata.language !== null) {
+      event.language = safeString(metadata.language, 20);
+    }
+    if (metadata.provider !== undefined && metadata.provider !== null) {
+      event.provider = safeString(metadata.provider, 64);
+    }
+    for (const key of ['startedAt', 'endedAt']) {
+      if (metadata[key] !== undefined && metadata[key] !== null) event[key] = safeString(metadata[key], 64);
     }
 
     return event;
   }
 
   buildViewerEvent(eventType, data = {}, decision = {}) {
-    const username = data.uniqueId || data.username || data.userId || data.nickname || 'Viewer';
-    const message = data.comment || data.message || '';
+    if (!this.config.viewerEventTypes.includes(eventType)) return null;
+
+    const username = safeString(data.uniqueId || data.username || data.userId || data.nickname, 128, 'Viewer') || 'Viewer';
+    const message = cleanSpeechText(data.comment || data.message || '', 500);
     const event = {
       eventType,
       username,
-      userId: data.userId || data.uniqueId || username,
-      nickname: data.nickname || username,
+      userId: safeString(data.userId || data.uniqueId || username, 128),
+      nickname: safeString(data.nickname || username, 128),
       message,
-      comment: data.comment || message,
+      comment: message,
       source: 'sidekick-viewer',
-      decision
+      decision: sanitizeDecision(decision)
     };
 
-    for (const key of [
-      'giftName',
-      'giftId',
-      'diamondCount',
-      'repeatCount',
-      'likeCount',
-      'totalLikeCount',
-      'followRole',
-      'isSubscriber',
-      'teamMemberLevel'
-    ]) {
-      if (data[key] !== undefined && data[key] !== null) {
-        event[key] = data[key];
-      }
+    if (data.giftName !== undefined && data.giftName !== null) {
+      event.giftName = safeString(data.giftName, 160);
+    }
+    if (data.giftId !== undefined && data.giftId !== null) {
+      const numericGiftId = Number(data.giftId);
+      event.giftId = Number.isFinite(numericGiftId) ? numericGiftId : safeString(data.giftId, 80);
+    }
+    for (const key of ['diamondCount', 'repeatCount', 'likeCount', 'totalLikeCount', 'teamMemberLevel']) {
+      if (data[key] !== undefined && data[key] !== null) event[key] = Math.round(clamp(data[key], 0, 100000000, 0));
+    }
+    if (data.followRole !== undefined && data.followRole !== null) {
+      event.followRole = safeString(data.followRole, 80);
+    }
+    if (data.isSubscriber !== undefined && data.isSubscriber !== null) {
+      event.isSubscriber = normalizeBoolean(data.isSubscriber, false);
     }
 
     return event;
@@ -171,6 +237,9 @@ class ConversationCoordinator {
       minHostSpeechChars: this.config.minHostSpeechChars,
       echoWindowMs: this.config.echoWindowMs,
       maxRecentUtterances: this.config.maxRecentUtterances,
+      duplicateSimilarity: this.config.duplicateSimilarity,
+      hostSpeechEventType: this.config.hostSpeechEventType,
+      viewerEventTypes: this.config.viewerEventTypes,
       recentUtteranceCount: this.recentUtterances.length,
       recentSidekickUtteranceCount,
       recentHostUtteranceCount,
@@ -236,5 +305,7 @@ class ConversationCoordinator {
 module.exports = {
   ConversationCoordinator,
   DEFAULT_CONVERSATION_COORDINATOR_CONFIG,
+  SUPPORTED_EVENT_TYPES,
+  normalizeConversationConfig,
   normalizeSpeechText
 };

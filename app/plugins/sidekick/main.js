@@ -1052,6 +1052,9 @@ class SidekickPlugin {
     const event = this.conversationCoordinator?.buildViewerEvent
       ? this.conversationCoordinator.buildViewerEvent(eventType, data, evaluation)
       : data;
+    if (!event) {
+      return { handled: false, responded: false, reason: 'viewer-event-disabled' };
+    }
     const result = await animazingPal.processSidekickEvent(eventType, event, evaluation);
     if (result?.responded) this.metrics?.recordResponse();
     return result;

@@ -9,7 +9,8 @@
  * Default configuration values
  */
 const {
-  DEFAULT_CONVERSATION_COORDINATOR_CONFIG
+  DEFAULT_CONVERSATION_COORDINATOR_CONFIG,
+  normalizeConversationConfig
 } = require('./conversation-coordinator');
 
 const DEFAULT_CONFIG = {
@@ -176,6 +177,7 @@ class ConfigManager {
   _normalizeStandaloneHostConfig() {
     if (!this.config) return;
     delete this.config.animaze;
+    this.config.conversation = normalizeConversationConfig(this.config.conversation || DEFAULT_CONFIG.conversation);
     if (!this._isPlainObject(this.config.output)) {
       this.config.output = this._cloneDefaults().output;
       return;

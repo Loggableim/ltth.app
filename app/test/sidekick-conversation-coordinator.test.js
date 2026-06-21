@@ -53,7 +53,7 @@ describe('Sidekick conversation coordinator', () => {
   test('builds a sanitized host speech event for AnimazingPal', () => {
     const coordinator = new ConversationCoordinator({
       hostName: 'Streamer',
-      hostSpeechEventType: 'host-speaking'
+      hostSpeechEventType: 'chat'
     });
 
     expect(coordinator.buildHostSpeechEvent('  Hallo Chat  ', {
@@ -61,21 +61,66 @@ describe('Sidekick conversation coordinator', () => {
       language: 'de',
       provider: 'future-asr',
       unsafe: '<script>'
-    })).toEqual({
-      eventType: 'host-speaking',
+    })).toEqual(expect.objectContaining({
+      eventType: 'chat',
       username: 'Streamer',
       userId: 'sidekick-host',
       message: 'Hallo Chat',
+      comment: 'Hallo Chat',
       source: 'host-mic',
+      isHostSpeech: true,
       confidence: 0.94,
       language: 'de',
       provider: 'future-asr'
+    }));
+  });
+
+  test('normalizes unsafe conversation config to bounded supported values', () => {
+    const coordinator = new ConversationCoordinator({
+      enabled: 'false',
+      hostName: ` ${'H'.repeat(120)} `,
+      minHostSpeechChars: -50,
+      echoWindowMs: 999999999,
+      maxRecentUtterances: 9999,
+      hostSpeechEventType: 'sidekick-host-speech',
+      viewerEventTypes: ['gift', 'unknown', 'chat', 'chat']
     });
+
+    expect(coordinator.getStatus()).toEqual(expect.objectContaining({
+      enabled: false,
+      hostName: 'H'.repeat(64),
+      minHostSpeechChars: 1,
+      echoWindowMs: 300000,
+      maxRecentUtterances: 200,
+      hostSpeechEventType: 'chat',
+      viewerEventTypes: ['gift', 'chat']
+    }));
+  });
+
+  test('bounds host speech payload strings and numeric metadata', () => {
+    const coordinator = new ConversationCoordinator({
+      hostName: '<b>Very Long Host Name That Should Be Trimmed To Sixty Four Characters Exactly</b>'
+    });
+    const event = coordinator.buildHostSpeechEvent('x'.repeat(2000), {
+      userId: 'u'.repeat(200),
+      source: 's'.repeat(80),
+      confidence: 99,
+      language: 'german-language-code-that-is-too-long',
+      provider: 'provider-name-that-is-too-long'.repeat(10)
+    });
+
+    expect(event.message).toHaveLength(500);
+    expect(event.comment).toHaveLength(500);
+    expect(event.userId).toHaveLength(128);
+    expect(event.source).toHaveLength(32);
+    expect(event.confidence).toBe(1);
+    expect(event.language).toHaveLength(20);
+    expect(event.provider).toHaveLength(64);
   });
 
   test('builds viewer events while preserving useful viewer and gift fields', () => {
     const coordinator = new ConversationCoordinator();
-    const decision = { type: 'gift', priority: 7 };
+    const decision = { type: 'gift', priority: 7, response: 'bulky text', nested: { unsafe: true } };
 
     expect(coordinator.buildViewerEvent('gift', {
       uniqueId: 'alice_1',
@@ -95,7 +140,20 @@ describe('Sidekick conversation coordinator', () => {
       diamondCount: 1,
       repeatCount: 3,
       source: 'sidekick-viewer',
-      decision
+      decision: {
+        type: 'gift',
+        priority: 7
+      }
+    }));
+  });
+
+  test('rejects viewer events that are not enabled in the coordinator whitelist', () => {
+    const coordinator = new ConversationCoordinator({ viewerEventTypes: ['chat'] });
+
+    expect(coordinator.buildViewerEvent('gift', { uniqueId: 'alice', giftName: 'Rose' }, {})).toBeNull();
+    expect(coordinator.buildViewerEvent('chat', { uniqueId: 'alice', comment: 'hi' }, {})).toEqual(expect.objectContaining({
+      eventType: 'chat',
+      comment: 'hi'
     }));
   });
 
