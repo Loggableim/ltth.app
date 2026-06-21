@@ -1,0 +1,84 @@
+/* ============================================
+   LTTH Overlay Base Styles
+   Shared by animation-overlay and ifttt-hud
+   ============================================ */
+
+:root {
+    --font-overlay: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: transparent;
+    overflow: hidden;
+    font-family: var(--font-overlay);
+}
+
+/* Shared fade keyframes */
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Connection status dot (bottom-right) */
+.overlay-connection-dot {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4caf50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    pointer-events: none;
+    opacity: 0.7;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.overlay-connection-dot.disconnected {
+    background: #f44336;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+}
+
+/* Debug panel */
+.overlay-debug-panel {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ff00;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    display: none;
+    pointer-events: none;
+    max-width: 400px;
+    z-index: 10001;
+}
+
+.overlay-debug-panel.visible {
+    display: block;
+}
+
+.overlay-debug-title {
+    color: #00ffff;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.overlay-debug-entry {
+    margin: 4px 0;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+}

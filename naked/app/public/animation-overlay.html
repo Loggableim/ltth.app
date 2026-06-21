@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/overlay-base.css">
+    <style>
+        #animation-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .animation-item {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 45vw;
+            height: 45vh;
+            transform: var(--overlay-transform, translate(-50%, -50%));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            contain: layout paint;
+            will-change: transform, opacity;
+        }
+
+        .animation-item video,
+        .animation-item audio,
+        .animation-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: var(--overlay-fit, contain);
+            display: block;
+        }
+
+        .animation-item.fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .animation-item.fade-out {
+            animation: fadeOut 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: var(--overlay-transform, translate(-50%, -50%)) scale(0.92);
+            }
+            to {
+                opacity: 1;
+                transform: var(--overlay-transform, translate(-50%, -50%)) scale(1);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: var(--overlay-transform, translate(-50%, -50%)) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: var(--overlay-transform, translate(-50%, -50%)) scale(0.92);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="animation-container"></div>
+    <div id="debug-info" class="overlay-debug-panel"></div>
+
+    <script>
+        // Connect to Socket.IO
+        const socket = io();
+        const container = document.getElementById('animation-container');
+        const debugInfo = document.getElementById('debug-info');
+
+        // Queue for animations
+        let animationQueue = [];
+        let isPlaying = false;
+
+        // Memory tracking for debug mode
+        let totalAnimationsPlayed = 0;
+        let totalAudioElementsCreated = 0;
+
+        // Debug mode (can be enabled via URL parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const debugMode = urlParams.get('debug') === 'true';
+
+        if (debugMode) {
+            debugInfo.classList.add('visible');
+            updateDebug('Animation overlay loaded (debug mode)');
+            
+            // Periodic memory monitoring in debug mode
+            setInterval(() => {
+                const activeElements = container.querySelectorAll('.animation-item').length;
+                const audioElements = document.querySelectorAll('audio').length;
+                updateDebug(`Stats: Animations: ${totalAnimationsPlayed}, Active: ${activeElements}, Audio: ${audioElements}/${totalAudioElementsCreated}`);
+            }, 30000); // Every 30 seconds
+        }
+
+        function updateDebug(message) {
+            if (debugMode) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.textContent = `[${timestamp}] ${message}`;
+                console.log(`[Animation] ${message}`);
+            }
+        }
+
+        function clampNumber(value, fallback, min, max) {
+            const parsed = parseFloat(value);
+            if (!Number.isFinite(parsed)) return fallback;
+            return Math.max(min, Math.min(max, parsed));
+        }
+
+        function normalizeLayout(layout = {}) {
+            const allowedAnchors = ['center', 'top-left', 'top', 'top-right', 'left', 'right', 'bottom-left', 'bottom', 'bottom-right'];
+            const allowedFits = ['contain', 'cover', 'fill'];
+            return {
+                x: clampNumber(layout.x, 50, 0, 100),
+                y: clampNumber(layout.y, 50, 0, 100),
+                width: clampNumber(layout.width, 45, 5, 100),
+                height: clampNumber(layout.height, 45, 5, 100),
+                duration: clampNumber(layout.duration, 5, 1, 30),
+                anchor: allowedAnchors.includes(layout.anchor) ? layout.anchor : 'center',
+                fit: allowedFits.includes(layout.fit) ? layout.fit : 'contain'
+            };
+        }
+
+        function anchorToTransform(anchor) {
+            const transforms = {
+                'top-left': 'translate(0, 0)',
+                top: 'translate(-50%, 0)',
+                'top-right': 'translate(-100%, 0)',
+                left: 'translate(0, -50%)',
+                center: 'translate(-50%, -50%)',
+                right: 'translate(-100%, -50%)',
+                'bottom-left': 'translate(0, -100%)',
+                bottom: 'translate(-50%, -100%)',
+                'bottom-right': 'translate(-100%, -100%)'
+            };
+            return transforms[anchor] || transforms.center;
+        }
+
+        function applyAnimationLayout(wrapper, element, layoutData) {
+            const layout = normalizeLayout(layoutData);
+            wrapper.style.left = `${layout.x}%`;
+            wrapper.style.top = `${layout.y}%`;
+            wrapper.style.width = `${layout.width}vw`;
+            wrapper.style.height = `${layout.height}vh`;
+            wrapper.style.setProperty('--overlay-transform', anchorToTransform(layout.anchor));
+            wrapper.style.setProperty('--overlay-fit', layout.fit);
+            element.style.objectFit = layout.fit;
+            return layout;
+        }
+
+        socket.on('connect', () => {
+            updateDebug('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            updateDebug('Disconnected from server');
+        });
+
+        // Listen for event animations (follow, subscribe, share)
+        socket.on('event:animation', (data) => {
+            updateDebug(`Event animation: ${data.eventType} - ${data.username}`);
+            console.log('Event animation received:', data);
+            queueAnimation(data);
+        });
+
+        // Listen for gift animations
+        socket.on('gift:animation', (data) => {
+            updateDebug(`Gift animation: ${data.giftName}`);
+            console.log('Gift animation received:', data);
+            queueAnimation(data);
+        });
+
+        // Listen for soundboard audio events (plays audio alongside animations)
+        socket.on('soundboard:play', (data) => {
+            updateDebug(`Soundboard audio: ${data.label} (volume: ${data.volume}, target: ${data.audioTarget || 'both'})`);
+            console.log('Soundboard audio received:', data);
+            
+            // Check the audio target setting
+            // audioTarget can be: 'dashboard', 'obs_overlay', or 'both'
+            // For OBS overlay, we play if target is 'obs_overlay' or 'both'
+            const audioTarget = data.audioTarget || 'both';
+            
+            // Skip animation audio (eventType === 'animation') - now handled in main app
+            if (data.eventType === 'animation') {
+                console.log(`⏭️ [OBS Overlay] Skipping animation audio - handled in main app`);
+                updateDebug(`Skipped animation audio: ${data.label}`);
+                return;
+            }
+            
+            if (audioTarget === 'obs_overlay' || audioTarget === 'both') {
+                playSoundboardAudio(data);
+            } else {
+                console.log(`⏭️ [OBS Overlay] Skipping audio playback - target is '${audioTarget}', not obs_overlay`);
+                updateDebug(`Skipped audio: ${data.label} (plays in dashboard)`);
+            }
+        });
+
+        // Cleanup on page unload to prevent memory leaks
+        window.addEventListener('beforeunload', () => {
+            socket.disconnect();
+        });
+
+        function queueAnimation(data) {
+            animationQueue.push(data);
+            if (!isPlaying) {
+                playNextAnimation();
+            }
+        }
+
+        /**
+         * Play soundboard audio immediately (not queued)
+         * This plays audio from soundboard events alongside gift animations
+         * Fixed: Properly cleanup event listeners to prevent memory leaks
+         */
+        function playSoundboardAudio(data) {
+            const { url, volume, label } = data;
+
+            if (!url) {
+                console.warn('Soundboard audio URL is missing');
+                updateDebug('Soundboard: Missing URL');
+                return;
+            }
+
+            // Validate and clamp volume between 0 and 1
+            const validVolume = Math.max(0, Math.min(1, volume || 1.0));
+
+            // Track audio element creation
+            totalAudioElementsCreated++;
+
+            // Create audio element
+            const audio = document.createElement('audio');
+            audio.src = url;
+            audio.volume = validVolume;
+            
+            // Use AbortController for automatic listener cleanup
+            const abortController = new AbortController();
+            const signal = abortController.signal;
+            
+            // Cleanup function to remove element and abort listeners
+            const cleanup = () => {
+                abortController.abort(); // Remove all event listeners automatically
+                clearTimeout(safetyTimeout); // Clear timeout
+                if (audio.parentNode) {
+                    audio.parentNode.removeChild(audio);
+                }
+            };
+            
+            // Safety timeout to prevent stuck audio elements (max 5 minutes)
+            const safetyTimeout = setTimeout(() => {
+                console.warn(`⚠️ Soundboard audio exceeded timeout: ${label}`);
+                cleanup();
+            }, 300000);
+            
+            // Add event listeners with signal for automatic cleanup
+            audio.addEventListener('ended', () => {
+                console.log(`✅ Soundboard audio finished: ${label}`);
+                cleanup();
+            }, { signal, once: true });
+
+            audio.addEventListener('error', (e) => {
+                console.error('Soundboard audio error:', e);
+                updateDebug(`Audio error: ${url}`);
+                cleanup();
+            }, { signal, once: true });
+            
+            // Append to DOM only after listeners are set up
+            document.body.appendChild(audio);
+            
+            // Play audio with proper error handling
+            audio.play().then(() => {
+                updateDebug(`Playing audio: ${label} (vol: ${validVolume})`);
+                console.log(`✅ Soundboard audio started: ${label}`);
+            }).catch(err => {
+                console.error('Soundboard audio playback error:', err);
+                updateDebug(`Audio error: ${err.message}`);
+                clearTimeout(safetyTimeout);
+                cleanup();
+            });
+        }
+
+        async function playNextAnimation() {
+            if (animationQueue.length === 0) {
+                isPlaying = false;
+                return;
+            }
+
+            isPlaying = true;
+            const animation = animationQueue.shift();
+
+            try {
+                await playAnimation(animation);
+            } catch (error) {
+                console.error('Error playing animation:', error);
+                updateDebug(`Error: ${error.message}`);
+            }
+
+            // Play next animation after a small delay
+            setTimeout(() => playNextAnimation(), 500);
+        }
+
+        async function playAnimation(data) {
+            const { url, volume, type, eventType, username, giftName } = data;
+
+            if (!url) {
+                console.warn('Animation URL is missing');
+                return;
+            }
+
+            totalAnimationsPlayed++;
+            updateDebug(`Playing: ${url} (type: ${type || 'auto'})`);
+
+            // Validate and clamp volume between 0 and 1
+            const validVolume = Math.max(0, Math.min(1, volume || 1.0));
+
+            // Determine animation type based on the 'type' parameter or URL extension
+            let detectedType = type || 'auto';
+            
+            if (detectedType === 'auto' || !detectedType || detectedType === 'none') {
+                // Auto-detect based on URL extension
+                if (url.match(/\.(mp4|webm|mov)($|\?)/i)) {
+                    detectedType = 'video';
+                } else if (url.match(/\.(gif)($|\?)/i)) {
+                    detectedType = 'gif';
+                } else if (url.match(/\.(png|jpg|jpeg|webp|svg)($|\?)/i)) {
+                    detectedType = 'image';
+                } else if (url.match(/\.(mp3|wav|ogg)($|\?)/i)) {
+                    detectedType = 'audio';
+                } else {
+                    detectedType = 'video'; // Default to video
+                }
+            }
+
+            let element;
+            let duration = 5000; // Default duration for images/gifs in milliseconds
+            const MAX_ANIMATION_DURATION = 30000; // Maximum 30 seconds
+
+            // Use AbortController for automatic event listener cleanup
+            const abortController = new AbortController();
+            const signal = abortController.signal;
+
+            if (detectedType === 'video') {
+                element = document.createElement('video');
+                element.src = url;
+                element.volume = validVolume;
+                element.playsInline = true;
+                // CRITICAL FIX: Always start muted for autoplay compatibility
+                // Browsers block autoplay of unmuted videos after a period without user interaction
+                element.muted = true;
+                element.autoplay = true;
+                // Note: Unmuting happens in loadedmetadata listener below
+            } else if (detectedType === 'gif' || detectedType === 'image') {
+                element = document.createElement('img');
+                element.src = url;
+                element.alt = giftName || eventType || 'Animation';
+                duration = 5000; // Default 5 seconds for images/gifs
+            } else if (detectedType === 'audio') {
+                element = document.createElement('audio');
+                element.src = url;
+                element.volume = validVolume;
+                element.autoplay = true;
+            } else {
+                // Fallback - try video with autoplay fix (same logic as main video path)
+                element = document.createElement('video');
+                element.src = url;
+                element.volume = validVolume;
+                element.muted = true; // Start muted for autoplay
+                element.autoplay = true;
+                element.playsInline = true;
+            }
+
+            // Create wrapper div
+            const wrapper = document.createElement('div');
+            wrapper.className = 'animation-item fade-in';
+            const layout = applyAnimationLayout(wrapper, element, data.layout);
+            if (detectedType === 'gif' || detectedType === 'image') {
+                duration = layout.duration * 1000;
+            }
+            wrapper.appendChild(element);
+            container.appendChild(wrapper);
+
+            // Return a promise that resolves when animation is complete
+            return new Promise((resolve) => {
+                // Cleanup function
+                const cleanup = () => {
+                    abortController.abort(); // Remove all event listeners
+                    fadeOutAndRemove(wrapper, resolve);
+                };
+                
+                if (detectedType === 'video') {
+                    // For videos, wait for the video to end
+                    // Single listener to handle both unmuting and duration
+                    element.addEventListener('loadedmetadata', () => {
+                        duration = element.duration * 1000;
+                        // Unmute after loading if volume is not zero
+                        if (validVolume > 0) {
+                            element.muted = false;
+                            element.volume = validVolume;
+                        }
+                    }, { signal, once: true });
+
+                    element.addEventListener('ended', cleanup, { signal, once: true });
+
+                    element.addEventListener('error', (e) => {
+                        console.error('Video error:', e);
+                        updateDebug(`Video error: ${url}`);
+                        cleanup();
+                    }, { signal, once: true });
+                    
+                    // Handle play failure (autoplay blocked)
+                    const playPromise = element.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(err => {
+                            console.warn('Video autoplay blocked:', err);
+                            updateDebug('Autoplay blocked - user interaction needed');
+                            // Try to play muted as fallback
+                            element.muted = true;
+                            element.play().catch(fallbackErr => {
+                                console.error('Fallback autoplay also failed:', fallbackErr);
+                                cleanup();
+                            });
+                        });
+                    }
+                } else if (detectedType === 'audio') {
+                    // For audio, wait for it to end
+                    element.addEventListener('loadedmetadata', () => {
+                        duration = element.duration * 1000;
+                    }, { signal, once: true });
+
+                    element.addEventListener('ended', cleanup, { signal, once: true });
+
+                    element.addEventListener('error', (e) => {
+                        console.error('Audio error:', e);
+                        updateDebug(`Audio error: ${url}`);
+                        cleanup();
+                    }, { signal, once: true });
+                } else if (detectedType === 'gif' || detectedType === 'image') {
+                    // For images/GIFs, show for a fixed duration
+                    element.addEventListener('load', () => {
+                        updateDebug(`Image loaded: ${url}`);
+                    }, { signal, once: true });
+                    
+                    element.addEventListener('error', (e) => {
+                        console.error('Image error:', e);
+                        updateDebug(`Image error: ${url}`);
+                        cleanup();
+                    }, { signal, once: true });
+
+                    // Remove after duration
+                    setTimeout(cleanup, duration);
+                } else {
+                    // Fallback: remove after default duration
+                    setTimeout(cleanup, duration);
+                }
+
+                // Safety timeout to prevent stuck animations
+                setTimeout(() => {
+                    if (container.contains(wrapper)) {
+                        console.warn(`⚠️ Animation exceeded max duration: ${url}`);
+                        cleanup();
+                    }
+                }, MAX_ANIMATION_DURATION);
+            });
+        }
+
+        function fadeOutAndRemove(element, callback) {
+            element.classList.remove('fade-in');
+            element.classList.add('fade-out');
+
+            setTimeout(() => {
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+                if (callback) callback();
+            }, 500); // Match animation duration
+        }
+
+        // Test function (can be called from console)
+        window.testAnimation = function(url, volume = 1.0) {
+            queueAnimation({
+                url: url,
+                volume: volume,
+                type: 'test',
+                eventType: 'test',
+                username: 'TestUser'
+            });
+        };
+
+        updateDebug('Animation overlay ready');
+    </script>
+</body>
+</html>

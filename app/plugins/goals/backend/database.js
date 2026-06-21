@@ -197,10 +197,12 @@ class GoalsDatabase {
             firework_hud_label = null,
             firework_progress_enabled = 1,
             firework_progress_milestones = '25,50,75',
+            theme = null,
             theme_json = null,
             overlay_width = 500,
             overlay_height = 100
         } = goalData;
+        const serializedTheme = theme_json || (theme ? JSON.stringify(theme) : null);
 
         const stmt = this.db.prepare(`
             INSERT INTO goals (
@@ -222,7 +224,7 @@ class GoalsDatabase {
             firework_enabled ? 1 : 0, firework_intensity, firework_duration,
             firework_theme, firework_encounter_mode, firework_quality_profile,
             firework_hud_label, firework_progress_enabled ? 1 : 0, firework_progress_milestones,
-            theme_json,
+            serializedTheme,
             overlay_width, overlay_height
         );
 

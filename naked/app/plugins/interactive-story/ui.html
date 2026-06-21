@@ -1,0 +1,3361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Story Generator - Admin Panel</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--color-bg-primary, #0f172a);
+      color: var(--color-text-primary, #f8fafc);
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .page-header {
+      background: var(--color-bg-card, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      box-shadow: var(--shadow-md, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted, #94a3b8);
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .page-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .page-subtitle {
+      color: var(--color-text-secondary, #cbd5e1);
+      margin-top: 6px;
+    }
+
+    .page-meta {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: var(--color-bg-secondary, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      padding: 8px 12px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--color-text-secondary, #cbd5e1);
+    }
+
+    .theme-chip {
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--glow-primary, 0 0 20px rgba(59, 130, 246, 0.25));
+    }
+
+    .theme-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .language-label {
+      color: var(--color-text-secondary, #cbd5e1);
+      font-weight: 600;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.75rem; }
+    h3 { font-size: 1.5rem; }
+    h4 { font-size: 1.25rem; }
+    h5 { font-size: 1.1rem; }
+    h6 { font-size: 1rem; }
+
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .mt-3 { margin-top: 1rem; }
+    .mt-4 { margin-top: 1.5rem; }
+    .d-flex { display: flex; }
+    .d-block { display: block; }
+    .d-inline-block { display: inline-block; }
+    .justify-content-between { justify-content: space-between; }
+    .align-items-center { align-items: center; }
+    .float-end { margin-left: auto; }
+    .text-muted { color: var(--color-text-muted, #94a3b8); }
+    .w-100 { width: 100%; }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 0;
+    }
+
+    .col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-8, .col-md-12 {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .card {
+      background: var(--color-bg-card, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+      color: #fff;
+      font-weight: 700;
+      padding: 14px 18px;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .input-group input {
+      flex: 1;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .status-item {
+      background: var(--color-bg-secondary, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .status-label {
+      color: var(--color-text-muted, #94a3b8);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .status-value {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .form-control, .form-select {
+      display: block;
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      background: var(--color-input-bg, #1e293b);
+      color: var(--color-input-text, #f8fafc);
+      border: 1px solid var(--color-input-border, #334155);
+      border-radius: 8px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--color-input-focus, #3b82f6);
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .form-select {
+      appearance: none;
+      padding-right: 2.25rem;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 14px 12px;
+    }
+
+    .form-select-compact {
+      width: auto;
+      min-width: 160px;
+    }
+
+    textarea.form-control {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-check {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-check-input {
+      width: 1.25em;
+      height: 1.25em;
+      margin-right: 0.5em;
+      vertical-align: middle;
+      background-color: var(--color-input-bg, #1e293b);
+      border: 1px solid var(--color-input-border, #334155);
+      border-radius: 0.35em;
+      cursor: pointer;
+    }
+
+    .form-check-input:checked {
+      background-color: var(--brand-primary, #12a116);
+      border-color: var(--brand-primary, #12a116);
+    }
+
+    .form-check-label {
+      cursor: pointer;
+      color: var(--color-text-secondary, #cbd5e1);
+      font-weight: 500;
+    }
+
+    .form-text {
+      display: block;
+      margin-top: 6px;
+      color: var(--color-text-muted, #94a3b8);
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      padding: 0.65rem 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      text-decoration: none;
+      background: var(--color-bg-secondary, #1e293b);
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+      color: #fff;
+      box-shadow: var(--glow-primary, 0 0 20px rgba(59, 130, 246, 0.35));
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      box-shadow: var(--glow-success, 0 0 18px rgba(16, 185, 129, 0.35));
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: var(--color-btn-secondary-bg, #334155);
+      color: var(--color-btn-secondary-text, #f8fafc);
+    }
+
+    .btn-outline-primary {
+      background: transparent;
+      color: var(--color-text-primary, #f8fafc);
+      border-color: var(--color-border, #334155);
+    }
+
+    .btn-outline-light {
+      background: transparent;
+      color: var(--color-text-primary, #f8fafc);
+      border-color: var(--color-border, #334155);
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.9rem;
+      border-radius: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35em 0.65em;
+      font-size: 0.85em;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: baseline;
+      border-radius: 0.35rem;
+      background: var(--color-badge-bg, #334155);
+      color: var(--color-badge-text, #cbd5e1);
+    }
+
+    .bg-success { background-color: #22c55e; color: #0b2616; }
+    .bg-warning { background-color: #f59e0b; color: #311b02; }
+    .bg-danger { background-color: #ef4444; color: #3b0c0c; }
+    .bg-info { background-color: #06b6d4; color: #022c35; }
+    .bg-primary { background-color: var(--brand-primary, #12a116); color: #041006; }
+    .bg-secondary { background-color: #64748b; color: #0f172a; }
+
+    .alert {
+      padding: 0.9rem 1.1rem;
+      border-radius: 10px;
+      border: 1px solid var(--color-border, #334155);
+      background: var(--color-bg-secondary, #1e293b);
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .alert-info {
+      border-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.12);
+      color: #38bdf8;
+    }
+
+    .alert-success {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+    }
+
+    .alert-danger {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-active {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    .status-inactive {
+      background: #94a3b8;
+    }
+
+    .chapter-preview {
+      background: var(--color-bg-secondary, #1e293b);
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid var(--color-border, #334155);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .choice-item {
+      background: var(--color-bg-secondary, #1e293b);
+      padding: 10px;
+      margin: 5px 0;
+      border-left: 3px solid var(--brand-primary, #12a116);
+      border-radius: 8px;
+    }
+
+    .memory-tag {
+      display: inline-block;
+      background: var(--color-bg-secondary, #1e293b);
+      padding: 6px 12px;
+      margin: 3px;
+      border-radius: 12px;
+      font-size: 0.9em;
+      border: 1px solid var(--color-border, #334155);
+    }
+
+    #storyImage {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
+    }
+
+    .theme-card {
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 10px;
+      background: var(--color-bg-secondary, #1e293b);
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+    }
+
+    .theme-card.selected {
+      border: 2px solid var(--brand-primary, #12a116);
+      box-shadow: var(--glow-brand, 0 0 20px rgba(18, 161, 22, 0.3));
+    }
+
+    .progress {
+      width: 100%;
+      height: 8px;
+      background: var(--color-bg-secondary, #1e293b);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--color-border, #334155);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+    }
+
+    .input-group button {
+      height: 100%;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      color: var(--color-text-secondary, #cbd5e1);
+      font-weight: 700;
+    }
+    
+    /* Collapsible Section Styles */
+    .config-section {
+      background: var(--color-bg-secondary, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    
+    .config-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+    
+    .config-section-header:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    }
+    
+    .config-section-header h5 {
+      margin: 0;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .config-section-toggle {
+      font-size: 0.9em;
+      color: var(--color-text-muted, #94a3b8);
+      transition: transform 0.3s ease;
+    }
+    
+    .config-section.collapsed .config-section-toggle {
+      transform: rotate(-90deg);
+    }
+    
+    .config-section-content {
+      padding: 16px 18px;
+      transition: max-height 0.3s ease-out, padding 0.3s ease-out, opacity 0.2s ease;
+      max-height: 2000px;
+      opacity: 1;
+    }
+    
+    .config-section.collapsed .config-section-content {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+    
+    /* Quick Start Card */
+    .quick-start-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .quick-start-card h4 {
+      color: #10b981;
+      margin-bottom: 12px;
+    }
+    
+    .quick-start-steps {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .quick-start-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+      min-width: 200px;
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+    
+    .step-number {
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    
+    .step-content {
+      flex: 1;
+    }
+    
+    .step-content strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    
+    .step-content small {
+      color: var(--color-text-muted, #94a3b8);
+    }
+    
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+      padding: 10px 18px;
+      background: var(--color-bg-secondary, #1e293b);
+      border: 1px solid var(--color-border, #334155);
+      border-radius: 8px;
+      color: var(--color-text-secondary, #cbd5e1);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .tab-btn:hover {
+      background: var(--color-bg-card, #1e293b);
+      border-color: var(--color-text-muted, #94a3b8);
+    }
+    
+    .tab-btn.active {
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+      border-color: transparent;
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Improved Grid Layouts */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    
+    .form-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .form-grid-2, .form-grid-3, .form-grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .form-grid-3, .form-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .page-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container app-shell">
+    <header class="page-header">
+      <div>
+        <div class="eyebrow" data-i18n-key="hero.eyebrow">AI Storytelling Control</div>
+        <h1 class="page-title" data-i18n-key="hero.title">📖 Interactive Story Generator</h1>
+        <p class="page-subtitle" data-i18n-key="hero.subtitle">
+          Cinematic stories with live voting, TTS narration, and OBS overlays.
+        </p>
+        <div class="page-meta">
+          <span class="pill" id="statusPill" data-i18n-key="hero.status.ready">Ready for your next stream</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="theme-chip" id="themeBadge">
+          <span class="theme-dot"></span>
+          <span data-i18n-key="hero.theme_synced">Theme synced with dashboard</span>
+        </div>
+        <label class="language-label" for="languageSelect" data-i18n-key="hero.language_label">Language</label>
+        <select id="languageSelect" class="form-select form-select-compact">
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- Status Card -->
+    <div class="card">
+      <div class="card-header" data-i18n-key="cards.status.title">
+        ℹ️ Status
+      </div>
+      <div class="card-body">
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label" data-i18n-key="cards.status.plugin">Plugin Status</span>
+            <span class="status-value" id="pluginStatus">
+              <span class="status-indicator status-inactive"></span>
+              <span data-i18n-key="cards.status.loading">Loading…</span>
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-label" data-i18n-key="cards.status.session">Active Session</span>
+            <span class="status-value" id="sessionStatus" data-i18n-key="cards.status.none">None</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label" data-i18n-key="cards.status.chapter">Current Chapter</span>
+            <span class="status-value" id="chapterStatus">-</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label" data-i18n-key="cards.status.voting">Voting</span>
+            <span class="status-value" id="votingStatus" data-i18n-key="cards.status.inactive">Inactive</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration Card -->
+    <div class="card">
+      <div class="card-header" data-i18n-key="cards.configuration.title">
+        ⚙️ Configuration
+      </div>
+      <div class="card-body">
+        <!-- Quick Start Guide -->
+        <div class="quick-start-card">
+          <h4>🚀 Quick Start</h4>
+          <div class="quick-start-steps">
+            <div class="quick-start-step">
+              <span class="step-number">1</span>
+              <div class="step-content">
+                <strong>Configure API</strong>
+                <small>Set your OpenAI or SiliconFlow API key in Settings</small>
+              </div>
+            </div>
+            <div class="quick-start-step">
+              <span class="step-number">2</span>
+              <div class="step-content">
+                <strong>Test Connection</strong>
+                <small>Use the Test API Key button below</small>
+              </div>
+            </div>
+            <div class="quick-start-step">
+              <span class="step-number">3</span>
+              <div class="step-content">
+                <strong>Add OBS Overlay</strong>
+                <small>Copy the overlay URL to OBS Browser Source</small>
+              </div>
+            </div>
+            <div class="quick-start-step">
+              <span class="step-number">4</span>
+              <div class="step-content">
+                <strong>Start Story!</strong>
+                <small>Select a theme and click Start Story</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <form id="configForm">
+          <!-- API Status Section -->
+          <div class="config-section">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>🔑 API Configuration</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content">
+              <div class="alert alert-info mb-3" data-i18n-key="cards.configuration.api_info">
+                <strong>ℹ️ API Key Configuration</strong><br>
+                Configure your AI provider API keys in <strong>Settings</strong>:<br>
+                • <strong>OpenAI</strong>: Settings → OpenAI API Configuration<br>
+                • <strong>SiliconFlow</strong>: Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)
+              </div>
+              
+              <div class="mb-3">
+                <button type="button" class="btn btn-primary" id="testApiKeyBtn" data-i18n-key="cards.configuration.test_api_key">
+                  🔍 Test API Key
+                </button>
+                <small class="form-text text-muted ml-2" data-i18n-key="cards.configuration.test_hint">Click to validate your API key</small>
+                <div id="apiKeyTestResult" class="mt-2" style="display: none;"></div>
+              </div>
+              
+              <!-- Provider Selection -->
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.providers.llm">LLM Provider</label>
+                  <select class="form-select" id="llmProvider">
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="siliconflow">SiliconFlow</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.providers.image">Image Provider</label>
+                  <select class="form-select" id="imageProvider">
+                    <option value="openai">OpenAI (DALL-E)</option>
+                    <option value="siliconflow">SiliconFlow</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.providers.tts">TTS Provider</label>
+                  <select class="form-select" id="ttsProvider">
+                    <option value="system">System TTS (LTTH TTS Plugin)</option>
+                  </select>
+                </div>
+              </div>
+              
+              <!-- Model Selection -->
+              <div class="form-grid-2">
+                <div class="mb-3" id="openaiModelGroup">
+                  <label class="form-label" data-i18n-key="cards.configuration.models.openai_llm">OpenAI LLM Model</label>
+                  <select class="form-select" id="openaiModel">
+                    <option value="gpt-4o-mini">GPT-4o Mini (Cost-effective)</option>
+                    <option value="gpt-4o">GPT-4o (Multimodal)</option>
+                    <option value="gpt-4-turbo">GPT-4 Turbo (Fast)</option>
+                    <option value="o1">o1 (Reasoning)</option>
+                  </select>
+                </div>
+                <div class="mb-3" id="siliconflowModelGroup" style="display: none;">
+                  <label class="form-label" data-i18n-key="cards.configuration.models.silicon_llm">SiliconFlow LLM Model</label>
+                  <select class="form-select" id="defaultModel">
+                    <option value="deepseek">DeepSeek V3</option>
+                    <option value="qwen">Qwen 2.5-7B</option>
+                    <option value="llama">Meta-Llama 3.1-8B</option>
+                  </select>
+                </div>
+                <div class="mb-3" id="openaiImageModelGroup">
+                  <label class="form-label" data-i18n-key="cards.configuration.models.openai_image">OpenAI Image Model</label>
+                  <select class="form-select" id="openaiImageModel">
+                    <option value="dall-e-3">DALL-E 3 (High Quality)</option>
+                    <option value="dall-e-2">DALL-E 2 (Cost-efficient)</option>
+                  </select>
+                </div>
+                <div class="mb-3" id="siliconflowImageModelGroup" style="display: none;">
+                  <label class="form-label" data-i18n-key="cards.configuration.models.silicon_image">SiliconFlow Image Model</label>
+                  <select class="form-select" id="defaultImageModel">
+                    <option value="flux-schnell">FLUX.1 Schnell</option>
+                    <option value="z-image-turbo">Z-Image Turbo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- TTS Settings Section -->
+          <div class="config-section">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>🎙️ TTS Voice Configuration</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content" id="systemTtsVoiceGroup">
+              <div class="form-grid-2">
+                <div class="mb-3">
+                  <label class="form-label">TTS Engine</label>
+                  <select class="form-select" id="ttsEngine">
+                    <option value="openai">OpenAI TTS</option>
+                    <option value="tiktok">TikTok TTS (Free)</option>
+                    <option value="google">Google Cloud TTS</option>
+                    <option value="elevenlabs">ElevenLabs TTS</option>
+                    <option value="speechify">Speechify TTS</option>
+                    <option value="siliconflow">SiliconFlow TTS</option>
+                    <option value="fishaudio">Fish.audio TTS</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Voice</label>
+                  <select class="form-select" id="ttsVoiceId">
+                    <!-- OpenAI Voices -->
+                    <optgroup label="OpenAI TTS" id="openaiVoices">
+                      <option value="alloy">Alloy (Neutral)</option>
+                      <option value="echo">Echo (Male)</option>
+                      <option value="fable">Fable (British)</option>
+                      <option value="onyx">Onyx (Deep Male)</option>
+                      <option value="nova">Nova (Female)</option>
+                      <option value="shimmer">Shimmer (Soft Female)</option>
+                    </optgroup>
+                    
+                    <!-- TikTok Voices -->
+                    <optgroup label="TikTok TTS" id="tiktokVoices" style="display: none;">
+                      <option value="en_us_001">English US - Female</option>
+                      <option value="en_us_002">English US - Male</option>
+                      <option value="en_us_009">English US - Storyteller</option>
+                      <option value="en_us_010">English US - Narrator</option>
+                    </optgroup>
+                    
+                    <!-- Google Cloud Voices -->
+                    <optgroup label="Google Cloud TTS" id="googleVoices" style="display: none;">
+                      <option value="en-US-Neural2-A">US English - Female (Neural)</option>
+                      <option value="en-US-Neural2-D">US English - Male (Neural)</option>
+                      <option value="en-GB-Neural2-A">UK English - Female (Neural)</option>
+                      <option value="en-GB-Neural2-B">UK English - Male (Neural)</option>
+                      <option value="de-DE-Neural2-A">German - Female (Neural)</option>
+                      <option value="de-DE-Neural2-B">German - Male (Neural)</option>
+                    </optgroup>
+                    
+                    <!-- ElevenLabs Voices -->
+                    <optgroup label="ElevenLabs TTS" id="elevenlabsVoices" style="display: none;">
+                      <option value="adam">Adam (Deep Male)</option>
+                      <option value="bella">Bella (Soft Female)</option>
+                      <option value="josh">Josh (Deep Male 2)</option>
+                      <option value="rachel">Rachel (Calm Female)</option>
+                    </optgroup>
+                    
+                    <!-- Speechify Voices -->
+                    <optgroup label="Speechify TTS" id="speechifyVoices" style="display: none;">
+                      <option value="henry">Henry (Deep Male)</option>
+                      <option value="mrbeast">MrBeast</option>
+                    </optgroup>
+                    
+                    <!-- SiliconFlow/FishSpeech Voices -->
+                    <optgroup label="SiliconFlow/FishSpeech" id="siliconflowVoices" style="display: none;">
+                      <option value="narrator">Narrator (Default)</option>
+                      <option value="male">Male Voice</option>
+                      <option value="female">Female Voice</option>
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" id="autoGenerateTTS">
+                <label class="form-check-label" for="autoGenerateTTS">
+                  <strong data-i18n-key="cards.configuration.voting.auto_tts">Enable TTS Narration</strong>
+                </label>
+                <small class="d-block text-muted">Automatically narrate chapters with TTS. Disable for self-reading mode.</small>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Story Settings Section -->
+          <div class="config-section">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>📝 Story & Voting Settings</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content">
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.story.language">Story Language</label>
+                  <select class="form-select" id="storyLanguage">
+                    <option value="German">Deutsch (German)</option>
+                    <option value="English">English</option>
+                    <option value="Spanish">Español (Spanish)</option>
+                    <option value="French">Français (French)</option>
+                    <option value="Italian">Italiano (Italian)</option>
+                    <option value="Portuguese">Português (Portuguese)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.voting.max_chapters">Max Chapters</label>
+                  <input type="number" class="form-control" id="maxChapters" min="3" max="20" value="5">
+                  <small class="text-muted">Story ends after this many chapters</small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.voting.choices">Number of Choices</label>
+                  <input type="number" class="form-control" id="numChoices" min="3" max="6" value="4">
+                </div>
+              </div>
+              
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.voting.duration">Voting Duration (seconds)</label>
+                  <input type="number" class="form-control" id="votingDuration" min="15" max="300" value="60">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.voting.pattern">Vote Keyword Pattern</label>
+                  <select class="form-select" id="voteKeywordPattern">
+                    <option value="!letter">!a, !b, !c, !d</option>
+                    <option value="letter">A, B, C, D</option>
+                    <option value="number">1, 2, 3, 4</option>
+                    <option value="antwort">Antwort 1, 2, 3...</option>
+                    <option value="answer">Answer 1, 2, 3...</option>
+                  </select>
+                </div>
+                <div class="mb-3 form-check" style="margin-top: 35px;">
+                  <input type="checkbox" class="form-check-input" id="autoGenerateImages">
+                  <label class="form-check-label" for="autoGenerateImages">
+                    <span data-i18n-key="cards.configuration.voting.auto_images">Auto-generate Images</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" id="caseSensitiveVoting">
+                <label class="form-check-label" for="caseSensitiveVoting">
+                  <strong data-i18n-key="cards.configuration.voting.case_sensitive">Case-Sensitive Voting</strong>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Overlay Settings Section -->
+          <div class="config-section collapsed">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>🎨 Overlay Customization</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content">
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.orientation">Orientation</label>
+                  <select class="form-select" id="overlayOrientation">
+                    <option value="landscape">Landscape (Horizontal)</option>
+                    <option value="portrait">Portrait (Vertical)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.resolution">Resolution</label>
+                  <select class="form-select" id="overlayResolution">
+                    <option value="1920x1080">1920x1080 (Full HD)</option>
+                    <option value="1280x720">1280x720 (HD)</option>
+                    <option value="2560x1440">2560x1440 (2K)</option>
+                    <option value="1080x1920">1080x1920 (Portrait Full HD)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.display_mode">Display Mode</label>
+                  <select class="form-select" id="overlayDisplayMode">
+                    <option value="full">Full Chapter</option>
+                    <option value="sentence">Sentence-by-Sentence</option>
+                    <option value="scroll">Star Wars Scroll (TTS Synced)</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.font_family">Font Family</label>
+                  <select class="form-select" id="overlayFontFamily">
+                    <option value="Segoe UI, Tahoma, Geneva, Verdana, sans-serif">Segoe UI (Default)</option>
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.text_size">Text Size (em)</label>
+                  <input type="number" class="form-control" id="overlayFontSize" min="0.5" max="3" step="0.1" value="1.3">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.title_size">Title Size (em)</label>
+                  <input type="number" class="form-control" id="overlayTitleFontSize" min="1" max="5" step="0.1" value="2.5">
+                </div>
+              </div>
+              
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.text_color">Text Color</label>
+                  <input type="color" class="form-control" id="overlayTextColor" value="#ffffff">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" data-i18n-key="cards.configuration.overlay.title_color">Title Color</label>
+                  <input type="color" class="form-control" id="overlayTitleColor" value="#e94560">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Voting Highlight Color</label>
+                  <input type="color" class="form-control" id="overlayVotingColor" value="#e94560">
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Background Gradient</label>
+                <select class="form-select" id="overlayBackgroundGradient">
+                  <option value="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)">Dark Bottom Fade (Default)</option>
+                  <option value="linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%)">Dark Full</option>
+                  <option value="linear-gradient(135deg, rgba(15,52,96,0.5) 0%, rgba(0,0,0,0.9) 100%)">Blue Gradient</option>
+                  <option value="rgba(0,0,0,0)">Transparent</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Timing Settings Section -->
+          <div class="config-section collapsed">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>⏱️ Timing Configuration</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content">
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label">Title Image Preview (seconds)</label>
+                  <input type="number" class="form-control" id="titlePreviewDelay" min="1" max="30" step="0.5" value="5">
+                  <small class="text-muted">Time to show title image before narration</small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Min Title Read Time (seconds)</label>
+                  <input type="number" class="form-control" id="minTitleReadTime" min="0.5" max="10" step="0.5" value="3">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Content Start Buffer (seconds)</label>
+                  <input type="number" class="form-control" id="contentStartBuffer" min="0" max="5" step="0.1" value="0.5">
+                </div>
+              </div>
+              
+              <div class="form-grid-3">
+                <div class="mb-3">
+                  <label class="form-label">Voting Results Display (seconds)</label>
+                  <input type="number" class="form-control" id="votingResultsDuration" min="2" max="30" step="0.5" value="5">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Chapter Transition Delay (seconds)</label>
+                  <input type="number" class="form-control" id="chapterTransitionDelay" min="0" max="5" step="0.1" value="1">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Final Chapter Auto-End (seconds)</label>
+                  <input type="number" class="form-control" id="finalChapterDelay" min="3" max="60" step="1" value="5">
+                </div>
+              </div>
+              
+              <div class="form-grid-2">
+                <div class="mb-3">
+                  <label class="form-label">Generating Animation</label>
+                  <select class="form-select" id="generatingAnimationMode">
+                    <option value="default">Default Spinner</option>
+                    <option value="custom">Custom GIF/MP4</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Custom Animation URL</label>
+                  <input type="text" class="form-control" id="generatingAnimationUrl" placeholder="https://example.com/loop.mp4">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Advanced Settings Section -->
+          <div class="config-section collapsed">
+            <div class="config-section-header" onclick="toggleConfigSection(this)">
+              <h5>⚙️ Advanced Settings</h5>
+              <span class="config-section-toggle">▼</span>
+            </div>
+            <div class="config-section-content">
+              <div class="form-grid-3">
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="offlineMode">
+                  <label class="form-check-label" for="offlineMode">
+                    <strong data-i18n-key="cards.configuration.voting.offline_mode">Offline/Test Mode</strong>
+                  </label>
+                  <small class="d-block text-muted">Admin chooses path (no live chat)</small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="manualMode">
+                  <label class="form-check-label" for="manualMode">
+                    <strong data-i18n-key="cards.configuration.voting.manual_mode">Manual Mode</strong>
+                  </label>
+                  <small class="d-block text-muted">Manually advance each round</small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="manualModeTTS">
+                  <label class="form-check-label" for="manualModeTTS">
+                    <strong data-i18n-key="cards.configuration.voting.manual_tts">Use TTS in Manual Mode</strong>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="form-grid-2">
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="debugLogging">
+                  <label class="form-check-label" for="debugLogging">
+                    <strong data-i18n-key="cards.configuration.voting.debug_logging">Debug Logging</strong>
+                  </label>
+                  <small class="d-block text-muted">Enable detailed logging & API diagnostics</small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="apiLogging">
+                  <label class="form-check-label" for="apiLogging">
+                    <strong data-i18n-key="cards.configuration.voting.api_logging">API Request Logging</strong>
+                  </label>
+                  <small class="d-block text-muted">Show detailed API requests (debug only)</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" data-i18n-key="cards.configuration.save">
+            💾 Save Configuration
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- OBS Overlay Preview Card -->
+    <div class="card">
+      <div class="card-header" data-i18n-key="cards.overlay.title">
+        📺 OBS Overlay
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label" data-i18n-key="cards.overlay.url_label">Overlay URL for OBS Browser Source:</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="overlayUrl" readonly value="">
+            <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="cards.overlay.copy">📋 Copy</button>
+            <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="cards.overlay.open">🔗 Open</button>
+          </div>
+          <small class="text-muted" data-i18n-key="cards.overlay.hint">
+            Add this URL as a Browser Source in OBS (Recommended size: 1920x1080)
+          </small>
+        </div>
+        
+        <div class="mb-2">
+          <button class="btn btn-secondary btn-sm" id="toggleOverlayPreviewBtn">
+            <span id="previewToggleIcon">▶️</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
+          </button>
+        </div>
+        
+        <div id="overlayPreviewContainer" style="display: none;">
+          <div style="border: 2px solid var(--color-border, #334155); border-radius: 8px; overflow: hidden; background: #000;">
+            <iframe 
+              id="overlayPreview" 
+              src="" 
+              style="width: 100%; height: 540px; border: none; display: block;"
+              title="OBS Overlay Preview"
+            ></iframe>
+          </div>
+          <small class="text-muted d-block mt-2" data-i18n-key="cards.overlay.preview_hint">
+            ℹ️ This preview is rendered at 50% of the 1920x1080 overlay view.
+          </small>
+          
+          <!-- Preview Test Buttons -->
+          <div class="mt-3">
+            <h6 class="mb-2">🧪 Test Overlay Display</h6>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-primary" id="testTitlePreviewBtn">
+                Test Title Display
+              </button>
+              <button class="btn btn-sm btn-outline-primary" id="testChapterPreviewBtn">
+                Test Chapter Display
+              </button>
+              <button class="btn btn-sm btn-outline-primary" id="testChoicesPreviewBtn">
+                Test Voting Choices
+              </button>
+              <button class="btn btn-sm btn-outline-danger" id="clearOverlayPreviewBtn">
+                Clear Overlay
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">
+              ℹ️ These buttons send test data to the overlay for preview purposes
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Story Controls Card -->
+    <div class="card" id="storyControls">
+      <div class="card-header" data-i18n-key="cards.story_controls.title">
+        ▶️ Story Controls
+      </div>
+      <div class="card-body">
+        <div id="startStorySection">
+          <h5 data-i18n-key="cards.story_controls.start_new">Start New Story</h5>
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label" data-i18n-key="cards.story_controls.select_theme">Select Theme:</label>
+              <div class="row" id="themeSelector">
+                <!-- Themes will be populated here -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label" data-i18n-key="cards.story_controls.custom_outline">Custom Outline (optional)</label>
+            <textarea class="form-control" id="storyOutline" rows="3" placeholder="Leave blank for auto-generated outline" data-i18n-target="placeholder" data-i18n-key="cards.story_controls.custom_outline_placeholder"></textarea>
+          </div>
+
+          <button class="btn btn-success btn-lg" id="startStoryBtn" data-i18n-key="cards.story_controls.start_btn">
+            🚀 Start Story
+          </button>
+        </div>
+
+        <div id="activeStorySection" style="display: none;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 data-i18n-key="cards.story_controls.active_story">Active Story</h5>
+            <button class="btn btn-danger" id="endStoryBtn" data-i18n-key="cards.story_controls.end_story">
+              ⏹️ End Story
+            </button>
+          </div>
+          
+          <div id="currentChapterDisplay"></div>
+          
+          <!-- Manual Mode Controls -->
+          <div id="manualModeSection" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+              🎮 <strong data-i18n-key="cards.story_controls.manual_title">Manual Mode:</strong> <span data-i18n-key="cards.story_controls.manual_body">Manually advance through each round</span>
+            </div>
+            
+            <div class="mb-3">
+              <h6 data-i18n-key="cards.story_controls.manual_current_round">Current Round:</h6>
+              <div id="manualModeChapterInfo" class="p-3 bg-dark rounded">
+                <div><strong data-i18n-key="cards.story_controls.manual_chapter">Chapter:</strong> <span id="manualChapterNumber">-</span></div>
+                <div><strong data-i18n-key="cards.story_controls.manual_voting_active">Voting Active:</strong> <span id="manualVotingStatus">-</span></div>
+              </div>
+            </div>
+            
+            <div id="manualModeVoting" style="display: none;">
+              <h6 data-i18n-key="cards.story_controls.manual_voting_results">Current Voting Results:</h6>
+              <div id="manualVotingResults" class="mb-3"></div>
+            </div>
+            
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary" id="manualAdvanceBtn" disabled data-i18n-key="cards.story_controls.manual_advance">
+                ⏭️ Advance to Next Round
+              </button>
+              <button class="btn btn-secondary" id="manualShowResultsBtn" data-i18n-key="cards.story_controls.manual_show_results">
+                📊 Show Voting Results
+              </button>
+            </div>
+          </div>
+          
+          <!-- Admin Choice Selection (Offline Mode) -->
+          <div id="adminChoiceSection" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+              👤 <strong data-i18n-key="cards.story_controls.offline_title">Offline/Test Mode:</strong> <span data-i18n-key="cards.story_controls.offline_body">Choose the next path manually</span>
+            </div>
+            <div id="adminChoiceButtons"></div>
+          </div>
+          
+          <div class="mt-3">
+            <button class="btn btn-primary" id="forceVoteEndBtn" style="display: none;" data-i18n-key="cards.story_controls.force_vote">
+              ✓ Force Vote End
+            </button>
+            <button class="btn btn-secondary" id="regenerateImageBtn" data-i18n-key="cards.story_controls.regenerate_image">
+              🖼️ Regenerate Image
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Debug Logging Card -->
+    <div class="card" id="debugLogCard" style="display: none;">
+      <div class="card-header" data-i18n-key="cards.debug.title">
+        🐛 Debug Logs
+        <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="cards.debug.clear">
+          🗑️ Clear
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="debugLogDisplay" style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
+          <div class="text-muted" data-i18n-key="cards.debug.empty">No logs available yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Story Memory Card -->
+    <div class="card" id="memoryCard" style="display: none;">
+      <div class="card-header" data-i18n-key="cards.memory.title">
+        🧠 Story Memory / Lore Database
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-4">
+            <h6 data-i18n-key="cards.memory.characters">👥 Characters</h6>
+            <div id="charactersList"></div>
+          </div>
+          <div class="col-md-4">
+            <h6 data-i18n-key="cards.memory.locations">📍 Locations</h6>
+            <div id="locationsList"></div>
+          </div>
+          <div class="col-md-4">
+            <h6 data-i18n-key="cards.memory.items">💎 Items</h6>
+            <div id="itemsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Voters Card -->
+    <div class="card" id="topVotersCard" style="display: none;">
+      <div class="card-header" data-i18n-key="cards.voters.title">
+        🏆 Top Voters
+      </div>
+      <div class="card-body">
+        <div id="topVotersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- i18n client is loaded first so the inline translations can rely on it safely -->
+  <script src="/js/i18n-client.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    /**
+     * Toggle collapsible configuration section
+     * IMPORTANT: This function must be defined early in the script
+     * because it's referenced by inline onclick handlers in the HTML
+     * Explicitly attached to window to ensure global accessibility
+     */
+    window.toggleConfigSection = function(headerElement) {
+      if (!headerElement) {
+        console.error('toggleConfigSection called with null element');
+        return;
+      }
+      const section = headerElement.parentElement;
+      if (!section) {
+        console.error('toggleConfigSection: parent element not found');
+        return;
+      }
+      section.classList.toggle('collapsed');
+      console.log('Section toggled:', section.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+    };
+
+    const pluginTranslations = {
+      en: {
+        hero: {
+          eyebrow: 'AI Storytelling Control',
+          title: '📖 Interactive Story Generator',
+          subtitle: 'Cinematic stories with live voting, TTS narration, and OBS overlays.',
+          status: { ready: 'Ready for your next stream' },
+          theme_synced: 'Theme synced with dashboard',
+          language_label: 'Language',
+          theme_name: { night: 'Night', day: 'Day', contrast: 'High Contrast' }
+        },
+        cards: {
+          status: {
+            title: 'ℹ️ Status',
+            plugin: 'Plugin Status',
+            loading: 'Loading…',
+            session: 'Active Session',
+            none: 'None',
+            chapter: 'Current Chapter',
+            voting: 'Voting',
+            inactive: 'Inactive',
+            configured: 'Configured',
+            not_configured: 'Not configured',
+            active_time: 'Active ({{seconds}}s)',
+            chapter_prefix: 'Chapter'
+          },
+          configuration: {
+            title: '⚙️ Configuration',
+            api_info: '<strong>ℹ️ API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br>• <strong>OpenAI</strong>: Settings → OpenAI API Configuration<br>• <strong>SiliconFlow</strong>: Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)',
+            test_api_key: '🔍 Test API Key',
+            test_hint: 'Click to validate your API key',
+            testing: '⏳ Testing...',
+            providers: {
+              title: '🤖 AI Provider Selection',
+              llm: 'LLM Provider',
+              image: 'Image Provider',
+              tts: 'TTS Provider'
+            },
+            models: {
+              title: '🎯 Model Selection',
+              openai_llm: 'OpenAI LLM Model',
+              openai_hint: 'GPT-5.2 is OpenAI\'s most intelligent model with improved instruction following and multimodality.',
+              silicon_llm: 'SiliconFlow LLM Model',
+              openai_image: 'OpenAI Image Model',
+              silicon_image: 'SiliconFlow Image Model'
+            },
+            overlay: {
+              title: '🎨 Overlay Customization',
+              orientation: 'Orientation',
+              resolution: 'Resolution',
+              display_mode: 'Display Mode',
+              display_hint: 'How chapter text is displayed. Scroll mode animates like Star Wars opening and syncs with TTS narration.',
+              font_family: 'Font Family',
+              text_size: 'Text Size (em)',
+              title_size: 'Title Size (em)',
+              text_color: 'Text Color',
+              title_color: 'Title Color'
+            },
+            story: {
+              title: '📝 Story Generation Settings',
+              language: 'Story Language',
+              language_hint: 'Language for story generation and narration'
+            },
+            voting: {
+              title: '⚙️ Voting & Generation Settings',
+              duration: 'Voting Duration (seconds)',
+              choices: 'Number of Choices',
+              max_chapters: 'Max Chapters (Rounds)',
+              max_hint: 'Story ends after this many chapters',
+              auto_images: 'Auto-generate Images',
+              pattern: 'Vote Keyword Pattern',
+              pattern_hint: 'How viewers vote in chat',
+              auto_tts: 'Auto-generate TTS',
+              case_sensitive: 'Case-Sensitive Voting',
+              offline_mode: 'Offline/Test Mode',
+              offline_hint: 'Admin chooses path (no live chat required)',
+              manual_mode: 'Manual Mode',
+              manual_hint: 'Manually advance each round (no auto-progression)',
+              manual_tts: 'Use TTS in Manual Mode',
+              manual_tts_hint: 'Enable TTS when using manual mode',
+              debug_logging: 'Debug Logging',
+              debug_hint: 'Enable detailed logging & API diagnostics',
+              api_logging: 'API Request Logging',
+              api_hint: 'Show detailed API requests (debug only)'
+            },
+            save: '💾 Save Configuration',
+            generating: '⏳ Generating...'
+          },
+          overlay: {
+            title: '📺 OBS Overlay',
+            url_label: 'Overlay URL for OBS Browser Source:',
+            copy: '📋 Copy',
+            open: '🔗 Open',
+            hint: 'Add this URL as a Browser Source in OBS (Recommended size: 1920x1080)',
+            preview: {
+              show: 'Show preview',
+              hide: 'Hide preview'
+            },
+            preview_hint: 'ℹ️ This preview is rendered at 50% of the 1920x1080 overlay view.'
+          },
+          story_controls: {
+            title: '▶️ Story Controls',
+            start_new: 'Start New Story',
+            select_theme: 'Select Theme:',
+            custom_outline: 'Custom Outline (optional)',
+            custom_outline_placeholder: 'Leave blank for auto-generated outline',
+            start_btn: '🚀 Start Story',
+            active_story: 'Active Story',
+            end_story: '⏹️ End Story',
+            offline_title: 'Offline/Test Mode:',
+            offline_body: 'Choose the next path manually',
+            manual_title: 'Manual Mode:',
+            manual_body: 'Manually advance through each round',
+            manual_current_round: 'Current Round:',
+            manual_chapter: 'Chapter:',
+            manual_voting_active: 'Voting Active:',
+            manual_voting_results: 'Current Voting Results:',
+            manual_advance: '⏭️ Advance to Next Round',
+            manual_show_results: '📊 Show Voting Results',
+            force_vote: '✓ Force Vote End',
+            regenerate_image: '🖼️ Regenerate Image',
+            choices_title: 'Choices:',
+            option_label: '➡️ Option {{option}}: {{choice}}',
+            chapter_badge: 'Chapter {{current}} / {{total}}'
+          },
+          debug: {
+            title: '🐛 Debug Logs',
+            clear: '🗑️ Clear',
+            empty: 'No logs available yet'
+          },
+          memory: {
+            title: '🧠 Story Memory / Lore Database',
+            characters: '👥 Characters',
+            locations: '📍 Locations',
+            items: '💎 Items'
+          },
+          voters: {
+            title: '🏆 Top Voters',
+            votes: '{{count}} votes'
+          }
+        },
+        alerts: {
+          overlay_copied: '✅ Overlay URL copied!',
+          overlay_copy_failed: '⚠️ Copy failed. Please select the text and press Ctrl+C / Cmd+C.',
+          overlay_missing: '❌ No URL available. Please reload the page.',
+          overlay_blocked: '⚠️ Popup was blocked! Allow popups or open manually:\n{{url}}',
+          overlay_open_error: '❌ Error opening overlay. Please open manually:\n{{url}}',
+          ui_missing: 'Error: UI elements not found. Please reload the page.',
+          admin_choice_error: 'Error: {{message}}',
+          config_saved: 'Configuration saved successfully!',
+          config_save_error: 'Error saving configuration: {{message}}',
+          theme_required: 'Please select a theme first!',
+          story_start_error: 'Error starting story: {{message}}',
+          story_end_error: 'Error ending story: {{message}}',
+          story_error: 'Error: {{message}}',
+          api_test_error: 'Error testing API key'
+        },
+        prompts: {
+          confirm_choice: 'Are you sure you want to pick option {{option}}?',
+          confirm_end_story: 'Are you sure you want to end the current story?'
+        }
+      },
+      de: {
+        hero: {
+          eyebrow: 'AI Storytelling Steuerung',
+          title: '📖 Interactive Story Generator',
+          subtitle: 'Cinematische Stories mit Live-Voting, TTS und OBS-Overlays.',
+          status: { ready: 'Bereit für deinen nächsten Stream' },
+          theme_synced: 'Design mit Dashboard synchronisiert',
+          language_label: 'Sprache',
+          theme_name: { night: 'Nacht', day: 'Tag', contrast: 'Hoher Kontrast' }
+        },
+        cards: {
+          status: {
+            title: 'ℹ️ Status',
+            plugin: 'Plugin-Status',
+            loading: 'Lade…',
+            session: 'Aktive Session',
+            none: 'Keine',
+            chapter: 'Aktuelles Kapitel',
+            voting: 'Voting',
+            inactive: 'Inaktiv',
+            configured: 'Konfiguriert',
+            not_configured: 'Nicht konfiguriert',
+            active_time: 'Aktiv ({{seconds}}s)',
+            chapter_prefix: 'Kapitel'
+          },
+          configuration: {
+            title: '⚙️ Konfiguration',
+            api_info: '<strong>ℹ️ API-Key Konfiguration</strong><br>Konfiguriere deine KI-Provider-Schlüssel in <strong>Einstellungen</strong>:<br>• <strong>OpenAI</strong>: Einstellungen → OpenAI API Konfiguration<br>• <strong>SiliconFlow</strong>: Einstellungen → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)',
+            test_api_key: '🔍 API-Key testen',
+            test_hint: 'Klicke, um deinen API-Key zu prüfen',
+            testing: '⏳ Test läuft...',
+            providers: {
+              title: '🤖 KI-Provider Auswahl',
+              llm: 'LLM-Provider',
+              image: 'Bild-Provider',
+              tts: 'TTS-Provider'
+            },
+            models: {
+              title: '🎯 Modellauswahl',
+              openai_llm: 'OpenAI LLM Modell',
+              openai_hint: 'GPT-5.2 ist das intelligenteste OpenAI-Modell mit besserem Befolgen von Anweisungen und Multimodalität.',
+              silicon_llm: 'SiliconFlow LLM Modell',
+              openai_image: 'OpenAI Bildmodell',
+              silicon_image: 'SiliconFlow Bildmodell'
+            },
+            overlay: {
+              title: '🎨 Overlay-Anpassung',
+              orientation: 'Ausrichtung',
+              resolution: 'Auflösung',
+              display_mode: 'Darstellungsmodus',
+              display_hint: 'Wie Kapiteltext angezeigt wird. Scroll-Modus animiert wie der Star-Wars-Intro und synchronisiert sich mit TTS.',
+              font_family: 'Schriftfamilie',
+              text_size: 'Textgröße (em)',
+              title_size: 'Titelgröße (em)',
+              text_color: 'Textfarbe',
+              title_color: 'Titelfarbe'
+            },
+            story: {
+              title: '📝 Story-Generierung',
+              language: 'Story-Sprache',
+              language_hint: 'Sprache für Story und TTS-Erzählung'
+            },
+            voting: {
+              title: '⚙️ Voting & Generierung',
+              duration: 'Voting-Dauer (Sekunden)',
+              choices: 'Anzahl der Optionen',
+              max_chapters: 'Max. Kapitel (Runden)',
+              max_hint: 'Story endet nach dieser Kapitelanzahl',
+              auto_images: 'Bilder automatisch generieren',
+              pattern: 'Voting-Schlüsselwortmuster',
+              pattern_hint: 'Wie Zuschauer im Chat abstimmen',
+              auto_tts: 'TTS automatisch generieren',
+              case_sensitive: 'Groß-/Kleinschreibung beachten',
+              offline_mode: 'Offline/Test-Modus',
+              offline_hint: 'Admin wählt Pfad (kein Live-Chat nötig)',
+              manual_mode: 'Manueller Modus',
+              manual_hint: 'Jede Runde manuell voranschreiten (keine Auto-Progression)',
+              manual_tts: 'TTS im manuellen Modus verwenden',
+              manual_tts_hint: 'TTS aktivieren, wenn manueller Modus verwendet wird',
+              debug_logging: 'Debug-Logging',
+              debug_hint: 'Detailliertes Logging & API-Diagnose aktivieren',
+              api_logging: 'API-Request-Logging',
+              api_hint: 'Detaillierte API-Anfragen anzeigen (nur Debug)'
+            },
+            save: '💾 Konfiguration speichern',
+            generating: '⏳ Generiere...'
+          },
+          overlay: {
+            title: '📺 OBS Overlay',
+            url_label: 'Overlay-URL für OBS Browser Source:',
+            copy: '📋 Kopieren',
+            open: '🔗 Öffnen',
+            hint: 'Füge diese URL in OBS als Browser Source hinzu (Empfohlene Größe: 1920x1080)',
+            preview: {
+              show: 'Vorschau anzeigen',
+              hide: 'Vorschau ausblenden'
+            },
+            preview_hint: 'ℹ️ Diese Vorschau wird in 50% der 1920x1080-Ansicht dargestellt.'
+          },
+          story_controls: {
+            title: '▶️ Story-Steuerung',
+            start_new: 'Neue Story starten',
+            select_theme: 'Thema auswählen:',
+            custom_outline: 'Eigene Outline (optional)',
+            custom_outline_placeholder: 'Leer lassen für automatisch generierte Outline',
+            start_btn: '🚀 Story starten',
+            active_story: 'Aktive Story',
+            end_story: '⏹️ Story beenden',
+            offline_title: 'Offline/Test-Modus:',
+            offline_body: 'Wähle den nächsten Pfad manuell',
+            manual_title: 'Manueller Modus:',
+            manual_body: 'Jede Runde manuell voranschreiten',
+            manual_current_round: 'Aktuelle Runde:',
+            manual_chapter: 'Kapitel:',
+            manual_voting_active: 'Voting aktiv:',
+            manual_voting_results: 'Aktuelle Voting-Ergebnisse:',
+            manual_advance: '⏭️ Zur nächsten Runde',
+            manual_show_results: '📊 Voting-Ergebnisse anzeigen',
+            force_vote: '✓ Voting beenden',
+            regenerate_image: '🖼️ Bild neu generieren',
+            choices_title: 'Optionen:',
+            option_label: '➡️ Option {{option}}: {{choice}}',
+            chapter_badge: 'Kapitel {{current}} / {{total}}'
+          },
+          debug: {
+            title: '🐛 Debug-Logs',
+            clear: '🗑️ Leeren',
+            empty: 'Keine Logs verfügbar'
+          },
+          memory: {
+            title: '🧠 Story-Speicher / Lore-Datenbank',
+            characters: '👥 Charaktere',
+            locations: '📍 Orte',
+            items: '💎 Gegenstände'
+          },
+          voters: {
+            title: '🏆 Top-Voter',
+            votes: '{{count}} Stimmen'
+          }
+        },
+        alerts: {
+          overlay_copied: '✅ Overlay-URL kopiert!',
+          overlay_copy_failed: '⚠️ Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C drücken.',
+          overlay_missing: '❌ Keine URL verfügbar. Bitte lade die Seite neu.',
+          overlay_blocked: '⚠️ Popup wurde blockiert! Erlaube Popups oder öffne manuell:\n{{url}}',
+          overlay_open_error: '❌ Fehler beim Öffnen des Overlays. Bitte manuell öffnen:\n{{url}}',
+          ui_missing: 'Fehler: UI-Elemente nicht gefunden. Bitte Seite neu laden.',
+          admin_choice_error: 'Fehler: {{message}}',
+          config_saved: 'Konfiguration erfolgreich gespeichert!',
+          config_save_error: 'Fehler beim Speichern der Konfiguration: {{message}}',
+          theme_required: 'Bitte zuerst ein Thema auswählen!',
+          story_start_error: 'Fehler beim Starten der Story: {{message}}',
+          story_end_error: 'Fehler beim Beenden der Story: {{message}}',
+          story_error: 'Fehler: {{message}}',
+          api_test_error: 'Fehler beim Testen des API-Keys'
+        },
+        prompts: {
+          confirm_choice: 'Bist du sicher, dass du Option {{option}} wählen möchtest?',
+          confirm_end_story: 'Möchtest du die aktuelle Story wirklich beenden?'
+        }
+      }
+    };
+
+    const isPreviewMode = new URLSearchParams(window.location.search).get('demo') === '1';
+    let currentLocale = 'en';
+
+    // Lightweight nested lookup to avoid pulling an extra dependency
+    const getNested = (obj, pathParts) => pathParts.reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : null), obj);
+
+    const t = (key, params = {}) => {
+      const parts = key.split('.');
+      const localeData = pluginTranslations[currentLocale] || pluginTranslations.en;
+      const fallbackData = pluginTranslations.en;
+      let value = getNested(localeData, parts) || getNested(fallbackData, parts) || key;
+      if (typeof value !== 'string') return key;
+      return value.replace(/\{\{(\w+)\}\}/g, (_, token) => params[token] !== undefined ? params[token] : `{{${token}}}`);
+    };
+
+    function applyTranslations(locale = currentLocale) {
+      currentLocale = locale;
+      document.documentElement.lang = locale;
+      const languageSelect = document.getElementById('languageSelect');
+      if (languageSelect && languageSelect.value !== locale) {
+        languageSelect.value = locale;
+      }
+      document.querySelectorAll('[data-i18n-key]').forEach(el => {
+        const key = el.getAttribute('data-i18n-key');
+        const translation = t(key);
+        if (!translation) return;
+        if (el.dataset.i18nTarget === 'placeholder') {
+          el.placeholder = translation;
+        } else {
+          el.innerHTML = translation;
+        }
+      });
+    }
+
+    function updateThemeBadge(theme) {
+      const badgeText = document.querySelector('#themeBadge span:last-child');
+      if (badgeText) {
+        const themeName = t(`hero.theme_name.${theme}`) || theme;
+        badgeText.textContent = `${t('hero.theme_synced')} · ${themeName}`;
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+    }
+
+    const socket = isPreviewMode ? { on: () => {}, emit: () => {} } : io();
+    let selectedTheme = null;
+    let currentStatus = null;
+
+    // Initialize translations, theme, and defaults
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        if (typeof I18nClient !== 'undefined') {
+          window.i18n = new I18nClient();
+          await window.i18n.init();
+          currentLocale = window.i18n.currentLocale || currentLocale;
+          window.i18n.onLanguageChange(locale => applyTranslations(locale));
+        } else {
+          const savedLocale = localStorage.getItem('app_locale');
+          if (savedLocale) currentLocale = savedLocale;
+        }
+      } catch (error) {
+        console.error('i18n init failed:', error);
+      }
+
+      applyTranslations(currentLocale);
+
+      const languageSelect = document.getElementById('languageSelect');
+      if (languageSelect) {
+        languageSelect.value = currentLocale;
+        languageSelect.addEventListener('change', async (event) => {
+          const locale = event.target.value;
+          currentLocale = locale;
+          if (window.i18n) {
+            await window.i18n.changeLanguage(locale);
+          } else {
+            localStorage.setItem('app_locale', locale);
+          }
+          applyTranslations(locale);
+        });
+      }
+
+      const parentTheme = (() => {
+        try {
+          return window.parent?.document?.documentElement?.getAttribute('data-theme');
+        } catch (error) {
+          return null;
+        }
+      })();
+      updateThemeBadge(parentTheme || document.documentElement.getAttribute('data-theme') || 'night');
+
+      const themeObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'data-theme') {
+            const theme = document.documentElement.getAttribute('data-theme') || 'night';
+            updateThemeBadge(theme);
+          }
+        });
+      });
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      const overlayUrl = `${window.location.protocol}//${window.location.host}/interactive-story/overlay`;
+      const overlayInput = document.getElementById('overlayUrl');
+      const overlayFrame = document.getElementById('overlayPreview');
+      if (overlayInput) overlayInput.value = overlayUrl;
+      if (overlayFrame) overlayFrame.src = overlayUrl;
+
+      // Initialize currentStatus with default values before loading
+      currentStatus = {
+        configured: false,
+        session: null,
+        chapter: null,
+        voting: { active: false, timeRemaining: 0 },
+        config: { maxChapters: 5 }
+      };
+
+      if (!isPreviewMode) {
+        loadStatus();
+        loadConfig();
+        loadThemes();
+        loadDebugLogs();
+      } else {
+        currentStatus.configured = true;
+        updateStatusDisplay();
+        renderPreviewThemes();
+      }
+
+      // Refresh status every 2 seconds (skip in preview mode)
+      setInterval(() => {
+        if (!isPreviewMode) {
+          loadStatus();
+        }
+      }, 2000);
+      
+      // Wrap event listener setup in try-catch to prevent one error from breaking all listeners
+      try {
+        // Add event listeners for buttons (must be inside DOMContentLoaded)
+        // Use optional chaining to prevent errors if elements don't exist
+        document.getElementById('testApiKeyBtn')?.addEventListener('click', testApiKey);
+      document.getElementById('copyOverlayUrlBtn')?.addEventListener('click', copyOverlayUrl);
+      document.getElementById('openOverlayBtn')?.addEventListener('click', openOverlayInNewTab);
+      document.getElementById('toggleOverlayPreviewBtn')?.addEventListener('click', toggleOverlayPreview);
+      document.getElementById('testTitlePreviewBtn')?.addEventListener('click', testTitlePreview);
+      document.getElementById('testChapterPreviewBtn')?.addEventListener('click', testChapterPreview);
+      document.getElementById('testChoicesPreviewBtn')?.addEventListener('click', testChoicesPreview);
+      document.getElementById('clearOverlayPreviewBtn')?.addEventListener('click', clearOverlayPreview);
+      
+      // Manual mode button event listeners
+      document.getElementById('manualAdvanceBtn')?.addEventListener('click', manualAdvanceRound);
+      document.getElementById('manualShowResultsBtn')?.addEventListener('click', manualShowResults);
+      
+      // Debug log clear button
+      document.getElementById('clearLogsBtn')?.addEventListener('click', () => {
+        const logDisplay = document.getElementById('debugLogDisplay');
+        if (logDisplay) {
+          logDisplay.innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+        }
+      });
+
+      // Provider selection change handlers
+      document.getElementById('llmProvider')?.addEventListener('change', updateProviderUI);
+      document.getElementById('imageProvider')?.addEventListener('change', updateProviderUI);
+      document.getElementById('ttsProvider')?.addEventListener('change', updateProviderUI);
+      document.getElementById('ttsEngine')?.addEventListener('change', (e) => {
+        updateTTSVoiceOptions(e.target.value);
+      });
+
+      // Form submission and story control event handlers
+      // CRITICAL: These MUST be inside DOMContentLoaded to ensure DOM elements exist
+      document.getElementById('configForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (isPreviewMode) {
+          alert(t('alerts.config_saved'));
+          return;
+        }
+        
+        const config = {
+          // Provider selection
+          llmProvider: document.getElementById('llmProvider').value,
+          imageProvider: document.getElementById('imageProvider').value,
+          ttsProvider: document.getElementById('ttsProvider').value,
+          
+          // Model selection
+          openaiModel: document.getElementById('openaiModel').value,
+          openaiImageModel: document.getElementById('openaiImageModel').value,
+          defaultModel: document.getElementById('defaultModel').value,
+          defaultImageModel: document.getElementById('defaultImageModel').value,
+          
+          // TTS voice
+          ttsEngine: document.getElementById('ttsEngine').value,
+          ttsVoiceId: document.getElementById('ttsVoiceId').value,
+          
+          // Timing configuration (convert seconds to milliseconds)
+          titlePreviewDelay: parseFloat(document.getElementById('titlePreviewDelay').value) * 1000,
+          minTitleReadTime: parseFloat(document.getElementById('minTitleReadTime').value) * 1000,
+          contentStartBuffer: parseFloat(document.getElementById('contentStartBuffer').value) * 1000,
+          
+          // Overlay customization
+          overlayOrientation: document.getElementById('overlayOrientation').value,
+          overlayResolution: document.getElementById('overlayResolution').value,
+          overlayDisplayMode: document.getElementById('overlayDisplayMode').value,
+          overlayFontFamily: document.getElementById('overlayFontFamily').value,
+          overlayFontSize: parseFloat(document.getElementById('overlayFontSize').value),
+          overlayTitleFontSize: parseFloat(document.getElementById('overlayTitleFontSize').value),
+          overlayTextColor: document.getElementById('overlayTextColor').value,
+          overlayTitleColor: document.getElementById('overlayTitleColor').value,
+          overlayVotingColor: document.getElementById('overlayVotingColor').value,
+          generatingAnimationMode: document.getElementById('generatingAnimationMode').value,
+          generatingAnimationUrl: document.getElementById('generatingAnimationUrl').value.trim(),
+          overlayBackgroundGradient: document.getElementById('overlayBackgroundGradient').value,
+          
+          // Display duration settings (convert seconds to milliseconds)
+          votingResultsDuration: parseFloat(document.getElementById('votingResultsDuration').value) * 1000,
+          chapterTransitionDelay: parseFloat(document.getElementById('chapterTransitionDelay').value) * 1000,
+          finalChapterDelay: parseFloat(document.getElementById('finalChapterDelay').value) * 1000,
+          
+          // Story generation settings
+          storyLanguage: document.getElementById('storyLanguage').value,
+          
+          // Settings
+          votingDuration: parseInt(document.getElementById('votingDuration').value),
+          numChoices: parseInt(document.getElementById('numChoices').value),
+          maxChapters: parseInt(document.getElementById('maxChapters').value),
+          voteKeywordPattern: document.getElementById('voteKeywordPattern').value,
+          caseSensitiveVoting: document.getElementById('caseSensitiveVoting').checked,
+          autoGenerateImages: document.getElementById('autoGenerateImages').checked,
+          autoGenerateTTS: document.getElementById('autoGenerateTTS').checked,
+          offlineMode: document.getElementById('offlineMode').checked,
+          manualMode: document.getElementById('manualMode').checked,
+          manualModeTTS: document.getElementById('manualModeTTS').checked,
+          debugLogging: document.getElementById('debugLogging').checked,
+          apiLogging: document.getElementById('apiLogging').checked
+        };
+        
+        try {
+          const response = await fetch('/api/interactive-story/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+          });
+          
+          if (response.ok) {
+            alert(t('alerts.config_saved'));
+            loadStatus();
+            loadConfig(); // Reload to update UI
+          } else {
+            const errorText = await response.text();
+            alert(t('alerts.config_save_error', { message: `HTTP ${response.status}: ${errorText}` }));
+          }
+        } catch (error) {
+          alert(t('alerts.config_save_error', { message: error.message }));
+        }
+      });
+
+      document.getElementById('startStoryBtn')?.addEventListener('click', async () => {
+        if (!selectedTheme) {
+          alert(t('alerts.theme_required'));
+          return;
+        }
+        
+        const outline = document.getElementById('storyOutline')?.value || '';
+        // Select model based on current LLM provider
+        const llmProvider = document.getElementById('llmProvider')?.value || 'openai';
+        const model = llmProvider === 'openai' 
+          ? document.getElementById('openaiModel')?.value || 'gpt-4o-mini'
+          : document.getElementById('defaultModel')?.value || 'deepseek';
+        
+        try {
+          const startBtn = document.getElementById('startStoryBtn');
+          if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = t('cards.configuration.generating');
+          }
+
+          if (isPreviewMode) {
+            currentStatus = {
+              configured: true,
+              session: { id: 1 },
+              chapter: {
+                chapterNumber: 1,
+                title: 'Demo Chapter',
+                content: 'This is a preview of the story content.',
+                choices: ['Follow the river', 'Climb the mountain', 'Return to camp']
+              },
+              voting: { active: false, timeRemaining: 0 },
+              config: { maxChapters: 5 }
+            };
+            updateStatusDisplay();
+            if (startBtn) {
+              startBtn.disabled = false;
+              startBtn.innerHTML = t('cards.story_controls.start_btn');
+            }
+            return;
+          }
+          
+          const response = await fetch('/api/interactive-story/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: selectedTheme, outline, model })
+          });
+          
+          if (response.ok) {
+            loadStatus();
+          } else {
+            const error = await response.json();
+            alert(t('alerts.story_start_error', { message: error.error }));
+          }
+        } catch (error) {
+          alert(t('alerts.story_error', { message: error.message }));
+        } finally {
+          const startBtn = document.getElementById('startStoryBtn');
+          if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.innerHTML = t('cards.story_controls.start_btn');
+          }
+        }
+      });
+
+      document.getElementById('endStoryBtn')?.addEventListener('click', async () => {
+        if (!confirm(t('prompts.confirm_end_story'))) {
+          return;
+        }
+        
+        const endBtn = document.getElementById('endStoryBtn');
+        if (!endBtn) return;
+        
+        const originalText = endBtn.innerHTML;
+        
+        try {
+          // Disable button and show loading state
+          endBtn.disabled = true;
+          endBtn.innerHTML = '⏳ Ending...';
+          
+          if (!isPreviewMode) {
+            const response = await fetch('/api/interactive-story/end', { method: 'POST' });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Failed to end story');
+            }
+            
+            // Success - reload status
+            loadStatus();
+            
+            // Show success message briefly
+            endBtn.innerHTML = '✅ Story Ended';
+            setTimeout(() => {
+              endBtn.innerHTML = originalText;
+            }, 2000);
+          } else {
+            currentStatus = { configured: true, session: null, chapter: null, voting: { active: false }, config: { maxChapters: 5 } };
+            updateStatusDisplay();
+          }
+        } catch (error) {
+          console.error('Error ending story:', error);
+          alert(t('alerts.story_end_error', { message: error.message }));
+          
+          // Restore button
+          endBtn.innerHTML = originalText;
+        } finally {
+          // Always re-enable button after a short delay
+          setTimeout(() => {
+            endBtn.disabled = false;
+          }, 1000);
+        }
+      });
+
+      document.getElementById('forceVoteEndBtn')?.addEventListener('click', () => {
+        socket.emit('story:force-vote-end');
+      });
+
+      document.getElementById('regenerateImageBtn')?.addEventListener('click', () => {
+        socket.emit('story:regenerate-image', {});
+      });
+      } catch (eventListenerError) {
+        console.error('❌ Error setting up event listeners:', eventListenerError);
+        // Show error to user but don't break the entire UI
+        console.error('Event listener setup failed. Some buttons may not work. Please refresh the page.');
+      }
+    });
+
+    // Overlay preview functions
+    async function copyOverlayUrl() {
+      const urlInput = document.getElementById('overlayUrl');
+      const url = urlInput.value;
+      
+      try {
+        // Modern Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          alert(t('alerts.overlay_copied'));
+        } else {
+          // Fallback for older browsers
+          urlInput.select();
+          urlInput.setSelectionRange(0, 99999); // For mobile devices
+          document.execCommand('copy');
+          alert(t('alerts.overlay_copied'));
+        }
+      } catch (error) {
+        console.error('Error copying URL:', error);
+        // Final fallback - select text so user can manually copy
+        urlInput.select();
+        alert(t('alerts.overlay_copy_failed'));
+      }
+    }
+
+    function openOverlayInNewTab() {
+      const url = document.getElementById('overlayUrl').value;
+      
+      if (!url) {
+        alert(t('alerts.overlay_missing'));
+        return;
+      }
+      
+      try {
+        const newWindow = window.open(url, '_blank', 'width=1920,height=1080,toolbar=no,menubar=no,scrollbars=no');
+        
+        // Check if popup was blocked
+        setTimeout(() => {
+          try {
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+              // Popup was blocked
+              alert(t('alerts.overlay_blocked', { url }));
+            }
+          } catch (e) {
+            // Cross-origin restriction, but window likely opened
+            console.log('Window opened (cross-origin check failed, this is normal)');
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error opening overlay:', error);
+        alert(t('alerts.overlay_open_error', { url }));
+      }
+    }
+
+    function toggleOverlayPreview() {
+      const container = document.getElementById('overlayPreviewContainer');
+      const toggleIcon = document.getElementById('previewToggleIcon');
+      const toggleText = document.getElementById('previewToggleText');
+      
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+        toggleIcon.textContent = '⏸️';
+        toggleText.textContent = t('cards.overlay.preview.hide');
+      } else {
+        container.style.display = 'none';
+        toggleIcon.textContent = '▶️';
+        toggleText.textContent = t('cards.overlay.preview.show');
+      }
+    }
+    
+    // OBS Overlay Preview Test Functions
+    
+    /**
+     * Check if socket is available for preview testing
+     * @returns {boolean} True if socket is available, false otherwise
+     */
+    function isSocketAvailableForPreview() {
+      if (!socket || isPreviewMode) {
+        console.warn('Preview mode or socket not available for testing');
+        return false;
+      }
+      return true;
+    }
+    
+    function testTitlePreview() {
+      if (!isSocketAvailableForPreview()) return;
+      
+      // Send test chapter data with title emphasis
+      const testChapter = {
+        chapterNumber: 1,
+        title: '🌟 The Beginning of an Epic Adventure',
+        content: 'Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.',
+        choices: [],
+        imagePath: null
+      };
+      
+      // Emit events to show title phase
+      socket.emit('story:chapter-ready', testChapter);
+      setTimeout(() => {
+        socket.emit('story:chapter-title-phase', {
+          title: testChapter.title,
+          chapterNumber: testChapter.chapterNumber
+        });
+      }, 500);
+      
+      console.log('Test title preview sent to overlay');
+    }
+    
+    function testChapterPreview() {
+      if (!isSocketAvailableForPreview()) return;
+      
+      // Send test chapter with full content
+      const testChapter = {
+        chapterNumber: 2,
+        title: 'The Ancient Temple',
+        content: 'As you step through the massive stone doors, a chill runs down your spine. The walls are covered in ancient runes that seem to glow faintly in the darkness. A mysterious voice echoes through the chamber, speaking in a language you somehow understand.',
+        choices: ['Approach the altar', 'Examine the runes closely', 'Follow the voice'],
+        imagePath: null
+      };
+      
+      // Emit chapter ready
+      socket.emit('story:chapter-ready', testChapter);
+      
+      // Simulate progressive sentence display
+      const sentences = testChapter.content.match(/[^.!?]+[.!?]+/g) || [testChapter.content];
+      sentences.forEach((sentence, index) => {
+        setTimeout(() => {
+          socket.emit('story:chapter-sentence', {
+            sentence: sentence.trim(),
+            index: index,
+            total: sentences.length,
+            chapterNumber: testChapter.chapterNumber
+          });
+        }, 1000 + (index * 2000)); // Progressive display
+      });
+      
+      console.log('Test chapter preview sent to overlay');
+    }
+    
+    function testChoicesPreview() {
+      if (!isSocketAvailableForPreview()) return;
+      
+      // Send test voting data
+      const testChoices = [
+        'Enter the dark corridor',
+        'Search for another exit',
+        'Call out for help'
+      ];
+      
+      socket.emit('story:voting-started', {
+        choices: testChoices,
+        duration: 60,
+        startTime: Date.now()
+      });
+      
+      // Simulate some votes
+      setTimeout(() => {
+        socket.emit('story:vote-update', {
+          votes: [15, 8, 12],
+          choices: testChoices,
+          timeRemaining: 45
+        });
+      }, 1000);
+      
+      setTimeout(() => {
+        socket.emit('story:vote-update', {
+          votes: [23, 14, 19],
+          choices: testChoices,
+          timeRemaining: 30
+        });
+      }, 2500);
+      
+      console.log('Test choices preview sent to overlay');
+    }
+    
+    function clearOverlayPreview() {
+      if (!isSocketAvailableForPreview()) return;
+      
+      // Emit event to clear/reset overlay
+      socket.emit('story:ended', { message: 'Preview cleared' });
+      
+      console.log('Overlay preview cleared');
+    }
+
+    // Test API key
+    async function testApiKey() {
+      console.log('[TEST API KEY] Button clicked');
+      const btn = document.getElementById('testApiKeyBtn');
+      const resultDiv = document.getElementById('apiKeyTestResult');
+      
+      if (!btn || !resultDiv) {
+        console.error('[TEST API KEY] Button or result div not found!', { btn, resultDiv });
+        alert(t('alerts.ui_missing'));
+        return;
+      }
+
+      if (isPreviewMode) {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert alert-success mt-2';
+        resultDiv.textContent = t('alerts.overlay_copied');
+        return;
+      }
+      
+      // Get the selected provider
+      const provider = document.getElementById('llmProvider')?.value || 'openai';
+      
+      console.log('[TEST API KEY] Starting validation for provider:', provider);
+      btn.disabled = true;
+      btn.innerHTML = t('cards.configuration.testing');
+      resultDiv.style.display = 'none';
+      
+      try {
+        console.log('[TEST API KEY] Sending request to /api/interactive-story/validate-api-key');
+        const response = await fetch('/api/interactive-story/validate-api-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        
+        console.log('[TEST API KEY] Response status:', response.status);
+        const result = await response.json();
+        console.log('[TEST API KEY] Response data:', result);
+        
+        resultDiv.style.display = 'block';
+        
+        if (result.valid) {
+          resultDiv.className = 'alert alert-success mt-2';
+          resultDiv.innerHTML = `
+            <strong>✅ ${result.message}</strong><br>
+            <small>
+              Provider: ${result.provider}<br>
+              API Key Length: ${result.details.keyLength} characters<br>
+              Prefix: ${result.details.keyPrefix}<br>
+              Tested Model: ${result.details.testedModel}
+            </small>
+          `;
+        } else {
+          resultDiv.className = 'alert alert-danger mt-2';
+          let html = `<strong>❌ ${result.message}</strong><br>`;
+          
+          if (!result.configured) {
+            html += `<small>${result.error}</small>`;
+          } else {
+            html += `<small>Error: ${result.error}</small><br>`;
+            if (result.details) {
+              html += `<br><strong>Diagnostics:</strong><br>`;
+              html += `Provider: ${result.provider || 'Unknown'}<br>`;
+              html += `API Key Length: ${result.details.keyLength} characters`;
+              // Only show expected length warning for SiliconFlow (OpenAI keys vary in length)
+              if (result.details.keyLength !== 64 && result.provider && result.provider.toLowerCase() !== 'openai') {
+                html += ` <span style="color: #ffc107;">⚠️ Expected: ~64 characters</span>`;
+              }
+              html += `<br>Prefix: ${result.details.keyPrefix}<br>`;
+              html += `Status Code: ${result.details.statusCode}<br>`;
+              if (result.details.hasWhitespace) {
+                html += `<span style="color: #ffc107;">⚠️ API key contains whitespace!</span><br>`;
+              }
+            }
+            if (result.troubleshooting && result.troubleshooting.length > 0) {
+              html += `<br><strong>Troubleshooting Steps:</strong><ul style="margin-bottom: 0; padding-left: 20px;">`;
+              result.troubleshooting.forEach(tip => {
+                html += `<li style="margin-bottom: 5px;">${tip}</li>`;
+              });
+              html += `</ul>`;
+            }
+          }
+          
+          resultDiv.innerHTML = html;
+        }
+      } catch (error) {
+        console.error('[TEST API KEY] Error:', error);
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'alert alert-danger mt-2';
+        resultDiv.innerHTML = `
+          <strong>❌ ${t('alerts.api_test_error')}</strong><br>
+          <small>${error.message}</small><br>
+          <small style="color: var(--color-text-muted, #94a3b8);">Check browser console for details</small>
+        `;
+      } finally {
+        console.log('[TEST API KEY] Test complete, re-enabling button');
+        btn.disabled = false;
+        btn.innerHTML = t('cards.configuration.test_api_key');
+      }
+    }
+
+    // Load initial data
+    async function loadStatus() {
+      try {
+        if (isPreviewMode) {
+          currentStatus = currentStatus || {
+            configured: true,
+            session: null,
+            chapter: null,
+            voting: { active: false, timeRemaining: 0 },
+            config: { maxChapters: 5 }
+          };
+          updateStatusDisplay();
+          return;
+        }
+        const response = await fetch('/api/interactive-story/status');
+        if (!response.ok) {
+          console.error('Failed to load status:', response.status, response.statusText);
+          // Set default status on error
+          currentStatus = currentStatus || {
+            configured: false,
+            session: null,
+            chapter: null,
+            voting: { active: false, timeRemaining: 0 },
+            config: { maxChapters: 5 }
+          };
+          updateStatusDisplay();
+          return;
+        }
+        currentStatus = await response.json();
+        updateStatusDisplay();
+      } catch (error) {
+        console.error('Error loading status:', error);
+        // Set default status on error
+        currentStatus = currentStatus || {
+          configured: false,
+          session: null,
+          chapter: null,
+          voting: { active: false, timeRemaining: 0 },
+          config: { maxChapters: 5 }
+        };
+        updateStatusDisplay();
+      }
+    }
+
+    /**
+     * Escape HTML to prevent XSS attacks
+     * @param {string} str - String to escape
+     * @returns {string} - Escaped string
+     */
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function loadConfig() {
+      try {
+        if (isPreviewMode) {
+          const config = {
+            llmProvider: 'openai',
+            imageProvider: 'openai',
+            ttsProvider: 'system',
+            ttsEngine: 'openai',
+            openaiModel: 'gpt-4o',
+            openaiImageModel: 'dall-e-3',
+            defaultModel: 'deepseek',
+            defaultImageModel: 'flux-schnell',
+            ttsVoiceId: 'alloy',
+            titlePreviewDelay: 5000,
+            minTitleReadTime: 3000,
+            contentStartBuffer: 500,
+            overlayOrientation: 'landscape',
+            overlayResolution: '1920x1080',
+             overlayDisplayMode: 'full',
+             overlayFontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+             overlayFontSize: 1.3,
+             overlayTitleFontSize: 2.5,
+             overlayTextColor: '#ffffff',
+             overlayTitleColor: '#12a116',
+             overlayVotingColor: '#e94560',
+             overlayBackgroundGradient: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)',
+             generatingAnimationMode: 'default',
+             generatingAnimationUrl: '',
+             votingResultsDuration: 5000,
+             chapterTransitionDelay: 1000,
+             finalChapterDelay: 5000,
+             storyLanguage: 'English',
+            votingDuration: 60,
+            numChoices: 4,
+            maxChapters: 5,
+            voteKeywordPattern: '!letter',
+            caseSensitiveVoting: false,
+            autoGenerateImages: true,
+            autoGenerateTTS: true,
+            offlineMode: false,
+            manualMode: false,
+            manualModeTTS: true,
+            debugLogging: false,
+            apiLogging: false
+          };
+          document.getElementById('llmProvider').value = config.llmProvider;
+          document.getElementById('imageProvider').value = config.imageProvider;
+          document.getElementById('ttsProvider').value = config.ttsProvider;
+          document.getElementById('ttsEngine').value = config.ttsEngine;
+          document.getElementById('openaiModel').value = config.openaiModel;
+          document.getElementById('openaiImageModel').value = config.openaiImageModel;
+          document.getElementById('defaultModel').value = config.defaultModel;
+          document.getElementById('defaultImageModel').value = config.defaultImageModel;
+          document.getElementById('ttsVoiceId').value = config.ttsVoiceId;
+          document.getElementById('titlePreviewDelay').value = (config.titlePreviewDelay || 5000) / 1000;
+          document.getElementById('minTitleReadTime').value = (config.minTitleReadTime || 3000) / 1000;
+          document.getElementById('contentStartBuffer').value = (config.contentStartBuffer || 500) / 1000;
+          document.getElementById('overlayOrientation').value = config.overlayOrientation;
+          document.getElementById('overlayResolution').value = config.overlayResolution;
+          document.getElementById('overlayDisplayMode').value = config.overlayDisplayMode;
+          document.getElementById('overlayFontFamily').value = config.overlayFontFamily;
+          document.getElementById('overlayFontSize').value = config.overlayFontSize;
+          document.getElementById('overlayTitleFontSize').value = config.overlayTitleFontSize;
+          document.getElementById('overlayTextColor').value = config.overlayTextColor;
+          document.getElementById('overlayTitleColor').value = config.overlayTitleColor;
+          document.getElementById('overlayVotingColor').value = config.overlayVotingColor;
+          document.getElementById('overlayBackgroundGradient').value = config.overlayBackgroundGradient;
+          document.getElementById('generatingAnimationMode').value = config.generatingAnimationMode;
+          document.getElementById('generatingAnimationUrl').value = config.generatingAnimationUrl;
+          document.getElementById('votingResultsDuration').value = (config.votingResultsDuration || 5000) / 1000;
+          document.getElementById('chapterTransitionDelay').value = (config.chapterTransitionDelay || 1000) / 1000;
+          document.getElementById('finalChapterDelay').value = (config.finalChapterDelay || 5000) / 1000;
+          document.getElementById('storyLanguage').value = config.storyLanguage;
+          document.getElementById('votingDuration').value = config.votingDuration;
+          document.getElementById('numChoices').value = config.numChoices;
+          document.getElementById('maxChapters').value = config.maxChapters;
+          document.getElementById('voteKeywordPattern').value = config.voteKeywordPattern;
+          document.getElementById('caseSensitiveVoting').checked = config.caseSensitiveVoting;
+          document.getElementById('autoGenerateImages').checked = config.autoGenerateImages;
+          document.getElementById('autoGenerateTTS').checked = config.autoGenerateTTS;
+          document.getElementById('offlineMode').checked = config.offlineMode;
+          document.getElementById('manualMode').checked = config.manualMode;
+          document.getElementById('manualModeTTS').checked = config.manualModeTTS;
+          document.getElementById('debugLogging').checked = config.debugLogging;
+          document.getElementById('apiLogging').checked = config.apiLogging;
+          updateProviderUI();
+          return;
+        }
+        const response = await fetch('/api/interactive-story/config');
+        if (!response.ok) {
+          console.error('Failed to load config:', response.status, response.statusText);
+          return;
+        }
+        const config = await response.json();
+        
+        // Provider selection
+        document.getElementById('llmProvider').value = config.llmProvider || 'openai';
+        document.getElementById('imageProvider').value = config.imageProvider || 'openai';
+        document.getElementById('ttsProvider').value = config.ttsProvider || 'system';
+        
+        // Model selection
+        document.getElementById('openaiModel').value = config.openaiModel || 'gpt-4o-mini';
+        document.getElementById('openaiImageModel').value = config.openaiImageModel || 'dall-e-2';
+        document.getElementById('defaultModel').value = config.defaultModel || 'deepseek';
+        document.getElementById('defaultImageModel').value = config.defaultImageModel || 'flux-schnell';
+        
+        // TTS voice
+        document.getElementById('ttsEngine').value = config.ttsEngine || 'openai';
+        document.getElementById('ttsVoiceId').value = config.ttsVoiceId || 'alloy';
+        
+        // Timing configuration
+        document.getElementById('titlePreviewDelay').value = (config.titlePreviewDelay || 5000) / 1000; // Convert ms to seconds
+        document.getElementById('minTitleReadTime').value = (config.minTitleReadTime || 3000) / 1000;
+        document.getElementById('contentStartBuffer').value = (config.contentStartBuffer || 500) / 1000;
+        
+        // Overlay customization
+        document.getElementById('overlayOrientation').value = config.overlayOrientation || 'landscape';
+        document.getElementById('overlayResolution').value = config.overlayResolution || '1920x1080';
+        document.getElementById('overlayDisplayMode').value = config.overlayDisplayMode || 'full';
+        document.getElementById('overlayFontFamily').value = config.overlayFontFamily || 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+        document.getElementById('overlayFontSize').value = config.overlayFontSize || 1.3;
+        document.getElementById('overlayTitleFontSize').value = config.overlayTitleFontSize || 2.5;
+        document.getElementById('overlayTextColor').value = config.overlayTextColor || '#ffffff';
+        document.getElementById('overlayTitleColor').value = config.overlayTitleColor || '#e94560';
+        document.getElementById('overlayVotingColor').value = config.overlayVotingColor || '#e94560';
+        document.getElementById('generatingAnimationMode').value = config.generatingAnimationMode || 'default';
+        document.getElementById('generatingAnimationUrl').value = config.generatingAnimationUrl || '';
+        document.getElementById('overlayBackgroundGradient').value = config.overlayBackgroundGradient || 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)';
+        
+        // Display duration settings (convert ms to seconds)
+        document.getElementById('votingResultsDuration').value = (config.votingResultsDuration || 5000) / 1000;
+        document.getElementById('chapterTransitionDelay').value = (config.chapterTransitionDelay || 1000) / 1000;
+        document.getElementById('finalChapterDelay').value = (config.finalChapterDelay || 5000) / 1000;
+        
+        // Story generation settings
+        document.getElementById('storyLanguage').value = config.storyLanguage || 'German';
+        
+        // Settings
+        document.getElementById('votingDuration').value = config.votingDuration || 60;
+        document.getElementById('numChoices').value = config.numChoices || 3;
+        document.getElementById('maxChapters').value = config.maxChapters || 5;
+        document.getElementById('voteKeywordPattern').value = config.voteKeywordPattern || '!letter';
+        document.getElementById('caseSensitiveVoting').checked = config.caseSensitiveVoting === true;
+        document.getElementById('autoGenerateImages').checked = config.autoGenerateImages !== false;
+        document.getElementById('autoGenerateTTS').checked = config.autoGenerateTTS !== false; // Default to true
+        document.getElementById('offlineMode').checked = config.offlineMode === true;
+        document.getElementById('manualMode').checked = config.manualMode === true;
+        document.getElementById('manualModeTTS').checked = config.manualModeTTS !== false; // Default to true
+        document.getElementById('debugLogging').checked = config.debugLogging === true;
+        document.getElementById('apiLogging').checked = config.apiLogging === true;
+        
+        // Show/hide debug log card based on debug logging setting
+        document.getElementById('debugLogCard').style.display = config.debugLogging ? 'block' : 'none';
+        
+        // Update provider-specific UI visibility
+        updateProviderUI();
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    }
+    
+    function updateProviderUI() {
+      const llmProvider = document.getElementById('llmProvider').value;
+      const imageProvider = document.getElementById('imageProvider').value;
+      const ttsProvider = document.getElementById('ttsProvider').value;
+      const ttsEngine = document.getElementById('ttsEngine').value;
+      
+      // Show/hide LLM model selectors
+      document.getElementById('openaiModelGroup').style.display = llmProvider === 'openai' ? 'block' : 'none';
+      document.getElementById('siliconflowModelGroup').style.display = llmProvider === 'siliconflow' ? 'block' : 'none';
+      
+      // Show/hide Image model selectors
+      document.getElementById('openaiImageModelGroup').style.display = imageProvider === 'openai' ? 'block' : 'none';
+      document.getElementById('siliconflowImageModelGroup').style.display = imageProvider === 'siliconflow' ? 'block' : 'none';
+      
+      // Show/hide TTS voice selection (only for system TTS provider)
+      document.getElementById('systemTtsVoiceGroup').style.display = ttsProvider === 'system' ? 'block' : 'none';
+      
+      // Update voice options based on selected TTS engine
+      updateTTSVoiceOptions(ttsEngine);
+    }
+    
+    function updateTTSVoiceOptions(engine) {
+      // Show/hide voice option groups based on selected engine
+      const voiceGroups = {
+        'openai': 'openaiVoices',
+        'tiktok': 'tiktokVoices',
+        'google': 'googleVoices',
+        'elevenlabs': 'elevenlabsVoices',
+        'speechify': 'speechifyVoices',
+        'siliconflow': 'siliconflowVoices',
+        'fishaudio': 'siliconflowVoices' // Fish.audio uses same voice format as SiliconFlow
+      };
+      
+      // Hide all voice groups
+      Object.values(voiceGroups).forEach(groupId => {
+        const group = document.getElementById(groupId);
+        if (group) {
+          group.style.display = 'none';
+          // Disable all options in this group
+          Array.from(group.querySelectorAll('option')).forEach(opt => opt.disabled = true);
+        }
+      });
+      
+      // Show and enable the selected engine's voice group
+      const activeGroupId = voiceGroups[engine];
+      if (activeGroupId) {
+        const activeGroup = document.getElementById(activeGroupId);
+        if (activeGroup) {
+          activeGroup.style.display = '';
+          // Enable all options in active group
+          Array.from(activeGroup.querySelectorAll('option')).forEach(opt => opt.disabled = false);
+          
+          // Select first option of active group if current selection is not valid
+          const voiceSelect = document.getElementById('ttsVoiceId');
+          const currentOption = voiceSelect.querySelector(`option[value="${voiceSelect.value}"]`);
+          if (!currentOption || currentOption.disabled) {
+            const firstOption = activeGroup.querySelector('option');
+            if (firstOption) {
+              voiceSelect.value = firstOption.value;
+            }
+          }
+        }
+      }
+      
+      // Load dynamic voices from TTS plugin API for better compatibility
+      loadTTSVoicesFromAPI(engine);
+    }
+    
+    /**
+     * Load available TTS voices from the TTS plugin API
+     * This ensures the interactive story uses the same voices as the TTS plugin
+     */
+    async function loadTTSVoicesFromAPI(engine) {
+      if (isPreviewMode) {
+        console.log('Skipping TTS voice loading in preview mode');
+        return; // Skip in preview mode
+      }
+      
+      try {
+        const response = await fetch(`/api/tts/voices?engine=${engine}`);
+        if (!response.ok) {
+          console.warn('Failed to load TTS voices from API, using static list');
+          return;
+        }
+        
+        const data = await response.json();
+        if (!data.success || !data.voices || !data.voices[engine]) {
+          console.warn('No voices returned from API for engine:', engine);
+          return;
+        }
+        
+        const voices = data.voices[engine];
+        console.log(`Loaded ${Object.keys(voices).length} voices for engine ${engine}:`, voices);
+        
+        // Update voice select options dynamically
+        const voiceSelect = document.getElementById('ttsVoiceId');
+        const currentValue = voiceSelect.value;
+        
+        // Find the appropriate optgroup for this engine
+        const voiceGroups = {
+          'openai': 'openaiVoices',
+          'tiktok': 'tiktokVoices',
+          'google': 'googleVoices',
+          'elevenlabs': 'elevenlabsVoices',
+          'speechify': 'speechifyVoices',
+          'siliconflow': 'siliconflowVoices',
+          'fishaudio': 'siliconflowVoices' // Fish.audio uses same voice format as SiliconFlow
+        };
+        
+        const groupId = voiceGroups[engine];
+        if (!groupId) return;
+        
+        let optgroup = document.getElementById(groupId);
+        if (!optgroup) {
+          // Create optgroup if it doesn't exist
+          optgroup = document.createElement('optgroup');
+          optgroup.id = groupId;
+          optgroup.label = engine.charAt(0).toUpperCase() + engine.slice(1) + ' Voices';
+          voiceSelect.appendChild(optgroup);
+        }
+        
+        // Clear existing options in this group
+        optgroup.innerHTML = '';
+        
+        // Add voice options
+        Object.entries(voices).forEach(([voiceId, voiceInfo]) => {
+          const option = document.createElement('option');
+          option.value = voiceId;
+          
+          // Handle different voice info formats
+          if (typeof voiceInfo === 'string') {
+            option.textContent = voiceInfo;
+          } else if (voiceInfo.name) {
+            option.textContent = voiceInfo.name;
+          } else if (voiceInfo.displayName) {
+            option.textContent = voiceInfo.displayName;
+          } else {
+            option.textContent = voiceId;
+          }
+          
+          optgroup.appendChild(option);
+        });
+        
+        // Restore previous selection if valid
+        if (currentValue && voiceSelect.querySelector(`option[value="${currentValue}"]`)) {
+          voiceSelect.value = currentValue;
+        } else if (optgroup.children.length > 0) {
+          // Select first option if previous selection not found
+          voiceSelect.value = optgroup.children[0].value;
+        }
+        
+        console.log(`Updated voice options for ${engine}, selected: ${voiceSelect.value}`);
+      } catch (error) {
+        console.error('Error loading TTS voices from API:', error);
+      }
+    }
+
+    function renderPreviewThemes() {
+      const themeSelector = document.getElementById('themeSelector');
+      if (!themeSelector) return;
+      const demoThemes = [
+        { id: 'demo-forest', name: 'Enchanted Forest', description: 'Mystic, cozy, green', furry: false },
+        { id: 'demo-space', name: 'Galactic Voyage', description: 'Futuristic sci-fi adventure', furry: false },
+        { id: 'demo-furry', name: 'Furry Tails', description: 'Wholesome anthro journey', furry: true }
+      ];
+      themeSelector.innerHTML = '';
+      demoThemes.forEach(theme => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-3';
+        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+        col.innerHTML = `
+          <div class="card theme-card" data-theme="${theme.id}">
+            <div class="card-body text-center">
+              <h6>${theme.name}${furryBadge}</h6>
+              <small class="text-muted">${theme.description}</small>
+            </div>
+          </div>
+        `;
+        themeSelector.appendChild(col);
+      });
+
+      document.querySelectorAll('.theme-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedTheme = card.dataset.theme;
+        });
+      });
+    }
+
+    async function loadThemes() {
+      try {
+        // Try to load 5 random themes (including 2 furry themes)
+        const response = await fetch('/api/interactive-story/random-themes?count=5');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.themes || !Array.isArray(data.themes)) {
+          throw new Error('Invalid response format');
+        }
+        
+        const themes = data.themes;
+        
+        const themeSelector = document.getElementById('themeSelector');
+        themeSelector.innerHTML = '';
+        
+        if (themes.length === 0) {
+          throw new Error('No themes returned');
+        }
+        
+        for (const theme of themes) {
+          const col = document.createElement('div');
+          col.className = 'col-md-4 mb-3';
+          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+          col.innerHTML = `
+            <div class="card theme-card" data-theme="${theme.id}">
+              <div class="card-body text-center">
+                <h6>${theme.name}${furryBadge}</h6>
+                <small class="text-muted">${theme.description}</small>
+              </div>
+            </div>
+          `;
+          themeSelector.appendChild(col);
+        }
+        
+        // Add click handlers
+        document.querySelectorAll('.theme-card').forEach(card => {
+          card.addEventListener('click', () => {
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedTheme = card.dataset.theme;
+          });
+        });
+      } catch (error) {
+        console.error('Error loading random themes:', error);
+        // Fallback: Load all themes from the old endpoint
+        console.log('Falling back to all themes...');
+        try {
+          const response = await fetch('/api/interactive-story/themes');
+          const allThemes = await response.json();
+          
+          const themeSelector = document.getElementById('themeSelector');
+          themeSelector.innerHTML = '';
+          
+          for (const [key, theme] of Object.entries(allThemes)) {
+            const col = document.createElement('div');
+            col.className = 'col-md-4 mb-3';
+            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+            col.innerHTML = `
+              <div class="card theme-card" data-theme="${key}">
+                <div class="card-body text-center">
+                  <h6>${theme.name}${furryBadge}</h6>
+                  <small class="text-muted">${theme.style || theme.description}</small>
+                </div>
+              </div>
+            `;
+            themeSelector.appendChild(col);
+          }
+          
+          // Add click handlers
+          document.querySelectorAll('.theme-card').forEach(card => {
+            card.addEventListener('click', () => {
+              document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+              card.classList.add('selected');
+              selectedTheme = card.dataset.theme;
+            });
+          });
+        } catch (fallbackError) {
+          console.error('Error loading fallback themes:', fallbackError);
+          const themeSelector = document.getElementById('themeSelector');
+          themeSelector.innerHTML = `<div class="alert alert-danger">${t('alerts.story_error', { message: 'Theme load failed' })}</div>`;
+        }
+      }
+    }
+
+    function updateStatusDisplay() {
+      // Safety check: ensure currentStatus is defined
+      if (!currentStatus) {
+        console.warn('updateStatusDisplay called with undefined currentStatus');
+        return;
+      }
+      
+      // Plugin status
+      const statusEl = document.getElementById('pluginStatus');
+      if (currentStatus.configured) {
+        statusEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('cards.status.configured')}`;
+      } else {
+        statusEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('cards.status.not_configured')}`;
+      }
+      
+      // Session status
+      document.getElementById('sessionStatus').textContent = currentStatus.session ? `#${currentStatus.session.id}` : t('cards.status.none');
+      
+      // Chapter status
+      document.getElementById('chapterStatus').textContent = currentStatus.chapter 
+        ? `${t('cards.status.chapter_prefix')} ${currentStatus.chapter.chapterNumber}` 
+        : '-';
+      
+      // Voting status
+      const votingEl = document.getElementById('votingStatus');
+      if (currentStatus.voting && currentStatus.voting.active) {
+        const timeLeft = Math.ceil(currentStatus.voting.timeRemaining);
+        votingEl.innerHTML = `<span class="status-indicator status-active"></span> ${t('cards.status.active_time', { seconds: timeLeft })}`;
+        document.getElementById('forceVoteEndBtn').style.display = 'inline-block';
+      } else {
+        votingEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('cards.status.inactive')}`;
+        document.getElementById('forceVoteEndBtn').style.display = 'none';
+      }
+      
+      // Show/hide sections
+      if (currentStatus.session) {
+        document.getElementById('startStorySection').style.display = 'none';
+        document.getElementById('activeStorySection').style.display = 'block';
+        document.getElementById('memoryCard').style.display = 'block';
+        document.getElementById('topVotersCard').style.display = 'block';
+        
+        if (currentStatus.chapter) {
+          displayChapter(currentStatus.chapter);
+        }
+        
+        loadMemory();
+        loadTopVoters();
+      } else {
+        document.getElementById('startStorySection').style.display = 'block';
+        document.getElementById('activeStorySection').style.display = 'none';
+        document.getElementById('memoryCard').style.display = 'none';
+        document.getElementById('topVotersCard').style.display = 'none';
+      }
+    }
+
+    function displayChapter(chapter) {
+      const display = document.getElementById('currentChapterDisplay');
+      
+      // Get config to show max chapters
+      const maxChapters = currentStatus?.config?.maxChapters || 5;
+      const progressPercent = Math.round((chapter.chapterNumber / maxChapters) * 100);
+      const badgeLabel = t('cards.story_controls.chapter_badge', { current: chapter.chapterNumber, total: maxChapters });
+      
+      let html = `
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">${escapeHtml(chapter.title)}</h4>
+            <span class="badge bg-primary">${badgeLabel}</span>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%" 
+                 aria-valuenow="${chapter.chapterNumber}" aria-valuemin="0" aria-valuemax="${maxChapters}"></div>
+          </div>
+        </div>
+      `;
+      
+      if (chapter.imagePath) {
+        const filename = chapter.imagePath.split('/').pop();
+        html += `<img id="storyImage" src="/api/interactive-story/image/${escapeHtml(filename)}" alt="Chapter Image">`;
+      }
+      
+      html += `<div class="chapter-preview">${escapeHtml(chapter.content)}</div>`;
+      
+      html += `<h5 class="mt-3">${t('cards.story_controls.choices_title')}</h5>`;
+      const votePattern = currentStatus?.config?.voteKeywordPattern || '!letter';
+      chapter.choices.forEach((choice, index) => {
+        const voteKeyword = getVoteKeywordDisplay(index, votePattern);
+        html += `<div class="choice-item"><strong>${voteKeyword}</strong> - ${escapeHtml(choice)}</div>`;
+      });
+      
+      display.innerHTML = html;
+      
+      // Update admin choice buttons if in offline mode
+      updateAdminChoiceButtons(chapter);
+    }
+    
+    /**
+     * Get vote keyword for display based on pattern
+     */
+    function getVoteKeywordDisplay(index, pattern) {
+      switch (pattern) {
+        case '!letter':
+          return `!${String.fromCharCode('a'.charCodeAt(0) + index)}`;
+        case 'letter':
+          return String.fromCharCode('A'.charCodeAt(0) + index);
+        case 'number':
+          return String(index + 1);
+        case 'antwort':
+          return `Antwort ${index + 1}`;
+        case 'answer':
+          return `Answer ${index + 1}`;
+        default:
+          return `!${String.fromCharCode('a'.charCodeAt(0) + index)}`;
+      }
+    }
+    
+    function updateAdminChoiceButtons(chapter) {
+      const config = currentStatus?.voting?.settings || {};
+      const offlineMode = document.getElementById('offlineMode')?.checked || false;
+      const manualMode = document.getElementById('manualMode')?.checked || false;
+      const adminChoiceSection = document.getElementById('adminChoiceSection');
+      const adminChoiceButtons = document.getElementById('adminChoiceButtons');
+      const manualModeSection = document.getElementById('manualModeSection');
+      
+      // Show admin choice section for offline mode
+      if (offlineMode && chapter) {
+        adminChoiceSection.style.display = 'block';
+        
+        let html = '';
+        chapter.choices.forEach((choice, index) => {
+          const letter = String.fromCharCode(97 + index).toUpperCase();
+          // Escape the choice text to prevent XSS
+          const escapedChoice = escapeHtml(choice);
+          const buttonLabel = t('cards.story_controls.option_label', { option: letter, choice: escapedChoice });
+          html += `
+            <button class="btn btn-primary mb-2 w-100 admin-choice-btn" data-choice-index="${index}">
+              ${buttonLabel}
+            </button>
+          `;
+        });
+        
+        adminChoiceButtons.innerHTML = html;
+        
+        // Add event listeners to admin choice buttons
+        document.querySelectorAll('.admin-choice-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const choiceIndex = parseInt(btn.getAttribute('data-choice-index'));
+            selectAdminChoice(choiceIndex);
+          });
+        });
+      } else {
+        adminChoiceSection.style.display = 'none';
+      }
+      
+      // Show manual mode section
+      if (manualMode && chapter) {
+        manualModeSection.style.display = 'block';
+        updateManualModeDisplay();
+      } else {
+        manualModeSection.style.display = 'none';
+      }
+    }
+    
+    async function selectAdminChoice(choiceIndex) {
+      if (!confirm(t('prompts.confirm_choice', { option: String.fromCharCode(65 + choiceIndex) }))) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/interactive-story/admin-choice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ choiceIndex })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Admin choice successful:', result);
+        } else {
+          const error = await response.json();
+          alert(t('alerts.admin_choice_error', { message: error.error }));
+        }
+      } catch (error) {
+        console.error('Error selecting admin choice:', error);
+        alert(t('alerts.admin_choice_error', { message: error.message }));
+      }
+    }
+
+    function updateManualModeDisplay() {
+      if (!currentStatus || !currentStatus.chapter) return;
+      
+      const chapter = currentStatus.chapter;
+      const voting = currentStatus.voting || {};
+      
+      // Update chapter info
+      document.getElementById('manualChapterNumber').textContent = `${chapter.chapterNumber}/${currentStatus.config?.maxChapters || 5}`;
+      document.getElementById('manualVotingStatus').textContent = voting.active ? 'Yes' : 'No';
+      
+      // Show voting results if active
+      const manualModeVoting = document.getElementById('manualModeVoting');
+      const manualVotingResults = document.getElementById('manualVotingResults');
+      
+      if (voting.active && voting.choices) {
+        manualModeVoting.style.display = 'block';
+        
+        let html = '<div class="list-group">';
+        voting.choices.forEach((choice, index) => {
+          // Use voteCounts array from voting system, not "votes"
+          const votes = voting.voteCounts ? voting.voteCounts[index] || 0 : 0;
+          const percentage = voting.totalVotes > 0 ? Math.round((votes / voting.totalVotes) * 100) : 0;
+          const letter = String.fromCharCode(65 + index);
+          
+          html += `
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong>${letter}. ${choice}</strong>
+                <span class="badge bg-primary">${votes} votes (${percentage}%)</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar" style="width: ${percentage}%"></div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        
+        manualVotingResults.innerHTML = html;
+        
+        // Disable advance button while voting is active (let voting complete first)
+        // Users can use "Force Vote End" button if they want to skip waiting
+        document.getElementById('manualAdvanceBtn').disabled = voting.active;
+      } else {
+        manualModeVoting.style.display = 'none';
+        // Enable advance button when voting is complete
+        document.getElementById('manualAdvanceBtn').disabled = false;
+      }
+    }
+    
+    async function manualAdvanceRound() {
+      if (!currentStatus || !currentStatus.chapter) {
+        alert('No active chapter to advance from.');
+        return;
+      }
+      
+      const chapterNum = currentStatus.chapter.chapterNumber;
+      const maxChapters = currentStatus.config?.maxChapters || 5;
+      const nextChapter = chapterNum + 1;
+      
+      if (!confirm(`Advance from Chapter ${chapterNum} to Chapter ${nextChapter}/${maxChapters}?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/interactive-story/manual-advance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          console.log('Manual advance successful');
+          loadStatus();
+        } else {
+          const error = await response.json();
+          alert('Error advancing round: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Error advancing round:', error);
+        alert('Error advancing round: ' + error.message);
+      }
+    }
+    
+    function manualShowResults() {
+      updateManualModeDisplay();
+      // Scroll to results
+      document.getElementById('manualModeVoting').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function loadMemory() {
+      try {
+        const response = await fetch('/api/interactive-story/memory');
+        const memory = await response.json();
+        
+        // Characters
+        const charList = document.getElementById('charactersList');
+        charList.innerHTML = memory.characters.map(char => 
+          `<div class="memory-tag">👤 ${char.name}</div>`
+        ).join('');
+        
+        // Locations
+        const locList = document.getElementById('locationsList');
+        locList.innerHTML = memory.locations.map(loc => 
+          `<div class="memory-tag">📍 ${loc.name}</div>`
+        ).join('');
+        
+        // Items
+        const itemList = document.getElementById('itemsList');
+        itemList.innerHTML = memory.items.map(item => 
+          `<div class="memory-tag">💎 ${item.name}</div>`
+        ).join('');
+      } catch (error) {
+        console.error('Error loading memory:', error);
+      }
+    }
+
+    async function loadTopVoters() {
+      try {
+        const response = await fetch('/api/interactive-story/top-voters');
+        const voters = await response.json();
+        
+        const votersList = document.getElementById('topVotersList');
+        votersList.innerHTML = voters.map((voter, index) => `
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span><strong>#${index + 1}</strong> ${voter.username}</span>
+            <span class="badge bg-primary">${t('cards.voters.votes', { count: voter.votes_cast })}</span>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading top voters:', error);
+      }
+    }
+
+    // Socket.io event listeners
+    socket.on('story:chapter-ready', (chapter) => {
+      loadStatus();
+    });
+
+    socket.on('story:voting-started', () => {
+      loadStatus();
+    });
+
+    socket.on('story:voting-ended', (results) => {
+      loadStatus();
+      loadTopVoters();
+    });
+
+    socket.on('story:vote-update', () => {
+      loadTopVoters();
+    });
+
+    socket.on('story:image-updated', () => {
+      if (currentStatus && currentStatus.chapter) {
+        displayChapter(currentStatus.chapter);
+      }
+    });
+    
+    socket.on('story:generation-failed', (data) => {
+      // Show user-friendly error message
+      let errorMsg = `Story generation failed: ${data.error}`;
+      
+      if (data.isTimeout || data.statusCode === 504) {
+        errorMsg = `⏱️ API Timeout: The story generation took too long.
+
+💡 Suggestions:
+• Wait a few minutes and try again (API may be overloaded)
+• Use the "End Story" button to stop the current story
+• Consider switching to a faster model in configuration
+• Reduce max_chapters for shorter stories
+
+You can still manually end the story and start a new one.`;
+      }
+      
+      alert(errorMsg);
+      loadStatus();
+    });
+    
+    // Debug log handler
+    socket.on('story:debug-log', (logEntry) => {
+      addDebugLog(logEntry);
+    });
+    
+    // Debug log functions
+    async function loadDebugLogs() {
+      try {
+        if (isPreviewMode) {
+          document.getElementById('debugLogDisplay').innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+          return;
+        }
+        const response = await fetch('/api/interactive-story/debug-logs');
+        const data = await response.json();
+        
+        const logDisplay = document.getElementById('debugLogDisplay');
+        if (data.logs && data.logs.length > 0) {
+          logDisplay.innerHTML = data.logs.map(log => formatLogEntry(log)).join('');
+        } else {
+          logDisplay.innerHTML = `<div class="text-muted">${t('cards.debug.empty')}</div>`;
+        }
+      } catch (error) {
+        console.error('Error loading debug logs:', error);
+      }
+    }
+    
+    function addDebugLog(logEntry) {
+      const logDisplay = document.getElementById('debugLogDisplay');
+      
+      // Remove "no logs" message if present
+      if (logDisplay.querySelector('.text-muted')) {
+        logDisplay.innerHTML = '';
+      }
+      
+      // Add new log at the top
+      const logHtml = formatLogEntry(logEntry);
+      logDisplay.insertAdjacentHTML('afterbegin', logHtml);
+      
+      // Keep only last 100 entries
+      const entries = logDisplay.querySelectorAll('.log-entry');
+      if (entries.length > 100) {
+        entries[entries.length - 1].remove();
+      }
+    }
+    
+    function formatLogEntry(log) {
+      const levelColors = {
+        error: '#dc3545',
+        warn: '#ffc107',
+        info: '#17a2b8',
+        debug: '#6c757d'
+      };
+      
+      const color = levelColors[log.level] || '#6c757d';
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      
+      let html = `
+        <div class="log-entry" style="border-left: 3px solid ${color}; padding: 5px 10px; margin-bottom: 5px; background: rgba(255,255,255,0.05);">
+          <div style="color: ${color};">
+            <strong>[${time}] ${log.level.toUpperCase()}</strong>
+          </div>
+          <div>${log.message}</div>
+      `;
+      
+      if (log.data) {
+        html += `<div style="color: #aaa; font-size: 0.8em; margin-top: 3px;">${JSON.stringify(log.data)}</div>`;
+      }
+      
+      html += '</div>';
+      return html;
+    }
+    
+    // Event handlers that need to be added after DOMContentLoaded will be added there.
+    // Initialisation now happens inside DOMContentLoaded to ensure locale and theme are ready.
+  </script>
+</body>
+</html>

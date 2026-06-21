@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spin Wheel Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    #wheelContainer {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    #wheelContainer.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      width: 500px;
+      height: 500px;
+    }
+
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 60px rgba(255, 215, 0, 0.3);
+      border: 8px solid #FFD700;
+      transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    }
+
+    .wheel-segment {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      transform-origin: 100% 100%;
+      overflow: hidden;
+    }
+
+    .wheel-segment-inner {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .wheel-segment.positive .wheel-segment-inner {
+      background: linear-gradient(135deg, #00FF00, #00AA00);
+    }
+
+    .wheel-segment.negative .wheel-segment-inner {
+      background: linear-gradient(135deg, #FF0000, #AA0000);
+    }
+
+    .wheel-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      background: radial-gradient(circle, #FFD700, #FFA500);
+      border-radius: 50%;
+      border: 5px solid #fff;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .wheel-pointer {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 30px solid transparent;
+      border-right: 30px solid transparent;
+      border-top: 60px solid #FF0000;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+      z-index: 11;
+    }
+
+    .wheel-pointer::after {
+      content: '';
+      position: absolute;
+      top: -58px;
+      left: -25px;
+      width: 50px;
+      height: 50px;
+      background: #FF0000;
+      border-radius: 50%;
+      border: 4px solid #FFD700;
+    }
+
+    #resultDisplay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      background: rgba(0, 0, 0, 0.95);
+      padding: 40px 60px;
+      border-radius: 20px;
+      border: 4px solid #FFD700;
+      text-align: center;
+      z-index: 2000;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+    }
+
+    #resultDisplay.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .result-title {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    .result-title.win {
+      color: #00FF00;
+    }
+
+    .result-title.loss {
+      color: #FF4444;
+    }
+
+    .result-details {
+      font-size: 32px;
+      color: #FFD700;
+      margin: 10px 0;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .result-xp {
+      font-size: 28px;
+      color: #FFFFFF;
+      margin: 5px 0;
+    }
+
+    .user-info {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) scale(0);
+      opacity: 0;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px 40px;
+      border-radius: 15px;
+      border: 3px solid #FFD700;
+      z-index: 1001;
+      transition: all 0.3s ease;
+    }
+
+    .user-info.active {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+    }
+
+    .user-name {
+      font-size: 36px;
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+      margin-bottom: 10px;
+    }
+
+    .bet-amount {
+      font-size: 28px;
+      color: #FFFFFF;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div id="wheelContainer">
+    <div class="wheel-wrapper">
+      <div class="wheel-pointer"></div>
+      <div id="wheel"></div>
+      <div class="wheel-center">🎰</div>
+    </div>
+  </div>
+
+  <div class="user-info" id="userInfo">
+    <div class="user-name" id="userName"></div>
+    <div class="bet-amount" id="betAmount"></div>
+  </div>
+
+  <div id="resultDisplay">
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-details" id="resultValue"></div>
+    <div class="result-xp" id="netChange"></div>
+    <div class="result-xp" id="totalXP"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentRotation = 0;
+
+    // Format number helper
+    function formatNumber(value) {
+      const absValue = Math.abs(value);
+      const sign = value < 0 ? '-' : '';
+      
+      if (absValue >= 1000000) {
+        const millions = absValue / 1000000;
+        if (millions >= 10) {
+          return sign + Math.floor(millions) + 'M';
+        } else {
+          return sign + millions.toFixed(1) + 'M';
+        }
+      } else if (absValue >= 1000) {
+        return sign + Math.floor(absValue / 1000) + 'k';
+      } else {
+        return value.toString();
+      }
+    }
+
+    // Create wheel segments
+    function createWheel(fieldValues) {
+      const wheel = document.getElementById('wheel');
+      wheel.innerHTML = '';
+      
+      const numFields = fieldValues.length;
+      const anglePerSegment = 360 / numFields;
+
+      fieldValues.forEach((value, index) => {
+        const segment = document.createElement('div');
+        segment.className = `wheel-segment ${value >= 0 ? 'positive' : 'negative'}`;
+        
+        const rotation = anglePerSegment * index;
+        segment.style.transform = `rotate(${rotation}deg)`;
+
+        const inner = document.createElement('div');
+        inner.className = 'wheel-segment-inner';
+        inner.style.transform = `rotate(${-rotation}deg) translateY(-120px)`;
+        inner.textContent = formatNumber(value);
+        
+        segment.appendChild(inner);
+        wheel.appendChild(segment);
+      });
+    }
+
+    // Spin the wheel
+    function spinWheel(data) {
+      const { username, betAmount, fieldIndex, fieldValue, xpChange, netChange, xpAfter, isWin, spinConfig } = data;
+      
+      // Create wheel with current config
+      createWheel(spinConfig.field_values);
+
+      // Show user info
+      const userInfo = document.getElementById('userInfo');
+      document.getElementById('userName').textContent = username;
+      document.getElementById('betAmount').textContent = `Bet: ${formatNumber(betAmount)} XP`;
+      userInfo.classList.add('active');
+
+      // Show wheel container
+      const wheelContainer = document.getElementById('wheelContainer');
+      wheelContainer.classList.add('active');
+
+      // Calculate target rotation
+      const numFields = spinConfig.field_values.length;
+      const anglePerSegment = 360 / numFields;
+      
+      // We want the pointer (top) to point to the winning segment
+      // Add extra spins for effect (3-5 full rotations)
+      const extraSpins = 3 + Math.floor(Math.random() * 3);
+      const targetAngle = (anglePerSegment * fieldIndex) + (anglePerSegment / 2);
+      const totalRotation = (360 * extraSpins) + targetAngle;
+
+      // Spin animation
+      const wheel = document.getElementById('wheel');
+      setTimeout(() => {
+        currentRotation += totalRotation;
+        wheel.style.transform = `rotate(${currentRotation}deg)`;
+      }, 100);
+
+      // Show result after spin completes
+      setTimeout(() => {
+        showResult(username, betAmount, fieldValue, netChange, xpAfter, isWin);
+      }, 4500);
+
+      // Hide everything after showing result
+      setTimeout(() => {
+        hideAll();
+      }, 9500);
+    }
+
+    // Show result display
+    function showResult(username, betAmount, fieldValue, netChange, xpAfter, isWin) {
+      const resultDisplay = document.getElementById('resultDisplay');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultValue = document.getElementById('resultValue');
+      const netChangeEl = document.getElementById('netChange');
+      const totalXPEl = document.getElementById('totalXP');
+
+      resultTitle.textContent = isWin ? '🎉 YOU WIN! 🎉' : '😢 YOU LOSE 😢';
+      resultTitle.className = `result-title ${isWin ? 'win' : 'loss'}`;
+      
+      resultValue.textContent = `Result: ${formatNumber(fieldValue)} XP`;
+      
+      const changeText = netChange >= 0 ? `+${formatNumber(netChange)}` : formatNumber(netChange);
+      netChangeEl.textContent = `Net Change: ${changeText} XP`;
+      
+      totalXPEl.textContent = `Total XP: ${formatNumber(xpAfter)} XP`;
+
+      resultDisplay.classList.add('active');
+    }
+
+    // Hide all overlays
+    function hideAll() {
+      document.getElementById('wheelContainer').classList.remove('active');
+      document.getElementById('userInfo').classList.remove('active');
+      document.getElementById('resultDisplay').classList.remove('active');
+    }
+
+    // Listen for spin events
+    socket.on('viewer-xp:spin-result', (data) => {
+      console.log('Spin event received:', data);
+      spinWheel(data);
+    });
+
+    // Initialize with default wheel (won't be visible until spin event)
+    createWheel([5000, -2000, 1000, -5000, 2000, -1000, 10000, -3000]);
+  </script>
+</body>
+</html>

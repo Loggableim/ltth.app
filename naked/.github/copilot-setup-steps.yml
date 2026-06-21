@@ -1,0 +1,56 @@
+name: LTTH Snapshot Setup
+
+description: |
+  LTTH local snapshot. Runtime source is app/. Electron source is not present.
+
+overview:
+  stack:
+    - Node.js Express backend
+    - Socket.IO realtime events
+    - SQLite with better-sqlite3
+    - Static dashboard and OBS overlays
+    - Plugin system
+    - Go launcher sources
+
+setup:
+  prerequisites:
+    - Node.js >=18 <25
+    - npm
+    - Go for launcher work only
+
+  commands:
+    install_app: cd app && npm install
+    start_backend: cd app && npm start
+    dev_backend: cd app && npm run dev
+    test: cd app && npm test
+    build_css: cd app && npm run build:css
+
+structure:
+  active_docs:
+    - AGENTS.md
+    - README.md
+    - DOCUMENTATION_INDEX.md
+    - docs/SNAPSHOT_STATUS.md
+    - infos/llm_start_here.md
+    - infos/ARCHITECTURE.md
+    - infos/DEVELOPMENT.md
+
+  runtime:
+    - app/server.js
+    - app/modules/
+    - app/plugins/
+    - app/public/
+    - app/routes/
+    - app/test/
+
+  launcher:
+    - build-src/
+    - launcher.exe
+    - launcher-console.exe
+    - dev_launcher.exe
+
+notes:
+  - Root package.json is a command wrapper only.
+  - Install Node dependencies in app/.
+  - docs_archive/ is historical reference only.
+  - Do not add Electron workflows unless Electron source files are restored.

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Backup & Restore - Pup Cid's Little TikTool Helper</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--color-bg-primary, #0f0f1e);
+            color: var(--color-text-primary, #ffffff);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid var(--color-border, #2a2a3e); }
+        .header h1 {
+            font-size: 2.2rem; font-weight: 700; margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header p { color: var(--color-text-muted, #888); font-size: 1rem; }
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid var(--color-border, #2a2a3e); }
+        .tab-btn {
+            padding: 10px 20px; border: none; border-radius: 8px 8px 0 0; cursor: pointer;
+            font-size: 0.95rem; font-weight: 600; background: transparent;
+            color: var(--color-text-muted, #888); transition: all 0.2s; border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab-btn:hover { color: var(--color-text-primary, #fff); background: var(--color-bg-secondary, #1a1a2e); }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; background: var(--color-bg-secondary, #1a1a2e); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        /* Cards */
+        .card {
+            background: var(--color-bg-secondary, #1a1a2e);
+            border-radius: 12px; padding: 28px; margin-bottom: 20px;
+            border: 1px solid var(--color-border, #2a2a3e);
+        }
+        .card h2 { font-size: 1.25rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .card p.desc { color: var(--color-text-muted, #888); margin-bottom: 16px; font-size: 0.93rem; }
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: var(--color-text-secondary, #ccc); }
+        .form-group input[type=text] {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--color-border, #2a2a3e);
+            border-radius: 8px; background: var(--color-bg-tertiary, #0f0f1e);
+            color: var(--color-text-primary, #fff); font-size: 0.95rem; transition: border-color 0.2s;
+        }
+        .form-group input[type=text]:focus { outline: none; border-color: #667eea; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; }
+        .checkbox-label {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            padding: 8px 14px; border-radius: 8px; border: 1px solid var(--color-border, #2a2a3e);
+            font-size: 0.88rem; transition: all 0.2s; user-select: none;
+        }
+        .checkbox-label:hover { border-color: #667eea; }
+        .checkbox-label input[type=checkbox] { accent-color: #667eea; width: 15px; height: 15px; }
+        /* Buttons */
+        .btn {
+            padding: 10px 22px; border: none; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex;
+            align-items: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: var(--color-bg-tertiary, #0f0f1e); color: var(--color-text-primary, #fff); border: 1px solid var(--color-border, #2a2a3e); }
+        .btn-secondary:hover { border-color: #667eea; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        /* Alert/status */
+        .alert {
+            padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
+            font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;
+        }
+        .alert-success { background: rgba(34,197,94,0.12); border: 1px solid #22c55e; color: #22c55e; }
+        .alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid #ef4444;  color: #ef4444;  }
+        .alert-warn    { background: rgba(251,191,36,0.12); border: 1px solid #fbbf24;  color: #fbbf24;  }
+        .alert-info    { background: rgba(99,102,241,0.12); border: 1px solid #6366f1;  color: #a5b4fc;  }
+        /* Upload zone */
+        .upload-zone {
+            border: 2px dashed var(--color-border, #2a2a3e); border-radius: 10px;
+            padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: #667eea; background: rgba(102,126,234,0.07); }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .upload-zone p { color: var(--color-text-muted, #888); margin-bottom: 6px; }
+        .upload-zone p strong { color: var(--color-text-primary, #fff); }
+        /* Preview table */
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .preview-table th { text-align: left; padding: 8px 12px; color: var(--color-text-muted, #888); font-weight: 600; border-bottom: 1px solid var(--color-border, #2a2a3e); }
+        .preview-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+        }
+        .badge-new      { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .badge-conflict { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .badge-files    { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+        /* Log area */
+        .log-area {
+            background: var(--color-bg-tertiary, #0f0f1e); border-radius: 8px;
+            padding: 14px; font-family: monospace; font-size: 0.82rem; max-height: 240px;
+            overflow-y: auto; display: none; margin-top: 10px;
+        }
+        .log-area.show { display: block; }
+        .log-line { margin-bottom: 3px; }
+        .log-ok   { color: #22c55e; }
+        .log-warn { color: #fbbf24; }
+        .log-err  { color: #ef4444; }
+        .log-info { color: #a5b4fc; }
+        /* Mode selector */
+        .mode-group { display: flex; gap: 10px; }
+        .mode-btn {
+            flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--color-border, #2a2a3e);
+            background: transparent; color: var(--color-text-secondary, #ccc);
+            cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.2s; text-align: center;
+        }
+        .mode-btn:hover { border-color: #667eea; color: #fff; }
+        .mode-btn.selected { border-color: #667eea; background: rgba(102,126,234,0.12); color: #fff; }
+        .mode-desc { font-size: 0.8rem; color: var(--color-text-muted, #888); margin-top: 4px; font-weight: 400; }
+        /* File display */
+        .selected-file {
+            padding: 10px 14px; background: var(--color-bg-tertiary, #0f0f1e);
+            border-radius: 8px; font-size: 0.88rem; display: flex; align-items: center; gap: 10px;
+            border: 1px solid var(--color-border, #2a2a3e);
+        }
+        .selected-file .remove { cursor: pointer; color: #ef4444; margin-left: auto; }
+        /* Summary grid */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0; }
+        .summary-item {
+            background: var(--color-bg-tertiary, #0f0f1e); border-radius: 8px; padding: 14px;
+            text-align: center; border: 1px solid var(--color-border, #2a2a3e);
+        }
+        .summary-item .num { font-size: 1.8rem; font-weight: 700; color: #667eea; }
+        .summary-item .lbl { font-size: 0.78rem; color: var(--color-text-muted, #888); margin-top: 2px; }
+        .hidden { display: none !important; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted, #888); margin-bottom: 10px; margin-top: 16px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>💾 Config Backup &amp; Restore</h1>
+        <p>Export your current configuration to a secure backup, restore from a previous backup, or migrate from an older installation.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="export">📤 Export Backup</button>
+        <button class="tab-btn" data-tab="import">📥 Import Backup</button>
+        <button class="tab-btn" data-tab="legacy">🗂️ Legacy Import</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TAB 1: EXPORT
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-export" class="tab-panel active">
+
+        <div id="exportAlert" class="alert hidden"></div>
+
+        <div class="card">
+            <h2>📤 Export Current Configuration</h2>
+            <p class="desc">Create a complete backup ZIP of your settings. The backup can be restored later using the Import tab.</p>
+
+            <p class="section-title">What to include</p>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incGlobal" checked>
+                    🌍 Global Settings
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incPluginSettings" checked>
+                    🔌 Plugin Settings
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incPluginData" checked>
+                    📁 Plugin Data Files
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incUserConfigs" checked>
+                    User Configs
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incUploads" checked>
+                    🖼️ Uploads
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="incUserData" checked>
+                    🗄️ User Data
+                </label>
+            </div>
+
+            <div id="capWarning" class="alert alert-warn hidden" style="margin-top:14px;"></div>
+
+            <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="exportBtn">
+                    📤 Download Backup
+                </button>
+                <span id="exportStatus" class="hidden" style="color:var(--color-text-muted,#888);font-size:0.88rem;">
+                    <span class="spinner"></span> Creating backup…
+                </span>
+            </div>
+        </div>
+
+        <div class="card hidden" id="exportResultCard">
+            <h2>✅ Backup Created</h2>
+            <div id="exportResultMsg"></div>
+            <div id="exportWarnings"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TAB 2: IMPORT BACKUP
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-import" class="tab-panel">
+
+        <div id="importAlert" class="alert hidden"></div>
+
+        <!-- Step 1: Upload -->
+        <div class="card" id="importStep1">
+            <h2>📥 Import Backup File</h2>
+            <p class="desc">Upload a ZIP backup file created by this tool. The backup will be previewed before anything is changed.</p>
+
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">📦</div>
+                <p><strong>Drop your backup ZIP here</strong></p>
+                <p>or click to browse files</p>
+                <input type="file" id="fileInput" accept=".zip,application/zip" style="display:none;">
+            </div>
+
+            <div id="selectedFileRow" class="selected-file hidden" style="margin-top:12px;">
+                <span>📦</span>
+                <span id="selectedFileName"></span>
+                <span id="selectedFileSize" style="color:var(--color-text-muted,#888);"></span>
+                <span class="remove" id="clearFileBtn" title="Remove file">✕</span>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button class="btn btn-primary" id="validateBtn" disabled>
+                    🔍 Validate &amp; Preview
+                </button>
+                <span id="validateStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
+                    <span class="spinner"></span> Validating…
+                </span>
+            </div>
+        </div>
+
+        <!-- Step 2: Preview -->
+        <div class="card hidden" id="importStep2">
+            <h2>🔍 Import Preview</h2>
+
+            <div id="manifestInfo" style="margin-bottom:16px;font-size:0.88rem;color:var(--color-text-muted,#888);"></div>
+
+            <div class="summary-grid" id="summaryGrid"></div>
+
+            <div id="previewWarnings"></div>
+
+            <p class="section-title">Plugin details</p>
+            <div style="overflow-x:auto;">
+                <table class="preview-table" id="pluginTable">
+                    <thead>
+                        <tr>
+                            <th>Plugin</th>
+                            <th>New Keys</th>
+                            <th>Conflicts</th>
+                            <th>Data Files</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pluginTableBody"></tbody>
+                </table>
+            </div>
+
+            <p class="section-title">Import mode</p>
+            <div class="mode-group">
+                <button class="mode-btn" data-mode="merge" id="modeMerge">
+                    🔀 Merge
+                    <div class="mode-desc">Add missing settings only; existing values are kept.</div>
+                </button>
+                <button class="mode-btn selected" data-mode="replace" id="modeReplace">
+                    🔄 Replace
+                    <div class="mode-desc">Overwrite all matching settings with backup values.</div>
+                </button>
+            </div>
+
+            <p class="section-title">Sections to restore</p>
+            <div class="checkbox-group" id="importSections">
+                <label class="checkbox-label"><input type="checkbox" id="impGlobal" checked> 🌍 Global Settings</label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginSettings" checked> 🔌 Plugin Settings</label>
+                <label class="checkbox-label"><input type="checkbox" id="impPluginData" checked> 📁 Plugin Data Files</label>
+                <label class="checkbox-label" id="impUploadsLbl"><input type="checkbox" id="impUploads"> 🖼️ Uploads</label>
+                <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"> 🗄️ User Data</label>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="doImportBtn">
+                    ✅ Restore Now
+                </button>
+                <button class="btn btn-secondary" id="cancelImportBtn">
+                    ✕ Cancel
+                </button>
+                <span id="doImportStatus" class="hidden" style="margin-left:4px;color:var(--color-text-muted,#888);font-size:0.88rem;">
+                    <span class="spinner"></span> Importing…
+                </span>
+            </div>
+        </div>
+
+        <!-- Step 3: Result -->
+        <div class="card hidden" id="importStep3">
+            <h2>📋 Import Result</h2>
+            <div id="importResultMsg"></div>
+            <div id="importResultLog" class="log-area"></div>
+            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;">
+                🔽 Show Details
+            </button>
+            <div style="margin-top:16px;">
+                <button class="btn btn-secondary" id="newImportBtn">📥 Import Another Backup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         TAB 3: LEGACY IMPORT
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div id="tab-legacy" class="tab-panel">
+
+        <div class="alert alert-info" style="margin-bottom:16px;">
+            ℹ️ <strong>Legacy Import</strong> – Use this to migrate settings from an older installation that stores files directly in the application directory (pre-persistent-config versions).
+        </div>
+
+        <div id="legacyAlert" class="alert hidden"></div>
+
+        <div class="card">
+            <h2>🗂️ Import from Old Installation Path</h2>
+            <p class="desc">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
+
+            <div class="form-group">
+                <label for="legacyPathInput">Old Installation Path</label>
+                <div style="display:flex;gap:10px;">
+                    <input type="text" id="legacyPathInput" placeholder="e.g. C:\Users\You\ltth or /home/you/ltth" style="flex:1;">
+                    <button class="btn btn-secondary" id="legacyValidateBtn">🔍 Scan</button>
+                </div>
+            </div>
+
+            <div class="form-group hidden" id="legacyProfileGroup">
+                <label for="legacyProfileInput">Profile name for imported config (optional)</label>
+                <input type="text" id="legacyProfileInput" placeholder="imported-config" maxlength="50">
+            </div>
+
+            <div id="legacyFindings" class="hidden">
+                <p class="section-title">Found in path</p>
+                <div id="legacyFindingsList"></div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button class="btn btn-primary hidden" id="legacyImportBtn" disabled>
+                    📥 Import Legacy Settings
+                </button>
+                <span id="legacyStatus" class="hidden" style="margin-left:12px;color:var(--color-text-muted,#888);font-size:0.88rem;">
+                    <span class="spinner"></span> Importing…
+                </span>
+            </div>
+        </div>
+
+        <div class="card hidden" id="legacyResultCard">
+            <h2>📋 Import Result</h2>
+            <div id="legacyResultMsg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    // ── Tab switching ──────────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function showAlert(el, msg, type) {
+        el.className = 'alert alert-' + type;
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+    function hideEl(el) { el.classList.add('hidden'); }
+    function showEl(el) { el.classList.remove('hidden'); }
+    function fmtSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXPORT TAB
+    // ═══════════════════════════════════════════════════════════════════════════
+    const exportBtn = document.getElementById('exportBtn');
+    const exportStatus = document.getElementById('exportStatus');
+    const exportResultCard = document.getElementById('exportResultCard');
+    const exportAlert = document.getElementById('exportAlert');
+
+    // Load capabilities on page load
+    fetch('/api/config-backup/capabilities')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                showAlert(document.getElementById('capWarning'),
+                    '⚠️ Backup system not fully initialised. Export may be unavailable.', 'warn');
+                showEl(document.getElementById('capWarning'));
+            }
+        })
+        .catch(() => {
+            showAlert(document.getElementById('capWarning'),
+                '⚠️ Could not reach the backup API. Make sure the server is running.', 'warn');
+            showEl(document.getElementById('capWarning'));
+        });
+
+    exportBtn.addEventListener('click', async () => {
+        hideEl(exportAlert);
+        hideEl(exportResultCard);
+        exportBtn.disabled = true;
+        showEl(exportStatus);
+
+        const opts = {
+            includeGlobalSettings: document.getElementById('incGlobal').checked,
+            includePluginSettings: document.getElementById('incPluginSettings').checked,
+            includePluginData: document.getElementById('incPluginData').checked,
+            includeUserConfigs: document.getElementById('incUserConfigs').checked,
+            includeUploads: document.getElementById('incUploads').checked,
+            includeUserData: document.getElementById('incUserData').checked
+        };
+
+        try {
+            // Step 1: Request a one-time download token from the server
+            const tokenResp = await fetch('/api/config-backup/export-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(opts)
+            });
+
+            if (!tokenResp.ok) {
+                const err = await tokenResp.json().catch(() => ({ error: tokenResp.statusText }));
+                throw new Error(err.error || `HTTP ${tokenResp.status}`);
+            }
+
+            const tokenData = await tokenResp.json();
+            if (!tokenData.success) {
+                throw new Error(tokenData.error || 'Failed to prepare backup');
+            }
+
+            const { downloadUrl, filename } = tokenData;
+
+            // Step 2: Attempt download – primary method: window.open in top context
+            // (bypasses iframe download restrictions in browsers)
+            let opened = false;
+            try {
+                const win = window.open(downloadUrl, '_blank');
+                if (win) {
+                    opened = true;
+                }
+            } catch { /* popup blocked or not available */ }
+
+            // Fallback 1: window.top.location / window.parent.open
+            if (!opened) {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const pwin = window.parent.open(downloadUrl, '_blank');
+                        if (pwin) opened = true;
+                    }
+                } catch { /* cross-origin guard */ }
+            }
+
+            // Fallback 2: Blob download via current window – only when window.open was blocked
+            // (may silently fail inside sandboxed iframes, but worth trying)
+            if (!opened) {
+                const blobResp = await fetch(downloadUrl).catch(() => null);
+                if (blobResp && blobResp.ok) {
+                    try {
+                        const blob = await blobResp.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = blobUrl; a.download = filename;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+                        opened = true;
+                    } catch { /* ignore */ }
+                }
+            }
+
+            // Step 3: Show result card with manual download link
+            const safeFilename = escHtml(filename);
+            const safeUrl = escHtml(downloadUrl);
+            document.getElementById('exportResultMsg').innerHTML =
+                `<div class="alert alert-success">` +
+                `✅ Backup ready! &nbsp;` +
+                `📥 <a href="${safeUrl}" download="${safeFilename}" target="_blank" rel="noopener noreferrer"><strong>${safeFilename}</strong></a>` +
+                `<br><small style="opacity:0.8;">If the download did not start automatically, click the link above or right-click → "Save as…"</small>` +
+                `</div>`;
+
+            showEl(exportResultCard);
+        } catch (e) {
+            showAlert(exportAlert, '❌ Export failed: ' + e.message, 'error');
+        } finally {
+            exportBtn.disabled = false;
+            hideEl(exportStatus);
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // IMPORT TAB
+    // ═══════════════════════════════════════════════════════════════════════════
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFileRow = document.getElementById('selectedFileRow');
+    const validateBtn = document.getElementById('validateBtn');
+    const importAlert = document.getElementById('importAlert');
+    const importStep1 = document.getElementById('importStep1');
+    const importStep2 = document.getElementById('importStep2');
+    const importStep3 = document.getElementById('importStep3');
+
+    const importSections = document.getElementById('importSections');
+    if (importSections && !document.getElementById('impUserConfigs')) {
+        const userConfigsLabel = document.createElement('label');
+        userConfigsLabel.className = 'checkbox-label';
+        userConfigsLabel.id = 'impUserConfigsLbl';
+        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs" checked> User Configs';
+        importSections.insertBefore(userConfigsLabel, document.getElementById('impUploadsLbl'));
+    }
+    ['impUploads', 'impUserData'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) checkbox.checked = true;
+    });
+
+    let selectedFile = null;
+    let parsedPreview = null;
+    let importMode = 'replace';
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', e => {
+        e.preventDefault(); uploadZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) setFile(file);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+    document.getElementById('clearFileBtn').addEventListener('click', clearFile);
+    document.getElementById('cancelImportBtn').addEventListener('click', resetImport);
+    document.getElementById('newImportBtn').addEventListener('click', resetImport);
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            importMode = btn.dataset.mode;
+        });
+    });
+
+    function setFile(file) {
+        if (!file.name.endsWith('.zip') && file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
+            showAlert(importAlert, '❌ Only ZIP backup files are accepted.', 'error');
+            return;
+        }
+        selectedFile = file;
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileSize').textContent = '(' + fmtSize(file.size) + ')';
+        showEl(selectedFileRow);
+        validateBtn.disabled = false;
+        hideEl(importAlert);
+    }
+
+    function clearFile() {
+        selectedFile = null;
+        fileInput.value = '';
+        hideEl(selectedFileRow);
+        validateBtn.disabled = true;
+    }
+
+    function resetImport() {
+        clearFile();
+        parsedPreview = null;
+        hideEl(importAlert);
+        hideEl(importStep2);
+        hideEl(importStep3);
+        showEl(importStep1);
+    }
+
+    validateBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        validateBtn.disabled = true;
+        showEl(document.getElementById('validateStatus'));
+        hideEl(importAlert);
+
+        const fd = new FormData();
+        fd.append('backup', selectedFile);
+
+        try {
+            const resp = await fetch('/api/config-backup/preview-import', { method: 'POST', body: fd });
+            const data = await resp.json();
+
+            if (!data.success) {
+                const msg = (data.errors || [data.error]).join('\n');
+                showAlert(importAlert, '❌ Backup validation failed:\n' + msg, 'error');
+                return;
+            }
+
+            parsedPreview = data.preview;
+            renderPreview(data.preview, data.warnings || []);
+            hideEl(importStep1);
+            showEl(importStep2);
+        } catch (e) {
+            showAlert(importAlert, '❌ Validation error: ' + e.message, 'error');
+        } finally {
+            validateBtn.disabled = false;
+            hideEl(document.getElementById('validateStatus'));
+        }
+    });
+
+    function renderPreview(preview, warnings) {
+        const manifest = preview.manifest || {};
+        const appInfo = manifest.app || {};
+        document.getElementById('manifestInfo').innerHTML =
+            `<strong>Backup from:</strong> ${escHtml(manifest.exportedAt || 'unknown')} &nbsp;|&nbsp; ` +
+            `<strong>App version:</strong> ${escHtml(appInfo.version || '?')} &nbsp;|&nbsp; ` +
+            `<strong>Profile:</strong> ${escHtml(manifest.sourceProfile || 'none')}`;
+
+        // Summary grid
+        const grid = document.getElementById('summaryGrid');
+        const plugins = preview.plugins || {};
+        const totalNew = Object.values(plugins).reduce((s, p) => s + (p.settingsNew || 0), 0) + (preview.global?.new || 0);
+        const totalConflicts = Object.values(plugins).reduce((s, p) => s + (p.settingsConflicts || 0), 0) + (preview.global?.conflicts || 0);
+        const totalFiles = Object.values(plugins).reduce((s, p) => s + (p.dataFiles || 0), 0);
+        grid.innerHTML = [
+            { num: Object.keys(plugins).length, lbl: 'Plugins' },
+            { num: totalNew, lbl: 'New Settings' },
+            { num: totalConflicts, lbl: 'Conflicts' },
+            { num: totalFiles, lbl: 'Data Files' },
+            { num: preview.userConfigFiles || 0, lbl: 'User Configs' },
+            { num: preview.uploadFiles || 0, lbl: 'Upload Files' }
+        ].map(item =>
+            `<div class="summary-item"><div class="num">${item.num}</div><div class="lbl">${item.lbl}</div></div>`
+        ).join('');
+
+        // Plugin table
+        const tbody = document.getElementById('pluginTableBody');
+        const pluginIds = Object.keys(plugins);
+        if (pluginIds.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:var(--color-text-muted,#888);padding:16px;">No plugin settings in this backup.</td></tr>';
+        } else {
+            tbody.innerHTML = pluginIds.map(id => {
+                const p = plugins[id];
+                return `<tr>
+                    <td><strong>${escHtml(id)}</strong></td>
+                    <td>${p.settingsNew > 0 ? `<span class="badge badge-new">+${p.settingsNew}</span>` : '<span style="color:#666;">—</span>'}</td>
+                    <td>${p.settingsConflicts > 0 ? `<span class="badge badge-conflict">⚠ ${p.settingsConflicts}</span>` : '<span style="color:#666;">—</span>'}</td>
+                    <td>${p.dataFiles > 0 ? `<span class="badge badge-files">📁 ${p.dataFiles}</span>` : '<span style="color:#666;">—</span>'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Warnings
+        const warnEl = document.getElementById('previewWarnings');
+        if (warnings && warnings.length > 0) {
+            warnEl.innerHTML = warnings.slice(0, 5).map(w =>
+                `<div class="alert alert-warn" style="margin-bottom:6px;">${escHtml(w)}</div>`
+            ).join('');
+        } else {
+            warnEl.innerHTML = '';
+        }
+
+        // Show/hide file sections based on backup content
+        if ((preview.userConfigFiles || 0) > 0) {
+            showEl(document.getElementById('impUserConfigsLbl'));
+            document.getElementById('impUserConfigs').checked = true;
+        } else {
+            hideEl(document.getElementById('impUserConfigsLbl'));
+        }
+        if ((preview.uploadFiles || 0) > 0) {
+            showEl(document.getElementById('impUploadsLbl'));
+            document.getElementById('impUploads').checked = true;
+        } else {
+            hideEl(document.getElementById('impUploadsLbl'));
+        }
+        if ((preview.userDataFiles || 0) > 0) {
+            showEl(document.getElementById('impUserDataLbl'));
+            document.getElementById('impUserData').checked = true;
+        } else {
+            hideEl(document.getElementById('impUserDataLbl'));
+        }
+    }
+
+    document.getElementById('doImportBtn').addEventListener('click', async () => {
+        if (!selectedFile) return;
+        const btn = document.getElementById('doImportBtn');
+        btn.disabled = true;
+        showEl(document.getElementById('doImportStatus'));
+
+        const fd = new FormData();
+        fd.append('backup', selectedFile);
+        fd.append('mode', importMode);
+        fd.append('includeGlobalSettings', document.getElementById('impGlobal').checked);
+        fd.append('includePluginSettings', document.getElementById('impPluginSettings').checked);
+        fd.append('includePluginData', document.getElementById('impPluginData').checked);
+        fd.append('includeUserConfigs', document.getElementById('impUserConfigs').checked);
+        fd.append('includeUploads', document.getElementById('impUploads').checked);
+        fd.append('includeUserData', document.getElementById('impUserData').checked);
+
+        try {
+            const resp = await fetch('/api/config-backup/import', { method: 'POST', body: fd });
+            const data = await resp.json();
+
+            hideEl(importStep2);
+            showEl(importStep3);
+
+            const logArea = document.getElementById('importResultLog');
+            const toggleBtn = document.getElementById('toggleLogBtn');
+            logArea.innerHTML = '';
+
+            if (data.success) {
+                document.getElementById('importResultMsg').innerHTML =
+                    '<div class="alert alert-success">✅ Import completed successfully! Restart the application to apply all changes.</div>';
+            } else {
+                const errMsg = (data.errors || ['Unknown error']).join('\n');
+                document.getElementById('importResultMsg').innerHTML =
+                    `<div class="alert alert-error">❌ Import completed with errors:\n${escHtml(errMsg)}</div>`;
+            }
+
+            // Build log lines
+            const allLines = [];
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(w => allLines.push({ cls: 'log-warn', text: '⚠ ' + w }));
+            }
+            if (data.errors && data.errors.length > 0) {
+                data.errors.forEach(e => allLines.push({ cls: 'log-err', text: '✕ ' + e }));
+            }
+            if (data.report) {
+                const report = data.report;
+                if (report.globalSettings) {
+                    allLines.push({ cls: 'log-ok', text: `Global settings: ${report.globalSettings.imported?.length || 0} imported, ${report.globalSettings.skipped?.length || 0} skipped` });
+                }
+                if (report.userConfigs) {
+                    allLines.push({ cls: 'log-ok', text: `User configs: ${report.userConfigs.imported?.length || 0} imported, ${report.userConfigs.skipped?.length || 0} skipped, ${report.userConfigs.renamed?.length || 0} renamed` });
+                }
+                Object.entries(report.plugins || {}).forEach(([id, p]) => {
+                    allLines.push({ cls: 'log-info', text: `[${id}] settings: +${p.importedSettings?.length || 0} files: +${p.importedFiles?.length || 0}` });
+                });
+            }
+
+            if (allLines.length > 0) {
+                logArea.innerHTML = allLines.map(l =>
+                    `<div class="log-line ${l.cls}">${escHtml(l.text)}</div>`
+                ).join('');
+                showEl(toggleBtn);
+                toggleBtn.textContent = '🔽 Show Details';
+                toggleBtn.onclick = () => {
+                    if (logArea.classList.contains('show')) {
+                        logArea.classList.remove('show');
+                        toggleBtn.textContent = '🔽 Show Details';
+                    } else {
+                        logArea.classList.add('show');
+                        toggleBtn.textContent = '🔼 Hide Details';
+                    }
+                };
+            }
+        } catch (e) {
+            hideEl(importStep2);
+            showEl(importStep3);
+            document.getElementById('importResultMsg').innerHTML =
+                `<div class="alert alert-error">❌ Import failed: ${escHtml(e.message)}</div>`;
+        } finally {
+            btn.disabled = false;
+            hideEl(document.getElementById('doImportStatus'));
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LEGACY TAB
+    // ═══════════════════════════════════════════════════════════════════════════
+    const legacyPathInput = document.getElementById('legacyPathInput');
+    const legacyValidateBtn = document.getElementById('legacyValidateBtn');
+    const legacyImportBtn = document.getElementById('legacyImportBtn');
+    const legacyAlert = document.getElementById('legacyAlert');
+    const legacyResultCard = document.getElementById('legacyResultCard');
+    let legacyValidated = false;
+
+    legacyValidateBtn.addEventListener('click', async () => {
+        const importPath = legacyPathInput.value.trim();
+        if (!importPath) { showAlert(legacyAlert, '❌ Please enter a path.', 'error'); return; }
+        hideEl(legacyAlert);
+        legacyValidateBtn.disabled = true;
+        legacyImportBtn.disabled = true;
+        legacyValidated = false;
+
+        try {
+            const resp = await fetch('/api/config-import/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ importPath })
+            });
+            const data = await resp.json();
+
+            if (data.valid) {
+                const fl = document.getElementById('legacyFindingsList');
+                fl.innerHTML = '';
+                const checks = [
+                    { key: 'userConfigs', label: 'user_configs directory' },
+                    { key: 'userData', label: 'user_data directory' },
+                    { key: 'uploads', label: 'uploads directory' },
+                    { key: 'plugins', label: 'plugins directory' },
+                    { key: 'legacyDatabase', label: 'Legacy database.db' },
+                    { key: 'legacyData', label: 'Legacy data/ directory' }
+                ];
+                checks.forEach(c => {
+                    if (data.findings && data.findings[c.key]) {
+                        fl.innerHTML += `<div class="alert alert-success" style="margin-bottom:6px;">✅ Found: ${escHtml(c.label)}</div>`;
+                    }
+                });
+                if (data.findings?.files?.length) {
+                    fl.innerHTML += `<div class="alert alert-info" style="margin-bottom:6px;">📁 ${data.findings.files.length} file(s) detected</div>`;
+                }
+                showEl(document.getElementById('legacyFindings'));
+                showEl(document.getElementById('legacyProfileGroup'));
+                showEl(legacyImportBtn);
+                legacyImportBtn.disabled = false;
+                legacyValidated = true;
+            } else {
+                showAlert(legacyAlert, '❌ ' + (data.error || 'No configuration files found.'), 'error');
+                hideEl(document.getElementById('legacyFindings'));
+                hideEl(legacyImportBtn);
+            }
+        } catch (e) {
+            showAlert(legacyAlert, '❌ ' + e.message, 'error');
+        } finally {
+            legacyValidateBtn.disabled = false;
+        }
+    });
+
+    legacyImportBtn.addEventListener('click', async () => {
+        if (!legacyValidated) return;
+        const importPath = legacyPathInput.value.trim();
+        const profileName = document.getElementById('legacyProfileInput').value.trim();
+        legacyImportBtn.disabled = true;
+        showEl(document.getElementById('legacyStatus'));
+        hideEl(legacyAlert);
+        hideEl(legacyResultCard);
+
+        try {
+            const resp = await fetch('/api/config-import/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ importPath, profileName })
+            });
+            const data = await resp.json();
+
+            const msgEl = document.getElementById('legacyResultMsg');
+            if (data.success) {
+                const items = [];
+                if (data.imported) {
+                    if (data.imported.userConfigs > 0) items.push(`${data.imported.userConfigs} user config files`);
+                    if (data.imported.userData > 0) items.push(`${data.imported.userData} user data files`);
+                    if (data.imported.uploads > 0) items.push(`${data.imported.uploads} uploads`);
+                    if (data.imported.plugins > 0) items.push(`${data.imported.plugins} plugin data files`);
+                    if (data.imported.legacyDatabase > 0) items.push(`${data.imported.legacyDatabase} legacy database files`);
+                    if (data.imported.legacyData > 0) items.push(`${data.imported.legacyData} legacy data files`);
+                }
+                let html = '<div class="alert alert-success">✅ Import completed successfully!</div>';
+                if (items.length > 0) {
+                    html += `<div class="alert alert-info" style="margin-top:8px;">📦 Imported: ${escHtml(items.join(', '))}</div>`;
+                }
+                if (data.imported?.userConfigs > 0 || data.imported?.legacyDatabase > 0) {
+                    html += '<div class="alert alert-warn" style="margin-top:8px;">⚠️ Go to Settings → User Profiles, switch to the imported profile, then restart the application.</div>';
+                }
+                msgEl.innerHTML = html;
+            } else {
+                const errMsg = data.errors?.join('\n') || data.error || 'Import failed.';
+                msgEl.innerHTML = `<div class="alert alert-error">❌ ${escHtml(errMsg)}</div>`;
+            }
+            showEl(legacyResultCard);
+        } catch (e) {
+            showAlert(legacyAlert, '❌ ' + e.message, 'error');
+        } finally {
+            legacyImportBtn.disabled = false;
+            hideEl(document.getElementById('legacyStatus'));
+        }
+    });
+
+    legacyPathInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') legacyValidateBtn.click();
+    });
+
+    // ── XSS helper ────────────────────────────────────────────────────────────
+    function escHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+})();
+</script>
+</body>
+</html>

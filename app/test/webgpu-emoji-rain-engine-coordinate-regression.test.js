@@ -214,6 +214,26 @@ describe('WebGPU Emoji Rain client coordinate regressions', () => {
     expect(element.style.transform).toContain('scale(0.1)');
   });
 
+  test.each(scripts)('$name renders the TikTok profile image on every fifth heart balloon by default', ({ path: scriptPath }) => {
+    const { context, dom } = loadOverlayScript(scriptPath);
+    context.initPhysics();
+
+    for (let i = 0; i < 5; i++) {
+      context.spawnHeartBalloon({
+        count: 5,
+        username: 'liker',
+        profilePictureUrl: 'https://example.test/tiktok-avatar.jpg',
+        x: 0.5
+      }, i);
+    }
+
+    const balloons = dom.window.document.querySelectorAll('.heart-balloon');
+    expect(balloons).toHaveLength(5);
+    expect(balloons[0].querySelector('img')).toBeNull();
+    expect(balloons[3].querySelector('img')).toBeNull();
+    expect(balloons[4].querySelector('img').src).toBe('https://example.test/tiktok-avatar.jpg');
+  });
+
   test('standard overlay spawns gift ball rain as physics bodies with image and price despawn', () => {
     const { context, dom, circleBodies } = loadOverlayScript('public/js/webgpu-emoji-rain-engine.js');
     context.initPhysics();
@@ -260,7 +280,12 @@ describe('WebGPU Emoji Rain client coordinate regressions', () => {
       y: 0
     });
 
-    expect(dom.window.document.querySelectorAll('.gift-ball')).toHaveLength(4);
+    const giftBalls = dom.window.document.querySelectorAll('.gift-ball');
+    expect(giftBalls).toHaveLength(4);
+    giftBalls.forEach(giftBall => {
+      expect(giftBall.textContent).toBe('');
+      expect(giftBall.querySelector('img').src).toBe('https://example.test/rose.png');
+    });
     expect(circleBodies).toHaveLength(4);
   });
 

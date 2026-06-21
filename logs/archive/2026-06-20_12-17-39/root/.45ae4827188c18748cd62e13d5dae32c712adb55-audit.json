@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\.45ae4827188c18748cd62e13d5dae32c712adb55-audit.json",
+    "files": [
+        {
+            "date": 1781885239494,
+            "name": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\app-2026-06-19.log",
+            "hash": "07d2b0bc52e51876c2db1f533f056679322920cf3a8268108215df2b18893ef1"
+        },
+        {
+            "date": 1781906400063,
+            "name": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\app-2026-06-20.log",
+            "hash": "d0ce88d14def6318afdba3a384435ca49752995d95e850f27b36556d896baa3e"
+        }
+    ],
+    "hashType": "sha256"
+}

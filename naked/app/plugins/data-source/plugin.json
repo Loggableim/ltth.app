@@ -1,0 +1,11 @@
+{
+  "id": "data-source",
+  "name": "Data Source Manager",
+  "version": "1.0.0",
+  "description": "Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle.",
+  "author": "PupCid",
+  "entry": "main.js",
+  "enabled": true,
+  "category": "system",
+  "hasUI": true
+}

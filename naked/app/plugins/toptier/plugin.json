@@ -1,0 +1,12 @@
+{
+  "id": "toptier",
+  "name": "Top Tier",
+  "description": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen und 7 Overlay-Varianten für OBS.",
+  "version": "1.0.0",
+  "author": "PupCid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "overlay",
+  "dependencies": [],
+  "permissions": ["tiktok-events", "database"]
+}

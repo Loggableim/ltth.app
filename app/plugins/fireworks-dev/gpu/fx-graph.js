@@ -10,10 +10,23 @@
       this.rockets = [];
       this.imageCache = new Map();
       this.paletteCache = new Map();
+      this.config = {
+        giftVisualMappings: {},
+        finalePatternProfiles: {}
+      };
       this.width = 0;
       this.height = 0;
       this.lastTime = 0;
       this.resize();
+    }
+
+    configure(config = {}) {
+      this.config = {
+        ...this.config,
+        ...config,
+        giftVisualMappings: config.giftVisualMappings || this.config.giftVisualMappings || {},
+        finalePatternProfiles: config.finalePatternProfiles || this.config.finalePatternProfiles || {}
+      };
     }
 
     resize(scale = 1) {
@@ -280,6 +293,9 @@
       if (payload.shape === 'ring') {
         return 'ring';
       }
+      if (payload.shape === 'double-ring') {
+        return 'double-ring';
+      }
       if (payload.shape === 'spiral') {
         return 'spiral';
       }
@@ -306,6 +322,8 @@
         shape: payload.shape || giftProfile.shape,
         shapes: payload.shapes || giftProfile.shapes,
         patternOverride: payload.patternOverride || giftProfile.patternOverride,
+        finalePattern: payload.finalePattern || giftProfile.finalePattern,
+        rocketShapeSequence: payload.rocketShapeSequence || giftProfile.rocketShapeSequence,
         giftPopupPosition: payload.giftPopupPosition || giftProfile.giftPopupPosition,
         screenFxPreset: payload.screenFxPreset || giftProfile.screenFxPreset,
         cameraImpulse: payload.cameraImpulse ?? giftProfile.cameraImpulse,
@@ -314,6 +332,11 @@
     }
 
     resolveGiftEffectProfile(payload) {
+      const configuredProfile = this.resolveConfiguredGiftEffectProfile(payload);
+      if (configuredProfile) {
+        return configuredProfile;
+      }
+
       const giftName = String(payload.giftName || payload.hudLabel || '').trim().toLowerCase();
       const tier = payload.tier || 'medium';
       const massiveFallback = tier === 'massive' || (payload.coins || 0) >= 1000;
@@ -433,18 +456,54 @@
       return null;
     }
 
+    resolveConfiguredGiftEffectProfile(payload) {
+      const mappings = this.config.giftVisualMappings || {};
+      const giftIdKey = payload.giftId !== undefined && payload.giftId !== null
+        ? String(payload.giftId)
+        : null;
+      const normalizedGiftName = String(payload.giftName || '').trim().toLowerCase();
+
+      let mapping = giftIdKey ? mappings[giftIdKey] : null;
+      if (!mapping && normalizedGiftName) {
+        mapping = Object.values(mappings).find((candidate) =>
+          String(candidate?.giftName || '').trim().toLowerCase() === normalizedGiftName
+        ) || null;
+      }
+
+      if (!mapping) {
+        return null;
+      }
+
+      return {
+        shape: mapping.shape || payload.shape || 'burst',
+        shapes: Array.isArray(mapping.shapes) && mapping.shapes.length
+          ? mapping.shapes
+          : [mapping.shape || payload.shape || 'burst'],
+        rocketShapeSequence: Array.isArray(mapping.rocketShapeSequence) && mapping.rocketShapeSequence.length
+          ? mapping.rocketShapeSequence
+          : null,
+        patternOverride: mapping.patternOverride || null,
+        finalePattern: mapping.finalePattern || null,
+        giftPopupPosition: mapping.giftPopupPosition || payload.giftPopupPosition || 'bottom',
+        screenFxPreset: mapping.screenFxPreset || null,
+        cameraImpulse: mapping.cameraImpulse || 0,
+        hudLabel: mapping.hudLabel || payload.hudLabel || null
+      };
+    }
+
     resolveFinaleProfile(payload, encounterState) {
       const giftProfile = this.resolveGiftEffectProfile(payload) || {};
+      const configuredPatterns = this.config.finalePatternProfiles || {};
       const defaultShapes = Array.isArray(payload.shapes) && payload.shapes.length
         ? payload.shapes
-        : giftProfile.shapes || ['burst', 'heart', 'star', 'ring', 'spiral', 'paws'];
+        : giftProfile.shapes || ['burst', 'heart', 'star', 'ring', 'double-ring', 'spiral', 'paws'];
       const defaultPatterns = giftProfile.patternOverride
         ? [giftProfile.patternOverride]
-        : ['nova', 'fan', 'crossfire', 'ring'];
+        : ['nova', 'fan', 'crossfire', 'ring', 'double-ring'];
       const tier = payload.tier || 'medium';
       const baseProfiles = {
         small: {
-          finalePattern: giftProfile.finalePattern || 'line-sweep',
+          finalePattern: payload.finalePattern || giftProfile.finalePattern || configuredPatterns.small || 'line-sweep',
           shapeSequence: defaultShapes,
           patternSequence: defaultPatterns,
           burstCount: payload.burstCount || 5,
@@ -457,7 +516,7 @@
           followUpWaves: []
         },
         medium: {
-          finalePattern: giftProfile.finalePattern || 'arc-sweep',
+          finalePattern: payload.finalePattern || giftProfile.finalePattern || configuredPatterns.medium || 'arc-sweep',
           shapeSequence: defaultShapes,
           patternSequence: defaultPatterns,
           burstCount: payload.burstCount || 6,
@@ -470,7 +529,7 @@
           followUpWaves: []
         },
         big: {
-          finalePattern: giftProfile.finalePattern || 'crown-arc',
+          finalePattern: payload.finalePattern || giftProfile.finalePattern || configuredPatterns.big || 'crown-arc',
           shapeSequence: defaultShapes,
           patternSequence: defaultPatterns,
           burstCount: payload.burstCount || 8,
@@ -483,9 +542,9 @@
           followUpWaves: []
         },
         massive: {
-          finalePattern: giftProfile.finalePattern || 'siege-crown',
-          shapeSequence: giftProfile.shapes || ['ring', 'star', 'burst', 'spiral', 'heart', 'paws'],
-          patternSequence: ['crossfire', 'nova', 'fan', 'ring', 'spiral'],
+          finalePattern: payload.finalePattern || giftProfile.finalePattern || configuredPatterns.massive || 'siege-crown',
+          shapeSequence: giftProfile.shapes || ['ring', 'double-ring', 'star', 'burst', 'spiral', 'heart', 'paws'],
+          patternSequence: ['crossfire', 'nova', 'fan', 'ring', 'double-ring', 'spiral'],
           burstCount: payload.burstCount || 10,
           intensityMultiplier: 1.08,
           intensityJitter: 0.92,
@@ -499,7 +558,7 @@
 
       const finaleProfile = {
         ...(baseProfiles[tier] || baseProfiles.medium),
-        finalePattern: giftProfile.finalePattern || (baseProfiles[tier] || baseProfiles.medium).finalePattern,
+        finalePattern: payload.finalePattern || giftProfile.finalePattern || (baseProfiles[tier] || baseProfiles.medium).finalePattern,
         shapeSequence: payload.shapes || (baseProfiles[tier] || baseProfiles.medium).shapeSequence,
         patternSequence: payload.patternOverride ? [payload.patternOverride] : (baseProfiles[tier] || baseProfiles.medium).patternSequence,
         cameraImpulse: Math.max(payload.cameraImpulse || 0, giftProfile.cameraImpulse || (baseProfiles[tier] || baseProfiles.medium).cameraImpulse),
@@ -523,6 +582,15 @@
         if (pattern === 'rose-garden') {
           x = 0.2 + ratio * 0.6;
           y = 0.3 + Math.sin(ratio * Math.PI * 2) * 0.08 + (i % 2 === 0 ? -0.03 : 0.03);
+        } else if (pattern === 'line-sweep') {
+          x = 0.16 + ratio * 0.68;
+          y = 0.4 + (i % 2 === 0 ? -0.06 : 0.04);
+        } else if (pattern === 'arc-sweep') {
+          x = 0.14 + ratio * 0.72;
+          y = 0.52 - Math.sin(ratio * Math.PI) * 0.22;
+        } else if (pattern === 'crown-arc') {
+          x = 0.16 + ratio * 0.68;
+          y = 0.18 + Math.abs(Math.sin(ratio * Math.PI * 3)) * 0.14;
         } else if (pattern === 'heart-cascade') {
           x = 0.25 + ratio * 0.5;
           y = 0.18 + ratio * 0.34;
@@ -559,6 +627,60 @@
     }
 
     buildFollowUpFinaleWaves(finaleProfile, payload, encounterState) {
+      if (finaleProfile.finalePattern === 'crown-arc') {
+        return [
+          {
+            delayMs: 190,
+            positions: [
+              { x: 0.24, y: 0.36 },
+              { x: 0.5, y: 0.18 },
+              { x: 0.76, y: 0.36 }
+            ],
+            shapeSequence: ['double-ring', 'star', 'double-ring'],
+            patternSequence: ['double-ring', 'nova', 'double-ring'],
+            intensityMultiplier: 0.98,
+            particleMultiplier: 68,
+            cameraImpulse: 0.36
+          }
+        ];
+      }
+
+      if (finaleProfile.finalePattern === 'arc-sweep') {
+        return [
+          {
+            delayMs: 220,
+            positions: [
+              { x: 0.3, y: 0.38 },
+              { x: 0.5, y: 0.26 },
+              { x: 0.7, y: 0.38 }
+            ],
+            shapeSequence: ['ring', 'heart', 'ring'],
+            patternSequence: ['ring', 'lobe', 'ring'],
+            intensityMultiplier: 0.82,
+            particleMultiplier: 56,
+            cameraImpulse: 0.24
+          }
+        ];
+      }
+
+      if (finaleProfile.finalePattern === 'line-sweep') {
+        return [
+          {
+            delayMs: 150,
+            positions: [
+              { x: 0.22, y: 0.48 },
+              { x: 0.5, y: 0.4 },
+              { x: 0.78, y: 0.48 }
+            ],
+            shapeSequence: ['burst', 'star', 'burst'],
+            patternSequence: ['fan', 'fan', 'fan'],
+            intensityMultiplier: 0.74,
+            particleMultiplier: 46,
+            cameraImpulse: 0.18
+          }
+        ];
+      }
+
       if (finaleProfile.finalePattern === 'siege-crown') {
         return [
           {
@@ -657,6 +779,10 @@
 
         if (pattern === 'spiral') {
           angle = Math.PI * 5 * ratio + Math.random() * 0.18;
+        } else if (pattern === 'double-ring') {
+          const shell = i % 2;
+          angle = Math.PI * 2 * ratio + (shell === 0 ? 0 : Math.PI / Math.max(6, count / 8));
+          speed *= shell === 0 ? 0.94 : 1.24;
         } else if (pattern === 'paw-burst') {
           const cluster = i % 5;
           const clusterAngles = [-Math.PI * 0.88, -Math.PI * 0.56, -Math.PI * 0.24, Math.PI * 0.08, Math.PI * 0.42];
@@ -724,7 +850,7 @@
         return;
       }
 
-      if (payload.shape === 'ring') {
+      if (payload.shape === 'ring' || payload.shape === 'double-ring') {
         particle.renderAs = 'ring';
         particle.outlineOnly = true;
       }
@@ -761,6 +887,17 @@
         this.spawnShockwave(centerX, centerY, {
           shockwaveScale: (profile.shockwaveScale || 1) * 1.15
         });
+      }
+
+      if (payload.shape === 'double-ring') {
+        this.spawnShockwave(centerX, centerY, {
+          shockwaveScale: (profile.shockwaveScale || 1) * 1.08
+        });
+        setTimeout(() => {
+          this.spawnShockwave(centerX, centerY, {
+            shockwaveScale: (profile.shockwaveScale || 1) * 1.42
+          });
+        }, 130);
       }
     }
 

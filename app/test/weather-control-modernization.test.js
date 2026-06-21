@@ -77,6 +77,20 @@ describe('Weather Control modernization', () => {
     expect(engine).toContain('drawHeatwave(effect)');
   });
 
+  test('particle-based ambient effects keep their parent effect context', () => {
+    ['fireflies', 'sakura', 'embers'].forEach((effectName) => {
+      const acquireBlock = engine.match(new RegExp(`this\\.pools\\.${effectName}\\.acquire\\(\\{[\\s\\S]{0,300}?\\}\\)`));
+      expect(acquireBlock).toBeTruthy();
+      expect(acquireBlock[0]).toContain('parentEffect: effect');
+    });
+  });
+
+  test('sunbeam rendering uses soft volumetric light without lens flare artifacts', () => {
+    expect(engine).toContain('drawSoftSunbeams(effect)');
+    expect(engine).toContain('drawAmbientLightHaze(effect)');
+    expect(engine).not.toContain('this.drawLensFlare(effect)');
+  });
+
   test('UI exposes compact controls for presets, sequences, active effects, import/export, audio, triggers and filtering', () => {
     expect(ui).toContain('effectSearch');
     expect(ui).toContain('effectCategoryFilter');
@@ -88,5 +102,12 @@ describe('Weather Control modernization', () => {
     expect(ui).toContain('audioEnabled');
     expect(ui).toContain('trigger-follow-enabled');
     expect(ui).toContain('effect-heatwave-enabled');
+  });
+
+  test('UI copies the OBS overlay URL with Clipboard API and fallback selection', () => {
+    expect(ui).toContain('navigator.clipboard.writeText');
+    expect(ui).toContain('copyWithSelectionFallback(input)');
+    expect(ui).toContain('input.removeAttribute(\'readonly\')');
+    expect(ui).toContain('input.setSelectionRange(0, input.value.length)');
   });
 });

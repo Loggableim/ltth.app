@@ -81,6 +81,7 @@ class WebGPUEmojiRainPlugin {
     this.spawnQueue = [];
     this.spawnBatchSize = 10;
     this.spawnBatchInterval = null;
+    this.globalTriggerResetInterval = null;
     
     // Debug mode
     this.debugMode = false;
@@ -152,7 +153,7 @@ class WebGPUEmojiRainPlugin {
     this.startSpawnBatchProcessor();
     
     // Reset global trigger counter periodically
-    setInterval(() => {
+    this.globalTriggerResetInterval = setInterval(() => {
       this.globalTriggerCount = 0;
     }, this.globalTriggerWindow);
 
@@ -717,13 +718,59 @@ class WebGPUEmojiRainPlugin {
   }
 
   getProfilePictureUrl(data = {}) {
-    return data.profilePictureUrl ||
-      data.profilePicture ||
-      data.avatarUrl ||
-      data.avatar ||
-      data.user?.profilePictureUrl ||
-      data.user?.avatarUrl ||
-      null;
+    const candidates = [
+      data.profilePictureUrl,
+      data.profilePicture,
+      data.avatarUrl,
+      data.avatar,
+      data.user?.profilePictureUrl,
+      data.user?.profilePicture,
+      data.user?.avatarUrl,
+      data.user?.avatar,
+      data.user?.avatarThumb,
+      data.user?.avatarMedium,
+      data.user?.avatarLarger
+    ];
+
+    for (const candidate of candidates) {
+      const url = this.normalizeImageUrl(candidate);
+      if (url) {
+        return url;
+      }
+    }
+
+    return null;
+  }
+
+  normalizeImageUrl(value) {
+    if (!value) {
+      return null;
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    const candidates = [
+      value.url,
+      value.uri,
+      value.urlList,
+      value.url_list,
+      value.urls
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        const firstUrl = candidate.find(item => typeof item === 'string' && item.trim());
+        if (firstUrl) {
+          return firstUrl;
+        }
+      } else if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate;
+      }
+    }
+
+    return null;
   }
 
   getHeartBalloonCount(config, data = {}) {
@@ -807,14 +854,14 @@ class WebGPUEmojiRainPlugin {
   }
 
   getGiftImageUrl(data = {}, catalogGift = null) {
-    return data.giftPictureUrl ||
+    return catalogGift?.image_url ||
+      catalogGift?.imageUrl ||
+      data.gift?.image_url ||
+      data.gift?.imageUrl ||
+      data.giftPictureUrl ||
       data.giftImageUrl ||
       data.imageUrl ||
       data.image_url ||
-      data.gift?.image_url ||
-      data.gift?.imageUrl ||
-      catalogGift?.image_url ||
-      catalogGift?.imageUrl ||
       null;
   }
 
@@ -899,7 +946,7 @@ class WebGPUEmojiRainPlugin {
 
     const username = params.username || 'Unknown';
     const maxCount = Math.max(1, parseInt(config.heart_balloon_max_hearts || config.max_count_per_event || 24, 10));
-    const profileEvery = Math.max(1, parseInt(config.heart_balloon_profile_every || 4, 10));
+    const profileEvery = Math.max(1, parseInt(config.heart_balloon_profile_every || 5, 10));
     const count = Math.max(1, Math.min(parseInt(params.count || config.heart_balloon_test_count || 8, 10), maxCount));
 
     const spawnData = {
@@ -1249,6 +1296,20 @@ class WebGPUEmojiRainPlugin {
     res.sendFile(path.join(__dirname, 'overlay.html'));
   }
 
+  resolveUploadFilePath(filename) {
+    if (!filename || filename !== path.basename(filename)) {
+      return null;
+    }
+
+    const uploadRoot = path.resolve(this.uploadDir);
+    const filePath = path.resolve(uploadRoot, filename);
+    if (!filePath.startsWith(uploadRoot + path.sep)) {
+      return null;
+    }
+
+    return filePath;
+  }
+
   registerRoutes() {
     // Serve plugin UI (configuration page)
     this.api.registerRoute('get', '/webgpu-emoji-rain/ui', (req, res) => {
@@ -1272,7 +1333,11 @@ class WebGPUEmojiRainPlugin {
     // Serve uploaded emoji images
     this.api.registerRoute('get', '/webgpu-emoji-rain/uploads/:filename', (req, res) => {
       const filename = req.params.filename;
-      const filePath = path.join(this.uploadDir, filename);
+      const filePath = this.resolveUploadFilePath(filename);
+
+      if (!filePath) {
+        return res.status(400).json({ success: false, error: 'Invalid filename' });
+      }
 
       if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
@@ -1544,7 +1609,11 @@ class WebGPUEmojiRainPlugin {
     this.api.registerRoute('delete', '/api/webgpu-emoji-rain/images/:filename', (req, res) => {
       try {
         const filename = req.params.filename;
-        const filePath = path.join(this.uploadDir, filename);
+        const filePath = this.resolveUploadFilePath(filename);
+
+        if (!filePath) {
+          return res.status(400).json({ success: false, error: 'Invalid filename' });
+        }
 
         if (!fs.existsSync(filePath)) {
           return res.status(404).json({ success: false, error: 'File not found' });
@@ -2634,7 +2703,7 @@ class WebGPUEmojiRainPlugin {
     // Register "Herzballons" action
     this.api.registerFlowAction('webgpu_emoji_rain_heart_balloons', {
       name: 'Herzballons',
-      description: 'Spawn rising heart balloons with the viewer profile picture every fourth balloon',
+      description: 'Spawn rising heart balloons with the viewer profile picture every fifth balloon',
       icon: '♥',
       category: 'effects',
       parameters: {
@@ -2692,6 +2761,12 @@ class WebGPUEmojiRainPlugin {
     // Stop spawn batch processor
     if (this.spawnBatchInterval) {
       clearInterval(this.spawnBatchInterval);
+      this.spawnBatchInterval = null;
+    }
+
+    if (this.globalTriggerResetInterval) {
+      clearInterval(this.globalTriggerResetInterval);
+      this.globalTriggerResetInterval = null;
     }
     
     // Unregister GCCE commands

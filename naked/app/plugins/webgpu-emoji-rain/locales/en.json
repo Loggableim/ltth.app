@@ -1,0 +1,128 @@
+{
+  "webgpu_emoji_rain": {
+    "title": "Emoji Rain Settings",
+    "subtitle": "Interactive Emoji Overlays with GCCE Commands",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable Emoji Rain",
+      "trigger_on_gift": "Trigger on Gift",
+      "trigger_on_follow": "Trigger on Follow",
+      "trigger_on_like": "Trigger on Like Milestone",
+      "like_threshold": "Like Threshold",
+      "duration": "Rain Duration (seconds)",
+      "intensity": "Rain Intensity",
+      "emoji_size": "Emoji Size",
+      "custom_emojis": "Custom Emojis",
+      "save": "Save Settings",
+      "max_count_per_event": "Max Count Per Event",
+      "max_intensity": "Max Intensity"
+    },
+    "rate_limit": {
+      "title": "Rate Limiting (Optional)",
+      "description": "Limits the number of emojis per second and queues excess emojis",
+      "enabled": "Enable Rate Limiting",
+      "emojis_per_second": "Max Emojis per Second",
+      "help": "Useful during many simultaneous events (e.g. like waves) to maintain performance",
+      "queue_info": "Emojis exceeding the limit are queued and processed gradually"
+    },
+    "anti_spam": {
+      "title": "Anti-Spam & Safety",
+      "global_max_triggers": "Max Triggers Per 30s",
+      "user_cooldown": "User Cooldown (ms)",
+      "global_cooldown": "Global Cooldown (ms)",
+      "emoji_blocklist": "Blocked Emojis"
+    },
+    "toaster_mode": {
+      "title": "Toaster Mode (Low-End PCs)",
+      "description": "Reduces CPU usage and resource consumption for weak PCs",
+      "enabled": "Enable Toaster Mode",
+      "help": "Optimized for maximum performance on weak systems",
+      "changes_title": "What changes:",
+      "max_emojis": "Max Emojis: 200 → 50",
+      "target_fps": "Target FPS: 60 → 30",
+      "rotation": "Rotation: Disabled",
+      "wind": "Wind: Disabled",
+      "effects": "Rainbow/Pixel/Glow: Disabled",
+      "burst": "Burst Intensity: Reduced",
+      "tip": "Use Toaster Mode if your PC slows down during streaming or CPU usage is too high."
+    },
+    "commands": {
+      "title": "Chat Commands (GCCE)",
+      "description": "Available chat commands for viewers",
+      "rain": "/rain [preset] - Trigger emoji rain",
+      "emoji": "/emoji <emoji> [count] [intensity] - Spawn specific emoji",
+      "beans": "/beans - SuperFan burst effect (subscribers only)",
+      "storm": "/storm [emoji] - Heavy emoji storm (VIP only)",
+      "rainstop": "/rainstop - Stop all rain (moderator only)"
+    },
+    "presets": {
+      "title": "Presets",
+      "add": "Add Preset",
+      "edit": "Edit",
+      "delete": "Delete",
+      "trigger": "Trigger",
+      "name": "Name",
+      "emoji": "Emoji",
+      "count": "Count",
+      "intensity": "Intensity",
+      "duration": "Duration (ms)",
+      "burst": "Burst Mode",
+      "spawn_area": "Spawn Area"
+    },
+    "user_mappings": {
+      "title": "User Mappings",
+      "username": "Username",
+      "emoji": "Emoji",
+      "search": "Search",
+      "import": "Import",
+      "export": "Export",
+      "add": "Add Mapping",
+      "delete": "Delete",
+      "bulk_import": "Bulk Import (JSON)",
+      "merge": "Merge with existing"
+    },
+    "uploads": {
+      "title": "Uploaded Images",
+      "upload": "Upload Image",
+      "filename": "Filename",
+      "size": "Size",
+      "created": "Created",
+      "delete": "Delete",
+      "max_size": "Max 5MB per file",
+      "allowed_types": "PNG, JPG, GIF, WebP, SVG"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay URL",
+      "obs_url": "OBS HUD URL",
+      "copy": "Copy URL",
+      "open": "Open Overlay",
+      "test": "Test Rain",
+      "pause": "Pause",
+      "resume": "Resume",
+      "clear": "Clear",
+      "theme": "Theme",
+      "opacity": "Opacity",
+      "speed": "Speed",
+      "bounding_box": "Bounding Box"
+    },
+    "debug": {
+      "title": "Debug & Telemetry",
+      "enabled": "Debug Mode",
+      "metrics": "Metrics",
+      "total_triggers": "Total Triggers",
+      "command_triggers": "Command Triggers",
+      "event_triggers": "Event Triggers",
+      "flow_triggers": "Flow Triggers",
+      "dropped_events": "Dropped Events",
+      "avg_count": "Avg Count",
+      "avg_intensity": "Avg Intensity",
+      "reset_metrics": "Reset Metrics"
+    },
+    "preview": {
+      "title": "Preview",
+      "start": "Start Preview",
+      "stop": "Stop Preview"
+    }
+  }
+}

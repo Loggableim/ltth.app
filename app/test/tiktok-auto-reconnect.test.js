@@ -7,6 +7,9 @@
 
 const Database = require('../modules/database');
 const TikTokConnector = require('../modules/tiktok');
+const {
+    shouldAutoReconnectOnStartup
+} = require('../modules/tiktok-auto-reconnect-policy');
 const fs = require('fs');
 const path = require('path');
 const EventEmitter = require('events');
@@ -175,5 +178,49 @@ describe('TikTok Auto-Reconnect', () => {
 
         expect(savedUsername).toBe('testuser');
         expect(autoReconnectEnabled).toBe(true); // Default is enabled
+    });
+
+    test('startup auto-reconnect should be disabled in safe mode', () => {
+        expect(shouldAutoReconnectOnStartup({
+            autoReconnectSetting: 'true',
+            savedUsername: 'testuser',
+            env: { LTTH_SAFE_MODE: 'true' }
+        })).toEqual({
+            enabled: false,
+            reason: 'safe_mode'
+        });
+    });
+
+    test('startup auto-reconnect should be disabled by launcher plugin-disable mode', () => {
+        expect(shouldAutoReconnectOnStartup({
+            autoReconnectSetting: 'true',
+            savedUsername: 'testuser',
+            env: { DISABLE_PLUGINS: 'true' }
+        })).toEqual({
+            enabled: false,
+            reason: 'safe_mode'
+        });
+    });
+
+    test('startup auto-reconnect should be disabled by explicit environment flag', () => {
+        expect(shouldAutoReconnectOnStartup({
+            autoReconnectSetting: 'true',
+            savedUsername: 'testuser',
+            env: { LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true' }
+        })).toEqual({
+            enabled: false,
+            reason: 'env_disabled'
+        });
+    });
+
+    test('startup auto-reconnect should proceed when enabled and not in safe mode', () => {
+        expect(shouldAutoReconnectOnStartup({
+            autoReconnectSetting: 'true',
+            savedUsername: 'testuser',
+            env: {}
+        })).toEqual({
+            enabled: true,
+            reason: 'enabled'
+        });
     });
 });

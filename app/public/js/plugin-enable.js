@@ -50,7 +50,7 @@
             btn.textContent = originalText;
             btn.disabled = false;
             if (statusMsg) {
-                statusMsg.textContent = errorText;
+                statusMsg.textContent = error && error.message ? error.message : errorText;
                 statusMsg.style.color = '#ef4444';
             }
             

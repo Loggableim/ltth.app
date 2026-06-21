@@ -186,6 +186,9 @@ class CoinBattlePlugin {
       language: 'de',
       font: 'default',
       fontSize: 16,
+      overlayResolution: '1920x1080',
+      overlayWidth: 1920,
+      overlayHeight: 1080,
       showAvatars: true,
       showBadges: true,
       animationSpeed: 'normal',
@@ -512,7 +515,7 @@ class CoinBattlePlugin {
             }
           }
 
-          const match = this.engine.startMatch(matchMode, matchDuration);
+          const match = this.engine.startMatch(resolvedMode, matchDuration);
           let pyramid = null;
 
           if (match.mode === 'pyramid') {

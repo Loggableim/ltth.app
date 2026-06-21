@@ -11,6 +11,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
   let mockDb;
   let mockIo;
   let routeHandlers;
+  let plugin;
 
   beforeEach(() => {
     mockLogger = {
@@ -58,8 +59,15 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
     };
   });
 
+  afterEach(async () => {
+    if (plugin && typeof plugin.destroy === 'function') {
+      await plugin.destroy();
+    }
+    plugin = null;
+  });
+
   test('emits socket event after manual avatar generation', async () => {
-    const plugin = new TalkingHeadsPlugin(mockApi);
+    plugin = new TalkingHeadsPlugin(mockApi);
     await plugin.init();
 
     // Mock _generateAvatarAndSprites to simulate successful generation
@@ -118,7 +126,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
   });
 
   test('emits socket event after avatar assignment', async () => {
-    const plugin = new TalkingHeadsPlugin(mockApi);
+    plugin = new TalkingHeadsPlugin(mockApi);
     await plugin.init();
 
     // Mock _generateAvatarAndSprites
@@ -178,7 +186,7 @@ describe('Talking Heads Avatar Generation Socket Events', () => {
   });
 
   test('does not emit socket event when generation fails', async () => {
-    const plugin = new TalkingHeadsPlugin(mockApi);
+    plugin = new TalkingHeadsPlugin(mockApi);
     await plugin.init();
 
     // Mock _generateAvatarAndSprites to simulate failure

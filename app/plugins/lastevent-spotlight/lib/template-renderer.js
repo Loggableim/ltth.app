@@ -96,12 +96,49 @@ class TemplateRenderer {
     return div.innerHTML;
   }
 
+  escapeAttribute(text) {
+    return this.escapeHtml(text).replace(/"/g, '&quot;');
+  }
+
   /**
    * Get current design variant configuration
    */
   getVariantConfig() {
     const variant = this.settings.designVariant || 'default';
     return this.designVariants[variant] || this.designVariants.default;
+  }
+
+  normalizeFontToken(font) {
+    const trimmed = typeof font === 'string' ? font.trim() : '';
+    if (!trimmed) {
+      return '';
+    }
+    if (/^["'].*["']$/.test(trimmed)) {
+      return trimmed;
+    }
+    if (/^[a-z-]+$/i.test(trimmed) && !/\s/.test(trimmed)) {
+      return trimmed;
+    }
+    return /\s/.test(trimmed) ? `'${trimmed}'` : trimmed;
+  }
+
+  resolveFontFamily(fontFamily, options = {}) {
+    const configuredFonts = typeof fontFamily === 'string' && fontFamily.trim()
+      ? fontFamily.split(',').map(part => this.normalizeFontToken(part)).filter(Boolean)
+      : [];
+    const primaryFonts = options.retro
+      ? ["'Press Start 2P'", "'Courier New'", 'monospace']
+      : (configuredFonts.length > 0 ? configuredFonts : ["'Exo 2'"]);
+    const fallbackFonts = [
+      "'Segoe UI'",
+      "'Segoe UI Emoji'",
+      "'Segoe UI Symbol'",
+      "'Noto Sans'",
+      "'Noto Color Emoji'",
+      'sans-serif'
+    ];
+
+    return [...new Set([...primaryFonts, ...configuredFonts, ...fallbackFonts])].join(', ');
   }
 
   /**
@@ -370,7 +407,7 @@ class TemplateRenderer {
     const encodedContent = encodeURIComponent(content);
     const rx = borderRadius ? `rx="${borderRadius}"` : '';
     
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23${backgroundColor.replace('#', '')}' ${rx} width='100' height='100'/%3E%3Ctext x='50' y='55' text-anchor='middle' dominant-baseline='middle' fill='${textColor}' font-size='${fontSize}' font-family='sans-serif'%3E${encodedContent}%3C/text%3E%3C/svg%3E`;
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23${backgroundColor.replace('#', '')}' ${rx} width='100' height='100'/%3E%3Ctext x='50' y='55' text-anchor='middle' dominant-baseline='middle' fill='${textColor}' font-size='${fontSize}' font-family='Segoe UI Emoji,Segoe UI Symbol,Segoe UI,sans-serif'%3E${encodedContent}%3C/text%3E%3C/svg%3E`;
   }
 
   /**
@@ -505,7 +542,9 @@ class TemplateRenderer {
     const giftPictureUrl = this.normalizeImageUrl(preloadedGiftPicUrl || userData.metadata?.giftPictureUrl);
     
     // Determine fallback emoji based on event type
-    const giftEmoji = userData.eventType === 'topgift' ? '💎' : (userData.eventType === 'giftstreak' ? '🔥' : '🎁');
+    const giftEmoji = userData.eventType === 'topgift'
+      ? '\u{1F48E}'
+      : (userData.eventType === 'giftstreak' ? '\u{1F525}' : '\u{1F381}');
     
     // Fallback SVG data URI for when gift picture fails to load
     const fallbackSvg = this.generateFallbackSvg(giftEmoji, { borderRadius: '10', fontSize: '50' });
@@ -558,7 +597,7 @@ class TemplateRenderer {
   buildTextContent(userData, fontSize, variant, isGiftEvent, hasGiftData) {
     const textParts = [];
     const fontColor = this.settings.fontColor || '#FFFFFF';
-    const fontFamily = variant.retroFont ? '"Press Start 2P", "Courier New", monospace' : (this.settings.fontFamily || 'Exo 2');
+    const fontFamily = this.resolveFontFamily(this.settings.fontFamily, { retro: variant.retroFont });
     const actualFontSize = variant.retroFont ? this.calculateReducedSize(fontSize, 0.6) : fontSize;
 
     // Event label
@@ -577,7 +616,7 @@ class TemplateRenderer {
     }
     
     textParts.push(`
-      <div class="event-label" style="${labelStyle}">
+      <div class="event-label" style="${this.escapeAttribute(labelStyle)}">
         ${escapedLabel}
       </div>
     `);
@@ -600,7 +639,7 @@ class TemplateRenderer {
       }
       
       textParts.push(`
-        <div class="username" style="${usernameStyle}">${escapedNickname}</div>
+        <div class="username" style="${this.escapeAttribute(usernameStyle)}">${escapedNickname}</div>
       `);
     }
 
@@ -617,13 +656,13 @@ class TemplateRenderer {
       if (userData.metadata.giftCount && userData.metadata.giftCount > 1) {
         const giftCount = parseInt(userData.metadata.giftCount) || 0;
         const countColor = variant.neonGlow ? '#00ff00' : '#00ff00';
-        giftInfo.push(`<span style="color: ${countColor};">×${giftCount}</span>`);
+        giftInfo.push(`<span style="color: ${countColor};">&times;${giftCount}</span>`);
       }
       
       if (userData.metadata.coins && userData.metadata.coins > 0) {
         const coins = parseInt(userData.metadata.coins) || 0;
         const coinColor = variant.neonGlow ? '#ffd700' : '#ffd700';
-        giftInfo.push(`<span style="color: ${coinColor};">💰 ${coins} coins</span>`);
+        giftInfo.push(`<span style="color: ${coinColor};">&#x1F4B0; ${coins} coins</span>`);
       }
       
       if (giftInfo.length > 0) {
@@ -644,7 +683,7 @@ class TemplateRenderer {
         }
         
         textParts.push(`
-          <div class="gift-metadata" style="${metadataStyle}">
+          <div class="gift-metadata" style="${this.escapeAttribute(metadataStyle)}">
             ${giftInfo.join(' ')}
           </div>
         `);

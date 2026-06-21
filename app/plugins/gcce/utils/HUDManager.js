@@ -843,6 +843,7 @@ class HUDManager {
         this.api.log(`[HUD] Cleaned up ${cleaned} expired element(s)`, 'debug');
       }
     }, 5000);
+    this.cleanupInterval.unref?.();
   }
 
   /**

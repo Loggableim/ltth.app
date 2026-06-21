@@ -1,0 +1,192 @@
+{
+  "plugin": {
+    "name": "CoinBattle",
+    "description": "Live-Kampfspiel, bei dem Zuschauer durch das Senden von TikTok-Geschenken Coins sammeln"
+  },
+  "ui": {
+    "title": "CoinBattle Konfiguration",
+    "subtitle": "Verwalten Sie Live-Kämpfe und Ranglisten",
+    "tabs": {
+      "control": "Steuerung",
+      "settings": "Einstellungen",
+      "history": "Verlauf",
+      "leaderboard": "Rangliste"
+    }
+  },
+  "match": {
+    "start": "Match starten",
+    "end": "Match beenden",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "extend": "Verlängern",
+    "active": "Aktives Match",
+    "inactive": "Kein aktives Match",
+    "duration": "Dauer",
+    "remaining": "Verbleibend",
+    "elapsed": "Vergangen",
+    "mode": "Modus",
+    "status": "Status"
+  },
+  "modes": {
+    "solo": "Solo",
+    "team": "Team",
+    "pyramid": "Pyramide"
+  },
+  "teams": {
+    "red": "Team Rot",
+    "blue": "Team Blau",
+    "assignment": "Teamzuweisung",
+    "random": "Zufällig",
+    "manual": "Manuell",
+    "alternate": "Abwechselnd"
+  },
+  "multiplier": {
+    "title": "Multiplikator",
+    "activate": "Aktivieren",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "duration": "Dauer (Sekunden)",
+    "value": "Wert"
+  },
+  "pyramid": {
+    "title": "Pyramidenmodus",
+    "description": "Spieler kämpfen um den Aufstieg in der Pyramide durch Geschenke oder Likes",
+    "enabled": "Pyramidenmodus aktivieren",
+    "autoStart": "Auto-Start bei erstem Geschenk",
+    "rowCount": "Anzahl der Reihen",
+    "roundDuration": "Rundendauer (Sekunden)",
+    "extensionPerCoin": "Verlängerung pro Coin (Sekunden)",
+    "maxExtension": "Maximale Verlängerung (Sekunden)",
+    "coinsPerPoint": "Punkte pro Coin",
+    "likesPerPoint": "Punkte pro Like",
+    "knockout": "Knockout!",
+    "takesLead": "übernimmt die Führung!",
+    "roundStarted": "Pyramiden-Runde gestartet!",
+    "roundEnded": "Pyramiden-Runde beendet!",
+    "rows": {
+      "2": "2 Reihen (1+2 = 3 Plätze)",
+      "3": "3 Reihen (1+2+4 = 7 Plätze)",
+      "4": "4 Reihen (1+2+4+6 = 13 Plätze)"
+    }
+  },
+  "settings": {
+    "general": "Allgemein",
+    "gameplay": "Gameplay",
+    "display": "Anzeige",
+    "advanced": "Erweitert",
+    "matchDuration": "Match-Dauer (Sekunden)",
+    "autoStart": "Auto-Start bei Geschenk",
+    "autoReset": "Auto-Reset nach Match",
+    "autoExtension": "Auto-Verlängerung",
+    "extensionThreshold": "Verlängerungs-Schwelle (Coins)",
+    "extensionDuration": "Verlängerungs-Dauer (Sekunden)",
+    "enableMultipliers": "Multiplikatoren aktivieren",
+    "theme": "Theme",
+    "skin": "Skin",
+    "layout": "Layout",
+    "language": "Sprache",
+    "font": "Schriftart",
+    "fontSize": "Schriftgröße",
+    "showAvatars": "Avatare anzeigen",
+    "showBadges": "Abzeichen anzeigen",
+    "animationSpeed": "Animationsgeschwindigkeit",
+    "toasterMode": "Toaster-Modus (Performance)"
+  },
+  "themes": {
+    "light": "Hell",
+    "dark": "Dunkel",
+    "neon": "Neon",
+    "minimal": "Minimal"
+  },
+  "skins": {
+    "gold": "Gold",
+    "futuristic": "Futuristisch",
+    "retro": "Retro"
+  },
+  "layouts": {
+    "fullscreen": "Vollbild",
+    "compact": "Kompakt"
+  },
+  "leaderboard": {
+    "title": "Rangliste",
+    "session": "Sitzung",
+    "lifetime": "Lebensdauer",
+    "weekly": "Wöchentlich",
+    "season": "Saison",
+    "rank": "Rang",
+    "player": "Spieler",
+    "coins": "Coins",
+    "gifts": "Geschenke",
+    "team": "Team",
+    "badges": "Abzeichen",
+    "manageUsers": "Benutzer verwalten",
+    "deleteUser": "Benutzer löschen",
+    "deleteUserConfirm": "Möchten Sie diesen Benutzer wirklich aus allen Ranglisten löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "userDeleted": "Benutzer erfolgreich gelöscht",
+    "noData": "Keine Daten verfügbar"
+  },
+  "season": {
+    "title": "Saison-Konfiguration",
+    "name": "Saison-Name",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "active": "Aktive Saison",
+    "noActiveSeason": "Keine aktive Saison konfiguriert",
+    "createUpdate": "Saison erstellen/aktualisieren",
+    "description": "Konfigurieren Sie den Datumsbereich für die Saison-Rangliste. Es kann nur eine Saison gleichzeitig aktiv sein.",
+    "saved": "Saison erfolgreich gespeichert",
+    "period": "Zeitraum"
+  },
+  "history": {
+    "title": "Match-Verlauf",
+    "matchId": "Match-ID",
+    "date": "Datum",
+    "duration": "Dauer",
+    "mode": "Modus",
+    "winner": "Gewinner",
+    "totalCoins": "Gesamte Coins",
+    "participants": "Teilnehmer",
+    "export": "Exportieren"
+  },
+  "badges": {
+    "top_donator": "Top-Spender",
+    "legend": "Legende",
+    "supporter": "Unterstützer",
+    "team_player": "Teamspieler",
+    "coin_master": "Coin-Meister",
+    "generous": "Großzügig",
+    "champion": "Champion",
+    "veteran": "Veteran"
+  },
+  "simulation": {
+    "title": "Offline-Simulation",
+    "start": "Simulation starten",
+    "stop": "Simulation stoppen",
+    "description": "Teste Layouts und Animationen ohne TikTok Live"
+  },
+  "overlay": {
+    "title": "Overlay",
+    "url": "OBS Browser Source URL",
+    "copy": "URL kopieren",
+    "preview": "Vorschau",
+    "customize": "Anpassen"
+  },
+  "messages": {
+    "matchStarted": "Match gestartet",
+    "matchEnded": "Match beendet",
+    "matchPaused": "Match pausiert",
+    "matchResumed": "Match fortgesetzt",
+    "matchExtended": "Match verlängert",
+    "multiplierActivated": "Multiplikator aktiviert",
+    "configSaved": "Konfiguration gespeichert",
+    "error": "Fehler",
+    "success": "Erfolg"
+  },
+  "buttons": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "reset": "Zurücksetzen",
+    "apply": "Anwenden",
+    "close": "Schließen"
+  }
+}

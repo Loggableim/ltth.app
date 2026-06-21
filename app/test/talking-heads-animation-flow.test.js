@@ -13,9 +13,11 @@ describe('Talking Heads Animation Flow', () => {
   let mockIo;
   let plugin;
   let emittedEvents;
+  let controllers;
 
   beforeEach(() => {
     emittedEvents = [];
+    controllers = [];
 
     mockLogger = {
       info: jest.fn(),
@@ -71,6 +73,17 @@ describe('Talking Heads Animation Flow', () => {
     plugin = new TalkingHeadsPlugin(mockApi);
   });
 
+  afterEach(async () => {
+    controllers.forEach(controller => {
+      controller.stopAllAnimations();
+      controller.clearAllTimeouts();
+    });
+
+    if (plugin && typeof plugin.destroy === 'function') {
+      await plugin.destroy();
+    }
+  });
+
   test('Animation controller emits start event when animation begins', () => {
     const config = {
       fadeInDuration: 300,
@@ -79,6 +92,7 @@ describe('Talking Heads Animation Flow', () => {
     };
 
     const controller = new AnimationController(mockIo, mockLogger, config, null);
+    controllers.push(controller);
 
     const testSprites = {
       idle_neutral: '/api/talkingheads/sprite/test_idle.png',
@@ -106,6 +120,7 @@ describe('Talking Heads Animation Flow', () => {
     };
 
     const controller = new AnimationController(mockIo, mockLogger, config, null);
+    controllers.push(controller);
 
     const testSprites = {
       idle_neutral: '/test/idle.png',
@@ -143,6 +158,7 @@ describe('Talking Heads Animation Flow', () => {
     };
 
     const controller = new AnimationController(mockIo, mockLogger, config, null);
+    controllers.push(controller);
 
     const testSprites = {
       idle_neutral: '/test/idle.png',
@@ -220,6 +236,7 @@ describe('Talking Heads Animation Flow', () => {
     };
 
     const controller = new AnimationController(mockIo, mockLogger, config, null);
+    controllers.push(controller);
 
     const testSprites = {
       idle_neutral: '/test/idle.png',

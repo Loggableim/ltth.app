@@ -484,5 +484,21 @@ describe('Event TTS System', () => {
             expect(mockTTS.speakCalls.length).toBe(3);
             done();
         });
+
+        test('should use username as cooldown identity when userId is missing', () => {
+            mockAPI.simulateTikTokEvent('follow', {
+                username: 'UserWithoutId1'
+            });
+
+            mockAPI.simulateTikTokEvent('follow', {
+                username: 'UserWithoutId2'
+            });
+
+            expect(mockTTS.speakCalls.length).toBe(2);
+            expect(mockTTS.speakCalls.map(call => call.username)).toEqual([
+                'UserWithoutId1',
+                'UserWithoutId2'
+            ]);
+        });
     });
 });

@@ -206,6 +206,10 @@ function openCreateModal() {
 function editGoal(id) {
     const goal = goals.find(g => g.id === id);
     if (!goal) return;
+    const theme = {
+        ...getDefaultTheme(goal.goal_type),
+        ...(goal.theme || {})
+    };
 
     editingGoalId = id;
     document.querySelector('.modal-header').textContent = 'Edit Goal';
@@ -229,6 +233,12 @@ function editGoal(id) {
     document.getElementById('goal-firework-progress-milestones').value = goal.firework_progress_milestones || '25,50,75';
     document.getElementById('goal-width').value = goal.overlay_width;
     document.getElementById('goal-height').value = goal.overlay_height;
+    document.getElementById('goal-primary-color').value = theme.primaryColor || '#60a5fa';
+    document.getElementById('goal-secondary-color').value = theme.secondaryColor || '#3b82f6';
+    document.getElementById('goal-text-color').value = theme.textColor || '#ffffff';
+    document.getElementById('goal-bg-color').value = cssColorToHex(theme.bgColor) || '#0f172a';
+    document.getElementById('goal-font-family').value = theme.fontFamily || "'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif";
+    document.getElementById('goal-font-size').value = theme.fontSize || '20';
 
     document.getElementById('increment-amount-group').style.display =
         goal.on_reach_action === 'increment' ? 'block' : 'none';
@@ -274,6 +284,7 @@ async function saveGoal(e) {
         firework_hud_label: document.getElementById('goal-firework-hud-label').value.trim() || null,
         firework_progress_enabled: document.getElementById('goal-firework-progress-enabled').checked ? 1 : 0,
         firework_progress_milestones: document.getElementById('goal-firework-progress-milestones').value.trim() || '25,50,75',
+        theme: buildGoalThemeFromForm(),
         overlay_width: parseInt(document.getElementById('goal-width').value),
         overlay_height: parseInt(document.getElementById('goal-height').value),
         enabled: 1
@@ -367,6 +378,47 @@ function clampNumber(value, min, max, fallback) {
         return fallback;
     }
     return Math.min(max, Math.max(min, parsed));
+}
+
+function buildGoalThemeFromForm() {
+    const bgHex = document.getElementById('goal-bg-color')?.value || '#0f172a';
+    const fontSize = parseInt(document.getElementById('goal-font-size')?.value, 10);
+
+    return {
+        primaryColor: document.getElementById('goal-primary-color')?.value || '#60a5fa',
+        secondaryColor: document.getElementById('goal-secondary-color')?.value || '#3b82f6',
+        textColor: document.getElementById('goal-text-color')?.value || '#ffffff',
+        bgColor: hexToRgba(bgHex, 0.95),
+        fontFamily: document.getElementById('goal-font-family')?.value || "'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif",
+        fontSize: Number.isFinite(fontSize) ? fontSize : 20
+    };
+}
+
+function hexToRgba(hexColor, alpha = 1) {
+    const hex = String(hexColor || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
+        return `rgba(15, 23, 42, ${alpha})`;
+    }
+
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function cssColorToHex(color) {
+    if (!color) return null;
+    if (/^#[0-9a-fA-F]{6}$/.test(color)) return color;
+
+    const match = String(color).match(/rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/);
+    if (!match) return null;
+
+    return [match[1], match[2], match[3]]
+        .map(value => Math.max(0, Math.min(255, parseInt(value, 10)))
+            .toString(16)
+            .padStart(2, '0'))
+        .join('')
+        .replace(/^/, '#');
 }
 
 // Event delegation for dynamically created goal card buttons

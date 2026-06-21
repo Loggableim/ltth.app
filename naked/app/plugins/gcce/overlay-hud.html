@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCCE HUD Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #hud-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .hud-element {
+            position: absolute;
+            pointer-events: none;
+            animation: hudFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform, opacity;
+        }
+
+        .hud-element.fade-out {
+            animation: hudFadeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .hud-text {
+            padding: 16px 32px;
+            border-radius: 12px;
+            max-width: 800px;
+            word-wrap: break-word;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .hud-image {
+            max-width: 400px;
+            max-height: 400px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .hud-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .hud-media {
+            max-width: 480px;
+            max-height: 480px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .hud-media video,
+        .hud-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Position classes with stacking support */
+        .position-top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        .position-top-center {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-top-right {
+            top: 20px;
+            right: 20px;
+        }
+
+        .position-center-left {
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+        }
+
+        .position-center {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .position-center-right {
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+        }
+
+        .position-bottom-left {
+            bottom: 20px;
+            left: 20px;
+        }
+
+        .position-bottom-center {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        /* Stacking for multiple elements */
+        .stacked {
+            margin-top: 10px;
+        }
+
+        @keyframes hudFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.85) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes hudFadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.85) translateY(10px);
+            }
+        }
+
+        /* Connection status indicator */
+        #connection-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            pointer-events: none;
+            opacity: 0.7;
+            transition: background 0.3s;
+        }
+
+        #connection-status.disconnected {
+            background: #f44336;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        /* Gift rotator */
+        #gift-rotator-container {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            max-width: 420px;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        #gift-rotator-container.hidden {
+            display: none;
+        }
+
+        .rotator-card {
+            padding: 16px;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            display: grid;
+            grid-template-columns: 72px 1fr;
+            gap: 12px;
+            align-items: center;
+            animation: hudFadeIn 0.45s ease;
+        }
+
+        .rotator-card img {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .rotator-card h4 {
+            margin: 0;
+            font-size: 1.05rem;
+            letter-spacing: 0.2px;
+        }
+
+        .rotator-card p {
+            margin: 4px 0 0 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .template-card {
+            border-style: solid;
+        }
+
+        .template-banner {
+            grid-template-columns: 56px 1fr;
+            border-radius: 10px;
+        }
+
+        .template-minimal {
+            border: none;
+            box-shadow: none;
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        /* New Templates */
+        /* Note: !important used intentionally for templates that require specific backgrounds
+           to override inline user-customized styles from the admin panel */
+        .template-modern {
+            background: rgba(255, 255, 255, 0.08) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .template-neon {
+            border: 3px solid;
+            box-shadow: 0 0 20px currentColor, 0 0 40px currentColor, inset 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        .template-elegant {
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .template-bold {
+            border: 4px solid;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .template-compact {
+            padding: 10px 14px;
+            grid-template-columns: 48px 1fr;
+            gap: 10px;
+            border-radius: 8px;
+        }
+
+        .template-compact .rotator-card img {
+            width: 48px;
+            height: 48px;
+        }
+
+        .template-compact h4 {
+            font-size: 0.9rem;
+        }
+
+        .template-compact p {
+            font-size: 0.8rem;
+        }
+
+        .template-wide {
+            min-width: 500px;
+            grid-template-columns: 64px 1fr;
+            padding: 18px 24px;
+        }
+
+        /* Gradient template requires !important to override user background color */
+        .template-gradient {
+            background: linear-gradient(135deg, rgba(255, 95, 158, 0.3), rgba(138, 43, 226, 0.3)) !important;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Transition Animations */
+        @keyframes rotatorFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes rotatorSlideLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes rotatorSlideRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes rotatorSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotatorSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotatorZoom {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes rotatorFlip {
+            from {
+                opacity: 0;
+                transform: perspective(1000px) rotateY(90deg);
+            }
+            to {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(0);
+            }
+        }
+
+        @keyframes rotatorRotate {
+            from {
+                opacity: 0;
+                transform: rotate(-180deg) scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: rotate(0) scale(1);
+            }
+        }
+
+        @keyframes rotatorBounce {
+            0% {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(10px);
+            }
+            80% {
+                transform: translateY(-5px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotatorSwing {
+            0% {
+                opacity: 0;
+                transform: perspective(1000px) rotateX(-90deg);
+                transform-origin: top;
+            }
+            100% {
+                opacity: 1;
+                transform: perspective(1000px) rotateX(0);
+                transform-origin: top;
+            }
+        }
+
+        .animation-fade {
+            animation: rotatorFade 0.5s ease-out;
+        }
+
+        .animation-slide-left {
+            animation: rotatorSlideLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-slide-right {
+            animation: rotatorSlideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-slide-up {
+            animation: rotatorSlideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-slide-down {
+            animation: rotatorSlideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-zoom {
+            animation: rotatorZoom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-flip {
+            animation: rotatorFlip 0.7s ease-out;
+        }
+
+        .animation-rotate {
+            animation: rotatorRotate 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animation-bounce {
+            animation: rotatorBounce 0.8s ease-out;
+        }
+
+        .animation-swing {
+            animation: rotatorSwing 0.7s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="hud-container"></div>
+    <div id="connection-status"></div>
+    <div id="gift-rotator-container" class="hidden"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Socket.io connection with enhanced error handling
+        let socket;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 10;
+        let rotatorContainer = null;
+        let rotatorConfig = { enabled: false, entries: [], intervalSeconds: 10 };
+        let rotatorIndex = 0;
+        let rotatorTimer = null;
+
+        try {
+            socket = io({
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                reconnectionAttempts: MAX_RECONNECT_ATTEMPTS
+            });
+        } catch (error) {
+            console.error('Failed to initialize socket.io:', error);
+        }
+        
+        if (!socket) {
+            console.error('GCCE HUD Overlay: Socket.io is not available');
+        } else {
+            const container = document.getElementById('hud-container');
+            const connectionStatus = document.getElementById('connection-status');
+            const activeElements = new Map();
+            const elementsByPosition = new Map();
+            rotatorContainer = document.getElementById('gift-rotator-container');
+
+            // Listen for show event
+            socket.on('gcce:hud:show', (data) => {
+                console.log('HUD Show:', data);
+                showElement(data);
+            });
+
+            // Listen for remove event
+            socket.on('gcce:hud:remove', (data) => {
+                console.log('HUD Remove:', data);
+                if (data && data.id) {
+                    removeElement(data.id);
+                }
+            });
+
+            // Listen for clear event
+            socket.on('gcce:hud:clear', () => {
+                console.log('HUD Clear all');
+                clearAll();
+            });
+
+            /**
+             * Show HUD element with stacking support
+             */
+            function showElement(element) {
+                const { id, type, content, duration, style } = element;
+
+                // Remove old element if it exists
+                if (activeElements.has(id)) {
+                    removeElement(id);
+                }
+
+                // Create element
+                const el = document.createElement('div');
+                el.id = `hud-${id}`;
+                el.className = `hud-element hud-${type}`;
+
+                // Handle stacking for same position
+                const position = style.position || 'top-center';
+                el.classList.add(`position-${position}`);
+
+                if (type === 'text') {
+                    el.classList.add('hud-text');
+                    el.textContent = content;
+                    el.style.fontSize = (style.fontSize || 48) + 'px';
+                    el.style.color = style.textColor || '#FFFFFF';
+                    el.style.backgroundColor = style.backgroundColor || 'rgba(0, 0, 0, 0.7)';
+                    el.style.fontFamily = style.fontFamily || 'Arial, sans-serif';
+                    el.style.maxWidth = (style.maxWidth || 800) + 'px';
+                } else if (type === 'image') {
+                    el.classList.add('hud-image');
+                    const img = document.createElement('img');
+                    img.src = content;
+                    img.style.maxWidth = (style.maxWidth || 400) + 'px';
+                    img.style.maxHeight = (style.maxHeight || 400) + 'px';
+                    
+                    // Handle image load errors
+                    img.onerror = () => {
+                        console.error('Failed to load image:', content);
+                        removeElement(id);
+                    };
+
+                    el.appendChild(img);
+                } else if (type === 'media') {
+                    el.classList.add('hud-media');
+                    const mediaType = element.mediaType || 'video';
+                    if (mediaType === 'video') {
+                        const video = document.createElement('video');
+                        video.src = content;
+                        video.autoplay = true;
+                        video.loop = true;
+                        video.muted = true;
+                        video.playsInline = true;
+                        video.style.maxWidth = (style.maxWidth || 480) + 'px';
+                        video.style.maxHeight = (style.maxHeight || 480) + 'px';
+                        el.appendChild(video);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = content;
+                        img.style.maxWidth = (style.maxWidth || 480) + 'px';
+                        img.style.maxHeight = (style.maxHeight || 480) + 'px';
+                        el.appendChild(img);
+                    }
+                }
+
+                // Check if there are elements in the same position
+                if (!elementsByPosition.has(position)) {
+                    elementsByPosition.set(position, []);
+                }
+                const positionElements = elementsByPosition.get(position);
+                
+                // Add stacking offset if needed
+                if (positionElements.length > 0) {
+                    el.classList.add('stacked');
+                }
+                
+                positionElements.push(id);
+
+                container.appendChild(el);
+                activeElements.set(id, { element: el, position });
+
+                // Auto-remove after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        removeElement(id);
+                    }, duration);
+                }
+            }
+
+            /**
+             * Remove HUD element
+             */
+            function removeElement(id) {
+                const data = activeElements.get(id);
+                if (data) {
+                    const { element, position } = data;
+                    
+                    element.classList.add('fade-out');
+                    setTimeout(() => {
+                        element.remove();
+                        activeElements.delete(id);
+                        
+                        // Update position tracking
+                        const positionElements = elementsByPosition.get(position);
+                        if (positionElements) {
+                            const index = positionElements.indexOf(id);
+                            if (index > -1) {
+                                positionElements.splice(index, 1);
+                            }
+                        }
+                    }, 400);
+                }
+            }
+
+            /**
+             * Clear all HUD elements
+             */
+            function clearAll() {
+                activeElements.forEach((data, id) => {
+                    removeElement(id);
+                });
+                elementsByPosition.clear();
+            }
+
+            // Connection status handlers
+            socket.on('connect', () => {
+                console.log('GCCE HUD Overlay connected');
+                connectionStatus.classList.remove('disconnected');
+                reconnectAttempts = 0;
+            });
+
+            socket.on('disconnect', () => {
+                console.log('GCCE HUD Overlay disconnected');
+                connectionStatus.classList.add('disconnected');
+            });
+
+            socket.on('reconnect_attempt', (attemptNumber) => {
+                console.log(`Reconnection attempt ${attemptNumber}/${MAX_RECONNECT_ATTEMPTS}`);
+                reconnectAttempts = attemptNumber;
+            });
+
+            socket.on('reconnect_failed', () => {
+                console.error('Failed to reconnect after maximum attempts');
+            });
+
+            socket.on('error', (error) => {
+                console.error('Socket.io error:', error);
+            });
+
+            // Gift rotator socket updates
+            socket.on('gcce:hud:rotator:update', (rotator) => {
+                if (rotator) {
+                    rotatorConfig = rotator;
+                    startRotator();
+                }
+            });
+
+            // Initial load for rotator
+            loadRotatorConfig();
+        }
+
+        /**
+         * Load gift rotator config from server
+         */
+        async function loadRotatorConfig() {
+            try {
+                const response = await fetch('/api/gcce/hud/rotator');
+                const data = await response.json();
+                if (data.success) {
+                    rotatorConfig = data.rotator || rotatorConfig;
+                    startRotator();
+                }
+            } catch (error) {
+                console.error('Failed to load rotator config:', error);
+            }
+        }
+
+        /**
+         * Start/refresh rotator
+         */
+        function startRotator() {
+            if (rotatorTimer) {
+                clearInterval(rotatorTimer);
+            }
+            renderRotatorEntry();
+
+            if (rotatorConfig.enabled && rotatorConfig.entries && rotatorConfig.entries.length > 1) {
+                const interval = Math.max(3, parseInt(rotatorConfig.intervalSeconds || 10, 10)) * 1000;
+                rotatorTimer = setInterval(() => {
+                    rotatorIndex = (rotatorIndex + 1) % rotatorConfig.entries.length;
+                    renderRotatorEntry();
+                }, interval);
+            }
+        }
+
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /**
+         * Validate CSS color value
+         */
+        function validateCssColor(color, defaultColor) {
+            // Allow hex colors, rgb/rgba, named colors, and transparent
+            const colorRegex = /^(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|[a-z]+)$/;
+            return colorRegex.test(color) ? color : defaultColor;
+        }
+
+        /**
+         * Validate CSS font family
+         */
+        function validateFontFamily(font, defaultFont) {
+            // Basic validation - allow common font family syntax
+            const fontRegex = /^[\w\s,'-]+$/;
+            return fontRegex.test(font) ? font : defaultFont;
+        }
+
+        /**
+         * Render current rotator entry (supports gift and media types)
+         */
+        function renderRotatorEntry() {
+            if (!rotatorContainer) return;
+            if (!rotatorConfig.enabled || !rotatorConfig.entries || rotatorConfig.entries.length === 0) {
+                rotatorContainer.classList.add('hidden');
+                rotatorContainer.innerHTML = '';
+                return;
+            }
+
+            if (rotatorIndex >= rotatorConfig.entries.length) {
+                rotatorIndex = 0;
+            }
+
+            const entry = rotatorConfig.entries[rotatorIndex];
+            if (!entry) {
+                rotatorContainer.classList.add('hidden');
+                rotatorContainer.innerHTML = '';
+                return;
+            }
+
+            rotatorContainer.classList.remove('hidden');
+
+            // Validate and escape all user inputs
+            const template = escapeHtml(entry.template || 'card');
+            const animation = escapeHtml(entry.animation || 'fade');
+            const title = escapeHtml(entry.title || entry.giftName || 'Gift');
+            const info = entry.info ? escapeHtml(entry.info) : '';
+            
+            // Determine entry type and media source
+            const entryType = entry.type || 'gift';
+            let mediaSource = '';
+            let altText = '';
+            
+            if (entryType === 'media') {
+                mediaSource = entry.mediaUrl || '';
+                altText = escapeHtml(entry.title || 'Media');
+            } else {
+                mediaSource = entry.giftImage || '';
+                altText = escapeHtml(entry.giftName || 'Gift');
+            }
+            
+            // Validate CSS values to prevent injection
+            const textColor = validateCssColor(entry.textColor, '#ffffff');
+            const backgroundColor = validateCssColor(entry.backgroundColor, 'rgba(0,0,0,0.65)');
+            const accent = validateCssColor(entry.accentColor, '#ff5f9e');
+            const font = validateFontFamily(entry.fontFamily, 'Inter, sans-serif');
+
+            // Build HTML safely
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `rotator-card template-${template} animation-${animation}`;
+            cardDiv.style.color = textColor;
+            cardDiv.style.background = backgroundColor;
+            cardDiv.style.borderColor = accent;
+            cardDiv.style.fontFamily = font;
+
+            const thumbDiv = document.createElement('div');
+            thumbDiv.className = 'rotator-gift-thumb';
+            
+            if (mediaSource) {
+                // For media entries, check if it's video or image
+                if (entryType === 'media' && entry.mediaKind === 'video') {
+                    const video = document.createElement('video');
+                    video.src = mediaSource;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.style.width = '72px';
+                    video.style.height = '72px';
+                    video.style.objectFit = 'cover';
+                    video.style.borderRadius = '10px';
+                    video.onerror = function() {
+                        this.parentElement.textContent = '📁';
+                    };
+                    thumbDiv.appendChild(video);
+                } else {
+                    // Image (for both gifts and media)
+                    const img = document.createElement('img');
+                    img.src = mediaSource;
+                    img.alt = altText;
+                    img.onerror = function() {
+                        this.parentElement.textContent = entryType === 'media' ? '🖼️' : '🎁';
+                    };
+                    thumbDiv.appendChild(img);
+                }
+            } else {
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.style.cssText = 'width:72px;height:72px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:28px;';
+                fallbackDiv.textContent = entryType === 'media' ? '📁' : '🎁';
+                thumbDiv.appendChild(fallbackDiv);
+            }
+
+            const copyDiv = document.createElement('div');
+            copyDiv.className = 'rotator-copy';
+            
+            const h4 = document.createElement('h4');
+            h4.textContent = title;
+            copyDiv.appendChild(h4);
+            
+            if (info) {
+                const p = document.createElement('p');
+                p.textContent = info;
+                copyDiv.appendChild(p);
+            }
+
+            cardDiv.appendChild(thumbDiv);
+            cardDiv.appendChild(copyDiv);
+            
+            rotatorContainer.textContent = '';
+            rotatorContainer.appendChild(cardDiv);
+        }
+    </script>
+</body>
+</html>

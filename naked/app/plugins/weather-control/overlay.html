@@ -1,0 +1,3376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Control Overlay - TikTok Stream Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+
+        body {
+            background: transparent !important;
+            background-color: transparent !important;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #weather-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: transparent !important;
+            background-color: transparent !important;
+            /* Force GPU rendering */
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent !important;
+            background-color: transparent !important;
+            /* Force GPU rendering for canvas */
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+        }
+
+        /* Debug overlay */
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            display: none;
+            z-index: 10000;
+            max-width: 350px;
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        #debug-info.active {
+            display: block;
+        }
+
+        #debug-info .status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        #debug-info .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        #debug-info .status-dot.connected {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        #debug-info .status-dot.disconnected {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Lightning flash overlay */
+        #lightning-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Connection status indicator */
+        #connection-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            display: none;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #connection-status.show {
+            display: block;
+            opacity: 1;
+        }
+
+        #connection-status.connected {
+            background: rgba(0, 128, 0, 0.8);
+        }
+
+        #connection-status.disconnected {
+            background: rgba(255, 0, 0, 0.8);
+        }
+
+        #connection-status.reconnecting {
+            background: rgba(255, 165, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="weather-container">
+        <canvas id="weather-canvas"></canvas>
+    </div>
+    <div id="lightning-flash"></div>
+    <div id="debug-info"></div>
+    <div id="connection-status"></div>
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- GSAP for smooth animations (served from local node_modules) -->
+    <script src="/gsap/gsap.min.js"></script>
+
+    <!-- Weather Engine -->
+    <script>
+        /**
+         * Weather Control Engine - Modernized
+         * 
+         * GPU-accelerated weather effects with GSAP animations
+         * Supports: rain, snow, storm, fog, thunder, sunbeam, glitchclouds
+         */
+
+        // Check if GSAP is loaded
+        if (typeof gsap === 'undefined') {
+            console.error('❌ GSAP library failed to load! Animations will not work.');
+            console.error('Please ensure /gsap/gsap.min.js is accessible.');
+            log('❌ GSAP library failed to load! Animations will be limited.');
+            // Show error message on screen using safe DOM manipulation
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,0,0,0.9);color:white;padding:20px;border-radius:10px;font-family:monospace;text-align:center;z-index:99999;';
+            const title = document.createElement('strong');
+            title.textContent = '⚠️ GSAP Loading Error';
+            errorDiv.appendChild(title);
+            errorDiv.appendChild(document.createElement('br'));
+            const msg1 = document.createTextNode('The GSAP animation library failed to load.');
+            errorDiv.appendChild(msg1);
+            errorDiv.appendChild(document.createElement('br'));
+            const msg2 = document.createTextNode('Weather effects will not display.');
+            errorDiv.appendChild(msg2);
+            document.body.appendChild(errorDiv);
+        } else {
+            log('✅ GSAP library loaded successfully');
+            log(`GSAP version: ${gsap.version || 'unknown'}`);
+        }
+
+        // Configuration
+        const config = {
+            debug: new URLSearchParams(window.location.search).get('debug') === 'true',
+            maxParticles: 500,
+            fpsCap: 60,
+            showConnectionStatus: true,
+            reconnectDelay: 1000,
+            reconnectMaxDelay: 30000,
+            reconnectBackoffMultiplier: 1.5,
+            enablePostProcessing: new URLSearchParams(window.location.search).get('bloom') === 'true',
+            renderQuality: 'high' // 'low', 'medium', 'high'
+        };
+
+        // DOM elements
+        const canvas = document.getElementById('weather-canvas');
+        // Initialize canvas context with transparency support
+        // NOTE: desynchronized:true breaks transparency in OBS Browser Source (CEF v103-107)
+        // The desynchronized option improves performance in browsers but causes OBS CEF
+        // to render the canvas in a separate GPU thread, breaking alpha channel reading
+        const ctx = canvas.getContext('2d', { 
+            alpha: true,
+            willReadFrequently: false,
+            premultipliedAlpha: true  // Ensure proper alpha blending
+        });
+        const debugInfo = document.getElementById('debug-info');
+        const lightningFlash = document.getElementById('lightning-flash');
+        const connectionStatus = document.getElementById('connection-status');
+
+        // Verify context initialization for transparency
+        if (!ctx) {
+            console.error('❌ Failed to get 2D context! Canvas rendering will not work.');
+            // Show error and stop execution
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,0,0,0.9);color:white;padding:20px;border-radius:10px;font-family:monospace;text-align:center;z-index:99999;';
+            errorDiv.textContent = '❌ Canvas context initialization failed. Please check your browser settings.';
+            document.body.appendChild(errorDiv);
+            throw new Error('Canvas context initialization failed');
+        }
+        
+        // Enable high-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Get context attributes once
+        const contextAttrs = ctx.getContextAttributes();
+        log(`✅ Canvas context initialized with alpha: ${contextAttrs.alpha}`);
+        log(`Canvas context attributes: ${JSON.stringify(contextAttrs)}`);
+
+        // Safe GSAP wrapper - fallback to setTimeout if GSAP not available
+        const safeGsap = (() => {
+            // Helper function to apply properties to target
+            // GSAP-specific properties to exclude from direct assignment (GSAP 3.x)
+            const gsapProps = ['duration', 'delay', 'ease', 'onComplete', 'repeat', 'yoyo', 'stagger', 'yoyoEase', 'onStart', 'onUpdate', 'onRepeat', 'repeatDelay'];
+            
+            function applyProperties(target, vars) {
+                Object.keys(vars).forEach(key => {
+                    if (!gsapProps.includes(key)) {
+                        if (typeof target === 'object' && target !== null) {
+                            try {
+                                // Check if target is a DOM element with a style property
+                                if (target.style && typeof target.style === 'object') {
+                                    // Apply CSS properties via style
+                                    target.style[key] = vars[key];
+                                } else {
+                                    // Apply directly to object (for plain objects)
+                                    target[key] = vars[key];
+                                }
+                            } catch (error) {
+                                // Silently ignore invalid property assignments
+                                console.debug(`Could not apply property ${key} to target:`, error);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            return {
+                to: (target, vars) => {
+                    if (typeof gsap !== 'undefined') {
+                        return gsap.to(target, vars);
+                    } else {
+                        // Fallback: apply properties directly without animation
+                        // In the fallback, we skip the "animation" so we apply immediately
+                        // The delay represents when the animation would start, so we delay the property application
+                        const applyDelay = (vars.delay || 0) * 1000;
+                        
+                        setTimeout(() => {
+                            applyProperties(target, vars);
+                            
+                            // Call onComplete after duration (since animation is instant in fallback)
+                            if (vars.onComplete) {
+                                const completionDelay = (vars.duration || 0) * 1000;
+                                setTimeout(vars.onComplete, completionDelay);
+                            }
+                        }, applyDelay);
+                        
+                        return { kill: () => {} };
+                    }
+                },
+                set: (target, vars) => {
+                    if (typeof gsap !== 'undefined') {
+                        return gsap.set(target, vars);
+                    } else {
+                        // Fallback: apply properties directly
+                        applyProperties(target, vars);
+                        return { kill: () => {} };
+                    }
+                }
+            };
+        })();
+
+        // Responsive canvas sizing with device pixel ratio support
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const displayWidth = window.innerWidth;
+            const displayHeight = window.innerHeight;
+            
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+            
+            ctx.scale(dpr, dpr);
+            
+            // Ensure canvas starts with transparent background
+            ctx.clearRect(0, 0, displayWidth, displayHeight);
+            
+            log(`Canvas resized: ${displayWidth}x${displayHeight} (DPR: ${dpr})`);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Visual effect constants
+        const FOG_MAX_ALPHA = 0.25;
+        const SNOWFLAKE_SPARKLE_CHANCE = 0.04;
+        const GLITCH_LINE_FREQUENCY = 0.2;
+        const DIGITAL_NOISE_FREQUENCY = 0.25;
+        const FIXED_TIMESTEP = 1000 / 60;
+        const MAX_ACCUMULATED = 200;
+        
+        // Lightning effect constants
+        const LIGHTNING_MAX_SEGMENTS_PER_BOLT = 200; // Hard limit per bolt
+        const LIGHTNING_BRANCH_THRESHOLD = 180; // Stop branching when approaching limit
+        const LIGHTNING_DEBUG_THRESHOLD = 150; // Log when segment count is high
+        const LIGHTNING_MAX_TOTAL_SEGMENTS = 1000; // Overflow protection
+        const LIGHTNING_MAX_CONCURRENT = 3; // Maximum simultaneous lightning bolts
+
+        /**
+         * SimplexNoise - Lightweight Simplex noise implementation for fog effects
+         */
+        class SimplexNoise {
+            constructor(random = Math.random) {
+                this.grad3 = [
+                    [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+                    [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+                    [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+                ];
+                this.p = [];
+                for (let i = 0; i < 256; i++) {
+                    this.p[i] = Math.floor(random() * 256);
+                }
+                this.perm = [];
+                for (let i = 0; i < 512; i++) {
+                    this.perm[i] = this.p[i & 255];
+                }
+            }
+
+            dot(g, x, y) {
+                return g[0] * x + g[1] * y;
+            }
+
+            noise2D(xin, yin) {
+                const F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+                const G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
+                
+                let n0, n1, n2;
+                const s = (xin + yin) * F2;
+                const i = Math.floor(xin + s);
+                const j = Math.floor(yin + s);
+                const t = (i + j) * G2;
+                const X0 = i - t;
+                const Y0 = j - t;
+                const x0 = xin - X0;
+                const y0 = yin - Y0;
+                
+                let i1, j1;
+                if (x0 > y0) {
+                    i1 = 1; j1 = 0;
+                } else {
+                    i1 = 0; j1 = 1;
+                }
+                
+                const x1 = x0 - i1 + G2;
+                const y1 = y0 - j1 + G2;
+                const x2 = x0 - 1.0 + 2.0 * G2;
+                const y2 = y0 - 1.0 + 2.0 * G2;
+                
+                const ii = i & 255;
+                const jj = j & 255;
+                const gi0 = this.perm[ii + this.perm[jj]] % 12;
+                const gi1 = this.perm[ii + i1 + this.perm[jj + j1]] % 12;
+                const gi2 = this.perm[ii + 1 + this.perm[jj + 1]] % 12;
+                
+                let t0 = 0.5 - x0 * x0 - y0 * y0;
+                if (t0 < 0) n0 = 0.0;
+                else {
+                    t0 *= t0;
+                    n0 = t0 * t0 * this.dot(this.grad3[gi0], x0, y0);
+                }
+                
+                let t1 = 0.5 - x1 * x1 - y1 * y1;
+                if (t1 < 0) n1 = 0.0;
+                else {
+                    t1 *= t1;
+                    n1 = t1 * t1 * this.dot(this.grad3[gi1], x1, y1);
+                }
+                
+                let t2 = 0.5 - x2 * x2 - y2 * y2;
+                if (t2 < 0) n2 = 0.0;
+                else {
+                    t2 *= t2;
+                    n2 = t2 * t2 * this.dot(this.grad3[gi2], x2, y2);
+                }
+                
+                return 70.0 * (n0 + n1 + n2);
+            }
+        }
+
+        /**
+         * Koch Snowflake Generator
+         */
+        function generateKochSnowflake(iterations = 2) {
+            let points = [
+                { x: 0, y: -1 },
+                { x: Math.cos(-Math.PI / 6), y: Math.sin(-Math.PI / 6) },
+                { x: Math.cos(-5 * Math.PI / 6), y: Math.sin(-5 * Math.PI / 6) }
+            ];
+            
+            for (let iter = 0; iter < iterations; iter++) {
+                points = kochIteration(points);
+            }
+            return points;
+        }
+
+        function kochIteration(points) {
+            const newPoints = [];
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                
+                newPoints.push({ x: p1.x, y: p1.y });
+                newPoints.push({ x: p1.x + dx / 3, y: p1.y + dy / 3 });
+                
+                const midX = p1.x + dx / 2;
+                const midY = p1.y + dy / 2;
+                const px = p1.x + dx / 3;
+                const py = p1.y + dy / 3;
+                const angle = Math.PI / 3;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                newPoints.push({
+                    x: px + (midX - px) * cos - (midY - py) * sin,
+                    y: py + (midX - px) * sin + (midY - py) * cos
+                });
+                
+                newPoints.push({ x: p1.x + 2 * dx / 3, y: p1.y + 2 * dy / 3 });
+            }
+            return newPoints;
+        }
+
+        /**
+         * Generate diverse realistic snowflake variants
+         * Each snowflake in nature is unique - this creates 20+ variants with:
+         * - Different symmetry levels (3-fold, 4-fold, 6-fold, 8-fold)
+         * - Random imperfections (broken arms, asymmetry)
+         * - Size variations
+         * - Different base shapes (stellar, plate, column, needle)
+         */
+        function generateSnowflakeVariants() {
+            const variants = [];
+            
+            // Variant 1-5: Koch snowflakes (6-fold symmetry) with varying iterations
+            for (let i = 0; i < 5; i++) {
+                const iterations = 1 + Math.floor(i / 2);
+                variants.push(generateKochSnowflake(iterations));
+            }
+            
+            // Variant 6-10: Stellar dendrites (6 main branches with side branches)
+            for (let i = 0; i < 5; i++) {
+                variants.push(generateStellarDendrite(6, 2 + i * 0.5, Math.random() * 0.3));
+            }
+            
+            // Variant 11-13: Plate snowflakes (simple hexagons with embellishments)
+            for (let i = 0; i < 3; i++) {
+                variants.push(generatePlateSnowflake(6, Math.random() * 0.2));
+            }
+            
+            // Variant 14-16: Needle crystals (elongated, 3-fold symmetry)
+            for (let i = 0; i < 3; i++) {
+                variants.push(generateNeedleCrystal(3, 1.5 + Math.random()));
+            }
+            
+            // Variant 17-20: Irregular/broken snowflakes (realistic imperfections)
+            for (let i = 0; i < 4; i++) {
+                const baseVariant = Math.floor(Math.random() * variants.length);
+                variants.push(addImperfections(variants[baseVariant], 0.15 + Math.random() * 0.2));
+            }
+            
+            return variants;
+        }
+
+        /**
+         * Generate stellar dendrite snowflake (6 main branches with side branches)
+         */
+        function generateStellarDendrite(branches = 6, branchLength = 2.5, sideBranchChance = 0.3) {
+            const points = [];
+            const angleStep = (Math.PI * 2) / branches;
+            
+            for (let i = 0; i < branches; i++) {
+                const angle = angleStep * i;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                
+                // Main branch
+                for (let dist = 0; dist <= branchLength; dist += 0.3) {
+                    const x = cos * dist;
+                    const y = sin * dist;
+                    points.push({ x, y });
+                    
+                    // Side branches
+                    if (Math.random() < sideBranchChance && dist > 0.5 && dist < branchLength - 0.3) {
+                        const sideLength = 0.2 + Math.random() * 0.4;
+                        const sideAngle = angle + (Math.random() > 0.5 ? 1 : -1) * (Math.PI / 6 + Math.random() * Math.PI / 12);
+                        const sideCos = Math.cos(sideAngle);
+                        const sideSin = Math.sin(sideAngle);
+                        
+                        for (let sd = 0.1; sd <= sideLength; sd += 0.1) {
+                            points.push({
+                                x: x + sideCos * sd,
+                                y: y + sideSin * sd
+                            });
+                        }
+                    }
+                }
+            }
+            
+            return points;
+        }
+
+        /**
+         * Generate simple plate snowflake (hexagon with small decorations)
+         */
+        function generatePlateSnowflake(sides = 6, decorationChance = 0.2) {
+            const points = [];
+            const angleStep = (Math.PI * 2) / sides;
+            
+            // Main hexagon
+            for (let i = 0; i <= sides; i++) {
+                const angle = angleStep * i;
+                points.push({
+                    x: Math.cos(angle) * 0.8,
+                    y: Math.sin(angle) * 0.8
+                });
+                
+                // Small decorations on edges
+                if (Math.random() < decorationChance) {
+                    const midAngle = angle + angleStep / 2;
+                    points.push({
+                        x: Math.cos(midAngle) * 0.6,
+                        y: Math.sin(midAngle) * 0.6
+                    });
+                }
+            }
+            
+            return points;
+        }
+
+        /**
+         * Generate needle crystal (elongated, less symmetry)
+         */
+        function generateNeedleCrystal(branches = 3, length = 2.0) {
+            const points = [];
+            const angleStep = (Math.PI * 2) / branches;
+            
+            for (let i = 0; i < branches; i++) {
+                const angle = angleStep * i;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                
+                // Elongated needle
+                for (let dist = 0; dist <= length; dist += 0.2) {
+                    points.push({
+                        x: cos * dist * 0.3, // Narrower
+                        y: sin * dist
+                    });
+                }
+            }
+            
+            return points;
+        }
+
+        /**
+         * Add imperfections to snowflake (broken arms, asymmetry)
+         */
+        function addImperfections(basePoints, imperfectionLevel = 0.2) {
+            if (!basePoints || basePoints.length === 0) return basePoints;
+            
+            const points = [];
+            
+            basePoints.forEach(point => {
+                // Random chance to skip point (creates gaps/broken arms)
+                if (Math.random() > imperfectionLevel) {
+                    // Add slight random displacement
+                    points.push({
+                        x: point.x + (Math.random() - 0.5) * imperfectionLevel * 0.5,
+                        y: point.y + (Math.random() - 0.5) * imperfectionLevel * 0.5
+                    });
+                }
+            });
+            
+            return points.length > 0 ? points : basePoints;
+        }
+
+        /**
+         * ParticlePool - Object pooling system
+         */
+        class ParticlePool {
+            constructor(ParticleClass, particleType, initialSize = 500) {
+                this.ParticleClass = ParticleClass;
+                this.particleType = particleType;
+                this.available = [];
+                this.active = new Set();
+                this.peakUsage = 0;
+                this.totalAcquired = 0;
+                
+                for (let i = 0; i < initialSize; i++) {
+                    this.available.push(new ParticleClass(particleType));
+                }
+            }
+
+            acquire(config) {
+                let particle;
+                if (this.available.length > 0) {
+                    particle = this.available.pop();
+                } else {
+                    particle = new this.ParticleClass(this.particleType);
+                }
+                
+                particle.reset(config);
+                this.active.add(particle);
+                this.totalAcquired++;
+                this.peakUsage = Math.max(this.peakUsage, this.active.size);
+                
+                return particle;
+            }
+
+            release(particle) {
+                if (this.active.has(particle)) {
+                    particle.active = false;
+                    this.active.delete(particle);
+                    this.available.push(particle);
+                }
+            }
+
+            releaseAll() {
+                this.active.forEach(particle => {
+                    particle.active = false;
+                    this.available.push(particle);
+                });
+                this.active.clear();
+            }
+
+            getStats() {
+                return {
+                    available: this.available.length,
+                    active: this.active.size,
+                    total: this.available.length + this.active.size,
+                    peakUsage: this.peakUsage,
+                    totalAcquired: this.totalAcquired
+                };
+            }
+        }
+
+        // Initialize particle pools and other globals
+        const pools = {
+            rain: null,
+            snow: null,
+            storm: null,
+            fog: null,
+            fireflies: null,
+            sakura: null,
+            embers: null
+        };
+        const snowflakeVariants = generateSnowflakeVariants();
+        const noise = new SimplexNoise();
+        let globalWind = 0;
+
+        // Lightning segments for procedural lightning
+        let lightningSegments = [];
+        let lightningFadeTime = 0;
+
+        // State management
+        const state = {
+            activeEffects: [],
+            particles: [],
+            socket: null,
+            connected: false,
+            reconnectAttempts: 0,
+            animationId: null,
+            lastFrameTime: 0,
+            accumulator: 0,
+            fps: 0,
+            fpsHistory: [],
+            totalEventsReceived: 0,
+            effectQueue: [],
+            maxConcurrentEffects: 3,
+            maxQueueLength: 66
+        };
+
+        // Particle class with optimized rendering
+        class Particle {
+            constructor(type, config = {}) {
+                this.type = type;
+                this.active = true;
+                this.reset(config);
+            }
+
+            reset(config = {}) {
+                const w = config.width || window.innerWidth;
+                const h = config.height || window.innerHeight;
+                
+                this.x = config.x !== undefined ? config.x : Math.random() * w;
+                this.y = config.startFromTop ? -20 : (config.y !== undefined ? config.y : Math.random() * h);
+                this.z = Math.random();
+                this.active = true;
+                
+                this.prevX = this.x;
+                this.prevY = this.y;
+                
+                switch (this.type) {
+                    case 'rain':
+                        this.speedY = 15 + Math.random() * 15;
+                        this.speedX = Math.random() * 3 - 1.5;
+                        this.length = 15 + Math.random() * 25;
+                        this.width = 1 + Math.random() * 1.5;
+                        this.alpha = 0.4 + Math.random() * 0.4;
+                        this.color = `rgba(160, 196, 232, ${this.alpha})`;
+                        this.wind = 0;
+                        this.turbulence = 0;
+                        this.splashing = false;
+                        this.splashParticles = [];
+                        break;
+                    
+                    case 'snow':
+                        this.speedY = 1 + Math.random() * 2.5;
+                        this.speedX = Math.random() * 2 - 1;
+                        this.size = 2 + Math.random() * 5;
+                        this.alpha = 0.5 + Math.random() * 0.5;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        this.wobbleSpeed = 0.02 + Math.random() * 0.04;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+                        this.variant = Math.floor(Math.random() * 5);
+                        if (!config.snowflakeVariants) {
+                            this.snowflakePoints = null;
+                        } else {
+                            this.snowflakePoints = config.snowflakeVariants[this.variant];
+                        }
+                        break;
+                    
+                    case 'storm':
+                        this.speedY = 20 + Math.random() * 20;
+                        this.speedX = 8 + Math.random() * 12;
+                        this.length = 20 + Math.random() * 35;
+                        this.width = 1.5 + Math.random() * 2;
+                        this.alpha = 0.5 + Math.random() * 0.4;
+                        this.color = `rgba(107, 163, 214, ${this.alpha})`;
+                        break;
+                    
+                    case 'fog':
+                        this.speedY = 0.3 + Math.random() * 0.4;
+                        this.speedX = 0.5 + Math.random() - 0.5;
+                        this.size = 60 + Math.random() * 140; // Optimized: 60-200px (was 80-280px)
+                        this.alpha = FOG_MAX_ALPHA; // Start at max alpha for immediate visibility
+                        this.life = 0;
+                        this.maxLife = 350 + Math.random() * 500; // Extended: 350-850ms (was 250-650ms)
+                        this.hue = 200 + Math.random() * 20;
+                        break;
+                    
+                    case 'fireflies':
+                        this.speedY = (Math.random() - 0.5) * 0.8;
+                        this.speedX = (Math.random() - 0.5) * 0.8;
+                        this.size = 2 + Math.random() * 3;
+                        this.alpha = 0;
+                        this.targetAlpha = 0.6 + Math.random() * 0.4;
+                        this.glowPhase = Math.random() * Math.PI * 2;
+                        this.glowSpeed = 0.02 + Math.random() * 0.04;
+                        this.wanderAngle = Math.random() * Math.PI * 2;
+                        this.wanderSpeed = 0.01 + Math.random() * 0.02;
+                        this.hue = 50 + Math.random() * 30;
+                        this.pulseTimer = 0;
+                        this.pulseInterval = 120 + Math.random() * 200;
+                        this.isPulsing = false;
+                        break;
+                    
+                    case 'sakura':
+                        this.speedY = 0.8 + Math.random() * 1.5;
+                        this.speedX = (Math.random() - 0.3) * 1.5;
+                        this.size = 4 + Math.random() * 6;
+                        this.alpha = 0.6 + Math.random() * 0.4;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotationSpeed = (Math.random() - 0.5) * 0.08;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        this.wobbleSpeed = 0.015 + Math.random() * 0.03;
+                        this.wobbleAmplitude = 1.5 + Math.random() * 2;
+                        this.hue = 330 + Math.random() * 20;
+                        this.saturation = 60 + Math.random() * 30;
+                        this.lightness = 75 + Math.random() * 15;
+                        this.petalShape = Math.floor(Math.random() * 3);
+                        this.flutter = Math.random() * Math.PI * 2;
+                        this.flutterSpeed = 0.03 + Math.random() * 0.05;
+                        break;
+                    
+                    case 'embers':
+                        this.x = config.x !== undefined ? config.x : Math.random() * w;
+                        this.y = config.y !== undefined ? config.y : h + 20;
+                        this.speedY = -(1.5 + Math.random() * 2.5);
+                        this.speedX = (Math.random() - 0.5) * 2;
+                        this.size = 1.5 + Math.random() * 3;
+                        this.alpha = 0.7 + Math.random() * 0.3;
+                        this.life = 1.0;
+                        this.decay = 0.002 + Math.random() * 0.004;
+                        this.hue = 15 + Math.random() * 25;
+                        this.wobble = Math.random() * Math.PI * 2;
+                        this.wobbleSpeed = 0.03 + Math.random() * 0.05;
+                        this.flickerPhase = Math.random() * Math.PI * 2;
+                        this.flickerSpeed = 0.1 + Math.random() * 0.2;
+                        break;
+                }
+            }
+
+            update(deltaTime, intensity = 1.0, dimensions = null, globalWindParam = 0, currentTime = Date.now()) {
+                const speed = deltaTime / 16.67;
+                const w = dimensions?.width || window.innerWidth;
+                const h = dimensions?.height || window.innerHeight;
+                
+                this.prevX = this.x;
+                this.prevY = this.y;
+                
+                switch (this.type) {
+                    case 'rain':
+                        this.wind = globalWindParam + (Math.random() - 0.5) * 2;
+                        this.turbulence = Math.sin(currentTime * 0.01 + this.x * 0.1) * 0.5;
+                        
+                        this.x += (this.speedX + this.wind + this.turbulence) * speed;
+                        this.y += this.speedY * speed * intensity;
+                        
+                        if (this.y > h - 10 && !this.splashing) {
+                            this.triggerSplash();
+                        }
+                        
+                        if (this.splashParticles.length > 0) {
+                            for (let i = 0; i < this.splashParticles.length; i++) {
+                                const splash = this.splashParticles[i];
+                                splash.x += splash.vx * speed;
+                                splash.y += splash.vy * speed;
+                                splash.vy += 0.2 * speed;
+                                splash.life -= 0.05 * speed;
+                            }
+                            this.splashParticles = this.splashParticles.filter(s => s.life > 0);
+                        }
+                        
+                        if (this.y > h + 20) {
+                            this.reset({ startFromTop: true, width: w, height: h });
+                        }
+                        if (this.x < -20 || this.x > w + 20) {
+                            this.x = Math.random() * w;
+                        }
+                        break;
+                    
+                    case 'snow':
+                        this.y += this.speedY * speed * intensity;
+                        this.wobble += this.wobbleSpeed * speed;
+                        this.x += Math.sin(this.wobble) * 0.8 * speed + this.speedX * speed;
+                        this.rotation += this.rotationSpeed * speed;
+                        if (this.y > h + 20) {
+                            this.reset({ startFromTop: true, width: w, height: h });
+                        }
+                        if (this.x < -20) this.x = w + 20;
+                        if (this.x > w + 20) this.x = -20;
+                        break;
+                    
+                    case 'storm':
+                        this.y += this.speedY * speed * intensity;
+                        this.x += this.speedX * speed * intensity;
+                        if (this.y > h + 50) {
+                            this.reset({ startFromTop: true, width: w, height: h });
+                        }
+                        if (this.x > w + 100) {
+                            this.x = -100;
+                            this.y = Math.random() * h;
+                        }
+                        break;
+                    
+                    case 'fog':
+                        this.y += this.speedY * speed;
+                        this.x += this.speedX * speed;
+                        this.life += speed;
+                        const lifePercent = this.life / this.maxLife;
+                        // Linear fade-in/sustain/fade-out curve for better visibility
+                        // 0-20%: Fade in, 20-80%: Sustain, 80-100%: Fade out
+                        if (lifePercent < 0.2) {
+                            this.alpha = (lifePercent / 0.2) * FOG_MAX_ALPHA;
+                        } else if (lifePercent < 0.8) {
+                            this.alpha = FOG_MAX_ALPHA;
+                        } else {
+                            this.alpha = ((1 - lifePercent) / 0.2) * FOG_MAX_ALPHA;
+                        }
+                        if (this.life > this.maxLife) {
+                            this.reset({ width: w, height: h });
+                        }
+                        if (this.x < -this.size) this.x = w + this.size;
+                        if (this.x > w + this.size) this.x = -this.size;
+                        break;
+                    
+                    case 'fireflies':
+                        this.wanderAngle += (Math.random() - 0.5) * this.wanderSpeed * speed;
+                        this.speedX += Math.cos(this.wanderAngle) * 0.05 * speed;
+                        this.speedY += Math.sin(this.wanderAngle) * 0.05 * speed;
+                        this.speedX *= 0.98;
+                        this.speedY *= 0.98;
+                        this.x += this.speedX * speed;
+                        this.y += this.speedY * speed;
+                        
+                        this.pulseTimer += speed;
+                        if (this.pulseTimer > this.pulseInterval) {
+                            this.isPulsing = true;
+                            this.pulseTimer = 0;
+                            this.pulseInterval = 120 + Math.random() * 200;
+                        }
+                        
+                        if (this.isPulsing) {
+                            this.glowPhase += this.glowSpeed * speed * 3;
+                            this.alpha = this.targetAlpha * Math.sin(this.glowPhase);
+                            if (this.glowPhase > Math.PI) {
+                                this.isPulsing = false;
+                                this.glowPhase = 0;
+                                this.alpha = 0;
+                            }
+                        }
+                        
+                        if (this.x < -30) this.x = w + 30;
+                        if (this.x > w + 30) this.x = -30;
+                        if (this.y < -30) this.y = h + 30;
+                        if (this.y > h + 30) this.y = -30;
+                        break;
+                    
+                    case 'sakura':
+                        this.y += this.speedY * speed * intensity;
+                        this.wobble += this.wobbleSpeed * speed;
+                        this.flutter += this.flutterSpeed * speed;
+                        this.x += Math.sin(this.wobble) * this.wobbleAmplitude * speed + this.speedX * speed;
+                        this.rotation += this.rotationSpeed * speed * (1 + Math.sin(this.flutter) * 0.5);
+                        this.alpha = (0.5 + Math.abs(Math.sin(this.flutter)) * 0.5) * (0.6 + Math.random() * 0.05);
+                        
+                        if (this.y > h + 20) {
+                            this.reset({ startFromTop: true, width: w, height: h });
+                        }
+                        if (this.x < -30) this.x = w + 30;
+                        if (this.x > w + 30) this.x = -30;
+                        break;
+                    
+                    case 'embers':
+                        this.y += this.speedY * speed * intensity;
+                        this.wobble += this.wobbleSpeed * speed;
+                        this.x += Math.sin(this.wobble) * 0.5 * speed + this.speedX * speed * 0.3;
+                        this.speedY *= 0.999;
+                        this.life -= this.decay * speed;
+                        this.flickerPhase += this.flickerSpeed * speed;
+                        this.alpha = this.life * (0.6 + Math.sin(this.flickerPhase) * 0.4);
+                        
+                        if (this.life <= 0 || this.y < -50) {
+                            this.reset({ width: w, height: h, y: h + 20 });
+                            this.life = 1.0;
+                        }
+                        if (this.x < -30) this.x = w + 30;
+                        if (this.x > w + 30) this.x = -30;
+                        break;
+                }
+            }
+
+            triggerSplash() {
+                this.splashing = true;
+                const splashCount = 3 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < splashCount; i++) {
+                    this.splashParticles.push({
+                        x: this.x,
+                        y: this.y,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: -2 - Math.random() * 2,
+                        life: 1.0,
+                        size: 1 + Math.random()
+                    });
+                }
+            }
+
+            draw() {
+                if (!this.active || !ctx) return;
+                
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                
+                switch (this.type) {
+                    case 'rain':
+                    case 'storm':
+                    {
+                        // Depth-based rendering
+                        const depthFactor = 0.5 + this.z * 0.5; // z: 0-1 → depth: 0.5-1.0
+                        const glowIntensity = this.type === 'storm' ? 0.3 : 0.15;
+                        
+                        // Outer glow layer
+                        const glowGradient = ctx.createLinearGradient(
+                            this.x, this.y,
+                            this.x - this.speedX * 2, this.y - this.length
+                        );
+                        const glowColor = this.type === 'storm' 
+                            ? `rgba(107, 163, 214, ${this.alpha * glowIntensity})` 
+                            : `rgba(160, 196, 232, ${this.alpha * glowIntensity})`;
+                        glowGradient.addColorStop(0, glowColor);
+                        glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                        
+                        ctx.strokeStyle = glowGradient;
+                        ctx.lineWidth = (this.width + 2) * depthFactor;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.x - this.speedX * 2, this.y - this.length);
+                        ctx.stroke();
+                        
+                        // Main raindrop with depth-based color
+                        const mainGradient = ctx.createLinearGradient(
+                            this.x, this.y,
+                            this.x - this.speedX * 2, this.y - this.length
+                        );
+                        
+                        const baseR = this.type === 'storm' ? 107 : 160;
+                        const baseG = this.type === 'storm' ? 163 : 196;
+                        const baseB = this.type === 'storm' ? 214 : 232;
+                        
+                        const depthR = Math.round(baseR * depthFactor);
+                        const depthG = Math.round(baseG * depthFactor);
+                        const depthB = Math.round(baseB * depthFactor);
+                        
+                        mainGradient.addColorStop(0, `rgba(${depthR}, ${depthG}, ${depthB}, ${this.alpha})`);
+                        mainGradient.addColorStop(0.5, `rgba(${baseR}, ${baseG}, ${baseB}, ${this.alpha * 0.8})`);
+                        mainGradient.addColorStop(1, `rgba(${baseR}, ${baseG}, ${baseB}, 0)`);
+                        
+                        ctx.strokeStyle = mainGradient;
+                        ctx.lineWidth = this.width * depthFactor;
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.x - this.speedX * 2, this.y - this.length);
+                        ctx.stroke();
+                        
+                        // Enhanced splash rendering
+                        if (this.type === 'rain' && this.splashParticles.length > 0) {
+                            this.splashParticles.forEach(splash => {
+                                const splashAlpha = splash.life * 0.7;
+                                
+                                // Glow layer
+                                ctx.globalAlpha = splashAlpha * 0.3;
+                                ctx.fillStyle = 'rgba(200, 230, 255, 1)';
+                                ctx.beginPath();
+                                ctx.arc(splash.x, splash.y, splash.size + 2, 0, Math.PI * 2);
+                                ctx.fill();
+                                
+                                // Main splash
+                                ctx.globalAlpha = splashAlpha;
+                                ctx.fillStyle = 'rgba(180, 210, 240, 1)';
+                                ctx.beginPath();
+                                ctx.arc(splash.x, splash.y, splash.size, 0, Math.PI * 2);
+                                ctx.fill();
+                                
+                                ctx.globalAlpha = this.alpha;
+                            });
+                        }
+                        break;
+                    }
+                    
+                    case 'snow':
+                    {
+                        ctx.save();
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        
+                        const depthScale = 0.6 + this.z * 0.4;
+                        
+                        // Shadow/depth layer
+                        ctx.globalAlpha = this.alpha * 0.3;
+                        ctx.fillStyle = 'rgba(180, 200, 220, 1)';
+                        ctx.beginPath();
+                        if (this.snowflakePoints && this.snowflakePoints.length > 0) {
+                            for (let i = 0; i < this.snowflakePoints.length; i++) {
+                                const x = this.snowflakePoints[i].x * this.size * depthScale;
+                                const y = this.snowflakePoints[i].y * this.size * depthScale + 2;
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Main snowflake with radial gradient (crystal effect)
+                        ctx.globalAlpha = this.alpha;
+                        
+                        if (this.snowflakePoints && this.snowflakePoints.length > 0) {
+                            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * depthScale);
+                            gradient.addColorStop(0, '#ffffff');
+                            gradient.addColorStop(0.6, '#f0f8ff');
+                            gradient.addColorStop(1, 'rgba(240, 248, 255, 0.8)');
+                            
+                            ctx.fillStyle = gradient;
+                            ctx.beginPath();
+                            for (let i = 0; i < this.snowflakePoints.length; i++) {
+                                const x = this.snowflakePoints[i].x * this.size * depthScale;
+                                const y = this.snowflakePoints[i].y * this.size * depthScale;
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Outline for definition
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        } else {
+                            // Fallback with gradient
+                            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * depthScale);
+                            gradient.addColorStop(0, '#ffffff');
+                            gradient.addColorStop(1, 'rgba(240, 248, 255, 0.8)');
+                            ctx.fillStyle = gradient;
+                            
+                            const points = 6;
+                            ctx.beginPath();
+                            for (let i = 0; i < points; i++) {
+                                const angle = (i * Math.PI * 2) / points;
+                                const x = Math.cos(angle) * this.size * depthScale;
+                                const y = Math.sin(angle) * this.size * depthScale;
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        }
+                        
+                        // Enhanced sparkle effect
+                        if (Math.random() < SNOWFLAKE_SPARKLE_CHANCE * 1.5) {
+                            ctx.globalAlpha = 0.9;
+                            
+                            // Outer glow
+                            const sparkleGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * 0.6);
+                            sparkleGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                            sparkleGradient.addColorStop(0.5, 'rgba(255, 255, 220, 0.6)');
+                            sparkleGradient.addColorStop(1, 'rgba(255, 255, 220, 0)');
+                            ctx.fillStyle = sparkleGradient;
+                            ctx.beginPath();
+                            ctx.arc(0, 0, this.size * 0.6, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            // Bright center
+                            ctx.fillStyle = '#ffffee';
+                            ctx.beginPath();
+                            ctx.arc(0, 0, this.size * 0.3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        ctx.restore();
+                        break;
+                    }
+                    
+                    case 'fog':
+                    {
+                        const baseX = this.x;
+                        const baseY = this.y;
+                        
+                        // Perlin noise displacement for organic edges
+                        const noiseScale = 0.003;
+                        const noiseTime = Date.now() * 0.0001;
+                        const noiseOffsetX = noise.noise2D(baseX * noiseScale, noiseTime) * 30;
+                        const noiseOffsetY = noise.noise2D(baseY * noiseScale, noiseTime + 100) * 30;
+                        
+                        const finalX = baseX + noiseOffsetX;
+                        const finalY = baseY + noiseOffsetY;
+                        
+                        // Layer 1: Large soft base
+                        const baseGradient = ctx.createRadialGradient(
+                            finalX, finalY, 0,
+                            finalX, finalY, this.size * 1.2
+                        );
+                        baseGradient.addColorStop(0, `hsla(${this.hue}, 15%, 80%, ${this.alpha * 0.8})`);
+                        baseGradient.addColorStop(0.5, `hsla(${this.hue}, 15%, 75%, ${this.alpha * 0.4})`);
+                        baseGradient.addColorStop(1, 'rgba(200, 200, 220, 0)');
+                        ctx.fillStyle = baseGradient;
+                        ctx.beginPath();
+                        ctx.arc(finalX, finalY, this.size * 1.2, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Layer 2: Medium density core
+                        const coreGradient = ctx.createRadialGradient(
+                            finalX, finalY, 0,
+                            finalX, finalY, this.size * 0.7
+                        );
+                        coreGradient.addColorStop(0, `hsla(${this.hue + 5}, 18%, 78%, ${this.alpha})`);
+                        coreGradient.addColorStop(0.6, `hsla(${this.hue}, 15%, 73%, ${this.alpha * 0.6})`);
+                        coreGradient.addColorStop(1, 'rgba(190, 190, 210, 0)');
+                        ctx.fillStyle = coreGradient;
+                        ctx.beginPath();
+                        ctx.arc(finalX, finalY, this.size * 0.7, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Layer 3: Highlight/light scatter
+                        const highlightGradient = ctx.createRadialGradient(
+                            finalX - this.size * 0.15, finalY - this.size * 0.15, 0,
+                            finalX - this.size * 0.15, finalY - this.size * 0.15, this.size * 0.4
+                        );
+                        highlightGradient.addColorStop(0, `hsla(${this.hue - 10}, 20%, 85%, ${this.alpha * 0.5})`);
+                        highlightGradient.addColorStop(0.5, `hsla(${this.hue - 5}, 18%, 82%, ${this.alpha * 0.25})`);
+                        highlightGradient.addColorStop(1, 'rgba(220, 220, 240, 0)');
+                        ctx.fillStyle = highlightGradient;
+                        ctx.beginPath();
+                        ctx.arc(finalX - this.size * 0.15, finalY - this.size * 0.15, this.size * 0.4, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        break;
+                    }
+                    
+                    case 'fireflies':
+                    {
+                        if (this.alpha <= 0.01) break;
+                        
+                        ctx.save();
+                        
+                        const outerGlow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 6);
+                        outerGlow.addColorStop(0, `hsla(${this.hue}, 90%, 70%, ${this.alpha * 0.15})`);
+                        outerGlow.addColorStop(0.5, `hsla(${this.hue}, 90%, 60%, ${this.alpha * 0.05})`);
+                        outerGlow.addColorStop(1, `hsla(${this.hue}, 90%, 50%, 0)`);
+                        ctx.fillStyle = outerGlow;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size * 6, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        const innerGlow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
+                        innerGlow.addColorStop(0, `hsla(${this.hue}, 95%, 80%, ${this.alpha * 0.6})`);
+                        innerGlow.addColorStop(0.5, `hsla(${this.hue}, 95%, 70%, ${this.alpha * 0.3})`);
+                        innerGlow.addColorStop(1, `hsla(${this.hue}, 90%, 60%, 0)`);
+                        ctx.fillStyle = innerGlow;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.globalAlpha = this.alpha;
+                        ctx.fillStyle = `hsl(${this.hue}, 100%, 90%)`;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size * 0.4, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.restore();
+                        break;
+                    }
+                    
+                    case 'sakura':
+                    {
+                        ctx.save();
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        ctx.globalAlpha = this.alpha;
+                        
+                        const s = this.size;
+                        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, s);
+                        gradient.addColorStop(0, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness + 10}%, 1)`);
+                        gradient.addColorStop(0.5, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0.9)`);
+                        gradient.addColorStop(1, `hsla(${this.hue - 10}, ${this.saturation - 10}%, ${this.lightness - 5}%, 0.6)`);
+                        ctx.fillStyle = gradient;
+                        
+                        if (this.petalShape === 0) {
+                            ctx.beginPath();
+                            ctx.ellipse(0, 0, s * 0.6, s, 0, 0, Math.PI * 2);
+                            ctx.fill();
+                        } else if (this.petalShape === 1) {
+                            ctx.beginPath();
+                            ctx.ellipse(0, 0, s * 0.35, s * 1.1, 0, 0, Math.PI * 2);
+                            ctx.fill();
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(-s * 0.25, -s * 0.1, s * 0.45, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.arc(s * 0.25, -s * 0.1, s * 0.45, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.moveTo(-s * 0.55, 0);
+                            ctx.quadraticCurveTo(0, s * 1.1, s * 0.55, 0);
+                            ctx.fill();
+                        }
+                        
+                        ctx.strokeStyle = `hsla(${this.hue + 10}, ${this.saturation}%, ${this.lightness - 15}%, 0.3)`;
+                        ctx.lineWidth = 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -s * 0.6);
+                        ctx.quadraticCurveTo(s * 0.1, 0, 0, s * 0.7);
+                        ctx.stroke();
+                        
+                        ctx.restore();
+                        break;
+                    }
+                    
+                    case 'embers':
+                    {
+                        if (this.alpha <= 0.01) break;
+                        ctx.save();
+                        
+                        const outerSize = this.size * 4 * this.life;
+                        const outerGlow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, outerSize);
+                        outerGlow.addColorStop(0, `hsla(${this.hue}, 100%, 60%, ${this.alpha * 0.2})`);
+                        outerGlow.addColorStop(0.5, `hsla(${this.hue + 10}, 90%, 50%, ${this.alpha * 0.08})`);
+                        outerGlow.addColorStop(1, `hsla(${this.hue}, 80%, 40%, 0)`);
+                        ctx.fillStyle = outerGlow;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, outerSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        const innerSize = this.size * 1.5 * this.life;
+                        const innerGlow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, innerSize);
+                        innerGlow.addColorStop(0, `hsla(${this.hue - 5}, 100%, 75%, ${this.alpha * 0.8})`);
+                        innerGlow.addColorStop(0.6, `hsla(${this.hue}, 100%, 60%, ${this.alpha * 0.4})`);
+                        innerGlow.addColorStop(1, `hsla(${this.hue + 10}, 90%, 45%, 0)`);
+                        ctx.fillStyle = innerGlow;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, innerSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.globalAlpha = this.alpha * this.life;
+                        ctx.fillStyle = `hsl(${this.hue - 10}, 100%, 90%)`;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size * 0.3 * this.life, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.restore();
+                        break;
+                    }
+                }
+                
+                ctx.restore();
+            }
+
+            destroy() {
+                this.active = false;
+            }
+        }
+
+        // Initialize particle pools after Particle class is defined
+        pools.rain = new ParticlePool(Particle, 'rain', 500);
+        pools.snow = new ParticlePool(Particle, 'snow', 500);
+        pools.storm = new ParticlePool(Particle, 'storm', 500);
+        pools.fog = new ParticlePool(Particle, 'fog', 100);
+        pools.fireflies = new ParticlePool(Particle, 'fireflies', 200);
+        pools.sakura = new ParticlePool(Particle, 'sakura', 300);
+        pools.embers = new ParticlePool(Particle, 'embers', 300);
+
+        // Effect handlers with GSAP animations
+        const effects = {
+            rain: {
+                start(intensity = 0.5, duration = 10000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(250 * intensity);
+                    const newParticles = [];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.rain.acquire({
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'rain',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`🌧️ Rain effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.rain.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'rain').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.rain.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'rain');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'rain');
+                        log('🌧️ All rain effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.rain.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🌧️ Rain effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            snow: {
+                start(intensity = 0.5, duration = 10000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(180 * intensity);
+                    const newParticles = [];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.snow.acquire({
+                            width: window.innerWidth,
+                            height: window.innerHeight,
+                            snowflakeVariants: snowflakeVariants
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'snow',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`❄️ Snow effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.snow.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'snow').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.snow.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'snow');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'snow');
+                        log('❄️ All snow effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.snow.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('❄️ Snow effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            storm: {
+                start(intensity = 0.7, duration = 8000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(300 * intensity);
+                    const newParticles = [];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.storm.acquire({
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'storm',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        nextShake: Date.now() + Math.random() * 1500,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`⛈️ Storm effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    safeGsap.to(canvas.style, {
+                        filter: 'brightness(0.85)',
+                        duration: 0.5,
+                        ease: 'power2.inOut'
+                    });
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.storm.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'storm').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.storm.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'storm');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'storm');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.storm.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        processEffectQueue();
+                    }
+                    
+                    const hasStorm = state.activeEffects.some(e => e.type === 'storm');
+                    if (!hasStorm) {
+                        safeGsap.to(canvas.style, {
+                            filter: 'brightness(1)',
+                            duration: 0.8,
+                            ease: 'power2.inOut'
+                        });
+                    }
+                    
+                    log('⛈️ Storm effect stopped');
+                }
+            },
+
+            fog: {
+                start(intensity = 0.4, duration = 15000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(80 * intensity); // Increased from 30 to 80 particles
+                    const newParticles = [];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.fog.acquire({
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'fog',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`🌫️ Fog effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.fog.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'fog').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.fog.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'fog');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'fog');
+                        log('🌫️ All fog effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.fog.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🌫️ Fog effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            thunder: {
+                start(intensity = 0.8, duration = 5000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const effect = {
+                        type: 'thunder',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        nextFlash: Date.now() + Math.random() * 800,
+                        flashCount: 0,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`⚡ Thunder effect started (${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    // Schedule auto-stop and store timer ID
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.thunder.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        // Stop all thunder effects
+                        state.activeEffects.filter(e => e.type === 'thunder').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'thunder');
+                        log('⚡ All thunder effects stopped');
+                        processEffectQueue(); // Process queue when effects stop
+                    } else {
+                        // Cancel timer to prevent memory leak
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('⚡ Thunder effect stopped');
+                        processEffectQueue(); // Process queue when an effect stops
+                    }
+                }
+            },
+
+            sunbeam: {
+                start(intensity = 0.6, duration = 12000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const beamCount = 6;
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    
+                    const effect = {
+                        type: 'sunbeam',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        beams: Array.from({ length: beamCount }, (_, i) => ({
+                            x: (w / beamCount) * i + Math.random() * (w / beamCount),
+                            y: Math.random() * h * 0.3,
+                            angle: Math.random() * Math.PI / 6 - Math.PI / 12,
+                            width: 60 + Math.random() * 120,
+                            height: h * 1.2,
+                            speed: 0.3 + Math.random() * 0.5,
+                            opacity: 0
+                        })),
+                        timerId: null,
+                        fadeTimerId: null
+                    };
+                    
+                    // Fade in beams
+                    effect.beams.forEach((beam, i) => {
+                        safeGsap.to(beam, {
+                            opacity: 1,
+                            duration: 1,
+                            delay: i * 0.1,
+                            ease: 'power2.inOut'
+                        });
+                    });
+                    
+                    state.activeEffects.push(effect);
+                    log(`☀️ Sunbeam effect started (${beamCount} beams, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        // Fade out before stopping
+                        effect.fadeTimerId = setTimeout(() => {
+                            effect.beams.forEach((beam, i) => {
+                                safeGsap.to(beam, {
+                                    opacity: 0,
+                                    duration: 1,
+                                    delay: i * 0.05,
+                                    ease: 'power2.inOut'
+                                });
+                            });
+                        }, Math.max(0, duration - 1200));
+                        
+                        // Schedule auto-stop and store timer ID
+                        effect.timerId = setTimeout(() => effects.sunbeam.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        // Stop all sunbeam effects
+                        state.activeEffects.filter(e => e.type === 'sunbeam').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            if (e.fadeTimerId) clearTimeout(e.fadeTimerId);
+                            // Clean up effect-specific data
+                            e.beams = null;
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'sunbeam');
+                        log('☀️ All sunbeam effects stopped');
+                        processEffectQueue(); // Process queue when effects stop
+                    } else {
+                        // Cancel timers to prevent memory leak
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        if (effect.fadeTimerId) {
+                            clearTimeout(effect.fadeTimerId);
+                            effect.fadeTimerId = null;
+                        }
+                        // Clean up effect-specific data
+                        effect.beams = null;
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('☀️ Sunbeam effect stopped');
+                        processEffectQueue(); // Process queue when an effect stops
+                    }
+                }
+            },
+
+            glitchclouds: {
+                start(intensity = 0.7, duration = 8000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const effect = {
+                        type: 'glitchclouds',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        glitchLines: [],
+                        glitchInterval: null,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`☁️ Glitch Clouds effect started (${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    // Schedule auto-stop and store timer ID
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.glitchclouds.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        // Stop all glitch clouds effects
+                        state.activeEffects.filter(e => e.type === 'glitchclouds').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            // Clean up effect-specific data
+                            e.glitchLines = null;
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'glitchclouds');
+                        log('☁️ All glitch clouds effects stopped');
+                        processEffectQueue(); // Process queue when effects stop
+                    } else {
+                        // Cancel timer to prevent memory leak
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        // Clean up effect-specific data
+                        effect.glitchLines = null;
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('☁️ Glitch clouds effect stopped');
+                        processEffectQueue(); // Process queue when an effect stops
+                    }
+                }
+            },
+
+            aurora: {
+                start(intensity = 0.5, duration = 15000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const waveCount = 3 + Math.floor(intensity * 4);
+                    const h = window.innerHeight;
+                    const effect = {
+                        type: 'aurora',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        auroraWaves: [],
+                        timerId: null
+                    };
+                    
+                    for (let i = 0; i < waveCount; i++) {
+                        effect.auroraWaves.push({
+                            y: h * (0.05 + Math.random() * 0.25),
+                            amplitude: 30 + Math.random() * 60,
+                            frequency: 0.002 + Math.random() * 0.004,
+                            speed: 0.0003 + Math.random() * 0.0005,
+                            phase: Math.random() * Math.PI * 2,
+                            hue: 100 + Math.random() * 80,
+                            width: 40 + Math.random() * 80,
+                            alpha: 0.12 + Math.random() * 0.15
+                        });
+                    }
+                    
+                    state.activeEffects.push(effect);
+                    log(`🌌 Aurora effect started (${waveCount} waves, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.aurora.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'aurora').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.auroraWaves = null;
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'aurora');
+                        log('🌌 All aurora effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.auroraWaves = null;
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🌌 Aurora effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            fireflies: {
+                start(intensity = 0.5, duration = 12000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(40 * intensity);
+                    const newParticles = [];
+                    const h = window.innerHeight;
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.fireflies.acquire({
+                            width: window.innerWidth,
+                            height: h,
+                            y: h * (0.4 + Math.random() * 0.6)
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'fireflies',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`✨ Fireflies effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.fireflies.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'fireflies').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.fireflies.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'fireflies');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'fireflies');
+                        log('✨ All fireflies effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.fireflies.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('✨ Fireflies effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            meteors: {
+                start(intensity = 0.4, duration = 10000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const effect = {
+                        type: 'meteors',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        meteors: [],
+                        nextMeteor: Date.now() + Math.random() * 1000,
+                        maxMeteors: Math.floor(3 + intensity * 5),
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`☄️ Meteors effect started (${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.meteors.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'meteors').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.meteors = null;
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'meteors');
+                        log('☄️ All meteors effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.meteors = null;
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('☄️ Meteors effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            sakura: {
+                start(intensity = 0.5, duration = 12000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(60 * intensity);
+                    const newParticles = [];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.sakura.acquire({
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'sakura',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`🌸 Sakura effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.sakura.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'sakura').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.sakura.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'sakura');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'sakura');
+                        log('🌸 All sakura effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.sakura.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🌸 Sakura effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            embers: {
+                start(intensity = 0.5, duration = 10000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const particleCount = Math.floor(50 * intensity);
+                    const newParticles = [];
+                    const h = window.innerHeight;
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = pools.embers.acquire({
+                            width: window.innerWidth,
+                            height: h,
+                            y: h + Math.random() * 50
+                        });
+                        newParticles.push(particle);
+                    }
+                    
+                    state.particles.push(...newParticles);
+                    
+                    const effect = {
+                        type: 'embers',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        particles: newParticles,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`🔥 Embers effect started (${particleCount} particles, ${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.embers.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'embers').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                            e.particles.forEach(p => pools.embers.release(p));
+                        });
+                        state.particles = state.particles.filter(p => p.type !== 'embers');
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'embers');
+                        log('🔥 All embers effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        effect.particles.forEach(p => pools.embers.release(p));
+                        state.particles = state.particles.filter(p => p.active);
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🔥 Embers effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            },
+
+            heatwave: {
+                start(intensity = 0.4, duration = 8000, options = {}) {
+                    const isPermanent = options.permanent === true;
+                    const effect = {
+                        type: 'heatwave',
+                        intensity,
+                        startTime: Date.now(),
+                        duration,
+                        permanent: isPermanent,
+                        timerId: null
+                    };
+                    
+                    state.activeEffects.push(effect);
+                    log(`🌡️ Heatwave effect started (${isPermanent ? 'permanent' : `${duration}ms`})`);
+                    
+                    if (!isPermanent) {
+                        effect.timerId = setTimeout(() => effects.heatwave.stop(effect), duration);
+                    }
+                },
+                stop(effect) {
+                    if (!effect) {
+                        state.activeEffects.filter(e => e.type === 'heatwave').forEach(e => {
+                            if (e.timerId) clearTimeout(e.timerId);
+                        });
+                        state.activeEffects = state.activeEffects.filter(e => e.type !== 'heatwave');
+                        log('🌡️ All heatwave effects stopped');
+                        processEffectQueue();
+                    } else {
+                        if (effect.timerId) {
+                            clearTimeout(effect.timerId);
+                            effect.timerId = null;
+                        }
+                        state.activeEffects = state.activeEffects.filter(e => e !== effect);
+                        log('🌡️ Heatwave effect stopped');
+                        processEffectQueue();
+                    }
+                }
+            }
+        };
+
+        // Update physics with fixed timestep
+        function updatePhysics(deltaTime, currentTime) {
+            globalWind = Math.sin(currentTime * 0.0005) * 3;
+            
+            for (const particle of state.particles) {
+                if (!particle.active) continue;
+                
+                const effect = state.activeEffects.find(e =>
+                    e.particles && e.particles.includes(particle)
+                );
+                const intensity = effect ? effect.intensity : 1.0;
+                const dimensions = { width: window.innerWidth, height: window.innerHeight };
+                
+                particle.update(deltaTime, intensity, dimensions, globalWind, currentTime);
+            }
+            
+            state.particles = state.particles.filter(p => p.active);
+        }
+
+        // Render with interpolation
+        function renderInterpolated(alpha) {
+            for (const particle of state.particles) {
+                if (!particle.active) continue;
+                
+                const renderX = particle.prevX + (particle.x - particle.prevX) * alpha;
+                const renderY = particle.prevY + (particle.y - particle.prevY) * alpha;
+                
+                const origX = particle.x;
+                const origY = particle.y;
+                particle.x = renderX;
+                particle.y = renderY;
+                
+                particle.draw();
+                
+                particle.x = origX;
+                particle.y = origY;
+            }
+        }
+
+        // Render loop with fixed timestep
+        function render(timestamp) {
+            const deltaTime = Math.min(timestamp - state.lastFrameTime, 100);
+            state.lastFrameTime = timestamp;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            ctx.clearRect(0, 0, w, h);
+
+            if (deltaTime > 0) {
+                state.fps = Math.round(1000 / deltaTime);
+                state.fpsHistory.push(state.fps);
+                if (state.fpsHistory.length > 60) state.fpsHistory.shift();
+            }
+
+            state.accumulator += deltaTime;
+            state.accumulator = Math.min(state.accumulator, MAX_ACCUMULATED);
+            
+            const currentTime = Date.now();
+            while (state.accumulator >= FIXED_TIMESTEP) {
+                updatePhysics(FIXED_TIMESTEP, currentTime);
+                state.accumulator -= FIXED_TIMESTEP;
+            }
+            
+            const alpha = state.accumulator / FIXED_TIMESTEP;
+            renderInterpolated(alpha);
+
+            for (let i = state.activeEffects.length - 1; i >= 0; i--) {
+                const effect = state.activeEffects[i];
+                const elapsed = currentTime - effect.startTime;
+                const isPermanent = effect.permanent === true;
+                
+                if (!isPermanent && elapsed > effect.duration + 1000) {
+                    state.activeEffects.splice(i, 1);
+                    continue;
+                }
+
+                if (effect.type === 'thunder') {
+                    handleThunder(effect);
+                }
+
+                if (effect.type === 'sunbeam' && effect.beams && Array.isArray(effect.beams)) {
+                    drawSunbeams(effect);
+                }
+
+                if (effect.type === 'fog') {
+                    drawVolumetricFog(effect);
+                }
+
+                if (effect.type === 'glitchclouds') {
+                    drawGlitchClouds(effect);
+                }
+
+                if (effect.type === 'aurora') {
+                    drawAurora(effect);
+                }
+
+                if (effect.type === 'meteors') {
+                    drawMeteors(effect);
+                }
+
+                if (effect.type === 'heatwave') {
+                    drawHeatwave(effect);
+                }
+
+                if (effect.type === 'storm' && Date.now() >= effect.nextShake) {
+                    shakeCamera(effect.intensity);
+                    effect.nextShake = Date.now() + 800 + Math.random() * 2500;
+                }
+            }
+            
+            // Apply optional post-processing (bloom)
+            if (config.enablePostProcessing) {
+                applyPostProcessing();
+            }
+
+            if (config.debug) {
+                updateDebugInfo();
+            }
+
+            state.animationId = requestAnimationFrame(render);
+        }
+
+        // Handle thunder effect with procedural lightning
+        function handleThunder(effect) {
+            const now = Date.now();
+            
+            // Count active lightning bolts
+            const activeLightningCount = state.activeEffects.filter(e => 
+                e.type === 'thunder' && e.lightningActive
+            ).length;
+            
+            if (now >= effect.nextFlash) {
+                // Limit concurrent lightning bolts to prevent performance degradation
+                if (activeLightningCount < LIGHTNING_MAX_CONCURRENT) {
+                    // Check for segment overflow before generating new bolt
+                    if (lightningSegments.length > LIGHTNING_MAX_TOTAL_SEGMENTS) {
+                        log(`⚠️ Lightning segment overflow detected (${lightningSegments.length} segments), clearing`, 'warn');
+                        lightningSegments = [];
+                    }
+                    
+                    generateLightningBolt();
+                    effect.flashCount = (effect.flashCount || 0) + 1;
+                    effect.lightningActive = true; // Mark as active
+                    effect.nextFlash = now + 400 + Math.random() * 2500;
+                    triggerLightning(effect.intensity);
+                }
+            }
+            
+            if (lightningSegments.length > 0 && now < lightningFadeTime) {
+                const fadeProgress = 1 - (lightningFadeTime - now) / 150;
+                drawLightning(fadeProgress);
+            } else if (now >= lightningFadeTime && lightningSegments.length > 0) {
+                // Clear segments after fade completes (memory leak fix)
+                lightningSegments = [];
+                effect.lightningActive = false; // Mark as inactive
+            }
+        }
+
+        // Generate procedural lightning bolt
+        function generateLightningBolt() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            const startX = Math.random() * w;
+            const startY = 0;
+            const endX = startX + (Math.random() - 0.5) * w * 0.3;
+            const endY = h;
+            
+            // Clear old segments before generating new bolt
+            const segmentCount = { count: 0 };
+            lightningSegments = subdivideLightning(startX, startY, endX, endY, 6, 1.0, segmentCount);
+            lightningFadeTime = Date.now() + 150;
+            
+            // Debug logging for high segment count monitoring
+            if (segmentCount.count > LIGHTNING_DEBUG_THRESHOLD) {
+                log(`⚡ Lightning generated with ${segmentCount.count} segments (threshold: ${LIGHTNING_DEBUG_THRESHOLD})`, 'debug');
+            }
+        }
+
+        // Recursive lightning subdivision with segment limits
+        function subdivideLightning(x1, y1, x2, y2, generations, brightness, segmentCount = { count: 0 }) {
+            const segments = [];
+            
+            // Hard limit: prevent unbounded segment growth
+            if (segmentCount.count >= LIGHTNING_MAX_SEGMENTS_PER_BOLT) {
+                return segments;
+            }
+            
+            if (generations === 0) {
+                segments.push({ x1, y1, x2, y2, brightness });
+                segmentCount.count++;
+                return segments;
+            }
+            
+            const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * (x2 - x1) * 0.4;
+            const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * 50;
+            
+            segments.push(...subdivideLightning(x1, y1, midX, midY, generations - 1, brightness, segmentCount));
+            segments.push(...subdivideLightning(midX, midY, x2, y2, generations - 1, brightness * 0.9, segmentCount));
+            
+            // Reduced branching probability: decreases at higher recursion depths
+            const branchProbability = 0.3 * Math.pow(0.7, 6 - generations);
+            // Secondary limit: stop branching when approaching hard limit
+            if (Math.random() < branchProbability && generations > 2 && segmentCount.count < LIGHTNING_BRANCH_THRESHOLD) {
+                const branchAngle = (Math.random() - 0.5) * Math.PI / 3;
+                const branchLength = Math.hypot(x2 - midX, y2 - midY) * 0.6;
+                const branchEndX = midX + Math.cos(branchAngle) * branchLength;
+                const branchEndY = midY + Math.sin(branchAngle) * branchLength + branchLength * 0.5;
+                segments.push(...subdivideLightning(midX, midY, branchEndX, branchEndY, generations - 2, brightness * 0.5, segmentCount));
+            }
+            
+            return segments;
+        }
+
+        // Draw lightning with HDR multi-layer glow
+        function drawLightning(fadeProgress) {
+            ctx.save();
+            
+            const brightness = 1.0 - fadeProgress;
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Multi-pass glow for atmospheric scatter
+            const glowPasses = [
+                { width: 20, alpha: 0.08, color: 'rgba(180, 220, 255, ' },
+                { width: 12, alpha: 0.15, color: 'rgba(200, 230, 255, ' },
+                { width: 6, alpha: 0.25, color: 'rgba(220, 240, 255, ' },
+                { width: 3, alpha: 0.4, color: 'rgba(240, 250, 255, ' }
+            ];
+            
+            // Render glow passes (outer to inner)
+            glowPasses.forEach(pass => {
+                ctx.strokeStyle = pass.color + (pass.alpha * brightness) + ')';
+                ctx.lineWidth = pass.width;
+                
+                ctx.beginPath();
+                lightningSegments.forEach((seg, i) => {
+                    if (i === 0) ctx.moveTo(seg.x1, seg.y1);
+                    ctx.lineTo(seg.x2, seg.y2);
+                });
+                ctx.stroke();
+            });
+            
+            // Main lightning core (bright white)
+            ctx.strokeStyle = `rgba(255, 255, 255, ${brightness * 0.95})`;
+            ctx.lineWidth = 1.5;
+            
+            ctx.beginPath();
+            lightningSegments.forEach((seg, i) => {
+                if (i === 0) ctx.moveTo(seg.x1, seg.y1);
+                ctx.lineTo(seg.x2, seg.y2);
+            });
+            ctx.stroke();
+            
+            // Inner highlight (electric blue)
+            ctx.strokeStyle = `rgba(150, 200, 255, ${brightness * 0.6})`;
+            ctx.lineWidth = 0.8;
+            
+            ctx.beginPath();
+            lightningSegments.forEach((seg, i) => {
+                if (i === 0) ctx.moveTo(seg.x1, seg.y1);
+                ctx.lineTo(seg.x2, seg.y2);
+            });
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Lightning flash effect with GSAP
+        function triggerLightning(intensity) {
+            const maxOpacity = 0.3 + intensity * 0.6;
+            
+            safeGsap.to(lightningFlash, {
+                opacity: maxOpacity,
+                duration: 0.05,
+                ease: 'power4.in',
+                onComplete: () => {
+                    safeGsap.to(lightningFlash, {
+                        opacity: 0,
+                        duration: 0.1,
+                        ease: 'power2.out'
+                    });
+                }
+            });
+
+            // Sometimes double flash for realism
+            if (Math.random() > 0.5) {
+                safeGsap.to(lightningFlash, {
+                    opacity: maxOpacity * 0.6,
+                    duration: 0.04,
+                    delay: 0.12,
+                    ease: 'power4.in',
+                    onComplete: () => {
+                        safeGsap.to(lightningFlash, {
+                            opacity: 0,
+                            duration: 0.08,
+                            ease: 'power2.out'
+                        });
+                    }
+                });
+            }
+        }
+
+        // Camera shake effect with GSAP
+        function shakeCamera(intensity) {
+            const shakeAmount = 6 * intensity;
+            const shakeDuration = 0.5;
+            
+            safeGsap.to(canvas, {
+                x: `+=${(Math.random() - 0.5) * shakeAmount}`,
+                y: `+=${(Math.random() - 0.5) * shakeAmount}`,
+                duration: 0.05,
+                repeat: 8,
+                yoyo: true,
+                ease: 'power1.inOut',
+                onComplete: () => {
+                    safeGsap.set(canvas, { x: 0, y: 0 });
+                }
+            });
+        }
+
+        // Draw sunbeams with volumetric bloom effect
+        function drawSunbeams(effect) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen'; // HDR-like blending
+            
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            effect.beams.forEach(beam => {
+                // Defensive: catch missing properties to prevent NaN canvas poisoning
+                if (typeof beam.height !== 'number' || isNaN(beam.height)) {
+                    beam.height = h * 1.2;
+                }
+                if (typeof beam.y !== 'number' || isNaN(beam.y)) {
+                    beam.y = Math.random() * h * 0.3;
+                }
+
+                beam.x += beam.speed;
+                if (beam.x > w + 150) {
+                    beam.x = -150;
+                }
+                
+                // Multi-pass bloom for volumetric effect
+                const bloomPasses = [
+                    { scale: 2.5, alpha: 0.03 },
+                    { scale: 1.8, alpha: 0.06 },
+                    { scale: 1.3, alpha: 0.10 }
+                ];
+                
+                bloomPasses.forEach(pass => {
+                    ctx.save();
+                    ctx.translate(beam.x, beam.y);
+                    ctx.rotate((beam.angle * Math.PI) / 180);
+                    ctx.scale(pass.scale, 1);
+                    
+                    const bloomAlpha = beam.opacity * pass.alpha * effect.intensity;
+                    const bloomGradient = ctx.createLinearGradient(0, 0, 0, beam.height);
+                    bloomGradient.addColorStop(0, `rgba(255, 250, 220, ${bloomAlpha})`);
+                    bloomGradient.addColorStop(0.4, `rgba(255, 240, 180, ${bloomAlpha * 0.7})`);
+                    bloomGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
+                    
+                    ctx.fillStyle = bloomGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(-beam.width / 2, 0);
+                    ctx.lineTo(beam.width / 2, 0);
+                    ctx.lineTo(beam.width * 0.1 * pass.scale, beam.height);
+                    ctx.lineTo(-beam.width * 0.1 * pass.scale, beam.height);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.restore();
+                });
+                
+                // Main beam with tapered gradient
+                ctx.save();
+                ctx.translate(beam.x, beam.y);
+                ctx.rotate((beam.angle * Math.PI) / 180);
+                
+                const beamGradient = ctx.createLinearGradient(0, 0, 0, beam.height);
+                const beamAlpha = beam.opacity * effect.intensity;
+                beamGradient.addColorStop(0, `rgba(255, 252, 230, ${beamAlpha * 0.5})`);
+                beamGradient.addColorStop(0.3, `rgba(255, 245, 200, ${beamAlpha * 0.35})`);
+                beamGradient.addColorStop(0.7, `rgba(255, 240, 180, ${beamAlpha * 0.15})`);
+                beamGradient.addColorStop(1, 'rgba(255, 235, 160, 0)');
+                
+                ctx.fillStyle = beamGradient;
+                ctx.beginPath();
+                ctx.moveTo(-beam.width / 2, 0);
+                ctx.lineTo(beam.width / 2, 0);
+                ctx.lineTo(beam.width * 0.1, beam.height);
+                ctx.lineTo(-beam.width * 0.1, beam.height);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+                
+                drawDustMotes(beam, effect);
+            });
+            
+            ctx.restore();
+        }
+
+        // Draw floating dust particles in sunbeam with depth
+        function drawDustMotes(beam, effect) {
+            const moteCount = Math.floor(15 * effect.intensity);
+            const time = Date.now() * 0.001;
+            
+            ctx.save();
+            for (let i = 0; i < moteCount; i++) {
+                const seed = beam.x + beam.y + i;
+                const moteY = ((seed * 13 + time * 20) % beam.height);
+                const moteX = beam.x + Math.sin(seed + time * 2) * beam.width * 0.4;
+                const depth = (i / moteCount); // Depth factor 0-1
+                const depthScale = 0.5 + depth * 0.5;
+                
+                const moteAlpha = (0.3 + Math.sin(seed + time * 3) * 0.2) * effect.intensity;
+                
+                // Glow around mote
+                const moteGradient = ctx.createRadialGradient(
+                    moteX, beam.y + moteY, 0,
+                    moteX, beam.y + moteY, 3 * depthScale
+                );
+                moteGradient.addColorStop(0, `rgba(255, 250, 220, ${moteAlpha * 0.8})`);
+                moteGradient.addColorStop(0.5, `rgba(255, 245, 200, ${moteAlpha * 0.4})`);
+                moteGradient.addColorStop(1, 'rgba(255, 240, 180, 0)');
+                
+                ctx.fillStyle = moteGradient;
+                ctx.beginPath();
+                ctx.arc(moteX, beam.y + moteY, 3 * depthScale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bright core
+                ctx.globalAlpha = moteAlpha;
+                ctx.fillStyle = '#ffffdd';
+                ctx.beginPath();
+                ctx.arc(moteX, beam.y + moteY, 1 * depthScale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Draw volumetric fog with Perlin noise
+        function drawVolumetricFog(effect) {
+            const time = Date.now() * 0.0005;
+            
+            for (const particle of effect.particles) {
+                if (!particle.active) continue;
+                
+                ctx.save();
+                
+                const noiseValue = noise.noise2D(particle.x * 0.005, time);
+                const alphaModulation = 0.7 + noiseValue * 0.3;
+                
+                const layers = 3;
+                for (let i = 0; i < layers; i++) {
+                    const layerSize = particle.size * (1 - i * 0.2);
+                    const layerAlpha = particle.alpha * alphaModulation * (1 - i * 0.3);
+                    
+                    const offsetX = noise.noise2D(particle.x * 0.003, time + i) * 20;
+                    const offsetY = noise.noise2D(particle.y * 0.003, time + i + 10) * 20;
+                    
+                    const gradient = ctx.createRadialGradient(
+                        particle.x + offsetX, particle.y + offsetY, 0,
+                        particle.x + offsetX, particle.y + offsetY, layerSize
+                    );
+                    
+                    const hue = particle.hue + i * 5;
+                    gradient.addColorStop(0, `hsla(${hue}, 15%, 75%, ${layerAlpha})`);
+                    gradient.addColorStop(0.5, `hsla(${hue}, 15%, 70%, ${layerAlpha * 0.5})`);
+                    gradient.addColorStop(1, 'rgba(180, 180, 200, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(particle.x + offsetX, particle.y + offsetY, layerSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        // Draw advanced glitch clouds with RGB shift, displacement, and VHS artifacts
+        function drawGlitchClouds(effect) {
+            ctx.save();
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const time = Date.now();
+            
+            // === RGB Channel Shift (classic glitch effect) ===
+            if (Math.random() < GLITCH_LINE_FREQUENCY * 1.5) {
+                const shiftIntensity = effect.intensity * 8;
+                const shiftY = Math.floor(Math.random() * h);
+                const shiftHeight = Math.floor(10 + Math.random() * 40);
+                
+                try {
+                    // Get image data for this strip
+                    const imageData = ctx.getImageData(0, shiftY, w, Math.min(shiftHeight, h - shiftY));
+                    const data = imageData.data;
+                    
+                    // Shift RGB channels
+                    for (let i = 0; i < data.length; i += 4) {
+                        const offset = Math.floor((Math.random() - 0.5) * shiftIntensity) * 4;
+                        const newIndex = i + offset;
+                        
+                        if (newIndex >= 0 && newIndex < data.length - 4) {
+                            // Red channel shift
+                            data[i] = data[newIndex];
+                            // Blue channel shift (opposite direction)
+                            const blueIndex = i - offset * 2;
+                            if (blueIndex >= 0 && blueIndex < data.length) {
+                                data[i + 2] = data[blueIndex];
+                            }
+                        }
+                    }
+                    
+                    ctx.putImageData(imageData, 0, shiftY);
+                } catch (e) {
+                    // Fail silently if out of bounds
+                }
+            }
+            
+            // === Vertical Displacement Bars ===
+            if (Math.random() < GLITCH_LINE_FREQUENCY) {
+                const barCount = Math.floor(2 + Math.random() * 5);
+                for (let i = 0; i < barCount; i++) {
+                    const barY = Math.random() * h;
+                    const barHeight = 5 + Math.random() * 30;
+                    const displacement = (Math.random() - 0.5) * 50 * effect.intensity;
+                    
+                    // Copy and shift section
+                    try {
+                        const imageData = ctx.getImageData(0, barY, w, Math.min(barHeight, h - barY));
+                        ctx.putImageData(imageData, displacement, barY);
+                    } catch (e) {
+                        // Fail silently if out of bounds
+                    }
+                    
+                    // Add colored overlay
+                    ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+                    const glitchColors = [
+                        '#ff00ff', // Magenta
+                        '#00ffff', // Cyan
+                        '#ff0000', // Red
+                        '#00ff00', // Green
+                        '#ffff00', // Yellow
+                        '#0000ff'  // Blue
+                    ];
+                    ctx.fillStyle = glitchColors[Math.floor(Math.random() * glitchColors.length)];
+                    ctx.fillRect(0, barY, w, barHeight);
+                }
+            }
+            
+            // === Scanline/VHS Effect ===
+            if (Math.random() < 0.3) {
+                ctx.globalAlpha = 0.15 * effect.intensity;
+                ctx.fillStyle = '#000000';
+                for (let y = 0; y < h; y += 4) {
+                    ctx.fillRect(0, y, w, 2);
+                }
+            }
+            
+            // === Digital Artifacts (blocks) ===
+            if (Math.random() < DIGITAL_NOISE_FREQUENCY * 2) {
+                const blockCount = Math.floor(20 + Math.random() * 40);
+                for (let i = 0; i < blockCount; i++) {
+                    const blockX = Math.random() * w;
+                    const blockY = Math.random() * h;
+                    const blockW = 10 + Math.random() * 40;
+                    const blockH = 10 + Math.random() * 40;
+                    
+                    ctx.globalAlpha = 0.4 + Math.random() * 0.5;
+                    const brightness = Math.random() * 255;
+                    const colorStyle = Math.random();
+                    
+                    if (colorStyle < 0.33) {
+                        // Grayscale noise
+                        ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+                    } else if (colorStyle < 0.66) {
+                        // Magenta/Cyan
+                        ctx.fillStyle = Math.random() > 0.5 ? '#ff00ff' : '#00ffff';
+                    } else {
+                        // Random RGB
+                        ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                    }
+                    
+                    ctx.fillRect(blockX, blockY, blockW, blockH);
+                }
+            }
+            
+            // === Chromatic Aberration (edges) ===
+            if (Math.random() < 0.2) {
+                ctx.globalAlpha = 0.3 * effect.intensity;
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, w, h);
+                
+                ctx.strokeStyle = '#00ffff';
+                ctx.strokeRect(3, 3, w - 6, h - 6);
+            }
+            
+            // === Static Noise (improved) ===
+            const noiseIntensity = effect.intensity * 0.15; // Increased from 0.05
+            ctx.globalAlpha = noiseIntensity;
+            
+            for (let i = 0; i < 150; i++) { // Increased from 50
+                const x = Math.random() * w;
+                const y = Math.random() * h;
+                const size = 1 + Math.random() * 4;
+                const brightness = Math.random() * 255;
+                
+                ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw aurora borealis effect
+        function drawAurora(effect) {
+            if (!effect.auroraWaves) return;
+            
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            const w = window.innerWidth;
+            const time = Date.now();
+            
+            effect.auroraWaves.forEach(wave => {
+                const phase = wave.phase + time * wave.speed;
+                const segmentCount = 60;
+                const segmentWidth = (w + 100) / segmentCount;
+                
+                for (let layer = 0; layer < 3; layer++) {
+                    const layerAlpha = wave.alpha * (1 - layer * 0.25) * effect.intensity;
+                    const layerWidth = wave.width * (1 + layer * 0.5);
+                    const layerOffset = layer * 8;
+                    
+                    ctx.beginPath();
+                    
+                    const noiseCache = new Float32Array(segmentCount + 1);
+                    for (let i = 0; i <= segmentCount; i++) {
+                        const x = -50 + i * segmentWidth;
+                        noiseCache[i] = noise.noise2D(x * wave.frequency + phase, layer * 10 + wave.phase);
+                        const y = wave.y + layerOffset + noiseCache[i] * wave.amplitude;
+                        
+                        if (i === 0) ctx.moveTo(x, y - layerWidth / 2);
+                        else ctx.lineTo(x, y - layerWidth / 2);
+                    }
+                    
+                    for (let i = segmentCount; i >= 0; i--) {
+                        const x = -50 + i * segmentWidth;
+                        const y = wave.y + layerOffset + noiseCache[i] * wave.amplitude;
+                        ctx.lineTo(x, y + layerWidth / 2);
+                    }
+                    
+                    ctx.closePath();
+                    
+                    const hueShift = Math.sin(time * 0.0002 + wave.phase) * 20;
+                    const gradient = ctx.createLinearGradient(0, wave.y - wave.amplitude, 0, wave.y + wave.amplitude);
+                    gradient.addColorStop(0, `hsla(${wave.hue + hueShift}, 80%, 60%, 0)`);
+                    gradient.addColorStop(0.3, `hsla(${wave.hue + hueShift}, 80%, 55%, ${layerAlpha})`);
+                    gradient.addColorStop(0.5, `hsla(${wave.hue + hueShift + 20}, 85%, 65%, ${layerAlpha * 1.2})`);
+                    gradient.addColorStop(0.7, `hsla(${wave.hue + hueShift + 40}, 80%, 55%, ${layerAlpha})`);
+                    gradient.addColorStop(1, `hsla(${wave.hue + hueShift + 60}, 80%, 60%, 0)`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+            });
+            
+            ctx.restore();
+        }
+
+        // Draw meteor shower effect
+        function drawMeteors(effect) {
+            if (!effect.meteors) return;
+            const now = Date.now();
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            // Spawn new meteor
+            if (now >= effect.nextMeteor && effect.meteors.length < effect.maxMeteors) {
+                const angle = (Math.PI / 6) + Math.random() * (Math.PI / 4);
+                const speed = 8 + Math.random() * 12;
+                const r = Math.random();
+                effect.meteors.push({
+                    x: Math.random() * w * 1.2 - w * 0.1,
+                    y: -20,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    length: 40 + Math.random() * 80,
+                    alpha: 0.8 + Math.random() * 0.2,
+                    life: 1.0,
+                    decay: 0.008 + Math.random() * 0.01,
+                    hue: r > 0.7 ? 30 : (r > 0.35 ? 200 : 60),
+                    trailParticles: []
+                });
+                effect.nextMeteor = now + 300 + Math.random() * (2000 / Math.max(0.1, effect.intensity));
+            }
+            
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            
+            for (let m = effect.meteors.length - 1; m >= 0; m--) {
+                const meteor = effect.meteors[m];
+                meteor.x += meteor.vx;
+                meteor.y += meteor.vy;
+                meteor.life -= meteor.decay;
+                
+                // Trail particles
+                if (meteor.life > 0.2) {
+                    meteor.trailParticles.push({
+                        x: meteor.x + (Math.random() - 0.5) * 4,
+                        y: meteor.y + (Math.random() - 0.5) * 4,
+                        alpha: 0.5,
+                        size: 1 + Math.random() * 2
+                    });
+                }
+                
+                // Update trail
+                for (let t = meteor.trailParticles.length - 1; t >= 0; t--) {
+                    meteor.trailParticles[t].alpha -= 0.02;
+                    if (meteor.trailParticles[t].alpha <= 0) {
+                        meteor.trailParticles.splice(t, 1);
+                    }
+                }
+                
+                if (meteor.life <= 0 && meteor.trailParticles.length === 0) {
+                    effect.meteors.splice(m, 1);
+                    continue;
+                }
+                
+                // Draw trail particles
+                for (let t = 0; t < meteor.trailParticles.length; t++) {
+                    const tp = meteor.trailParticles[t];
+                    const tpGrad = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, tp.size * 2);
+                    tpGrad.addColorStop(0, `hsla(${meteor.hue}, 80%, 70%, ${tp.alpha * 0.4})`);
+                    tpGrad.addColorStop(1, `hsla(${meteor.hue}, 80%, 50%, 0)`);
+                    ctx.fillStyle = tpGrad;
+                    ctx.beginPath();
+                    ctx.arc(tp.x, tp.y, tp.size * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                if (meteor.life <= 0) continue;
+                
+                // Draw meteor head glow
+                const headSize = 6 + meteor.life * 4;
+                const headGrad = ctx.createRadialGradient(meteor.x, meteor.y, 0, meteor.x, meteor.y, headSize);
+                headGrad.addColorStop(0, `hsla(${meteor.hue}, 100%, 95%, ${meteor.life * meteor.alpha})`);
+                headGrad.addColorStop(0.3, `hsla(${meteor.hue}, 90%, 80%, ${meteor.life * meteor.alpha * 0.6})`);
+                headGrad.addColorStop(0.6, `hsla(${meteor.hue}, 80%, 60%, ${meteor.life * meteor.alpha * 0.2})`);
+                headGrad.addColorStop(1, `hsla(${meteor.hue}, 80%, 50%, 0)`);
+                ctx.fillStyle = headGrad;
+                ctx.beginPath();
+                ctx.arc(meteor.x, meteor.y, headSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw meteor tail streak
+                const tailLength = meteor.length * meteor.life;
+                const meteorSpeed = Math.hypot(meteor.vx, meteor.vy);
+                const tailGrad = ctx.createLinearGradient(
+                    meteor.x, meteor.y,
+                    meteor.x - meteor.vx * (tailLength / meteorSpeed),
+                    meteor.y - meteor.vy * (tailLength / meteorSpeed)
+                );
+                tailGrad.addColorStop(0, `hsla(${meteor.hue}, 90%, 85%, ${meteor.life * meteor.alpha * 0.8})`);
+                tailGrad.addColorStop(0.3, `hsla(${meteor.hue}, 85%, 70%, ${meteor.life * meteor.alpha * 0.4})`);
+                tailGrad.addColorStop(1, `hsla(${meteor.hue}, 80%, 60%, 0)`);
+                
+                ctx.strokeStyle = tailGrad;
+                ctx.lineWidth = 2 + meteor.life * 2;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(meteor.x, meteor.y);
+                ctx.lineTo(
+                    meteor.x - meteor.vx * (tailLength / meteorSpeed),
+                    meteor.y - meteor.vy * (tailLength / meteorSpeed)
+                );
+                ctx.stroke();
+                
+                // Bright core
+                ctx.globalAlpha = meteor.life * meteor.alpha;
+                ctx.fillStyle = `hsl(${meteor.hue}, 100%, 97%)`;
+                ctx.beginPath();
+                ctx.arc(meteor.x, meteor.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw heat shimmer / distortion effect
+        function drawHeatwave(effect) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const time = Date.now() * 0.001;
+            const intensity = effect.intensity;
+            
+            ctx.save();
+            
+            // Draw shimmering heat bands rising from the bottom
+            const bandCount = Math.floor(5 + intensity * 8);
+            for (let i = 0; i < bandCount; i++) {
+                const seed = i * 137.5;
+                const bandX = ((seed * 13 + time * 40) % (w + 200)) - 100;
+                const bandY = h - ((seed * 7 + time * 30) % h);
+                const bandHeight = 40 + (seed % 80);
+                const bandWidth = 20 + (seed % 60);
+                const shimmerAlpha = (0.04 + (seed % 5) * 0.01) * intensity;
+                
+                const shimmerGradient = ctx.createRadialGradient(
+                    bandX, bandY, 0,
+                    bandX, bandY, bandWidth
+                );
+                shimmerGradient.addColorStop(0, `rgba(255, 200, 100, ${shimmerAlpha * 1.5})`);
+                shimmerGradient.addColorStop(0.4, `rgba(255, 180, 80, ${shimmerAlpha})`);
+                shimmerGradient.addColorStop(1, 'rgba(255, 160, 60, 0)');
+                
+                ctx.fillStyle = shimmerGradient;
+                ctx.beginPath();
+                ctx.ellipse(bandX, bandY, bandWidth * 0.4, bandHeight, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Subtle warm overlay at the bottom
+            const heatGradient = ctx.createLinearGradient(0, h, 0, h * 0.6);
+            heatGradient.addColorStop(0, `rgba(255, 140, 0, ${0.04 * intensity})`);
+            heatGradient.addColorStop(0.5, `rgba(255, 160, 20, ${0.02 * intensity})`);
+            heatGradient.addColorStop(1, 'rgba(255, 180, 40, 0)');
+            ctx.fillStyle = heatGradient;
+            ctx.fillRect(0, h * 0.6, w, h * 0.4);
+            
+            ctx.restore();
+        }
+
+        /**
+         * Apply post-processing effects (bloom/glow)
+         * Optional - can impact performance
+         */
+        function applyPostProcessing() {
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.15;
+            ctx.filter = 'blur(8px)';
+            
+            // Create temporary canvas for bloom effect
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+            
+            ctx.drawImage(tempCanvas, 0, 0);
+            
+            ctx.filter = 'none';
+            ctx.restore();
+        }
+
+
+        // Debug info display with enhanced metrics
+        function updateDebugInfo() {
+            debugInfo.classList.add('active');
+            const avgFps = state.fpsHistory.length > 0 
+                ? Math.round(state.fpsHistory.reduce((a, b) => a + b, 0) / state.fpsHistory.length)
+                : 0;
+            
+            const connectionStatusText = state.connected ? 'Connected' : 'Disconnected';
+            const connectionClass = state.connected ? 'connected' : 'disconnected';
+            
+            // Use cached context attributes
+            const alphaStatus = contextAttrs.alpha ? '✅ Enabled' : '❌ Disabled';
+            const premultipliedStatus = contextAttrs.premultipliedAlpha ? '✅ Yes' : '❌ No';
+            
+            debugInfo.innerHTML = `
+                <div class="status">
+                    <div class="status-dot ${connectionClass}"></div>
+                    <strong>Weather Control Debug</strong>
+                </div>
+                <div style="margin-top: 8px;">
+                    <strong>Connection:</strong> ${connectionStatusText}<br>
+                    <strong>FPS:</strong> ${state.fps} (avg: ${avgFps})<br>
+                    <strong>Particles:</strong> ${state.particles.length} / ${config.maxParticles}<br>
+                    <strong>Active Effects:</strong> ${state.activeEffects.length}<br>
+                    ${state.activeEffects.map(e => 
+                        `  → ${e.type} (${Math.round(e.intensity * 100)}%)`
+                    ).join('<br>')}
+                    <br><strong>Events Received:</strong> ${state.totalEventsReceived}
+                    <br><strong>Canvas Alpha:</strong> ${alphaStatus}
+                    <br><strong>Premultiplied Alpha:</strong> ${premultipliedStatus}
+                    <br><strong>Canvas Size:</strong> ${canvas.width}x${canvas.height}
+                    <br><strong>DPR:</strong> ${window.devicePixelRatio || 1}
+                </div>
+            `;
+        }
+
+        // Logging with timestamp
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`[${timestamp}] [Weather] ${message}`);
+        }
+
+        // Connection status display
+        function updateConnectionStatus(status, message) {
+            if (!config.showConnectionStatus && !config.debug) return;
+            
+            connectionStatus.className = `show ${status}`;
+            connectionStatus.textContent = message;
+            
+            // Auto-hide success messages after 3 seconds
+            if (status === 'connected') {
+                setTimeout(() => {
+                    connectionStatus.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // WebSocket connection with robust error handling and reconnection
+        function initSocket() {
+            try {
+                log('Initializing WebSocket connection...');
+                
+                state.socket = io({
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: config.reconnectDelay,
+                    reconnectionDelayMax: config.reconnectMaxDelay,
+                    reconnectionAttempts: Infinity,
+                    timeout: 20000,
+                    forceNew: false
+                });
+
+                state.socket.on('connect', () => {
+                    state.connected = true;
+                    state.reconnectAttempts = 0;
+                    log('✅ Connected to server');
+                    updateConnectionStatus('connected', '✓ Connected');
+                    
+                    // Signal to backend: Client is ready for events
+                    state.socket.emit('weather:client-ready');
+                });
+
+                state.socket.on('disconnect', (reason) => {
+                    state.connected = false;
+                    log(`❌ Disconnected from server: ${reason}`);
+                    updateConnectionStatus('disconnected', '✗ Disconnected');
+                });
+
+                state.socket.on('reconnect_attempt', (attemptNumber) => {
+                    state.reconnectAttempts = attemptNumber;
+                    log(`🔄 Reconnection attempt ${attemptNumber}...`);
+                    updateConnectionStatus('reconnecting', `⟳ Reconnecting... (${attemptNumber})`);
+                });
+
+                state.socket.on('reconnect', (attemptNumber) => {
+                    state.connected = true;
+                    state.reconnectAttempts = 0;
+                    log(`✅ Reconnected after ${attemptNumber} attempts`);
+                    updateConnectionStatus('connected', '✓ Reconnected');
+                    
+                    // Re-sync permanent effects after reconnection
+                    state.socket.emit('weather:client-ready');
+                });
+
+                state.socket.on('reconnect_error', (error) => {
+                    log(`❌ Reconnection error: ${error.message}`);
+                });
+
+                state.socket.on('reconnect_failed', () => {
+                    log('❌ Reconnection failed - all attempts exhausted');
+                    updateConnectionStatus('disconnected', '✗ Connection failed');
+                });
+
+                state.socket.on('weather:trigger', (data) => {
+                    state.totalEventsReceived++;
+                    log(`🌦️ Received weather event #${state.totalEventsReceived}: ${data.action}`);
+                    handleWeatherEvent(data);
+                });
+
+                state.socket.on('weather:stop', (data) => {
+                    log(`🛑 Received weather stop event from ${data.username}`);
+                    stopAllEffects();
+                });
+
+                state.socket.on('weather:stop-effect', (data) => {
+                    if (data?.action && effects[data.action]) {
+                        log(`🛑 Received stop event for effect: ${data.action}`);
+                        stopEffect(data.action);
+                    }
+                });
+
+                state.socket.on('weather:config-changed', (data) => {
+                    log('⚙️ Weather config changed, reloading permanent effects...', data);
+                    
+                    // Stop all current effects
+                    Object.keys(effects).forEach(type => {
+                        if (effects[type] && effects[type].stop) {
+                            effects[type].stop();
+                        }
+                    });
+                    state.activeEffects = [];
+                    
+                    // Request fresh permanent effects after brief delay
+                    // Delay allows effects cleanup to complete before requesting new state
+                    const CONFIG_RELOAD_DELAY = 100;
+                    setTimeout(() => {
+                        state.socket.emit('weather:request-permanent-effects');
+                    }, CONFIG_RELOAD_DELAY);
+                });
+
+                state.socket.on('connect_error', (error) => {
+                    log(`❌ Connection error: ${error.message}`);
+                    updateConnectionStatus('disconnected', `✗ Error: ${error.message}`);
+                });
+
+                state.socket.on('error', (error) => {
+                    log(`❌ Socket error: ${error.message || error}`);
+                });
+
+            } catch (error) {
+                log(`❌ Failed to initialize socket: ${error.message}`);
+                updateConnectionStatus('disconnected', `✗ Init failed: ${error.message}`);
+            }
+        }
+
+        // Process queued weather effects
+        function processEffectQueue() {
+            // Check if we can process more effects
+            while (state.activeEffects.length < state.maxConcurrentEffects && state.effectQueue.length > 0) {
+                const queuedEvent = state.effectQueue.shift();
+                triggerEffectImmediately(queuedEvent);
+            }
+        }
+
+        // Trigger an effect immediately
+        function triggerEffectImmediately(data) {
+            try {
+                const { action, intensity, duration, username, permanent } = data;
+                const validIntensity = Math.max(0, Math.min(1, parseFloat(intensity) || 0.5));
+                const isPermanent = permanent === true || duration === 0 || duration === '0';
+                const validDuration = isPermanent
+                    ? 0
+                    : Math.max(1000, Math.min(60000, parseInt(duration) || 10000));
+                
+                if (isPermanent) {
+                    // Ensure only one permanent instance per effect
+                    effects[action].stop();
+                }
+
+                log(`🎬 Triggering ${action} (intensity: ${validIntensity}, duration: ${isPermanent ? 'permanent' : `${validDuration}ms`}, user: ${username || 'unknown'})`);
+                effects[action].start(validIntensity, validDuration, { permanent: isPermanent });
+                
+            } catch (error) {
+                log(`❌ Error triggering weather effect: ${error.message}`);
+            }
+        }
+
+        // Handle weather events from WebSocket
+        function handleWeatherEvent(data) {
+            try {
+                const { action, intensity, duration, username, permanent } = data;
+                
+                // Validate event data
+                if (!action) {
+                    log('⚠️ Invalid event: missing action');
+                    return;
+                }
+                
+                if (!effects[action]) {
+                    log(`⚠️ Unknown weather effect: ${action}`);
+                    return;
+                }
+                
+                const isPermanent = permanent === true || duration === 0 || duration === '0';
+                
+                // Permanent effects bypass the queue
+                if (isPermanent) {
+                    triggerEffectImmediately(data);
+                    return;
+                }
+                
+                // Check if we can trigger immediately or need to queue
+                if (state.activeEffects.length < state.maxConcurrentEffects) {
+                    triggerEffectImmediately(data);
+                } else {
+                    // Add to queue if not full
+                    if (state.effectQueue.length < state.maxQueueLength) {
+                        state.effectQueue.push(data);
+                        log(`📋 Effect queued: ${action} (Queue: ${state.effectQueue.length}/${state.maxQueueLength})`);
+                    } else {
+                        log(`⚠️ Effect queue full, dropping: ${action}`);
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Error handling weather event: ${error.message}`);
+            }
+        }
+
+        // Stop all active weather effects
+        function stopAllEffects() {
+            try {
+                log('🛑 Stopping all weather effects...');
+                let stoppedCount = 0;
+                
+                // Stop all active effects
+                for (const effectName in effects) {
+                    if (effects[effectName].active) {
+                        effects[effectName].stop();
+                        stoppedCount++;
+                    }
+                }
+                
+                // Clear all particles
+                state.particles.length = 0;
+                
+                // Clear lightning state
+                lightningSegments = [];
+                lightningFadeTime = 0;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                log(`✅ Stopped ${stoppedCount} active effect(s)`);
+                
+            } catch (error) {
+                log(`❌ Error stopping effects: ${error.message}`);
+            }
+        }
+
+        function stopEffect(effectName) {
+            if (!effects[effectName]) return;
+            effects[effectName].stop();
+        }
+
+        // Initialize overlay
+        function init() {
+            log('🌦️ Weather Control Overlay initializing...');
+            log(`Version: Modernized v2.0`);
+            log(`Debug mode: ${config.debug ? 'ENABLED' : 'disabled'}`);
+            log(`Device Pixel Ratio: ${window.devicePixelRatio || 1}`);
+            log(`Canvas size: ${canvas.width}x${canvas.height}`);
+            log(`Canvas alpha channel: ${contextAttrs.alpha ? 'ENABLED ✅' : 'DISABLED ❌'}`);
+            log(`Premultiplied alpha: ${contextAttrs.premultipliedAlpha ? 'YES ✅' : 'NO ❌'}`);
+            
+            // Test transparency by verifying background
+            if (config.debug) {
+                log('🎨 Testing canvas transparency...');
+                const testData = ctx.getImageData(0, 0, 1, 1).data;
+                log(`Initial canvas pixel RGBA: [${testData[0]}, ${testData[1]}, ${testData[2]}, ${testData[3]}]`);
+                if (testData[3] === 0) {
+                    log('✅ Canvas background is transparent');
+                } else {
+                    log(`⚠️ Canvas background may not be fully transparent (alpha: ${testData[3]})`);
+                }
+            }
+            
+            // Start render loop
+            state.lastFrameTime = performance.now();
+            state.animationId = requestAnimationFrame(render);
+            
+            // Connect to WebSocket
+            initSocket();
+            
+            // Show initial connection status
+            if (config.debug || config.showConnectionStatus) {
+                updateConnectionStatus('reconnecting', '⟳ Connecting...');
+            }
+            
+            log('✅ Weather Control Overlay initialized successfully');
+            log('Waiting for weather events via WebSocket...');
+        }
+
+        // Cleanup on unload
+        function cleanup() {
+            log('🧹 Cleaning up...');
+            
+            if (state.animationId) {
+                cancelAnimationFrame(state.animationId);
+                state.animationId = null;
+            }
+            
+            if (state.socket) {
+                state.socket.disconnect();
+                state.socket = null;
+            }
+            
+            // Clear all effect timers to prevent memory leaks
+            state.activeEffects.forEach(effect => {
+                if (effect.timerId) {
+                    clearTimeout(effect.timerId);
+                    effect.timerId = null;
+                }
+                if (effect.fadeTimerId) {
+                    clearTimeout(effect.fadeTimerId);
+                    effect.fadeTimerId = null;
+                }
+            });
+            
+            // Clear all effects
+            state.activeEffects = [];
+            state.particles = [];
+            
+            log('✅ Cleanup complete');
+        }
+
+        // Event listeners
+        window.addEventListener('load', init);
+        window.addEventListener('beforeunload', cleanup);
+        
+        // Handle visibility changes (for OBS optimization)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                log('👁️ Page hidden - pausing render loop');
+                if (state.animationId) {
+                    cancelAnimationFrame(state.animationId);
+                    state.animationId = null;
+                }
+            } else {
+                log('👁️ Page visible - resuming render loop');
+                if (!state.animationId) {
+                    state.lastFrameTime = performance.now();
+                    state.animationId = requestAnimationFrame(render);
+                }
+            }
+        });
+
+        // Expose global API for testing (only in debug mode)
+        if (config.debug) {
+            window.weatherControl = {
+                state,
+                effects,
+                triggerEffect: (action, intensity, duration) => {
+                    handleWeatherEvent({ action, intensity, duration });
+                },
+                clearAll: () => {
+                    state.activeEffects.forEach(e => {
+                        if (effects[e.type]) {
+                            effects[e.type].stop(e);
+                        }
+                    });
+                },
+                getStats: () => ({
+                    fps: state.fps,
+                    particles: state.particles.length,
+                    effects: state.activeEffects.length,
+                    connected: state.connected,
+                    eventsReceived: state.totalEventsReceived
+                })
+            };
+            log('🔧 Debug API exposed: window.weatherControl');
+        }
+    </script>
+</body>
+</html>

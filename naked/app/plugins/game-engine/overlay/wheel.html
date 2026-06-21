@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glücksrad - LTTH Game Engine</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --shock-color-primary: #FF6B00;
+      --shock-color-secondary: #FF4500;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    #wheel-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    #wheel-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #wheel-wrapper.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Wheel pointer (arrow at top) */
+    #wheel-pointer {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 25px solid transparent;
+      border-right: 25px solid transparent;
+      border-top: 50px solid #FFD700;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+      z-index: 100;
+    }
+
+    #wheel-pointer::after {
+      content: '';
+      position: absolute;
+      top: -55px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: #FFD700;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+
+    /* Wheel canvas */
+    #wheel-canvas {
+      border-radius: 50%;
+      box-shadow: 
+        0 0 0 15px #1a1a2e,
+        0 0 0 20px #FFD700,
+        0 0 0 25px #1a1a2e,
+        0 0 60px rgba(255, 215, 0, 0.3),
+        inset 0 0 50px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Center hub */
+    #wheel-center {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 36px;
+      box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.5),
+        inset 0 3px 10px rgba(255, 255, 255, 0.4),
+        inset 0 -3px 10px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    /* Player info card */
+    #player-info {
+      position: absolute;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: linear-gradient(135deg, #2a2a4e, #1a1a2e);
+      padding: 15px 25px;
+      border-radius: 50px;
+      border: 2px solid #FFD700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transform: translateX(-50%) translateY(-50px);
+      transition: all 0.5s ease;
+    }
+
+    #player-info.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #player-info img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid #FFD700;
+    }
+
+    #player-info .player-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #player-info .gift-name {
+      font-size: 14px;
+      color: #FFD700;
+      font-weight: 600;
+    }
+
+    /* Win announcement */
+    #win-announcement {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      padding: 25px 50px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(76, 175, 80, 0.3);
+      border: 3px solid #81C784;
+      opacity: 0;
+      transform: translateX(-50%) scale(0.5);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 200;
+    }
+
+    #win-announcement.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #win-announcement .congrats {
+      font-size: 20px;
+      color: #C8E6C9;
+      margin-bottom: 5px;
+    }
+
+    #win-announcement .winner-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #win-announcement .prize {
+      font-size: 42px;
+      font-weight: 900;
+      color: #FFD700;
+      text-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.5),
+        2px 2px 4px rgba(0, 0, 0, 0.3);
+      margin-top: 10px;
+      animation: prizePulse 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes prizePulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    /* Shock animation */
+    @keyframes shock-pulse {
+      0%, 100% { 
+        transform: translateX(-50%) scale(1);
+        filter: brightness(1);
+      }
+      25% { 
+        transform: translateX(-50%) scale(1.05) rotate(2deg);
+        filter: brightness(1.3);
+      }
+      75% { 
+        transform: translateX(-50%) scale(1.05) rotate(-2deg);
+        filter: brightness(1.3);
+      }
+    }
+
+    /* Shock styling */
+    #win-announcement.shock {
+      background: linear-gradient(135deg, var(--shock-color-primary), var(--shock-color-secondary));
+      border: 3px solid #FFD700;
+      box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(255, 107, 0, 0.6),
+        0 0 100px rgba(255, 107, 0, 0.3);
+      animation: shock-pulse 0.3s ease-in-out 3;
+    }
+
+    #win-announcement.shock .congrats {
+      color: #FFD700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+
+    #win-announcement.shock .prize {
+      color: #FFF;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+      animation: shock-pulse 0.3s ease-in-out 3;
+    }
+
+    /* Niete (no win) styling */
+    #win-announcement.niete {
+      background: linear-gradient(135deg, #607D8B, #455A64);
+      border: 3px solid #90A4AE;
+      box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(96, 125, 139, 0.3);
+    }
+
+    #win-announcement.niete .congrats {
+      color: #CFD8DC;
+    }
+
+    #win-announcement.niete .prize {
+      color: #90A4AE;
+      animation: none;
+    }
+
+    /* Info screen (shown after win) */
+    #info-screen {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #2196F3, #1565C0);
+      padding: 25px 40px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(33, 150, 243, 0.3);
+      border: 3px solid #64B5F6;
+      opacity: 0;
+      transform: translateX(-50%) scale(0.5);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 199;
+      max-width: 600px;
+    }
+
+    #info-screen.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #info-screen .info-header {
+      font-size: 20px;
+      color: #BBDEFB;
+      margin-bottom: 10px;
+    }
+
+    #info-screen .info-text {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      line-height: 1.4;
+    }
+
+    /* Test mode controls */
+    #test-mode-controls {
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10000;
+      color: white;
+      min-width: 200px;
+    }
+
+    #test-mode-controls h3 {
+      margin: 0 0 15px 0;
+      color: #4CAF50;
+    }
+
+    #test-mode-controls button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+      font-weight: bold;
+      background: #4CAF50;
+    }
+
+    #test-mode-controls button:hover {
+      background: #45a049;
+    }
+
+    #test-mode-controls input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: white;
+    }
+
+    /* Queue display */
+    #queue-display {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      background: rgba(26, 26, 46, 0.9);
+      padding: 15px 20px;
+      border-radius: 15px;
+      border: 2px solid #64B5F6;
+      min-width: 200px;
+      opacity: 0;
+      transform: translateX(50px);
+      transition: all 0.3s ease;
+    }
+
+    #queue-display.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    #queue-display h3 {
+      color: #64B5F6;
+      font-size: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #queue-list {
+      list-style: none;
+    }
+
+    #queue-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: #aaa;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #queue-list li:last-child {
+      border-bottom: none;
+    }
+
+    #queue-list .position {
+      background: #64B5F6;
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Confetti particles */
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+    }
+
+    /* Glow effect during spin */
+    #wheel-wrapper.spinning #wheel-canvas {
+      box-shadow: 
+        0 0 0 15px #1a1a2e,
+        0 0 0 20px #FFD700,
+        0 0 0 25px #1a1a2e,
+        0 0 100px rgba(255, 215, 0, 0.6),
+        inset 0 0 50px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Idle state message */
+    #idle-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 24px;
+    }
+
+    #idle-message.hidden {
+      display: none;
+    }
+
+    #idle-message .idle-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    #idle-message .idle-subtitle {
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    /* Audio indicator */
+    #audio-status {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      font-size: 24px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="wheel-container">
+    <div id="idle-message">
+      <div class="idle-title" id="idle-message-title">🎡 Warte auf Spieler...</div>
+      <div class="idle-subtitle" id="idle-message-subtitle">Sende ein Geschenk, um das Glücksrad zu drehen!</div>
+    </div>
+
+    <!-- Test Mode Controls -->
+    <div id="test-mode-controls">
+      <h3>🧪 Test Mode</h3>
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;">Player Name:</label>
+        <input type="text" id="test-player-name" value="TestPlayer">
+      </div>
+      <button id="test-spin-wheel">🎡 Spin Wheel</button>
+    </div>
+
+    <div id="player-info">
+      <img id="player-avatar" src="" alt="Avatar">
+      <div>
+        <div class="player-name" id="player-name">Spieler</div>
+        <div class="gift-name" id="gift-info">🎁 Geschenk</div>
+      </div>
+    </div>
+
+    <div id="wheel-wrapper">
+      <div id="wheel-pointer"></div>
+      <canvas id="wheel-canvas" width="500" height="500"></canvas>
+      <div id="wheel-center">🎡</div>
+    </div>
+
+    <div id="win-announcement">
+      <div class="congrats" id="congrats-text">🎉 Glückwunsch!</div>
+      <div class="winner-name" id="winner-name">Spieler</div>
+      <div class="prize" id="prize-text">PRIZE</div>
+    </div>
+
+    <div id="info-screen">
+      <div class="info-header">ℹ️ Information</div>
+      <div class="info-text" id="info-screen-text">Um deinen Gewinn abzuholen, besuche discord.gg/deinserver</div>
+    </div>
+
+    <div id="queue-display">
+      <h3>📋 Warteschlange</h3>
+      <ul id="queue-list"></ul>
+    </div>
+
+    <div id="audio-status">🔊</div>
+  </div>
+
+  <!-- Audio elements - wheel-specific sounds (sources set dynamically) -->
+  <audio id="spin-sound" preload="auto"></audio>
+  <!-- Prize audio sounds - user selectable per segment -->
+  <audio id="prize-1-sound" preload="auto"></audio>
+  <audio id="prize-2-sound" preload="auto"></audio>
+  <audio id="prize-3-sound" preload="auto"></audio>
+  <!-- Lost/Niete audio -->
+  <audio id="lost-sound" preload="auto"></audio>
+
+  <script>
+    // Configuration
+    let config = {
+      segments: [],
+      settings: {
+        spinDuration: 5000,
+        soundEnabled: true,
+        soundVolume: 0.7
+      }
+    };
+    
+    // Current wheel ID (for loading custom audio)
+    let currentWheelId = null;
+
+    // State
+    let currentRotation = 0;
+    let isSpinning = false;
+    let currentSpinId = null;
+    const TYPE_ICONS = {
+      plinko: '🎰',
+      wheel: '🎡',
+      default: '🎮'
+    };
+    let queue = [];
+    
+    // Audio loaded state
+    let audioLoaded = false;
+    
+    // Web Audio API context for tick sound (avoids using Connect4 audio)
+    let audioContext = null;
+    
+    // Audio constants for tick sound
+    const TICK_SOUND_VOLUME_MULTIPLIER = 0.15; // Lower volume multiplier for tick sound
+    const TICK_SOUND_FREQUENCY = 800; // Hz
+    const TICK_SOUND_DURATION = 0.03; // seconds
+    
+    function getAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+    
+    // Play tick sound using Web Audio API (wheel-specific, not Connect4)
+    function playTickSound() {
+      if (!config.settings.soundEnabled) return;
+      
+      try {
+        const audioCtx = getAudioContext();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        // Short click sound - higher frequency for wheel tick
+        oscillator.type = 'sine';
+        oscillator.frequency.value = TICK_SOUND_FREQUENCY;
+        
+        const volume = (config.settings.soundVolume || 0.7) * TICK_SOUND_VOLUME_MULTIPLIER;
+        gainNode.gain.value = volume;
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + TICK_SOUND_DURATION);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + TICK_SOUND_DURATION);
+      } catch (error) {
+        // Silently ignore audio errors
+      }
+    }
+
+    // Canvas and context
+    const canvas = document.getElementById('wheel-canvas');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = canvas.width / 2 - 10;
+
+    // DOM elements
+    const wheelWrapper = document.getElementById('wheel-wrapper');
+    const wheelCenter = document.getElementById('wheel-center');
+    const playerInfo = document.getElementById('player-info');
+    const playerAvatar = document.getElementById('player-avatar');
+    const playerName = document.getElementById('player-name');
+    const giftInfo = document.getElementById('gift-info');
+    const winAnnouncement = document.getElementById('win-announcement');
+    const congratsText = document.getElementById('congrats-text');
+    const winnerName = document.getElementById('winner-name');
+    const prizeText = document.getElementById('prize-text');
+    const infoScreen = document.getElementById('info-screen');
+    const infoScreenText = document.getElementById('info-screen-text');
+    const queueDisplay = document.getElementById('queue-display');
+    const queueList = document.getElementById('queue-list');
+    const idleMessage = document.getElementById('idle-message');
+    const idleMessageTitle = document.getElementById('idle-message-title');
+    const idleMessageSubtitle = document.getElementById('idle-message-subtitle');
+
+    // Audio elements
+    const spinSound = document.getElementById('spin-sound');
+    const prize1Sound = document.getElementById('prize-1-sound');
+    const prize2Sound = document.getElementById('prize-2-sound');
+    const prize3Sound = document.getElementById('prize-3-sound');
+    const lostSound = document.getElementById('lost-sound');
+    
+    // Default audio URLs
+    const defaultAudioUrls = {
+      spinning: '/game-engine/sounds/wheel/spinning sound.mp3',
+      prize1: '/game-engine/sounds/wheel/price 1 audio.mp3',
+      prize2: '/game-engine/sounds/wheel/price 2 audio.mp3',
+      prize3: '/game-engine/sounds/wheel/price 3 audio.mp3',
+      lost: '/game-engine/sounds/wheel/lost.mp3'
+    };
+    
+    /**
+     * Load audio files for a specific wheel
+     */
+    async function loadWheelAudio(wheelId) {
+      currentWheelId = wheelId;
+      
+      try {
+        // Fetch audio settings
+        const res = await fetch(`/api/game-engine/wheel/audio/settings?wheelId=${wheelId}`);
+        const settings = await res.json();
+        
+        // Set audio sources based on settings
+        const audioMap = {
+          spinning: spinSound,
+          prize1: prize1Sound,
+          prize2: prize2Sound,
+          prize3: prize3Sound,
+          lost: lostSound
+        };
+        
+        for (const [type, audioEl] of Object.entries(audioMap)) {
+          const setting = settings[type];
+          let audioUrl;
+          
+          if (setting && setting.isCustom) {
+            // Use custom audio with cache-busting timestamp
+            audioUrl = `/game-engine/sounds/wheel/custom/${wheelId}/${type}.mp3?t=${Date.now()}`;
+          } else {
+            // Use default audio
+            audioUrl = defaultAudioUrls[type];
+          }
+          
+          audioEl.src = audioUrl;
+          audioEl.load();
+        }
+        
+        audioLoaded = true;
+        console.log('Wheel audio loaded for wheel', wheelId);
+      } catch (error) {
+        console.error('Error loading wheel audio:', error);
+        // Fall back to defaults
+        spinSound.src = defaultAudioUrls.spinning;
+        prize1Sound.src = defaultAudioUrls.prize1;
+        prize2Sound.src = defaultAudioUrls.prize2;
+        prize3Sound.src = defaultAudioUrls.prize3;
+        lostSound.src = defaultAudioUrls.lost;
+        audioLoaded = true;
+      }
+    }
+    
+    // Initialize with default audio
+    loadWheelAudio('1');
+
+    // Socket.io
+    const socket = io();
+
+    /**
+     * Draw the wheel with current configuration
+     * 
+     * COORDINATE SYSTEM SYNCHRONIZATION:
+     * - Canvas native: 0° is at right (3 o'clock), increases clockwise
+     * - Wheel logical: 0° is at top (12 o'clock), increases clockwise
+     * - Offset applied: -Math.PI/2 (-90°) to align canvas 0° with wheel 0°
+     * 
+     * When rotation = 0:
+     * - Segment 0 is drawn from -90° to (-90° + segmentAngle) in canvas coords
+     * - This places segment 0 at top (12 o'clock), directly under the pointer
+     * - This matches the server assumption that segment 0 starts at 0° (top)
+     * 
+     * When rotation = R:
+     * - The entire wheel is rotated R degrees clockwise
+     * - ctx.rotate() rotates the coordinate system, then segments are drawn
+     * - After rotation, the segment originally at position P is now at (P + R)
+     * - The pointer stays at top (-90° canvas = 270° absolute = 0° wheel)
+     * 
+     * @param {number} rotation - Rotation angle in degrees (0 = no rotation)
+     */
+    function drawWheel(rotation = 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (!config.segments || config.segments.length === 0) {
+        // Draw placeholder wheel
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#2a2a4e';
+        ctx.fill();
+        ctx.fillStyle = '#666';
+        ctx.font = '24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Keine Segmente', centerX, centerY);
+        return;
+      }
+
+      const numSegments = config.segments.length;
+      const segmentAngle = (Math.PI * 2) / numSegments;
+
+      // Apply rotation
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.translate(-centerX, -centerY);
+
+      // Draw segments
+      // CRITICAL: Segment angles must match server calculation coordinate system
+      // Server assumes segment 0 starts at 0° (top/12 o'clock where pointer is)
+      // Segments are drawn clockwise: segment 0 at 0°, segment 1 at segmentAngle, etc.
+      // The pointer is at the top (0°/360°) and points downward into the wheel
+      for (let i = 0; i < numSegments; i++) {
+        const segment = config.segments[i];
+        // Match server coordinate system: segment i starts at (i * segmentAngle) radians
+        // segmentAngle is already in radians: (Math.PI * 2) / numSegments
+        // Offset by -Math.PI/2 to align canvas 0° (right/3 o'clock) to wheel 0° (top/12 o'clock)
+        const startAngle = i * segmentAngle - Math.PI / 2;
+        const endAngle = startAngle + segmentAngle;
+
+        // Draw segment
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        
+        // Fill with segment color
+        ctx.fillStyle = segment.color || '#4CAF50';
+        ctx.fill();
+        
+        // Add border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + segmentAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = getContrastColor(segment.color || '#4CAF50');
+        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        
+        // Wrap text if too long
+        const text = segment.text || `Preis ${i + 1}`;
+        const maxWidth = radius - 50;
+        ctx.fillText(truncateText(text, maxWidth), radius - 20, 6);
+        
+        ctx.restore();
+      }
+
+      ctx.restore();
+
+      // Draw center circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fill();
+    }
+
+    /**
+     * Get contrasting text color
+     */
+    function getContrastColor(hexColor) {
+      const r = parseInt(hexColor.slice(1, 3), 16);
+      const g = parseInt(hexColor.slice(3, 5), 16);
+      const b = parseInt(hexColor.slice(5, 7), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.5 ? '#000000' : '#FFFFFF';
+    }
+
+    /**
+     * Truncate text to fit within maxWidth
+     */
+    function truncateText(text, maxWidth) {
+      ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      let width = ctx.measureText(text).width;
+      if (width <= maxWidth) return text;
+      
+      while (width > maxWidth && text.length > 0) {
+        text = text.slice(0, -1);
+        width = ctx.measureText(text + '...').width;
+      }
+      return text + '...';
+    }
+
+    // ============================================================================
+    // WHEEL LANDING SEGMENT CALCULATION - CRITICAL CLIENT-SIDE RECONSTRUCTION
+    // ============================================================================
+    // This function reconstructs which segment the wheel landed on by reversing
+    // the server's rotation calculation. It MUST remain synchronized with the
+    // server-side calculation in games/wheel.js::startSpin()
+    //
+    // COORDINATE SYSTEM (must match server exactly):
+    // - Segment 0 starts at 0° (top/12 o'clock position where pointer is located)
+    // - Segments are evenly distributed and increase clockwise
+    // - Segment i spans from (i × segmentAngle) to ((i+1) × segmentAngle)
+    // - The pointer is fixed at 0° (top/12 o'clock) and points downward
+    // - Wheel rotates clockwise (positive rotation = clockwise)
+    //
+    // REVERSE CALCULATION STEPS:
+    // 1. Normalize rotation to 0-360° range (handle multiple full rotations)
+    // 2. Reverse the formula: totalRotation = (fullRotations × 360°) + (360° - landingAngle)
+    //    So: finalAngle = (360° - landingAngle) mod 360°
+    //    Therefore: landingAngle = (360° - finalAngle) mod 360°
+    // 3. Calculate segment: segmentIndex = floor(landingAngle / segmentAngle)
+    //
+    // IMPORTANT: The drawing code applies a -90° offset (-Math.PI/2) to align
+    // the canvas coordinate system (0° at right/3 o'clock) with the wheel coordinate
+    // system (0° at top/12 o'clock). This offset is purely visual and doesn't affect
+    // the calculation because both the drawing rotation and this calculation use
+    // the same wheel coordinate system (0° = top).
+    //
+    // EXAMPLE: 5 segments, rotation = 1980°
+    // - segmentAngle = 360° / 5 = 72°
+    // - finalAngle = 1980° mod 360° = 180°
+    // - landingAngle = (360° - 180°) mod 360° = 180°
+    // - segmentIndex = floor(180° / 72°) = floor(2.5) = 2 ✓
+    // ============================================================================
+    function calculateLandingSegment(rotation) {
+      if (!config.segments || !Array.isArray(config.segments) || config.segments.length === 0) {
+        console.error('calculateLandingSegment: config.segments is invalid or empty');
+        return 0;
+      }
+
+      const numSegments = config.segments.length;
+      const segmentAngle = 360 / numSegments;
+
+      // Floating-point-safe normalization:
+      // A plain % can drift numerically at large rotation values with certain segment counts
+      // (e.g. 6, 8, 10, 12 segments) and land exactly on a boundary from the wrong side.
+      const rawMod = rotation % 360;
+      const finalAngle = rawMod < 0 ? rawMod + 360 : rawMod;
+
+      // Inverse of the server formula: totalRotation = (fullRotations * 360) + (360 - landingAngle)
+      // => finalAngle = (360 - landingAngle) % 360
+      // => landingAngle = (360 - finalAngle) % 360
+      const landingAngle = finalAngle === 0 ? 0 : (360 - finalAngle);
+
+      // Epsilon guard at segment boundaries: a 1e-9° buffer prevents floating-point drift
+      // from flipping a landing point onto the wrong segment. The buffer is orders of magnitude
+      // smaller than LANDING_ZONE_START (10% of segmentAngle), so it never affects real results.
+      const EPSILON = 1e-9;
+      let segmentIndex = Math.floor((landingAngle + EPSILON) / segmentAngle);
+
+      // Clamp to valid range
+      if (segmentIndex < 0) {
+        console.warn(`calculateLandingSegment: negative index ${segmentIndex}, clamping to 0`);
+        segmentIndex = 0;
+      } else if (segmentIndex >= numSegments) {
+        console.warn(`calculateLandingSegment: index ${segmentIndex} >= ${numSegments}, clamping`);
+        segmentIndex = numSegments - 1;
+      }
+
+      return segmentIndex;
+    }
+
+    /**
+     * Animate wheel spin
+     * 
+     * CRITICAL REQUIREMENTS FOR CORRECT LANDING:
+     * 1. Spin duration MUST remain constant (matches server calculation)
+     * 2. Wheel MUST start at rotation = 0° (segment 0 at top under pointer)
+     * 3. Total rotation value from server MUST be used exactly as provided
+     * 
+     * The server calculates totalRotation based on:
+     * - Starting position: 0° (segment 0 at top)
+     * - Configured spinDuration
+     * - Cubic ease-out easing function
+     * 
+     * If any of these assumptions are violated, the wheel will land on the wrong segment!
+     * 
+     * IMPORTANT: Before calling this function, ensure currentRotation is reset to 0
+     * and drawWheel(0) has been called to visually reset the wheel position.
+     */
+    function spinWheel(totalRotation, duration, winningSegment, spinId, nickname) {
+      isSpinning = true;
+      currentSpinId = spinId;
+      wheelWrapper.classList.add('spinning');
+      idleMessage.classList.add('hidden');
+
+      // Use the spin duration provided by the server (MUST NOT change dynamically)
+      // The server calculated totalRotation based on this exact duration
+      // Changing the duration would cause the wheel to land at the wrong segment
+      const actualDuration = duration;
+
+      // Play spin sound
+      // Note: If the audio duration doesn't match the spin duration, it will be cut short or loop
+      // This ensures the visual animation and landing position remain accurate
+      if (config.settings.soundEnabled) {
+        spinSound.volume = config.settings.soundVolume || 0.7;
+        spinSound.currentTime = 0;
+        spinSound.play().catch(() => {});
+      }
+
+      // CRITICAL: Reset rotation to 0 before EVERY spin for consistent starting position
+      // The server calculates totalRotation assuming the wheel always starts at 0 degrees
+      // This ensures predictable and reproducible landing positions
+      // VALIDATION: Verify wheel is actually at 0° before starting
+      if (currentRotation !== 0) {
+        console.warn(`⚠️ Wheel was not at starting position! currentRotation=${currentRotation}, forcing reset to 0°`);
+      }
+      const startRotation = 0;
+      currentRotation = 0;
+
+      // Use the exact totalRotation calculated by the server
+      // This rotation is precisely calculated to land on the winning segment
+      const finalRotation = totalRotation;
+
+      const startTime = performance.now();
+      let lastTickAngle = startRotation;
+
+      // Tick sound interval (every segment passed)
+      const tickInterval = config.segments.length > 0 ? 360 / config.segments.length : 30;
+
+      function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / actualDuration, 1);
+        
+        // Easing function (ease-out cubic)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        const newRotation = startRotation + (finalRotation * easeOut);
+        currentRotation = newRotation;
+        
+        // Draw wheel
+        drawWheel(newRotation);
+
+        // Play tick sound when passing segment boundary (using Web Audio API)
+        if (config.settings.soundEnabled && progress < 0.9) {
+          const currentAngle = newRotation % 360;
+          const anglesSinceLastTick = Math.abs(currentAngle - lastTickAngle);
+          if (anglesSinceLastTick >= tickInterval) {
+            playTickSound();
+            lastTickAngle = currentAngle;
+          }
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Spin complete
+          wheelWrapper.classList.remove('spinning');
+          isSpinning = false;
+          
+          // Stop spin sound if still playing
+          if (config.settings.soundEnabled) {
+            spinSound.pause();
+            spinSound.currentTime = 0;
+          }
+
+          // Calculate which segment the wheel visually landed on based on final rotation (for debugging)
+          const landedSegmentIndex = calculateLandingSegment(currentRotation);
+          let reportedSegmentIndex = landedSegmentIndex;
+          
+          if (!config.segments[reportedSegmentIndex]) {
+            console.error(`Invalid landing calculation: segment ${reportedSegmentIndex} does not exist (total segments: ${config.segments.length})`);
+            reportedSegmentIndex = winningSegment.index;
+          }
+          
+          if (reportedSegmentIndex !== winningSegment.index) {
+            console.warn(`Wheel landing mismatch! Expected segment ${winningSegment.index} (${winningSegment.text}), but landed on segment ${reportedSegmentIndex}. Reporting mismatch for server validation.`);
+          }
+
+          // Notify server that spin is complete with authoritative expected index + reported landing for validation
+          socket.emit('wheel:spin-complete', {
+            spinId,
+            segmentIndex: winningSegment.index,
+            reportedSegmentIndex
+          });
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    /**
+     * Show win announcement (handles both wins, "Niete" results, and shock segments)
+     */
+    function showWinAnnouncement(name, prize, prizeColor, isNiete = false, prizeAudio = null, isShock = false, shockIntensity = 0) {
+      winnerName.textContent = name;
+      
+      // Handle shock segment
+      if (isShock) {
+        congratsText.textContent = '⚡ SHOCK!';
+        prizeText.textContent = `${prize} (${shockIntensity}%)`;
+        prizeText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--shock-color-primary').trim() || '#FF6B00';
+        winAnnouncement.classList.add('shock');
+        
+        // Add shock animation effect
+        winAnnouncement.style.animation = 'shock-pulse 0.3s ease-in-out 3';
+        
+        // Don't spawn confetti for shock
+      } else if (isNiete) {
+        // Handle "Niete" (no win) case
+        // Use custom Niete text from settings or default
+        const nieteText = config.settings.nieteText || 'Leider kein Gewinn!';
+        const dt = config._displayTexts || {};
+        congratsText.textContent = dt.labelNiete || '💔 Niete!';
+        prizeText.textContent = nieteText;
+        prizeText.style.color = prizeColor || '#90A4AE';
+        winAnnouncement.classList.add('niete');
+        
+        // Don't spawn confetti for Niete
+      } else {
+        // Regular win
+        const dt = config._displayTexts || {};
+        congratsText.textContent = dt.labelWin || '🎊 Gewonnen!';
+        prizeText.textContent = prize;
+        prizeText.style.color = prizeColor || '#FFD700';
+        winAnnouncement.classList.remove('niete');
+        winAnnouncement.classList.remove('shock');
+        
+        // Spawn confetti for wins
+        spawnConfetti();
+      }
+      
+      winAnnouncement.classList.add('visible');
+
+      // Play appropriate sound based on segment configuration
+      if (config.settings.soundEnabled) {
+        const volume = config.settings.soundVolume || 0.7;
+        let soundToPlay = null;
+        
+        if (isShock) {
+          // Play lost sound for shock (or could be a special shock sound)
+          soundToPlay = lostSound;
+        } else if (isNiete) {
+          // Play lost sound for Niete
+          soundToPlay = lostSound;
+        } else if (prizeAudio !== null && prizeAudio !== undefined && Number(prizeAudio) > 0) {
+          // Play configured prize audio (1, 2, or 3)
+          const audioNumber = Number(prizeAudio);
+          switch(audioNumber) {
+            case 1:
+              soundToPlay = prize1Sound;
+              break;
+            case 2:
+              soundToPlay = prize2Sound;
+              break;
+            case 3:
+              soundToPlay = prize3Sound;
+              break;
+            default:
+              soundToPlay = prize1Sound; // Default to prize 1
+          }
+        } else {
+          // Default prize audio for real wins without an explicit prizeAudio value.
+          // isNiete and isShock are already handled above, so this branch is only
+          // reached for genuine wins missing an explicit prizeAudio configuration.
+          soundToPlay = prize1Sound;
+        }
+        
+        if (soundToPlay) {
+          soundToPlay.volume = volume;
+          soundToPlay.currentTime = 0;
+          soundToPlay.play().catch(() => {});
+        }
+      }
+
+      // Hide after delay (use configurable duration, default 5 seconds)
+      const displayDuration = (config.settings.winnerDisplayDuration || 5) * 1000;
+      setTimeout(() => {
+        hideWinAnnouncement(isNiete, isShock);
+      }, displayDuration);
+    }
+
+    /**
+     * Hide win announcement and optionally show info screen
+     */
+    function hideWinAnnouncement(isNiete = false, isShock = false) {
+      winAnnouncement.classList.remove('visible');
+      winAnnouncement.classList.remove('niete');
+      winAnnouncement.classList.remove('shock');
+      winAnnouncement.style.animation = ''; // Clear shock animation
+      
+      // Show info screen after win (not for Niete or Shock)
+      const settings = config.settings || {};
+      if (!isNiete && !isShock && settings.infoScreenEnabled && settings.infoScreenText) {
+        setTimeout(() => {
+          showInfoScreen();
+        }, 300);
+      } else {
+        // Hide player info after a short delay
+        setTimeout(() => {
+          hidePlayerAndWheel();
+        }, 500);
+      }
+    }
+
+    /**
+     * Show info screen (e.g., how to claim prize)
+     */
+    function showInfoScreen() {
+      const settings = config.settings || {};
+      infoScreenText.textContent = settings.infoScreenText || 'Um deinen Gewinn abzuholen, besuche discord.gg/deinserver';
+      infoScreen.classList.add('visible');
+      
+      // Hide after delay
+      const infoDuration = (settings.infoScreenDuration || 5) * 1000;
+      setTimeout(() => {
+        hideInfoScreen();
+      }, infoDuration);
+    }
+
+    /**
+     * Hide info screen
+     */
+    function hideInfoScreen() {
+      infoScreen.classList.remove('visible');
+      
+      // Hide player info after info screen
+      setTimeout(() => {
+        hidePlayerAndWheel();
+      }, 300);
+    }
+
+    /**
+     * Hide player info and wheel, show idle message
+     */
+    function hidePlayerAndWheel() {
+      playerInfo.classList.remove('visible');
+      wheelWrapper.classList.remove('visible');
+      
+      // Show idle message if no queue
+      if (queue.length === 0) {
+        setTimeout(() => {
+          idleMessage.classList.remove('hidden');
+        }, 500);
+      }
+    }
+
+    /**
+     * Show player info
+     */
+    function showPlayerInfo(nickname, profilePictureUrl, giftName) {
+      playerName.textContent = nickname || 'Spieler';
+      playerAvatar.src = profilePictureUrl || 'https://via.placeholder.com/50';
+      giftInfo.textContent = giftName ? `🎁 ${giftName}` : '🎡 Dreht das Rad';
+      
+      playerInfo.classList.add('visible');
+      wheelWrapper.classList.add('visible');
+    }
+
+    /**
+     * Update queue display
+     */
+    function updateQueueDisplay() {
+      if (queue.length === 0) {
+        queueDisplay.classList.remove('visible');
+        return;
+      }
+
+      queueDisplay.classList.add('visible');
+      queueList.innerHTML = '';
+
+      queue.forEach((item, index) => {
+        const li = document.createElement('li');
+        const typeIcon = TYPE_ICONS[item.type] || TYPE_ICONS.default;
+        const displayName = item.nickname || item.username || 'Spieler';
+        li.innerHTML = `
+          <span class="position">${index + 1}</span>
+          <span>${typeIcon} ${displayName}</span>
+        `;
+        queueList.appendChild(li);
+      });
+    }
+
+    /**
+     * Normalize queue item data from socket events/status
+     */
+    function normalizeQueueItem(item) {
+      if (!item) {
+        return null;
+      }
+      
+      return {
+        type: item.type,
+        spinId: item.spinId,
+        batchId: item.batchId,
+        username: item.username,
+        nickname: item.nickname || item.username
+      };
+    }
+
+    /**
+     * Sync queue display with unified queue status
+     */
+    function syncQueueFromStatus(status) {
+      if (!status) {
+        return;
+      }
+      
+      const updatedQueue = [];
+      
+      if (status.currentItem) {
+        const currentItem = normalizeQueueItem(status.currentItem);
+        if (currentItem) {
+          updatedQueue.push(currentItem);
+        }
+      }
+      
+      if (Array.isArray(status.queue)) {
+        status.queue.forEach((item) => {
+          const normalizedItem = normalizeQueueItem(item);
+          if (normalizedItem) {
+            updatedQueue.push(normalizedItem);
+          }
+        });
+      }
+      
+      queue = updatedQueue;
+      updateQueueDisplay();
+    }
+
+    /**
+     * Request queue status sync from server.
+     */
+    function requestQueueStatusSync() {
+      socket.emit('unified-queue:request-status');
+    }
+
+    /**
+     * Update idle message text based on settings
+     */
+    function updateIdleMessage() {
+      const settings = config.settings || {};
+      
+      // Check if idle message is enabled (default: true)
+      if (settings.idleMessageEnabled === false) {
+        idleMessage.style.display = 'none';
+        return;
+      }
+      
+      idleMessage.style.display = '';
+      
+      // Update title and subtitle
+      idleMessageTitle.textContent = settings.idleMessageTitle || '🎡 Warte auf Spieler...';
+      idleMessageSubtitle.textContent = settings.idleMessageSubtitle || 'Sende ein Geschenk, um das Glücksrad zu drehen!';
+    }
+
+    /**
+     * Apply display text tokens from settings.displayTexts to overlay elements
+     * @param {Object} dt - displayTexts object from wheel settings
+     */
+    function applyDisplayTexts(dt) {
+      if (!dt || typeof dt !== 'object') return;
+      // titleText: no dedicated static title element on wheel overlay; used in announcements
+      // Store for use in showWinAnnouncement and showPlayerInfo
+      config._displayTexts = dt;
+    }
+
+    /**
+     * Spawn confetti particles
+     */
+    function spawnConfetti() {
+      const colors = ['#FFD700', '#FF6B6B', '#4CAF50', '#2196F3', '#9C27B0', '#FF9800'];
+      const container = document.getElementById('wheel-container');
+      
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.top = '-20px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        confetti.style.width = (Math.random() * 10 + 5) + 'px';
+        confetti.style.height = (Math.random() * 10 + 5) + 'px';
+        
+        container.appendChild(confetti);
+        
+        // Animate
+        const animation = confetti.animate([
+          { 
+            top: '-20px', 
+            opacity: 1,
+            transform: `rotate(0deg) translateX(0)`
+          },
+          { 
+            top: '100vh', 
+            opacity: 0,
+            transform: `rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 200}px)`
+          }
+        ], {
+          duration: Math.random() * 2000 + 2000,
+          easing: 'ease-out'
+        });
+        
+        animation.onfinish = () => confetti.remove();
+      }
+    }
+
+    // Socket.io event handlers
+    socket.on('connect', () => {
+      console.log('✅ Connected to server');
+      socket.emit('wheel:request-config');
+      requestQueueStatusSync();
+    });
+
+    socket.on('wheel:config', (newConfig) => {
+      console.log('⚙️ Received wheel config', newConfig);
+      
+      // Validate received config
+      if (!newConfig) {
+        console.error('wheel:config received null/undefined config');
+        return;
+      }
+      
+      if (!newConfig.segments || !Array.isArray(newConfig.segments)) {
+        console.error('wheel:config received invalid segments:', newConfig.segments);
+        return;
+      }
+      
+      if (newConfig.segments.length === 0) {
+        console.warn('wheel:config received empty segments array');
+        // Allow empty segments to show "no configuration" state
+      }
+      
+      config.segments = newConfig.segments || [];
+      config.settings = newConfig.settings || config.settings;
+      
+      // Apply display texts from settings
+      applyDisplayTexts(newConfig.settings && newConfig.settings.displayTexts);
+      
+      console.log(`✅ Config applied: ${config.segments.length} segments`);
+      drawWheel(currentRotation);
+      
+      // Update idle message text based on settings
+      updateIdleMessage();
+    });
+
+    socket.on('wheel:config-updated', (newConfig) => {
+      console.log('⚙️ Wheel config updated', newConfig);
+      
+      // Validate received config
+      if (!newConfig) {
+        console.error('wheel:config-updated received null/undefined config');
+        return;
+      }
+      
+      if (!newConfig.segments || !Array.isArray(newConfig.segments)) {
+        console.error('wheel:config-updated received invalid segments:', newConfig.segments);
+        return;
+      }
+      
+      if (newConfig.segments.length === 0) {
+        console.warn('wheel:config-updated received empty segments array');
+      }
+      
+      config.segments = newConfig.segments || config.segments;
+      config.settings = newConfig.settings || config.settings;
+      
+      // Apply display texts if provided
+      applyDisplayTexts(newConfig.settings && newConfig.settings.displayTexts);
+      
+      console.log(`✅ Config updated: ${config.segments.length} segments`);
+      drawWheel(currentRotation);
+      
+      // Update idle message text based on settings
+      updateIdleMessage();
+    });
+
+    socket.on('wheel:spin-start', async (data) => {
+      console.log('🎡 Spin start', data);
+      
+      // Validate spin data
+      if (!data) {
+        console.error('wheel:spin-start received null/undefined data');
+        return;
+      }
+      
+      if (!data.segments || !Array.isArray(data.segments) || data.segments.length === 0) {
+        console.error('wheel:spin-start received invalid or empty segments:', data.segments);
+        return;
+      }
+      
+      if (typeof data.winningSegmentIndex !== 'number' || data.winningSegmentIndex < 0 || data.winningSegmentIndex >= data.segments.length) {
+        console.error(`wheel:spin-start received invalid winningSegmentIndex ${data.winningSegmentIndex} (segments: ${data.segments?.length || 0})`);
+        return;
+      }
+      
+      if (!data.winningSegment) {
+        console.error('wheel:spin-start missing winningSegment data');
+        return;
+      }
+      
+      // Load audio for this wheel if different from current
+      if (data.wheelId && data.wheelId !== currentWheelId) {
+        await loadWheelAudio(data.wheelId);
+      }
+      
+      // Update config from spin event to ensure sync with server
+      // This is CRITICAL - the server sends the authoritative segment list for this spin
+      if (data.segments && data.segments.length > 0) {
+        const previousSegmentCount = config.segments.length;
+        config.segments = data.segments;
+        
+        if (previousSegmentCount !== data.segments.length) {
+          console.warn(`⚠️ Segment count changed: ${previousSegmentCount} → ${data.segments.length}`);
+        }
+      }
+      
+      if (data.settings) {
+        config.settings = { ...config.settings, ...data.settings };
+      }
+      
+      // Log segment metadata for debugging
+      console.log(`✅ Spin config applied: ${config.segments.length} segments, winning index: ${data.winningSegmentIndex} (${data.winningSegment.text}), rotation: ${data.totalRotation.toFixed(2)}°`);
+
+      // CRITICAL FIX: Reset wheel to starting position (0°) BEFORE spin begins
+      // The server calculates totalRotation assuming the wheel starts at 0° (segment 0 at top)
+      // ALWAYS reset to ensure proper synchronization, even if already at 0°
+      // This ensures the visual matches the calculation starting point
+      console.log(`🔄 Resetting wheel from ${(currentRotation % 360).toFixed(1)}° to 0° before spin`);
+      currentRotation = 0;
+      drawWheel(0);
+
+      // Show player info
+      showPlayerInfo(data.nickname, data.profilePictureUrl, data.giftName);
+      
+      // Note: Queue item will be removed on wheel:spin-result (after spin completes)
+      // Do NOT remove here, otherwise queue display disappears before spin finishes
+      
+      // Start spin animation
+      setTimeout(() => {
+        spinWheel(
+          data.totalRotation,
+          data.spinDuration,
+          data.winningSegment,
+          data.spinId,
+          data.nickname
+        );
+      }, 1000); // Short delay to show player info first
+    });
+    
+    // Listen for audio updates
+    socket.on('wheel:audio-updated', async (data) => {
+      console.log('🔊 Audio updated', data);
+      // Reload audio if this is the current wheel
+      if (data.wheelId == currentWheelId) {
+        await loadWheelAudio(data.wheelId);
+      }
+    });
+
+    socket.on('wheel:spin-queued', (data) => {
+      console.log('📋 Spin queued', data);
+      
+      queue.push({
+        type: 'wheel',
+        spinId: data.spinId,
+        username: data.username,
+        nickname: data.nickname,
+        position: data.position
+      });
+      
+      updateQueueDisplay();
+    });
+
+    // Unified queue event - same handling as legacy event
+    socket.on('unified-queue:wheel-queued', (data) => {
+      console.log('📋 [UNIFIED] Spin queued', data);
+      
+      queue.push({
+        type: 'wheel',
+        spinId: data.spinId,
+        username: data.username,
+        nickname: data.nickname || data.username, // Fallback to username if nickname not provided
+        position: data.position
+      });
+      
+      updateQueueDisplay();
+    });
+
+    // Unified queue event for Plinko
+    socket.on('unified-queue:plinko-queued', (data) => {
+      console.log('📋 [UNIFIED] Plinko queued', data);
+      
+      queue.push({
+        type: 'plinko',
+        batchId: data.batchId,
+        username: data.username,
+        nickname: data.nickname || data.username,
+        position: data.position
+      });
+      
+      updateQueueDisplay();
+    });
+
+    // Unified queue status sync
+    socket.on('unified-queue:status', (status) => {
+      console.log('📋 [UNIFIED] Queue status', status);
+      syncQueueFromStatus(status);
+    });
+
+    socket.on('unified-queue:cleared', () => {
+      console.log('🧹 [UNIFIED] Queue cleared');
+      queue = [];
+      updateQueueDisplay();
+    });
+
+    socket.on('wheel:queue-processing', (data) => {
+      console.log('📋 Processing queue', data);
+      
+      // Note: Do NOT remove from queue here - wait until spin actually completes
+      // This event fires when spin is about to start, not when it completes
+      // Queue will be removed on wheel:spin-result
+    });
+
+    socket.on('wheel:spin-result', (data) => {
+      console.log('🎉 Spin result', data);
+      if (!data) {
+        console.error('wheel:spin-result received null/undefined data');
+        return;
+      }
+      
+      const isSpinIdMismatch = currentSpinId && data.spinId !== currentSpinId;
+      
+      if (data.syncMismatch) {
+        console.warn(`Spin sync mismatch detected (expected: ${data.expectedSegmentIndex}, reported: ${data.reportedSegmentIndex})`);
+      }
+      
+      // Remove completed spin from queue display AFTER result is received
+      queue = queue.filter(item => item.spinId !== data.spinId);
+      updateQueueDisplay();
+      
+      if (isSpinIdMismatch) {
+        console.warn(`wheel:spin-result for unexpected spinId ${data.spinId} (current: ${currentSpinId})`);
+        requestQueueStatusSync();
+        // Skip announcement to avoid showing results for a stale spin.
+        return;
+      }
+      
+      showWinAnnouncement(
+        data.nickname || data.username || 'Spieler',
+        data.prize,
+        data.prizeColor,
+        data.isNiete || false,
+        // Use explicit null-check: prizeAudio=0 means "no audio", undefined/null → default 1
+        (data.prizeAudio !== undefined && data.prizeAudio !== null) ? data.prizeAudio : 1,
+        data.isShock || false,
+        data.shockIntensity || 0
+      );
+      
+      currentSpinId = null;
+    });
+
+    // Handle spin errors (e.g., segment count changed)
+    socket.on('wheel:spin-error', (data) => {
+      console.error('❌ Spin error', data);
+      
+      // Validate required data (spinId is required, others have fallbacks)
+      if (!data || !data.spinId) {
+        console.error('wheel:spin-error received invalid data:', data);
+        return;
+      }
+      
+      // Remove from queue if present
+      queue = queue.filter(item => item.spinId !== data.spinId);
+      updateQueueDisplay();
+      if (currentSpinId && data.spinId === currentSpinId) {
+        currentSpinId = null;
+      }
+      
+      // Show error message in announcement area (with safe fallbacks)
+      winnerName.textContent = data.nickname || data.username || 'Spieler';
+      congratsText.textContent = '❌ Fehler';
+      prizeText.textContent = data.message || 'Spin konnte nicht durchgeführt werden';
+      prizeText.style.color = '#FF6B6B';
+      winAnnouncement.classList.remove('niete');
+      winAnnouncement.classList.remove('shock');
+      winAnnouncement.classList.add('visible');
+      
+      // Hide error after 5 seconds
+      setTimeout(() => {
+        winAnnouncement.classList.remove('visible');
+      }, 5000);
+    });
+
+    socket.on('wheel:spin-timeout', (data) => {
+      console.warn('⚠️ Spin timeout (overlay did not respond)', data);
+      
+      // Validate required data
+      if (!data || !data.spinId) {
+        console.error('wheel:spin-timeout received invalid data:', data);
+        return;
+      }
+      
+      // Only handle timeout if this spin is currently active
+      if (isSpinning && currentSpinId === data.spinId) {
+        console.log(`Resetting stuck spin ${data.spinId}`);
+        
+        // Stop spinning immediately
+        isSpinning = false;
+        currentSpinId = null;
+        
+        // Reset wheel visual state
+        wheelWrapper.classList.remove('spinning');
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(0deg)';
+        
+        // Force reflow
+        void wheel.offsetHeight;
+        
+        // Re-enable transition
+        wheel.style.transition = '';
+        
+        // Hide any visible announcements
+        winAnnouncement.classList.remove('visible');
+        infoScreen.classList.remove('visible');
+        
+        // Show idle message
+        idleMessage.classList.add('visible');
+        updateIdleMessage();
+        
+        console.log('Wheel state reset after timeout');
+      }
+      
+      // Remove from queue if present
+      queue = queue.filter(item => item.spinId !== data.spinId);
+      updateQueueDisplay();
+    });
+
+    // Initialize
+    window.addEventListener('load', () => {
+      drawWheel();
+      updateIdleMessage();
+    });
+
+    // ============================================
+    // TEST MODE FUNCTIONALITY
+    // ============================================
+    
+    // Check if test mode is enabled
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('testMode') === 'true';
+    
+    if (testMode) {
+      console.log('🧪 Wheel test mode enabled');
+      document.getElementById('test-mode-controls').style.display = 'block';
+      
+      // Spin wheel button
+      document.getElementById('test-spin-wheel').addEventListener('click', async () => {
+        const playerName = document.getElementById('test-player-name').value || 'TestPlayer';
+        
+        try {
+          const response = await fetch('/api/game-engine/wheel/spin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: playerName,
+              nickname: playerName,
+              giftName: 'Test Spin'
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            console.log('Test spin triggered:', data);
+          } else {
+            console.error('Failed to trigger test spin:', data.error);
+            alert('Failed to trigger test spin: ' + (data.error || data.message));
+          }
+        } catch (error) {
+          console.error('Error triggering test spin:', error);
+          alert('Error triggering test spin: ' + error.message);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

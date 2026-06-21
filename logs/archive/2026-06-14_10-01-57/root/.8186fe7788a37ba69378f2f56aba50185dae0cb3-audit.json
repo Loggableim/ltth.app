@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\.8186fe7788a37ba69378f2f56aba50185dae0cb3-audit.json",
+    "files": [
+        {
+            "date": 1780601182857,
+            "name": "C:\\Users\\logga\\Documents\\ltth_codex\\ltth_desktop2-main\\logs\\error-2026-06-04.log",
+            "hash": "a17bcb4509d45a09a1ce0a953ed1e4e2fda60233c5a7fc16b6134766cc47d24e"
+        }
+    ],
+    "hashType": "sha256"
+}

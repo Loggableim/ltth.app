@@ -142,7 +142,7 @@ class EventTTSHandler {
     
     // Default gift handling (backwards compatibility)
     if (coins < (config.minCoins || 0)) return;
-    if (!this._checkCooldown(data.userId, 'gift', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'gift', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username, nickname, giftName, giftCount, coins
@@ -155,7 +155,7 @@ class EventTTSHandler {
 
   _handleFollow(data) {
     const config = this.tts.config.eventTTS.events.follow;
-    if (!this._checkCooldown(data.userId, 'follow', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'follow', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username: data.username || data.uniqueId || 'Someone',
@@ -167,7 +167,7 @@ class EventTTSHandler {
 
   _handleShare(data) {
     const config = this.tts.config.eventTTS.events.share;
-    if (!this._checkCooldown(data.userId, 'share', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'share', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username: data.username || data.uniqueId || 'Someone',
@@ -179,7 +179,7 @@ class EventTTSHandler {
 
   _handleSubscribe(data) {
     const config = this.tts.config.eventTTS.events.subscribe;
-    if (!this._checkCooldown(data.userId, 'subscribe', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'subscribe', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username: data.username || data.uniqueId || 'Someone',
@@ -194,7 +194,7 @@ class EventTTSHandler {
     const likeCount = data.likeCount || data.totalLikeCount || 1;
 
     if (likeCount < (config.minLikes || 1)) return;
-    if (!this._checkCooldown(data.userId, 'like', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'like', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username: data.username || data.uniqueId || 'Someone',
@@ -207,7 +207,7 @@ class EventTTSHandler {
 
   _handleJoin(data) {
     const config = this.tts.config.eventTTS.events.join;
-    if (!this._checkCooldown(data.userId, 'join', config.cooldownSeconds)) return;
+    if (!this._checkCooldown(this._getEventIdentity(data), 'join', config.cooldownSeconds)) return;
 
     const text = this._fillTemplate(config.template, {
       username: data.username || data.uniqueId || 'Someone',
@@ -225,10 +225,14 @@ class EventTTSHandler {
     return result;
   }
 
-  _checkCooldown(userId, eventType, cooldownSeconds) {
+  _getEventIdentity(data) {
+    return data?.userId || data?.username || data?.uniqueId || data?.nickname || 'event-system';
+  }
+
+  _checkCooldown(identity, eventType, cooldownSeconds) {
     if (!cooldownSeconds || cooldownSeconds <= 0) return true;
 
-    const key = `${userId}:${eventType}`;
+    const key = `${identity}:${eventType}`;
     const now = Date.now();
     const lastTime = this.cooldowns.get(key) || 0;
 

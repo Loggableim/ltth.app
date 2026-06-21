@@ -1,0 +1,22 @@
+{
+  "id": "lastevent-spotlight",
+  "name": "LastEvent Spotlight",
+  "version": "1.0.0",
+  "description": "Live overlays showing the last active user for each event type (follower, like, chatter, share, gifter, subscriber)",
+  "author": "Plugin System",
+  "entry": "main.js",
+  "enabled": true,
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Live overlays showing the last active user for each event type (follower, like, chatter, share, gifter, subscriber). Perfect for recognizing recent viewer interactions.",
+    "de": "Live-Overlays, die den zuletzt aktiven Benutzer für jeden Event-Typ anzeigen (Follower, Like, Chatter, Share, Gifter, Subscriber). Perfekt zum Erkennen aktueller Zuschauer-Interaktionen.",
+    "es": "Overlays en vivo que muestran el último usuario activo para cada tipo de evento (seguidor, like, chatter, compartir, donante, suscriptor). Perfecto para reconocer interacciones recientes de espectadores.",
+    "fr": "Overlays en direct affichant le dernier utilisateur actif pour chaque type d'événement (abonné, like, chatter, partage, donateur, souscripteur). Parfait pour reconnaître les interactions récentes des spectateurs."
+  }
+}

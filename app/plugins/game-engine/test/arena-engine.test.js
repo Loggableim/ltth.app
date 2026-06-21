@@ -63,6 +63,114 @@ describe('ArenaGame', () => {
     return player;
   }
 
+  it('uses lower default state emission and render pressure for smoother arena overlays', () => {
+    const { arena } = createArena();
+    const config = arena.getConfig();
+
+    expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
+    expect(config.targetFps).toBeLessThanOrEqual(45);
+    expect(config.maxRenderPlayers).toBeLessThanOrEqual(48);
+    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
+  });
+
+  it('makes small unarmed players flee larger nearby predators', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+    const small = movementPlayer(arena, config, 'small_survivor', 14, {
+      x: 360,
+      y: 300,
+      weapon: null,
+      lives: 60
+    });
+    const large = movementPlayer(arena, config, 'large_predator', 42, {
+      x: 500,
+      y: 300,
+      vx: -1,
+      vy: 0,
+      lives: 200
+    });
+
+    arena.players.set(small.username, small);
+    arena.players.set(large.username, large);
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(small, config);
+
+    expect(decision.mode).toBe('flee');
+    expect(decision.target.username).toBe('large_predator');
+    expect(decision.vector.x).toBeLessThan(0);
+  });
+
+  it('makes larger players actively hunt edible smaller targets', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+    const hunter = movementPlayer(arena, config, 'big_hunter', 58, {
+      x: 320,
+      y: 300,
+      weapon: null,
+      lives: 260
+    });
+    const prey = movementPlayer(arena, config, 'small_prey', 22, {
+      x: 500,
+      y: 300,
+      vx: -0.2,
+      vy: 0,
+      weapon: null,
+      lives: 100
+    });
+
+    arena.players.set(hunter.username, hunter);
+    arena.players.set(prey.username, prey);
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(hunter, config);
+
+    expect(decision.mode).toBe('hunt-player');
+    expect(decision.target.username).toBe('small_prey');
+    expect(decision.vector.x).toBeGreaterThan(0);
+  });
+
+  it('sends threatened unarmed players toward reachable weapons when the route is safe enough', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => 1000, random: () => 0.5 });
+    const config = arena.getConfig();
+    const runner = movementPlayer(arena, config, 'weapon_runner', 18, {
+      x: 360,
+      y: 300,
+      weapon: null,
+      lives: 55
+    });
+    const threat = movementPlayer(arena, config, 'weapon_chaser', 34, {
+      x: 520,
+      y: 300,
+      vx: -1,
+      vy: 0,
+      weapon: null,
+      lives: 180
+    });
+
+    arena.players.set(runner.username, runner);
+    arena.players.set(threat.username, threat);
+    arena.weaponPickups.set('safe_dash', {
+      id: 'safe_dash',
+      type: 'dash',
+      tier: 'pickup',
+      power: 3,
+      durationMs: 9000,
+      x: 260,
+      y: 300,
+      radius: config.weaponPickupRadius,
+      spawnedAt: 1000,
+      expiresAt: 20000
+    });
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(runner, config);
+
+    expect(decision.mode).toBe('evade-weapon');
+    expect(decision.target.id).toBe('safe_dash');
+    expect(decision.vector.x).toBeLessThan(0);
+  });
+
   it('spawns a viewer ball automatically on live activity', () => {
     const { arena, io } = createArena();
 
@@ -1416,7 +1524,7 @@ describe('ArenaGame', () => {
   it('exposes render performance settings in arena state', () => {
     const { arena } = createArena({
       renderScale: 0.7,
-      targetFps: 60,
+      targetFps: 50,
       maxRenderPlayers: 48,
       rendererMode: 'auto'
     });
@@ -1425,7 +1533,7 @@ describe('ArenaGame', () => {
 
     expect(state.config).toEqual(expect.objectContaining({
       renderScale: 0.7,
-      targetFps: 60,
+      targetFps: 50,
       maxRenderPlayers: 48,
       rendererMode: 'auto'
     }));
@@ -1636,13 +1744,14 @@ describe('ArenaGame', () => {
     }));
   });
 
-  it('uses high-frequency arena state cadence so render FPS changes can look smooth', () => {
+  it('uses a throttled arena state cadence so OBS overlays keep frame time headroom', () => {
     const { arena } = createArena();
     const config = arena.getConfig();
     const state = arena.getState('test');
 
     expect(config.tickRateMs).toBeLessThanOrEqual(50);
-    expect(config.stateEmitIntervalMs).toBeLessThanOrEqual(50);
+    expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
+    expect(config.stateEmitIntervalMs).toBeLessThanOrEqual(80);
     expect(state.config).toEqual(expect.objectContaining({
       tickRateMs: config.tickRateMs,
       stateEmitIntervalMs: config.stateEmitIntervalMs
@@ -1658,11 +1767,11 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config.tickRateMs).toBeLessThanOrEqual(50);
-    expect(config.stateEmitIntervalMs).toBeLessThanOrEqual(50);
-    expect(config.targetFps).toBe(60);
+    expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
+    expect(config.targetFps).toBe(45);
   });
 
-  it('upgrades previous 50ms arena cadence defaults to smoother snapshots', () => {
+  it('upgrades previous 50ms arena cadence defaults to lower network pressure', () => {
     const { arena } = createArena({
       tickRateMs: 50,
       stateEmitIntervalMs: 50
@@ -1670,7 +1779,7 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config.tickRateMs).toBeLessThan(50);
-    expect(config.stateEmitIntervalMs).toBeLessThan(50);
+    expect(config.stateEmitIntervalMs).toBeGreaterThan(50);
   });
 
   it('uses elapsed wall-clock time for scheduled arena ticks', () => {
@@ -1892,7 +2001,7 @@ describe('ArenaGame', () => {
     expect(arena.food.has('recent_burst')).toBe(true);
   });
 
-  it('upgrades sparse live food caps to the denser low-viewer arena envelope', () => {
+  it('upgrades sparse live food caps while keeping render load bounded', () => {
     const { arena } = createArena({
       maxFood: 50,
       maxFoodRender: 25
@@ -1900,7 +2009,8 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(80);
+    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
+    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
   });
 
   it('upgrades expensive legacy gift tier defaults to cheaper stream-friendly tiers', () => {
@@ -2036,17 +2146,17 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config.movement).toEqual(expect.objectContaining({
-      fleeDistance: 320,
-      huntDistance: 460,
+      fleeDistance: 360,
+      huntDistance: 520,
       foodSenseDistance: 460,
       steeringStrength: 0.3,
       randomTurn: 0.032,
-      fleeMassRatio: 1.03,
-      huntMassRatio: 1.04,
+      fleeMassRatio: 0.98,
+      huntMassRatio: 1.02,
       huntLeadSeconds: 0.65,
       threatLookaheadSeconds: 0.9,
-      behaviorMemoryMs: 3200,
-      targetSwitchScoreMargin: 5,
+      behaviorMemoryMs: 2600,
+      targetSwitchScoreMargin: 3.8,
       wanderFocusMinMs: 2200,
       wanderFocusMaxMs: 4500
     }));
@@ -2071,15 +2181,15 @@ describe('ArenaGame', () => {
     const config = arena.getConfig();
 
     expect(config.movement).toEqual(expect.objectContaining({
-      fleeDistance: 320,
-      huntDistance: 460,
+      fleeDistance: 360,
+      huntDistance: 520,
       steeringStrength: 0.3,
       randomTurn: 0.032,
-      fleeMassRatio: 1.03,
-      huntMassRatio: 1.04,
+      fleeMassRatio: 0.98,
+      huntMassRatio: 1.02,
       threatLookaheadSeconds: 0.9,
-      behaviorMemoryMs: 3200,
-      targetSwitchScoreMargin: 5,
+      behaviorMemoryMs: 2600,
+      targetSwitchScoreMargin: 3.8,
       wanderFocusMinMs: 2200,
       wanderFocusMaxMs: 4500
     }));
@@ -2100,8 +2210,8 @@ describe('ArenaGame', () => {
 
     expect(config.movement).toEqual(expect.objectContaining({
       randomTurn: 0.032,
-      behaviorMemoryMs: 3200,
-      targetSwitchScoreMargin: 5,
+      behaviorMemoryMs: 2600,
+      targetSwitchScoreMargin: 3.8,
       wanderFocusMinMs: 2200,
       wanderFocusMaxMs: 4500
     }));
@@ -4542,7 +4652,8 @@ describe('ArenaGame', () => {
     expect(config.maxMass).toBeGreaterThanOrEqual(240);
     expect(config.maxLives).toBeGreaterThanOrEqual(20000);
     expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(80);
+    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
+    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
     expect(config.foodValue).toBeLessThan(2.25);
     expect(config.likeFoodValue).toBeGreaterThanOrEqual(1);
     expect(config.playerAbsorbMassRatio).toBeGreaterThanOrEqual(0.88);
@@ -6205,9 +6316,9 @@ describe('GameEnginePlugin arena integration', () => {
       stateEmitIntervalMs: 120
     });
 
-    expect(config.targetFps).toBe(60);
+    expect(config.targetFps).toBe(45);
     expect(config.tickRateMs).toBeLessThanOrEqual(50);
-    expect(config.stateEmitIntervalMs).toBeLessThanOrEqual(50);
+    expect(config.stateEmitIntervalMs).toBeGreaterThanOrEqual(50);
   });
 
   it('upgrades saved legacy Arena frame defaults for admin config responses', () => {
@@ -6295,15 +6406,15 @@ describe('GameEnginePlugin arena integration', () => {
     });
 
     expect(config.movement).toEqual(expect.objectContaining({
-      fleeDistance: 320,
-      huntDistance: 460,
+      fleeDistance: 360,
+      huntDistance: 520,
       steeringStrength: 0.3,
       randomTurn: 0.032,
-      fleeMassRatio: 1.03,
-      huntMassRatio: 1.04,
+      fleeMassRatio: 0.98,
+      huntMassRatio: 1.02,
       threatLookaheadSeconds: 0.9,
-      behaviorMemoryMs: 3200,
-      targetSwitchScoreMargin: 5,
+      behaviorMemoryMs: 2600,
+      targetSwitchScoreMargin: 3.8,
       wanderFocusMinMs: 2200,
       wanderFocusMaxMs: 4500
     }));
@@ -6325,15 +6436,16 @@ describe('GameEnginePlugin arena integration', () => {
     });
 
     expect(config.maxFood).toBeGreaterThanOrEqual(120);
-    expect(config.maxFoodRender).toBeGreaterThanOrEqual(80);
+    expect(config.maxFoodRender).toBeGreaterThanOrEqual(70);
+    expect(config.maxFoodRender).toBeLessThanOrEqual(72);
     expect(config.foodSpawnIntervalMs).toBeGreaterThanOrEqual(1200);
     expect(config.foodSpawnBatchSize).toBeLessThanOrEqual(3);
     expect(config.foodDespawnMs).toBeGreaterThanOrEqual(90000);
     expect(config.foodBurstDespawnMs).toBeGreaterThanOrEqual(60000);
     expect(config.movement).toEqual(expect.objectContaining({
       randomTurn: 0.032,
-      behaviorMemoryMs: 3200,
-      targetSwitchScoreMargin: 5,
+      behaviorMemoryMs: 2600,
+      targetSwitchScoreMargin: 3.8,
       wanderFocusMinMs: 2200,
       wanderFocusMaxMs: 4500
     }));

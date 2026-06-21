@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClarityHUD - Multi-Stream Overlay</title>
+  <link href="/fonts/exo-2.css" rel="stylesheet">
+  <style>
+    /* CSS Custom Properties for Dynamic Configuration */
+    :root {
+      --multi-font-size: 28px;
+      --multi-line-height: 1.4;
+      --multi-letter-spacing: 0.3px;
+      --multi-font-family: 'Exo 2', sans-serif;
+      --multi-bg-color: rgba(0, 0, 0, 0.85);
+      --multi-text-color: #ffffff;
+      --multi-padding: 12px;
+      --multi-message-spacing: 6px;
+      --multi-card-width: 360px;
+      --multi-opacity: 1;
+      
+      /* Density modes */
+      --density-compact-spacing: 6px;
+      --density-compact-padding: 8px 12px;
+      --density-ultra-spacing: 3px;
+      --density-ultra-padding: 4px 8px;
+      --density-comfortable-spacing: 10px;
+      --density-comfortable-padding: 12px 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--multi-font-family);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+    }
+
+    #multi-container {
+      width: 100%;
+      height: 100%;
+      padding: var(--multi-padding);
+      display: flex;
+      gap: 12px;
+      opacity: var(--multi-opacity);
+    }
+
+    /* Layout modes */
+    #multi-container.layout-mixed {
+      flex-direction: column;
+    }
+
+    #multi-container.layout-split {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    #multi-container.layout-split.columns-1 {
+      flex-direction: column;
+    }
+
+    #multi-container.layout-split.columns-2 .stream-column {
+      flex: 0 0 calc(50% - 6px);
+    }
+
+    #multi-container.layout-split.columns-3 .stream-column {
+      flex: 0 0 calc(33.333% - 8px);
+    }
+
+    .stream-column {
+      display: flex;
+      flex-direction: column;
+      gap: var(--multi-message-spacing);
+      overflow: hidden;
+      flex: 1;
+      min-width: 300px;
+    }
+
+    #messages {
+      display: flex;
+      flex-direction: column;
+      gap: var(--multi-message-spacing);
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .chat-message {
+      background: var(--multi-bg-color);
+      padding: var(--density-compact-padding);
+      border-radius: 6px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 200ms ease-out, transform 200ms ease-out;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      line-height: var(--multi-line-height);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: var(--multi-card-width);
+      font-size: var(--multi-font-size);
+      position: relative;
+    }
+
+    .chat-message.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .chat-message.pulse-new {
+      animation: pulseGlow 0.5s ease-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+      50% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); }
+    }
+
+    /* Message styles */
+    .chat-message.style-stripe::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--source-accent);
+      border-radius: 6px 0 0 6px;
+    }
+
+    .chat-message.style-badge .source-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: var(--source-accent);
+      color: #000;
+      font-size: calc(var(--multi-font-size) * 0.7);
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    .chat-message.style-bg {
+      background: var(--source-bg);
+      color: var(--source-text);
+    }
+
+    /* Density modes */
+    body.density-ultra .chat-message {
+      padding: var(--density-ultra-padding);
+      gap: 2px;
+    }
+
+    body.density-ultra #messages {
+      gap: var(--density-ultra-spacing);
+    }
+
+    body.density-comfortable .chat-message {
+      padding: var(--density-comfortable-padding);
+      gap: 4px;
+    }
+
+    body.density-comfortable #messages {
+      gap: var(--density-comfortable-spacing);
+    }
+
+    .chat-message-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .source-badge {
+      display: none;
+      font-size: calc(var(--multi-font-size) * 0.7);
+      font-weight: 600;
+      color: var(--source-accent);
+    }
+
+    .chat-message.style-badge .source-badge {
+      display: inline-flex;
+    }
+
+    .chat-avatar {
+      display: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    body.show-avatars .chat-avatar {
+      display: block;
+    }
+
+    .badge-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .tiktok-emote {
+      display: inline-block;
+      height: 1.3em;
+      vertical-align: middle;
+      margin: 0 2px;
+    }
+
+    .unicode-emoji {
+      display: inline;
+      margin: 0 1px;
+    }
+
+    .chat-username {
+      color: var(--source-text, #ffffff);
+      font-weight: 700;
+      font-size: var(--multi-font-size);
+      line-height: var(--multi-line-height);
+      letter-spacing: var(--multi-letter-spacing);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      margin-right: 6px;
+    }
+
+    .chat-text {
+      color: var(--multi-text-color);
+      font-size: var(--multi-font-size);
+      line-height: var(--multi-line-height);
+      letter-spacing: var(--multi-letter-spacing);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      display: inline;
+    }
+
+    .chat-message.style-bg .chat-text {
+      text-shadow: none;
+    }
+
+    .chat-timestamp {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: calc(var(--multi-font-size) * 0.65);
+      line-height: var(--multi-line-height);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      margin-left: 8px;
+      display: none;
+    }
+
+    body.show-timestamps .chat-timestamp {
+      display: inline;
+    }
+
+    .chat-message.primary-stream {
+      opacity: 1;
+    }
+
+    body.highlight-primary .chat-message.primary-stream {
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Accessibility: Reduce Motion */
+    body.reduce-motion .chat-message {
+      transition: opacity 100ms ease-out;
+      transform: none !important;
+    }
+
+    /* Auto contrast adjustment */
+    body.auto-contrast .chat-message.style-bg {
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Debug Console */
+    #debug-console {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.9);
+      color: #0f0;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      max-width: 300px;
+      z-index: 10000;
+      display: none;
+    }
+
+    #debug-status { margin-bottom: 5px; }
+    #debug-socket { margin-bottom: 5px; }
+    #debug-events { margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <!-- Debug Console -->
+  <div id="debug-console">
+    <div id="debug-status">Status: Initializing...</div>
+    <div id="debug-socket">Socket: Disconnected</div>
+    <div id="debug-events">Events: 0</div>
+    <div id="debug-streams">Streams: 0</div>
+  </div>
+
+  <div id="multi-container" class="layout-mixed">
+    <div id="messages"></div>
+  </div>
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Libraries -->
+  <script src="/plugins/clarityhud/lib/animations.js"></script>
+  <script src="/plugins/clarityhud/lib/accessibility.js"></script>
+  <script src="/plugins/clarityhud/lib/emoji-parser.js"></script>
+  <script src="/plugins/clarityhud/lib/badge-renderer.js"></script>
+  <script src="/plugins/clarityhud/lib/message-parser.js"></script>
+  <script src="/plugins/clarityhud/lib/virtual-scroller.js"></script>
+
+  <script src="/plugins/clarityhud/overlays/multi.js"></script>
+</body>
+</html>

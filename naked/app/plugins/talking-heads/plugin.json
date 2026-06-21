@@ -1,0 +1,59 @@
+{
+  "id": "talking-heads",
+  "name": "Talking Heads",
+  "version": "1.0.0",
+  "description": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "module",
+  "devStatus": "early-version",
+  "dependencies": [
+    "axios",
+    "sharp"
+  ],
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-system"
+  ],
+  "features": [
+    "AI Avatar Generation from TikTok Profile",
+    "5-Frame Sprite Animation System",
+    "TTS Audio Synchronization",
+    "OBS WebSocket Integration",
+    "Role-based Activation",
+    "Multiple Style Templates",
+    "Avatar & Sprite Caching",
+    "Persistent User Identity"
+  ],
+  "config": {
+    "enabled": false,
+    "imageApiUrl": "https://api.siliconflow.com/v1/images/generations",
+    "imageApiKey": "",
+    "defaultStyle": "cartoon",
+    "cacheEnabled": true,
+    "cacheDuration": 2592000,
+    "obsEnabled": true,
+    "obsHudEnabled": true,
+    "spawnAnimationMode": "standard",
+    "spawnAnimationUrl": "",
+    "spawnAnimationVolume": 0.8,
+    "animationDuration": 5000,
+    "fadeInDuration": 300,
+    "fadeOutDuration": 300,
+    "blinkInterval": 3000,
+    "rolePermission": "all",
+    "minTeamLevel": 0,
+    "requireSubscriber": false,
+    "requireCustomVoice": false,
+    "avatarResolution": 1500,
+    "spriteResolution": 512
+  },
+  "descriptions": {
+    "en": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration.",
+    "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+  }
+}

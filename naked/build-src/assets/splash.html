@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - {{.Version}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+        }
+
+        .logo {
+            font-size: 72px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .version {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .status {
+            font-size: 20px;
+            margin-bottom: 30px;
+            min-height: 30px;
+            font-weight: 500;
+        }
+
+        .progress-container {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            height: 40px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(255, 59, 48, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+
+        .footer {
+            margin-top: 40px;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🐕</div>
+        <h1>{{.Title}}</h1>
+        <div class="version">Version {{.Version}}</div>
+        
+        <div class="status" id="status">Initialisiere...</div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress" style="width: 0%">
+                <span id="progress-text">0%</span>
+            </div>
+        </div>
+        
+        <div class="spinner" id="spinner"></div>
+        
+        <div class="error" id="error">
+            <strong>Fehler:</strong> <span id="error-message"></span>
+        </div>
+        
+        <div class="footer">
+            PupCid's Little TikTool Helper<br>
+            Powered by Cloud Launcher
+        </div>
+    </div>
+
+    <script>
+        const eventSource = new EventSource('/events');
+        const statusEl = document.getElementById('status');
+        const progressEl = document.getElementById('progress');
+        const progressTextEl = document.getElementById('progress-text');
+        const errorEl = document.getElementById('error');
+        const errorMessageEl = document.getElementById('error-message');
+        const spinnerEl = document.getElementById('spinner');
+
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.error) {
+                    // Show error
+                    errorMessageEl.textContent = data.error;
+                    errorEl.classList.add('show');
+                    spinnerEl.style.display = 'none';
+                } else {
+                    // Update progress
+                    if (data.progress !== undefined) {
+                        progressEl.style.width = data.progress + '%';
+                        progressTextEl.textContent = data.progress + '%';
+                    }
+                    
+                    if (data.status) {
+                        statusEl.textContent = data.status;
+                    }
+                    
+                    // Hide spinner when complete
+                    if (data.progress === 100) {
+                        spinnerEl.style.display = 'none';
+                        setTimeout(() => {
+                            statusEl.textContent = 'Fertig! Browser öffnet sich...';
+                        }, 1000);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to parse event data:', e);
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
+            eventSource.close();
+        };
+    </script>
+</body>
+</html>

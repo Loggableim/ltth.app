@@ -123,8 +123,8 @@ async function saveConfig() {
 
 async function triggerTest() {
     try {
-        const selectedShape = document.querySelector('.shape-preview.selected');
-        const shape = selectedShape ? selectedShape.dataset.shape : 'burst';
+        const activeShape = document.querySelector('.shape-preview.active-shape');
+        const shape = (config.defaultShape || activeShape?.dataset.shape || 'burst');
         
         await fetch('/api/fireworks-dev/trigger', {
             method: 'POST',
@@ -209,6 +209,8 @@ function updateUI() {
     document.getElementById('bloom-strength-value').textContent = String(config.bloomStrength || 0.75);
     document.getElementById('scene-backdrop-opacity').value = config.sceneBackdropOpacity ?? 0.92;
     document.getElementById('scene-backdrop-opacity-value').textContent = String(config.sceneBackdropOpacity ?? 0.92);
+    updateJsonEditor('finale-pattern-profiles', config.finalePatternProfiles || {});
+    updateJsonEditor('gift-visual-mappings', config.giftVisualMappings || {});
     toggleModePanels(config.proMode === true);
 
     SCENE_LAYERS.forEach((layer) => {
@@ -447,6 +449,18 @@ function updateToggle(id, value) {
     }
 }
 
+function updateJsonEditor(id, value) {
+    const element = document.getElementById(id);
+    if (!element) {
+        return;
+    }
+
+    const serialized = JSON.stringify(value || {}, null, 2);
+    if (element.value !== serialized) {
+        element.value = serialized;
+    }
+}
+
 function ensureSceneConfig() {
     config.sceneLayerVisibility = {
         sky: true,
@@ -524,6 +538,7 @@ function setupEventListeners() {
     document.getElementById('test-shape-heart-btn')?.addEventListener('click', () => triggerTestShape('heart'));
     document.getElementById('test-shape-star-btn')?.addEventListener('click', () => triggerTestShape('star'));
     document.getElementById('test-shape-ring-btn')?.addEventListener('click', () => triggerTestShape('ring'));
+    document.getElementById('test-shape-double-ring-btn')?.addEventListener('click', () => triggerTestShape('double-ring'));
     document.getElementById('test-shape-spiral-btn')?.addEventListener('click', () => triggerTestShape('spiral'));
     document.getElementById('test-shape-paws-btn')?.addEventListener('click', () => triggerTestShape('paws'));
     document.getElementById('test-shape-random-btn')?.addEventListener('click', triggerTestRandom);
@@ -626,6 +641,14 @@ function setupEventListeners() {
             ensureSceneConfig();
             config.sceneLayerOpacity[layer] = parseFloat(val);
         });
+    });
+
+    setupJsonTextarea('finale-pattern-profiles', (value) => {
+        config.finalePatternProfiles = value;
+    });
+
+    setupJsonTextarea('gift-visual-mappings', (value) => {
+        config.giftVisualMappings = value;
     });
     
     setupRangeSlider('max-particles', 'max-particles-value', '', (val) => {
@@ -824,6 +847,24 @@ function setupEventListeners() {
             if (!config.themeColors) config.themeColors = [];
             config.themeColors.push(color);
             addColorSwatch(color);
+        }
+    });
+}
+
+function setupJsonTextarea(id, onValidJson) {
+    const element = document.getElementById(id);
+    if (!element) {
+        return;
+    }
+
+    element.addEventListener('change', function() {
+        try {
+            const parsed = this.value.trim() ? JSON.parse(this.value) : {};
+            onValidJson(parsed);
+            this.dataset.invalid = 'false';
+        } catch (error) {
+            this.dataset.invalid = 'true';
+            showToast(`Invalid JSON in ${id}`, 'error');
         }
     });
 }
@@ -1345,21 +1386,41 @@ async function measureFPS() {
     // Trigger multiple fireworks to stress test
     const testDuration = BENCHMARK_CONFIG.TEST_DURATION;
     const fireworkInterval = BENCHMARK_CONFIG.FIREWORK_INTERVAL;
+    const benchmarkScenarios = [
+        { shape: 'burst', hudLabel: 'Benchmark Burst', giftId: 1001, giftName: 'Rose' },
+        { shape: 'heart', hudLabel: 'Benchmark Heart', giftId: 1002, giftName: 'Heart Me' },
+        { shape: 'ring', hudLabel: 'Benchmark Ring', giftId: 1003, giftName: 'Donut' },
+        { shape: 'double-ring', hudLabel: 'Benchmark Double Ring', giftId: 1004, giftName: 'Money Gun' },
+        { shape: 'spiral', hudLabel: 'Benchmark Spiral', giftId: 1005, giftName: 'Galaxy' },
+        { shape: 'paws', hudLabel: 'Benchmark Paws', giftId: 1006, giftName: 'Corgi' }
+    ];
     
     let fpsReadings = [];
+    let fireworkIndex = 0;
     
     // Start FPS measurement
     const measureStart = Date.now();
     
     // Trigger fireworks periodically
     const fireworkTimer = setInterval(async () => {
+        const scenario = benchmarkScenarios[fireworkIndex % benchmarkScenarios.length];
+        const tier = fireworkIndex % 6 === 5 ? 'massive' : fireworkIndex % 3 === 0 ? 'big' : 'medium';
+        fireworkIndex++;
+
         await fetch('/api/fireworks-dev/trigger', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                shape: 'burst',
-                intensity: 1.5,
-                position: { x: Math.random(), y: Math.random() * 0.5 + 0.25 }
+                shape: scenario.shape,
+                intensity: tier === 'massive' ? 2.8 : tier === 'big' ? 1.9 : 1.35,
+                tier,
+                giftId: scenario.giftId,
+                giftName: scenario.giftName,
+                position: { x: Math.random(), y: Math.random() * 0.5 + 0.25 },
+                hudLabel: scenario.hudLabel,
+                theme: config.theme,
+                encounterMode: tier === 'massive' ? 'finale' : config.encounterMode,
+                qualityProfile: config.qualityProfile
             })
         });
     }, fireworkInterval);

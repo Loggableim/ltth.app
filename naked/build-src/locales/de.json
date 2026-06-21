@@ -1,0 +1,139 @@
+{
+  "app_name": "PupCid's Little TikTool Helper",
+  "tabs": {
+    "changelog": "Changelog",
+    "api_keys": "API Keys",
+    "community": "Community",
+    "logging": "Logging"
+  },
+  "profile": {
+    "title": "Benutzerprofil",
+    "select": "Profil auswählen",
+    "no_profiles": "Keine Benutzerprofile verfügbar",
+    "selected": "Ausgewählt"
+  },
+  "status": {
+    "initializing": "Initialisiere...",
+    "checking_nodejs": "Prüfe Node.js Installation...",
+    "nodejs_missing": "FEHLER: Node.js ist nicht installiert!",
+    "nodejs_found": "Node.js gefunden...",
+    "nodejs_version": "Node.js Version: %s",
+    "checking_app_dir": "Prüfe App-Verzeichnis...",
+    "app_dir_missing": "FEHLER: app Verzeichnis nicht gefunden",
+    "app_dir_found": "App-Verzeichnis gefunden...",
+    "checking_dependencies": "Prüfe Abhängigkeiten...",
+    "installing_dependencies": "Installiere Abhängigkeiten...",
+    "installation_hint": "HINWEIS: npm install kann einige Minuten dauern, bitte das Fenster offen halten und warten",
+    "installation_failed": "FEHLER: %v",
+    "installation_done": "Installation abgeschlossen!",
+    "dependencies_installed": "Abhängigkeiten bereits installiert...",
+    "npm_install_start": "npm install wird gestartet...",
+    "npm_install_delay_notice": "HINWEIS: npm install kann mehrere Minuten dauern, besonders bei langsamer Internetverbindung. Bitte warten...",
+    "npm_install_line": "npm install: %s",
+    "npm_install_running": "npm install läuft... (%ds) - Bitte warten, Downloads können mehrere Minuten dauern",
+    "checking_config": "Prüfe Konfiguration...",
+    "config_ok": "Konfiguration geprüft!",
+    "starting_tool": "Starte Tool...",
+    "start_error": "FEHLER beim Starten: %v",
+    "check_logs": "Prüfe bitte die Log-Datei in app/logs/ für Details.",
+    "waiting_for_server_start": "Warte auf Server-Start...",
+    "env_restart": "🔄 .env erstellt - starte Server neu...",
+    "server_restart_wait": "🔄 Server neugestartet - warte auf Antwort...",
+    "server_failed_start": "⚠️ Server konnte nicht starten!",
+    "auto_fixes_done": "📋 Alle Auto-Fixes wurden versucht",
+    "check_launcher_logs": "💡 Prüfe app/logs/launcher_*.log für Details",
+    "manual_install_hint": "💡 Oder führe manuell: cd app && npm install",
+    "port_check_hint": "💡 Oder prüfe ob Port 3000 frei ist",
+    "closing": "❌ Launcher wird in 15 Sekunden geschlossen...",
+    "waiting_attempt": "Warte auf Server... (Versuch %d)",
+    "server_timeout": "⏱️ Server-Start Timeout (60s)",
+    "server_no_response": "📋 Server antwortet nicht - prüfe app/logs/",
+    "server_maybe_running": "💡 Server läuft evtl. noch im Hintergrund",
+    "wait_manual_open": "💡 Warte 2-3 Minuten und öffne localhost:3000",
+    "server_started": "Server erfolgreich gestartet!",
+    "redirecting_dashboard": "Weiterleitung zum Dashboard...",
+    "progress": "Fortschritt",
+    "env_creating": "🔧 Auto-Fix: Erstelle .env Datei...",
+    "env_created": "✅ .env Datei erstellt!",
+    "port_in_use": "⚠️ Port 3000 belegt - Server wird alternativen Port nutzen",
+    "server_already_running": "ℹ️ Server läuft bereits auf Port 3000",
+    "port_delegated": "🔌 Port-Management wird an Node.js delegiert (.ltth_port)...",
+    "port_selected": "Port %d ausgewählt",
+    "manual_starting": "Manueller Serverstart auf Port %d...",
+    "manual_start_available": "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen."
+  },
+  "api_keys": {
+    "title": "API Key Informationen",
+    "intro": "Um alle Funktionen von LTTH nutzen zu können, benötigen Sie API-Keys von verschiedenen Anbietern:",
+    "elevenlabs": {
+      "name": "ElevenLabs (Text-to-Speech)",
+      "url": "https://elevenlabs.io",
+      "type": "Freemium",
+      "description": "10.000 Zeichen/Monat kostenlos, dann kostenpflichtig",
+      "mandatory": true
+    },
+    "openai": {
+      "name": "OpenAI (GPT für Interactive Story)",
+      "url": "https://platform.openai.com",
+      "type": "Bezahlt",
+      "description": "Pay-as-you-go Preismodell, API-Key erforderlich"
+    },
+    "siliconflow": {
+      "name": "SiliconFlow (Alternative AI)",
+      "url": "https://siliconflow.com",
+      "type": "Freemium",
+      "description": "Kostenlose Tier verfügbar"
+    },
+    "fishAudio": {
+      "name": "Fish Audio (TTS Alternative)",
+      "url": "https://fish.audio",
+      "type": "Freemium",
+      "description": "Freemium TTS Service"
+    },
+    "mandatory_warning": "⚠️ WICHTIG: ElevenLabs API-Key ist verpflichtend!",
+    "fallback_warning": "Der integrierte Fallback-Key ist nicht garantiert funktionsfähig bei starker Nutzung durch alle User.",
+    "where_to_get": "Wo bekomme ich die Keys?"
+  },
+  "community": {
+    "title": "Community & Mithilfe",
+    "intro": "LTTH ist ein Open-Source-Projekt und lebt von der Community!",
+    "help_appreciated": "Deine Mithilfe beim Testen und Entwickeln ist sehr willkommen! 🎉",
+    "links": {
+      "repo": "GitHub Repository",
+      "discussions": "Diskussionen & Fragen",
+      "issues": "Bug Reports & Feature Requests",
+      "discord": "Discord Server"
+    },
+    "contribute": "Wie kann ich helfen?",
+    "contribute_text": "Teste neue Features, melde Bugs, schlage Verbesserungen vor oder entwickle eigene Plugins!"
+  },
+  "footer": {
+    "powered_by": "Powered by LTTH Launcher",
+    "version": "Version"
+  },
+  "changelog": {
+    "title": "Neueste Änderungen",
+    "loading": "Lade Changelog...",
+    "error": "Changelog konnte nicht geladen werden."
+  },
+  "logs": {
+    "title": "Server-Logs",
+    "intro": "Hier siehst du die aktuellen Launcher- und Server-Logs.",
+    "loading": "Lade Logs...",
+    "empty": "Keine Log-Einträge verfügbar.",
+    "error": "Logs konnten nicht geladen werden."
+  },
+  "theme": {
+    "label": "Design-Modus",
+    "daymode": "Tag",
+    "nightmode": "Nacht",
+    "highcontrast": "Hoher Kontrast"
+  },
+  "options": {
+    "keep_open": "Launcher geöffnet halten",
+    "keep_open_hint": "Zeigt vollständiges Server-Logging im Launcher",
+    "open_app": "Zur App",
+    "app_not_ready": "Server startet noch...",
+    "app_ready": "Klicken Sie hier, falls die App nicht automatisch öffnet"
+  }
+}

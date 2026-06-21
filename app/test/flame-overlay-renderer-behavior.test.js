@@ -331,6 +331,27 @@ describe('Flame Overlay renderer behavior', () => {
     });
   });
 
+  test('shader animations derive effect UVs from the active frame rectangle', () => {
+    const content = fs.readFileSync(effectsEnginePath, 'utf8');
+
+    expect(content).toContain('vec2 effectUv = clamp(pixelPos / frameResolution, 0.0, 1.0);');
+    expect(content).toContain('vec2 flameUv = effectUv;');
+    expect(content).toContain('vec2 smokePos = effectUv;');
+    expect(content).toContain('gl_FragColor = renderEnergyWaves(effectUv, pixelPos, edgeDist);');
+    expect(content).toContain('gl_FragColor = renderLightning(effectUv, pixelPos, edgeDist);');
+  });
+
+  test('flame easing preserves continuous animation time and pulse changes visible output', () => {
+    const content = fs.readFileSync(effectsEnginePath, 'utf8');
+
+    expect(content).toContain('float easedCycleTime(float timeValue, int easingType)');
+    expect(content).toContain('return (cycle + applyEasing(phase, easingType)) * 10.0;');
+    expect(content).toContain('timeAdjusted = easedCycleTime(timeAdjusted, uAnimationEasing);');
+    expect(content).toContain('float pulseWave = uPulseEnabled ? sin(uTime * uPulseSpeed) * uPulseAmount : 0.0;');
+    expect(content).toContain('result.rgb *= pulseBrightness;');
+    expect(content).toContain('result.a *= pulseAlpha;');
+  });
+
   test('texture placeholders receive filter and wrap immediately and keep fallback on image errors', () => {
     const images = [];
     class MockImage {

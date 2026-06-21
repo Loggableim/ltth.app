@@ -1401,7 +1401,8 @@
             width: this.dimensions.width,
             height: this.dimensions.height,
             opacity,
-            y: this.dimensions.height * (0.4 + Math.random() * 0.6)
+            y: this.dimensions.height * (0.4 + Math.random() * 0.6),
+            parentEffect: effect
           });
           effect.particles.push(particle);
         }
@@ -1416,7 +1417,8 @@
             width: this.dimensions.width,
             height: this.dimensions.height,
             opacity,
-            directionDeg
+            directionDeg,
+            parentEffect: effect
           });
           effect.particles.push(particle);
         }
@@ -1427,7 +1429,8 @@
             width: this.dimensions.width,
             height: this.dimensions.height,
             opacity,
-            y: this.dimensions.height + Math.random() * 50
+            y: this.dimensions.height + Math.random() * 50,
+            parentEffect: effect
           });
           effect.particles.push(particle);
         }
@@ -1588,14 +1591,15 @@
       
       for (let i = 0; i < beamCount; i++) {
         beams.push({
-          x: Math.random() * w * 1.5 - w * 0.25,
-          y: Math.random() * h * 0.3,
-          width: 40 + Math.random() * 80,
-          height: h * 1.2,
-          angle: 5 + Math.random() * 10,
-          opacity: 0.1 + Math.random() * 0.2,
-          speed: 0.05 + Math.random() * 0.15,
-          colorTemp: temp
+          x: Math.random() * w * 1.4 - w * 0.2,
+          y: -h * 0.18 + Math.random() * h * 0.2,
+          width: 110 + Math.random() * 190,
+          height: h * (1.05 + Math.random() * 0.35),
+          angle: -10 + Math.random() * 22,
+          opacity: 0.06 + Math.random() * 0.09,
+          speed: 0.015 + Math.random() * 0.035,
+          colorTemp: temp,
+          driftPhase: Math.random() * Math.PI * 2
         });
       }
       
@@ -1653,8 +1657,8 @@
       // Handle special effects
       for (const effect of this.state.activeEffects) {
         if (effect.type === 'sunbeam' && effect.beams && Array.isArray(effect.beams)) {
-          this.drawSunbeams(effect);
-          this.drawLensFlare(effect);
+          this.drawAmbientLightHaze(effect);
+          this.drawSoftSunbeams(effect);
         }
         if (effect.type === 'fog') {
           this.drawVolumetricFog(effect);
@@ -1767,81 +1771,104 @@
     }
 
     /**
-     * Draw sunbeams with HDR bloom effect
+     * Draw a soft ambient sunlight wash behind individual beams.
      */
-    drawSunbeams(effect) {
-      this.ctx.save();
-      this.ctx.globalCompositeOperation = 'screen'; // HDR-like blending
-      
+    drawAmbientLightHaze(effect) {
+      if (!effect.beams || effect.beams.length === 0) return;
       const w = this.dimensions.width;
-      
+      const h = this.dimensions.height;
+      const firstBeam = effect.beams[0];
+      const ct = firstBeam.colorTemp || { r: 255, g: 245, b: 210 };
+      const opacity = effect.opacity ?? 1;
+      const hazeAlpha = 0.045 * effect.intensity * opacity;
+
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = 'screen';
+
+      const skyGlow = this.ctx.createRadialGradient(w * 0.5, 0, 0, w * 0.5, 0, Math.max(w, h) * 0.85);
+      skyGlow.addColorStop(0, `rgba(${ct.r}, ${ct.g}, ${ct.b}, ${hazeAlpha})`);
+      skyGlow.addColorStop(0.45, `rgba(${ct.r}, ${Math.round(ct.g * 0.96)}, ${Math.round(ct.b * 0.84)}, ${hazeAlpha * 0.45})`);
+      skyGlow.addColorStop(1, 'rgba(255, 245, 220, 0)');
+      this.ctx.fillStyle = skyGlow;
+      this.ctx.fillRect(0, 0, w, h);
+
+      this.ctx.restore();
+    }
+
+    /**
+     * Draw soft volumetric sunbeams without hard cone edges.
+     */
+    drawSoftSunbeams(effect) {
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = 'screen';
+
+      const w = this.dimensions.width;
+      const time = Date.now() * 0.001;
+      const opacity = effect.opacity ?? 1;
+
       effect.beams.forEach(beam => {
         beam.x += beam.speed;
-        if (beam.x > w + 150) {
-          beam.x = -150;
+        if (beam.x > w + beam.width) {
+          beam.x = -beam.width;
         }
-        
+
         const ct = beam.colorTemp || { r: 255, g: 250, b: 220 };
-        
-        // Multi-pass bloom for volumetric effect
-        const bloomPasses = [
-          { scale: 2.5, alpha: 0.03 },
-          { scale: 1.8, alpha: 0.06 },
-          { scale: 1.3, alpha: 0.10 }
-        ].slice(0, this.qualityPreset.bloomPasses);
-        
-        bloomPasses.forEach(pass => {
+        const drift = Math.sin(time * 0.35 + beam.driftPhase) * beam.width * 0.08;
+        const passes = [
+          { scale: 1.8, alpha: 0.18, blur: 36 },
+          { scale: 1.15, alpha: 0.32, blur: 18 },
+          { scale: 0.72, alpha: 0.42, blur: 6 }
+        ].slice(0, Math.max(1, this.qualityPreset.bloomPasses));
+
+        passes.forEach(pass => {
           this.ctx.save();
-          this.ctx.translate(beam.x, beam.y);
+          this.ctx.translate(beam.x + drift, beam.y);
           this.ctx.rotate((beam.angle * Math.PI) / 180);
           this.ctx.scale(pass.scale, 1);
-          
-          const bloomAlpha = beam.opacity * pass.alpha * effect.intensity;
-          const bloomGradient = this.ctx.createLinearGradient(0, 0, 0, beam.height);
-          bloomGradient.addColorStop(0, `rgba(${ct.r}, ${ct.g}, ${Math.round(ct.b * 0.9)}, ${bloomAlpha})`);
-          bloomGradient.addColorStop(0.4, `rgba(${ct.r}, ${Math.round(ct.g * 0.96)}, ${Math.round(ct.b * 0.8)}, ${bloomAlpha * 0.7})`);
-          bloomGradient.addColorStop(1, `rgba(${ct.r}, ${Math.round(ct.g * 0.94)}, ${Math.round(ct.b * 0.73)}, 0)`);
-          
-          this.ctx.fillStyle = bloomGradient;
+
+          const beamAlpha = beam.opacity * pass.alpha * effect.intensity * opacity;
+          const edgeFeather = beam.width * 0.42;
+          const beamGradient = this.ctx.createLinearGradient(0, 0, 0, beam.height);
+          beamGradient.addColorStop(0, `rgba(${ct.r}, ${ct.g}, ${ct.b}, ${beamAlpha * 0.85})`);
+          beamGradient.addColorStop(0.28, `rgba(${ct.r}, ${Math.round(ct.g * 0.97)}, ${Math.round(ct.b * 0.88)}, ${beamAlpha})`);
+          beamGradient.addColorStop(0.72, `rgba(${ct.r}, ${Math.round(ct.g * 0.94)}, ${Math.round(ct.b * 0.78)}, ${beamAlpha * 0.38})`);
+          beamGradient.addColorStop(1, 'rgba(255, 240, 210, 0)');
+
+          this.ctx.filter = `blur(${pass.blur}px)`;
+          this.ctx.fillStyle = beamGradient;
           this.ctx.beginPath();
-          this.ctx.moveTo(-beam.width / 2, 0);
-          this.ctx.lineTo(beam.width / 2, 0);
-          this.ctx.lineTo(beam.width * 0.1 * pass.scale, beam.height);
-          this.ctx.lineTo(-beam.width * 0.1 * pass.scale, beam.height);
+          this.ctx.moveTo(-beam.width * 0.5, 0);
+          this.ctx.bezierCurveTo(
+            -beam.width * 0.5 - edgeFeather,
+            beam.height * 0.35,
+            -beam.width * 0.3,
+            beam.height * 0.72,
+            -beam.width * 0.12,
+            beam.height
+          );
+          this.ctx.lineTo(beam.width * 0.12, beam.height);
+          this.ctx.bezierCurveTo(
+            beam.width * 0.3,
+            beam.height * 0.72,
+            beam.width * 0.5 + edgeFeather,
+            beam.height * 0.35,
+            beam.width * 0.5,
+            0
+          );
           this.ctx.closePath();
           this.ctx.fill();
-          
+
           this.ctx.restore();
         });
-        
-        // Main beam with tapered gradient
-        this.ctx.save();
-        this.ctx.translate(beam.x, beam.y);
-        this.ctx.rotate((beam.angle * Math.PI) / 180);
-        
-        const beamGradient = this.ctx.createLinearGradient(0, 0, 0, beam.height);
-        const beamAlpha = beam.opacity * effect.intensity;
-        beamGradient.addColorStop(0, `rgba(${ct.r}, ${ct.g}, ${Math.round(ct.b * 0.9)}, ${beamAlpha * 0.5})`);
-        beamGradient.addColorStop(0.3, `rgba(${ct.r}, ${Math.round(ct.g * 0.98)}, ${Math.round(ct.b * 0.82)}, ${beamAlpha * 0.35})`);
-        beamGradient.addColorStop(0.7, `rgba(${ct.r}, ${Math.round(ct.g * 0.96)}, ${Math.round(ct.b * 0.73)}, ${beamAlpha * 0.15})`);
-        beamGradient.addColorStop(1, `rgba(${ct.r}, ${Math.round(ct.g * 0.94)}, ${Math.round(ct.b * 0.65)}, 0)`);
-        
-        this.ctx.fillStyle = beamGradient;
-        this.ctx.beginPath();
-        this.ctx.moveTo(-beam.width / 2, 0);
-        this.ctx.lineTo(beam.width / 2, 0);
-        this.ctx.lineTo(beam.width * 0.1, beam.height);
-        this.ctx.lineTo(-beam.width * 0.1, beam.height);
-        this.ctx.closePath();
-        this.ctx.fill();
-        
-        this.ctx.restore();
-        
-        // Add dust motes in beam with depth and glow
+
         this.drawDustMotes(beam, effect);
       });
-      
+
       this.ctx.restore();
+    }
+
+    drawSunbeams(effect) {
+      this.drawSoftSunbeams(effect);
     }
 
     /**

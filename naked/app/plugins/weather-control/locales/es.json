@@ -1,0 +1,64 @@
+{
+  "weather_control": {
+    "title": "Weather Control",
+    "subtitle": "Stream Weather Effects",
+    "config": {
+      "title": "Configuración",
+      "enabled": "Enable Weather Effects",
+      "default_weather": "Default Weather",
+      "transition_duration": "Transition Duration (seconds)",
+      "save": "Guardar Configuración"
+    },
+    "chat_commands": {
+      "title": "Chat Commands",
+      "enabled": "Enable Chat Commands",
+      "require_permission": "Require Permissions",
+      "allow_intensity": "Allow Intensity Control",
+      "allow_duration": "Allow Duration Control",
+      "description": "Allow viewers to trigger weather effects via chat commands"
+    },
+    "weather_types": {
+      "clear": "☀️ Clear",
+      "rain": "🌧️ Rain",
+      "snow": "❄️ Snow",
+      "storm": "⛈️ Storm",
+      "fog": "🌫️ Fog",
+      "wind": "💨 Wind",
+      "thunder": "⚡ Thunder",
+      "sunbeam": "☀️ Sunbeam",
+      "glitchclouds": "☁️ Glitch Clouds"
+    },
+    "commands": {
+      "weather": {
+        "description": "Trigger weather effects on the stream",
+        "syntax": "/weather <effect> [intensity] [duration]",
+        "examples": "/weather rain, /weather storm 0.8"
+      },
+      "weatherlist": {
+        "description": "List all available weather effects",
+        "syntax": "/weatherlist"
+      },
+      "weatherstop": {
+        "description": "Stop all active weather effects",
+        "syntax": "/weatherstop"
+      }
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift_trigger": "Activar con Regalo",
+      "follow_trigger": "Activar con Seguimiento",
+      "weather_map": "Gift → Weather Mapping"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "URL del Overlay",
+      "copy": "Copiar URL",
+      "open": "Abrir Overlay",
+      "test": "Test Weather Effect"
+    },
+    "controls": {
+      "set_weather": "Set Weather",
+      "clear_weather": "Clear All Effects"
+    }
+  }
+}

@@ -850,7 +850,7 @@ func (b *Bootstrapper) runInstall() {
 	downloadPath := filepath.Join(runtimeDir, fmt.Sprintf("payload-%d.%s", time.Now().UnixNano(), archiveExtension(payload.ArchiveFormat)))
 
 	b.setStatus(45, "Lade Payload herunter...", nil)
-	if err := b.downloadPayload(payload.PayloadURL, downloadPath, payload.PayloadSize); err != nil {
+	if err := downloadFile(payload.PayloadURL, downloadPath); err != nil {
 		b.setStatus(100, "Payload-Download fehlgeschlagen", err)
 		return
 	}
@@ -973,68 +973,6 @@ func downloadFile(sourceURL string, destination string) error {
 
 	_, err = io.Copy(file, response.Body)
 	return err
-}
-
-func (b *Bootstrapper) downloadPayload(sourceURL string, destination string, knownSize int64) error {
-	client := &http.Client{Timeout: 10 * time.Minute}
-	response, err := client.Get(sourceURL)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed with %s", response.Status)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
-		return err
-	}
-	file, err := os.Create(destination)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	totalSize := knownSize
-	if totalSize <= 0 {
-		totalSize = response.ContentLength
-	}
-
-	var downloaded int64
-	buf := make([]byte, 32*1024)
-	lastReport := time.Now()
-	startTime := time.Now()
-
-	for {
-		n, readErr := response.Body.Read(buf)
-		if n > 0 {
-			if _, writeErr := file.Write(buf[:n]); writeErr != nil {
-				return writeErr
-			}
-			downloaded += int64(n)
-		}
-		if readErr != nil {
-			if readErr == io.EOF {
-				break
-			}
-			return readErr
-		}
-
-		// Report progress every ~250ms
-		if time.Since(lastReport) > 250*time.Millisecond && totalSize > 0 {
-			lastReport = time.Now()
-			pct := int(float64(downloaded) / float64(totalSize) * 100)
-			speed := float64(downloaded) / time.Since(startTime).Seconds()
-			eta := time.Duration(float64(totalSize-downloaded)/speed) * time.Second
-			status := fmt.Sprintf("Lade Payload herunter … %d MB / %d MB (%.0f MB/s, ETA %ds)",
-				downloaded/(1024*1024), totalSize/(1024*1024), speed/(1024*1024), int(eta.Seconds()))
-			b.setStatus(45+pct*15/100, status, nil)
-		}
-	}
-
-	b.setStatus(58, "Payload-Download abgeschlossen", nil)
-	return nil
 }
 
 func verifyExecutableSignature(path string) error {

@@ -337,6 +337,108 @@ describe('flame-overlay trigger handling', () => {
         }));
     });
 
+    test('default config ships cinematic HDR v3 visual controls in OBS-safe mode', () => {
+        const { plugin } = createPlugin();
+
+        expect(plugin.config).toEqual(expect.objectContaining({
+            visualProfileVersion: 3,
+            qualityMode: 'obs-safe',
+            sparkEnabled: true,
+            heatDistortionEnabled: true,
+            cinematicContrast: expect.any(Number),
+            coreWhiteness: expect.any(Number),
+            emberTrailAmount: expect.any(Number)
+        }));
+    });
+
+    test('config endpoint accepts and clamps cinematic HDR v3 controls', () => {
+        const { plugin, routes } = createPlugin();
+        plugin.registerRoutes();
+
+        const res = createResponse();
+        routes['POST /api/flame-overlay/config'](
+            {
+                body: {
+                    qualityMode: 'max-quality',
+                    sparkDensity: 99,
+                    heatDistortionStrength: -5,
+                    cinematicContrast: 9,
+                    coreWhiteness: 2,
+                    emberTrailAmount: 3
+                }
+            },
+            res
+        );
+
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            success: true,
+            message: 'Configuration updated'
+        }));
+        expect(plugin.config).toEqual(expect.objectContaining({
+            qualityMode: 'max-quality',
+            sparkDensity: 2,
+            heatDistortionStrength: 0,
+            cinematicContrast: 2,
+            coreWhiteness: 1,
+            emberTrailAmount: 1
+        }));
+    });
+
+    test('v3 migration upgrades old defaults without overwriting custom visual choices', () => {
+        const { plugin } = createPlugin({
+            getConfig: jest.fn(key => (key === 'settings' ? {
+                visualProfileVersion: 2,
+                flameBrightness: 0.92,
+                bloomIntensity: 1.7,
+                smokeEnabled: false,
+                sparkDensity: 0.44
+            } : null))
+        });
+
+        plugin.loadConfig();
+
+        expect(plugin.config.visualProfileVersion).toBe(3);
+        expect(plugin.config.flameBrightness).toBe(0.92);
+        expect(plugin.config.bloomIntensity).toBe(1.7);
+        expect(plugin.config.smokeEnabled).toBe(false);
+        expect(plugin.config.sparkDensity).toBe(0.44);
+        expect(plugin.config.qualityMode).toBe('obs-safe');
+        expect(plugin.config.heatDistortionEnabled).toBe(true);
+    });
+
+    test('renderer exposes adaptive quality and cinematic HDR uniforms', () => {
+        const EffectsEngine = loadEffectsEngineClass();
+        const engine = Object.create(EffectsEngine.prototype);
+        engine.config = { qualityMode: 'low-load', noiseOctaves: 12, sparkDensity: 1.2 };
+
+        expect(engine.getQualitySettings()).toEqual(expect.objectContaining({
+            maxNoiseOctaves: 6,
+            sparkScale: 0.35,
+            bloomScale: 0.55,
+            heatScale: 0.45
+        }));
+        expect(engine.getEffectiveNoiseOctaves()).toBe(6);
+        expect(engine.getEffectiveSparkDensity()).toBeCloseTo(0.42);
+
+        const source = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'effects-engine.js'), 'utf8');
+        expect(source).toContain('uSparkDensity');
+        expect(source).toContain('uHeatDistortionStrength');
+        expect(source).toContain('uCinematicContrast');
+        expect(source).toContain('uCoreWhiteness');
+        expect(source).toContain('uEmberTrailAmount');
+    });
+
+    test('settings UI exposes Pro Control Room layout and cinematic presets', () => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'ui', 'settings.html'), 'utf8');
+
+        expect(source).toContain('control-room-shell');
+        expect(source).toContain('id="qualityMode"');
+        expect(source).toContain('data-visual-preset="cinematic-hdr"');
+        expect(source).toContain('data-tab-target="look"');
+        expect(source).toContain('id="sparkDensity"');
+        expect(source).toContain('id="heatDistortionStrength"');
+    });
+
     test('config endpoint reports persistence failure instead of success', () => {
         const { plugin, api, routes } = createPlugin({
             setConfig: jest.fn(() => false)

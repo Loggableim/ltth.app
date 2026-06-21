@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClarityHUD - Stream Overlay</title>
+  <link href="/fonts/open-sans.css" rel="stylesheet">
+  <link href="/fonts/opendyslexic.css" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --safe-zone-h: 60px;
+      --safe-zone-v: 40px;
+      --overlay-opacity: 1;
+      --accent: #00d4ff;
+      --border-radius: 10px;
+      --card-bg: rgba(0, 0, 0, 0.82);
+      --highlight-username-size: 56px;
+
+      /* Accent colors per event type */
+      --color-chat: #4caf50;
+      --color-follow: #ff5722;
+      --color-share: #9c27b0;
+      --color-gift: #ffc107;
+      --color-sub: #f44336;
+      --color-treasure: #00bcd4;
+      --color-join: #607d8b;
+      --color-like: #e91e63;
+    }
+
+    body {
+      font-family: 'Open Sans', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      color: #ffffff;
+      font-size: 16px;
+    }
+
+    body.dyslexia-font {
+      font-family: 'OpenDyslexic', sans-serif;
+    }
+
+    body.reduce-motion * {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    /* Type accent bindings */
+    .type-chat     { --accent: var(--color-chat); }
+    .type-follow   { --accent: var(--color-follow); }
+    .type-share    { --accent: var(--color-share); }
+    .type-gift     { --accent: var(--color-gift); }
+    .type-sub      { --accent: var(--color-sub); }
+    .type-treasure { --accent: var(--color-treasure); }
+    .type-join     { --accent: var(--color-join); }
+    .type-like     { --accent: var(--color-like); }
+
+    /* ==================== OVERLAY ROOT ==================== */
+    #stream-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: var(--overlay-opacity);
+    }
+
+    /* ==================== SLOTS ==================== */
+    #slot-top-left {
+      position: absolute;
+      top: var(--safe-zone-v);
+      left: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    #slot-top-center {
+      position: absolute;
+      top: var(--safe-zone-v);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-width: 320px;
+    }
+
+    #slot-top-right {
+      position: absolute;
+      top: var(--safe-zone-v);
+      right: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    #slot-bottom-left {
+      position: absolute;
+      bottom: var(--safe-zone-v);
+      left: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    #slot-bottom-center {
+      position: absolute;
+      bottom: var(--safe-zone-v);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 10px;
+      min-width: 320px;
+    }
+
+    #slot-bottom-right {
+      position: absolute;
+      bottom: var(--safe-zone-v);
+      right: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    #slot-left-rail {
+      position: absolute;
+      top: calc(var(--safe-zone-v) * 2);
+      bottom: calc(var(--safe-zone-v) * 2);
+      left: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      width: 340px;
+      overflow: hidden;
+    }
+
+    #slot-right-rail {
+      position: absolute;
+      top: calc(var(--safe-zone-v) * 2);
+      bottom: calc(var(--safe-zone-v) * 2);
+      right: var(--safe-zone-h);
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: flex-end;
+      gap: 8px;
+      width: 340px;
+      overflow: hidden;
+    }
+
+    /* ==================== ALERT CARD ==================== */
+    .alert-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+      max-width: 360px;
+      padding: 10px 14px;
+      background: var(--card-bg);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--border-radius);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+      will-change: opacity, transform;
+    }
+
+    .alert-icon {
+      font-size: 2em;
+      flex-shrink: 0;
+      line-height: 1;
+      filter: drop-shadow(0 0 6px var(--accent));
+    }
+
+    .alert-gift-img {
+      width: 2.5em;
+      height: 2.5em;
+      object-fit: contain;
+      flex-shrink: 0;
+      border-radius: 4px;
+    }
+
+    .alert-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .alert-username {
+      font-weight: 700;
+      font-size: 1em;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-action {
+      font-size: 0.82em;
+      color: rgba(255,255,255,0.75);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-detail {
+      font-size: 0.78em;
+      color: rgba(255,255,255,0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .alert-coins {
+      display: inline-block;
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+      border: 1px solid rgba(255, 193, 7, 0.4);
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 0.75em;
+      font-weight: 600;
+      white-space: nowrap;
+      margin-top: 2px;
+      align-self: flex-start;
+    }
+
+    /* ==================== HIGHLIGHT CARD ==================== */
+    .highlight-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 28px;
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      border-radius: calc(var(--border-radius) * 1.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6),
+                  0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
+      text-align: center;
+      min-width: 300px;
+      max-width: 480px;
+      will-change: opacity, transform;
+    }
+
+    .highlight-icon {
+      font-size: 3.5em;
+      line-height: 1;
+      filter: drop-shadow(0 0 12px var(--accent));
+    }
+
+    .highlight-gift-img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px var(--accent));
+    }
+
+    .highlight-username {
+      font-size: var(--highlight-username-size);
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 0 20px var(--accent), 0 2px 8px rgba(0,0,0,0.8);
+      line-height: 1;
+      word-break: break-word;
+    }
+
+    .highlight-action {
+      font-size: 1.1em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .highlight-detail {
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* ==================== GLOW PULSE ==================== */
+    .glow-pulse {
+      animation: glowPulse 2s ease-in-out infinite;
+    }
+
+    /* ==================== KEYFRAMES ==================== */
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-48px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes slideOutLeft {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-48px) scale(0.96);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(48px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(48px) scale(0.96);
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(48px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes slideOutDown {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(48px) scale(0.96);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    @keyframes popIn {
+      0%   { opacity: 0; transform: scale(0.5);    }
+      70%  { opacity: 1; transform: scale(1.06);   }
+      85%  { transform: scale(0.97);               }
+      100% { transform: scale(1);                  }
+    }
+
+    @keyframes popOut {
+      0%   { opacity: 1; transform: scale(1);    }
+      30%  { transform: scale(1.06);             }
+      100% { opacity: 0; transform: scale(0.5);  }
+    }
+
+    @keyframes bounceIn {
+      0%   { opacity: 0; transform: scale(0.3);    }
+      50%  { opacity: 1; transform: scale(1.08);   }
+      75%  { transform: scale(0.95);               }
+      100% { transform: scale(1);                  }
+    }
+
+    @keyframes bounceOut {
+      0%   { opacity: 1; transform: scale(1);    }
+      25%  { transform: scale(1.08);             }
+      100% { opacity: 0; transform: scale(0.3);  }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% {
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6),
+                    0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      50% {
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6),
+                    0 0 56px color-mix(in srgb, var(--accent) 50%, transparent),
+                    0 0 80px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+    }
+
+    /* ==================== ANIMATION STATE CLASSES ==================== */
+    .anim-slide-in-left  { animation: slideInLeft  0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-slide-out-left { animation: slideOutLeft 0.3s  cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+    .anim-slide-in-right  { animation: slideInRight  0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-slide-out-right { animation: slideOutRight 0.3s  cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+    .anim-slide-in-up   { animation: slideInUp   0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-slide-out-down { animation: slideOutDown 0.3s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+    .anim-fade-in  { animation: fadeIn  0.3s ease forwards; }
+    .anim-fade-out { animation: fadeOut 0.3s ease forwards; }
+    .anim-pop-in   { animation: popIn   0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-pop-out  { animation: popOut  0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+    .anim-bounce-in  { animation: bounceIn  0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-bounce-out { animation: bounceOut 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
+
+    /* ==================== PORTRAIT MODE ==================== */
+    body.portrait {
+      --safe-zone-h: 32px;
+      --safe-zone-v: 28px;
+      --highlight-username-size: 40px;
+      font-size: 13.6px; /* ~15% smaller */
+    }
+
+    body.portrait .alert-card {
+      min-width: 80vw;
+      max-width: 90vw;
+    }
+
+    body.portrait .highlight-card {
+      min-width: 80vw;
+      max-width: 92vw;
+    }
+
+    body.portrait #slot-top-center,
+    body.portrait #slot-bottom-center {
+      min-width: 80vw;
+    }
+
+    /* ==================== RESOLUTION SCALING ==================== */
+
+    /* 4K (3840px+) */
+    @media (min-width: 3840px) {
+      :root {
+        --safe-zone-h: 120px;
+        --safe-zone-v: 80px;
+        --border-radius: 18px;
+        --highlight-username-size: 84px;
+      }
+      body {
+        font-size: 24px;
+      }
+      .alert-icon {
+        font-size: 3em;
+      }
+      .highlight-icon {
+        font-size: 5.5em;
+      }
+      .highlight-gift-img {
+        width: 180px;
+        height: 180px;
+      }
+    }
+
+    /* 1440p (2560px+, up to 1440px tall) */
+    @media (min-width: 2560px) and (max-height: 1440px) {
+      :root {
+        --safe-zone-h: 90px;
+        --safe-zone-v: 60px;
+        --border-radius: 14px;
+        --highlight-username-size: 70px;
+      }
+      body {
+        font-size: 20px;
+      }
+    }
+
+    /* 720p and below */
+    @media (max-height: 768px) {
+      :root {
+        --safe-zone-h: 40px;
+        --safe-zone-v: 24px;
+        --highlight-username-size: 44px;
+      }
+      body {
+        font-size: 12.8px; /* 16 * 0.8 = 12.8 */
+      }
+    }
+
+    /* ==================== TICKER BAR ==================== */
+    .ticker-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      z-index: 100;
+      overflow: hidden;
+      border-top: 2px solid rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .ticker-bar.active {
+      opacity: 1;
+    }
+
+    .ticker-label {
+      flex-shrink: 0;
+      padding: 0 14px;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: #ff4444;
+      letter-spacing: 0.5px;
+      background: rgba(255, 68, 68, 0.1);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .ticker-track {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+    }
+
+    .ticker-inner {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 20px;
+      font-size: 0.78em;
+      color: rgba(255, 255, 255, 0.85);
+      flex-shrink: 0;
+    }
+
+    .ticker-item .ticker-icon {
+      font-size: 1.1em;
+    }
+
+    .ticker-item .ticker-name {
+      font-weight: 700;
+      color: var(--accent, #00d4ff);
+    }
+
+    .ticker-sep {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
+    }
+
+    body.reduce-motion .ticker-inner {
+      animation: none !important;
+    }
+
+    body.ticker-active #slot-bottom-left,
+    body.ticker-active #slot-bottom-center,
+    body.ticker-active #slot-bottom-right {
+      bottom: calc(var(--safe-zone-v) + 40px);
+    }
+
+    @keyframes tickerScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+  </style>
+</head>
+<body>
+  <div id="stream-overlay">
+    <div id="slot-top-left"></div>
+    <div id="slot-top-center"></div>
+    <div id="slot-top-right"></div>
+    <div id="slot-bottom-left"></div>
+    <div id="slot-bottom-center"></div>
+    <div id="slot-bottom-right"></div>
+    <div id="slot-left-rail"></div>
+    <div id="slot-right-rail"></div>
+  </div>
+
+  <!-- Ticker Bar -->
+  <div class="ticker-bar" id="ticker-bar">
+    <div class="ticker-label" id="ticker-label">🔴 LIVE</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="ticker-inner"></div>
+    </div>
+  </div>
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Libraries -->
+  <script src="/plugins/clarityhud/lib/animations.js"></script>
+  <script src="/plugins/clarityhud/lib/stream-animations.js"></script>
+  <script src="/plugins/clarityhud/lib/emoji-parser.js"></script>
+  <script src="/plugins/clarityhud/lib/message-parser.js"></script>
+
+  <script src="/plugins/clarityhud/overlays/stream.js"></script>
+</body>
+</html>

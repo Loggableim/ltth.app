@@ -1,0 +1,374 @@
+/**
+ * Profile Manager Styles
+ * Enhanced UX for profile system with warning badges and status indicators
+ */
+
+/* Profile Warning Badge on Profile Button */
+.profile-warning-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-warning 2s infinite;
+    border: 2px solid var(--color-bg-primary);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    z-index: 10;
+}
+
+.profile-warning-badge i {
+    width: 12px;
+    height: 12px;
+    color: white;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6);
+    }
+}
+
+/* Profile Button Enhancement */
+.topbar-profile-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.topbar-profile-btn:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.topbar-profile-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+/* Profile Switch Warning Banner */
+.profile-switch-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+    border-bottom: 2px solid rgba(245, 158, 11, 0.5);
+    padding: 1rem 1.5rem;
+    animation: slideInDown 0.4s ease-out;
+    z-index: 100;
+}
+
+.profile-switch-warning-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-switch-warning-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+}
+
+.profile-switch-warning-icon i {
+    width: 24px;
+    height: 24px;
+}
+
+.profile-switch-warning-text {
+    flex: 1;
+}
+
+.profile-switch-warning-text strong {
+    color: #f59e0b;
+    font-size: 1rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.profile-switch-warning-text p {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.profile-switch-warning-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-restart-now {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-restart-now:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    filter: brightness(1.1);
+}
+
+.btn-restart-now:active {
+    transform: translateY(0);
+}
+
+.btn-restart-now i {
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-dismiss-warning {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-dismiss-warning:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--color-text-primary);
+}
+
+.btn-dismiss-warning i {
+    width: 20px;
+    height: 20px;
+}
+
+/* Animations */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+}
+
+/* Profile Status Tooltip */
+.profile-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .profile-switch-warning {
+        padding: 0.875rem 1rem;
+    }
+
+    .profile-switch-warning-content {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .profile-switch-warning-text {
+        flex-basis: 100%;
+    }
+
+    .profile-switch-warning-actions {
+        flex-basis: 100%;
+        justify-content: flex-end;
+    }
+
+    .btn-restart-now {
+        padding: 8px 16px;
+        font-size: 0.8125rem;
+    }
+
+    .profile-switch-warning-text strong {
+        font-size: 0.9rem;
+    }
+
+    .profile-switch-warning-text p {
+        font-size: 0.8125rem;
+    }
+}
+
+/* Profile Integrity Indicator */
+.profile-integrity-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.profile-integrity-status.healthy {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.profile-integrity-status.warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.profile-integrity-status.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.profile-integrity-status i {
+    width: 12px;
+    height: 12px;
+}
+
+/* Migration Status Badge */
+.migration-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    color: #60a5fa;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.migration-status-badge i {
+    width: 14px;
+    height: 14px;
+}
+
+.migration-status-badge.completed {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+}
+
+/* Profile Documentation Link */
+.profile-doc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-accent-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.profile-doc-link:hover {
+    background: var(--color-active-bg);
+    text-decoration: none;
+}
+
+.profile-doc-link i {
+    width: 16px;
+    height: 16px;
+}
+
+/* Profile Help Tooltip Icon */
+.profile-help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 50%;
+    color: #60a5fa;
+    cursor: help;
+    transition: all 0.2s ease;
+}
+
+.profile-help-icon:hover {
+    background: rgba(59, 130, 246, 0.25);
+    transform: scale(1.1);
+}
+
+.profile-help-icon i {
+    width: 12px;
+    height: 12px;
+}

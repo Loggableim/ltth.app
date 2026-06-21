@@ -15,7 +15,7 @@ class MockAPI {
       heart_balloon_like_divisor: 1,
       heart_balloon_min_hearts: 1,
       heart_balloon_max_hearts: 24,
-      heart_balloon_profile_every: 4,
+      heart_balloon_profile_every: 5,
       heart_balloon_pop_y: 0.5,
       heart_balloon_wind_strength: 0.45,
       heart_balloon_test_count: 8,
@@ -98,7 +98,7 @@ describe('WebGPU Emoji Rain - Herzballons', () => {
       count: 9,
       username: 'viewer-one',
       profilePictureUrl: 'https://example.test/avatar.jpg',
-      profileEvery: 4,
+      profileEvery: 5,
       popY: 0.5,
       windStrength: 0.45,
       reason: 'test'
@@ -122,6 +122,33 @@ describe('WebGPU Emoji Rain - Herzballons', () => {
       count: 6,
       username: 'liker',
       profilePictureUrl: 'https://example.test/liker.jpg',
+      source: 'event:like'
+    });
+  });
+
+  test('like events extract TikTok avatar urlList for every fifth heart balloon', () => {
+    const api = new MockAPI();
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    plugin.spawnEmojiRain('like', {
+      uniqueId: 'liker',
+      likeCount: 6,
+      user: {
+        profilePictureUrl: {
+          urlList: [
+            'https://example.test/tiktok-avatar-small.jpg',
+            'https://example.test/tiktok-avatar-large.jpg'
+          ]
+        }
+      }
+    });
+
+    expect(api.emissions[0].data).toMatchObject({
+      mode: 'heart-balloons',
+      count: 6,
+      username: 'liker',
+      profilePictureUrl: 'https://example.test/tiktok-avatar-small.jpg',
+      profileEvery: 5,
       source: 'event:like'
     });
   });

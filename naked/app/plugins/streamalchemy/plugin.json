@@ -1,0 +1,27 @@
+{
+  "id": "streamalchemy",
+  "name": "StreamAlchemy",
+  "version": "1.0.0",
+  "description": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons",
+  "author": "Pup Cid",
+  "entry": "index.js",
+  "enabled": false,
+  "devStatus": "early-version",
+  "dependencies": {
+    "optional": [
+      "gcce"
+    ]
+  },
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons. Features inventory system, item crafting, and recipe management.",
+    "de": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung.",
+    "es": "Transforma regalos de TikTok en objetos RPG virtuales con mecánicas de elaboración e iconos generados por IA. Presenta sistema de inventario, elaboración de objetos y gestión de recetas.",
+    "fr": "Transforme les cadeaux TikTok en objets RPG virtuels avec mécaniques d'artisanat et icônes générées par IA. Comprend système d'inventaire, fabrication d'objets et gestion de recettes."
+  }
+}

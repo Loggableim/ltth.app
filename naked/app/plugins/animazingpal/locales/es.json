@@ -1,0 +1,132 @@
+{
+  "navigation": {
+    "animazingpal": "AnimazingPal"
+  },
+  "animazingpal": {
+    "title": "AnimazingPal - Cerebro IA VTuber",
+    "description": "Control inteligente de avatar VTuber con respuestas impulsadas por IA",
+    "status": {
+      "connected": "Conectado a Animaze",
+      "disconnected": "Desconectado",
+      "connecting": "Conectando...",
+      "error": "Error de conexión"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "brain": "Cerebro & IA",
+      "personalities": "Personalidades",
+      "memories": "Memorias",
+      "events": "Acciones de Eventos",
+      "gifts": "Mapeo de Regalos",
+      "chatpal": "ChatPal",
+      "settings": "Configuración"
+    },
+    "brain": {
+      "title": "Motor de Cerebro IA",
+      "description": "El cerebro procesa todos los eventos del stream y decide cuándo y cómo responder",
+      "enabled": "Cerebro habilitado",
+      "api_key": "Clave API de OpenAI",
+      "model": "Modelo de IA",
+      "test_connection": "Probar conexión",
+      "connection_success": "¡Conexión API exitosa!",
+      "connection_failed": "Conexión API fallida",
+      "response_settings": "Configuración de respuestas",
+      "auto_respond_chat": "Responder a mensajes de chat",
+      "auto_respond_gifts": "Agradecer regalos",
+      "auto_respond_follows": "Dar bienvenida a seguidores",
+      "auto_respond_shares": "Agradecer compartidos",
+      "auto_respond_likes": "Reaccionar a likes",
+      "auto_respond_subscribe": "Dar bienvenida a suscriptores",
+      "chat_probability": "Probabilidad de respuesta al chat",
+      "max_responses_minute": "Máx. respuestas por minuto",
+      "speak_threshold": "Umbral de habla",
+      "speak_threshold_help": "Qué tan importante debe ser un evento para activar el habla (0-1)"
+    },
+    "personalities": {
+      "title": "Personalidades de Streamer",
+      "description": "Elige cómo se comporta y habla tu avatar IA",
+      "select": "Seleccionar personalidad",
+      "create_custom": "Crear personalizada",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "active": "Activa",
+      "custom": "Personalizada",
+      "builtin": "Predefinida",
+      "name": "Nombre",
+      "display_name": "Nombre visible",
+      "description_label": "Descripción",
+      "system_prompt": "Prompt del sistema",
+      "voice_style": "Estilo de voz",
+      "catchphrases": "Frases características",
+      "topics": "Temas de interés",
+      "language": "Idioma",
+      "presets": {
+        "friendly_streamer": "Streamer Amigable",
+        "friendly_streamer_desc": "Streamer cálido y entusiasta que da la bienvenida a todos",
+        "gaming_pro": "Gaming Pro",
+        "gaming_pro_desc": "Gamer competitivo con experiencia y humor seco",
+        "entertainer": "Entretenedor",
+        "entertainer_desc": "Entretenedor carismático que nunca se aburre",
+        "chill_vibes": "Vibraciones Relajadas",
+        "chill_vibes_desc": "Streamer relajado para sesiones tranquilas",
+        "anime_fan": "Fan del Anime",
+        "anime_fan_desc": "Apasionado fan del anime y manga con cultura otaku"
+      }
+    },
+    "memories": {
+      "title": "Sistema de Memoria",
+      "description": "Memorias a largo plazo almacenadas por perfil de streamer",
+      "search": "Buscar memorias",
+      "recent": "Memorias recientes",
+      "important": "Memorias importantes",
+      "archived": "Archivadas",
+      "user_profiles": "Perfiles de usuarios",
+      "total_memories": "Total de memorias",
+      "total_users": "Usuarios conocidos",
+      "archive_old": "Archivar memorias antiguas",
+      "clear_old": "Limpiar datos antiguos",
+      "streamer_profile": "Perfil de streamer",
+      "streamer_profile_help": "Las memorias se almacenan por separado para cada streamer conectado"
+    },
+    "events": {
+      "title": "Acciones de Eventos",
+      "description": "Configura cómo reacciona el avatar a los eventos del stream",
+      "gift": "Regalo recibido",
+      "chat": "Mensaje de chat",
+      "follow": "Nuevo seguidor",
+      "share": "Stream compartido",
+      "like": "Likes recibidos",
+      "subscribe": "Nuevo suscriptor",
+      "action_type": "Tipo de acción",
+      "action_value": "Acción",
+      "message": "Plantilla de mensaje",
+      "enabled": "Habilitado",
+      "threshold": "Umbral"
+    },
+    "settings": {
+      "title": "Configuración de conexión",
+      "host": "Host de Animaze",
+      "port": "Puerto de Animaze",
+      "auto_connect": "Conectar automáticamente al iniciar",
+      "auto_reconnect": "Reconectar automáticamente al desconectar",
+      "reconnect_delay": "Retraso de reconexión (ms)",
+      "verbose_logging": "Registro detallado"
+    },
+    "actions": {
+      "connect": "Conectar",
+      "disconnect": "Desconectar",
+      "refresh": "Actualizar datos",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "test": "Probar",
+      "reset": "Restablecer valores predeterminados"
+    },
+    "messages": {
+      "config_saved": "Configuración guardada",
+      "config_error": "Error al guardar la configuración",
+      "connected": "Conectado exitosamente a Animaze",
+      "disconnected": "Desconectado de Animaze",
+      "connection_error": "No se pudo conectar a Animaze"
+    }
+  }
+}

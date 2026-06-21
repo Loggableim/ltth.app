@@ -1,0 +1,26 @@
+{
+  "id": "interactive-story",
+  "name": "Interactive Story Generator",
+  "version": "1.0.0",
+  "description": "AI-powered interactive story generation with LLM, image generation, multi-voice TTS, voting mechanics, and OBS overlays",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "entertainment",
+  "devStatus": "early-version",
+  "dependencies": [],
+  "permissions": [
+    "tiktok-events",
+    "database",
+    "socket-emit",
+    "routes",
+    "socket.io",
+    "websocket-client"
+  ],
+  "descriptions": {
+    "en": "AI-powered interactive story generation with chat voting, image generation, multi-voice TTS, and adaptive OBS overlays. Create engaging stories with your audience using LLM technology.",
+    "de": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie.",
+    "es": "Generación de historias interactivas impulsada por IA con votación por chat, generación de imágenes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnología LLM.",
+    "fr": "Génération d'histoires interactives alimentée par l'IA avec vote par chat, génération d'images, TTS multi-voix et overlays adaptatifs OBS. Créez des histoires captivantes avec votre public grâce à la technologie LLM."
+  }
+}

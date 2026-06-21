@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect4 Overlay - LTTH Game Engine</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      color: white;
+    }
+
+    #game-container {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    #game-container.active {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    #game-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #game-title {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    #game-status {
+      font-size: 20px;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    #game-board {
+      display: inline-block;
+      background: var(--board-color, #2C3E50);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #column-labels {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .column-label {
+      width: 70px;
+      color: var(--text-color, #FFFFFF);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .board-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .board-cell {
+      width: 70px;
+      height: 70px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .board-cell.filled {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .piece {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      position: absolute;
+      animation: dropPiece 0.5s ease-out;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes dropPiece {
+      from {
+        transform: translateY(-500px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .piece.player1 {
+      background: var(--player1-color, #E74C3C);
+    }
+
+    .piece.player2 {
+      background: var(--player2-color, #F1C40F);
+    }
+
+    .piece.winning {
+      animation: winningPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes winningPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 8px 16px rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    #game-info {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .player-info {
+      display: inline-block;
+      margin: 0 20px;
+      padding: 15px 25px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 18px;
+    }
+
+    .player-info.active {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .player-color {
+      display: inline-block;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #game-result {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 40px 60px;
+      border-radius: 20px;
+      text-align: center;
+      font-size: 36px;
+      font-weight: bold;
+      animation: resultPopIn 0.5s ease-out;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+    }
+
+    #game-result.show {
+      display: block;
+    }
+
+    @keyframes resultPopIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .winner-text {
+      color: #4CAF50;
+      text-shadow: 0 0 20px #4CAF50;
+    }
+
+    .draw-text {
+      color: #FFC107;
+      text-shadow: 0 0 20px #FFC107;
+    }
+
+    #xp-reward {
+      font-size: 24px;
+      margin-top: 20px;
+      color: #64B5F6;
+    }
+
+    .win-streak {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      animation: streakGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes streakGlow {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 25px rgba(102, 126, 234, 0.8);
+      }
+    }
+
+    .win-streak-icon {
+      font-size: 24px;
+      margin-right: 5px;
+    }
+
+    .celebration-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+    }
+
+    .celebration-overlay.active {
+      display: block;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #f0f;
+      animation: confettiFall 3s linear forwards;
+    }
+
+    @keyframes confettiFall {
+      to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* Challenge Screen Styles */
+    #challenge-screen {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 50px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+      min-width: 400px;
+      z-index: 2000;
+    }
+
+    #challenge-screen.show {
+      display: block;
+      animation: challengePopIn 0.5s ease-out;
+    }
+
+    @keyframes challengePopIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -60%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .challenge-title {
+      font-size: 48px;
+      font-weight: bold;
+      color: #FF6B6B;
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px #FF6B6B;
+      animation: titlePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .challenge-question {
+      font-size: 32px;
+      color: #FFC107;
+      margin-bottom: 30px;
+    }
+
+    .challenge-gift {
+      margin: 20px 0;
+    }
+
+    .challenge-gift img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .challenge-gift-placeholder {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+      font-size: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .challenge-info {
+      font-size: 18px;
+      color: #aaa;
+      margin-top: 15px;
+    }
+
+    .challenge-timer {
+      font-size: 24px;
+      color: #4CAF50;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+
+    .challenge-timer.warning {
+      color: #FF6B6B;
+      animation: timerWarning 1s ease-in-out infinite;
+    }
+
+    @keyframes timerWarning {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    /* Leaderboard Styles */
+    #leaderboard-screen {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+      min-width: 500px;
+      max-width: 800px;
+      z-index: 1500;
+    }
+
+    #leaderboard-screen.show {
+      display: block;
+      animation: leaderboardSlideIn 0.5s ease-out;
+    }
+
+    @keyframes leaderboardSlideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    .leaderboard-title {
+      font-size: 36px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 0 0 15px #4CAF50;
+    }
+
+    .leaderboard-type {
+      font-size: 24px;
+      color: #64B5F6;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leaderboard-table thead {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .leaderboard-table th {
+      padding: 10px;
+      text-align: left;
+      font-size: 16px;
+      color: #FFC107;
+      border-bottom: 2px solid #FFC107;
+    }
+
+    .leaderboard-table td {
+      padding: 12px 10px;
+      font-size: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .leaderboard-table tr:nth-child(1) td {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #000;
+      font-weight: bold;
+    }
+
+    .leaderboard-table tr:nth-child(2) td {
+      background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+      color: #000;
+      font-weight: bold;
+    }
+
+    .leaderboard-table tr:nth-child(3) td {
+      background: linear-gradient(135deg, #CD7F32 0%, #B8702A 100%);
+      color: #000;
+      font-weight: bold;
+    }
+
+    .rank-icon {
+      font-size: 24px;
+      margin-right: 8px;
+    }
+
+    .leaderboard-empty {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Celebration overlay for confetti -->
+  <div id="celebration-overlay" class="celebration-overlay"></div>
+
+  <!-- Challenge Screen -->
+  <div id="challenge-screen">
+    <div class="challenge-title">NEW CHALLENGER!</div>
+    <div class="challenge-question">Accept Challenge?</div>
+    <div id="challenger-name" style="font-size: 24px; color: #64B5F6; margin-bottom: 20px;"></div>
+    <div class="challenge-gift">
+      <div id="challenge-gift-container"></div>
+    </div>
+    <div class="challenge-info">Send this gift to start:</div>
+    <div id="gift-name" style="font-size: 20px; color: #FFC107; margin-top: 10px;"></div>
+    <div id="challenge-timer" class="challenge-timer"></div>
+  </div>
+
+  <!-- Leaderboard Screen -->
+  <div id="leaderboard-screen">
+    <div class="leaderboard-title">🏆 Leaderboard 🏆</div>
+    <div id="leaderboard-type" class="leaderboard-type"></div>
+    <div id="leaderboard-content"></div>
+  </div>
+
+  <div id="game-container">
+    <div id="game-header">
+      <div id="game-title">Vier Gewinnt / Connect4</div>
+      <div id="game-status">Warte auf Spiel...</div>
+    </div>
+
+    <div id="game-board">
+      <div id="column-labels">
+        <div class="column-label">A</div>
+        <div class="column-label">B</div>
+        <div class="column-label">C</div>
+        <div class="column-label">D</div>
+        <div class="column-label">E</div>
+        <div class="column-label">F</div>
+        <div class="column-label">G</div>
+      </div>
+      <div id="board-grid"></div>
+    </div>
+
+    <div id="game-info">
+      <div class="player-info" id="player1-info">
+        <span class="player-color" id="player1-color"></span>
+        <span id="player1-name">Player 1</span>
+      </div>
+      <div class="player-info" id="player2-info">
+        <span class="player-color" id="player2-color"></span>
+        <span id="player2-name">Player 2</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-result">
+    <div id="result-text"></div>
+    <div id="xp-reward"></div>
+  </div>
+
+  <!-- Test Mode Controls -->
+  <div id="test-mode-controls" style="display: none; position: fixed; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.9); padding: 20px; border-radius: 10px; z-index: 10000; color: white; font-family: Arial, sans-serif;">
+    <h3 style="margin: 0 0 15px 0; color: #4CAF50;">🧪 Test Mode</h3>
+    <div style="margin-bottom: 10px;">
+      <button id="test-start-game" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-bottom: 5px;">Start Test Game</button>
+    </div>
+    <div id="test-game-controls" style="display: none;">
+      <div style="margin-bottom: 10px;">
+        <strong>Current Player: <span id="test-current-player">1</span></strong>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="display: block; margin-bottom: 5px; font-size: 12px;">Drop Piece in Column:</label>
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+          <button class="test-column-btn" data-column="A" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">A</button>
+          <button class="test-column-btn" data-column="B" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">B</button>
+          <button class="test-column-btn" data-column="C" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">C</button>
+          <button class="test-column-btn" data-column="D" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">D</button>
+          <button class="test-column-btn" data-column="E" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">E</button>
+          <button class="test-column-btn" data-column="F" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">F</button>
+          <button class="test-column-btn" data-column="G" style="padding: 8px; background: #64B5F6; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">G</button>
+        </div>
+      </div>
+      <div>
+        <button id="test-end-game" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">End Test Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    let currentSession = null;
+    let gameConfig = null;
+    const ROWS = 6;
+    const COLUMNS = 7;
+
+    // Check if test mode is enabled via URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('testMode') === 'true';
+    let testSessionId = null;
+
+    // Sound effects (using Web Audio API)
+    let audioContext = null; // Lazy initialization to avoid autoplay policy issues
+    
+    function getAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+    
+    // Play audio file (MP3/WAV)
+    function playAudioFile(filePath, volume = null) {
+      if (!gameConfig || !gameConfig.soundEnabled) return;
+      
+      try {
+        const audio = new Audio(filePath);
+        audio.volume = volume !== null ? volume : (gameConfig.soundVolume || 0.5);
+        audio.play().catch(err => {
+          console.warn('Audio playback failed:', err);
+        });
+      } catch (error) {
+        console.warn('Failed to load audio:', error);
+      }
+    }
+    
+    function playSound(type) {
+      if (!gameConfig || !gameConfig.soundEnabled) return;
+      
+      // Map sound types to default sound files
+      const defaultSounds = {
+        'move': '/game-engine/sounds/default/game start.mp3',
+        'win': '/game-engine/sounds/default/player-1-wins.mp3',
+        'draw': '/game-engine/sounds/default/game over.mp3',
+        'timer_warning': '/game-engine/sounds/default/ten-sec-timer.mp3'
+      };
+      
+      // Use default sounds if available, otherwise fall back to oscillator
+      if (defaultSounds[type]) {
+        playAudioFile(defaultSounds[type]);
+        return;
+      }
+      
+      // Fallback to oscillator sounds for compatibility
+      try {
+        const ctx = getAudioContext();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        const volume = (gameConfig.soundVolume || 0.5) * 0.3;
+        gainNode.gain.value = volume;
+        
+        switch(type) {
+          case 'move':
+            oscillator.frequency.value = 400;
+            oscillator.type = 'sine';
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            break;
+          case 'win':
+            oscillator.frequency.value = 800;
+            oscillator.type = 'square';
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            break;
+          case 'draw':
+            oscillator.frequency.value = 300;
+            oscillator.type = 'triangle';
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            break;
+        }
+        
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.5);
+      } catch (error) {
+        console.warn('Audio playback failed:', error);
+      }
+    }
+
+    // Confetti celebration configuration
+    const CONFETTI_CONFIG = {
+      count: 50,
+      spawnInterval: 30, // ms between each confetti piece
+      animationDelay: 500, // ms max random delay
+      duration: 3000 // ms total animation duration
+    };
+
+    // Confetti celebration
+    function celebrateWin() {
+      if (!gameConfig || !gameConfig.celebrationEnabled) return;
+      
+      const celebrationOverlay = document.getElementById('celebration-overlay');
+      celebrationOverlay.classList.add('active');
+      
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800'];
+      
+      for (let i = 0; i < CONFETTI_CONFIG.count; i++) {
+        setTimeout(() => {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + '%';
+          confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDelay = Math.random() * (CONFETTI_CONFIG.animationDelay / 1000) + 's';
+          celebrationOverlay.appendChild(confetti);
+          
+          setTimeout(() => confetti.remove(), CONFETTI_CONFIG.duration);
+        }, i * CONFETTI_CONFIG.spawnInterval);
+      }
+      
+      setTimeout(() => {
+        celebrationOverlay.classList.remove('active');
+      }, CONFETTI_CONFIG.duration);
+    }
+
+    // Challenge screen variables
+    let challengeTimerInterval = null;
+
+    // Media playback function
+    function playMedia(mediaInfo) {
+      if (!mediaInfo || !mediaInfo.file_path) return;
+      
+      try {
+        const element = mediaInfo.media_type === 'audio' 
+          ? document.createElement('audio')
+          : document.createElement('video');
+        
+        element.src = mediaInfo.file_path;
+        element.volume = (gameConfig && gameConfig.soundVolume) ? gameConfig.soundVolume : 0.5;
+        element.style.display = 'none';
+        
+        document.body.appendChild(element);
+        
+        element.play().catch(err => {
+          console.warn('Media playback failed:', err);
+        });
+        
+        element.onended = () => {
+          document.body.removeChild(element);
+        };
+        
+        element.onerror = () => {
+          console.error('Failed to load media:', mediaInfo.file_path);
+          document.body.removeChild(element);
+        };
+      } catch (error) {
+        console.error('Error playing media:', error);
+      }
+    }
+
+    // Show challenge screen
+    function showChallengeScreen(data) {
+      const challengeScreen = document.getElementById('challenge-screen');
+      const challengerNameDiv = document.getElementById('challenger-name');
+      const giftContainer = document.getElementById('challenge-gift-container');
+      const giftNameDiv = document.getElementById('gift-name');
+      const timerDiv = document.getElementById('challenge-timer');
+
+      // Play challenge media if available
+      if (data.media) {
+        playMedia(data.media);
+      }
+
+      // Set challenger name
+      challengerNameDiv.textContent = data.challengerNickname || data.challengerUsername;
+
+      // Set gift image or placeholder
+      giftContainer.innerHTML = '';
+      if (data.giftImageUrl) {
+        const img = document.createElement('img');
+        img.src = data.giftImageUrl;
+        img.alt = data.giftName;
+        giftContainer.appendChild(img);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'challenge-gift-placeholder';
+        placeholder.textContent = '🎁';
+        giftContainer.appendChild(placeholder);
+      }
+
+      // Set gift name
+      giftNameDiv.textContent = data.giftName;
+
+      // Show challenge screen
+      challengeScreen.classList.add('show');
+
+      // Start countdown timer
+      const expiresAt = new Date(data.expiresAt);
+      challengeTimerInterval = setInterval(() => {
+        const now = new Date();
+        const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
+        
+        timerDiv.textContent = `⏱️ ${remaining}s`;
+        
+        if (remaining <= 5) {
+          timerDiv.classList.add('warning');
+        }
+        
+        if (remaining <= 0) {
+          clearInterval(challengeTimerInterval);
+        }
+      }, 100);
+
+      // Auto-hide after timeout
+      setTimeout(() => {
+        hideChallengeScreen();
+      }, data.timeoutSeconds * 1000);
+    }
+
+    // Hide challenge screen
+    function hideChallengeScreen() {
+      const challengeScreen = document.getElementById('challenge-screen');
+      challengeScreen.classList.remove('show');
+      
+      if (challengeTimerInterval) {
+        clearInterval(challengeTimerInterval);
+        challengeTimerInterval = null;
+      }
+    }
+
+    // Leaderboard display
+    let currentLeaderboardIndex = 0;
+    let leaderboardRotationInterval = null;
+
+    // Show leaderboard rotation
+    async function showLeaderboardRotation(gameType) {
+      if (!gameConfig || !gameConfig.leaderboardEnabled) {
+        return;
+      }
+
+      const types = gameConfig.leaderboardTypes || ['daily', 'season', 'lifetime'];
+      const displayTime = (gameConfig.leaderboardDisplayTime || 3) * 1000;
+
+      currentLeaderboardIndex = 0;
+
+      // Show first leaderboard
+      await showLeaderboard(gameType, types[currentLeaderboardIndex]);
+
+      // Rotate through leaderboards
+      leaderboardRotationInterval = setInterval(async () => {
+        currentLeaderboardIndex++;
+        
+        if (currentLeaderboardIndex >= types.length) {
+          // Finished rotation
+          hideLeaderboard();
+          clearInterval(leaderboardRotationInterval);
+          leaderboardRotationInterval = null;
+          
+          // Hide game container after leaderboards
+          setTimeout(() => {
+            document.getElementById('game-container').classList.remove('active');
+          }, 1000);
+          return;
+        }
+
+        await showLeaderboard(gameType, types[currentLeaderboardIndex]);
+      }, displayTime);
+    }
+
+    // Show specific leaderboard
+    async function showLeaderboard(gameType, type) {
+      const leaderboardScreen = document.getElementById('leaderboard-screen');
+      const typeDiv = document.getElementById('leaderboard-type');
+      const contentDiv = document.getElementById('leaderboard-content');
+
+      // Set type title
+      const typeNames = {
+        daily: 'Heute / Today',
+        season: 'Diese Saison / This Season',
+        lifetime: 'Allzeit / All Time',
+        elo: 'ELO Rangliste / ELO Ranking'
+      };
+      typeDiv.textContent = typeNames[type] || type;
+
+      // Fetch leaderboard data
+      try {
+        const response = await fetch(`/api/game-engine/${type}-leaderboard/${gameType}?limit=10`);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+          contentDiv.innerHTML = '<div class="leaderboard-empty">Noch keine Daten / No data yet</div>';
+        } else {
+          contentDiv.innerHTML = renderLeaderboardTable(data, type);
+        }
+      } catch (error) {
+        console.error('Failed to load leaderboard:', error);
+        contentDiv.innerHTML = '<div class="leaderboard-empty">Fehler beim Laden / Error loading</div>';
+      }
+
+      // Show leaderboard
+      leaderboardScreen.classList.add('show');
+    }
+
+    // Hide leaderboard
+    function hideLeaderboard() {
+      const leaderboardScreen = document.getElementById('leaderboard-screen');
+      leaderboardScreen.classList.remove('show');
+    }
+
+    // Render leaderboard table
+    function renderLeaderboardTable(data, type) {
+      const rankIcons = ['🥇', '🥈', '🥉'];
+      
+      let html = '<table class="leaderboard-table"><thead><tr>';
+      html += '<th>Rang</th>';
+      html += '<th>Spieler</th>';
+      
+      if (type === 'daily') {
+        html += '<th>Siege Heute</th>';
+        html += '<th>Spiele Heute</th>';
+      } else if (type === 'season') {
+        html += '<th>Siege Saison</th>';
+        html += '<th>Spiele Saison</th>';
+      } else if (type === 'lifetime') {
+        html += '<th>Gesamt Siege</th>';
+        html += '<th>Gesamt Spiele</th>';
+      } else if (type === 'elo') {
+        html += '<th>ELO Rating</th>';
+        html += '<th>Peak ELO</th>';
+      }
+      
+      html += '</tr></thead><tbody>';
+      
+      data.forEach((player, index) => {
+        html += '<tr>';
+        html += `<td><span class="rank-icon">${rankIcons[index] || (index + 1)}</span>${index + 1}</td>`;
+        html += `<td>${player.username}</td>`;
+        
+        if (type === 'daily') {
+          html += `<td>${player.wins_today || 0}</td>`;
+          html += `<td>${player.games_today || 0}</td>`;
+        } else if (type === 'season') {
+          html += `<td>${player.wins_season || 0}</td>`;
+          html += `<td>${player.games_season || 0}</td>`;
+        } else if (type === 'lifetime') {
+          html += `<td>${player.wins || 0}</td>`;
+          html += `<td>${player.total_games || 0}</td>`;
+        } else if (type === 'elo') {
+          html += `<td>${player.elo_rating || 1000}</td>`;
+          html += `<td>${player.peak_elo || 1000}</td>`;
+        }
+        
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // Initialize board grid
+    function initializeBoard() {
+      const boardGrid = document.getElementById('board-grid');
+      boardGrid.innerHTML = '';
+      
+      for (let row = 0; row < ROWS; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'board-row';
+        
+        for (let col = 0; col < COLUMNS; col++) {
+          const cell = document.createElement('div');
+          cell.className = 'board-cell';
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          rowDiv.appendChild(cell);
+        }
+        
+        boardGrid.appendChild(rowDiv);
+      }
+    }
+
+    // Apply configuration
+    function applyConfig(config) {
+      gameConfig = config;
+      
+      if (config.boardColor) {
+        document.documentElement.style.setProperty('--board-color', config.boardColor);
+      }
+      if (config.player1Color) {
+        document.documentElement.style.setProperty('--player1-color', config.player1Color);
+      }
+      if (config.player2Color) {
+        document.documentElement.style.setProperty('--player2-color', config.player2Color);
+      }
+      if (config.textColor) {
+        document.documentElement.style.setProperty('--text-color', config.textColor);
+      }
+      if (config.fontFamily) {
+        document.body.style.fontFamily = config.fontFamily;
+      }
+
+      // Apply display texts
+      applyDisplayTexts(config.displayTexts);
+
+      // Update column labels visibility
+      const columnLabels = document.getElementById('column-labels');
+      if (config.showCoordinates === false) {
+        columnLabels.style.display = 'none';
+      }
+    }
+
+    /**
+     * Apply display text tokens from displayTexts config to overlay elements
+     * @param {Object} dt - displayTexts object from connect4 config
+     */
+    function applyDisplayTexts(dt) {
+      if (!dt || typeof dt !== 'object') return;
+      const titleEl = document.getElementById('game-title');
+      if (titleEl && dt.titleText) titleEl.textContent = dt.titleText;
+      // Store for dynamic use in updateStatus / updatePlayerInfo
+      if (!gameConfig) return;
+      gameConfig._displayTexts = dt;
+    }
+
+    // Update board display
+    function updateBoard(state) {
+      const board = state.board;
+      
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLUMNS; col++) {
+          const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+          const cellValue = board[row][col];
+          
+          // Clear existing pieces
+          cell.innerHTML = '';
+          cell.classList.remove('filled');
+          
+          if (cellValue !== 0) {
+            const piece = document.createElement('div');
+            piece.className = `piece player${cellValue}`;
+            
+            // Check if this cell is part of winning combination
+            if (state.winningCells) {
+              const isWinning = state.winningCells.some(([r, c]) => r === row && c === col);
+              if (isWinning) {
+                piece.classList.add('winning');
+              }
+            }
+            
+            cell.appendChild(piece);
+            cell.classList.add('filled');
+          }
+        }
+      }
+    }
+
+    // Update player info
+    function updatePlayerInfo(state) {
+      const player1Info = document.getElementById('player1-info');
+      const player2Info = document.getElementById('player2-info');
+      
+      document.getElementById('player1-name').textContent = state.player1.nickname || state.player1.username;
+      document.getElementById('player2-name').textContent = state.player2.nickname || state.player2.username;
+      
+      document.getElementById('player1-color').style.background = state.player1.color;
+      document.getElementById('player2-color').style.background = state.player2.color;
+      
+      // Highlight current player
+      player1Info.classList.toggle('active', state.currentPlayer === 1 && state.status === 'active');
+      player2Info.classList.toggle('active', state.currentPlayer === 2 && state.status === 'active');
+    }
+
+    // Update game status
+    function updateStatus(state) {
+      const statusDiv = document.getElementById('game-status');
+      const dt = (gameConfig && gameConfig._displayTexts) || {};
+      
+      if (state.status === 'completed') {
+        if (state.winner) {
+          const winnerInfo = state.winner === 1 ? state.player1 : state.player2;
+          const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
+          statusDiv.textContent = winLabel.replace('{player}', winnerInfo.nickname || winnerInfo.username);
+        } else {
+          statusDiv.textContent = dt.labelDraw || '🤝 Unentschieden!';
+        }
+      } else {
+        const currentPlayerInfo = state.currentPlayer === 1 ? state.player1 : state.player2;
+        const columnText = currentPlayerInfo.role === 'viewer' ? ` ${dt.labelYourTurn || 'Du bist dran! Tippe A-G'}` : '';
+        statusDiv.textContent = `Am Zug: ${currentPlayerInfo.nickname || currentPlayerInfo.username}${columnText}`;
+      }
+    }
+
+    // Show game result
+    function showResult(data) {
+      const resultDiv = document.getElementById('game-result');
+      const resultText = document.getElementById('result-text');
+      const xpReward = document.getElementById('xp-reward');
+      const dt = (gameConfig && gameConfig._displayTexts) || {};
+      
+      if (data.winner) {
+        const winnerInfo = data.state.winner === 1 ? data.state.player1 : data.state.player2;
+        const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
+        resultText.innerHTML = `<span class="winner-text">${winLabel.replace('{player}', winnerInfo.nickname || winnerInfo.username)}</span>`;
+        
+        // Play appropriate win sound based on which player won
+        const winSound = data.state.winner === 1 
+          ? '/game-engine/sounds/default/player-1-wins.mp3'
+          : '/game-engine/sounds/default/player-2-wins.mp3';
+        playAudioFile(winSound);
+        
+        celebrateWin();
+      } else if (data.reason === 'draw') {
+        resultText.innerHTML = `<span class="draw-text">${dt.labelDraw || '🤝 Unentschieden!'}</span>`;
+        playAudioFile('/game-engine/sounds/default/game over.mp3');
+      } else {
+        resultText.innerHTML = '<span>Spiel beendet</span>';
+      }
+      
+      // Show XP reward if viewer won/lost
+      let xpText = '';
+      if (data.winner && data.state.player1.role === 'viewer') {
+        xpText = data.state.winner === 1 ? '✨ +100 XP' : '✨ +25 XP';
+      } else if (data.winner && data.state.player2.role === 'viewer') {
+        xpText = data.state.winner === 2 ? '✨ +100 XP' : '✨ +25 XP';
+      }
+      xpReward.textContent = xpText;
+      
+      // Show win streak if enabled
+      if (gameConfig && gameConfig.showWinStreaks && data.winStreak && data.winStreak.newWinStreak > 1) {
+        const streakDiv = document.createElement('div');
+        streakDiv.className = 'win-streak';
+        streakDiv.innerHTML = `<span class="win-streak-icon">🔥</span> ${data.winStreak.newWinStreak} Siege in Folge!`;
+        xpReward.after(streakDiv);
+      }
+      
+      // Show ELO changes if enabled
+      if (gameConfig && gameConfig.eloEnabled && data.eloChanges) {
+        const eloContainer = document.createElement('div');
+        eloContainer.className = 'elo-changes';
+        eloContainer.style.marginTop = '15px';
+        eloContainer.style.fontSize = '16px';
+        
+        if (data.eloChanges.player1) {
+          const p1Change = data.eloChanges.player1.change;
+          const p1Color = p1Change > 0 ? '#4CAF50' : '#f44336';
+          const p1Arrow = p1Change > 0 ? '↑' : '↓';
+          eloContainer.innerHTML += `
+            <div style="margin: 5px 0;">
+              <strong>${data.state.player1.nickname || data.state.player1.username}:</strong> 
+              <span style="color: ${p1Color};">${p1Arrow} ${Math.abs(p1Change)} ELO</span>
+              <span style="color: #aaa;"> (${data.eloChanges.player1.newELO})</span>
+              ${data.eloChanges.player1.isPeakELO ? ' 🌟 Neuer Rekord!' : ''}
+            </div>
+          `;
+        }
+        
+        if (data.eloChanges.player2) {
+          const p2Change = data.eloChanges.player2.change;
+          const p2Color = p2Change > 0 ? '#4CAF50' : '#f44336';
+          const p2Arrow = p2Change > 0 ? '↑' : '↓';
+          eloContainer.innerHTML += `
+            <div style="margin: 5px 0;">
+              <strong>${data.state.player2.nickname || data.state.player2.username}:</strong> 
+              <span style="color: ${p2Color};">${p2Arrow} ${Math.abs(p2Change)} ELO</span>
+              <span style="color: #aaa;"> (${data.eloChanges.player2.newELO})</span>
+              ${data.eloChanges.player2.isPeakELO ? ' 🌟 Neuer Rekord!' : ''}
+            </div>
+          `;
+        }
+        
+        xpReward.after(eloContainer);
+      }
+      
+      resultDiv.classList.add('show');
+      
+      // Hide result after 5 seconds
+      setTimeout(() => {
+        resultDiv.classList.remove('show');
+        setTimeout(() => {
+          document.getElementById('game-container').classList.remove('active');
+        }, 1000);
+      }, 5000);
+    }
+
+    // Socket event handlers
+    socket.on('game-engine:challenge-created', (data) => {
+      console.log('Challenge created:', data);
+      showChallengeScreen(data);
+    });
+
+    socket.on('game-engine:challenge-rejected', (data) => {
+      console.log('Challenge rejected:', data);
+      hideChallengeScreen();
+    });
+
+    socket.on('game-engine:game-started', (data) => {
+      console.log('Game started:', data);
+      hideChallengeScreen(); // Hide challenge screen when game starts
+      
+      // Play challenge accepted media if available
+      if (data.media) {
+        playMedia(data.media);
+      }
+      
+      currentSession = data.sessionId;
+      applyConfig(data.config);
+      updateBoard(data.state);
+      updatePlayerInfo(data.state);
+      updateStatus(data.state);
+      document.getElementById('game-container').classList.add('active');
+    });
+
+    socket.on('game-engine:move-made', (data) => {
+      console.log('Move made:', data);
+      if (data.sessionId === currentSession) {
+        playSound('move');
+        updateBoard(data.state);
+        updatePlayerInfo(data.state);
+        updateStatus(data.state);
+      }
+    });
+
+    socket.on('game-engine:game-ended', (data) => {
+      console.log('Game ended:', data);
+      if (data.sessionId === currentSession) {
+        updateBoard(data.state);
+        updateStatus(data.state);
+        showResult(data);
+        currentSession = null;
+        
+        // Show leaderboard rotation after game ends
+        setTimeout(() => {
+          showLeaderboardRotation(data.gameType);
+        }, 5500); // Wait for result screen to finish (5 seconds + 500ms buffer)
+      }
+    });
+
+    socket.on('game-engine:config-updated', (data) => {
+      console.log('Config updated:', data);
+      if (data.gameType === 'connect4') {
+        applyConfig(data.config);
+      }
+    });
+
+    // Load initial configuration
+    fetch('/api/game-engine/config/connect4')
+      .then(res => res.json())
+      .then(config => {
+        applyConfig(config);
+      })
+      .catch(err => console.error('Failed to load config:', err));
+
+    // Check for active session on load
+    fetch('/api/game-engine/active-session')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.gameType === 'connect4') {
+          currentSession = data.sessionId;
+          applyConfig(gameConfig || {});
+          updateBoard(data.state);
+          updatePlayerInfo(data.state);
+          updateStatus(data.state);
+          document.getElementById('game-container').classList.add('active');
+        }
+      })
+      .catch(err => console.error('Failed to load active session:', err));
+
+    // Initialize
+    initializeBoard();
+
+    // ============================================
+    // TEST MODE FUNCTIONALITY
+    // ============================================
+    
+    if (testMode) {
+      console.log('🧪 Test mode enabled');
+      document.getElementById('test-mode-controls').style.display = 'block';
+      
+      // Start test game button
+      document.getElementById('test-start-game').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/game-engine/manual/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameType: 'connect4',
+              opponentType: 'manual',
+              player1Name: 'Test Player 1',
+              player2Name: 'Test Player 2'
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            testSessionId = data.sessionId;
+            console.log('Test game started:', data);
+            document.getElementById('test-start-game').style.display = 'none';
+            document.getElementById('test-game-controls').style.display = 'block';
+          } else {
+            console.error('Failed to start test game:', data.error);
+            alert('Failed to start test game: ' + (data.error || data.message));
+          }
+        } catch (error) {
+          console.error('Error starting test game:', error);
+          alert('Error starting test game: ' + error.message);
+        }
+      });
+      
+      // Column buttons for making moves
+      document.querySelectorAll('.test-column-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!testSessionId) {
+            alert('No active test game');
+            return;
+          }
+          
+          const column = btn.getAttribute('data-column');
+          
+          try {
+            const response = await fetch('/api/game-engine/manual/move', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: testSessionId,
+                column: column
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+              console.error('Failed to make move:', data.error);
+            }
+          } catch (error) {
+            console.error('Error making move:', error);
+          }
+        });
+      });
+      
+      // End test game button
+      document.getElementById('test-end-game').addEventListener('click', async () => {
+        if (!testSessionId) {
+          alert('No active test game');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/api/game-engine/manual/end', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: testSessionId
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            testSessionId = null;
+            document.getElementById('test-start-game').style.display = 'block';
+            document.getElementById('test-game-controls').style.display = 'none';
+            console.log('Test game ended');
+          } else {
+            console.error('Failed to end test game:', data.error);
+          }
+        } catch (error) {
+          console.error('Error ending test game:', error);
+        }
+      });
+      
+      // Update current player display when move is made
+      socket.on('game-engine:move-made', (data) => {
+        if (data.sessionId === testSessionId && data.manual) {
+          const currentPlayer = data.state.currentPlayer;
+          document.getElementById('test-current-player').textContent = currentPlayer;
+        }
+      });
+      
+      // Reset test controls when game ends
+      socket.on('game-engine:game-ended', (data) => {
+        if (data.sessionId === testSessionId) {
+          testSessionId = null;
+          document.getElementById('test-start-game').style.display = 'block';
+          document.getElementById('test-game-controls').style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "id": "coinbattle",
+  "name": "CoinBattle",
+  "version": "1.0.0",
+  "description": "Live battle game module where viewers compete by sending TikTok gifts to collect coins. Features team battles, multiplier events, historical rankings, badges, and customizable overlays.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "overlay",
+  "devStatus": "early-version",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "websocket-client"
+  ],
+  "descriptions": {
+    "en": "Live battle game where viewers compete by sending TikTok gifts to collect coins. Features team battles, multiplier events, historical rankings, badges, and customizable overlays.",
+    "de": "Live-Battle-Spiel, bei dem Zuschauer durch TikTok-Geschenke Münzen sammeln. Bietet Team-Battles, Multiplikator-Events, historische Rankings, Badges und anpassbare Overlays.",
+    "es": "Juego de batalla en vivo donde los espectadores compiten enviando regalos de TikTok para recolectar monedas. Incluye batallas por equipos, eventos multiplicadores, rankings históricos, insignias y overlays personalizables.",
+    "fr": "Jeu de bataille en direct où les spectateurs rivalisent en envoyant des cadeaux TikTok pour collecter des pièces. Comprend des batailles d'équipe, événements multiplicateurs, classements historiques, badges et overlays personnalisables."
+  }
+}

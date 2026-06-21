@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talking Heads – Viewer Bar</title>
+  <link rel="stylesheet" href="/talking-heads/assets/viewer-bar.css">
+</head>
+<body>
+  <!-- Speaking zone: avatars pop up here when chatting -->
+  <div id="speakingZone"></div>
+
+  <!-- Rotator bar: all viewers scroll here -->
+  <div id="viewerBarContainer">
+    <div id="viewerBarInner"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/talking-heads/assets/viewer-bar.js"></script>
+  <script>
+    (function () {
+      const socket = io({ transports: ['websocket', 'polling'] });
+      const manager = new ViewerBarManager(socket);
+
+      socket.on('connect', function () {
+        socket.emit('viewer-bar:request:sync');
+      });
+
+      socket.on('viewer-bar:state:sync', function (data) {
+        if (data.config) manager.updateConfig(data.config);
+        manager.syncState(data.viewers || []);
+      });
+
+      socket.on('viewer-bar:viewer:join', function (data) {
+        manager.addViewer(data.userId, data.username, data.sprites);
+      });
+
+      socket.on('viewer-bar:viewer:leave', function (data) {
+        manager.removeViewer(data.userId);
+      });
+
+      socket.on('viewer-bar:viewer:speak', function (data) {
+        // Ensure viewer is in bar before starting speaking animation
+        if (!manager.viewers.has(data.userId)) {
+          manager.addViewer(data.userId, data.username, data.sprites);
+        }
+        manager.startSpeaking(data.userId, data.message, data.duration);
+      });
+
+      socket.on('viewer-bar:config:update', function (data) {
+        if (data.config) manager.updateConfig(data.config);
+      });
+    })();
+  </script>
+</body>
+</html>

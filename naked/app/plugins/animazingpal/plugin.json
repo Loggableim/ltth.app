@@ -1,0 +1,23 @@
+{
+  "id": "animazingpal",
+  "name": "AnimazingPal",
+  "version": "1.2.0",
+  "description": "Integration mit Animaze für VTuber Avatar-Steuerung mit KI-Brain und Langzeit-Gedächtnis",
+  "author": "copilot",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "integration",
+  "devStatus": "working-beta",
+  "permissions": [
+    "routes",
+    "socket.io",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Integration with Animaze for VTuber avatar control via TikTok LIVE events. Features an AI Brain Engine with long-term memory, personality system, and GPT-powered intelligent responses.",
+    "de": "Integration mit Animaze für VTuber Avatar-Steuerung über TikTok LIVE Events. Mit KI-Brain Engine: Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerte intelligente Antworten.",
+    "es": "Integración con Animaze para control de avatar VTuber a través de eventos de TikTok LIVE. Incluye un Motor de Cerebro IA con memoria a largo plazo, sistema de personalidades y respuestas inteligentes con GPT.",
+    "fr": "Intégration avec Animaze pour le contrôle d'avatar VTuber via les événements TikTok LIVE. Comprend un moteur IA avec mémoire à long terme, système de personnalités et réponses intelligentes GPT."
+  }
+}

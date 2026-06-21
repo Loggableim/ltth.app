@@ -1,0 +1,128 @@
+{
+  "webgpu_emoji_rain": {
+    "title": "Emoji-Regen Einstellungen",
+    "subtitle": "Interaktive Emoji-Overlays mit GCCE-Befehlen",
+    "config": {
+      "title": "Konfiguration",
+      "enabled": "Emoji-Regen aktivieren",
+      "trigger_on_gift": "Bei Geschenk auslösen",
+      "trigger_on_follow": "Bei Follow auslösen",
+      "trigger_on_like": "Bei Like-Meilenstein auslösen",
+      "like_threshold": "Like-Schwellenwert",
+      "duration": "Regen-Dauer (Sekunden)",
+      "intensity": "Regen-Intensität",
+      "emoji_size": "Emoji-Größe",
+      "custom_emojis": "Benutzerdefinierte Emojis",
+      "save": "Einstellungen speichern",
+      "max_count_per_event": "Max. Anzahl pro Event",
+      "max_intensity": "Max. Intensität"
+    },
+    "rate_limit": {
+      "title": "Rate Limiting (Optional)",
+      "description": "Limitiert die Anzahl der Emojis pro Sekunde und packt überschüssige Emojis in eine Warteschlange",
+      "enabled": "Rate Limiting aktivieren",
+      "emojis_per_second": "Max. Emojis pro Sekunde",
+      "help": "Nützlich bei vielen gleichzeitigen Events (z.B. Like-Wellen) um Performance zu erhalten",
+      "queue_info": "Emojis die das Limit überschreiten werden in eine Warteschlange eingereiht und nach und nach abgearbeitet"
+    },
+    "anti_spam": {
+      "title": "Anti-Spam & Sicherheit",
+      "global_max_triggers": "Max. Trigger pro 30s",
+      "user_cooldown": "Benutzer-Cooldown (ms)",
+      "global_cooldown": "Globaler Cooldown (ms)",
+      "emoji_blocklist": "Blockierte Emojis"
+    },
+    "toaster_mode": {
+      "title": "Toaster Modus (Schwache PCs)",
+      "description": "Reduziert CPU-Auslastung und Ressourcenverbrauch für schwache PCs",
+      "enabled": "Toaster Modus aktivieren",
+      "help": "Optimiert für maximale Performance auf schwachen Systemen",
+      "changes_title": "Was wird geändert:",
+      "max_emojis": "Max. Emojis: 200 → 50",
+      "target_fps": "Ziel-FPS: 60 → 30",
+      "rotation": "Rotation: Deaktiviert",
+      "wind": "Wind: Deaktiviert",
+      "effects": "Rainbow/Pixel/Glow: Deaktiviert",
+      "burst": "Burst Intensität: Reduziert",
+      "tip": "Nutze den Toaster Modus, wenn dein PC beim Streamen langsamer wird oder die CPU-Auslastung zu hoch ist."
+    },
+    "commands": {
+      "title": "Chat-Befehle (GCCE)",
+      "description": "Verfügbare Chat-Befehle für Zuschauer",
+      "rain": "/rain [preset] - Emoji-Regen auslösen",
+      "emoji": "/emoji <emoji> [anzahl] [intensität] - Bestimmtes Emoji spawnen",
+      "beans": "/beans - SuperFan Burst-Effekt (nur Abonnenten)",
+      "storm": "/storm [emoji] - Schwerer Emoji-Sturm (nur VIP)",
+      "rainstop": "/rainstop - Allen Regen stoppen (nur Moderator)"
+    },
+    "presets": {
+      "title": "Vorlagen",
+      "add": "Vorlage hinzufügen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "trigger": "Auslösen",
+      "name": "Name",
+      "emoji": "Emoji",
+      "count": "Anzahl",
+      "intensity": "Intensität",
+      "duration": "Dauer (ms)",
+      "burst": "Burst-Modus",
+      "spawn_area": "Spawn-Bereich"
+    },
+    "user_mappings": {
+      "title": "Benutzer-Zuordnungen",
+      "username": "Benutzername",
+      "emoji": "Emoji",
+      "search": "Suchen",
+      "import": "Importieren",
+      "export": "Exportieren",
+      "add": "Zuordnung hinzufügen",
+      "delete": "Löschen",
+      "bulk_import": "Massen-Import (JSON)",
+      "merge": "Mit vorhandenen zusammenführen"
+    },
+    "uploads": {
+      "title": "Hochgeladene Bilder",
+      "upload": "Bild hochladen",
+      "filename": "Dateiname",
+      "size": "Größe",
+      "created": "Erstellt",
+      "delete": "Löschen",
+      "max_size": "Max 5MB pro Datei",
+      "allowed_types": "PNG, JPG, GIF, WebP, SVG"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay-URL",
+      "obs_url": "OBS HUD-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen",
+      "test": "Regen testen",
+      "pause": "Pausieren",
+      "resume": "Fortsetzen",
+      "clear": "Leeren",
+      "theme": "Theme",
+      "opacity": "Deckkraft",
+      "speed": "Geschwindigkeit",
+      "bounding_box": "Begrenzungsbox"
+    },
+    "debug": {
+      "title": "Debug & Telemetrie",
+      "enabled": "Debug-Modus",
+      "metrics": "Metriken",
+      "total_triggers": "Gesamt Trigger",
+      "command_triggers": "Befehl-Trigger",
+      "event_triggers": "Event-Trigger",
+      "flow_triggers": "Flow-Trigger",
+      "dropped_events": "Verworfene Events",
+      "avg_count": "Durchschn. Anzahl",
+      "avg_intensity": "Durchschn. Intensität",
+      "reset_metrics": "Metriken zurücksetzen"
+    },
+    "preview": {
+      "title": "Vorschau",
+      "start": "Vorschau starten",
+      "stop": "Vorschau stoppen"
+    }
+  }
+}

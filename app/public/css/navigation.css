@@ -539,6 +539,15 @@ body {
     box-shadow: var(--glow-primary);
 }
 
+.sidebar-item.plugin-disabled {
+    opacity: 0.58;
+    border: 1px dashed color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.sidebar-item.plugin-disabled:hover {
+    opacity: 0.82;
+}
+
 .sidebar-item svg {
     width: 20px;
     height: 20px;

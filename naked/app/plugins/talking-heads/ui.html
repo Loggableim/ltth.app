@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talking Heads - AI Avatar Animation</title>
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        // Apply saved theme immediately
+        (function() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'night';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    <script src="/js/i18n-client.js"></script>
+    <script src="/js/lucide.min.js"></script>
+    <script src="/js/theme-manager.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            background: var(--color-bg-primary);
+            padding: 20px;
+            overflow-y: auto;
+            min-height: 100vh;
+            color: var(--color-text-primary);
+        }
+        
+        .config-section {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 6px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+        }
+        
+        .form-help {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .toggle-switch input {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .toggle-slider {
+            width: 44px;
+            height: 24px;
+            background: var(--color-bg-tertiary);
+            border-radius: 12px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: var(--color-text-secondary);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--color-accent-primary);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+            background: white;
+        }
+        
+        .toggle-label {
+            margin-left: 12px;
+            font-size: 0.875rem;
+            color: var(--color-text-primary);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: var(--color-accent-success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--color-accent-danger);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--color-btn-secondary-bg);
+            color: var(--color-btn-secondary-text);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--color-accent-success);
+        }
+        
+        .badge-warning {
+            background: rgba(234, 179, 8, 0.1);
+            color: var(--color-accent-warning);
+        }
+        
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-accent-primary);
+        }
+        
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .style-card {
+            background: var(--color-bg-tertiary);
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .style-card:hover {
+            border-color: var(--color-accent-primary);
+            background: var(--color-bg-hover);
+        }
+        
+        .style-card.selected {
+            border-color: var(--color-accent-primary);
+            background: var(--color-active-bg);
+        }
+        
+        .style-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+        
+        .style-desc {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 0.875rem;
+        }
+        
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--color-accent-primary);
+        }
+        
+        .alert-warning {
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            color: var(--color-accent-warning);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+        
+        .animation-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .animation-item {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .debug-log {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            padding: 16px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.5;
+            border: 1px solid var(--color-border);
+        }
+
+        .log-entry {
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            gap: 8px;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-meta {
+            color: var(--color-text-secondary);
+            font-size: 0.7rem;
+        }
+
+        .log-level {
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .log-level.info { color: var(--color-accent-primary); }
+        .log-level.warn { color: var(--color-accent-warning); }
+        .log-level.error { color: var(--color-accent-danger); }
+        .log-level.debug { color: var(--color-text-secondary); }
+
+        .avatar-card {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .avatar-sprites-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .avatar-thumb {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            background: var(--color-bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            margin-bottom: 8px;
+        }
+
+        .avatar-sprite-mini {
+            width: calc(33.333% - 6px);
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            background: var(--color-bg-secondary);
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+        }
+
+        .sprite-label {
+            font-size: 0.65rem;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .user-item:hover {
+            background: var(--color-bg-hover);
+            border-color: var(--color-accent-primary);
+        }
+
+        .user-item.has-avatar {
+            opacity: 0.6;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-border);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            font-size: 0.95rem;
+        }
+
+        .user-stats {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-assign {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            background: var(--color-accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-assign:hover {
+            background: var(--color-accent-secondary);
+        }
+
+        .btn-assign:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .avatar-status {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: var(--color-accent-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto max-w-7xl">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold mb-2">
+                <i data-lucide="user-circle-2" class="inline-block w-8 h-8 mr-2"></i>
+                <span data-i18n="talking_heads_ui.title">Talking Heads - AI Avatar Animation</span>
+            </h1>
+            <p class="text-sm" style="color: var(--color-text-secondary);" data-i18n="talking_heads_ui.subtitle">
+                Dynamische 2D-Avatare für TikTok-User mit TTS-synchronisierter Animation
+            </p>
+        </div>
+
+        <!-- Status Section -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="activity"></i>
+                <span data-i18n="talking_heads_ui.sections.status">Status & Einstellungen</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enabledSwitch">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.plugin_enabled">Plugin aktiviert</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="debugLoggingSwitch">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.debug_logging">Debug-Logging</span>
+                    </label>
+                </div>
+                <div>
+                    <span id="apiStatus" class="status-badge badge-info" data-i18n="talking_heads_ui.labels.api_status_checking">Prüfe...</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.image_provider">Bild-Engine</label>
+                    <select id="imageProvider" class="form-select">
+                        <option value="auto" data-i18n="talking_heads_ui.options.provider_auto">Auto (OpenAI bevorzugt, SiliconFlow als Fallback)</option>
+                        <option value="openai" data-i18n="talking_heads_ui.options.provider_openai">OpenAI (DALL-E 3)</option>
+                        <option value="siliconflow" data-i18n="talking_heads_ui.options.provider_siliconflow">SiliconFlow (FLUX.1)</option>
+                    </select>
+                    <div class="form-help" data-i18n="talking_heads_ui.help.image_provider">Wähle den gewünschten Bildgenerator. Auto versucht zuerst OpenAI (falls API-Key gesetzt).</div>
+                </div>
+            </div>
+            
+            <div id="apiKeyWarning" class="alert alert-warning" style="display: none;" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.api_key_warning">
+                <strong>⚠️ Kein API-Schlüssel konfiguriert!</strong><br>
+                Bitte konfigurieren Sie den passenden Schlüssel für die gewählte Engine:<br>
+                - <strong>OpenAI</strong>: Dashboard → Einstellungen → OpenAI API Configuration<br>
+                - <strong>SiliconFlow</strong>: Dashboard → Einstellungen → TTS API Keys → SiliconFlow API Key<br>
+                <small>Der API-Schlüssel wird zentral verwaltet und mit anderen Plugins geteilt.</small>
+            </div>
+            
+            <div class="alert alert-info" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.image_generation_info">
+                <strong>ℹ️ Bildgenerierung</strong><br>
+                Das Plugin unterstützt <strong>OpenAI (DALL-E 3)</strong> und <strong>SiliconFlow (FLUX.1)</strong>. 
+                Hinterlegen Sie den passenden API-Key in den globalen Settings und wählen Sie hier die gewünschte Engine.
+            </div>
+        </div>
+
+        <!-- Style Selection -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="palette"></i>
+                <span data-i18n="talking_heads_ui.sections.style">Avatar-Stil</span>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" data-i18n="talking_heads_ui.labels.select_style">Wählen Sie einen Stil für die Avatar-Generierung</label>
+                <div class="style-grid" id="styleGrid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="shield"></i>
+                <span data-i18n="talking_heads_ui.sections.permissions">Berechtigungen</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.permission_question">Wer erhält Talking Heads?</label>
+                    <select id="rolePermission" class="form-select">
+                        <option value="all" data-i18n="talking_heads_ui.options.permission_all">Alle Zuschauer</option>
+                        <option value="team" data-i18n="talking_heads_ui.options.permission_team">Nur Team-Mitglieder</option>
+                        <option value="subscriber" data-i18n="talking_heads_ui.options.permission_subscriber">Nur Abonnenten/Superfans</option>
+                        <option value="custom_voice" data-i18n="talking_heads_ui.options.permission_custom_voice">Nur User mit TTS-Stimme</option>
+                        <option value="moderator" data-i18n="talking_heads_ui.options.permission_moderator">Nur Moderatoren</option>
+                        <option value="top_gifter" data-i18n="talking_heads_ui.options.permission_top_gifter">Nur Top Gifter</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="minTeamLevelWrapper" style="display: none;">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.min_team_level">Minimales Team-Level</label>
+                    <input type="number" id="minTeamLevel" class="form-input" min="0" max="6" value="0">
+                    <div class="form-help" data-i18n="talking_heads_ui.help.min_team_level">Level 0-6 (0 = alle Team-Mitglieder)</div>
+                </div>
+            </div>
+            
+            <!-- Permission Test Result -->
+            <div id="permissionTestResult" class="alert" style="display: none; margin-top: 16px;"></div>
+            
+            <div class="flex gap-4 mt-4">
+                <button class="btn btn-secondary" type="button" id="testPermissionsBtn">
+                    <i data-lucide="shield-check" class="inline-block w-4 h-4 mr-2"></i>
+                    Berechtigungen testen
+                </button>
+                <div class="form-help flex items-center">
+                    Testet die aktuellen Berechtigungs-Einstellungen mit verschiedenen User-Typen
+                </div>
+            </div>
+        </div>
+
+        <!-- Animation Settings -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="film"></i>
+                <span data-i18n="talking_heads_ui.sections.animation">Animations-Einstellungen</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.fade_in">Fade-In Dauer (ms)</label>
+                    <input type="number" id="fadeInDuration" class="form-input" min="0" max="2000" step="100" value="300">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.fade_out">Fade-Out Dauer (ms)</label>
+                    <input type="number" id="fadeOutDuration" class="form-input" min="0" max="2000" step="100" value="300">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.blink_interval">Blinzel-Intervall (ms)</label>
+                    <input type="number" id="blinkInterval" class="form-input" min="1000" max="10000" step="500" value="3000">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label class="form-label">Spawn Animation</label>
+                    <select id="spawnAnimationMode" class="form-select">
+                        <option value="standard">Standard WebGL Spawn</option>
+                        <option value="custom">Benutzerdefinierte MP4/GIF</option>
+                    </select>
+                    <div class="form-help">Wird automatisch beim ersten Avatar abgespielt.</div>
+                </div>
+                <div class="form-group" id="customSpawnWrapper" style="display: none;">
+                    <label class="form-label">Custom Animation URL (MP4 oder GIF)</label>
+                    <input type="text" id="spawnAnimationUrl" class="form-input" placeholder="https://example.com/spawn.mp4">
+                    <div class="form-help">MP4 kann Audio enthalten, GIF wird stumm abgespielt.</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-group">
+                    <label class="form-label">Spawn Audio Lautstärke</label>
+                    <input type="number" id="spawnAnimationVolume" class="form-input" min="0" max="1" step="0.05" value="0.8">
+                    <div class="form-help">Nur relevant für MP4 mit Audio.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">OBS HUD URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="obsHudUrl" class="form-input" readonly>
+                        <button class="btn btn-secondary" type="button" id="copyObsHudUrlBtn">Copy</button>
+                    </div>
+                    <div class="form-help">1920x1080 HUD mit WebGL Spawn Animation.</div>
+                </div>
+                <div class="form-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="obsHudEnabled">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">OBS HUD aktivieren</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="obsEnabled">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label" data-i18n="talking_heads_ui.labels.obs_enabled">OBS Integration aktivieren</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Preview TTS -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="volume-2"></i>
+                <span>Talking Head & TTS Preview</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Vorschau-Text</label>
+                <input type="text" id="previewTtsText" class="form-input" placeholder="Hallo! Das ist ein Talking Heads Test.">
+                <div class="form-help">Spielt die lokale TTS Engine ab und zeigt gleichzeitig das Talking Head im OBS HUD.</div>
+            </div>
+            <div class="flex gap-4">
+                <button class="btn btn-secondary" type="button" id="previewTtsBtn">
+                    <i data-lucide="play-circle" class="inline-block w-4 h-4 mr-2"></i>
+                    Vorschau abspielen
+                </button>
+                <button class="btn btn-secondary" type="button" id="testAnimationBtn">
+                    <i data-lucide="activity" class="inline-block w-4 h-4 mr-2"></i>
+                    Nur Animation testen
+                </button>
+            </div>
+            <div class="form-help text-xs mt-2">
+                <strong>Hinweis:</strong> "Nur Animation testen" zeigt die Mundbewegungen ohne TTS Audio. 
+                Öffnen Sie die Browser-Konsole im OBS HUD für detaillierte Logs.
+            </div>
+        </div>
+
+        <!-- Cache Management -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="database"></i>
+                <span data-i18n="talking_heads_ui.sections.cache">Cache-Verwaltung</span>
+            </div>
+            
+            <div class="stats-grid mb-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="cacheCount">0</div>
+                    <div class="stat-label" data-i18n="talking_heads_ui.labels.cached_avatars">Gespeicherte Avatare</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeAnimations">0</div>
+                    <div class="stat-label" data-i18n="talking_heads_ui.labels.active_animations">Aktive Animationen</div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="cacheEnabled">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label" data-i18n="talking_heads_ui.labels.cache_enabled">Avatar-Caching aktivieren</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" data-i18n="talking_heads_ui.labels.cache_duration">Cache-Dauer (Tage)</label>
+                    <input type="number" id="cacheDuration" class="form-input" min="1" max="365" value="30">
+                    <div class="form-help" data-i18n="talking_heads_ui.help.cache_duration">Avatare werden nach dieser Zeit gelöscht</div>
+                </div>
+            </div>
+            
+            <div>
+                <button class="btn btn-danger" id="clearCacheBtn">
+                    <i data-lucide="trash-2" class="inline-block w-4 h-4 mr-2"></i>
+                    <span data-i18n="talking_heads_ui.buttons.clear_cache">Gesamten Cache leeren</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Sprite Assignment -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="copy"></i>
+                <span>Manuelle Sprite-Zuweisung</span>
+            </div>
+            <div class="form-help" style="margin-bottom: 16px;">
+                Weise einem User die Sprites eines anderen Users zu, ohne neu zu generieren.
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="form-group">
+                    <label class="form-label">Ziel-User (erhält Sprites)</label>
+                    <input type="text" id="targetUserSearch" class="form-input" placeholder="User-ID oder Username eingeben...">
+                    <div class="form-help">Der User, der die Sprites erhalten soll</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Quell-Avatar (Sprite-Vorlage)</label>
+                    <select id="sourceAvatarSelect" class="form-select">
+                        <option value="">-- Bitte Avatar wählen --</option>
+                    </select>
+                    <div class="form-help">Avatar, dessen Sprites kopiert werden</div>
+                </div>
+            </div>
+            
+            <!-- Preview Area -->
+            <div id="spritePreviewArea" style="
+                display: none;
+                padding: 16px;
+                background: var(--color-bg-tertiary);
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                margin-bottom: 16px;
+            ">
+                <div style="font-weight: 500; margin-bottom: 8px;">Vorschau:</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <img id="spritePreviewImg" style="width: 128px; height: 128px; object-fit: contain; background: #000; border-radius: 4px;" alt="Sprite Preview">
+                </div>
+            </div>
+            
+            <div>
+                <button class="btn btn-primary" id="assignSpriteBtn" disabled>
+                    <i data-lucide="check-circle" class="inline-block w-4 h-4 mr-2"></i>
+                    Sprites zuweisen
+                </button>
+            </div>
+        </div>
+
+        <!-- User Assignment -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="user-plus"></i>
+                <span>User-Zuweisung für Talking Heads</span>
+            </div>
+            <div class="form-help" style="margin-bottom: 10px;">
+                Wähle einen User aus dem Stream aus und generiere einen Talking Head basierend auf Profilbild und Username.
+                Bei verfügbarem OpenAI API-Key wird das Profilbild automatisch analysiert.
+            </div>
+            
+            <div class="flex gap-4 mb-4">
+                <button class="btn btn-secondary" id="loadUsersBtn">
+                    <i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-2"></i>
+                    User aus Stream laden
+                </button>
+                <div class="form-help flex items-center">
+                    <span id="userCountLabel">Keine User geladen</span>
+                </div>
+            </div>
+
+            <div id="userListContainer" style="display: none;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="form-group">
+                        <label class="form-label">User suchen</label>
+                        <input type="text" id="userSearchInput" class="form-input" placeholder="Username eingeben...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">User-Filter</label>
+                        <select id="userFilterSelect" class="form-select">
+                            <option value="active" selected>Nur aktiver Livestream (Standard)</option>
+                            <option value="all">Alle User (global)</option>
+                        </select>
+                        <div class="form-help">Standard: Nur User die aktuell zusehen. Offline User via Suchfeld finden.</div>
+                    </div>
+                </div>
+                
+                <div id="userList" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 6px; padding: 8px;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Avatars -->
+        <div class="config-section">
+            <div class="section-title">
+                <i data-lucide="users"></i>
+                <span>Generierte Talking Heads</span>
+            </div>
+            <div class="form-help" style="margin-bottom: 10px;">Alle generierten Avatare werden hier angezeigt. Klicke auf einen Avatar, um die Standard-Idle Ansicht zu sehen.</div>
+            <div id="avatarList" class="style-grid avatar-grid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Active Animations -->
+        <div class="config-section" id="activeAnimationsSection" style="display: none;">
+            <div class="section-title">
+                <i data-lucide="play-circle"></i>
+                <span data-i18n="talking_heads_ui.sections.active_animations">Aktive Animationen</span>
+            </div>
+            <div id="animationList" class="animation-list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Debug Log -->
+        <div class="config-section" id="debugLogSection" style="display: none;">
+            <div class="section-title">
+                <i data-lucide="terminal"></i>
+                <span data-i18n="talking_heads_ui.sections.debug_log">Debug Log</span>
+            </div>
+            <div class="alert alert-info" data-i18n-html="true" data-i18n="talking_heads_ui.alerts.debug_log">
+                <strong>ℹ️ Debug-Logs anzeigen</strong><br>
+                Debug-Logs werden in Echtzeit angezeigt. Die Logs enthalten detaillierte Informationen über API-Aufrufe, Cache-Zugriffe und Avatar-Generierung.
+            </div>
+            
+            <!-- Debug Log Controls -->
+            <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoRefreshLogs" checked>
+                    <span class="toggle-slider"></span>
+                    <span style="margin-left: 8px; font-size: 0.875rem;">Auto-Refresh (5s)</span>
+                </label>
+                <button class="btn btn-secondary" id="refreshLogsBtn" style="padding: 6px 12px;">
+                    <i data-lucide="refresh-cw" class="inline-block w-4 h-4 mr-1"></i>
+                    Aktualisieren
+                </button>
+                <button class="btn btn-secondary" id="clearLogsBtn" style="padding: 6px 12px;">
+                    <i data-lucide="trash-2" class="inline-block w-4 h-4 mr-1"></i>
+                    Logs leeren
+                </button>
+            </div>
+            
+            <!-- Debug Log Output -->
+            <div class="debug-log" id="debugLogOutput" aria-live="polite" style="
+                background: #1a1a1a;
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                padding: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+                font-family: 'Courier New', monospace;
+                font-size: 0.75rem;
+                line-height: 1.5;
+                color: #d4d4d4;
+            "></div>
+        </div>
+
+        <!-- Manual Sprites Section -->
+        <div class="config-section" id="manualSpritesSection">
+            <div class="section-title">
+                <i data-lucide="upload"></i>
+                <span>Manuelle Sprites</span>
+            </div>
+
+            <!-- Sprite Mode Selector -->
+            <div class="form-group">
+                <label class="form-label">Sprite-Modus</label>
+                <select class="form-select" id="spriteModeSelect">
+                    <option value="auto">Auto (nur KI-Generierung)</option>
+                    <option value="manual">Manuell (nur eigene Sprites)</option>
+                    <option value="hybrid">Hybrid (Manuell bevorzugt, KI als Fallback)</option>
+                </select>
+                <div class="form-help">Bestimmt, wie Sprites für Viewer ausgewählt werden.</div>
+            </div>
+
+            <div class="form-group" id="manualFallbackGroup" style="display:none;">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="manualFallbackToggle">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">KI-Fallback bei fehlendem manuellem Set</span>
+                </label>
+            </div>
+
+            <div class="form-group" id="defaultManualSetGroup" style="display:none;">
+                <label class="form-label">Standard-Sprite-Set (für alle ohne eigenes)</label>
+                <select class="form-select" id="defaultManualSetSelect">
+                    <option value="">-- Kein Standard --</option>
+                </select>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="form-group">
+                <label class="form-label">Neues Sprite-Set hochladen</label>
+                <input type="text" class="form-input" id="manualSetNameInput" placeholder="Set-Name (z.B. MeinAvatar)" style="margin-bottom:8px;">
+
+                <div id="manualUploadDropZone" style="
+                    border: 2px dashed var(--color-border);
+                    border-radius: 8px;
+                    padding: 20px;
+                    text-align: center;
+                    cursor: pointer;
+                    color: var(--color-text-secondary);
+                    transition: border-color 0.2s;
+                    margin-bottom: 8px;
+                " ondragover="event.preventDefault();this.style.borderColor='var(--color-accent-primary)';"
+                   ondragleave="this.style.borderColor='var(--color-border)';"
+                   ondrop="window.handleManualDropZoneDrop(event)">
+                    <i data-lucide="upload-cloud" style="width:32px;height:32px;margin:0 auto 8px;display:block;"></i>
+                    <div style="font-size:0.875rem;">5 PNGs hier ablegen oder klicken zum Auswählen</div>
+                    <div style="font-size:0.75rem;margin-top:4px;">Dateinamen: <code>idle_neutral.png, blink.png, speak_closed.png, speak_mid.png, speak_open.png</code></div>
+                    <input type="file" id="manualSpriteFilesInput" accept=".png" multiple style="display:none;">
+                </div>
+
+                <div style="text-align:center;font-size:0.75rem;color:var(--color-text-secondary);margin-bottom:8px;">oder</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="file" id="manualZipInput" accept=".zip" style="flex:1;" class="form-input">
+                    <span style="font-size:0.75rem;color:var(--color-text-secondary);">ZIP mit den 5 Frames hochladen</span>
+                </div>
+
+                <button class="btn btn-primary" id="uploadManualSetBtn" style="margin-top:12px;">
+                    <i data-lucide="upload" class="inline-block w-4 h-4 mr-1"></i>
+                    Set hochladen
+                </button>
+                <div id="manualUploadStatus" style="margin-top:8px;font-size:0.8rem;"></div>
+            </div>
+
+            <!-- Uploaded Sets List -->
+            <div class="form-group">
+                <label class="form-label">Vorhandene Sprite-Sets</label>
+                <div id="manualSetsList" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- User Assignment -->
+            <div class="form-group">
+                <label class="form-label">Sprite-Set einem User zuweisen</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:160px;">
+                        <label class="form-label" style="font-size:0.75rem;">User</label>
+                        <select class="form-select" id="manualAssignUserSelect">
+                            <option value="">-- User wählen --</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:160px;">
+                        <label class="form-label" style="font-size:0.75rem;">Sprite-Set</label>
+                        <select class="form-select" id="manualAssignSetSelect">
+                            <option value="">-- Set wählen --</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" id="manualAssignBtn">
+                        <i data-lucide="check" class="inline-block w-4 h-4 mr-1"></i>
+                        Zuweisen
+                    </button>
+                </div>
+                <div id="manualAssignStatus" style="margin-top:6px;font-size:0.8rem;"></div>
+            </div>
+        </div>
+
+        <!-- Viewer Bar Section -->
+        <div class="config-section" id="viewerBarSection">
+            <div class="section-title">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Viewer Rotator Bar</span>
+            </div>
+
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="viewerBarEnabledToggle">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Viewer Bar aktivieren</span>
+                </label>
+            </div>
+
+            <!-- OBS URL -->
+            <div class="form-group" id="viewerBarUrlGroup">
+                <label class="form-label">OBS Browser Source URL</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" class="form-input" id="viewerBarUrlDisplay" readonly style="flex:1;font-family:monospace;font-size:0.8rem;">
+                    <button class="btn btn-secondary" id="copyViewerBarUrlBtn" style="padding:8px 12px;" title="URL kopieren">
+                        <i data-lucide="copy" class="inline-block w-4 h-4"></i>
+                    </button>
+                    <a id="viewerBarPreviewLink" href="#" target="_blank">
+                        <button class="btn btn-secondary" style="padding:8px 12px;" title="Vorschau öffnen">
+                            <i data-lucide="external-link" class="inline-block w-4 h-4"></i>
+                        </button>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Avatar Size -->
+            <div class="form-group">
+                <label class="form-label">Avatar-Größe: <span id="avatarSizeValue">64</span>px</label>
+                <input type="range" id="viewerBarAvatarSize" min="32" max="128" value="64" class="form-input" style="padding:0;">
+            </div>
+
+            <!-- Scroll Speed -->
+            <div class="form-group">
+                <label class="form-label">Scroll-Geschwindigkeit: <span id="scrollSpeedValue">30</span> px/s (0 = kein Scroll)</label>
+                <input type="range" id="viewerBarScrollSpeed" min="0" max="100" value="30" class="form-input" style="padding:0;">
+            </div>
+
+            <!-- Scroll Direction -->
+            <div class="form-group">
+                <label class="form-label">Scroll-Richtung</label>
+                <select class="form-select" id="viewerBarScrollDirection">
+                    <option value="left">Links (Standard)</option>
+                    <option value="right">Rechts</option>
+                </select>
+            </div>
+
+            <!-- Pop-up Duration -->
+            <div class="form-group">
+                <label class="form-label">Pop-Up Dauer: <span id="popUpDurationValue">5</span>s</label>
+                <input type="range" id="viewerBarPopUpDuration" min="2" max="15" value="5" class="form-input" style="padding:0;">
+            </div>
+
+            <!-- Max Viewers -->
+            <div class="form-group">
+                <label class="form-label">Max. sichtbare Viewer</label>
+                <input type="number" class="form-input" id="viewerBarMaxViewers" min="1" max="50" value="20" style="width:100px;">
+            </div>
+
+            <!-- Chat Bubble -->
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="viewerBarShowChatBubble" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Chat-Bubble anzeigen</span>
+                </label>
+            </div>
+
+            <!-- Show Username -->
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="viewerBarShowUsername" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Benutzername anzeigen</span>
+                </label>
+            </div>
+
+            <!-- Idle Blink -->
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="viewerBarIdleBlink" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Idle Blink-Animation</span>
+                </label>
+            </div>
+
+            <!-- Pause Scroll on Speak -->
+            <div class="form-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="viewerBarPauseOnSpeak" checked>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">Scroll pausieren wenn Viewer spricht</span>
+                </label>
+            </div>
+
+            <!-- Bar Background -->
+            <div class="form-group">
+                <label class="form-label">Bar-Hintergrundfarbe</label>
+                <input type="text" class="form-input" id="viewerBarBackground" value="rgba(0,0,0,0.3)" placeholder="rgba(0,0,0,0.3)" style="width:250px;">
+                <div class="form-help">CSS Farbe (z.B. rgba(0,0,0,0.5) oder #1a1a1a)</div>
+            </div>
+
+            <!-- Save Bar Config -->
+            <button class="btn btn-success" id="saveViewerBarConfigBtn" style="margin-top:8px;">
+                <i data-lucide="save" class="inline-block w-4 h-4 mr-1"></i>
+                Viewer Bar Konfiguration speichern
+            </button>
+            <div id="viewerBarSaveStatus" style="margin-top:8px;font-size:0.8rem;"></div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end gap-4 mb-6">
+            <button class="btn btn-primary" id="testApiBtn">
+                <i data-lucide="check-circle" class="inline-block w-4 h-4 mr-2"></i>
+                <span data-i18n="talking_heads_ui.buttons.test_api">API testen</span>
+            </button>
+            <button class="btn btn-secondary" id="testGenerateBtn">
+                <i data-lucide="image" class="inline-block w-4 h-4 mr-2"></i>
+                <span data-i18n="talking_heads_ui.buttons.test_generate">Test-Avatar generieren</span>
+            </button>
+            <button class="btn btn-success" id="saveConfigBtn" disabled>
+                <i data-lucide="save" class="inline-block w-4 h-4 mr-2"></i>
+                <span data-i18n="talking_heads_ui.buttons.save_config">Konfiguration speichern</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="assets/ui.js"></script>
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+    <script>
+    // =====================================================================
+    // Manual Sprites UI
+    // =====================================================================
+    (function () {
+        const SPRITE_FIELDS = ['idle_neutral', 'blink', 'speak_closed', 'speak_mid', 'speak_open'];
+
+        // --- Sprite Mode ---
+        const spriteModeSelect = document.getElementById('spriteModeSelect');
+        const manualFallbackGroup = document.getElementById('manualFallbackGroup');
+        const defaultManualSetGroup = document.getElementById('defaultManualSetGroup');
+
+        function updateManualVisibility() {
+            const mode = spriteModeSelect ? spriteModeSelect.value : 'auto';
+            if (manualFallbackGroup) manualFallbackGroup.style.display = mode === 'manual' ? '' : 'none';
+            if (defaultManualSetGroup) defaultManualSetGroup.style.display = (mode !== 'auto') ? '' : 'none';
+        }
+
+        if (spriteModeSelect) {
+            spriteModeSelect.addEventListener('change', updateManualVisibility);
+        }
+
+        // Load current config and prefill
+        fetch('/api/talkingheads/config')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+                const cfg = data.config || {};
+                if (spriteModeSelect) spriteModeSelect.value = cfg.spriteMode || 'auto';
+                const manualFallbackToggle = document.getElementById('manualFallbackToggle');
+                if (manualFallbackToggle) manualFallbackToggle.checked = cfg.manualFallback !== false;
+                updateManualVisibility();
+                loadManualSets(cfg.defaultManualSetId);
+            })
+            .catch(() => {});
+
+        // Sprite Mode save integration (add to main save button)
+        const origSaveConfigBtn = document.getElementById('saveConfigBtn');
+        if (origSaveConfigBtn) {
+            origSaveConfigBtn.addEventListener('click', function () {
+                const manualFallbackToggle = document.getElementById('manualFallbackToggle');
+                const defaultManualSetSelect = document.getElementById('defaultManualSetSelect');
+                const extraConfig = {
+                    spriteMode: spriteModeSelect ? spriteModeSelect.value : 'auto',
+                    manualFallback: manualFallbackToggle ? manualFallbackToggle.checked : true,
+                    defaultManualSetId: defaultManualSetSelect ? defaultManualSetSelect.value || null : null
+                };
+                fetch('/api/talkingheads/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(extraConfig)
+                }).catch(() => {});
+            }, true); // capture phase so it runs before ui.js handler
+        }
+
+        // --- Upload ---
+        const dropZone = document.getElementById('manualUploadDropZone');
+        const filesInput = document.getElementById('manualSpriteFilesInput');
+        const zipInput = document.getElementById('manualZipInput');
+        const uploadBtn = document.getElementById('uploadManualSetBtn');
+        const uploadStatus = document.getElementById('manualUploadStatus');
+
+        if (dropZone) {
+            dropZone.addEventListener('click', () => filesInput && filesInput.click());
+        }
+
+        window.handleManualDropZoneDrop = function (event) {
+            event.preventDefault();
+            if (dropZone) dropZone.style.borderColor = 'var(--color-border)';
+            if (filesInput && event.dataTransfer.files.length) {
+                filesInput.files = event.dataTransfer.files;
+            }
+        };
+
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', async function () {
+                const setName = (document.getElementById('manualSetNameInput') || {}).value || '';
+                if (!setName.trim()) {
+                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = 'Bitte einen Set-Namen eingeben.'; }
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('setName', setName.trim());
+
+                // Individual PNGs
+                if (filesInput && filesInput.files.length) {
+                    for (const file of filesInput.files) {
+                        const fieldName = file.name.replace(/\.png$/i, '');
+                        if (SPRITE_FIELDS.includes(fieldName)) {
+                            formData.append(fieldName, file, file.name);
+                        }
+                    }
+                }
+
+                // ZIP
+                if (zipInput && zipInput.files.length) {
+                    formData.append('zip', zipInput.files[0]);
+                }
+
+                if (uploadStatus) { uploadStatus.style.color = 'var(--color-text-secondary)'; uploadStatus.textContent = 'Wird hochgeladen…'; }
+                uploadBtn.disabled = true;
+
+                try {
+                    const resp = await fetch('/api/talkingheads/manual-upload', { method: 'POST', body: formData });
+                    const data = await resp.json();
+                    if (data.success) {
+                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-success)'; uploadStatus.textContent = `✅ Set "${data.setName}" hochgeladen (ID: ${data.setId})`; }
+                        loadManualSets();
+                        if (filesInput) filesInput.value = '';
+                        if (zipInput) zipInput.value = '';
+                        if (document.getElementById('manualSetNameInput')) document.getElementById('manualSetNameInput').value = '';
+                    } else {
+                        if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = '❌ ' + (data.error || 'Fehler'); }
+                    }
+                } catch (err) {
+                    if (uploadStatus) { uploadStatus.style.color = 'var(--color-accent-danger)'; uploadStatus.textContent = '❌ Netzwerkfehler: ' + err.message; }
+                } finally {
+                    uploadBtn.disabled = false;
+                }
+            });
+        }
+
+        // --- Load Sets ---
+        async function loadManualSets(currentDefaultId) {
+            try {
+                const resp = await fetch('/api/talkingheads/manual-templates');
+                const data = await resp.json();
+                if (!data.success) return;
+
+                const setsList = document.getElementById('manualSetsList');
+                const defaultSelect = document.getElementById('defaultManualSetSelect');
+                const assignSetSelect = document.getElementById('manualAssignSetSelect');
+
+                // Rebuild sets list
+                if (setsList) {
+                    setsList.innerHTML = '';
+                    if (data.sets.length === 0) {
+                        setsList.innerHTML = '<div style="color:var(--color-text-secondary);font-size:0.85rem;">Noch keine manuellen Sets vorhanden.</div>';
+                    } else {
+                        for (const set of data.sets) {
+                            const card = document.createElement('div');
+                            card.style.cssText = 'background:var(--color-bg-tertiary);border:1px solid var(--color-border);border-radius:8px;padding:10px;min-width:130px;max-width:160px;text-align:center;';
+                            const previewSrc = (set.sprites && set.sprites.idle_neutral) ? set.sprites.idle_neutral : '';
+                            card.innerHTML = `
+                                <img src="${previewSrc}" alt="${set.setName}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--color-border);margin-bottom:6px;" onerror="this.style.display='none'">
+                                <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${set.setName}">${set.setName}</div>
+                                <div style="font-size:0.7rem;color:var(--color-text-secondary);margin-bottom:6px;">${set.setId}</div>
+                                <button class="btn btn-danger" data-set-id="${set.setId}" style="padding:4px 8px;font-size:0.75rem;">Löschen</button>
+                            `;
+                            card.querySelector('button').addEventListener('click', function () {
+                                deleteManualSet(this.getAttribute('data-set-id'));
+                            });
+                            setsList.appendChild(card);
+                        }
+                    }
+                }
+
+                // Rebuild selects
+                const setOptions = data.sets.map(s => `<option value="${s.setId}">${s.setName}</option>`).join('');
+                if (defaultSelect) {
+                    defaultSelect.innerHTML = '<option value="">-- Kein Standard --</option>' + setOptions;
+                    if (currentDefaultId) defaultSelect.value = currentDefaultId;
+                }
+                if (assignSetSelect) {
+                    assignSetSelect.innerHTML = '<option value="">-- Set wählen --</option>' + setOptions;
+                }
+            } catch (_) {}
+        }
+
+        async function deleteManualSet(setId) {
+            if (!confirm(`Sprite-Set "${setId}" wirklich löschen?`)) return;
+            try {
+                const resp = await fetch(`/api/talkingheads/manual-upload/${encodeURIComponent(setId)}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (data.success) loadManualSets();
+            } catch (_) {}
+        }
+
+        // --- Load users for assignment ---
+        async function loadUsersForAssignment() {
+            try {
+                const resp = await fetch('/api/talkingheads/users?limit=200');
+                const data = await resp.json();
+                if (!data.success) return;
+                const select = document.getElementById('manualAssignUserSelect');
+                if (select) {
+                    select.innerHTML = '<option value="">-- User wählen --</option>' + data.users.map(u => `<option value="${u.userId}" data-username="${u.username}">${u.username} (${u.uniqueId || u.userId})</option>`).join('');
+                }
+            } catch (_) {}
+        }
+        loadUsersForAssignment();
+
+        // --- Assign ---
+        const assignBtn = document.getElementById('manualAssignBtn');
+        if (assignBtn) {
+            assignBtn.addEventListener('click', async function () {
+                const userSelect = document.getElementById('manualAssignUserSelect');
+                const setSelect = document.getElementById('manualAssignSetSelect');
+                const statusEl = document.getElementById('manualAssignStatus');
+
+                const userId = userSelect ? userSelect.value : '';
+                const username = userSelect ? (userSelect.options[userSelect.selectedIndex] || {}).getAttribute('data-username') || '' : '';
+                const setId = setSelect ? setSelect.value : '';
+
+                if (!userId || !setId) {
+                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = 'Bitte User und Set auswählen.'; }
+                    return;
+                }
+
+                try {
+                    const resp = await fetch('/api/talkingheads/manual-assign', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, username, setId })
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        if (statusEl) { statusEl.style.color = 'var(--color-accent-success)'; statusEl.textContent = `✅ Set "${setId}" wurde ${username} zugewiesen.`; }
+                    } else {
+                        if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = '❌ ' + (data.error || 'Fehler'); }
+                    }
+                } catch (err) {
+                    if (statusEl) { statusEl.style.color = 'var(--color-accent-danger)'; statusEl.textContent = '❌ Fehler: ' + err.message; }
+                }
+            });
+        }
+    })();
+
+    // =====================================================================
+    // Viewer Bar UI
+    // =====================================================================
+    (function () {
+        const avatarSizeSlider = document.getElementById('viewerBarAvatarSize');
+        const avatarSizeValue = document.getElementById('avatarSizeValue');
+        const scrollSpeedSlider = document.getElementById('viewerBarScrollSpeed');
+        const scrollSpeedValue = document.getElementById('scrollSpeedValue');
+        const popUpDurationSlider = document.getElementById('viewerBarPopUpDuration');
+        const popUpDurationValue = document.getElementById('popUpDurationValue');
+
+        if (avatarSizeSlider && avatarSizeValue) {
+            avatarSizeSlider.addEventListener('input', () => { avatarSizeValue.textContent = avatarSizeSlider.value; });
+        }
+        if (scrollSpeedSlider && scrollSpeedValue) {
+            scrollSpeedSlider.addEventListener('input', () => { scrollSpeedValue.textContent = scrollSpeedSlider.value; });
+        }
+        if (popUpDurationSlider && popUpDurationValue) {
+            popUpDurationSlider.addEventListener('input', () => { popUpDurationValue.textContent = popUpDurationSlider.value; });
+        }
+
+        // Load current config
+        fetch('/api/talkingheads/viewer-bar/config')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+                const cfg = data.config || {};
+
+                const el = id => document.getElementById(id);
+                if (el('viewerBarEnabledToggle')) el('viewerBarEnabledToggle').checked = !!cfg.enabled;
+                if (el('viewerBarAvatarSize')) { el('viewerBarAvatarSize').value = cfg.avatarSize || 64; if (avatarSizeValue) avatarSizeValue.textContent = cfg.avatarSize || 64; }
+                if (el('viewerBarScrollSpeed')) { el('viewerBarScrollSpeed').value = cfg.scrollSpeed || 30; if (scrollSpeedValue) scrollSpeedValue.textContent = cfg.scrollSpeed || 30; }
+                if (el('viewerBarScrollDirection')) el('viewerBarScrollDirection').value = cfg.scrollDirection || 'left';
+                if (el('viewerBarPopUpDuration')) { const v = Math.round((cfg.popUpDuration || 5000) / 1000); el('viewerBarPopUpDuration').value = v; if (popUpDurationValue) popUpDurationValue.textContent = v; }
+                if (el('viewerBarMaxViewers')) el('viewerBarMaxViewers').value = cfg.maxVisibleViewers || 20;
+                if (el('viewerBarShowChatBubble')) el('viewerBarShowChatBubble').checked = cfg.showChatBubble !== false;
+                if (el('viewerBarShowUsername')) el('viewerBarShowUsername').checked = cfg.showUsername !== false;
+                if (el('viewerBarIdleBlink')) el('viewerBarIdleBlink').checked = cfg.idleBlinkEnabled !== false;
+                if (el('viewerBarPauseOnSpeak')) el('viewerBarPauseOnSpeak').checked = cfg.pauseScrollOnSpeak !== false;
+                if (el('viewerBarBackground')) el('viewerBarBackground').value = cfg.barBackground || 'rgba(0,0,0,0.3)';
+
+                if (data.overlayUrl) {
+                    if (el('viewerBarUrlDisplay')) el('viewerBarUrlDisplay').value = data.overlayUrl;
+                    const previewLink = el('viewerBarPreviewLink');
+                    if (previewLink) previewLink.href = data.overlayUrl;
+                }
+            })
+            .catch(() => {});
+
+        // Copy URL
+        const copyBtn = document.getElementById('copyViewerBarUrlBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function () {
+                const urlInput = document.getElementById('viewerBarUrlDisplay');
+                if (urlInput) {
+                    navigator.clipboard.writeText(urlInput.value).catch(() => {
+                        urlInput.select();
+                        document.execCommand('copy');
+                    });
+                }
+            });
+        }
+
+        // Save
+        const saveBtn = document.getElementById('saveViewerBarConfigBtn');
+        const saveStatus = document.getElementById('viewerBarSaveStatus');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async function () {
+                const el = id => document.getElementById(id);
+                const cfg = {
+                    enabled: !!(el('viewerBarEnabledToggle') && el('viewerBarEnabledToggle').checked),
+                    avatarSize: parseInt((el('viewerBarAvatarSize') || {}).value || '64', 10),
+                    scrollSpeed: parseInt((el('viewerBarScrollSpeed') || {}).value || '30', 10),
+                    scrollDirection: (el('viewerBarScrollDirection') || {}).value || 'left',
+                    popUpDuration: parseInt((el('viewerBarPopUpDuration') || {}).value || '5', 10) * 1000,
+                    maxVisibleViewers: parseInt((el('viewerBarMaxViewers') || {}).value || '20', 10),
+                    showChatBubble: !!(el('viewerBarShowChatBubble') && el('viewerBarShowChatBubble').checked),
+                    showUsername: !!(el('viewerBarShowUsername') && el('viewerBarShowUsername').checked),
+                    idleBlinkEnabled: !!(el('viewerBarIdleBlink') && el('viewerBarIdleBlink').checked),
+                    pauseScrollOnSpeak: !!(el('viewerBarPauseOnSpeak') && el('viewerBarPauseOnSpeak').checked),
+                    barBackground: (el('viewerBarBackground') || {}).value || 'rgba(0,0,0,0.3)'
+                };
+
+                saveBtn.disabled = true;
+                try {
+                    const resp = await fetch('/api/talkingheads/viewer-bar/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(cfg)
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-success)'; saveStatus.textContent = '✅ Konfiguration gespeichert'; }
+                    } else {
+                        if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = '❌ ' + (data.error || 'Fehler'); }
+                    }
+                } catch (err) {
+                    if (saveStatus) { saveStatus.style.color = 'var(--color-accent-danger)'; saveStatus.textContent = '❌ Fehler: ' + err.message; }
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

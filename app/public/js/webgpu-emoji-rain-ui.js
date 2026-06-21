@@ -322,7 +322,7 @@ function updateUI() {
         document.getElementById('heart_balloon_like_divisor').value = config.heart_balloon_like_divisor || 1;
         document.getElementById('heart_balloon_min_hearts').value = config.heart_balloon_min_hearts || 1;
         document.getElementById('heart_balloon_max_hearts').value = config.heart_balloon_max_hearts || 24;
-        document.getElementById('heart_balloon_profile_every').value = config.heart_balloon_profile_every || 4;
+        document.getElementById('heart_balloon_profile_every').value = config.heart_balloon_profile_every || 5;
         setRangeValue('heart_balloon_pop_y', config.heart_balloon_pop_y !== undefined ? config.heart_balloon_pop_y : 0.5);
         setRangeValue('heart_balloon_wind_strength', config.heart_balloon_wind_strength !== undefined ? config.heart_balloon_wind_strength : 0.45);
         document.getElementById('heart_balloon_test_count').value = config.heart_balloon_test_count || 8;

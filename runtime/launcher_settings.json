@@ -1,0 +1,9 @@
+{
+  "locale": "de",
+  "theme": "night",
+  "preferredPort": 3000,
+  "keepLauncherOpen": true,
+  "safeMode": false,
+  "updateChannel": "local",
+  "firstRunComplete": true
+}

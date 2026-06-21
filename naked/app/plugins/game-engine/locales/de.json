@@ -1,0 +1,151 @@
+{
+  "game_engine": {
+    "title": "LTTH Game Engine - Admin Panel",
+    "tabs": {
+      "connect4": "Connect4",
+      "chess": "Schach",
+      "plinko": "Plinko",
+      "wheel": "Glücksrad",
+      "triggers": "Trigger",
+      "xp_rewards": "XP-Belohnungen",
+      "media": "Medien",
+      "active_game": "Aktives Spiel",
+      "stats": "Statistiken"
+    },
+    "connect4": {
+      "title": "Connect4-Einstellungen",
+      "board_design": "Spielbrett-Design",
+      "board_color": "Spielbrett-Farbe",
+      "player1_color": "Spieler 1 Farbe",
+      "player2_color": "Spieler 2 Farbe",
+      "text_color": "Textfarbe",
+      "font_family": "Schriftart",
+      "show_coordinates": "Koordinaten anzeigen",
+      "animation_speed": "Animations-Geschwindigkeit (ms)",
+      "streamer_role": "Streamer-Rolle",
+      "role_player1": "Spieler 1 (Rot)",
+      "role_player2": "Spieler 2 (Gelb)",
+      "challenge_flow": "Challenge-Flow-Einstellungen",
+      "show_challenge_screen": "Challenge-Bildschirm anzeigen",
+      "challenge_timeout": "Challenge-Timeout (Sekunden)",
+      "leaderboard": "Leaderboard-Einstellungen",
+      "leaderboard_enabled": "Leaderboard nach Spiel anzeigen",
+      "leaderboard_display_time": "Anzeigezeit pro Leaderboard (Sekunden)",
+      "leaderboard_types": "Anzuzeigende Leaderboards",
+      "leaderboard_daily": "Täglich",
+      "leaderboard_season": "Saison",
+      "leaderboard_lifetime": "Allzeit",
+      "leaderboard_elo": "ELO",
+      "save_config": "Konfiguration speichern",
+      "config_saved": "Konfiguration erfolgreich gespeichert!"
+    },
+    "chess": {
+      "title": "Schach-Einstellungen",
+      "board_design": "Spielbrett-Design",
+      "board_theme": "Brett-Theme",
+      "theme_dark": "Dunkel",
+      "theme_light": "Hell",
+      "theme_wood": "Holz",
+      "save_config": "Konfiguration speichern",
+      "config_saved": "Konfiguration erfolgreich gespeichert!"
+    },
+    "plinko": {
+      "title": "Plinko-Einstellungen",
+      "slot_editor": "Slot-Editor",
+      "add_slot": "Slot hinzufügen",
+      "multiplier": "Multiplikator",
+      "color": "Farbe",
+      "physics": "Physik-Einstellungen",
+      "gravity": "Schwerkraft",
+      "save_config": "Konfiguration speichern",
+      "config_saved": "Konfiguration erfolgreich gespeichert!"
+    },
+    "wheel": {
+      "title": "Glücksrad-Einstellungen",
+      "wheels": "Glücksräder",
+      "add_wheel": "Neues Glücksrad hinzufügen",
+      "wheel_name": "Glücksrad-Name",
+      "save_config": "Konfiguration speichern",
+      "config_saved": "Konfiguration erfolgreich gespeichert!"
+    },
+    "triggers": {
+      "title": "Spiel-Trigger",
+      "description": "Konfiguriere, wie Spiele über Geschenke oder Chat-Befehle ausgelöst werden",
+      "game_type": "Spieltyp",
+      "trigger_type": "Trigger-Typ",
+      "gift": "Geschenk",
+      "command": "Befehl",
+      "trigger_value": "Trigger-Wert",
+      "add_trigger": "Trigger hinzufügen",
+      "remove_trigger": "Entfernen",
+      "no_triggers": "Keine Trigger konfiguriert"
+    },
+    "xp_rewards": {
+      "title": "XP-Belohnungen",
+      "description": "Konfiguriere XP-Belohnungen für Spielergebnisse",
+      "game_type": "Spieltyp",
+      "win": "Sieg",
+      "loss": "Niederlage",
+      "draw": "Unentschieden",
+      "participation": "Teilnahme",
+      "save_rewards": "Belohnungen speichern",
+      "rewards_saved": "XP-Belohnungen erfolgreich gespeichert!"
+    },
+    "common": {
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "edit": "Bearbeiten",
+      "add": "Hinzufügen",
+      "remove": "Entfernen",
+      "loading": "Laden...",
+      "error": "Fehler",
+      "success": "Erfolg"
+    },
+    "display_texts": {
+      "slot": {
+        "title": "🎰 SLOT MACHINE",
+        "label_loss": "😔 Kein Gewinn",
+        "label_near_miss": "😬 Knapp!",
+        "label_small_win": "🎉 Kleiner Gewinn!",
+        "label_medium_win": "🎊 Gewinn!",
+        "label_big_win": "🔥 Großer Gewinn!",
+        "label_jackpot": "🏆 JACKPOT!"
+      },
+      "wheel": {
+        "title": "🎡 GLÜCKSRAD",
+        "label_spin": "🔄 Dreht sich...",
+        "label_result": "🎉 Ergebnis:",
+        "label_niete": "💔 Niete!",
+        "label_win": "🎊 Gewonnen!",
+        "label_queued": "⏳ In der Warteschlange..."
+      },
+      "plinko": {
+        "title": "🎰 PLINKO",
+        "label_drop": "⬇️ Ball wird gedropt!",
+        "label_win": "🎉 Gewonnen!",
+        "multiplier_prefix": "×",
+        "label_queued": "⏳ Warteschlange..."
+      },
+      "connect4": {
+        "title": "🔵 CONNECT 4",
+        "label_player1": "Spieler 1",
+        "label_player2": "Spieler 2",
+        "label_your_turn": "Du bist dran! Tippe A-G",
+        "label_waiting": "Warte auf Gegner...",
+        "label_win": "🏆 {player} gewinnt!",
+        "label_draw": "🤝 Unentschieden!"
+      },
+      "chess": {
+        "title": "♟️ SCHACH",
+        "label_white": "Weiß",
+        "label_black": "Schwarz",
+        "label_your_turn": "Dein Zug",
+        "label_check": "⚠️ Schach!",
+        "label_checkmate": "♚ Schachmatt!",
+        "label_draw": "🤝 Remis!",
+        "label_win": "🏆 {player} gewinnt!"
+      }
+    }
+  }
+}

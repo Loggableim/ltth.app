@@ -1,0 +1,57 @@
+{
+  "soundboard": {
+    "title": "Soundboard",
+    "subtitle": "Sound Effect Management",
+    "sounds": {
+      "title": "Sound Library",
+      "add": "Add Sound",
+      "upload": "Upload Sound",
+      "name": "Sound Name",
+      "file": "Sound File",
+      "category": "Category",
+      "volume": "Volume",
+      "play": "Play",
+      "stop": "Stop",
+      "delete": "Delete",
+      "edit": "Edit"
+    },
+    "animations": {
+      "export": "Exporter les animations audio",
+      "import": "Importer les animations audio",
+      "exportSuccess": "Animations audio exportées avec succès!",
+      "importSuccess": "Import terminé: {imported} nouveau, {updated} mis à jour, {failed} échoué",
+      "importError": "Erreur lors de l'importation des animations audio",
+      "selectFile": "Veuillez sélectionner un fichier JSON à importer"
+    },
+    "config": {
+      "title": "Paramètres",
+      "enabled": "Enable Soundboard",
+      "trigger_mode": "Trigger Mode",
+      "manual": "Manual Only",
+      "automatic": "Automatic on Events",
+      "master_volume": "Master Volume",
+      "save": "Enregistrer les Paramètres",
+      "audio_target": "Audio Playback Target",
+      "audio_target_dashboard": "Dashboard Only",
+      "audio_target_obs": "OBS Overlay Only",
+      "audio_target_both": "Both (Dashboard + OBS)",
+      "audio_target_help_dashboard": "Audio plays directly in your browser (recommended if OBS audio not working)",
+      "audio_target_help_obs": "Audio plays in the OBS browser source",
+      "audio_target_help_both": "Audio plays in both locations"
+    },
+    "categories": {
+      "all": "All Sounds",
+      "alerts": "Alerts",
+      "effects": "Effets",
+      "music": "Music",
+      "custom": "Custom"
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift": "On Gift",
+      "follow": "On Follow",
+      "subscribe": "On Subscribe",
+      "like": "On Like"
+    }
+  }
+}

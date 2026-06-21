@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Bot</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/plugins/music-bot/assets/ui-style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div>
+        <p class="eyebrow">LTTH Plugin</p>
+        <h1>Music Bot</h1>
+        <p class="subtitle">Viewer-controlled Song Requests via TikTok Chat</p>
+      </div>
+      <div class="status" id="playback-state">Idle</div>
+    </header>
+
+    <div id="setup-issues-banner" class="setup-banner" style="display:none;">
+      <h3>⚠️ Music Bot – Einrichtung erforderlich</h3>
+      <div id="setup-issues-list"></div>
+    </div>
+
+    <script>
+      (function () {
+        const banner = document.getElementById('setup-issues-banner');
+        const list = document.getElementById('setup-issues-list');
+
+        function renderIssues(issues) {
+          if (!issues || issues.length === 0) {
+            banner.style.display = 'none';
+            return;
+          }
+          banner.style.display = 'block';
+          list.innerHTML = '';
+          issues.forEach(function (issue) {
+            const div = document.createElement('div');
+            div.className = 'setup-issue ' + (issue.severity === 'error' ? 'error' : 'warning');
+            const icon = issue.severity === 'error' ? '❌' : '⚠️';
+            let html = '<strong>' + icon + ' ' + issue.title + '</strong><br>';
+            html += '<span style="font-size:0.9em;">' + (issue.description || '') + '</span>';
+            const instructions = issue.installInstructions;
+            if (instructions && instructions.length > 0) {
+              html += '<ul>';
+              instructions.forEach(function (instr) {
+                html += '<li><code>' + instr + '</code></li>';
+              });
+              html += '</ul>';
+            }
+            div.innerHTML = html;
+            list.appendChild(div);
+          });
+        }
+
+        if (typeof io !== 'undefined') {
+          var setupSocket = io();
+          setupSocket.on('music-bot:setup-status', function (data) {
+            renderIssues(data.issues || []);
+          });
+        }
+
+        fetch('/api/plugins/music-bot/setup-status')
+          .then(function (r) { return r.json(); })
+          .then(function (data) { if (data.success) { renderIssues(data.issues || []); } })
+          .catch(function () {});
+      })();
+    </script>
+
+    <nav class="tab-bar" id="tab-bar">
+      <button class="tab active" data-tab="player">🎵 Player</button>
+      <button class="tab" data-tab="queue">📋 Queue</button>
+      <button class="tab" data-tab="settings">⚙️ Einstellungen</button>
+      <button class="tab" data-tab="autodj">🤖 Auto-DJ</button>
+      <button class="tab" data-tab="aliases">💬 Aliases</button>
+      <button class="tab" data-tab="moderation">🛡️ Moderation</button>
+      <button class="tab" data-tab="overlay">📺 Overlay</button>
+      <button class="tab" data-tab="history">📜 History</button>
+    </nav>
+
+    <section class="card player-card tab-content active" data-tab-content="player">
+      <div class="card-header">
+        <div>
+          <h2>Player &amp; Suche</h2>
+          <p class="text-secondary">YouTube-Link einfügen oder Stichwort suchen</p>
+        </div>
+        <div class="pill" id="preview-source">YouTube</div>
+      </div>
+
+      <div class="player-search-bar">
+        <input type="text" id="search-input" placeholder="YouTube-Link einfügen oder Suchwort eingeben..." autocomplete="off">
+        <button id="search-btn" class="btn ghost" type="button">🔍&nbsp;Suchen</button>
+        <button id="request-btn" class="btn primary" type="button">＋&nbsp;Zur Queue</button>
+      </div>
+      <div id="search-feedback" class="feedback"></div>
+
+      <div class="player-embed-wrapper">
+        <div class="player-frame" id="player-frame-box">
+          <div class="player-placeholder" id="player-placeholder">
+            <span>🎵 YouTube-Link einfügen oder oben suchen</span>
+          </div>
+          <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <div id="now-playing" class="now-playing empty">
+        <p>Aktuell läuft nichts.</p>
+      </div>
+      <div class="np-progress-wrapper" id="np-progress-wrapper" style="display:none">
+        <div class="np-progress-bar">
+          <div class="np-progress-fill" id="np-progress-fill"></div>
+        </div>
+        <div class="np-time">
+          <span id="np-elapsed">0:00</span>
+          <span id="np-duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="player-bottom">
+        <div class="player-sliders">
+          <div class="slider-group">
+            <label for="master-volume-input">🔊 Master Volume</label>
+            <div class="slider-row">
+              <input type="range" id="master-volume-input" min="0" max="100" value="100">
+              <span id="master-volume-value">100</span>
+            </div>
+          </div>
+          <div class="slider-group">
+            <label for="volume-input">🎚️ Source Volume</label>
+            <div class="slider-row">
+              <input type="range" id="volume-input" min="0" max="100" value="50">
+              <span id="volume-value">50</span>
+            </div>
+          </div>
+          <div class="slider-group">
+            <label for="crossfade-input">Crossfade (Sek.)</label>
+            <div class="slider-row">
+              <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
+              <span id="crossfade-value">3s</span>
+            </div>
+          </div>
+        </div>
+        <div class="player-controls">
+          <button id="pause-btn" class="btn ghost">⏸&nbsp;Pause</button>
+          <button id="resume-btn" class="btn">▶&nbsp;Resume</button>
+          <button id="skip-btn" class="btn danger">⏭&nbsp;Skip</button>
+          <button id="clear-btn" class="btn ghost">🗑&nbsp;Queue leeren</button>
+        </div>
+      </div>
+
+      <div id="request-feedback" class="feedback"></div>
+      <form id="request-form" style="display:none">
+        <input type="text" id="request-input">
+      </form>
+    </section>
+
+    <section class="card tab-content" data-tab-content="settings">
+      <div class="card-header">
+        <div>
+          <h2>Einstellungen</h2>
+          <p class="text-secondary">Duplicate Detection &amp; Gifts</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span>Duplicate Detection</span>
+          <select id="duplicate-detection">
+            <option value="strict">Strict</option>
+            <option value="fuzzy">Fuzzy</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Cooldown (Sekunden)</span>
+          <input type="number" id="cooldown-seconds" min="0" value="30">
+        </label>
+        <label class="field">
+          <span>Maximale Songlänge (Sekunden)</span>
+          <input type="number" id="max-song-duration-seconds" min="30" max="7200" value="360">
+          <small class="text-secondary">Blockiert zu lange Songs vor dem Queue-Add.</small>
+        </label>
+        <label class="field">
+          <span>yt-dlp Pfad</span>
+          <input type="text" id="ytdlp-path" placeholder="z.B. /usr/local/bin/yt-dlp">
+          <small class="text-secondary">Benötigt für YouTube/SoundCloud. Standard: yt-dlp</small>
+        </label>
+        <label class="field">
+          <span>mpv Pfad</span>
+          <input type="text" id="mpv-path" placeholder="z.B. C:\tools\mpv\mpv.exe oder /usr/bin/mpv">
+          <small class="text-secondary">Benötigt für die Audio-Wiedergabe. Standard: mpv</small>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="cooldown-bypass-gifts">
+          <span>Cooldown für Gifts überspringen</span>
+        </label>
+        <label class="field">
+          <span>Skip-Immunity Gifts (Komma oder Zeile)</span>
+          <textarea id="skip-immunity-gifts" rows="2" placeholder="Rose, Garnele"></textarea>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="require-superfan">
+          <span>Nur Superfans dürfen Songs anfragen 🌟</span>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="pay-to-play-enabled">
+          <span>Pay-to-Play aktivieren (Gift/Coin Pflicht für !sr)</span>
+        </label>
+        <label class="field">
+          <span>Pay-to-Play Gifts (Komma oder Zeile)</span>
+          <textarea id="pay-to-play-gifts" rows="2" placeholder="Rose, GG"></textarea>
+        </label>
+        <label class="field">
+          <span>Pay-to-Play Mindestcoins pro Request</span>
+          <input type="number" id="pay-to-play-min-coins" min="0" value="0">
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="pay-to-skip-enabled">
+          <span>Pay-to-Skip aktivieren</span>
+        </label>
+        <label class="field">
+          <span>Pay-to-Skip Gifts (Komma oder Zeile)</span>
+          <textarea id="pay-to-skip-gifts" rows="2" placeholder="GG"></textarea>
+        </label>
+        <label class="field">
+          <span>Geschenkekatalog (Mehrfachauswahl, dann in Felder kopieren)</span>
+          <select id="gift-catalog-list" size="6" multiple></select>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="like-gate-enabled">
+          <span>Like-Gating für !sr aktivieren</span>
+        </label>
+        <label class="field">
+          <span>Mindestanzahl Likes pro User</span>
+          <input type="number" id="min-likes-per-user" min="1" value="1">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="settings-save" class="btn primary">Einstellungen speichern</button>
+        <div id="settings-feedback" class="feedback"></div>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="overlay">
+      <div class="card-header">
+        <div>
+          <h2>📺 OBS Overlay</h2>
+          <p class="text-secondary">Browser Source URL für OBS / Streamlabs</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span>Design</span>
+          <select id="overlay-design">
+            <option value="compact">Compact (Standard)</option>
+            <option value="fullwidth">Fullwidth (Banner)</option>
+            <option value="minimal">Minimal (Text)</option>
+            <option value="card">Card (Großes Widget)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Theme</span>
+          <select id="overlay-theme">
+            <option value="default">Default (Standard)</option>
+            <option value="cyberpunk">Cyberpunk</option>
+            <option value="minimal">Minimal</option>
+            <option value="neon">Neon</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Position</span>
+          <select id="overlay-position">
+            <option value="bottom-left">Bottom Left</option>
+            <option value="bottom-right">Bottom Right</option>
+            <option value="bottom-center">Bottom Center</option>
+            <option value="top-left">Top Left</option>
+            <option value="top-right">Top Right</option>
+            <option value="top-center">Top Center</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Overlay-URL</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="overlay-url" readonly style="flex:1;font-size:12px">
+            <button id="overlay-copy" class="btn ghost" type="button">📋 Kopieren</button>
+            <button id="overlay-open" class="btn ghost" type="button">🔗 Öffnen</button>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="autodj">
+      <div class="card-header">
+        <div>
+          <h2>Auto-DJ</h2>
+          <p class="text-secondary">Füllt die Queue automatisch</p>
+        </div>
+        <span id="auto-dj-status" class="pill">Deaktiviert</span>
+      </div>
+      <div class="form-grid">
+        <label class="checkbox-field">
+          <input type="checkbox" id="auto-dj-enabled">
+          <span>Auto-DJ aktivieren</span>
+        </label>
+        <label class="field">
+          <span>Modus</span>
+          <select id="auto-dj-mode">
+            <option value="history">History</option>
+            <option value="playlist">Playlist</option>
+            <option value="random">Random</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Min. Plays in History</span>
+          <input type="number" id="auto-dj-history-plays" min="1" value="2">
+        </label>
+        <label class="field">
+          <span>Max. aufeinanderfolgende Tracks</span>
+          <input type="number" id="auto-dj-max-consecutive" min="1" value="10">
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="auto-dj-announce">
+          <span>Chat-Ansage für Auto-DJ</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="auto-dj-save" class="btn primary">Speichern</button>
+        <button id="auto-dj-skip" class="btn ghost">Nächster Auto-DJ Track</button>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="aliases">
+      <div class="card-header">
+        <div>
+          <h2>Command Aliases</h2>
+          <p class="text-secondary">Kommagetrennt, z.B. <em>play, song</em></p>
+        </div>
+      </div>
+      <div class="form-grid" id="alias-grid">
+        <label class="field">
+          <span>Request</span>
+          <input type="text" data-command="request" class="alias-input" placeholder="play, song">
+        </label>
+        <label class="field">
+          <span>Skip</span>
+          <input type="text" data-command="skip" class="alias-input" placeholder="skip">
+        </label>
+        <label class="field">
+          <span>Queue</span>
+          <input type="text" data-command="queue" class="alias-input" placeholder="q, list">
+        </label>
+        <label class="field">
+          <span>Now Playing</span>
+          <input type="text" data-command="nowPlaying" class="alias-input" placeholder="now, current">
+        </label>
+        <label class="field">
+          <span>Volume</span>
+          <input type="text" data-command="volume" class="alias-input" placeholder="v, volume">
+        </label>
+        <label class="field">
+          <span>Pause</span>
+          <input type="text" data-command="pause" class="alias-input" placeholder="stop">
+        </label>
+        <label class="field">
+          <span>Resume</span>
+          <input type="text" data-command="resume" class="alias-input" placeholder="continue">
+        </label>
+        <label class="field">
+          <span>Clear</span>
+          <input type="text" data-command="clear" class="alias-input" placeholder="">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="alias-save" class="btn primary">Aliases speichern</button>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="queue">
+      <div class="card-header">
+        <div>
+          <h2>Queue</h2>
+          <p class="text-secondary">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
+        </div>
+        <span id="queue-length" class="pill">0</span>
+      </div>
+      <div id="queue-list" class="list empty">
+        <p>Keine Songs in der Queue.</p>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="moderation">
+      <div class="card-header">
+        <div>
+          <h2>Moderation</h2>
+          <p class="text-secondary">NSFW / Keywords &amp; Ban-Liste</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="checkbox-field">
+          <input type="checkbox" id="reject-age" checked>
+          <span>NSFW/Age-Restricted Videos ablehnen</span>
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="reject-explicit">
+          <span>Explicit-Metadaten ablehnen</span>
+        </label>
+        <label class="field">
+          <span>Geblockte Keywords (eine Zeile pro Keyword)</span>
+          <textarea id="blocked-keywords" rows="3" placeholder="keyword1&#10;keyword2"></textarea>
+        </label>
+      </div>
+      <div class="actions">
+        <button id="moderation-save" class="btn primary">Moderation speichern</button>
+        <div id="moderation-feedback" class="feedback"></div>
+      </div>
+
+      <div class="card-header">
+        <div>
+          <h3>Ban-Liste</h3>
+          <p class="text-secondary">URLs, Keywords, Channels oder User sperren</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span>Typ</span>
+          <select id="ban-type">
+            <option value="url">URL</option>
+            <option value="keyword">Keyword</option>
+            <option value="channel">Channel</option>
+            <option value="user">User</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Wert</span>
+          <input type="text" id="ban-value" placeholder="https://... oder Keyword">
+        </label>
+        <label class="field">
+          <span>Reason</span>
+          <input type="text" id="ban-reason" placeholder="Optional">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="ban-add" class="btn primary" type="button">Ban hinzufügen</button>
+        <div id="ban-feedback" class="feedback"></div>
+      </div>
+      <div class="table-wrapper">
+        <table class="table" id="ban-table">
+          <thead>
+            <tr>
+              <th>Typ</th>
+              <th>Wert</th>
+              <th>Reason</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card tab-content" data-tab-content="history">
+      <div class="card-header">
+        <div>
+          <h2>History</h2>
+          <p class="text-secondary">Letzte gespielte Songs</p>
+        </div>
+      </div>
+      <div id="history-list" class="list empty">
+        <p>Noch keine History.</p>
+      </div>
+    </section>
+  </div>
+  <div id="musicbot-toast-container" class="musicbot-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/plugins/music-bot/assets/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+/**
+ * Test: TTS Queue Manager Pre-Generation System
+ * 
+ * This test validates the pre-generation system that reduces TTS latency
+ * by synthesizing audio for upcoming queue items during current playback.
+ * 
+ * Expected behavior:
+ * - Pre-generation callback can be registered
+ * - peek() method allows viewing queue without dequeuing
+ * - Pre-generation runs automatically for next N items
+ * - Stats track hits, misses, and errors
+ * - On-demand synthesis falls back when pre-gen fails
+ */
+
+const QueueManager = require('../plugins/tts/utils/queue-manager');
+
+describe('TTS Queue Manager - Pre-Generation System', () => {
+    let queueManager;
+    let mockLogger;
+    let mockConfig;
+    let synthesizeCallCount;
+    
+    beforeEach(() => {
+        synthesizeCallCount = 0;
+        
+        // Mock logger
+        mockLogger = {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn()
+        };
+        
+        // Mock config
+        mockConfig = {
+            maxQueueSize: 100,
+            rateLimit: 5,
+            rateLimitWindow: 60
+        };
+        
+        queueManager = new QueueManager(mockConfig, mockLogger);
+    });
+    
+    afterEach(() => {
+        if (queueManager) {
+            queueManager.stopProcessing();
+            queueManager.clear();
+        }
+    });
+    
+    test('should allow registering synthesis callback', () => {
+        const mockCallback = jest.fn();
+        queueManager.setSynthesizeCallback(mockCallback);
+        
+        expect(queueManager.synthesizeCallback).toBe(mockCallback);
+        expect(mockLogger.info).toHaveBeenCalledWith(
+            'Pre-generation synthesis callback registered'
+        );
+    });
+    
+    test('peek() should return next items without removing them', () => {
+        // Add 5 items
+        for (let i = 1; i <= 5; i++) {
+            queueManager.enqueue({
+                userId: `user${i}`,
+                username: `User${i}`,
+                text: `Message ${i}`,
+                voice: 'en-US',
+                engine: 'tiktok',
+                audioData: null,
+                priority: i
+            });
+        }
+        
+        // Peek at next 3 items
+        const peeked = queueManager.peek(3);
+        
+        expect(peeked).toHaveLength(3);
+        expect(queueManager.queue).toHaveLength(5); // Queue unchanged
+        expect(peeked[0].text).toBe('Message 5'); // Highest priority first
+    });
+    
+    test('peek() should return empty array when queue is empty', () => {
+        const peeked = queueManager.peek(5);
+        expect(peeked).toHaveLength(0);
+    });
+    
+    test('should include pre-generation stats in getStats()', () => {
+        const stats = queueManager.getStats();
+        
+        expect(stats).toHaveProperty('preGenerationHits');
+        expect(stats).toHaveProperty('preGenerationMisses');
+        expect(stats).toHaveProperty('preGenerationErrors');
+        expect(stats).toHaveProperty('preGenerationHitRate');
+        expect(stats).toHaveProperty('activePreGenerations');
+        expect(stats.preGenerationHitRate).toBe('N/A'); // No attempts yet
+    });
+    
+    test('should calculate pre-generation hit rate correctly', () => {
+        // Simulate hits and misses
+        queueManager.stats.preGenerationHits = 9;
+        queueManager.stats.preGenerationMisses = 1;
+        
+        const stats = queueManager.getStats();
+        expect(stats.preGenerationHitRate).toBe('90.0%');
+    });
+    
+    test('should show hasAudio and isPreGenerating in getInfo()', () => {
+        queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: 'base64data', // Has audio
+            priority: 1
+        });
+        
+        queueManager.enqueue({
+            userId: 'user2',
+            username: 'User2',
+            text: 'Message 2',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: null, // No audio
+            priority: 0
+        });
+        
+        const info = queueManager.getInfo();
+        
+        expect(info.nextItems).toHaveLength(2);
+        expect(info.nextItems[0]).toHaveProperty('hasAudio', true);
+        expect(info.nextItems[0]).toHaveProperty('isPreGenerating', false);
+        expect(info.nextItems[1]).toHaveProperty('hasAudio', false);
+        expect(info.nextItems[1]).toHaveProperty('isPreGenerating', false);
+    });
+    
+    test('should track pre-generation in progress', () => {
+        const result = queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: null,
+            priority: 1
+        });
+        
+        const itemId = queueManager.queue[0].id; // Get actual ID generated by queue manager
+        
+        // Simulate pre-generation in progress
+        queueManager.preGenerationInProgress.set(itemId, true);
+        
+        const info = queueManager.getInfo();
+        expect(info.nextItems[0].isPreGenerating).toBe(true);
+        
+        const stats = queueManager.getStats();
+        expect(stats.activePreGenerations).toBe(1);
+    });
+    
+    test('should reset pre-generation stats when resetStats() is called', () => {
+        queueManager.stats.preGenerationHits = 10;
+        queueManager.stats.preGenerationMisses = 2;
+        queueManager.stats.preGenerationErrors = 1;
+        
+        queueManager.resetStats();
+        
+        expect(queueManager.stats.preGenerationHits).toBe(0);
+        expect(queueManager.stats.preGenerationMisses).toBe(0);
+        expect(queueManager.stats.preGenerationErrors).toBe(0);
+    });
+    
+    test('should clear pre-generation in progress when queue is cleared', () => {
+        queueManager.preGenerationInProgress.set('test-id-1', true);
+        queueManager.preGenerationInProgress.set('test-id-2', true);
+        
+        expect(queueManager.preGenerationInProgress.size).toBe(2);
+        
+        queueManager.clear();
+        
+        expect(queueManager.preGenerationInProgress.size).toBe(0);
+    });
+    
+    test('should clear pre-generation when processing is stopped', () => {
+        queueManager.preGenerationInProgress.set('test-id-1', true);
+        queueManager.isProcessing = true;
+        
+        queueManager.stopProcessing();
+        
+        expect(queueManager.preGenerationInProgress.size).toBe(0);
+        expect(queueManager.isProcessing).toBe(false);
+    });
+    
+    test('pre-generation should skip items that already have audio', async () => {
+        const mockSynthesize = jest.fn().mockResolvedValue('audio-data');
+        queueManager.setSynthesizeCallback(mockSynthesize);
+        
+        // Add item with audio already present
+        queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: 'existing-audio', // Already has audio
+            priority: 1
+        });
+        
+        // Trigger pre-generation
+        await queueManager._triggerPreGeneration();
+        
+        // Wait a bit for async operations
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Should NOT call synthesize for items with audio
+        expect(mockSynthesize).not.toHaveBeenCalled();
+    });
+    
+    test('pre-generation should skip streaming items', async () => {
+        const mockSynthesize = jest.fn().mockResolvedValue('audio-data');
+        queueManager.setSynthesizeCallback(mockSynthesize);
+        
+        // Add streaming item
+        queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'fishaudio',
+            isStreaming: true, // Streaming item
+            audioData: null,
+            priority: 1
+        });
+        
+        // Trigger pre-generation
+        await queueManager._triggerPreGeneration();
+        
+        // Wait a bit for async operations
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Should NOT call synthesize for streaming items
+        expect(mockSynthesize).not.toHaveBeenCalled();
+    });
+    
+    test('should handle pre-generation errors gracefully', async () => {
+        const mockSynthesize = jest.fn().mockRejectedValue(new Error('Synthesis failed'));
+        queueManager.setSynthesizeCallback(mockSynthesize);
+        
+        // Add item
+        const result = queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: null,
+            priority: 1
+        });
+        
+        const itemId = queueManager.queue[0].id;
+        
+        // Trigger pre-generation (should handle error)
+        await queueManager._preGenerateItem(queueManager.queue[0]);
+        
+        // Should track error
+        expect(queueManager.stats.preGenerationErrors).toBeGreaterThan(0);
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('[PRE-GEN] Failed')
+        );
+        
+        // Should not be in progress anymore
+        expect(queueManager.preGenerationInProgress.has(itemId)).toBe(false);
+    });
+    
+    test('should store audio data from successful pre-generation', async () => {
+        const mockAudioData = 'pre-generated-audio-data';
+        const mockSynthesize = jest.fn().mockResolvedValue(mockAudioData);
+        queueManager.setSynthesizeCallback(mockSynthesize);
+        
+        // Add item
+        queueManager.enqueue({
+            userId: 'user1',
+            username: 'User1',
+            text: 'Message 1',
+            voice: 'en-US',
+            engine: 'tiktok',
+            audioData: null,
+            priority: 1
+        });
+        
+        const item = queueManager.queue[0];
+        expect(item.audioData).toBeNull();
+        
+        // Pre-generate
+        await queueManager._preGenerateItem(item);
+        
+        // Should have audio data now
+        expect(item.audioData).toBe(mockAudioData);
+        expect(mockSynthesize).toHaveBeenCalledWith(
+            'Message 1',
+            'en-US',
+            'tiktok',
+            {}
+        );
+    });
+});

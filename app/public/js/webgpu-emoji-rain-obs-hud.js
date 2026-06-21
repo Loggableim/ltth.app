@@ -62,7 +62,7 @@
             heart_balloon_like_divisor: 2,
             heart_balloon_min_hearts: 1,
             heart_balloon_max_hearts: 16,
-            heart_balloon_profile_every: 4,
+            heart_balloon_profile_every: 5,
             heart_balloon_pop_y: 0.5,
             heart_balloon_wind_strength: 0.45,
             heart_balloon_test_count: 8,
@@ -1136,7 +1136,7 @@
 
             const baseSize = config.emoji_min_size_px + Math.random() * (config.emoji_max_size_px - config.emoji_min_size_px);
             const size = clamp(baseSize * 1.05, 34, 96);
-            const profileEvery = Math.max(1, parseInt(data.profileEvery || config.heart_balloon_profile_every || 4, 10));
+            const profileEvery = Math.max(1, parseInt(data.profileEvery || config.heart_balloon_profile_every || 5, 10));
             const useProfilePicture = !!data.profilePictureUrl && (index + 1) % profileEvery === 0;
             const jitter = (Math.random() - 0.5) * 0.28;
             const sourceX = typeof data.x === 'number' ? clamp(data.x + jitter, 0.02, 0.98) : Math.random();

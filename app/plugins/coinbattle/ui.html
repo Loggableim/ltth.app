@@ -864,6 +864,24 @@
                         <label class="form-label">Font Size</label>
                         <input type="number" class="form-input" id="setting-fontsize" value="16" min="12" max="32">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Overlay Resolution</label>
+                        <select class="form-select" id="setting-overlay-resolution">
+                            <option value="1920x1080">1920 x 1080 (16:9)</option>
+                            <option value="1280x720">1280 x 720 (16:9)</option>
+                            <option value="2560x1440">2560 x 1440 (16:9)</option>
+                            <option value="3840x2160">3840 x 2160 (4K)</option>
+                            <option value="1080x1920">1080 x 1920 (Portrait)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Overlay Size</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <input type="number" class="form-input" id="setting-overlay-width" value="1920" min="320" max="7680" step="1" aria-label="Overlay width">
+                            <input type="number" class="form-input" id="setting-overlay-height" value="1080" min="240" max="4320" step="1" aria-label="Overlay height">
+                        </div>
+                    </div>
                 </div>
                 <div class="grid grid-2">
                     <div class="form-group">

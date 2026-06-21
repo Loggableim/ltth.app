@@ -1559,7 +1559,7 @@ class DatabaseManager {
             enable_particles: true,
             enable_depth: true,
             target_fps: 60,
-            visual_mode: 'premium_stage',
+            visual_mode: 'pupcid_balanced',
             pupcid_defaults_version: 2,
 
             // Emoji Set
@@ -1625,15 +1625,15 @@ class DatabaseManager {
 
             // Rate Limiting Queue
             rate_limit_enabled: true,
-            rate_limit_emojis_per_second: 26,
+            rate_limit_emojis_per_second: 24,
 
             // Scaling Rules
             like_count_divisor: 22,
             like_min_emojis: 1,
             like_max_emojis: 10,
-            gift_base_emojis: 5,
-            gift_coin_multiplier: 0.09,
-            gift_max_emojis: 42,
+            gift_base_emojis: 4,
+            gift_coin_multiplier: 0.08,
+            gift_max_emojis: 36,
 
             // Gift ball overlay defaults
             gift_balls_enabled: false,
@@ -1653,7 +1653,7 @@ class DatabaseManager {
             heart_balloon_like_divisor: 2,
             heart_balloon_min_hearts: 1,
             heart_balloon_max_hearts: 16,
-            heart_balloon_profile_every: 4,
+            heart_balloon_profile_every: 5,
             heart_balloon_pop_y: 0.5,
             heart_balloon_wind_strength: 0.45,
             heart_balloon_test_count: 8,

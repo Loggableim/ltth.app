@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XP Event Ticker</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    .ticker-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .ticker-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 15px;
+      border-radius: 8px 8px 0 0;
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .ticker-icon {
+      font-size: 20px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .events-list {
+      max-height: 400px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.9);
+      border-radius: 0 0 8px 8px;
+      padding: 5px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .events-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .events-list::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+
+    .events-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    .events-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .event-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 3px solid #4CAF50;
+      padding: 10px 12px;
+      margin: 5px 0;
+      border-radius: 4px;
+      animation: slideIn 0.3s ease-out;
+      transition: all 0.2s;
+    }
+
+    .event-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(3px);
+    }
+
+    .event-item.event-gift {
+      border-left-color: #FFD700;
+    }
+
+    .event-item.event-follow {
+      border-left-color: #FF6B6B;
+    }
+
+    .event-item.event-share {
+      border-left-color: #4ECDC4;
+    }
+
+    .event-item.event-like {
+      border-left-color: #FF69B4;
+    }
+
+    .event-item.event-subscribe {
+      border-left-color: #9B59B6;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .event-username {
+      color: #FFD700;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .event-time {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 11px;
+    }
+
+    .event-details {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+    }
+
+    .event-xp {
+      color: #4CAF50;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .event-type {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .event-icon {
+      font-size: 16px;
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 30px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    .settings-panel {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 8px;
+      color: white;
+      font-size: 12px;
+    }
+
+    .settings-panel label {
+      display: block;
+      margin: 8px 0 4px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .settings-panel input,
+    .settings-panel select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .settings-panel button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .settings-panel button:hover {
+      filter: brightness(1.2);
+      transform: translateY(-1px);
+    }
+
+    .connection-status {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-left: auto;
+    }
+
+    .connection-status.connected {
+      color: #4CAF50;
+    }
+
+    .connection-status.disconnected {
+      color: #FF6B6B;
+    }
+  </style>
+</head>
+<body>
+  <div class="ticker-container">
+    <div class="ticker-header">
+      <span class="ticker-icon">⭐</span>
+      <span>Live XP Events</span>
+      <span class="connection-status" id="connectionStatus">Connecting...</span>
+    </div>
+    <div class="events-list" id="eventsList">
+      <div class="empty-message">Waiting for events...</div>
+    </div>
+  </div>
+
+  <!-- Settings Panel (hidden in production, visible in preview) -->
+  <div class="settings-panel" id="settingsPanel" style="display: none;">
+    <h3 style="margin-bottom: 10px;">Overlay Settings</h3>
+    <label>Max Events:</label>
+    <input type="number" id="maxEvents" value="10" min="5" max="50">
+    
+    <label>Animation Duration (ms):</label>
+    <input type="number" id="animDuration" value="300" min="100" max="1000">
+    
+    <label>Auto Scroll:</label>
+    <select id="autoScroll">
+      <option value="true">Enabled</option>
+      <option value="false">Disabled</option>
+    </select>
+    
+    <button onclick="applySettings()">Apply Settings</button>
+    <button onclick="toggleSettings()">Hide Settings</button>
+  </div>
+
+  <script>
+    // Configuration
+    let config = {
+      maxEvents: 10,
+      animDuration: 300,
+      autoScroll: true
+    };
+
+    // Socket connection
+    const socket = io();
+    const eventsList = document.getElementById('eventsList');
+    const connectionStatus = document.getElementById('connectionStatus');
+    let events = [];
+
+    // Event type icons and colors
+    const eventIcons = {
+      'chat_message': '💬',
+      'gift': '🎁',
+      'gift_tier1': '🎁',
+      'gift_tier2': '🎁',
+      'gift_tier3': '🎁',
+      'gift_tier4': '🎁',
+      'gift_tier5': '💎',
+      'gift_tier6': '💎',
+      'gift_tier7': '💎',
+      'gift_tier8': '💎',
+      'follow': '❤️',
+      'share': '📤',
+      'like': '👍',
+      'subscribe': '⭐',
+      'daily_bonus': '🎁',
+      'streak_bonus': '🔥',
+      'watch_time_minute': '⏱️'
+    };
+
+    // Connection handlers
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      connectionStatus.textContent = 'Connected';
+      connectionStatus.className = 'connection-status connected';
+      
+      // Subscribe to XP events
+      socket.emit('viewerxp:subscribe-events');
+      
+      // Request recent events
+      socket.emit('viewerxp:get-recent-events', { limit: config.maxEvents });
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      connectionStatus.textContent = 'Disconnected';
+      connectionStatus.className = 'connection-status disconnected';
+    });
+
+    // Event handlers
+    socket.on('viewerxp:subscribed', (data) => {
+      console.log('Subscribed to XP events:', data);
+    });
+
+    socket.on('viewerxp:recent-events', (data) => {
+      if (data.success && data.events) {
+        events = data.events.slice(0, config.maxEvents);
+        renderEvents();
+      }
+    });
+
+    socket.on('viewerxp:event', (event) => {
+      console.log('New XP event:', event);
+      addEvent(event);
+    });
+
+    // Add new event
+    function addEvent(event) {
+      events.unshift(event);
+      
+      // Trim to max events
+      if (events.length > config.maxEvents) {
+        events = events.slice(0, config.maxEvents);
+      }
+      
+      renderEvents();
+    }
+
+    // Render events
+    function renderEvents() {
+      if (events.length === 0) {
+        eventsList.innerHTML = '<div class="empty-message">Waiting for events...</div>';
+        return;
+      }
+
+      eventsList.innerHTML = events.map(event => {
+        const time = formatTime(event.created_at);
+        const icon = eventIcons[event.event_type] || '⭐';
+        const eventClass = getEventClass(event.event_type);
+        
+        return `
+          <div class="event-item ${eventClass}">
+            <div class="event-header">
+              <span class="event-username">${escapeHtml(event.username)}</span>
+              <span class="event-time">${time}</span>
+            </div>
+            <div class="event-details">
+              <span class="event-icon">${icon}</span>
+              <span class="event-type">${formatEventType(event.event_type)}</span>
+              <span class="event-xp">+${event.xp_awarded} XP</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (config.autoScroll) {
+        eventsList.scrollTop = 0;
+      }
+    }
+
+    // Helper functions
+    function formatTime(timestamp) {
+      const now = Date.now();
+      const diff = Math.floor((now - timestamp) / 1000);
+      
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    function formatEventType(type) {
+      return type.replace(/_/g, ' ').replace(/tier\d+/, '');
+    }
+
+    function getEventClass(type) {
+      if (type.includes('gift')) return 'event-gift';
+      if (type === 'follow') return 'event-follow';
+      if (type === 'share') return 'event-share';
+      if (type === 'like') return 'event-like';
+      if (type === 'subscribe') return 'event-subscribe';
+      return '';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Settings functions
+    function toggleSettings() {
+      const panel = document.getElementById('settingsPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function applySettings() {
+      config.maxEvents = parseInt(document.getElementById('maxEvents').value);
+      config.animDuration = parseInt(document.getElementById('animDuration').value);
+      config.autoScroll = document.getElementById('autoScroll').value === 'true';
+      
+      // Re-trim events
+      events = events.slice(0, config.maxEvents);
+      renderEvents();
+      
+      console.log('Settings applied:', config);
+    }
+
+    // Show settings panel on Ctrl+S or double-click header
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        toggleSettings();
+      }
+    });
+
+    document.querySelector('.ticker-header').addEventListener('dblclick', () => {
+      toggleSettings();
+    });
+
+    // Initialize
+    console.log('XP Event Ticker initialized');
+  </script>
+</body>
+</html>

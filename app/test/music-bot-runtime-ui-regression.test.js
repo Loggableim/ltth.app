@@ -137,6 +137,19 @@ function bootMusicBotUi(options = {}) {
 }
 
 describe('Music Bot runtime and UI regressions', () => {
+  let doms;
+
+  beforeEach(() => {
+    doms = [];
+  });
+
+  afterEach(async () => {
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await Promise.resolve();
+    doms.forEach((dom) => dom.window.close());
+  });
+
   test('keeps queued songs when mpv is unavailable instead of draining the queue', async () => {
     const queue = [{
       id: 'song-1',
@@ -171,6 +184,7 @@ describe('Music Bot runtime and UI regressions', () => {
 
   test('UI exposes mpv path configuration and persists it to playback config', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
     const input = dom.window.document.getElementById('mpv-path');
 
     expect(input).not.toBeNull();
@@ -189,6 +203,7 @@ describe('Music Bot runtime and UI regressions', () => {
 
   test('UI shows the first-run assistant until the setup is completed', async () => {
     const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
     const assistant = dom.window.document.getElementById('musicbot-onboarding');
 
     expect(assistant).not.toBeNull();
@@ -249,6 +264,7 @@ describe('Music Bot runtime and UI regressions', () => {
         }
       ]
     });
+    doms.push(dom);
     await new Promise((resolve) => setTimeout(resolve, 0));
     await new Promise((resolve) => setTimeout(resolve, 0));
     const steps = Array.from(dom.window.document.querySelectorAll('#musicbot-onboarding-steps .onboarding-step-title'))

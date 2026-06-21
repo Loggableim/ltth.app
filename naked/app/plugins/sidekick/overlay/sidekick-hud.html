@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidekick HUD Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .overlay-container {
+      position: fixed;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      min-width: 200px;
+      max-width: 350px;
+    }
+
+    /* Position presets via URL params */
+    .overlay-container.top-left {
+      top: 20px;
+      left: 20px;
+    }
+
+    .overlay-container.top-right {
+      top: 20px;
+      right: 20px;
+    }
+
+    .overlay-container.bottom-left {
+      bottom: 20px;
+      left: 20px;
+    }
+
+    .overlay-container.bottom-right {
+      bottom: 20px;
+      right: 20px;
+    }
+
+    .overlay-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .overlay-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4CAF50;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.muted {
+      background: #ff9800;
+      animation: none;
+    }
+
+    .status-dot.disconnected {
+      background: #f44336;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .recent-events {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .event-list {
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      animation: slideIn 0.3s ease;
+    }
+
+    .event-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .event-icon {
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      margin-right: 5px;
+    }
+
+    .event-user {
+      font-weight: bold;
+      color: #64B5F6;
+    }
+
+    .event-content {
+      color: #ccc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Minimal mode */
+    .overlay-container.minimal {
+      min-width: 150px;
+    }
+
+    .overlay-container.minimal .recent-events {
+      display: none;
+    }
+
+    .overlay-container.minimal .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .overlay-container.minimal .stat-item {
+      padding: 5px;
+    }
+
+    .overlay-container.minimal .stat-value {
+      font-size: 18px;
+    }
+
+    .overlay-container.minimal .stat-label {
+      font-size: 9px;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container top-right" id="overlay">
+    <div class="overlay-header">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="overlay-title">🤖 Sidekick</span>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" id="stat-chats">0</div>
+        <div class="stat-label">Chat/Min</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="stat-gifts">0</div>
+        <div class="stat-label">Gifts</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="stat-follows">0</div>
+        <div class="stat-label">Follows</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="stat-viewers">0</div>
+        <div class="stat-label">Viewer</div>
+      </div>
+    </div>
+
+    <div class="recent-events" id="recent-events-section">
+      <div class="event-list" id="event-list">
+        <!-- Events will be added here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const position = params.get('position') || 'top-right';
+    const minimal = params.get('minimal') === 'true';
+    const showEvents = params.get('events') !== 'false';
+    const maxEvents = parseInt(params.get('maxEvents')) || 5;
+
+    // Apply settings
+    const overlay = document.getElementById('overlay');
+    overlay.className = `overlay-container ${position}`;
+    if (minimal) overlay.classList.add('minimal');
+    if (!showEvents) document.getElementById('recent-events-section').classList.add('hidden');
+
+    // Socket connection
+    const socket = io();
+    
+    // Event icons
+    const eventIcons = {
+      chat: '💬',
+      gift: '🎁',
+      follow: '👤',
+      share: '📤',
+      subscribe: '⭐',
+      join: '👋',
+      like: '❤️'
+    };
+
+    // Recent events buffer
+    const recentEvents = [];
+
+    // Update status
+    function updateStatus(status) {
+      const statusDot = document.getElementById('status-dot');
+      
+      if (status.muted) {
+        statusDot.className = 'status-dot muted';
+      } else if (!status.animaze?.isConnected) {
+        statusDot.className = 'status-dot disconnected';
+      } else {
+        statusDot.className = 'status-dot';
+      }
+
+      // Update stats
+      const rates = status.currentRates || {};
+      const session = status.session || {};
+      
+      document.getElementById('stat-chats').textContent = rates.chatsPerMinute || 0;
+      document.getElementById('stat-gifts').textContent = session.totalGifts || 0;
+      document.getElementById('stat-follows').textContent = session.totalFollows || 0;
+      document.getElementById('stat-viewers').textContent = status.activeViewers || 0;
+    }
+
+    // Add event to list
+    function addEvent(event) {
+      recentEvents.unshift(event);
+      while (recentEvents.length > maxEvents) {
+        recentEvents.pop();
+      }
+      renderEvents();
+    }
+
+    // Render event list
+    function renderEvents() {
+      const container = document.getElementById('event-list');
+      container.innerHTML = recentEvents.map(event => {
+        const icon = eventIcons[event.type] || '📌';
+        let content = '';
+        
+        switch (event.type) {
+          case 'chat':
+            content = event.payload?.comment?.substring(0, 30) || '';
+            if (event.payload?.comment?.length > 30) content += '...';
+            break;
+          case 'gift':
+            content = event.payload?.giftName || 'Gift';
+            break;
+          default:
+            content = '';
+        }
+        
+        return `
+          <div class="event-item">
+            <span class="event-icon">${icon}</span>
+            <span class="event-user">${event.nickname || event.uid}</span>
+            ${content ? `<span class="event-content"> ${content}</span>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Fetch initial status
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/sidekick/status');
+        const data = await res.json();
+        if (data.success) {
+          updateStatus(data.status);
+        }
+      } catch (err) {
+        console.error('Failed to fetch status:', err);
+      }
+    }
+
+    // Fetch recent events
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/api/sidekick/events?limit=' + maxEvents);
+        const data = await res.json();
+        if (data.success && data.events) {
+          data.events.forEach(event => {
+            if (!recentEvents.find(e => e.ts === event.ts && e.type === event.type)) {
+              recentEvents.push(event);
+            }
+          });
+          while (recentEvents.length > maxEvents) {
+            recentEvents.shift();
+          }
+          recentEvents.sort((a, b) => b.ts - a.ts);
+          renderEvents();
+        }
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      }
+    }
+
+    // Socket events
+    socket.on('sidekick:status', updateStatus);
+    
+    // Initial load
+    fetchStatus();
+    fetchEvents();
+    
+    // Periodic updates
+    setInterval(fetchStatus, 2000);
+    setInterval(fetchEvents, 5000);
+  </script>
+</body>
+</html>

@@ -22,6 +22,33 @@
   let translations = {};
   let currentLanguage = 'en';
 
+  const overlayResolutionPresets = {
+    '1280x720': { width: 1280, height: 720 },
+    '1920x1080': { width: 1920, height: 1080 },
+    '2560x1440': { width: 2560, height: 1440 },
+    '3840x2160': { width: 3840, height: 2160 },
+    '1080x1920': { width: 1080, height: 1920 }
+  };
+
+  function getOverlayDimensions() {
+    const width = parseInt(document.getElementById('setting-overlay-width')?.value || '1920', 10);
+    const height = parseInt(document.getElementById('setting-overlay-height')?.value || '1080', 10);
+    return {
+      width: Number.isFinite(width) ? Math.min(7680, Math.max(320, width)) : 1920,
+      height: Number.isFinite(height) ? Math.min(4320, Math.max(240, height)) : 1080
+    };
+  }
+
+  function applyOverlayResolutionPreset() {
+    const presetValue = document.getElementById('setting-overlay-resolution')?.value || '1920x1080';
+    const preset = overlayResolutionPresets[presetValue];
+    if (preset) {
+      document.getElementById('setting-overlay-width').value = preset.width;
+      document.getElementById('setting-overlay-height').value = preset.height;
+    }
+    updateOverlayURL();
+  }
+
   /**
    * Escape HTML to prevent XSS
    */
@@ -155,6 +182,22 @@
     if (btnPreviewPyramid) {
       btnPreviewPyramid.addEventListener('click', previewPyramidOverlay);
     }
+
+    const overlayResolution = document.getElementById('setting-overlay-resolution');
+    if (overlayResolution) {
+      overlayResolution.addEventListener('change', applyOverlayResolutionPreset);
+    }
+
+    ['setting-overlay-width', 'setting-overlay-height'].forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('input', () => {
+          const resolution = document.getElementById('setting-overlay-resolution');
+          if (resolution) resolution.value = 'custom';
+          updateOverlayURL();
+        });
+      }
+    });
 
     // Season management button
     const btnSaveSeason = document.getElementById('btn-save-season');
@@ -458,6 +501,9 @@
         document.getElementById('setting-skin').value = config.skin || 'gold';
         document.getElementById('setting-layout').value = config.layout || 'fullscreen';
         document.getElementById('setting-fontsize').value = config.fontSize || 16;
+        document.getElementById('setting-overlay-resolution').value = config.overlayResolution || '1920x1080';
+        document.getElementById('setting-overlay-width').value = config.overlayWidth || 1920;
+        document.getElementById('setting-overlay-height').value = config.overlayHeight || 1080;
         document.getElementById('setting-show-avatars').checked = config.showAvatars !== false;
         document.getElementById('setting-show-badges').checked = config.showBadges !== false;
         document.getElementById('setting-toaster-mode').checked = config.toasterMode || false;
@@ -474,6 +520,7 @@
         document.getElementById('setting-postmatch-show-xp').checked = postMatch.showXPAwards !== false;
         document.getElementById('setting-postmatch-credits-duration').value = postMatch.winnerCreditsDuration || 10;
         document.getElementById('credits-duration-value').textContent = postMatch.winnerCreditsDuration || 10;
+        updateOverlayURL();
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -490,6 +537,7 @@
     if (document.getElementById('setting-postmatch-lb-season').checked) leaderboardTypes.push('season');
     if (document.getElementById('setting-postmatch-lb-lifetime').checked) leaderboardTypes.push('lifetime');
     
+    const overlayDimensions = getOverlayDimensions();
     const config = {
       mode: document.getElementById('match-mode').value,
       matchDuration: parseInt(document.getElementById('match-duration').value),
@@ -504,6 +552,9 @@
       skin: document.getElementById('setting-skin').value,
       layout: document.getElementById('setting-layout').value,
       fontSize: parseInt(document.getElementById('setting-fontsize').value),
+      overlayResolution: document.getElementById('setting-overlay-resolution').value,
+      overlayWidth: overlayDimensions.width,
+      overlayHeight: overlayDimensions.height,
       showAvatars: document.getElementById('setting-show-avatars').checked,
       showBadges: document.getElementById('setting-show-badges').checked,
       toasterMode: document.getElementById('setting-toaster-mode').checked,
@@ -553,13 +604,26 @@
    * Update overlay URL
    */
   function updateOverlayURL() {
-    const url = `${window.location.origin}/plugins/coinbattle/overlay`;
+    const { width, height } = getOverlayDimensions();
+    const params = new URLSearchParams({
+      theme: document.getElementById('setting-theme')?.value || 'dark',
+      skin: document.getElementById('setting-skin')?.value || 'gold',
+      layout: document.getElementById('setting-layout')?.value || 'fullscreen',
+      showAvatars: String(document.getElementById('setting-show-avatars')?.checked !== false),
+      showBadges: String(document.getElementById('setting-show-badges')?.checked !== false),
+      toasterMode: String(document.getElementById('setting-toaster-mode')?.checked || false),
+      overlayWidth: String(width),
+      overlayHeight: String(height)
+    });
+    const url = `${window.location.origin}/plugins/coinbattle/overlay?${params.toString()}`;
     document.getElementById('overlay-url').value = url;
     
     // Also update pyramid overlay URL
     const pyramidUrlEl = document.getElementById('pyramid-overlay-url');
     if (pyramidUrlEl) {
-      pyramidUrlEl.value = `${window.location.origin}/plugins/coinbattle/overlay?pyramidMode=true`;
+      const pyramidParams = new URLSearchParams(params);
+      pyramidParams.set('pyramidMode', 'true');
+      pyramidUrlEl.value = `${window.location.origin}/plugins/coinbattle/overlay?${pyramidParams.toString()}`;
     }
   }
 
@@ -593,7 +657,8 @@
    */
   function previewOverlay() {
     const url = document.getElementById('overlay-url').value;
-    window.open(url, '_blank', 'width=1920,height=1080');
+    const { width, height } = getOverlayDimensions();
+    window.open(url, '_blank', `width=${width},height=${height}`);
   }
 
   /**
@@ -1140,7 +1205,8 @@
    */
   function previewPyramidOverlay() {
     const url = document.getElementById('pyramid-overlay-url').value;
-    window.open(url, '_blank', 'width=1920,height=1080');
+    const { width, height } = getOverlayDimensions();
+    window.open(url, '_blank', `width=${width},height=${height}`);
   }
 
   // ==================== NEW: Season & Leaderboard Management ====================

@@ -54,6 +54,7 @@ describe('Fireworks Dev Scene Runtime', () => {
     expect(themeManagerJs).toContain('setLayerConfig(');
     expect(sceneDirectorJs).toContain('pickProfile(');
     expect(sceneDirectorJs).toContain('Cataclysm barrage');
+    expect(sceneDirectorJs).toContain("if (typeof this.fxGraph.configure === 'function')");
     expect(sceneDirectorJs).toContain("this.hudController.updateEncounter(");
   });
 
@@ -82,15 +83,21 @@ describe('Fireworks Dev Scene Runtime', () => {
   });
 
   test('restores legacy-style special effects on top of bossfight rendering', () => {
+    expect(fxGraphJs).toContain('giftVisualMappings');
+    expect(fxGraphJs).toContain('finalePatternProfiles');
+    expect(fxGraphJs).toContain('resolveConfiguredGiftEffectProfile(');
     expect(fxGraphJs).toContain('showGiftPopup(');
     expect(fxGraphJs).toContain('launchGiftRocket(');
     expect(fxGraphJs).toContain('resolveGiftRocketProfile(');
     expect(fxGraphJs).toContain('resolveGiftEffectProfile(');
     expect(fxGraphJs).toContain('resolveFinaleProfile(');
+    expect(fxGraphJs).toContain("payload.shape === 'double-ring'");
+    expect(fxGraphJs).toContain("pattern === 'double-ring'");
     expect(fxGraphJs).toContain("variant: 'dart'");
     expect(fxGraphJs).toContain("variant: 'flare'");
     expect(fxGraphJs).toContain("variant: 'comet'");
     expect(fxGraphJs).toContain("variant: 'siege'");
+    expect(fxGraphJs).toContain("finalePattern: payload.finalePattern || giftProfile.finalePattern || configuredPatterns.big || 'crown-arc'");
     expect(fxGraphJs).toContain("finalePattern: 'rose-garden'");
     expect(fxGraphJs).toContain("finalePattern: 'heart-cascade'");
     expect(fxGraphJs).toContain("finalePattern: 'money-fan'");

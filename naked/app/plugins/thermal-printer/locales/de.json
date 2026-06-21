@@ -1,0 +1,53 @@
+{
+  "thermal_printer": {
+    "name": "Thermodrucker",
+    "description": "Druckt TikTok Live Events auf einem Thermodrucker (ESC/POS)",
+    "status": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt",
+      "reconnecting": "Verbinde neu...",
+      "queue_size": "Warteschlangengröße",
+      "printed_jobs": "Gedruckte Aufträge",
+      "failed_jobs": "Fehlgeschlagene Aufträge",
+      "uptime": "Laufzeit"
+    },
+    "config": {
+      "enable": "Thermodrucker aktivieren",
+      "printer_type": "Drucker-Typ",
+      "usb": "USB",
+      "network": "Netzwerk",
+      "usb_vendor_id": "USB Vendor ID",
+      "usb_product_id": "USB Product ID",
+      "network_host": "Netzwerk Host/IP",
+      "network_port": "Netzwerk Port",
+      "event_filters": "Event-Filter",
+      "print_chats": "Chat-Nachrichten drucken",
+      "print_gifts": "Geschenke drucken",
+      "print_follows": "Follows drucken",
+      "print_shares": "Shares drucken",
+      "min_coins": "Minimum Coins zum Drucken",
+      "ignore_bot_commands": "Bot-Befehle ignorieren (Nachrichten die mit '!' beginnen)",
+      "formatting": "Formatierung",
+      "auto_cut": "Papier nach jedem Event automatisch schneiden",
+      "paper_width": "Papierbreite (Zeichen)",
+      "encoding": "Zeichenkodierung",
+      "advanced": "Erweiterte Einstellungen",
+      "reconnect_attempts": "Neuverbindungsversuche",
+      "reconnect_delay": "Neuverbindungsverzögerung (ms)",
+      "queue_max_size": "Maximale Warteschlangengröße",
+      "print_delay": "Druckverzögerung (ms)"
+    },
+    "actions": {
+      "test_print": "Testdruck",
+      "save": "Konfiguration speichern",
+      "back": "Zurück zum Dashboard"
+    },
+    "messages": {
+      "config_saved": "Konfiguration erfolgreich gespeichert!",
+      "config_error": "Fehler beim Speichern der Konfiguration",
+      "test_queued": "Testdruck-Auftrag in Warteschlange!",
+      "test_error": "Fehler beim Senden des Testdrucks",
+      "printer_not_running": "Drucker-Dienst läuft nicht"
+    }
+  }
+}

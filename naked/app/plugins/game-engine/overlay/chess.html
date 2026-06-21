@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LTTH Chess Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Arial', sans-serif;
+      color: #ffffff;
+    }
+
+    #overlay-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      will-change: transform, opacity;
+    }
+
+    #overlay-container.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* Glassmorphism container */
+    .glass-container {
+      background: rgba(26, 26, 46, 0.85);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    #game-board {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+
+    /* Chessboard container */
+    #board-container {
+      position: relative;
+    }
+
+    #chessboard {
+      width: 640px;
+      height: 640px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+    }
+
+    .square {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      transition: background-color 0.3s ease;
+    }
+
+    .square.light {
+      background-color: #f0d9b5;
+    }
+
+    .square.dark {
+      background-color: #b58863;
+    }
+
+    .square.highlight {
+      background-color: rgba(255, 255, 0, 0.4);
+    }
+
+    .square.check {
+      background-color: rgba(255, 0, 0, 0.5);
+      animation: checkPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes checkPulse {
+      0%, 100% { background-color: rgba(255, 0, 0, 0.5); }
+      50% { background-color: rgba(255, 0, 0, 0.8); }
+    }
+
+    .square.last-move {
+      background-color: rgba(155, 199, 0, 0.4);
+    }
+
+    .piece {
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      user-select: none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .piece:hover {
+      transform: scale(1.1);
+    }
+
+    /* Coordinates */
+    .coord-row, .coord-col {
+      position: absolute;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .coord-row {
+      left: -25px;
+      width: 20px;
+      text-align: right;
+    }
+
+    .coord-col {
+      bottom: -25px;
+      width: 80px;
+      text-align: center;
+    }
+
+    /* Side panel */
+    #side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 350px;
+    }
+
+    /* Player info cards */
+    .player-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .player-card.active {
+      border-color: #4CAF50;
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    }
+
+    .player-card.white {
+      border-left: 4px solid #4CAF50;
+    }
+
+    .player-card.black {
+      border-left: 4px solid #2196F3;
+    }
+
+    .player-name {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .player-name.white {
+      color: #4CAF50;
+    }
+
+    .player-name.black {
+      color: #2196F3;
+    }
+
+    /* Chess clock */
+    .timer {
+      font-size: 48px;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      margin: 10px 0;
+      transition: all 0.3s ease;
+    }
+
+    .timer.warning {
+      color: #ff9800;
+      animation: timerPulse 1s ease-in-out infinite;
+    }
+
+    .timer.critical {
+      color: #f44336;
+      animation: timerPulse 0.5s ease-in-out infinite;
+    }
+
+    @keyframes timerPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Captured pieces */
+    .captured-pieces {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-height: 40px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+
+    .captured-piece {
+      font-size: 24px;
+      opacity: 0.8;
+    }
+
+    /* Game over overlay */
+    #game-over-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    #game-over-overlay.show {
+      display: flex;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .game-over-content {
+      text-align: center;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .game-over-title {
+      font-size: 72px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px currentColor;
+    }
+
+    .game-over-reason {
+      font-size: 36px;
+      opacity: 0.9;
+      margin-bottom: 30px;
+    }
+
+    .winner-name {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: #f0f;
+      position: fixed;
+      top: -10px;
+      animation: confetti-fall 3s linear;
+    }
+
+    @keyframes confetti-fall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Status message */
+    #status-message {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 26, 46, 0.95);
+      color: #fff;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 20px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #status-message.show {
+      opacity: 1;
+    }
+
+    #status-message.error {
+      background: rgba(244, 67, 54, 0.95);
+      border-color: #f44336;
+    }
+
+    /* Test mode controls */
+    #test-mode-controls {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10000;
+      color: white;
+      min-width: 250px;
+    }
+
+    #test-mode-controls h3 {
+      margin: 0 0 15px 0;
+      color: #4CAF50;
+    }
+
+    #test-mode-controls button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+      font-weight: bold;
+    }
+
+    #test-mode-controls .btn-start {
+      background: #4CAF50;
+    }
+
+    #test-mode-controls .btn-start:hover {
+      background: #45a049;
+    }
+
+    #test-mode-controls .btn-danger {
+      background: #f44336;
+    }
+
+    #test-mode-controls .btn-danger:hover {
+      background: #da190b;
+    }
+
+    #test-mode-controls input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: white;
+    }
+
+    #test-mode-controls label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Test Mode Controls -->
+  <div id="test-mode-controls">
+    <h3>🧪 Test Mode</h3>
+    <div id="test-start-section">
+      <label>Player 1 Name:</label>
+      <input type="text" id="test-player1-name" value="White Player">
+      <label>Player 2 Name:</label>
+      <input type="text" id="test-player2-name" value="Black Player">
+      <button class="btn-start" id="test-start-chess">♟️ Start Chess Game</button>
+    </div>
+    <div id="test-move-section" style="display: none;">
+      <div style="margin-bottom: 10px;">
+        <strong>Current Turn: <span id="test-current-turn">White</span></strong>
+      </div>
+      <label>Move (e.g., e4, Nf3):</label>
+      <input type="text" id="test-move-input" placeholder="Enter move">
+      <button class="btn-start" id="test-make-move">Make Move</button>
+      <button class="btn-danger" id="test-end-chess">End Game</button>
+    </div>
+  </div>
+
+  <div id="overlay-container">
+    <div class="glass-container">
+      <div id="game-board">
+        <div id="board-container">
+          <div id="chessboard"></div>
+        </div>
+        
+        <div id="side-panel">
+          <!-- Black player (top) -->
+          <div class="player-card black" id="black-player">
+            <div class="player-name black" id="black-name">Black Player</div>
+            <div class="timer" id="black-timer">5:00</div>
+            <div class="captured-pieces" id="black-captured"></div>
+          </div>
+
+          <!-- White player (bottom) -->
+          <div class="player-card white" id="white-player">
+            <div class="player-name white" id="white-name">White Player</div>
+            <div class="timer" id="white-timer">5:00</div>
+            <div class="captured-pieces" id="white-captured"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-over-overlay">
+    <div class="game-over-content">
+      <div class="game-over-title" id="game-over-title">Game Over!</div>
+      <div class="winner-name" id="winner-name"></div>
+      <div class="game-over-reason" id="game-over-reason"></div>
+    </div>
+  </div>
+
+  <div id="status-message"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Check if test mode is enabled
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('testMode') === 'true';
+    let testSessionId = null;
+    
+    // Unicode chess pieces
+    const pieces = {
+      'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+      'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+    };
+
+    let gameState = null;
+    let config = {};
+    let lastMoveSquares = [];
+
+    // Initialize board
+    function initBoard() {
+      const board = document.getElementById('chessboard');
+      board.innerHTML = '';
+      
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const square = document.createElement('div');
+          square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+          square.dataset.row = row;
+          square.dataset.col = col;
+          square.dataset.square = String.fromCharCode(97 + col) + (8 - row);
+          board.appendChild(square);
+        }
+      }
+    }
+
+    // Parse FEN and update board
+    function updateBoardFromFEN(fen) {
+      const [position, turn, castling, enPassant, halfmove, fullmove] = fen.split(' ');
+      const ranks = position.split('/');
+      
+      const squares = document.querySelectorAll('.square');
+      squares.forEach(sq => {
+        sq.innerHTML = '';
+        sq.classList.remove('highlight', 'check', 'last-move');
+      });
+      
+      let squareIndex = 0;
+      for (let rank of ranks) {
+        for (let char of rank) {
+          if (isNaN(char)) {
+            // It's a piece
+            const square = squares[squareIndex];
+            const piece = document.createElement('span');
+            piece.className = 'piece';
+            piece.textContent = pieces[char];
+            piece.style.color = char === char.toUpperCase() ? '#ffffff' : '#000000';
+            square.appendChild(piece);
+            squareIndex++;
+          } else {
+            // It's empty squares
+            squareIndex += parseInt(char);
+          }
+        }
+      }
+    }
+
+    // Highlight last move
+    function highlightLastMove(move) {
+      if (!move || !move.from || !move.to) return;
+      
+      const fromSquare = document.querySelector(`[data-square="${move.from}"]`);
+      const toSquare = document.querySelector(`[data-square="${move.to}"]`);
+      
+      lastMoveSquares.forEach(sq => sq.classList.remove('last-move'));
+      lastMoveSquares = [];
+      
+      if (fromSquare) {
+        fromSquare.classList.add('last-move');
+        lastMoveSquares.push(fromSquare);
+      }
+      if (toSquare) {
+        toSquare.classList.add('last-move');
+        lastMoveSquares.push(toSquare);
+      }
+    }
+
+    // Highlight check
+    function highlightCheck(inCheck, currentPlayer) {
+      document.querySelectorAll('.square').forEach(sq => sq.classList.remove('check'));
+      
+      if (!inCheck) return;
+      
+      // Find king position
+      const squares = document.querySelectorAll('.square');
+      const kingPiece = currentPlayer === 'white' ? '♔' : '♚';
+      
+      squares.forEach(sq => {
+        const piece = sq.querySelector('.piece');
+        if (piece && piece.textContent === kingPiece) {
+          sq.classList.add('check');
+        }
+      });
+    }
+
+    // Update captured pieces
+    function updateCapturedPieces(captured) {
+      const whiteCaptured = document.getElementById('black-captured'); // White captured black pieces
+      const blackCaptured = document.getElementById('white-captured'); // Black captured white pieces
+      
+      whiteCaptured.innerHTML = '';
+      blackCaptured.innerHTML = '';
+      
+      // White's captures (black pieces)
+      ['p', 'n', 'b', 'r', 'q'].forEach(piece => {
+        const count = captured.white[piece] || 0;
+        for (let i = 0; i < count; i++) {
+          const span = document.createElement('span');
+          span.className = 'captured-piece';
+          span.textContent = pieces[piece];
+          whiteCaptured.appendChild(span);
+        }
+      });
+      
+      // Black's captures (white pieces)
+      ['P', 'N', 'B', 'R', 'Q'].forEach(piece => {
+        const count = captured.black[piece.toLowerCase()] || 0;
+        for (let i = 0; i < count; i++) {
+          const span = document.createElement('span');
+          span.className = 'captured-piece';
+          span.textContent = pieces[piece];
+          blackCaptured.appendChild(span);
+        }
+      });
+    }
+
+    // Format time (milliseconds to MM:SS)
+    function formatTime(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Update timers
+    function updateTimers(timers) {
+      const whiteTimer = document.getElementById('white-timer');
+      const blackTimer = document.getElementById('black-timer');
+      
+      whiteTimer.textContent = formatTime(timers.white);
+      blackTimer.textContent = formatTime(timers.black);
+      
+      // Apply warning/critical classes
+      whiteTimer.classList.remove('warning', 'critical');
+      blackTimer.classList.remove('warning', 'critical');
+      
+      if (timers.white < 30000) whiteTimer.classList.add(timers.white < 10000 ? 'critical' : 'warning');
+      if (timers.black < 30000) blackTimer.classList.add(timers.black < 10000 ? 'critical' : 'warning');
+    }
+
+    // Update active player
+    function updateActivePlayer(currentPlayer) {
+      const whiteCard = document.getElementById('white-player');
+      const blackCard = document.getElementById('black-player');
+      
+      whiteCard.classList.remove('active');
+      blackCard.classList.remove('active');
+      
+      if (currentPlayer === 'white') {
+        whiteCard.classList.add('active');
+      } else {
+        blackCard.classList.add('active');
+      }
+    }
+
+    // Show status message
+    function showMessage(message, isError = false) {
+      const msgEl = document.getElementById('status-message');
+      msgEl.textContent = message;
+      msgEl.classList.toggle('error', isError);
+      msgEl.classList.add('show');
+      
+      setTimeout(() => {
+        msgEl.classList.remove('show');
+      }, 3000);
+    }
+
+    // Show confetti
+    function showConfetti() {
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+      
+      for (let i = 0; i < 150; i++) {
+        setTimeout(() => {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * window.innerWidth + 'px';
+          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDelay = Math.random() * 2 + 's';
+          document.body.appendChild(confetti);
+          
+          setTimeout(() => confetti.remove(), 3000);
+        }, i * 30);
+      }
+    }
+
+    // Initialize
+    initBoard();
+
+    // Load initial chess config for display texts (best-effort)
+    fetch('/api/game-engine/config/chess')
+      .then(res => res.json())
+      .then(cfg => { if (cfg) { config = cfg; applyDisplayTexts(cfg.displayTexts); } })
+      .catch(() => {});
+
+    /**
+     * Apply display text tokens from displayTexts config to overlay elements
+     * @param {Object} dt - displayTexts object from chess config
+     */
+    function applyDisplayTexts(dt) {
+      if (!dt || typeof dt !== 'object') return;
+      config._displayTexts = dt;
+      // Apply static label texts that can be set immediately
+      if (dt.labelWhite) {
+        const whiteLabel = document.getElementById('white-player');
+        if (whiteLabel) whiteLabel.dataset.label = dt.labelWhite;
+      }
+      if (dt.labelBlack) {
+        const blackLabel = document.getElementById('black-player');
+        if (blackLabel) blackLabel.dataset.label = dt.labelBlack;
+      }
+    }
+
+    // Socket events
+    socket.on('game-engine:game-started', (data) => {
+      if (data.gameType !== 'chess') return;
+      
+      gameState = data.state;
+      config = data.config;
+      
+      // Apply display texts if present in config
+      applyDisplayTexts(config.displayTexts);
+      
+      // Update player names
+      document.getElementById('white-name').textContent = gameState.whitePlayer.nickname;
+      document.getElementById('black-name').textContent = gameState.blackPlayer.nickname;
+      
+      // Update board
+      updateBoardFromFEN(gameState.fen);
+      updateTimers(gameState.timers);
+      updateActivePlayer(gameState.currentPlayer);
+      updateCapturedPieces(gameState.capturedPieces);
+      
+      // Show overlay
+      document.getElementById('overlay-container').classList.add('active');
+    });
+
+    socket.on('game-engine:move-made', (data) => {
+      if (data.gameType !== 'chess') return;
+      
+      gameState = data.state;
+      
+      // Update board
+      updateBoardFromFEN(data.fen);
+      highlightLastMove(data.move);
+      highlightCheck(data.inCheck, gameState.currentPlayer);
+      updateTimers(gameState.timers);
+      updateActivePlayer(gameState.currentPlayer);
+      updateCapturedPieces(data.capturedPieces);
+    });
+
+    socket.on('game-engine:timer-update', (data) => {
+      updateTimers(data.timers);
+    });
+
+    socket.on('game-engine:move-error', (data) => {
+      showMessage(data.error, true);
+    });
+
+    socket.on('game-engine:game-ended', (data) => {
+      if (data.gameType !== 'chess') return;
+      
+      setTimeout(() => {
+        const overlay = document.getElementById('game-over-overlay');
+        const title = document.getElementById('game-over-title');
+        const winnerName = document.getElementById('winner-name');
+        const reason = document.getElementById('game-over-reason');
+        
+        if (data.winner) {
+          const winnerInfo = data.winner === 'white' ? gameState.whitePlayer : gameState.blackPlayer;
+          const dt = config._displayTexts || {};
+          const winLabel = dt.labelWin || '🏆 {player} gewinnt!';
+          title.textContent = winLabel.replace('{player}', winnerInfo.nickname);
+          title.style.color = data.winner === 'white' ? '#4CAF50' : '#2196F3';
+          winnerName.textContent = winnerInfo.nickname;
+          winnerName.style.color = data.winner === 'white' ? '#4CAF50' : '#2196F3';
+          
+          if (config.celebrationEnabled) {
+            showConfetti();
+          }
+        } else {
+          const dt = config._displayTexts || {};
+          title.textContent = dt.labelDraw || '🤝 Remis!';
+          title.style.color = '#FFC107';
+          winnerName.textContent = dt.labelDraw || '🤝 Remis!';
+          winnerName.style.color = '#FFC107';
+        }
+        
+        const dt = config._displayTexts || {};
+        const reasonText = {
+          'checkmate': dt.labelCheckmate || '♚ Schachmatt!',
+          'timeout': 'by Timeout',
+          'resignation': 'by Resignation',
+          'stalemate': 'Stalemate',
+          'repetition': 'by Threefold Repetition',
+          'insufficient_material': 'Insufficient Material',
+          'fifty_move_rule': 'by Fifty-Move Rule',
+          'draw_agreement': dt.labelDraw || '🤝 Remis!'
+        };
+        reason.textContent = reasonText[data.reason] || data.reason;
+        
+        overlay.classList.add('show');
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+          overlay.classList.remove('show');
+          document.getElementById('overlay-container').classList.remove('active');
+        }, 5000);
+      }, 500);
+    });
+
+    socket.on('game-engine:config-updated', (data) => {
+      if (data.gameType === 'chess') {
+        config = data.config;
+        applyDisplayTexts(config.displayTexts);
+      }
+    });
+
+    // ============================================
+    // TEST MODE FUNCTIONALITY
+    // ============================================
+    
+    if (testMode) {
+      console.log('🧪 Chess test mode enabled');
+      document.getElementById('test-mode-controls').style.display = 'block';
+      
+      // Note: Chess doesn't have a manual mode API like Connect4, so we'll note this limitation
+      // For now, we'll display a message that chess test mode requires the backend UI
+      
+      document.getElementById('test-start-chess').addEventListener('click', () => {
+        alert('Chess test mode requires using the Admin UI (game-engine/ui) to start manual games.\n\nThis overlay test mode is currently only fully supported for Connect4, Plinko, and Wheel.');
+      });
+      
+      // Update turn display when moves are made
+      socket.on('game-engine:move-made', (data) => {
+        if (data.sessionId === testSessionId && data.gameType === 'chess') {
+          const turn = data.state.turn === 'w' ? 'White' : 'Black';
+          document.getElementById('test-current-turn').textContent = turn;
+        }
+      });
+      
+      // Reset test controls when game ends
+      socket.on('game-engine:game-ended', (data) => {
+        if (data.sessionId === testSessionId) {
+          testSessionId = null;
+          document.getElementById('test-start-section').style.display = 'block';
+          document.getElementById('test-move-section').style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

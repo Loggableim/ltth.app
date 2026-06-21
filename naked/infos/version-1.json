@@ -1,0 +1,6642 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "OpenShock.API",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.openshock.app"
+    },
+    {
+      "url": "https://api.openshock.dev"
+    }
+  ],
+  "paths": {
+    "/1/tokens/{tokenId}": {
+      "delete": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Revoke a token",
+        "operationId": "TokenDelete_DeleteToken",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted token"
+          },
+          "403": {
+            "description": "Api Token is not allowed to delete other Api Tokens",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token does not exist, or you do not have access to it",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Get a token by id",
+        "operationId": "Tokens_GetTokenById",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The token does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Edit a token",
+        "operationId": "Tokens_EditToken",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The edited token"
+          },
+          "404": {
+            "description": "The token does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/tokens/self": {
+      "get": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Gets information about the current token used to access this endpoint",
+        "operationId": "TokensSelf_GetSelfToken",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/tokens/report": {
+      "post": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Endpoint to delete potentially compromised api tokens",
+        "operationId": "Tokens_ReportTokens",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportTokensRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tokens were deleted if found"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/tokens": {
+      "get": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "List all tokens for the current user",
+        "operationId": "Tokens_ListTokens",
+        "responses": {
+          "200": {
+            "description": "All tokens for the current user",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "API Tokens"
+        ],
+        "summary": "Create a new token",
+        "operationId": "Tokens_CreateToken",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenCreatedResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account/activate": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Activate account",
+        "operationId": "Account_Activate",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/username/check": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Check if a username is available",
+        "operationId": "Account_CheckUsername",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsernameCheckResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsernameCheckResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsernameCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/login": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Authenticate a user",
+        "operationId": "Account_Login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User successfully logged in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid username or password",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/logout": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "Account_Logout",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/1/account/recover/{passwordResetId}/{secret}": {
+      "head": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Check if a password reset is in progress",
+        "operationId": "Account_PasswordResetCheckValid",
+        "parameters": [
+          {
+            "name": "passwordResetId",
+            "in": "path",
+            "description": "The id of the password reset",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "description": "The secret of the password reset",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Valid password reset process",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Password reset process not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Complete a password reset process",
+        "operationId": "Account_PasswordResetComplete",
+        "parameters": [
+          {
+            "name": "passwordResetId",
+            "in": "path",
+            "description": "The id of the password reset",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "secret",
+            "in": "path",
+            "description": "The secret of the password reset",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetProcessData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password successfully changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Password reset process not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/reset": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Initiate a password reset",
+        "operationId": "Account_PasswordResetInitiate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset email sent if the email is associated to an registered account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/signup": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Signs up a new user",
+        "operationId": "Account_SignUp",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User successfully signed up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username or email already exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/verify-email": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Verify account email",
+        "operationId": "Account_EmailVerify",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/account/email": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Change the password of the current user",
+        "operationId": "AuthenticatedAccount_ChangeEmail",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account/password": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Change the password of the current user",
+        "operationId": "AuthenticatedAccount_ChangePassword",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account/username": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Change the username of the current user",
+        "operationId": "AuthenticatedAccount_ChangeUsername",
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account": {
+      "delete": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Deactivate currently logged in account",
+        "operationId": "AuthenticatedAccount_Deactivate",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account/connections/{provider}": {
+      "delete": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Remove an existing OAuth connection for the current user.",
+        "operationId": "AuthenticatedAccount_RemoveOAuthConnection",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "description": "Provider key (e.g. `discord`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Connection removed."
+          },
+          "404": {
+            "description": "No connection found for this provider.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/account/connections": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "List OAuth connections linked to the current user.",
+        "operationId": "AuthenticatedAccount_ListOAuthConnections",
+        "responses": {
+          "200": {
+            "description": "Returns the list of connections.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OAuthConnectionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/config": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Gets all configuration items",
+        "operationId": "Admin_ConfigurationList",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigurationItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Adds a new configuration",
+        "operationId": "Admin_ConfigurationAdd",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationAddItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration added"
+          },
+          "400": {
+            "description": "Invalid name or value format",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Already exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Updates an existing configuration",
+        "operationId": "Admin_ConfigurationUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationUpdateItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration updated (or nothing to do)"
+          },
+          "400": {
+            "description": "Invalid name or value format or type mismatch",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/config/{name}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Deletes a configuration",
+        "operationId": "Admin_ConfigurationDelete",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration deleted"
+          },
+          "400": {
+            "description": "Invalid name format",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/users/{userId}/deactivate": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Deactivates a user",
+        "operationId": "Admin_DeactivateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "deleteLater",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/users/{userId}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Deletes a user",
+        "operationId": "Admin_DeleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Edits a user",
+        "operationId": "Admin_ModifyUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/blacklist/emailProviders": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_AddEmailProviderBlacklist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEmailProviderBlacklistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_ListEmailProviderBlacklist",
+        "parameters": [
+          {
+            "name": "match",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailProviderBlacklistDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailProviderBlacklistDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmailProviderBlacklistDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/blacklist/emailProviders/{id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_RemoveEmailProviderBlacklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/monitoring/onlineDevices": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Gets all online devices",
+        "operationId": "Admin_GetOnlineDevices",
+        "responses": {
+          "200": {
+            "description": "All online devices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOnlineDeviceResponseArrayLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Gets all users, paginated",
+        "operationId": "Admin_GetUsers",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "$offset",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "$limit",
+            "in": "query",
+            "schema": {
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsersViewPaginated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/users/{userId}/reactivate": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reactivates a user",
+        "operationId": "Admin_ReactivateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/blacklist/usernames": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_AddUsernameBlacklist",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUsernameBlacklistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_ListUsernameBlacklist",
+        "parameters": [
+          {
+            "name": "match",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserNameBlacklistDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserNameBlacklistDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserNameBlacklistDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/blacklist/usernames/{id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "Admin_RemoveUsernameBlacklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/webhooks": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Creates a webhook",
+        "operationId": "Admin_AddWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddWebhookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List webhooks",
+        "operationId": "Admin_ListWebhooks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/admin/webhooks/{id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Removes a webhook",
+        "operationId": "Admin_RemoveWebhook",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie",
+              "Roles:Admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/device/assignLCG": {
+      "get": {
+        "tags": [
+          "Hub Endpoints"
+        ],
+        "summary": "Gets the best suited LCG node for the client",
+        "operationId": "Device_GetLiveControlGateway",
+        "responses": {
+          "200": {
+            "description": "Successfully assigned LCG node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LcgNodeResponseLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Unable to find suitable LCG node",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HubToken": [
+              "AuthenticationSchemes:HubToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/device/self": {
+      "get": {
+        "tags": [
+          "Hub Endpoints"
+        ],
+        "summary": "Gets information about the authenticated device.",
+        "operationId": "Device_GetSelf",
+        "responses": {
+          "200": {
+            "description": "The device information was successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSelfResponseLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HubToken": [
+              "AuthenticationSchemes:HubToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/device/pair/{pairCode}": {
+      "get": {
+        "tags": [
+          "Hub Endpoints"
+        ],
+        "summary": "Pair a device with a pair code.",
+        "operationId": "Device_Pair",
+        "parameters": [
+          {
+            "name": "pairCode",
+            "in": "path",
+            "description": "The pair code to pair with.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully assigned LCG node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such pair code exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HubToken": [
+              "AuthenticationSchemes:HubToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/pair/{pairCode}": {
+      "get": {
+        "tags": [
+          "Hub Endpoints"
+        ],
+        "summary": "Pair a device with a pair code.",
+        "operationId": "Device_Pair_DEPRECATED",
+        "parameters": [
+          {
+            "name": "pairCode",
+            "in": "path",
+            "description": "The pair code to pair with.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully assigned LCG node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such pair code exists",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HubToken": [
+              "AuthenticationSchemes:HubToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices/{deviceId}/ota": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Gets the OTA update history for a device",
+        "operationId": "DevicesOta_GetOtaUpdateHistory",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "Id of the device",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtaItemIReadOnlyCollectionLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Could not find device or you do not have access to it",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Get all devices for the current user",
+        "operationId": "Devices_ListDevices",
+        "responses": {
+          "200": {
+            "description": "All devices for the current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseDeviceArrayLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Create a new device for the current user",
+        "operationId": "Devices_CreateDevice",
+        "responses": {
+          "201": {
+            "description": "Successfully created device",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices/{deviceId}": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Get a device by its id",
+        "operationId": "Devices_GetDeviceById",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseDeviceWithTokenLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Edit a device",
+        "operationId": "Devices_EditDevice",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HubEditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated device"
+          },
+          "404": {
+            "description": "Device does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Regenerate a device token",
+        "operationId": "Devices_RegenerateDeviceToken",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "The id of the device to regenerate the token for",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully regenerated device token",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to save regenerated token"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Remove a device from current user's account",
+        "operationId": "Devices_RemoveDevice",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "The id of the device to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted device"
+          },
+          "404": {
+            "description": "Device does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices/{deviceId}/pair": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Get a pair code for a device",
+        "operationId": "Devices_GetPairCode",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pair code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device does not exist or does not belong to you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices/{deviceId}/lcg": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Get LCG info for a device if it is online and connected to a LCG node",
+        "operationId": "Devices_GetLiveControlGatewayInfo",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LCG node was found and device is online",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LcgResponseLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device is not online",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Device is online but not connected to a LCG node, you might need to upgrade your firmware to use this feature",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error, lcg node could not be found"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/devices/{deviceId}/shockers": {
+      "get": {
+        "tags": [
+          "Hub Management"
+        ],
+        "summary": "Get all shockers for a device",
+        "operationId": "Devices_GetShockers",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "description": "The device id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All shockers for the device",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShockerResponseArrayLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device does not exists or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "Gets the version of the OpenShock backend.",
+        "operationId": "Version_GetBackendInfo",
+        "responses": {
+          "200": {
+            "description": "The version was successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendInfoResponseLegacyDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/public/stats": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "Gets online devices statistics",
+        "operationId": "Public_GetOnlineDevicesStatistics",
+        "responses": {
+          "200": {
+            "description": "The statistics were successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponseLegacyDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/shares/links/{publicShareId}/{shockerId}": {
+      "post": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Add a shocker to a public share",
+        "operationId": "ShareLinks_AddShocker",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully added shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Public share or shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Shocker already exists in public share",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Edit a shocker in a public share",
+        "operationId": "ShareLinks_EditShocker",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicShareEditShocker"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated shocker",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Shocker does not exist in public share"
+          },
+          "404": {
+            "description": "Public share or shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Remove a shocker from a public share",
+        "operationId": "ShareLinks_RemoveShocker",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully removed shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Shocker does not exist in public share"
+          },
+          "404": {
+            "description": "Public share or shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shares/links": {
+      "post": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Create a new public share",
+        "operationId": "ShareLinks_CreatePublicShare",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicShareCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created public share",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuidLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Get all public shares for the current user",
+        "operationId": "ShareLinks_List",
+        "responses": {
+          "200": {
+            "description": "All public shares for the current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnPublicShareResponseArrayLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shares/links/{publicShareId}": {
+      "delete": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Deletes a public share",
+        "operationId": "ShareLinks_DeletePublicShare",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted public share",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Public share not found or does not belong to you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shares/links/{publicShareId}/{shockerId}/pause": {
+      "post": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Pause a shocker in a public share",
+        "operationId": "ShareLinks_PauseShocker",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated paused state shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseReasonLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Shocker does not exist in public share"
+          },
+          "404": {
+            "description": "Public share or shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/public/shares/links/{publicShareId}": {
+      "get": {
+        "tags": [
+          "Public Shocker Shares"
+        ],
+        "summary": "Gets information about a public share.",
+        "operationId": "Public_GetPublicShare",
+        "parameters": [
+          {
+            "name": "publicShareId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The public share information was successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicShareResponseLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The public share does not exist.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1/sessions/{sessionId}": {
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "operationId": "Sessions_DeleteSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/sessions": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "operationId": "Sessions_ListSessions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoginSessionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/sessions/self": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Gets information about the current token used to access this endpoint",
+        "operationId": "Sessions_GetSelfSession",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSessionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSessionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shares/code/{shareCodeId}": {
+      "delete": {
+        "tags": [
+          "Shocker Shares"
+        ],
+        "summary": "Delete a share code",
+        "operationId": "Shares_DeleteShareCode",
+        "parameters": [
+          {
+            "name": "shareCodeId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted share code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Share code not found or does not belong to you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Shocker Shares"
+        ],
+        "summary": "Link a share code to your account",
+        "operationId": "Shares_LinkShareCode",
+        "parameters": [
+          {
+            "name": "shareCodeId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Linked share code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "You cannot link your own shocker code / You already have this shocker linked to your account",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Share code not found or does not belong to you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error while linking share code to your account"
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}": {
+      "patch": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Edit a shocker",
+        "operationId": "Shocker_EditShocker",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewShocker"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Get information about a shocker.",
+        "operationId": "Shocker_GetShockerById",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shocker information was successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShockerWithDeviceLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The shocker does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Remove a shocker",
+        "operationId": "Shocker_RemoveShocker",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/logs": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Get the logs for a shocker",
+        "operationId": "Shocker_GetShockerLogs",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogEntryArrayLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/logs": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Get the logs for all shockers",
+        "operationId": "Shocker_GetAllShockerLogs",
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShockerLogsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/shared": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "List all shockers shared with the authenticated user.",
+        "operationId": "Shocker_ListSharedShockers",
+        "responses": {
+          "200": {
+            "description": "The shockers were successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerShockerResponseArrayLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/own": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "List all shockers belonging to the authenticated user.",
+        "operationId": "Shocker_ListShockers",
+        "responses": {
+          "200": {
+            "description": "The shockers were successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseDeviceWithShockersArrayLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/pause": {
+      "post": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Pause or unpause a shocker",
+        "operationId": "Shocker_PauseShocker",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully set pause state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker not found or does not belong to you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers": {
+      "post": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Register a shocker",
+        "operationId": "Shocker_RegisterShocker",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewShocker"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully created shocker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuidLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "You can have a maximum of 11 Shockers per Device.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device does not exist",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/control": {
+      "post": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Send a control message to shockers (Deprecated in favor of the /2/shockers/control endpoint)",
+        "operationId": "Shocker_SendControl_DEPRECATED",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Control"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The control messages were successfully sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyEmptyResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/shares": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Get all user shares for a shocker",
+        "operationId": "Shocker_GetUserShares",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "Id of the shocker",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareInfoArrayLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The shocker does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Create a share code for a shocker",
+        "operationId": "Shocker_ShockerShareCodeCreate",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShockerPermLimitPair"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The share code was successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuidLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Shocker does not exists or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/shareCodes": {
+      "get": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "List all share codes for a shocker",
+        "operationId": "Shocker_ShockerShareCodeList",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareCodeInfoArrayLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/shares/{sharedWithUserId}": {
+      "delete": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Remove a share for a shocker",
+        "operationId": "Shocker_ShockerShareRemove",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sharedWithUserId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully removed share code"
+          },
+          "404": {
+            "description": "Share does not exists or device/shocker does not belong to you nor is shared with you",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Update a share for a shocker",
+        "operationId": "Shocker_ShockerShareCodeUpdate",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sharedWithUserId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShockerPermLimitPair"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated share code"
+          },
+          "404": {
+            "description": "The share code does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/shockers/{shockerId}/shares/{sharedWithUserId}/pause": {
+      "post": {
+        "tags": [
+          "Shockers"
+        ],
+        "summary": "Pause/Unpause a share code for a shocker",
+        "operationId": "Shocker_ShockerShareCodePause",
+        "parameters": [
+          {
+            "name": "shockerId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sharedWithUserId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated pause status share",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BooleanLegacyDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The share code does not exist or you do not have access to it.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/users/self": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get the current user's information.",
+        "operationId": "Users_GetSelf",
+        "responses": {
+          "200": {
+            "description": "The user's information was successfully retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSelfResponseLegacyDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    },
+    "/1/users/by-name/{username}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "Users_GetByName",
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicUserInfo"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicUserInfo"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicUserInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenShockProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UserSessionCookie": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          },
+          {
+            "ApiToken": [
+              "AuthenticationSchemes:UserSessionCookie,ApiToken"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddEmailProviderBlacklistDto": {
+        "required": [
+          "domains"
+        ],
+        "type": "object",
+        "properties": {
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddUsernameBlacklistDto": {
+        "required": [
+          "matchType",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "matchType": {
+            "$ref": "#/components/schemas/MatchTypeEnum"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddWebhookDto": {
+        "required": [
+          "name",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOnlineDeviceResponse": {
+        "required": [
+          "bootedAt",
+          "connectedAt",
+          "firmwareVersion",
+          "gateway",
+          "id",
+          "latencyMs",
+          "name",
+          "owner",
+          "rssi",
+          "userAgent"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/BasicUserInfo"
+          },
+          "firmwareVersion": {
+            "title": "SemVer",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "type": "string",
+            "example": "1.0.0-dev+a16f2"
+          },
+          "gateway": {
+            "type": "string"
+          },
+          "connectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "userAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "bootedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "latencyMs": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "rssi": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOnlineDeviceResponseArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminOnlineDeviceResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminUsersView": {
+        "required": [
+          "activatedAt",
+          "apiTokenCount",
+          "createdAt",
+          "deactivatedAt",
+          "deactivatedByUserId",
+          "deviceCount",
+          "email",
+          "emailChangeRequestCount",
+          "id",
+          "name",
+          "nameChangeRequestCount",
+          "passwordHashType",
+          "passwordResetCount",
+          "roles",
+          "shockerControlLogCount",
+          "shockerCount",
+          "shockerPublicShareCount",
+          "shockerUserShareCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "passwordHashType": {
+            "$ref": "#/components/schemas/PasswordHashingAlgorithm"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleType"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deactivatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deactivatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "apiTokenCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "passwordResetCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shockerUserShareCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shockerPublicShareCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "emailChangeRequestCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nameChangeRequestCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deviceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shockerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shockerControlLogCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminUsersViewPaginated": {
+        "required": [
+          "data",
+          "limit",
+          "offset",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUsersView"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BackendInfoResponse": {
+        "required": [
+          "commit",
+          "currentTime",
+          "frontendUrl",
+          "isUserAuthenticated",
+          "oAuthProviders",
+          "shortLinkUrl",
+          "turnstileSiteKey",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "currentTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "frontendUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "shortLinkUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "turnstileSiteKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "oAuthProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isUserAuthenticated": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BackendInfoResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BackendInfoResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BasicUserInfo": {
+        "required": [
+          "id",
+          "image",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BooleanLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeEmailRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "user@example.com"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeUsernameRequest": {
+        "required": [
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "String"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfigurationAddItemRequest": {
+        "required": [
+          "description",
+          "name",
+          "type",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "description": "The unique name of the configuration item.\nMust consist of uppercase letters and underscores only."
+          },
+          "description": {
+            "type": "string",
+            "description": "A human-readable description of the configuration item’s purpose."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ConfigurationValueType"
+          },
+          "value": {
+            "type": "string",
+            "description": "The initial value for the configuration item, serialized as a string.\nMust conform to the format required by OpenShock.API.Controller.Admin.DTOs.ConfigurationAddItemRequest.Type."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request DTO for adding a new configuration item."
+      },
+      "ConfigurationItemDto": {
+        "required": [
+          "createdAt",
+          "description",
+          "name",
+          "type",
+          "updatedAt",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The unique name of the configuration item."
+          },
+          "description": {
+            "type": "string",
+            "description": "A human-readable description of what this configuration item controls."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ConfigurationValueType"
+          },
+          "value": {
+            "type": "string",
+            "description": "The current value of the configuration item, serialized as a string."
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "The timestamp when the configuration was last updated.",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp when the configuration was originally created.",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Data transfer object representing a configuration item."
+      },
+      "ConfigurationUpdateItemRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the configuration item to update.\nMust consist only of uppercase letters and underscores."
+          },
+          "description": {
+            "type": "string",
+            "description": "(Optional) New description for the configuration item.",
+            "nullable": true
+          },
+          "value": {
+            "type": "string",
+            "description": "(Optional) New value for the configuration item.\nMust match the format expected by its existing OpenShock.Common.OpenShockDb.ConfigurationValueType.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request DTO for updating a configuration item.\nEither OpenShock.API.Controller.Admin.DTOs.ConfigurationUpdateItemRequest.Description or OpenShock.API.Controller.Admin.DTOs.ConfigurationUpdateItemRequest.Value (or both) may be provided.\nIf both are null, no update action is performed."
+      },
+      "ConfigurationValueType": {
+        "enum": [
+          "String",
+          "Bool",
+          "Int",
+          "Float",
+          "Json"
+        ],
+        "type": "string"
+      },
+      "Control": {
+        "required": [
+          "duration",
+          "id",
+          "intensity",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ControlType"
+          },
+          "intensity": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "duration": {
+            "maximum": 65535,
+            "minimum": 300,
+            "type": "integer",
+            "format": "int32"
+          },
+          "exclusive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ControlLogSenderLight": {
+        "required": [
+          "customName",
+          "id",
+          "image",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "customName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ControlType": {
+        "enum": [
+          "Stop",
+          "Shock",
+          "Vibrate",
+          "Sound"
+        ],
+        "type": "string"
+      },
+      "CreateTokenRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "permissions": {
+            "maxItems": 256,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionType"
+            }
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceSelfResponse": {
+        "required": [
+          "id",
+          "name",
+          "shockers"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shockers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinimalShocker"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceSelfResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DeviceSelfResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EditTokenRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "permissions": {
+            "maxItems": 256,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionType"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmailProviderBlacklistDto": {
+        "required": [
+          "createdAt",
+          "domain",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GuidLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HubEditRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LcgNodeResponse": {
+        "required": [
+          "country",
+          "fqdn"
+        ],
+        "type": "object",
+        "properties": {
+          "fqdn": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LcgNodeResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LcgNodeResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LcgResponse": {
+        "required": [
+          "country",
+          "gateway"
+        ],
+        "type": "object",
+        "properties": {
+          "gateway": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LcgResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LcgResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LegacyEmptyResponse": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LogEntry": {
+        "required": [
+          "controlledBy",
+          "createdOn",
+          "duration",
+          "id",
+          "intensity",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ControlType"
+          },
+          "controlledBy": {
+            "$ref": "#/components/schemas/ControlLogSenderLight"
+          },
+          "intensity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LogEntryArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LogEntryWithHub": {
+        "required": [
+          "controlledBy",
+          "createdOn",
+          "duration",
+          "hubId",
+          "hubName",
+          "id",
+          "intensity",
+          "shockerId",
+          "shockerName",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hubId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hubName": {
+            "type": "string"
+          },
+          "shockerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shockerName": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ControlType"
+          },
+          "controlledBy": {
+            "$ref": "#/components/schemas/ControlLogSenderLight"
+          },
+          "intensity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Login": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginSessionResponse": {
+        "required": [
+          "created",
+          "expires",
+          "id",
+          "ip",
+          "lastUsed",
+          "userAgent"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsed": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MatchTypeEnum": {
+        "enum": [
+          "Exact",
+          "Contains"
+        ],
+        "type": "string"
+      },
+      "MinimalShocker": {
+        "required": [
+          "id",
+          "model",
+          "rfId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rfId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ShockerModelType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NewShocker": {
+        "required": [
+          "device",
+          "model",
+          "name",
+          "rfId"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "rfId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "device": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ShockerModelType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OAuthConnectionResponse": {
+        "required": [
+          "displayName",
+          "externalId",
+          "linkedAt",
+          "providerKey"
+        ],
+        "type": "object",
+        "properties": {
+          "providerKey": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpenShockProblem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "readOnly": true,
+            "deprecated": true
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true,
+            "deprecated": true
+          },
+          "requestId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": {}
+      },
+      "OtaItem": {
+        "required": [
+          "id",
+          "message",
+          "startedAt",
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OtaUpdateStatus"
+          },
+          "version": {
+            "title": "SemVer",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+            "type": "string",
+            "example": "1.0.0-dev+a16f2"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OtaItemIReadOnlyCollectionLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OtaItem"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OtaUpdateStatus": {
+        "enum": [
+          "Started",
+          "Running",
+          "Finished",
+          "Error",
+          "Timeout"
+        ],
+        "type": "string"
+      },
+      "OwnPublicShareResponse": {
+        "required": [
+          "createdOn",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OwnPublicShareResponseArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnPublicShareResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OwnerShockerResponse": {
+        "required": [
+          "devices",
+          "id",
+          "image",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedDevice"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "OwnerShockerResponseArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerShockerResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PasswordHashingAlgorithm": {
+        "enum": [
+          "BCrypt",
+          "PBKDF2",
+          "Unknown"
+        ],
+        "type": "string"
+      },
+      "PasswordResetProcessData": {
+        "required": [
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PauseReasonLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "title": "PauseReason",
+            "type": "integer",
+            "description": "An integer representing the reason(s) for the shocker being paused, expressed as a bitfield where reasons are OR'd together.\n\nEach bit corresponds to:\n- 1: Shocker\n- 2: UserShare\n- 4: PublicShare\n\nFor example, a value of 6 (2 | 4) indicates both 'UserShare' and 'PublicShare' reasons.",
+            "example": 6
+          }
+        },
+        "additionalProperties": false
+      },
+      "PauseRequest": {
+        "required": [
+          "pause"
+        ],
+        "type": "object",
+        "properties": {
+          "pause": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionType": {
+        "enum": [
+          "shockers.use",
+          "shockers.edit",
+          "shockers.pause",
+          "devices.edit",
+          "devices.auth"
+        ],
+        "type": "string"
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": {}
+      },
+      "PublicShareCreate": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicShareDevice": {
+        "required": [
+          "id",
+          "name",
+          "shockers"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shockers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicShareShocker"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicShareEditShocker": {
+        "required": [
+          "limits",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "$ref": "#/components/schemas/ShockerPermissions"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ShockerLimits"
+          },
+          "cooldown": {
+            "maximum": 65535,
+            "minimum": 300,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicShareResponse": {
+        "required": [
+          "author",
+          "createdOn",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "author": {
+            "$ref": "#/components/schemas/BasicUserInfo"
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicShareDevice"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicShareResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicShareResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicShareShocker": {
+        "required": [
+          "id",
+          "limits",
+          "name",
+          "paused",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ShockerPermissions"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ShockerLimits"
+          },
+          "paused": {
+            "title": "PauseReason",
+            "type": "integer",
+            "description": "An integer representing the reason(s) for the shocker being paused, expressed as a bitfield where reasons are OR'd together.\n\nEach bit corresponds to:\n- 1: Shocker\n- 2: UserShare\n- 4: PublicShare\n\nFor example, a value of 6 (2 | 4) indicates both 'UserShare' and 'PublicShare' reasons.",
+            "example": 6
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReportTokensRequest": {
+        "required": [
+          "secrets",
+          "turnstileResponse"
+        ],
+        "type": "object",
+        "properties": {
+          "turnstileResponse": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string"
+          },
+          "secrets": {
+            "maxItems": 512,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDevice": {
+        "required": [
+          "createdOn",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDeviceArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseDevice"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDeviceWithShockers": {
+        "required": [
+          "createdOn",
+          "id",
+          "name",
+          "shockers"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shockers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShockerResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDeviceWithShockersArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseDeviceWithShockers"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDeviceWithToken": {
+        "required": [
+          "createdOn",
+          "id",
+          "name",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "token": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResponseDeviceWithTokenLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ResponseDeviceWithToken"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RoleType": {
+        "enum": [
+          "Support",
+          "Staff",
+          "Admin",
+          "System"
+        ],
+        "type": "string"
+      },
+      "ShareCodeInfo": {
+        "required": [
+          "createdOn",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShareCodeInfoArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareCodeInfo"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShareInfo": {
+        "required": [
+          "createdOn",
+          "limits",
+          "paused",
+          "permissions",
+          "sharedWith"
+        ],
+        "type": "object",
+        "properties": {
+          "sharedWith": {
+            "$ref": "#/components/schemas/BasicUserInfo"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ShockerPermissions"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ShockerLimits"
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShareInfoArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareInfo"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SharedDevice": {
+        "required": [
+          "id",
+          "name",
+          "shockers"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shockers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedShocker"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SharedShocker": {
+        "required": [
+          "id",
+          "isPaused",
+          "limits",
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPaused": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/ShockerPermissions"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ShockerLimits"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerLimits": {
+        "required": [
+          "duration",
+          "intensity"
+        ],
+        "type": "object",
+        "properties": {
+          "intensity": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "duration": {
+            "maximum": 65535,
+            "minimum": 300,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerLogsResponse": {
+        "required": [
+          "logs"
+        ],
+        "type": "object",
+        "properties": {
+          "logs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntryWithHub"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerModelType": {
+        "enum": [
+          "CaiXianlin",
+          "PetTrainer",
+          "Petrainer998DR"
+        ],
+        "type": "string"
+      },
+      "ShockerPermLimitPair": {
+        "required": [
+          "limits",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "$ref": "#/components/schemas/ShockerPermissions"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ShockerLimits"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerPermissions": {
+        "required": [
+          "shock",
+          "sound",
+          "vibrate"
+        ],
+        "type": "object",
+        "properties": {
+          "vibrate": {
+            "type": "boolean"
+          },
+          "sound": {
+            "type": "boolean"
+          },
+          "shock": {
+            "type": "boolean"
+          },
+          "live": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerResponse": {
+        "required": [
+          "createdOn",
+          "id",
+          "isPaused",
+          "model",
+          "name",
+          "rfId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rfId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ShockerModelType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPaused": {
+            "type": "boolean"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerResponseArrayLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShockerResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerWithDevice": {
+        "required": [
+          "createdOn",
+          "device",
+          "id",
+          "isPaused",
+          "model",
+          "name",
+          "rfId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rfId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ShockerModelType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPaused": {
+            "type": "boolean"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "device": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShockerWithDeviceLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ShockerWithDevice"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SignUp": {
+        "required": [
+          "email",
+          "password",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "String"
+          },
+          "password": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StatsResponse": {
+        "required": [
+          "devicesOnline"
+        ],
+        "type": "object",
+        "properties": {
+          "devicesOnline": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StatsResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StatsResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StringLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TokenCreatedResponse": {
+        "required": [
+          "createdAt",
+          "id",
+          "lastUsed",
+          "name",
+          "permissions",
+          "token",
+          "validUntil"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastUsed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionType"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TokenResponse": {
+        "required": [
+          "createdOn",
+          "id",
+          "lastUsed",
+          "name",
+          "permissions",
+          "validUntil"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastUsed": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionType"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserNameBlacklistDto": {
+        "required": [
+          "createdAt",
+          "id",
+          "matchType",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "matchType": {
+            "$ref": "#/components/schemas/MatchTypeEnum"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserPatchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserSelfResponse": {
+        "required": [
+          "email",
+          "id",
+          "image",
+          "name",
+          "rank",
+          "roles"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleType"
+            }
+          },
+          "rank": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserSelfResponseLegacyDataResponse": {
+        "required": [
+          "data",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserSelfResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsernameAvailability": {
+        "enum": [
+          "Available",
+          "Taken",
+          "Invalid"
+        ],
+        "type": "string"
+      },
+      "UsernameCheckResponse": {
+        "required": [
+          "availability"
+        ],
+        "type": "object",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/UsernameAvailability"
+          },
+          "error": {
+            "$ref": "#/components/schemas/UsernameError"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsernameError": {
+        "required": [
+          "message",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/UsernameErrorType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsernameErrorType": {
+        "enum": [
+          "TooShort",
+          "TooLong",
+          "StartOrEndWithWhitespace",
+          "ResembleEmail",
+          "ObnoxiousCharacters",
+          "Blacklisted"
+        ],
+        "type": "string"
+      },
+      "WebhookDto": {
+        "required": [
+          "createdAt",
+          "id",
+          "name",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "UserSessionCookie": {
+        "type": "apiKey",
+        "description": "Enter user session cookie",
+        "name": "openShockSession",
+        "in": "cookie"
+      },
+      "ApiToken": {
+        "type": "apiKey",
+        "description": "Enter API Token",
+        "name": "OpenShockToken",
+        "in": "header"
+      },
+      "HubToken": {
+        "type": "apiKey",
+        "description": "Enter hub token",
+        "name": "DeviceToken",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Meta",
+      "description": "Version stuff"
+    },
+    {
+      "name": "Shockers",
+      "description": "Shocker management"
+    },
+    {
+      "name": "Shocker Shares",
+      "description": "Shocker share management"
+    },
+    {
+      "name": "Public Shocker Shares",
+      "description": "Public shares management"
+    },
+    {
+      "name": "Sessions",
+      "description": "Session management"
+    },
+    {
+      "name": "Hub Endpoints",
+      "description": "For devices (ESP's)"
+    },
+    {
+      "name": "Account",
+      "description": "User account management"
+    }
+  ]
+}

@@ -109,6 +109,10 @@ describe('TTS Username Announcement', () => {
     // Helper function to setup mocks for TTS testing
     function setupTTSMocks() {
         capturedText = null;
+
+        if (ttsPlugin.queueManager && typeof ttsPlugin.queueManager.stopProcessing === 'function') {
+            ttsPlugin.queueManager.stopProcessing();
+        }
         
         // Mock the queue manager
         ttsPlugin.queueManager = {
@@ -120,7 +124,8 @@ describe('TTS Username Announcement', () => {
                     queueSize: 1,
                     estimatedWaitMs: 0
                 };
-            }
+            },
+            stopProcessing: jest.fn()
         };
         
         // Mock the TikTok engine
@@ -149,7 +154,11 @@ describe('TTS Username Announcement', () => {
         await ttsPlugin.init();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        if (ttsPlugin && typeof ttsPlugin.destroy === 'function') {
+            await ttsPlugin.destroy();
+        }
+
         // Clean up test database
         if (db) {
             db.close();

@@ -524,6 +524,67 @@ class TTSPlugin {
     }
 
     /**
+     * Build the assignable Fish.audio voice pool from built-in and configured custom voices.
+     */
+    _getFishAudioVoicePool() {
+        const builtInVoices = FishSpeechEngine.getVoices();
+        const customVoices = this.config.customFishVoices || {};
+
+        return Object.keys({ ...builtInVoices, ...customVoices })
+            .filter((voiceId) => typeof voiceId === 'string' && voiceId.trim().length > 0);
+    }
+
+    /**
+     * Assign a random Fish.audio voice to eligible team-level users without an existing voice.
+     */
+    _maybeAssignTeamLevelFishVoice({ userId, username, teamLevel, userSettings, source, isSystemSource }) {
+        if (
+            isSystemSource ||
+            source !== 'chat' ||
+            !userId ||
+            teamLevel < 3 ||
+            userSettings?.assigned_voice_id ||
+            userSettings?.assigned_engine ||
+            userSettings?.is_blacklisted
+        ) {
+            return null;
+        }
+
+        if (!this.engines.fishaudio) {
+            this._logDebug('SPEAK_STEP4', 'Skipping automatic Fish.audio voice assignment because engine is unavailable', {
+                userId,
+                username,
+                teamLevel
+            });
+            return null;
+        }
+
+        const fishVoiceIds = this._getFishAudioVoicePool();
+        if (fishVoiceIds.length === 0) {
+            this.logger.warn(`TTS: Cannot auto-assign Fish.audio voice for ${username}; voice pool is empty`);
+            return null;
+        }
+
+        const randomIndex = Math.floor(Math.random() * fishVoiceIds.length);
+        const voiceId = fishVoiceIds[randomIndex];
+        const assigned = this.permissionManager.assignVoice(userId, username || userId, voiceId, 'fishaudio');
+
+        if (!assigned) {
+            return null;
+        }
+
+        this.logger.info(`TTS: Auto-assigned Fish.audio voice ${voiceId} to team level ${teamLevel} user ${username || userId}`);
+        this._logDebug('SPEAK_STEP4', 'Auto-assigned Fish.audio voice for team level user', {
+            userId,
+            username,
+            teamLevel,
+            voiceId
+        });
+
+        return voiceId;
+    }
+
+    /**
      * Internal debug logging
      */
     _logDebug(category, message, data = {}) {
@@ -1052,6 +1113,11 @@ class TTSPlugin {
         // SiliconFlow API key (centralized for Fish Speech TTS + StreamAlchemy image generation)
         // Try centralized key first, then legacy keys for backwards compatibility
         config.siliconflowApiKey = getValidApiKey('siliconflow_api_key', 'tts_fishspeech_api_key', 'streamalchemy_siliconflow_api_key') || config.siliconflowApiKey;
+
+        const savedTikTokSessionId = getValidApiKey('tiktok_session_id');
+        if (savedTikTokSessionId) {
+            config.tiktokSessionId = 'configured';
+        }
         
         // If no saved config exists, save defaults
         if (!saved) {
@@ -1275,7 +1341,24 @@ class TTSPlugin {
                     this.logger.info(`TTS Config Update: this.config.customFishVoices AFTER = ${JSON.stringify(this.config.customFishVoices)}`);
                 }
 
-                // TikTok SessionID support removed (engine no longer used)
+                if (updates.tiktokSessionId && updates.tiktokSessionId !== '***HIDDEN***') {
+                    const tiktokSessionId = String(updates.tiktokSessionId).trim();
+                    if (tiktokSessionId) {
+                        this.config.tiktokSessionId = 'configured';
+                        db.setSetting('tiktok_session_id', tiktokSessionId);
+                        db.setSetting('tiktok_session_extracted_at', new Date().toISOString());
+                        db.setSetting('tiktok_session_method', 'manual_import');
+
+                        if (this.engines.tiktok) {
+                            this.engines.tiktok.sessionId = tiktokSessionId;
+                        }
+
+                        this.logger.info('TTS: TikTok SessionID updated via config route');
+                        this._logDebug('CONFIG', 'TikTok SessionID updated via config route', {
+                            source: 'manual_import'
+                        });
+                    }
+                }
 
                 // Update Google API key if provided (and not the placeholder)
                 if (updates.googleApiKey && updates.googleApiKey !== '***HIDDEN***') {
@@ -2709,15 +2792,28 @@ class TTSPlugin {
             // Step 4: Determine voice and engine
             this._logDebug('SPEAK_STEP4', 'Getting user settings', { userId });
 
-            const userSettings = this.permissionManager.getUserSettings(userId);
-            
-            // Track if user has an assigned voice to preserve assignment intent during engine fallback
-            const hasUserAssignedVoice = !!(userSettings?.assigned_voice_id && userSettings?.assigned_engine);
+            let userSettings = this.permissionManager.getUserSettings(userId);
             
             // Prioritize user custom voices over source-provided voices
             // EXCEPT for system sources (quiz-show, manual) which should use their configured voice
             const isSystemSource = source === 'quiz-show' || source === 'manual';
-            
+
+            const autoAssignedFishVoice = this._maybeAssignTeamLevelFishVoice({
+                userId,
+                username,
+                teamLevel,
+                userSettings,
+                source,
+                isSystemSource
+            });
+
+            if (autoAssignedFishVoice) {
+                userSettings = this.permissionManager.getUserSettings(userId) || userSettings;
+            }
+
+            // Track if user has an assigned voice to preserve assignment intent during engine fallback
+            const hasUserAssignedVoice = !!(userSettings?.assigned_voice_id && userSettings?.assigned_engine);
+             
             let selectedEngine;
             let selectedVoice;
             

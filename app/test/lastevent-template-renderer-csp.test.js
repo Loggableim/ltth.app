@@ -268,6 +268,54 @@ describe('TemplateRenderer CSP Compliance', () => {
     expect(container.querySelectorAll('.username .wave-char')).toHaveLength(2);
   });
 
+  test('username text effects keep multi-code-point grapheme clusters together', async () => {
+    const textEffectsPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/text-effects.js');
+    const TextEffects = require(textEffectsPath);
+    window.TextEffects = TextEffects;
+    global.requestAnimationFrame = jest.fn(() => 1);
+    global.cancelAnimationFrame = jest.fn();
+
+    const renderer = new TemplateRenderer(container, {
+      showProfilePicture: false,
+      showUsername: true,
+      usernameEffect: 'wave'
+    });
+
+    const familyEmoji = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}';
+    const nickname = `A${familyEmoji}B`;
+    const expectedGraphemes = ['A', familyEmoji, 'B'];
+
+    await renderer.render({
+      uniqueId: 'testuser',
+      nickname,
+      eventType: 'follower',
+      label: 'Follower'
+    });
+
+    const wrappedChars = Array.from(container.querySelectorAll('.username .wave-char')).map(node => node.textContent);
+    expect(wrappedChars).toEqual(expectedGraphemes);
+    expect(container.querySelector('.username').textContent).toBe(nickname);
+  });
+
+  test('username styles include unicode-safe font fallbacks for OBS/browser rendering', async () => {
+    const renderer = new TemplateRenderer(container, {
+      showProfilePicture: false,
+      showUsername: true,
+      fontFamily: 'Exo 2'
+    });
+
+    await renderer.render({
+      uniqueId: 'unicode-user',
+      nickname: 'Łukasz ❤️',
+      eventType: 'follower',
+      label: 'Follower'
+    });
+
+    const usernameStyle = container.querySelector('.username').getAttribute('style');
+    expect(usernameStyle).toContain('Segoe UI Emoji');
+    expect(usernameStyle).toContain('sans-serif');
+  });
+
   test('rendering null clears active text effects', async () => {
     const textEffectsPath = path.join(__dirname, '../plugins/lastevent-spotlight/lib/text-effects.js');
     const TextEffects = require(textEffectsPath);

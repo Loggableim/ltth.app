@@ -1,0 +1,190 @@
+const fs = require('fs');
+const path = require('path');
+const { JSDOM } = require('jsdom');
+const MusicBotPlugin = require('../plugins/music-bot/main');
+const MusicResolver = require('../plugins/music-bot/lib/music-resolver');
+
+function createPluginWithQueue(queue) {
+  const emitted = [];
+  const api = {
+    getSocketIO: () => ({ emit: jest.fn() }),
+    getDatabase: () => ({}),
+    emit: jest.fn((event, payload) => emitted.push({ event, payload })),
+    log: jest.fn()
+  };
+  const plugin = new MusicBotPlugin(api);
+  plugin.config = {
+    playback: { mpvPath: 'mpv', autoPlay: true },
+    audio: { masterVolume: 100, sourceVolume: 50 },
+    autoDJ: { enabled: false },
+    fallbackPlaylist: { enabled: false, tracks: [] },
+    preCache: { enabled: false }
+  };
+  plugin._mpvAvailable = false;
+  plugin.queueManager = {
+    getQueue: jest.fn(() => queue),
+    shiftNext: jest.fn(() => queue.shift()),
+    returnToFront: jest.fn((song) => queue.unshift(song))
+  };
+  plugin.playbackEngine = {
+    play: jest.fn(),
+    clearNowPlaying: jest.fn(),
+    getNowPlaying: jest.fn(() => null)
+  };
+  plugin.autoDJ = { getNextTrack: jest.fn() };
+  plugin._playFallbackTrack = jest.fn(async () => null);
+  plugin._maybePlayAutoDJ = jest.fn(async () => null);
+  plugin._schedulePreCache = jest.fn();
+  return { plugin, api, emitted };
+}
+
+function createJsonResponse(payload) {
+  return { json: async () => payload };
+}
+
+function bootMusicBotUi() {
+  const html = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/ui.html'), 'utf8');
+  const js = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui.js'), 'utf8');
+  const fetchMock = jest.fn(async (url, options = {}) => {
+    const target = String(url);
+    if (options.method === 'POST') {
+      return createJsonResponse({ success: true, config: {} });
+    }
+    if (target.includes('/status')) {
+      return createJsonResponse({
+        success: true,
+        nowPlaying: null,
+        queueLength: 0,
+        playbackState: 'idle',
+        masterVolume: 100,
+        sourceVolume: 50
+      });
+    }
+    if (target.includes('/queue')) return createJsonResponse({ success: true, queue: [] });
+    if (target.includes('/history')) return createJsonResponse({ success: true, history: [] });
+    if (target.includes('/auto-dj/status')) {
+      return createJsonResponse({
+        success: true,
+        status: {
+          enabled: false,
+          mode: 'history',
+          historyMinPlays: 2,
+          maxConsecutiveAutoDJ: 10,
+          announceAutoDJ: true
+        }
+      });
+    }
+    if (target.includes('/bans')) return createJsonResponse({ success: true, bans: [] });
+    if (target.includes('/gift-catalog')) return createJsonResponse({ catalog: [] });
+    if (target.includes('/setup-status')) return createJsonResponse({ success: true, issues: [] });
+    if (target.includes('/config')) {
+      return createJsonResponse({
+        success: true,
+        config: {
+          queue: {
+            duplicateDetection: 'strict',
+            cooldownPerUserSeconds: 30,
+            maxSongDurationSeconds: 360,
+            cooldownBypassForGifts: false
+          },
+          playback: { crossfadeDuration: 3000, mpvPath: 'mpv' },
+          commandAliases: {},
+          autoDJ: {
+            enabled: false,
+            mode: 'history',
+            historyMinPlays: 2,
+            maxConsecutiveAutoDJ: 10,
+            announceAutoDJ: true
+          },
+          moderation: { rejectAgeRestricted: true, rejectExplicit: false, blockedKeywords: [] },
+          resolver: { ytdlpPath: 'yt-dlp' },
+          audio: { masterVolume: 100, sourceVolume: 50 },
+          permissions: { requireSuperfanForRequest: false },
+          monetization: {
+            payToPlayEnabled: false,
+            payToPlayGiftCatalog: [],
+            payToPlayMinCoins: 0,
+            payToSkipEnabled: false,
+            payToSkipGiftCatalog: [],
+            likeGateEnabled: false,
+            minLikesPerUser: 1
+          },
+          giftIntegration: { skipImmunityGifts: [] }
+        }
+      });
+    }
+    return createJsonResponse({ success: true });
+  });
+
+  const dom = new JSDOM(html, {
+    url: 'http://localhost:3000/plugins/music-bot/ui',
+    runScripts: 'dangerously',
+    beforeParse(window) {
+      window.io = () => ({ on: jest.fn(), emit: jest.fn() });
+      window.fetch = fetchMock;
+      window.open = jest.fn();
+      window.navigator.clipboard = { writeText: jest.fn(async () => {}) };
+    }
+  });
+  dom.window.eval(js);
+  return { dom, fetchMock };
+}
+
+describe('Music Bot runtime and UI regressions', () => {
+  test('keeps queued songs when mpv is unavailable instead of draining the queue', async () => {
+    const queue = [{
+      id: 'song-1',
+      title: 'Queued Song',
+      url: 'https://youtube.com/watch?v=abc123xyz99',
+      duration: 120,
+      requestedBy: 'viewer'
+    }];
+    const { plugin } = createPluginWithQueue(queue);
+
+    const result = await plugin._playNextFromQueue();
+
+    expect(result.success).toBe(false);
+    expect(queue).toHaveLength(1);
+    expect(plugin.queueManager.shiftNext).not.toHaveBeenCalled();
+    expect(plugin.playbackEngine.play).not.toHaveBeenCalled();
+  });
+
+  test('resolver config updates keep the bundled yt-dlp path for the default setting', () => {
+    const bundledPath = require('youtube-dl-exec').constants.YOUTUBE_DL_PATH;
+    const resolver = new MusicResolver({ ytdlpPath: 'custom-yt-dlp' }, { log: jest.fn() });
+
+    resolver.updateConfig({
+      ytdlpPath: 'yt-dlp',
+      moderation: { rejectExplicit: true, blockedKeywords: ['blocked'] }
+    });
+
+    expect(resolver.config.ytdlpPath).toBe(bundledPath);
+    expect(resolver.config.moderation.rejectExplicit).toBe(true);
+    expect(resolver.config.moderation.blockedKeywords).toEqual(['blocked']);
+  });
+
+  test('UI exposes mpv path configuration and persists it to playback config', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    const input = dom.window.document.getElementById('mpv-path');
+
+    expect(input).not.toBeNull();
+    input.value = 'C:\\tools\\mpv\\mpv.exe';
+    input.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const mpvPost = fetchMock.mock.calls.find(([url, options = {}]) => {
+      if (url !== '/api/plugins/music-bot/config' || options.method !== 'POST') return false;
+      const body = JSON.parse(options.body || '{}');
+      return body.playback?.mpvPath === 'C:\\tools\\mpv\\mpv.exe';
+    });
+    expect(mpvPost).toBeTruthy();
+  });
+
+  test('UI stylesheet uses a local resolved accent token instead of an undefined theme variable', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../plugins/music-bot/assets/ui-style.css'), 'utf8');
+
+    expect(css).toContain('--musicbot-accent');
+    expect(css).not.toContain('var(--color-accent)');
+  });
+});

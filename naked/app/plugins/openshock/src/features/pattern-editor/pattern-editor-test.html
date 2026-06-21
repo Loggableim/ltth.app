@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<!--
+  @file pattern-editor-test.html - Standalone Pattern Editor Test Page
+  @description Complete pattern editor implementation with live device testing
+-->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShock Pattern Editor - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0096ff);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ff4444);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pattern-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pattern-card:hover {
+            border-color: #00d4ff;
+            transform: translateY(-3px);
+        }
+
+        .pattern-card.selected {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .pattern-icon {
+            font-size: 2em;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .pattern-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .pattern-preview-canvas {
+            width: 100%;
+            height: 80px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .device-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .device-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-item.online {
+            border-left: 4px solid #00ff88;
+        }
+
+        .device-item.offline {
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .log-entry.success {
+            color: #00ff88;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .log-entry.info {
+            color: #00d4ff;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-offline {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ OpenShock Pattern Editor</h1>
+            <p style="color: #aaa;">Advanced Pattern Testing System</p>
+        </div>
+
+        <!-- API Configuration -->
+        <div class="card">
+            <h2 class="card-title">🔑 API Konfiguration</h2>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" id="apiKey" class="form-input" 
+                       value="6PP4UFqvQg1sWEyWKTD30dvbBMLfwtaW5sPwfopq8HKBSNIQYxdabBV0fANe623m">
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="connectBtn">🔌 Verbinden</button>
+                <button class="btn btn-danger" id="emergencyStop">🛑 NOTAUS</button>
+            </div>
+        </div>
+
+        <!-- Devices -->
+        <div class="card">
+            <h2 class="card-title">📱 Geräte</h2>
+            <div id="deviceList" class="device-list">
+                <p style="color: #aaa;">Noch keine Geräte geladen...</p>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Pattern Library -->
+            <div class="card">
+                <h2 class="card-title">📦 Pattern Bibliothek</h2>
+                <div id="patternLibrary"></div>
+            </div>
+
+            <!-- Pattern Editor -->
+            <div class="card">
+                <h2 class="card-title">✏️ Pattern Editor</h2>
+                <div id="patternEditor">
+                    <p style="color: #aaa;">Wähle ein Pattern aus der Bibliothek...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="card">
+            <h2 class="card-title">🧪 Test Kontrolle</h2>
+            <div class="btn-group">
+                <button class="btn btn-success" id="testSingleDevice">📍 Test Einzelgerät</button>
+                <button class="btn btn-success" id="testAllDevices">📍📍 Test Alle Geräte</button>
+                <button class="btn btn-primary" id="testPatternSequence">🎬 Pattern Sequenz</button>
+            </div>
+        </div>
+
+        <!-- Log -->
+        <div class="card">
+            <h2 class="card-title">📋 Test Log</h2>
+            <div id="logContainer" class="log-container">
+                <div class="log-entry info">System bereit...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Pattern Engine -->
+    <script src="engine/PatternEngine.ts.js"></script>
+    <script src="state/patternTypes.ts.js"></script>
+    <script src="state/patternStore.ts.js"></script>
+
+    <script>
+        // OpenShock API Client
+        class OpenShockAPIClient {
+            constructor(apiKey, baseUrl = 'https://api.openshock.app') {
+                this.apiKey = apiKey;
+                this.baseUrl = baseUrl;
+                this.devices = [];
+            }
+
+            async getDevices() {
+                try {
+                    const response = await fetch(`${this.baseUrl}/1/devices`, {
+                        headers: {
+                            'accept': 'application/json',
+                            'OpenShockToken': this.apiKey
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    this.devices = data.data || [];
+                    return this.devices;
+                } catch (error) {
+                    console.error('Error fetching devices:', error);
+                    throw error;
+                }
+            }
+
+            async sendControl(deviceId, type, intensity, duration, exclusive = false) {
+                try {
+                    const response = await fetch(`${this.baseUrl}/2/shockers/control`, {
+                        method: 'POST',
+                        headers: {
+                            'accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'OpenShockToken': this.apiKey
+                        },
+                        body: JSON.stringify({
+                            shocks: [{
+                                id: deviceId,
+                                type: type, // 0=Stop, 1=Shock, 2=Vibrate, 3=Sound
+                                intensity: Math.round(intensity),
+                                duration: Math.round(duration),
+                                exclusive: exclusive
+                            }],
+                            customName: 'Pattern Editor Test'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error sending control:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // Global state
+        let apiClient = null;
+        let devices = [];
+        let selectedPattern = null;
+
+        // Logging
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Pattern Editor initialisiert', 'success');
+            renderPatternLibrary();
+
+            // Connect button
+            document.getElementById('connectBtn').addEventListener('click', async () => {
+                const apiKey = document.getElementById('apiKey').value;
+                if (!apiKey) {
+                    log('Bitte API Key eingeben', 'error');
+                    return;
+                }
+
+                try {
+                    log('Verbinde mit OpenShock API...', 'info');
+                    apiClient = new OpenShockAPIClient(apiKey);
+                    devices = await apiClient.getDevices();
+                    log(`${devices.length} Gerät(e) gefunden`, 'success');
+                    renderDevices();
+                } catch (error) {
+                    log(`Verbindungsfehler: ${error.message}`, 'error');
+                }
+            });
+
+            // Emergency stop
+            document.getElementById('emergencyStop').addEventListener('click', async () => {
+                if (!apiClient || devices.length === 0) {
+                    log('Keine Geräte verbunden', 'error');
+                    return;
+                }
+
+                log('NOTAUS aktiviert!', 'error');
+                for (const device of devices) {
+                    for (const shocker of device.shockers) {
+                        try {
+                            await apiClient.sendControl(shocker.id, 0, 0, 300);
+                        } catch (error) {
+                            console.error('Emergency stop failed:', error);
+                        }
+                    }
+                }
+            });
+
+            // Test buttons
+            document.getElementById('testSingleDevice').addEventListener('click', testSingleDevice);
+            document.getElementById('testAllDevices').addEventListener('click', testAllDevices);
+            document.getElementById('testPatternSequence').addEventListener('click', testPatternSequence);
+        });
+
+        // Render devices
+        function renderDevices() {
+            const container = document.getElementById('deviceList');
+            if (devices.length === 0) {
+                container.innerHTML = '<p style="color: #aaa;">Keine Geräte gefunden</p>';
+                return;
+            }
+
+            container.innerHTML = devices.map(device => `
+                <div class="device-item ${device.online ? 'online' : 'offline'}">
+                    <div>
+                        <strong>${device.name}</strong><br>
+                        <small style="color: #aaa;">
+                            ${device.shockers.length} Shocker(s) • 
+                            ${device.online ? 'Online' : 'Offline'}
+                        </small>
+                    </div>
+                    <span class="status-badge ${device.online ? 'status-online' : 'status-offline'}">
+                        ${device.online ? '● Online' : '○ Offline'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Render pattern library
+        function renderPatternLibrary() {
+            const presets = [
+                { id: 'konstant', name: 'Konstant', icon: '📊', params: { intensity: 50 } },
+                { id: 'rampe', name: 'Rampe', icon: '📈', params: { startIntensity: 0, endIntensity: 100, duration: 5000 } },
+                { id: 'puls', name: 'Puls', icon: '💓', params: { intensity: 50, pulseDuration: 500, pauseDuration: 500 } },
+                { id: 'welle', name: 'Welle', icon: '🌊', params: { minIntensity: 0, maxIntensity: 100, frequency: 1 } },
+                { id: 'zufall', name: 'Zufall', icon: '🎲', params: { minIntensity: 20, maxIntensity: 80, frequency: 2 } }
+            ];
+
+            const container = document.getElementById('patternLibrary');
+            container.innerHTML = `
+                <div class="pattern-grid">
+                    ${presets.map(preset => `
+                        <div class="pattern-card" data-pattern-id="${preset.id}">
+                            <span class="pattern-icon">${preset.icon}</span>
+                            <h4 class="pattern-name">${preset.name}</h4>
+                            <button class="btn btn-primary" onclick="selectPattern('${preset.id}')">
+                                Auswählen
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Select pattern
+        function selectPattern(patternId) {
+            log(`Pattern "${patternId}" ausgewählt`, 'info');
+            selectedPattern = patternId;
+            
+            // Visual feedback
+            document.querySelectorAll('.pattern-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-pattern-id="${patternId}"]`).classList.add('selected');
+        }
+
+        // Test functions
+        async function testSingleDevice() {
+            if (!apiClient || devices.length === 0) {
+                log('Keine Geräte verbunden', 'error');
+                return;
+            }
+
+            const device = devices[0];
+            const shocker = device.shockers[0];
+            
+            log(`Teste Gerät: ${device.name}`, 'info');
+            
+            try {
+                // Beep
+                log('Sende Sound...', 'info');
+                await apiClient.sendControl(shocker.id, 3, 50, 500);
+                await sleep(700);
+                
+                // Vibration
+                log('Sende Vibration...', 'info');
+                await apiClient.sendControl(shocker.id, 2, 50, 1000);
+                await sleep(1200);
+                
+                // Shock
+                log('Sende Shock...', 'info');
+                await apiClient.sendControl(shocker.id, 1, 30, 500);
+                
+                log('Test abgeschlossen!', 'success');
+            } catch (error) {
+                log(`Test fehlgeschlagen: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllDevices() {
+            if (!apiClient || devices.length === 0) {
+                log('Keine Geräte verbunden', 'error');
+                return;
+            }
+
+            log(`Teste alle ${devices.length} Gerät(e)...`, 'info');
+            
+            for (const device of devices) {
+                for (const shocker of device.shockers) {
+                    try {
+                        log(`Test ${device.name} - Shocker ${shocker.id}`, 'info');
+                        await apiClient.sendControl(shocker.id, 1, 40, 300);
+                        await sleep(500);
+                    } catch (error) {
+                        log(`Fehler bei ${device.name}: ${error.message}`, 'error');
+                    }
+                }
+            }
+            
+            log('Alle Tests abgeschlossen!', 'success');
+        }
+
+        async function testPatternSequence() {
+            if (!apiClient || devices.length === 0) {
+                log('Keine Geräte verbunden', 'error');
+                return;
+            }
+
+            log('Starte Pattern-Sequenz...', 'info');
+            
+            const device = devices[0];
+            const shocker = device.shockers[0];
+            
+            const patterns = [
+                { name: 'Kurzer Puls', type: 1, intensity: 30, duration: 200 },
+                { name: 'Vibration', type: 2, intensity: 50, duration: 1000 },
+                { name: 'Doppel-Beep', type: 3, intensity: 50, duration: 300 },
+                { name: 'Pause', type: 0, intensity: 0, duration: 200 },
+                { name: 'Doppel-Beep 2', type: 3, intensity: 50, duration: 300 },
+                { name: 'Starker Shock', type: 1, intensity: 50, duration: 500 },
+                { name: 'Fade Vibration', type: 2, intensity: 30, duration: 1500 }
+            ];
+
+            for (const pattern of patterns) {
+                try {
+                    log(`Pattern: ${pattern.name}`, 'info');
+                    if (pattern.type !== 0) {
+                        await apiClient.sendControl(shocker.id, pattern.type, pattern.intensity, pattern.duration);
+                    }
+                    await sleep(pattern.duration + 300);
+                } catch (error) {
+                    log(`Fehler: ${error.message}`, 'error');
+                }
+            }
+            
+            log('Pattern-Sequenz abgeschlossen!', 'success');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>

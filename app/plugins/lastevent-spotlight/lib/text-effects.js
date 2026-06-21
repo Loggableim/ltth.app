@@ -9,6 +9,49 @@ class TextEffects {
     this.activeEffects = new Map();
   }
 
+  normalizeFontToken(font) {
+    const trimmed = typeof font === 'string' ? font.trim() : '';
+    if (!trimmed) {
+      return '';
+    }
+    if (/^["'].*["']$/.test(trimmed)) {
+      return trimmed;
+    }
+    if (/^[a-z-]+$/i.test(trimmed) && !/\s/.test(trimmed)) {
+      return trimmed;
+    }
+    return /\s/.test(trimmed) ? `'${trimmed}'` : trimmed;
+  }
+
+  resolveFontFamily(fontFamily) {
+    const fallbackFonts = [
+      "'Segoe UI'",
+      "'Segoe UI Emoji'",
+      "'Segoe UI Symbol'",
+      "'Noto Sans'",
+      "'Noto Color Emoji'",
+      'sans-serif'
+    ];
+    const configuredFonts = typeof fontFamily === 'string' && fontFamily.trim()
+      ? fontFamily.split(',').map(part => this.normalizeFontToken(part)).filter(Boolean)
+      : ["'Exo 2'"];
+
+    return [...new Set([...configuredFonts, ...fallbackFonts])].join(', ');
+  }
+
+  splitGraphemes(text) {
+    if (typeof text !== 'string' || text.length === 0) {
+      return [];
+    }
+
+    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+      const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+      return Array.from(segmenter.segment(text), segment => segment.segment);
+    }
+
+    return Array.from(text);
+  }
+
   /**
    * Apply comprehensive effects to a text element
    */
@@ -19,7 +62,7 @@ class TextEffects {
     this.clearEffects(element);
 
     // Base styling
-    element.style.fontFamily = settings.fontFamily || 'Exo 2';
+    element.style.fontFamily = this.resolveFontFamily(settings.fontFamily);
     element.style.fontSize = settings.fontSize || '32px';
     element.style.lineHeight = settings.fontLineSpacing || '1.2';
     element.style.letterSpacing = settings.fontLetterSpacing || 'normal';
@@ -167,7 +210,7 @@ class TextEffects {
     };
     this.activeEffects.set(element, effectState);
 
-    text.split('').forEach((char, index) => {
+    this.splitGraphemes(text).forEach((char, index) => {
       const span = document.createElement('span');
       span.className = className;
       span.dataset.index = String(index);

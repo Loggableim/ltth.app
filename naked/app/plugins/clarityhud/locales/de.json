@@ -1,0 +1,109 @@
+{
+  "clarityhud": {
+    "dashboard": {
+      "title": "ClarityHUD Dashboard",
+      "subtitle": "Ultra-minimalistisch, VR-optimiert und zugängliche HUD-Overlays für TikTok Live"
+    },
+    "chat_hud": {
+      "title": "Chat HUD",
+      "description": "Minimalistisches Nur-Chat-Overlay mit klarer Typografie"
+    },
+    "full_hud": {
+      "title": "Vollständiges Aktivitäts-HUD",
+      "description": "Kompletter Aktivitätsfeed mit Layout-Modi und Animationen"
+    },
+    "multi_hud": {
+      "title": "Multi-Stream HUD",
+      "description": "Zeigt bis zu 3 zusätzliche TikTok-Livestream-Chats neben Ihrem Haupt-Stream an"
+    },
+    "buttons": {
+      "settings": "Einstellungen",
+      "test_event": "Test-Ereignis",
+      "refresh_preview": "Vorschau aktualisieren",
+      "copy_url": "URL kopieren",
+      "save": "Einstellungen speichern",
+      "cancel": "Abbrechen",
+      "reset_defaults": "Auf Standardwerte zurücksetzen"
+    },
+    "labels": {
+      "overlay_url": "Overlay-URL",
+      "live_preview": "LIVE-VORSCHAU"
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "tabs": {
+        "appearance": "Erscheinungsbild",
+        "layout": "Layout",
+        "styling": "Gestaltung",
+        "accessibility": "Barrierefreiheit",
+        "events": "Ereignisse",
+        "animation": "Animation",
+        "streams": "Streams"
+      },
+      "multi_stream": {
+        "streams_config": "Zusätzliche TikTok-Streams",
+        "streams_help": "Konfigurieren Sie bis zu 3 zusätzliche TikTok-Streams, die neben Ihrem Haupt-Stream angezeigt werden",
+        "stream": "Stream {number}",
+        "enable_stream": "Diesen Stream aktivieren",
+        "username": "TikTok Benutzername",
+        "username_placeholder": "@benutzername",
+        "username_help": "Ohne das @-Symbol",
+        "display_name": "Anzeigename (Optional)",
+        "display_name_placeholder": "Stream {number}",
+        "display_name_help": "Benutzerdefinierte Beschriftung für diesen Stream",
+        "text_color": "Textfarbe",
+        "bg_color": "Hintergrundfarbe",
+        "accent_color": "Akzentfarbe",
+        "global_settings": "Globale Einstellungen",
+        "max_messages": "Maximale Nachrichten",
+        "max_messages_help": "Maximale Anzahl von Nachrichten, die im Speicher gehalten werden",
+        "enable_multi_hud": "Multi-Stream HUD aktivieren",
+        "layout_mode": "Layout-Modus",
+        "layout": "Layout",
+        "layout_mixed": "Gemischter Feed",
+        "layout_split": "Geteilte Spalten",
+        "layout_help": "Gemischt: Alle Streams in einem Feed. Geteilt: Separate Spalten pro Stream",
+        "columns": "Spalten",
+        "columns_auto": "Automatisch",
+        "columns_help": "Gilt nur für geteiltes Layout",
+        "primary_span2": "Haupt-Stream erstreckt sich über 2 Spalten",
+        "message_display": "Nachrichtenanzeige",
+        "message_style": "Nachrichtenstil",
+        "style_stripe": "Streifen",
+        "style_badge": "Badge",
+        "style_bg": "Hintergrund",
+        "style_help": "Streifen: Linker Rand. Badge: Quell-Label. BG: Farbiger Hintergrund",
+        "density": "Dichte",
+        "density_ultra": "Ultra-kompakt",
+        "density_compact": "Kompakt",
+        "density_comfortable": "Komfortabel",
+        "show_avatars": "Avatare anzeigen",
+        "show_timestamps": "Zeitstempel anzeigen",
+        "highlight_primary": "Haupt-Stream hervorheben",
+        "auto_contrast": "Auto-Kontrast (bessere Lesbarkeit)",
+        "pulse_on_new": "Puls-Animation bei neuen Nachrichten",
+        "preview_title": "Nachrichtenstil-Vorschau",
+        "preview_stripe": "Streifen-Stil: Linker Rand in Akzentfarbe",
+        "preview_badge": "Badge-Stil: Quell-Label-Badge",
+        "preview_bg": "Hintergrund-Stil: Farbiger Hintergrund",
+        "preview_help": "Wählen Sie Ihren bevorzugten Nachrichtenstil auf der Layout-Registerkarte",
+        "vr_optimization": "VR-Optimierung",
+        "vr_features": "Das Multi-Stream HUD ist für VRChat optimiert mit:",
+        "vr_feature_compact": "Kompaktes Layout (~360px breite Karten)",
+        "vr_feature_fonts": "Große, lesbare Schriftarten",
+        "vr_feature_contrast": "Hohe Kontrastfarben",
+        "vr_feature_animations": "Minimale Animationen",
+        "vr_feature_scrolling": "Virtuelles Scrollen für Leistung",
+        "vr_recommendation": "Empfohlene OBS-Auflösung: 1920x1080 oder höher für beste VR-Klarheit"
+      }
+    },
+    "messages": {
+      "url_copied": "URL in Zwischenablage kopiert!",
+      "settings_saved": "Einstellungen erfolgreich gespeichert!",
+      "preset_applied": "Voreinstellung {preset} angewendet",
+      "multi_streams_connected": "Multi-Stream-Verbindungen werden hergestellt...",
+      "stream_connected": "Stream {number} verbunden: @{username}",
+      "stream_failed": "Stream {number} konnte nicht verbunden werden: {error}"
+    }
+  }
+}

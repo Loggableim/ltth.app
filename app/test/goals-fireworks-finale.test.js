@@ -87,6 +87,41 @@ describe('Goals firework finale integration', () => {
     expect(updated.firework_progress_milestones).toBe('50,90');
   });
 
+  test('persists per-goal OBS overlay theme colors', () => {
+    const sqlite = new Database(':memory:');
+    const goalsDb = new GoalsDatabase(createApi(sqlite));
+    goalsDb.initialize();
+
+    const theme = {
+      primaryColor: '#123456',
+      secondaryColor: '#abcdef',
+      textColor: '#fedcba',
+      bgColor: 'rgba(1, 2, 3, 0.95)',
+      fontFamily: 'Impact, sans-serif',
+      fontSize: 24
+    };
+
+    const created = goalsDb.createGoal({
+      id: 'goal_theme',
+      name: 'Styled Goal',
+      goal_type: 'coin',
+      theme
+    });
+
+    expect(created.theme).toEqual(theme);
+    expect(sqlite.prepare('SELECT theme_json FROM goals WHERE id = ?').get('goal_theme').theme_json)
+      .toBe(JSON.stringify(theme));
+
+    const updatedTheme = {
+      ...theme,
+      primaryColor: '#654321',
+      bgColor: 'rgba(15, 23, 42, 0.95)'
+    };
+    const updated = goalsDb.updateGoal('goal_theme', { theme: updatedTheme });
+
+    expect(updated.theme).toEqual(updatedTheme);
+  });
+
   test('triggers the Fireworks plugin finale with goal-specific settings when an enabled goal is reached', () => {
     const sqlite = new Database(':memory:');
     const fireworksPlugin = { triggerFinale: jest.fn() };
@@ -250,5 +285,16 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain('firework_quality_profile');
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
+  });
+
+  test('sends custom style fields as goal theme from the UI save payload', () => {
+    const uiJs = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'goals', 'ui.js'), 'utf8');
+
+    expect(uiJs).toContain('theme: buildGoalThemeFromForm()');
+    expect(uiJs).toContain("document.getElementById('goal-primary-color')?.value");
+    expect(uiJs).toContain("document.getElementById('goal-secondary-color')?.value");
+    expect(uiJs).toContain("document.getElementById('goal-text-color')?.value");
+    expect(uiJs).toContain("document.getElementById('goal-bg-color')?.value");
+    expect(uiJs).toContain('cssColorToHex(theme.bgColor)');
   });
 });

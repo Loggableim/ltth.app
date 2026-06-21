@@ -635,6 +635,124 @@
             background: #166534;
         }
 
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 24% 0%, rgba(255, 102, 0, 0.2), transparent 34%),
+                linear-gradient(135deg, #07090d 0%, #11151d 48%, #08090c 100%);
+        }
+
+        .control-room-shell {
+            max-width: 1440px;
+        }
+
+        .control-room-hero {
+            display: grid;
+            grid-template-columns: minmax(280px, 0.88fr) minmax(360px, 1.12fr);
+            gap: 18px;
+            align-items: stretch;
+            margin-bottom: 18px;
+        }
+
+        .control-room-panel,
+        .section {
+            background: rgba(18, 22, 30, 0.92);
+            border: 1px solid rgba(255, 153, 51, 0.18);
+            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+        }
+
+        .control-room-panel {
+            border-radius: 8px;
+            padding: 18px;
+        }
+
+        .control-room-title {
+            color: #fff3df;
+            font-size: 30px;
+            line-height: 1.08;
+            margin-bottom: 10px;
+        }
+
+        .control-room-subtitle {
+            color: #aeb7c6;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .preset-strip,
+        .tab-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .visual-preset-btn,
+        .tab-btn {
+            border: 1px solid rgba(255, 153, 51, 0.28);
+            background: rgba(255, 255, 255, 0.045);
+            color: #f6d6a8;
+            border-radius: 6px;
+            padding: 9px 12px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .visual-preset-btn:hover,
+        .tab-btn:hover,
+        .tab-btn.active {
+            border-color: #ff9f43;
+            background: rgba(255, 123, 0, 0.16);
+            color: #ffffff;
+        }
+
+        .control-room-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .metric {
+            background: rgba(0, 0, 0, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .metric-label {
+            color: #7f8998;
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            color: #fff3df;
+            display: block;
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 3px;
+        }
+
+        .tab-pane.hidden {
+            display: none;
+        }
+
+        .section {
+            border-radius: 8px;
+        }
+
+        .section-title {
+            border-bottom-color: rgba(255, 102, 0, 0.42);
+        }
+
+        @media (max-width: 980px) {
+            .control-room-hero {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 768px) {
             .trigger-table {
                 font-size: 11px;
@@ -651,14 +769,47 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container control-room-shell">
         <h1>🎨 TikTok Visual Effects Overlay</h1>
         <p class="subtitle">Konfiguriere dein WebGL Effekt-Overlay mit 4 verschiedenen visuellen Modi für TikTok Livestreams</p>
         
+        <div class="control-room-hero">
+            <div class="control-room-panel">
+                <h1 class="control-room-title">Flame Overlay Control Room</h1>
+                <p class="control-room-subtitle">Cinematic HDR flame material, OBS-safe quality control, live preview, trigger rules and production presets in one operator surface.</p>
+                <div class="form-group">
+                    <label for="qualityMode">Quality Mode</label>
+                    <select id="qualityMode">
+                        <option value="obs-safe">OBS-safe</option>
+                        <option value="max-quality">Max Quality</option>
+                        <option value="low-load">Low Load</option>
+                    </select>
+                </div>
+                <div class="preset-strip">
+                    <button class="visual-preset-btn" type="button" data-visual-preset="cinematic-hdr">Cinematic HDR</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-heat">Neon Heat</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="clean-broadcast">Clean Broadcast</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="low-load">Low Load</button>
+                </div>
+                <div class="control-room-metrics">
+                    <div class="metric"><span class="metric-label">Profile</span><span class="metric-value" id="profileMetric">HDR</span></div>
+                    <div class="metric"><span class="metric-label">Render</span><span class="metric-value" id="qualityMetric">OBS</span></div>
+                    <div class="metric"><span class="metric-label">Trigger</span><span class="metric-value" id="triggerMetric">Ready</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-strip" role="tablist">
+            <button class="tab-btn active" type="button" data-tab-target="look">Look</button>
+            <button class="tab-btn" type="button" data-tab-target="frame">Frame</button>
+            <button class="tab-btn" type="button" data-tab-target="motion">Motion</button>
+            <button class="tab-btn" type="button" data-tab-target="postfx">Post-FX</button>
+            <button class="tab-btn" type="button" data-tab-target="trigger">Trigger</button>
+        </div>
+
         <div id="status" class="status" role="status" aria-live="polite"></div>
         
         <!-- Resolution Settings -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">🎭 Effekt-Typ</h2>
             
             <div class="form-group">
@@ -677,7 +828,7 @@
         </div>
         
         <!-- Real-time Preview -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">👁️ Echtzeit-Vorschau</h2>
             
             <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
@@ -725,7 +876,7 @@
         </div>
         
         <!-- Resolution Settings -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="frame">
             <h2 class="section-title">📐 Auflösung & Format</h2>
             
             <div class="form-group">
@@ -756,7 +907,7 @@
         </div>
         
         <!-- Frame Settings -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="frame">
             <h2 class="section-title">🖼️ Rahmen Einstellungen</h2>
             
             <div class="form-group">
@@ -783,7 +934,7 @@
         </div>
         
         <!-- Flame Appearance -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">🎨 Flammen Aussehen</h2>
             
             <div class="form-group">
@@ -803,7 +954,7 @@
         </div>
         
         <!-- Flame Animation -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="motion">
             <h2 class="section-title">⚡ Animation</h2>
             
             <div class="form-group">
@@ -823,7 +974,7 @@
         </div>
         
         <!-- Visual Effects -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">✨ Visuelle Effekte</h2>
             
             <div class="form-group">
@@ -849,7 +1000,7 @@
         </div>
         
         <!-- Quality Settings -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">🎯 Qualitätseinstellungen</h2>
             
             <div class="form-group">
@@ -874,9 +1025,23 @@
                 <small style="color: #888;">Passt Details automatisch an die Auflösung an</small>
             </div>
         </div>
-        
+
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title">Cinematic HDR Material</h2>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="sparkEnabled" checked>
+                    <label for="sparkEnabled">Cinematic Sparks / Embers</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="sparkDensity">Spark Density: <span class="slider-value" id="sparkDensityValue">0.78</span></label>
+                <input type="range" id="sparkDensity" min="0" max="2" value="0.78" step="0.02">
+            </div>
+        </div>
         <!-- Edge Settings -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="frame">
             <h2 class="section-title">✂️ Kanten-Einstellungen</h2>
             
             <div class="form-group">
@@ -899,7 +1064,7 @@
         </div>
         
         <!-- Animation Advanced -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="motion">
             <h2 class="section-title">🎬 Erweiterte Animation</h2>
             
             <div class="form-group">
@@ -933,7 +1098,7 @@
         </div>
         
         <!-- Bloom Section -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="postfx">
             <h2 class="section-title">💫 Bloom-Effekt (Leuchten)</h2>
             
             <div class="form-group">
@@ -964,7 +1129,7 @@
         </div>
         
         <!-- Layers Section -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="postfx">
             <h2 class="section-title">📚 Ebenen & Tiefe</h2>
             
             <div class="form-group">
@@ -989,7 +1154,7 @@
         </div>
         
         <!-- Post-FX Section -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="postfx">
             <h2 class="section-title">🎨 Nachbearbeitungs-Effekte</h2>
             
             <div class="form-group">
@@ -1010,9 +1175,38 @@
                 <small style="color: #888;">Stärke des Tiefeneffekts im gesamten Bild</small>
             </div>
         </div>
-        
+
+        <div class="section tab-pane" data-tab="postfx">
+            <h2 class="section-title">Cinematic HDR Post-FX</h2>
+            <div class="form-group">
+                <label for="cinematicContrast">Cinematic Contrast: <span class="slider-value" id="cinematicContrastValue">1.18</span></label>
+                <input type="range" id="cinematicContrast" min="0" max="2" value="1.18" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <label for="coreWhiteness">Hot Core Whiteness: <span class="slider-value" id="coreWhitenessValue">0.72</span></label>
+                <input type="range" id="coreWhiteness" min="0" max="1" value="0.72" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <label for="emberTrailAmount">Ember Trail: <span class="slider-value" id="emberTrailAmountValue">0.42</span></label>
+                <input type="range" id="emberTrailAmount" min="0" max="1" value="0.42" step="0.02">
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="heatDistortionEnabled" checked>
+                    <label for="heatDistortionEnabled">Heat Distortion</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="heatDistortionStrength">Heat Distortion Strength: <span class="slider-value" id="heatDistortionStrengthValue">0.32</span></label>
+                <input type="range" id="heatDistortionStrength" min="0" max="1" value="0.32" step="0.02">
+            </div>
+        </div>
         <!-- Smoke Section -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="postfx">
             <h2 class="section-title">💨 Rauch-Effekt</h2>
             
             <div class="form-group">
@@ -1043,7 +1237,7 @@
         </div>
         
         <!-- Presets Section -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">💾 Presets</h2>
             
             <div class="form-group">
@@ -1063,7 +1257,7 @@
         </div>
         
         <!-- Trigger System (v3.0.0) -->
-        <div class="section">
+        <div class="section tab-pane" data-tab="trigger">
             <h2 class="section-title">🎮 Triggers</h2>
 
             <!-- Master Toggle -->
@@ -1236,7 +1430,8 @@
         const REALTIME_UPDATE_ELEMENTS = ['effectType', 'frameMode', 'flameColor', 'backgroundTint', 
                                           'enableGlow', 'enableAdditiveBlend', 'maskOnlyEdges', 'highDPI',
                                           'useHighQualityTextures', 'detailScaleAuto', 'animationEasing',
-                                          'pulseEnabled', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor'];
+                                          'pulseEnabled', 'bloomEnabled', 'layersEnabled', 'smokeEnabled', 'smokeColor',
+                                          'qualityMode', 'sparkEnabled', 'heatDistortionEnabled'];
         const CUSTOM_RESOLUTION_INPUTS = ['customWidth', 'customHeight'];
 
         function getNumberInputValue(id, fallback) {
@@ -1253,6 +1448,110 @@
                 };
             }
             return RESOLUTION_PRESETS[preset] || RESOLUTION_PRESETS['tiktok-portrait'];
+        }
+
+        const VISUAL_PRESETS = {
+            'cinematic-hdr': {
+                qualityMode: 'obs-safe',
+                flameColor: '#ff6600',
+                flameIntensity: 1.48,
+                flameBrightness: 0.46,
+                noiseOctaves: 9,
+                edgeFeather: 0.52,
+                frameCurve: 0.14,
+                frameNoiseAmount: 0.18,
+                bloomEnabled: true,
+                bloomIntensity: 1.05,
+                bloomThreshold: 0.52,
+                bloomRadius: 5,
+                depthIntensity: 0.78,
+                sparkEnabled: true,
+                sparkDensity: 0.78,
+                heatDistortionEnabled: true,
+                heatDistortionStrength: 0.32,
+                cinematicContrast: 1.18,
+                coreWhiteness: 0.72,
+                emberTrailAmount: 0.42,
+                smokeEnabled: true,
+                smokeIntensity: 0.48,
+                smokeSpeed: 0.28,
+                smokeColor: '#2d2623'
+            },
+            'neon-heat': {
+                qualityMode: 'max-quality',
+                flameColor: '#ff2bd6',
+                flameIntensity: 1.75,
+                flameBrightness: 0.58,
+                bloomEnabled: true,
+                bloomIntensity: 1.4,
+                chromaticAberration: 0.01,
+                sparkDensity: 1.25,
+                heatDistortionStrength: 0.46,
+                cinematicContrast: 1.34,
+                coreWhiteness: 0.86,
+                emberTrailAmount: 0.62
+            },
+            'clean-broadcast': {
+                qualityMode: 'obs-safe',
+                flameColor: '#ff7a1a',
+                flameIntensity: 1.08,
+                flameBrightness: 0.36,
+                edgeFeather: 0.38,
+                bloomIntensity: 0.68,
+                sparkDensity: 0.28,
+                heatDistortionStrength: 0.12,
+                cinematicContrast: 1.06,
+                coreWhiteness: 0.48,
+                emberTrailAmount: 0.18,
+                smokeIntensity: 0.2,
+                filmGrain: 0.01
+            },
+            'low-load': {
+                qualityMode: 'low-load',
+                flameIntensity: 1.15,
+                flameBrightness: 0.4,
+                noiseOctaves: 6,
+                bloomRadius: 3,
+                sparkDensity: 0.24,
+                heatDistortionStrength: 0.08,
+                smokeEnabled: false,
+                filmGrain: 0.005,
+                chromaticAberration: 0.002
+            }
+        };
+
+        function setFieldValue(id, value) {
+            const element = document.getElementById(id);
+            if (!element || value === undefined) return;
+            if (element.type === 'checkbox') {
+                element.checked = Boolean(value);
+            } else {
+                element.value = value;
+            }
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function applyVisualPreset(name) {
+            const preset = VISUAL_PRESETS[name];
+            if (!preset) return;
+            for (const [key, value] of Object.entries(preset)) {
+                setFieldValue(key, value);
+            }
+            document.getElementById('profileMetric').textContent = name === 'neon-heat' ? 'NEON' : (name === 'low-load' ? 'LOW' : 'HDR');
+            document.querySelectorAll('.visual-preset-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.visualPreset === name);
+            });
+            if (previewActive) debouncedSaveConfig();
+        }
+
+        function activateTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.tabTarget === name);
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.toggle('hidden', pane.dataset.tab !== name);
+            });
         }
         
         // Initialize socket.io with error handling
@@ -1861,6 +2160,14 @@
         document.getElementById('reloadConfigBtn').addEventListener('click', loadConfig);
         document.getElementById('openOverlayBtn').addEventListener('click', openOverlay);
 
+        document.querySelectorAll('.visual-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyVisualPreset(btn.dataset.visualPreset));
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => activateTab(btn.dataset.tabTarget));
+        });
+
         // Cooldown/MaxStack sliders
         document.getElementById('triggerCooldown').addEventListener('input', (e) => {
             document.getElementById('triggerCooldownValue').textContent = e.target.value;
@@ -1976,7 +2283,8 @@
                         value = parseFloat(value).toFixed(3);
                     } else if (['edgeFeather', 'frameCurve', 'frameNoiseAmount', 'pulseAmount', 
                                'bloomThreshold', 'layerParallax', 'filmGrain', 'depthIntensity',
-                               'smokeIntensity', 'smokeSpeed'].includes(e.target.id)) {
+                               'smokeIntensity', 'smokeSpeed', 'sparkDensity', 'cinematicContrast',
+                               'coreWhiteness', 'emberTrailAmount', 'heatDistortionStrength'].includes(e.target.id)) {
                         value = parseFloat(value).toFixed(2);
                     } else if (['noiseOctaves', 'bloomRadius', 'layerCount'].includes(e.target.id)) {
                         value = parseInt(value);
@@ -2029,6 +2337,7 @@
             
             return {
                 effectType: document.getElementById('effectType').value,
+                qualityMode: document.getElementById('qualityMode').value,
                 resolutionPreset: document.getElementById('resolutionPreset').value,
                 customWidth: parseInt(document.getElementById('customWidth').value),
                 customHeight: parseInt(document.getElementById('customHeight').value),
@@ -2048,6 +2357,8 @@
                 noiseOctaves: parseInt(document.getElementById('noiseOctaves').value),
                 useHighQualityTextures: document.getElementById('useHighQualityTextures').checked,
                 detailScaleAuto: document.getElementById('detailScaleAuto').checked,
+                sparkEnabled: document.getElementById('sparkEnabled').checked,
+                sparkDensity: parseFloat(document.getElementById('sparkDensity').value),
                 // Edge Settings
                 edgeFeather: parseFloat(document.getElementById('edgeFeather').value),
                 frameCurve: parseFloat(document.getElementById('frameCurve').value),
@@ -2070,6 +2381,11 @@
                 chromaticAberration: parseFloat(document.getElementById('chromaticAberration').value),
                 filmGrain: parseFloat(document.getElementById('filmGrain').value),
                 depthIntensity: parseFloat(document.getElementById('depthIntensity').value),
+                cinematicContrast: parseFloat(document.getElementById('cinematicContrast').value),
+                coreWhiteness: parseFloat(document.getElementById('coreWhiteness').value),
+                emberTrailAmount: parseFloat(document.getElementById('emberTrailAmount').value),
+                heatDistortionEnabled: document.getElementById('heatDistortionEnabled').checked,
+                heatDistortionStrength: parseFloat(document.getElementById('heatDistortionStrength').value),
                 // Smoke
                 smokeEnabled: document.getElementById('smokeEnabled').checked,
                 smokeIntensity: parseFloat(document.getElementById('smokeIntensity').value),
@@ -2138,6 +2454,8 @@
                     
                     // Effect Type
                     document.getElementById('effectType').value = config.effectType || 'flames';
+                    document.getElementById('qualityMode').value = config.qualityMode || 'obs-safe';
+                    document.getElementById('qualityMetric').textContent = (config.qualityMode || 'obs-safe') === 'max-quality' ? 'MAX' : ((config.qualityMode || 'obs-safe') === 'low-load' ? 'LOW' : 'OBS');
                     
                     // Resolution
                     document.getElementById('resolutionPreset').value = config.resolutionPreset || 'tiktok-portrait';
@@ -2159,10 +2477,10 @@
                     // Animation
                     document.getElementById('flameSpeed').value = config.flameSpeed || 0.5;
                     document.getElementById('flameSpeedValue').textContent = config.flameSpeed || 0.5;
-                    document.getElementById('flameIntensity').value = config.flameIntensity || 1.3;
-                    document.getElementById('flameIntensityValue').textContent = config.flameIntensity || 1.3;
-                    document.getElementById('flameBrightness').value = config.flameBrightness || 0.25;
-                    document.getElementById('flameBrightnessValue').textContent = config.flameBrightness || 0.25;
+                    document.getElementById('flameIntensity').value = config.flameIntensity || 1.48;
+                    document.getElementById('flameIntensityValue').textContent = config.flameIntensity || 1.48;
+                    document.getElementById('flameBrightness').value = config.flameBrightness || 0.46;
+                    document.getElementById('flameBrightnessValue').textContent = config.flameBrightness || 0.46;
                     
                     // Effects
                     document.getElementById('enableGlow').checked = config.enableGlow !== false;
@@ -2170,18 +2488,21 @@
                     document.getElementById('highDPI').checked = config.highDPI !== false;
                     
                     // Quality Settings
-                    document.getElementById('noiseOctaves').value = config.noiseOctaves || 8;
-                    document.getElementById('noiseOctavesValue').textContent = config.noiseOctaves || 8;
+                    document.getElementById('noiseOctaves').value = config.noiseOctaves || 9;
+                    document.getElementById('noiseOctavesValue').textContent = config.noiseOctaves || 9;
                     document.getElementById('useHighQualityTextures').checked = config.useHighQualityTextures !== false;
                     document.getElementById('detailScaleAuto').checked = config.detailScaleAuto !== false;
+                    document.getElementById('sparkEnabled').checked = config.sparkEnabled !== false;
+                    document.getElementById('sparkDensity').value = config.sparkDensity !== undefined ? config.sparkDensity : 0.78;
+                    document.getElementById('sparkDensityValue').textContent = (config.sparkDensity !== undefined ? config.sparkDensity : 0.78).toFixed(2);
                     
                     // Edge Settings
-                    document.getElementById('edgeFeather').value = config.edgeFeather !== undefined ? config.edgeFeather : 0.3;
-                    document.getElementById('edgeFeatherValue').textContent = (config.edgeFeather !== undefined ? config.edgeFeather : 0.3).toFixed(2);
-                    document.getElementById('frameCurve').value = config.frameCurve || 0;
-                    document.getElementById('frameCurveValue').textContent = (config.frameCurve || 0).toFixed(2);
-                    document.getElementById('frameNoiseAmount').value = config.frameNoiseAmount || 0;
-                    document.getElementById('frameNoiseAmountValue').textContent = (config.frameNoiseAmount || 0).toFixed(2);
+                    document.getElementById('edgeFeather').value = config.edgeFeather !== undefined ? config.edgeFeather : 0.52;
+                    document.getElementById('edgeFeatherValue').textContent = (config.edgeFeather !== undefined ? config.edgeFeather : 0.52).toFixed(2);
+                    document.getElementById('frameCurve').value = config.frameCurve !== undefined ? config.frameCurve : 0.14;
+                    document.getElementById('frameCurveValue').textContent = (config.frameCurve !== undefined ? config.frameCurve : 0.14).toFixed(2);
+                    document.getElementById('frameNoiseAmount').value = config.frameNoiseAmount !== undefined ? config.frameNoiseAmount : 0.18;
+                    document.getElementById('frameNoiseAmountValue').textContent = (config.frameNoiseAmount !== undefined ? config.frameNoiseAmount : 0.18).toFixed(2);
                     
                     // Animation Advanced
                     document.getElementById('animationEasing').value = config.animationEasing || 'linear';
@@ -2193,12 +2514,12 @@
                     
                     // Bloom
                     document.getElementById('bloomEnabled').checked = config.bloomEnabled || false;
-                    document.getElementById('bloomIntensity').value = config.bloomIntensity !== undefined ? config.bloomIntensity : 0.8;
-                    document.getElementById('bloomIntensityValue').textContent = config.bloomIntensity !== undefined ? config.bloomIntensity : 0.8;
-                    document.getElementById('bloomThreshold').value = config.bloomThreshold !== undefined ? config.bloomThreshold : 0.6;
-                    document.getElementById('bloomThresholdValue').textContent = (config.bloomThreshold !== undefined ? config.bloomThreshold : 0.6).toFixed(2);
-                    document.getElementById('bloomRadius').value = config.bloomRadius || 4;
-                    document.getElementById('bloomRadiusValue').textContent = config.bloomRadius || 4;
+                    document.getElementById('bloomIntensity').value = config.bloomIntensity !== undefined ? config.bloomIntensity : 1.05;
+                    document.getElementById('bloomIntensityValue').textContent = config.bloomIntensity !== undefined ? config.bloomIntensity : 1.05;
+                    document.getElementById('bloomThreshold').value = config.bloomThreshold !== undefined ? config.bloomThreshold : 0.52;
+                    document.getElementById('bloomThresholdValue').textContent = (config.bloomThreshold !== undefined ? config.bloomThreshold : 0.52).toFixed(2);
+                    document.getElementById('bloomRadius').value = config.bloomRadius || 5;
+                    document.getElementById('bloomRadiusValue').textContent = config.bloomRadius || 5;
                     
                     // Layers
                     document.getElementById('layersEnabled').checked = config.layersEnabled !== false;
@@ -2208,20 +2529,29 @@
                     document.getElementById('layerParallaxValue').textContent = (config.layerParallax !== undefined ? config.layerParallax : 0.3).toFixed(2);
                     
                     // Post-FX
-                    document.getElementById('chromaticAberration').value = config.chromaticAberration !== undefined ? config.chromaticAberration : 0.005;
-                    document.getElementById('chromaticAberrationValue').textContent = (config.chromaticAberration !== undefined ? config.chromaticAberration : 0.005).toFixed(3);
-                    document.getElementById('filmGrain').value = config.filmGrain !== undefined ? config.filmGrain : 0.03;
-                    document.getElementById('filmGrainValue').textContent = (config.filmGrain !== undefined ? config.filmGrain : 0.03).toFixed(2);
-                    document.getElementById('depthIntensity').value = config.depthIntensity !== undefined ? config.depthIntensity : 0.5;
-                    document.getElementById('depthIntensityValue').textContent = (config.depthIntensity !== undefined ? config.depthIntensity : 0.5).toFixed(2);
+                    document.getElementById('chromaticAberration').value = config.chromaticAberration !== undefined ? config.chromaticAberration : 0.006;
+                    document.getElementById('chromaticAberrationValue').textContent = (config.chromaticAberration !== undefined ? config.chromaticAberration : 0.006).toFixed(3);
+                    document.getElementById('filmGrain').value = config.filmGrain !== undefined ? config.filmGrain : 0.025;
+                    document.getElementById('filmGrainValue').textContent = (config.filmGrain !== undefined ? config.filmGrain : 0.025).toFixed(2);
+                    document.getElementById('depthIntensity').value = config.depthIntensity !== undefined ? config.depthIntensity : 0.78;
+                    document.getElementById('depthIntensityValue').textContent = (config.depthIntensity !== undefined ? config.depthIntensity : 0.78).toFixed(2);
+                    document.getElementById('cinematicContrast').value = config.cinematicContrast !== undefined ? config.cinematicContrast : 1.18;
+                    document.getElementById('cinematicContrastValue').textContent = (config.cinematicContrast !== undefined ? config.cinematicContrast : 1.18).toFixed(2);
+                    document.getElementById('coreWhiteness').value = config.coreWhiteness !== undefined ? config.coreWhiteness : 0.72;
+                    document.getElementById('coreWhitenessValue').textContent = (config.coreWhiteness !== undefined ? config.coreWhiteness : 0.72).toFixed(2);
+                    document.getElementById('emberTrailAmount').value = config.emberTrailAmount !== undefined ? config.emberTrailAmount : 0.42;
+                    document.getElementById('emberTrailAmountValue').textContent = (config.emberTrailAmount !== undefined ? config.emberTrailAmount : 0.42).toFixed(2);
+                    document.getElementById('heatDistortionEnabled').checked = config.heatDistortionEnabled !== false;
+                    document.getElementById('heatDistortionStrength').value = config.heatDistortionStrength !== undefined ? config.heatDistortionStrength : 0.32;
+                    document.getElementById('heatDistortionStrengthValue').textContent = (config.heatDistortionStrength !== undefined ? config.heatDistortionStrength : 0.32).toFixed(2);
                     
                     // Smoke
                     document.getElementById('smokeEnabled').checked = config.smokeEnabled || false;
-                    document.getElementById('smokeIntensity').value = config.smokeIntensity !== undefined ? config.smokeIntensity : 0.4;
-                    document.getElementById('smokeIntensityValue').textContent = (config.smokeIntensity !== undefined ? config.smokeIntensity : 0.4).toFixed(2);
-                    document.getElementById('smokeSpeed').value = config.smokeSpeed !== undefined ? config.smokeSpeed : 0.3;
-                    document.getElementById('smokeSpeedValue').textContent = (config.smokeSpeed !== undefined ? config.smokeSpeed : 0.3).toFixed(2);
-                    document.getElementById('smokeColor').value = config.smokeColor || '#333333';
+                    document.getElementById('smokeIntensity').value = config.smokeIntensity !== undefined ? config.smokeIntensity : 0.48;
+                    document.getElementById('smokeIntensityValue').textContent = (config.smokeIntensity !== undefined ? config.smokeIntensity : 0.48).toFixed(2);
+                    document.getElementById('smokeSpeed').value = config.smokeSpeed !== undefined ? config.smokeSpeed : 0.28;
+                    document.getElementById('smokeSpeedValue').textContent = (config.smokeSpeed !== undefined ? config.smokeSpeed : 0.28).toFixed(2);
+                    document.getElementById('smokeColor').value = config.smokeColor || '#2d2623';
                     
                     // Frame position
                     if (config.framePositions && config.framePositions.length > 0) {
@@ -2441,9 +2771,10 @@
         
         // Update overlay URL based on current location
         const overlayUrl = window.location.origin + '/flame-overlay/overlay';
-        document.getElementById('overlayUrl').textContent = overlayUrl;
+            document.getElementById('overlayUrl').textContent = overlayUrl;
         
         // Load config on page load
+        activateTab('look');
         loadConfig();
     </script>
 </body>

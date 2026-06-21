@@ -1,0 +1,77 @@
+{
+  "multicam": {
+    "title": "Multi-Cam Switcher",
+    "subtitle": "Stream Camera Management",
+    "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
+    "current_scene": "Current Scene:",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
+    "connection": {
+      "title": "Connection",
+      "host": "Host",
+      "port": "Puerto",
+      "password": "Contraseña",
+      "connect": "Connect OBS",
+      "disconnect": "Disconnect OBS",
+      "save_settings": "Guardar Configuración",
+      "auto_connect_settings": "Configuración de Auto-Conexión",
+      "connect_on_start": "Conectar al Iniciar",
+      "connect_on_start_desc": "Conectar automáticamente a OBS cuando se inicializa el plugin",
+      "connect_delay_ms": "Retraso de Conexión (ms)",
+      "connect_delay_ms_desc": "Retraso antes de conectar al iniciar",
+      "auto_reconnect_enabled": "Habilitar Auto-Reconexión",
+      "auto_reconnect_enabled_desc": "Reconectar automáticamente si se pierde la conexión",
+      "max_reconnect_minutes": "Duración Máx. de Reconexión (min)",
+      "max_reconnect_minutes_desc": "Detener reconexión después de estos minutos",
+      "health_check_settings": "Configuración de Verificación de Salud",
+      "health_check_enabled": "Habilitar Verificación de Salud",
+      "health_check_enabled_desc": "Verificar periódicamente que la conexión OBS esté saludable",
+      "health_check_interval_ms": "Intervalo de Verificación de Salud (ms)",
+      "health_check_interval_ms_desc": "Tiempo entre verificaciones de salud"
+    },
+    "switcher": {
+      "title": "Scene Switcher",
+      "select_scene": "Select Scene...",
+      "switch": "Switch"
+    },
+    "hot_buttons": {
+      "title": "Hot Buttons"
+    },
+    "gift_mapping": {
+      "title": "Mapeo de Regalo a Escena",
+      "description": "Selecciona un regalo y asígnalo a una escena OBS. Cuando los usuarios envíen este regalo, la escena cambiará automáticamente.",
+      "select_gift": "Seleccionar Regalo",
+      "loading": "Cargando regalos...",
+      "select_scene": "Escena de Destino",
+      "select_scene_placeholder": "Seleccionar Escena...",
+      "min_coins": "Monedas Mínimas (opcional)",
+      "add": "Agregar Mapeo",
+      "refresh_gifts": "Actualizar Regalos",
+      "current_mappings": "Mapeos Actuales:"
+    },
+    "log": {
+      "title": "Activity Log",
+      "waiting": "Waiting for events..."
+    },
+    "cameras": {
+      "title": "Camera Sources",
+      "add": "Add Camera",
+      "name": "Camera Name",
+      "url": "Source URL",
+      "active": "Active",
+      "preview": "Vista Previa"
+    },
+    "overlay": {
+      "title": "Overlay Settings",
+      "url": "URL del Overlay",
+      "copy": "Copiar URL",
+      "open": "Abrir Overlay"
+    },
+    "settings": {
+      "save": "Guardar Configuración",
+      "reset": "Reset to Defaults"
+    }
+  }
+}

@@ -1,0 +1,2056 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Arena - LTTH Game Engine</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    #arena-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    #hud {
+      position: fixed;
+      left: 18px;
+      top: 18px;
+      width: min(320px, calc(100vw - 36px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(8, 13, 22, 0.72), rgba(18, 24, 38, 0.48));
+      border: 1px solid rgba(226, 232, 240, 0.16);
+      color: #f8fafc;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    #hud-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    #hud-count {
+      font-size: 12px;
+      color: #67e8f9;
+      flex-shrink: 0;
+    }
+
+    #arena-info-rotator {
+      margin-top: 8px;
+      min-height: 42px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.34);
+      border: 1px solid rgba(103, 232, 249, 0.18);
+      color: #dbeafe;
+      font-size: 12px;
+      line-height: 1.25;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      transition: border-color 180ms ease, background 180ms ease;
+    }
+
+    #arena-info-rotator[data-info-kind="gift"] {
+      background: rgba(30, 41, 59, 0.42);
+      border-color: rgba(250, 204, 21, 0.34);
+    }
+
+    #arena-info-icon-wrap {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.22), rgba(8, 13, 22, 0.32) 58%, rgba(8, 13, 22, 0.72));
+      border: 1px solid rgba(226, 232, 240, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    #arena-info-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #arena-info-icon-text {
+      color: #e0f2fe;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-align: center;
+      line-height: 1;
+    }
+
+    #arena-info-body {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    #arena-info-kind {
+      color: #67e8f9;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #arena-info-text {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #leaderboard {
+      margin-top: 10px;
+      display: grid;
+      gap: 5px;
+      font-size: 12px;
+    }
+
+    .leader-row {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      color: #e0f2fe;
+    }
+
+    .leader-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    #fever {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(190, 18, 60, 0.8), rgba(217, 119, 6, 0.72));
+      border: 1px solid rgba(254, 202, 202, 0.48);
+      color: #fff7ed;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    #fever.visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    #empty-state {
+      position: fixed;
+      left: 50%;
+      bottom: 40px;
+      transform: translateX(-50%);
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: #cbd5e1;
+      font-size: 14px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 160ms ease;
+    }
+
+    #empty-state.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="arena-canvas"></canvas>
+  <div id="hud">
+    <div id="hud-title">
+      <span id="title-text">LIVE ARENA</span>
+      <span id="hud-count">0 active</span>
+    </div>
+    <div id="arena-info-rotator" aria-live="polite" data-info-kind="like">
+      <span id="arena-info-icon-wrap">
+        <img id="arena-info-icon" alt="" hidden referrerpolicy="no-referrer">
+        <span id="arena-info-icon-text">LIKE</span>
+      </span>
+      <span id="arena-info-body">
+        <span id="arena-info-kind">Spielinfo</span>
+        <span id="arena-info-text">Likes geben Leben: 1 Like = 1 Leben</span>
+      </span>
+    </div>
+    <div id="leaderboard"></div>
+  </div>
+  <div id="fever">FEVER MODE</div>
+  <div id="empty-state">Waiting for live activity</div>
+
+  <script>
+    const socket = io();
+    const canvas = document.getElementById('arena-canvas');
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true }) || canvas.getContext('2d');
+    const hudCount = document.getElementById('hud-count');
+    const leaderboardEl = document.getElementById('leaderboard');
+    const infoRotatorEl = document.getElementById('arena-info-rotator');
+    const infoRotatorIcon = document.getElementById('arena-info-icon');
+    const infoRotatorIconText = document.getElementById('arena-info-icon-text');
+    const infoRotatorKind = document.getElementById('arena-info-kind');
+    const infoRotatorText = document.getElementById('arena-info-text');
+    const titleText = document.getElementById('title-text');
+    const feverEl = document.getElementById('fever');
+    const emptyStateEl = document.getElementById('empty-state');
+    const MAX_RENDER_DPR = 1.15;
+    const MAX_FOOD_RENDER_HIGH = 44;
+    const MAX_FOOD_RENDER_LOW = 26;
+    const DEFAULT_RENDER_SCALE = 0.75;
+    const DEFAULT_STATE_INTERVAL_MS = 33;
+    const SMOOTHING_EXTRAPOLATION_MS = 70;
+    const webgpuAvailable = !!navigator.gpu;
+
+    let state = {
+      config: {
+        arenaWidth: 1920,
+        arenaHeight: 1080,
+        renderScale: DEFAULT_RENDER_SCALE,
+        targetFps: 60,
+        maxRenderPlayers: 60,
+        rendererMode: 'auto',
+        tickRateMs: DEFAULT_STATE_INTERVAL_MS,
+        stateEmitIntervalMs: DEFAULT_STATE_INTERVAL_MS,
+        likeLifeValue: 1,
+        giftLifePerCoin: 25,
+        giftWeaponMappings: {},
+        infoRotatorIntervalMs: 4200,
+        infoRotatorMessages: [],
+        displayTexts: {
+          titleText: 'LIVE ARENA',
+          feverText: 'FEVER MODE',
+          emptyText: 'Waiting for live activity'
+        }
+      },
+      fever: { active: false },
+      players: [],
+      food: [],
+      weaponPickups: [],
+      mines: [],
+      leaderboard: []
+    };
+    const effects = [];
+    let lastDrawAt = 0;
+    const viewPlayers = new Map();
+    const trailHistory = new Map();
+    const orbSpriteCache = new Map();
+    const foodSpriteCache = new Map();
+    const avatarImageCache = new Map();
+    const avatarSpriteCache = new Map();
+    const weaponPickupSpriteCache = new Map();
+    const giftCatalogById = new Map();
+    const giftCatalogByName = new Map();
+    const failedInfoImageUrls = new Set();
+    let renderEngine = null;
+    const renderStats = {
+      dpr: 1,
+      quality: 1,
+      avgFrameMs: 16.7,
+      lastFrameAt: performance.now(),
+      visibleFood: 0,
+      visiblePlayers: 0,
+      frameCount: 0,
+      skippedFrames: 0,
+      fps: 60,
+      targetFps: 60,
+      renderScale: DEFAULT_RENDER_SCALE,
+      renderer: 'canvas2d-optimized',
+      webgpuAvailable,
+      stateRateMs: DEFAULT_STATE_INTERVAL_MS,
+      smoothing: 'interpolated-extrapolated',
+      internalWidth: 0,
+      internalHeight: 0,
+      engine: 'canvas2d',
+      rapierReady: false,
+      pixiReady: false
+    };
+    window.__arenaRenderStats = renderStats;
+    const WEAPON_LABELS = {
+      speed: 'Speed',
+      shield: 'Shield',
+      freeze: 'Freeze',
+      dash: 'Dash',
+      laser: 'Laser',
+      magnet: 'Magnet',
+      pulse: 'Pulse',
+      vampire: 'Vampire',
+      missile: 'Missile',
+      mine: 'Minen',
+      blackhole: 'Black Hole',
+      chainsaw: 'Chainsaw'
+    };
+    let infoRotatorIndex = 0;
+    let lastInfoRotatorAt = 0;
+    let lastInfoRotatorSignature = '';
+    let giftCatalogLoading = false;
+    let giftCatalogLoaded = false;
+
+    function clampNumber(value, min, max, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.max(min, Math.min(max, number));
+    }
+
+    function getRenderScale() {
+      return clampNumber(state.config?.renderScale, 0.35, 1.25, DEFAULT_RENDER_SCALE);
+    }
+
+    function getTargetFps() {
+      return clampNumber(state.config?.targetFps, 24, 60, 60);
+    }
+
+    function getMaxRenderPlayers() {
+      const maxPlayers = clampNumber(state.config?.maxPlayers, 1, 250, 80);
+      return Math.floor(clampNumber(state.config?.maxRenderPlayers, 5, maxPlayers, Math.min(maxPlayers, 60)));
+    }
+
+    function getInterpolationInterval() {
+      return clampNumber(
+        state.config?.stateEmitIntervalMs || state.config?.tickRateMs,
+        24,
+        140,
+        DEFAULT_STATE_INTERVAL_MS
+      );
+    }
+
+    function updateRendererStats() {
+      const engineSnapshot = renderEngine ? {
+        renderer: renderEngine.name,
+        engine: renderEngine.type,
+        rapierReady: !!renderEngine.rapierReady,
+        pixiReady: !!renderEngine.pixiReady
+      } : null;
+      renderStats.webgpuAvailable = webgpuAvailable;
+      renderStats.targetFps = getTargetFps();
+      renderStats.renderScale = getRenderScale();
+      renderStats.stateRateMs = getInterpolationInterval();
+      if (engineSnapshot) {
+        renderStats.renderer = engineSnapshot.renderer;
+        renderStats.engine = engineSnapshot.engine;
+        renderStats.rapierReady = engineSnapshot.rapierReady;
+        renderStats.pixiReady = engineSnapshot.pixiReady;
+      } else {
+        renderStats.renderer = state.config?.rendererMode === 'webgpu' && webgpuAvailable
+          ? 'canvas2d-optimized-webgpu-ready'
+          : 'canvas2d-optimized';
+      }
+    }
+
+    function resize() {
+      const baseDpr = Math.max(1, window.devicePixelRatio || 1);
+      const dpr = Math.max(0.35, Math.min(MAX_RENDER_DPR, baseDpr * getRenderScale()));
+      updateRendererStats();
+      renderStats.dpr = dpr;
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
+      renderStats.internalWidth = canvas.width;
+      renderStats.internalHeight = canvas.height;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      orbSpriteCache.clear();
+      foodSpriteCache.clear();
+      avatarSpriteCache.clear();
+      weaponPickupSpriteCache.clear();
+      if (renderEngine && typeof renderEngine.resize === 'function') {
+        renderEngine.resize();
+      }
+    }
+
+    function arenaScale() {
+      const width = state.config?.arenaWidth || 1920;
+      const height = state.config?.arenaHeight || 1080;
+      return {
+        sx: window.innerWidth / width,
+        sy: window.innerHeight / height
+      };
+    }
+
+    function project(point) {
+      const scale = arenaScale();
+      return {
+        x: point.x * scale.sx,
+        y: point.y * scale.sy,
+        radius: Math.max(2, point.radius * Math.min(scale.sx, scale.sy))
+      };
+    }
+
+    function projectRaw(x, y, radius) {
+      const scale = arenaScale();
+      return {
+        x: x * scale.sx,
+        y: y * scale.sy,
+        radius: Math.max(2, radius * Math.min(scale.sx, scale.sy))
+      };
+    }
+
+    function clampText(value, fallback, maxLength = 32) {
+      const text = String(value || fallback || '');
+      return text.length > maxLength ? `${text.slice(0, Math.max(1, maxLength - 3))}...` : text;
+    }
+
+    function weaponLabel(type) {
+      return WEAPON_LABELS[type] || clampText(type, 'Waffe', 18);
+    }
+
+    function catalogImageUrl(gift) {
+      return String(
+        gift?.image_url ||
+        gift?.imageUrl ||
+        gift?.giftPictureUrl ||
+        gift?.giftImageUrl ||
+        gift?.picture_url ||
+        ''
+      ).trim();
+    }
+
+    function avatarRenderUrl(player) {
+      return String(
+        player?.profilePictureProxyUrl ||
+        player?.profilePictureUrl ||
+        player?.avatar ||
+        ''
+      ).trim();
+    }
+
+    function normalizeGiftCatalogEntry(gift) {
+      if (!gift || typeof gift !== 'object') return null;
+      const id = String(gift.id || gift.gift_id || gift.giftId || '').trim();
+      const name = String(gift.name || gift.giftName || gift.label || '').trim();
+      const imageUrl = catalogImageUrl(gift);
+      const coins = Number(gift.diamond_count || gift.diamondCount || gift.catalogDiamondCount || gift.cost);
+      if (!id && !name) return null;
+      return {
+        id,
+        name,
+        imageUrl,
+        coins: Number.isFinite(coins) ? coins : null,
+        image_url: imageUrl
+      };
+    }
+
+    function indexGiftCatalog(gifts) {
+      giftCatalogById.clear();
+      giftCatalogByName.clear();
+      (Array.isArray(gifts) ? gifts : []).forEach(gift => {
+        const entry = normalizeGiftCatalogEntry(gift);
+        if (!entry) return;
+        if (entry.id) giftCatalogById.set(entry.id, entry);
+        if (entry.name) giftCatalogByName.set(entry.name.toLowerCase(), entry);
+      });
+      lastInfoRotatorSignature = '';
+    }
+
+    async function loadArenaGiftCatalogImages(force = false) {
+      if (giftCatalogLoading || (giftCatalogLoaded && !force)) return;
+      giftCatalogLoading = true;
+      try {
+        const response = await fetch('/api/gift-catalog');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data && Array.isArray(data.catalog)) {
+          indexGiftCatalog(data.catalog);
+          giftCatalogLoaded = true;
+        }
+      } catch (_) {
+        giftCatalogLoaded = false;
+      } finally {
+        giftCatalogLoading = false;
+      }
+    }
+
+    function findGiftCatalogEntry(giftKey, mapping) {
+      const ids = [
+        giftKey,
+        mapping?.giftId,
+        mapping?.catalogGiftId,
+        mapping?.id
+      ].map(value => String(value || '').trim()).filter(Boolean);
+      for (const id of ids) {
+        if (giftCatalogById.has(id)) return giftCatalogById.get(id);
+      }
+
+      const names = [
+        mapping?.giftName,
+        mapping?.name,
+        giftKey
+      ].map(value => String(value || '').trim().toLowerCase()).filter(Boolean);
+      for (const name of names) {
+        if (giftCatalogByName.has(name)) return giftCatalogByName.get(name);
+      }
+      return null;
+    }
+
+    function giftMappingLabel(giftKey, mapping, catalogEntry) {
+      const giftName = String(mapping?.giftName || catalogEntry?.name || giftKey || 'Geschenk').trim();
+      const coins = Number(mapping?.catalogDiamondCount || catalogEntry?.coins);
+      return Number.isFinite(coins) && coins > 0 ? `${giftName} (${coins} Coins)` : giftName;
+    }
+
+    function infoMessageSignature(message) {
+      return [
+        message.kind,
+        message.label,
+        message.text,
+        message.imageUrl,
+        message.iconText
+      ].join('|');
+    }
+
+    function buildInfoRotatorMessages() {
+      const config = state.config || {};
+      const customMessages = Array.isArray(config.infoRotatorMessages)
+        ? config.infoRotatorMessages
+          .map(message => String(message || '').trim())
+          .filter(Boolean)
+          .map(message => ({
+            kind: 'custom',
+            label: 'Info',
+            text: message,
+            iconText: 'INFO'
+          }))
+        : [];
+      const likeValue = clampNumber(config.likeLifeValue, 0.1, 10000, 1);
+      const giftLifePerCoin = clampNumber(config.giftLifePerCoin, 1, 100000, 25);
+      const giftMessages = Object.entries(config.giftWeaponMappings || {})
+        .filter(([, mapping]) => mapping && typeof mapping === 'object' && (mapping.weaponType || mapping.type))
+        .sort((a, b) => {
+          const aCoins = Number(a[1].catalogDiamondCount);
+          const bCoins = Number(b[1].catalogDiamondCount);
+          return (Number.isFinite(aCoins) ? aCoins : 999999) - (Number.isFinite(bCoins) ? bCoins : 999999);
+        })
+        .slice(0, 12)
+        .map(([giftKey, mapping]) => {
+          const catalogEntry = findGiftCatalogEntry(giftKey, mapping);
+          const weapon = weaponLabel(mapping.weaponType || mapping.type);
+          const imageUrl = String(
+            mapping.image_url ||
+            mapping.imageUrl ||
+            mapping.giftPictureUrl ||
+            mapping.giftImageUrl ||
+            catalogEntry?.imageUrl ||
+            ''
+          ).trim();
+          return {
+            kind: 'gift',
+            label: weapon,
+            text: `${giftMappingLabel(giftKey, mapping, catalogEntry)} triggert ${weapon}`,
+            imageUrl,
+            iconText: weapon.slice(0, 4).toUpperCase()
+          };
+        });
+
+      return [
+        ...customMessages,
+        {
+          kind: 'spawn',
+          label: 'Spawn',
+          text: 'Zum Spawnen: im LIVE aktiv werden - Chat, Like, Follow, Share oder Geschenk.',
+          iconText: 'LIVE'
+        },
+        {
+          kind: 'like',
+          label: 'Likes',
+          text: `Likes geben Leben: 1 Like = ${likeValue} Leben`,
+          iconText: 'LIKE'
+        },
+        {
+          kind: 'gift-life',
+          label: 'Geschenke',
+          text: `Geschenke geben Leben: 1 Coin = ${giftLifePerCoin} Leben`,
+          iconText: 'COIN'
+        },
+        {
+          kind: 'ai',
+          label: 'Arena',
+          text: 'Grosse Avatare jagen kleine, kleine sammeln Nahrung und fluechten.',
+          iconText: 'AI'
+        },
+        ...giftMessages
+      ].filter(Boolean);
+    }
+
+    function renderInfoRotatorMessage(message) {
+      if (!infoRotatorText) return;
+      const nextMessage = message || {};
+      const kind = String(nextMessage.kind || 'info').trim() || 'info';
+      const label = clampText(nextMessage.label || 'Spielinfo', 'Spielinfo', 20);
+      const text = String(nextMessage.text || '').trim();
+      const imageUrl = String(nextMessage.imageUrl || '').trim();
+
+      if (infoRotatorEl) {
+        infoRotatorEl.dataset.infoKind = kind;
+      }
+      if (infoRotatorKind) {
+        infoRotatorKind.textContent = label;
+      }
+      if (infoRotatorText.textContent !== text) {
+        infoRotatorText.textContent = text;
+      }
+
+      if (!infoRotatorIcon || !infoRotatorIconText) return;
+      if (imageUrl && !failedInfoImageUrls.has(imageUrl)) {
+        if (infoRotatorIcon.getAttribute('src') !== imageUrl) {
+          infoRotatorIcon.src = imageUrl;
+        }
+        infoRotatorIcon.hidden = false;
+        infoRotatorIconText.hidden = true;
+        return;
+      }
+
+      infoRotatorIcon.hidden = true;
+      infoRotatorIcon.removeAttribute('src');
+      infoRotatorIconText.hidden = false;
+      infoRotatorIconText.textContent = clampText(nextMessage.iconText || label, 'INFO', 5);
+    }
+
+    function updateInfoRotator(now = performance.now()) {
+      if (!infoRotatorText) return;
+      const messages = buildInfoRotatorMessages();
+      if (!messages.length) {
+        renderInfoRotatorMessage({ kind: 'info', label: 'Info', text: '' });
+        return;
+      }
+
+      const signature = messages.map(infoMessageSignature).join('\n');
+      if (signature !== lastInfoRotatorSignature) {
+        lastInfoRotatorSignature = signature;
+        infoRotatorIndex = Math.min(infoRotatorIndex, messages.length - 1);
+        lastInfoRotatorAt = now;
+      }
+
+      const intervalMs = clampNumber(state.config?.infoRotatorIntervalMs, 1500, 20000, 4200);
+      if (!lastInfoRotatorAt) lastInfoRotatorAt = now;
+      if (now - lastInfoRotatorAt >= intervalMs) {
+        infoRotatorIndex = (infoRotatorIndex + 1) % messages.length;
+        lastInfoRotatorAt = now;
+      }
+
+      renderInfoRotatorMessage(messages[infoRotatorIndex] || messages[0]);
+    }
+
+    function updateHud(now = performance.now()) {
+      const texts = state.config?.displayTexts || {};
+      titleText.textContent = clampText(texts.titleText, 'LIVE ARENA');
+      feverEl.textContent = clampText(texts.feverText, 'FEVER MODE');
+      emptyStateEl.textContent = clampText(texts.emptyText, 'Waiting for live activity');
+      hudCount.textContent = `${state.players.length} active`;
+      feverEl.classList.toggle('visible', !!state.fever?.active);
+      emptyStateEl.classList.toggle('visible', state.players.length === 0);
+      updateInfoRotator(now);
+
+      const fragment = document.createDocumentFragment();
+      (state.leaderboard || []).slice(0, 5).forEach(row => {
+        const el = document.createElement('div');
+        el.className = 'leader-row';
+        const rank = document.createElement('span');
+        const name = document.createElement('span');
+        const mass = document.createElement('span');
+        name.className = 'leader-name';
+        rank.textContent = `#${row.rank}`;
+        name.textContent = row.nickname || row.username;
+        mass.textContent = String(Math.round(row.mass));
+        el.append(rank, name, mass);
+        fragment.appendChild(el);
+      });
+      leaderboardEl.replaceChildren(fragment);
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    function hueFromColor(color) {
+      const match = String(color || '').match(/hsla?\(([-\d.]+)/i);
+      return match ? Number(match[1]) : 196;
+    }
+
+    function hsla(hue, saturation, lightness, alpha) {
+      return `hsla(${Math.round(hue)}, ${saturation}%, ${lightness}%, ${alpha})`;
+    }
+
+    function trimCache(cache, maxSize) {
+      while (cache.size > maxSize) {
+        cache.delete(cache.keys().next().value);
+      }
+    }
+
+    function getFoodSprite(feverActive) {
+      const key = feverActive ? 'fever' : 'normal';
+      if (foodSpriteCache.has(key)) return foodSpriteCache.get(key);
+
+      const sprite = document.createElement('canvas');
+      const size = 34;
+      sprite.width = size;
+      sprite.height = size;
+      const sctx = sprite.getContext('2d');
+      const center = size / 2;
+      const glow = sctx.createRadialGradient(center, center, 0, center, center, center);
+      if (feverActive) {
+        glow.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
+        glow.addColorStop(0.28, 'rgba(253, 224, 71, 0.22)');
+        glow.addColorStop(0.58, 'rgba(251, 146, 60, 0.08)');
+        glow.addColorStop(1, 'rgba(251, 146, 60, 0)');
+      } else {
+        glow.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
+        glow.addColorStop(0.3, 'rgba(103, 232, 249, 0.18)');
+        glow.addColorStop(0.62, 'rgba(45, 212, 191, 0.07)');
+        glow.addColorStop(1, 'rgba(45, 212, 191, 0)');
+      }
+      sctx.fillStyle = glow;
+      sctx.beginPath();
+      sctx.arc(center, center, center, 0, Math.PI * 2);
+      sctx.fill();
+
+      foodSpriteCache.set(key, sprite);
+      return sprite;
+    }
+
+    function drawFood() {
+      const food = state.food || [];
+      if (!food.length) return;
+
+      const configuredMax = Math.min(
+        state.config?.maxFoodRender || MAX_FOOD_RENDER_HIGH,
+        renderStats.quality > 0.7 ? MAX_FOOD_RENDER_HIGH : MAX_FOOD_RENDER_LOW
+      );
+      const qualityMax = Math.floor(configuredMax * (0.5 + renderStats.quality * 0.5));
+      const maxDraw = Math.max(12, Math.min(food.length, qualityMax));
+      const stride = Math.max(1, Math.ceil(food.length / maxDraw));
+      const sprite = getFoodSprite(!!state.fever?.active);
+      const foodOpacity = state.fever?.active ? 0.36 : 0.28;
+      renderStats.visibleFood = Math.ceil(food.length / stride);
+
+      ctx.save();
+      ctx.globalAlpha = foodOpacity;
+      for (let i = 0; i < food.length; i += stride) {
+        const point = project(food[i]);
+        const size = Math.max(8, point.radius * 4.2);
+        ctx.drawImage(sprite, point.x - size / 2, point.y - size / 2, size, size);
+      }
+      ctx.restore();
+    }
+
+    function drawWeaponPickups(now) {
+      const pickups = state.weaponPickups || [];
+      if (!pickups.length) return;
+
+      ctx.save();
+      for (const pickup of pickups) {
+        const point = project(pickup);
+        const sprite = getWeaponPickupSprite(pickup.type);
+        const pulse = 1 + Math.sin(now / 180 + point.x * 0.01) * 0.08;
+        const size = Math.max(28, point.radius * 3.4) * pulse;
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(now / 900 + point.x * 0.001);
+        ctx.globalAlpha = 0.88;
+        ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawMines(now) {
+      const mines = state.mines || [];
+      if (!mines.length) return;
+
+      ctx.save();
+      for (const mine of mines) {
+        const point = project(mine);
+        const color = weaponColor('mine');
+        const pulse = 1 + Math.sin(now / 130 + point.x * 0.02) * 0.09;
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(now / 500);
+        ctx.globalAlpha = 0.62;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+        ctx.lineWidth = Math.max(2, point.radius * 0.08);
+        ctx.shadowColor = color;
+        ctx.shadowBlur = renderStats.quality > 0.72 ? 8 : 0;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(8, point.radius * 0.48) * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+          const angle = i * Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * point.radius * 0.46, Math.sin(angle) * point.radius * 0.46);
+          ctx.lineTo(Math.cos(angle) * point.radius * 0.78, Math.sin(angle) * point.radius * 0.78);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function weaponColor(type) {
+      if (type === 'blackhole') return '#f97316';
+      if (type === 'chainsaw') return '#fb7185';
+      if (type === 'freeze') return '#7dd3fc';
+      if (type === 'dash') return '#34d399';
+      if (type === 'magnet') return '#f472b6';
+      if (type === 'vampire') return '#ef4444';
+      if (type === 'mine') return '#f59e0b';
+      if (type === 'laser') return '#f43f5e';
+      if (type === 'speed') return '#22d3ee';
+      if (type === 'shield') return '#60a5fa';
+      if (type === 'pulse') return '#c084fc';
+      if (type === 'missile') return '#facc15';
+      return '#a78bfa';
+    }
+
+    function weaponGlyph(type) {
+      if (type === 'blackhole') return 'BH';
+      if (type === 'chainsaw') return 'SAW';
+      if (type === 'freeze') return 'FR';
+      if (type === 'dash') return 'DS';
+      if (type === 'magnet') return 'MG';
+      if (type === 'vampire') return 'VP';
+      if (type === 'mine') return 'MN';
+      if (type === 'laser') return 'LX';
+      if (type === 'speed') return 'SP';
+      if (type === 'shield') return 'SH';
+      if (type === 'pulse') return 'PX';
+      if (type === 'missile') return 'MS';
+      return 'WP';
+    }
+
+    function cssHexToNumber(color, fallback = 0x67e8f9) {
+      const value = String(color || '').trim().replace('#', '');
+      const parsed = Number.parseInt(value, 16);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function createRapierCollisionWorld(RAPIER) {
+      if (!RAPIER || typeof RAPIER.World !== 'function') return null;
+      const world = new RAPIER.World({ x: 0, y: 0 });
+      return {
+        world,
+        sync(players = [], pickups = [], mines = []) {
+          if (!world || typeof world.step !== 'function') return;
+          world.step();
+          return {
+            bodies: players.length,
+            sensors: pickups.length + mines.length
+          };
+        }
+      };
+    }
+
+    class CanvasArenaRenderer {
+      constructor() {
+        this.name = 'canvas2d-optimized';
+        this.type = 'canvas2d';
+        this.pixiReady = false;
+        this.rapierReady = false;
+      }
+
+      resize() {
+        canvas.style.display = 'block';
+      }
+
+      render(now, players) {
+        canvas.style.display = 'block';
+        drawBackground();
+        drawFood();
+        drawMines(now);
+        drawWeaponPickups(now);
+        drawTrails(players);
+        players.forEach(player => drawPlayer(player, now));
+        drawEffects(now);
+      }
+    }
+
+    async function createPixiArenaRenderer(PIXI, RAPIER) {
+      if (!PIXI || typeof PIXI.Application !== 'function') {
+        throw new Error('PixiJS Application unavailable');
+      }
+
+      const app = new PIXI.Application();
+      const rendererMode = state.config?.rendererMode || 'auto';
+      const preferWebGpu = webgpuAvailable && (rendererMode === 'auto' || rendererMode === 'webgpu');
+      await app.init({
+        resizeTo: window,
+        backgroundAlpha: 0,
+        antialias: true,
+        autoDensity: true,
+        resolution: Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getRenderScale())),
+        preference: preferWebGpu ? 'webgpu' : 'webgl'
+      });
+
+      app.canvas.id = 'arena-pixi-canvas';
+      app.canvas.style.position = 'fixed';
+      app.canvas.style.inset = '0';
+      app.canvas.style.width = '100vw';
+      app.canvas.style.height = '100vh';
+      app.canvas.style.pointerEvents = 'none';
+      app.canvas.style.display = 'block';
+      document.body.insertBefore(app.canvas, canvas.nextSibling);
+
+      const stage = app.stage;
+      const foodLayer = new PIXI.Container();
+      const pickupLayer = new PIXI.Container();
+      const playerLayer = new PIXI.Container();
+      const effectLayer = new PIXI.Container();
+      stage.addChild(foodLayer, pickupLayer, playerLayer, effectLayer);
+
+      const collisionWorld = createRapierCollisionWorld(RAPIER);
+      const playerNodes = new Map();
+
+      function circleGraphic(radius, fillColor, alpha = 1, strokeColor = null, strokeWidth = 0) {
+        const graphic = new PIXI.Graphics();
+        graphic.circle(0, 0, radius);
+        graphic.fill({ color: fillColor, alpha });
+        if (strokeColor && strokeWidth > 0) {
+          graphic.stroke({ color: strokeColor, alpha: 0.8, width: strokeWidth });
+        }
+        return graphic;
+      }
+
+      function clearLayer(layer) {
+        layer.removeChildren().forEach(child => {
+          if (child && typeof child.destroy === 'function') child.destroy({ children: true });
+        });
+      }
+
+      function updatePlayerNode(player, point, now) {
+        let node = playerNodes.get(player.username);
+        if (!node) {
+          node = {
+            container: new PIXI.Container(),
+            avatarUrl: '',
+            avatarKey: '',
+            avatar: null,
+            fallback: new PIXI.Graphics(),
+            chrome: new PIXI.Graphics(),
+            weapon: new PIXI.Graphics()
+          };
+          node.container.addChild(node.fallback, node.chrome, node.weapon);
+          playerLayer.addChild(node.container);
+          playerNodes.set(player.username, node);
+        }
+
+        node.container.x = point.x;
+        node.container.y = point.y;
+        node.container.rotation = Math.atan2(player.vy || 0, player.vx || 1) * 0.02;
+
+        const avatarUrl = avatarRenderUrl(player);
+        if (avatarUrl !== node.avatarUrl) {
+          if (node.avatar) {
+            node.avatar.destroy();
+            node.avatar = null;
+          }
+          node.avatarUrl = avatarUrl;
+          node.avatarKey = '';
+        }
+
+        const avatarCanvas = avatarUrl ? getAvatarSprite(player, point.radius) : null;
+        const avatarKey = avatarCanvas ? `${avatarUrl}:${avatarCanvas.renderSize}` : '';
+        if (avatarCanvas && avatarKey !== node.avatarKey) {
+          if (node.avatar) node.avatar.destroy();
+          node.avatarKey = avatarKey;
+          node.avatar = new PIXI.Sprite(PIXI.Texture.from(avatarCanvas));
+          node.avatar.anchor.set(0.5);
+          node.container.addChildAt(node.avatar, 0);
+        }
+
+        if (node.avatar) {
+          const avatarSize = Math.max(point.radius * 2.08, avatarCanvas?.renderSize || point.radius * 2);
+          node.avatar.width = avatarSize;
+          node.avatar.height = avatarSize;
+          node.avatar.visible = true;
+        }
+
+        const hue = hueFromColor(player.color);
+        node.fallback.clear();
+        if (!node.avatar) {
+          node.fallback.circle(0, 0, point.radius);
+          node.fallback.fill({ color: cssHexToNumber(hsla(hue, 86, 54, 1), 0x22d3ee), alpha: 0.94 });
+        }
+
+        node.chrome.clear();
+        node.chrome.circle(0, 0, point.radius + 1.6);
+        node.chrome.stroke({ color: 0xffffff, alpha: 0.72, width: Math.max(1.5, point.radius * 0.08) });
+
+        node.weapon.clear();
+        if (player.weapon) {
+          const color = cssHexToNumber(weaponColor(player.weapon.type), 0xfacc15);
+          const pulse = 1 + Math.sin(now / 150) * 0.06;
+          node.weapon.circle(0, 0, point.radius * (1.24 * pulse));
+          node.weapon.stroke({ color, alpha: 0.78, width: Math.max(2, point.radius * 0.09) });
+          if (player.weapon.type === 'chainsaw') {
+            const teeth = 18;
+            for (let i = 0; i < teeth; i++) {
+              const angle = now / 92 + i * Math.PI * 2 / teeth;
+              const inner = point.radius * 1.08;
+              const outer = point.radius * 1.48;
+              node.weapon.moveTo(Math.cos(angle - 0.09) * inner, Math.sin(angle - 0.09) * inner);
+              node.weapon.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+              node.weapon.lineTo(Math.cos(angle + 0.09) * inner, Math.sin(angle + 0.09) * inner);
+              node.weapon.closePath();
+            }
+            node.weapon.fill({ color, alpha: 0.92 });
+          }
+        }
+      }
+
+      return {
+        name: app.renderer && app.renderer.type ? `pixijs-v8-${app.renderer.type}` : 'pixijs-v8',
+        type: 'pixi-rapier',
+        pixiReady: true,
+        rapierReady: !!collisionWorld,
+        resize() {
+          app.renderer.resolution = Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getRenderScale()));
+          app.renderer.resize(window.innerWidth, window.innerHeight);
+          canvas.style.display = 'none';
+        },
+        render(now, players) {
+          canvas.style.display = 'none';
+          clearLayer(foodLayer);
+          clearLayer(pickupLayer);
+          clearLayer(effectLayer);
+
+          const food = state.food || [];
+          const configuredMax = Math.min(
+            state.config?.maxFoodRender || MAX_FOOD_RENDER_HIGH,
+            renderStats.quality > 0.7 ? MAX_FOOD_RENDER_HIGH : MAX_FOOD_RENDER_LOW
+          );
+          const maxDraw = Math.max(12, Math.min(food.length, configuredMax));
+          const stride = Math.max(1, Math.ceil(food.length / Math.max(1, maxDraw)));
+          renderStats.visibleFood = Math.ceil(food.length / stride);
+          for (let i = 0; i < food.length; i += stride) {
+            const point = project(food[i]);
+            const orb = circleGraphic(Math.max(3, point.radius * 1.2), state.fever?.active ? 0xfacc15 : 0x2dd4bf, state.fever?.active ? 0.48 : 0.38);
+            orb.x = point.x;
+            orb.y = point.y;
+            foodLayer.addChild(orb);
+          }
+
+          for (const pickup of state.weaponPickups || []) {
+            const point = project(pickup);
+            const color = cssHexToNumber(weaponColor(pickup.type), 0xa78bfa);
+            const pickupGraphic = circleGraphic(Math.max(10, point.radius * 1.15), color, 0.72, 0xffffff, 1.5);
+            pickupGraphic.x = point.x;
+            pickupGraphic.y = point.y;
+            pickupGraphic.rotation = now / 700;
+            pickupLayer.addChild(pickupGraphic);
+          }
+
+          const keep = new Set();
+          for (const player of players) {
+            keep.add(player.username);
+            updatePlayerNode(player, project(player), now);
+          }
+          for (const [username, node] of playerNodes.entries()) {
+            if (!keep.has(username)) {
+              playerLayer.removeChild(node.container);
+              node.container.destroy({ children: true });
+              playerNodes.delete(username);
+            }
+          }
+
+          collisionWorld?.sync(players, state.weaponPickups || [], state.mines || []);
+        },
+        destroy() {
+          app.destroy(true, { children: true });
+        }
+      };
+    }
+
+    async function loadArenaRenderEngine() {
+      try {
+        const [PIXI, RAPIER] = await Promise.all([
+          import('/vendor/pixi/pixi.min.mjs'),
+          import('/vendor/rapier2d/rapier.es.js')
+        ]);
+        if (RAPIER && typeof RAPIER.init === 'function') {
+          await RAPIER.init();
+        }
+        return await createPixiArenaRenderer(PIXI, RAPIER);
+      } catch (error) {
+        renderStats.rendererError = String(error && error.message ? error.message : error);
+        return new CanvasArenaRenderer();
+      }
+    }
+
+    function getWeaponPickupSprite(type) {
+      const key = type || 'weapon';
+      if (weaponPickupSpriteCache.has(key)) return weaponPickupSpriteCache.get(key);
+
+      const color = weaponColor(type);
+      const sprite = document.createElement('canvas');
+      const size = 68;
+      const center = size / 2;
+      sprite.width = size;
+      sprite.height = size;
+      sprite.renderSize = size;
+      const sctx = sprite.getContext('2d');
+      const glow = sctx.createRadialGradient(center, center, 4, center, center, center);
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+      glow.addColorStop(0.32, color);
+      glow.addColorStop(0.7, 'rgba(255, 255, 255, 0.16)');
+      glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      sctx.fillStyle = glow;
+      sctx.beginPath();
+      sctx.arc(center, center, center, 0, Math.PI * 2);
+      sctx.fill();
+
+      sctx.fillStyle = 'rgba(7, 17, 31, 0.92)';
+      sctx.strokeStyle = color;
+      sctx.lineWidth = 3;
+      sctx.beginPath();
+      sctx.moveTo(center, 8);
+      sctx.lineTo(size - 9, center);
+      sctx.lineTo(center, size - 8);
+      sctx.lineTo(9, center);
+      sctx.closePath();
+      sctx.fill();
+      sctx.stroke();
+
+      sctx.fillStyle = '#ffffff';
+      sctx.font = '700 13px Segoe UI, Arial';
+      sctx.textAlign = 'center';
+      sctx.textBaseline = 'middle';
+      sctx.fillText(weaponGlyph(type), center, center + 1);
+
+      weaponPickupSpriteCache.set(key, sprite);
+      return sprite;
+    }
+
+    function getOrbSprite(player, radius) {
+      const hue = hueFromColor(player.color);
+      const weaponType = player.weapon?.type || 'none';
+      const bucket = Math.max(10, Math.min(62, Math.round(radius / 2) * 2));
+      const key = `${hue}:${weaponType}:${bucket}:${state.fever?.active ? 'fever' : 'normal'}`;
+      if (orbSpriteCache.has(key)) return orbSpriteCache.get(key);
+
+      const margin = Math.ceil(bucket * (weaponType === 'none' ? 0.72 : 1.05));
+      const size = Math.ceil((bucket + margin) * 2);
+      const center = size / 2;
+      const sprite = document.createElement('canvas');
+      sprite.width = size;
+      sprite.height = size;
+      sprite.renderSize = size;
+      const sctx = sprite.getContext('2d');
+
+      const auraHue = weaponType === 'blackhole'
+        ? 25
+        : weaponType === 'chainsaw'
+          ? 350
+          : weaponType === 'freeze'
+            ? 199
+            : weaponType === 'dash'
+              ? 150
+              : weaponType === 'magnet'
+                ? 320
+                : weaponType === 'vampire'
+                  ? 0
+                  : weaponType === 'mine'
+                    ? 38
+                    : weaponType === 'laser'
+                      ? 346
+                      : weaponType === 'speed'
+                        ? 188
+                        : hue;
+      const aura = sctx.createRadialGradient(center, center, bucket * 0.35, center, center, bucket + margin);
+      aura.addColorStop(0, hsla(auraHue, 90, 68, weaponType === 'none' ? 0.16 : 0.12));
+      aura.addColorStop(0.55, hsla(auraHue, 92, 58, weaponType === 'none' ? 0.08 : 0.07));
+      aura.addColorStop(1, hsla(auraHue, 90, 45, 0));
+      sctx.fillStyle = aura;
+      sctx.beginPath();
+      sctx.arc(center, center, bucket + margin, 0, Math.PI * 2);
+      sctx.fill();
+
+      sctx.save();
+      sctx.shadowColor = hsla(auraHue, 90, 62, weaponType === 'none' ? 0.25 : 0.2);
+      sctx.shadowBlur = weaponType === 'none' ? bucket * 0.28 : bucket * 0.34;
+      const body = sctx.createRadialGradient(
+        center - bucket * 0.34,
+        center - bucket * 0.42,
+        bucket * 0.08,
+        center,
+        center,
+        bucket
+      );
+      body.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      body.addColorStop(0.16, hsla(hue, 95, 82, 0.98));
+      body.addColorStop(0.43, hsla(hue, 78, 58, 0.96));
+      body.addColorStop(0.78, hsla((hue + 18) % 360, 80, 34, 0.96));
+      body.addColorStop(1, 'rgba(6, 10, 20, 0.96)');
+      sctx.fillStyle = body;
+      sctx.beginPath();
+      sctx.arc(center, center, bucket, 0, Math.PI * 2);
+      sctx.fill();
+      sctx.restore();
+
+      const rim = sctx.createLinearGradient(center - bucket, center - bucket, center + bucket, center + bucket);
+      rim.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+      rim.addColorStop(0.45, hsla(hue, 95, 74, 0.52));
+      rim.addColorStop(1, 'rgba(15, 23, 42, 0.72)');
+      sctx.lineWidth = Math.max(1.4, bucket * 0.09);
+      sctx.strokeStyle = rim;
+      sctx.beginPath();
+      sctx.arc(center, center, bucket - sctx.lineWidth / 2, 0, Math.PI * 2);
+      sctx.stroke();
+
+      sctx.globalAlpha = 0.22;
+      sctx.strokeStyle = 'rgba(255, 255, 255, 0.86)';
+      sctx.lineWidth = Math.max(1, bucket * 0.045);
+      sctx.beginPath();
+      sctx.arc(center - bucket * 0.08, center + bucket * 0.04, bucket * 0.58, -0.25, Math.PI * 1.08);
+      sctx.stroke();
+      sctx.beginPath();
+      sctx.arc(center + bucket * 0.08, center - bucket * 0.04, bucket * 0.36, Math.PI * 0.8, Math.PI * 1.85);
+      sctx.stroke();
+      sctx.globalAlpha = 1;
+
+      const highlight = sctx.createRadialGradient(
+        center - bucket * 0.36,
+        center - bucket * 0.44,
+        0,
+        center - bucket * 0.36,
+        center - bucket * 0.44,
+        bucket * 0.44
+      );
+      highlight.addColorStop(0, 'rgba(255, 255, 255, 0.84)');
+      highlight.addColorStop(0.42, 'rgba(255, 255, 255, 0.22)');
+      highlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      sctx.fillStyle = highlight;
+      sctx.beginPath();
+      sctx.ellipse(
+        center - bucket * 0.32,
+        center - bucket * 0.42,
+        bucket * 0.32,
+        bucket * 0.18,
+        -0.45,
+        0,
+        Math.PI * 2
+      );
+      sctx.fill();
+
+      orbSpriteCache.set(key, sprite);
+      trimCache(orbSpriteCache, 180);
+      return sprite;
+    }
+
+    function loadAvatar(url) {
+      const cleanUrl = String(url || '').trim();
+      if (!cleanUrl) return null;
+
+      const cached = avatarImageCache.get(cleanUrl);
+      if (cached) return cached;
+
+      const image = new Image();
+      const entry = {
+        image,
+        loaded: false,
+        failed: false
+      };
+
+      image.decoding = 'async';
+      image.loading = 'eager';
+      image.crossOrigin = 'anonymous';
+      image.referrerPolicy = 'no-referrer';
+      image.onload = () => {
+        entry.loaded = true;
+      };
+      image.onerror = () => {
+        entry.failed = true;
+      };
+      image.src = cleanUrl;
+
+      avatarImageCache.set(cleanUrl, entry);
+      trimCache(avatarImageCache, 160);
+      return entry;
+    }
+
+    function getAvatarSprite(player, radius) {
+      const cleanUrl = avatarRenderUrl(player);
+      const entry = loadAvatar(cleanUrl);
+      if (!entry || !entry.loaded || entry.failed || !entry.image.naturalWidth || !entry.image.naturalHeight) {
+        return null;
+      }
+
+      const bucket = Math.max(18, Math.min(80, Math.round(radius / 2) * 2));
+      const key = `${cleanUrl}:${bucket}`;
+      if (avatarSpriteCache.has(key)) return avatarSpriteCache.get(key);
+
+      const sprite = document.createElement('canvas');
+      const size = Math.ceil(bucket * 2.2);
+      const center = size / 2;
+      const avatarRadius = bucket * 0.88;
+      sprite.width = size;
+      sprite.height = size;
+      sprite.renderSize = size;
+      const sctx = sprite.getContext('2d');
+      const image = entry.image;
+      const diameter = avatarRadius * 2;
+      const scale = Math.max(diameter / image.naturalWidth, diameter / image.naturalHeight);
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+
+      sctx.save();
+      sctx.beginPath();
+      sctx.arc(center, center, avatarRadius, 0, Math.PI * 2);
+      sctx.fillStyle = '#07111f';
+      sctx.fill();
+      sctx.clip();
+      sctx.drawImage(image, center - width / 2, center - height / 2, width, height);
+      sctx.restore();
+
+      const gloss = sctx.createRadialGradient(
+        center - avatarRadius * 0.35,
+        center - avatarRadius * 0.42,
+        0,
+        center - avatarRadius * 0.35,
+        center - avatarRadius * 0.42,
+        avatarRadius * 0.6
+      );
+      gloss.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+      gloss.addColorStop(0.42, 'rgba(255, 255, 255, 0.14)');
+      gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      sctx.fillStyle = gloss;
+      sctx.beginPath();
+      sctx.ellipse(
+        center - avatarRadius * 0.3,
+        center - avatarRadius * 0.4,
+        avatarRadius * 0.34,
+        avatarRadius * 0.16,
+        -0.42,
+        0,
+        Math.PI * 2
+      );
+      sctx.fill();
+
+      avatarSpriteCache.set(key, sprite);
+      trimCache(avatarSpriteCache, 220);
+      return sprite;
+    }
+
+    function drawAvatarImage(player, point) {
+      const sprite = getAvatarSprite(player, point.radius);
+      if (!sprite) {
+        return false;
+      }
+
+      ctx.drawImage(
+        sprite,
+        point.x - sprite.renderSize / 2,
+        point.y - sprite.renderSize / 2,
+        sprite.renderSize,
+        sprite.renderSize
+      );
+      return true;
+    }
+
+    function drawAvatarChrome(player, point, hasAvatar) {
+      const rimColor = player.weapon ? weaponColor(player.weapon.type) : 'rgba(255, 255, 255, 0.9)';
+      ctx.save();
+      ctx.lineWidth = Math.max(2, point.radius * 0.08);
+      ctx.strokeStyle = rimColor;
+      ctx.shadowColor = rimColor;
+      ctx.shadowBlur = hasAvatar && renderStats.quality > 0.82 && state.players.length <= 55 ? 6 : 0;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, point.radius * 0.92, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (hasAvatar && renderStats.quality > 0.72 && state.players.length <= 55) {
+        ctx.globalAlpha = 0.32;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.ellipse(
+          point.x - point.radius * 0.28,
+          point.y - point.radius * 0.36,
+          point.radius * 0.28,
+          point.radius * 0.14,
+          -0.42,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawFallbackOrb(player, point) {
+      const sprite = getOrbSprite(player, point.radius);
+      ctx.drawImage(
+        sprite,
+        point.x - sprite.renderSize / 2,
+        point.y - sprite.renderSize / 2,
+        sprite.renderSize,
+        sprite.renderSize
+      );
+    }
+
+    function drawWeapon(player, point, now) {
+      if (!player.weapon) return;
+      const color = weaponColor(player.weapon.type);
+      const weaponAlpha = state.fever?.active ? 0.22 : 0.16;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = renderStats.quality > 0.82 && state.players.length <= 55 ? 4 : 0;
+      ctx.lineWidth = Math.max(2, point.radius * 0.12);
+      ctx.globalAlpha = weaponAlpha;
+
+      if (player.weapon.type === 'blackhole') {
+        const pulse = Math.sin(now / 150) * 4;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 15 + pulse, now / 480, Math.PI * 1.6 + now / 480);
+        ctx.stroke();
+        ctx.globalAlpha = weaponAlpha * 0.55;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 29 - pulse * 0.4, -now / 620, Math.PI * 1.4 - now / 620);
+        ctx.stroke();
+      } else if (player.weapon.type === 'chainsaw') {
+        const pulse = Math.sin(now / 80) * 3;
+        ctx.globalAlpha = weaponAlpha * 1.35;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 14 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = weaponAlpha * 0.8;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 26 - pulse * 0.3, -now / 220, Math.PI * 2 - now / 220);
+        ctx.stroke();
+      } else if (player.weapon.type === 'freeze') {
+        for (let i = 0; i < 6; i++) {
+          const angle = now / 600 + i * Math.PI / 3;
+          ctx.beginPath();
+          ctx.moveTo(point.x + Math.cos(angle) * point.radius * 1.06, point.y + Math.sin(angle) * point.radius * 1.06);
+          ctx.lineTo(point.x + Math.cos(angle) * point.radius * 1.55, point.y + Math.sin(angle) * point.radius * 1.55);
+          ctx.stroke();
+        }
+      } else if (player.weapon.type === 'dash') {
+        const angle = Math.atan2(player.vy || 0, player.vx || 1) + Math.PI;
+        for (const offset of [-0.38, 0, 0.38]) {
+          ctx.beginPath();
+          ctx.moveTo(point.x + Math.cos(angle + offset) * point.radius * 0.9, point.y + Math.sin(angle + offset) * point.radius * 0.9);
+          ctx.lineTo(point.x + Math.cos(angle + offset) * point.radius * 1.8, point.y + Math.sin(angle + offset) * point.radius * 1.8);
+          ctx.stroke();
+        }
+      } else if (player.weapon.type === 'magnet') {
+        for (const offset of [0, Math.PI]) {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, point.radius + 12, offset + now / 520, offset + Math.PI * 0.72 + now / 520);
+          ctx.stroke();
+        }
+      } else if (player.weapon.type === 'vampire') {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 10 + Math.sin(now / 120) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (player.weapon.type === 'mine') {
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (player.weapon.type === 'laser') {
+        const angle = Math.atan2(player.vy || 0, player.vx || 1);
+        const length = point.radius * 2.5;
+        const gradient = ctx.createLinearGradient(
+          point.x - Math.cos(angle) * length,
+          point.y - Math.sin(angle) * length,
+          point.x + Math.cos(angle) * length,
+          point.y + Math.sin(angle) * length
+        );
+        gradient.addColorStop(0, 'rgba(244, 63, 94, 0)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.62)');
+        gradient.addColorStop(1, 'rgba(244, 63, 94, 0)');
+        ctx.strokeStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(point.x - Math.cos(angle) * length, point.y - Math.sin(angle) * length);
+        ctx.lineTo(point.x + Math.cos(angle) * length, point.y + Math.sin(angle) * length);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, point.radius + 8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawChainsawTeeth(point, radius, now, color) {
+      const chainsaw_teeth = 18;
+      const spin = now / 92;
+      const inner = radius * 1.02;
+      const outer = radius * 1.42;
+
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+      ctx.lineWidth = Math.max(1, radius * 0.035);
+      ctx.globalAlpha = 0.94;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = renderStats.quality > 0.72 && state.players.length <= 65 ? 10 : 0;
+
+      for (let i = 0; i < chainsaw_teeth; i++) {
+        const angle = spin + i * Math.PI * 2 / chainsaw_teeth;
+        const width = 0.11 + Math.sin(now / 140 + i) * 0.018;
+        const x1 = point.x + Math.cos(angle - width) * inner;
+        const y1 = point.y + Math.sin(angle - width) * inner;
+        const x2 = point.x + Math.cos(angle) * outer;
+        const y2 = point.y + Math.sin(angle) * outer;
+        const x3 = point.x + Math.cos(angle + width) * inner;
+        const y3 = point.y + Math.sin(angle + width) * inner;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x3, y3);
+        ctx.closePath();
+        ctx.fill();
+        if (renderStats.quality > 0.78) ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawAnimatedWeaponAttachment(player, point, now) {
+      if (!player.weapon) return;
+
+      const type = player.weapon.type;
+      const color = weaponColor(type);
+      const direction = Math.atan2(player.vy || 0, player.vx || 1);
+      const spin = now / 320;
+      const r = point.radius;
+
+      ctx.save();
+      ctx.lineWidth = Math.max(2, r * 0.1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = renderStats.quality > 0.78 && state.players.length <= 55 ? 8 : 0;
+
+      if (type === 'chainsaw') {
+        drawChainsawTeeth(point, r, now, color);
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, r * (1.52 + Math.sin(now / 90) * 0.04), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (type === 'freeze') {
+        for (let i = 0; i < 5; i++) {
+          const angle = spin + i * Math.PI * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(point.x + Math.cos(angle) * r * 0.72, point.y + Math.sin(angle) * r * 0.72);
+          ctx.lineTo(point.x + Math.cos(angle) * r * 1.22, point.y + Math.sin(angle) * r * 1.22);
+          ctx.stroke();
+        }
+      } else if (type === 'dash') {
+        const back = direction + Math.PI;
+        ctx.globalAlpha = 0.9;
+        for (const offset of [-0.26, 0.26]) {
+          ctx.beginPath();
+          ctx.moveTo(point.x + Math.cos(back + offset) * r * 0.85, point.y + Math.sin(back + offset) * r * 0.85);
+          ctx.lineTo(point.x + Math.cos(back + offset) * r * 1.45, point.y + Math.sin(back + offset) * r * 1.45);
+          ctx.stroke();
+        }
+      } else if (type === 'magnet') {
+        ctx.beginPath();
+        ctx.arc(point.x - r * 0.24, point.y, r * 0.48, Math.PI * 0.45, Math.PI * 1.55);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(point.x + r * 0.24, point.y, r * 0.48, -Math.PI * 0.55, Math.PI * 0.55);
+        ctx.stroke();
+      } else if (type === 'vampire') {
+        ctx.beginPath();
+        ctx.moveTo(point.x - r * 0.2, point.y + r * 0.9);
+        ctx.lineTo(point.x, point.y + r * 1.3);
+        ctx.lineTo(point.x + r * 0.2, point.y + r * 0.9);
+        ctx.stroke();
+      } else if (type === 'mine') {
+        ctx.beginPath();
+        ctx.arc(point.x + Math.cos(spin) * r * 1.02, point.y + Math.sin(spin) * r * 1.02, Math.max(3, r * 0.16), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'speed') {
+        const back = direction + Math.PI;
+        for (const offset of [-0.42, 0.42]) {
+          const x = point.x + Math.cos(back + offset) * r * 0.82;
+          const y = point.y + Math.sin(back + offset) * r * 0.82;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + Math.cos(back) * r * 0.78, y + Math.sin(back) * r * 0.78);
+          ctx.stroke();
+        }
+      } else if (type === 'laser') {
+        const muzzleX = point.x + Math.cos(direction) * r * 0.98;
+        const muzzleY = point.y + Math.sin(direction) * r * 0.98;
+        ctx.translate(muzzleX, muzzleY);
+        ctx.rotate(direction);
+        ctx.fillRect(-r * 0.12, -r * 0.18, r * 0.7, r * 0.36);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(r * 0.42, -r * 0.08, r * 0.22, r * 0.16);
+      } else if (type === 'missile') {
+        const angle = direction + Math.sin(now / 180) * 0.16;
+        ctx.translate(point.x + Math.cos(angle) * r * 1.03, point.y + Math.sin(angle) * r * 1.03);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(r * 0.55, 0);
+        ctx.lineTo(-r * 0.38, -r * 0.26);
+        ctx.lineTo(-r * 0.18, 0);
+        ctx.lineTo(-r * 0.38, r * 0.26);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'shield') {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = spin * 0.18 + i * Math.PI / 3;
+          const x = point.x + Math.cos(angle) * r * 1.08;
+          const y = point.y + Math.sin(angle) * r * 1.08;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      } else if (type === 'pulse') {
+        ctx.globalAlpha = 0.92;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, r * (1.22 + Math.sin(now / 170) * 0.08), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 0.48;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, r * 1.52, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (type === 'blackhole') {
+        for (const offset of [0, Math.PI * 0.62, Math.PI * 1.22]) {
+          const angle = spin * 0.7 + offset;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, r * 1.28, angle, angle + Math.PI * 0.72);
+          ctx.stroke();
+        }
+      } else {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, r * 1.12, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function easeOutCubic(value) {
+      return 1 - Math.pow(1 - value, 3);
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function reconcilePlayers(players) {
+      const now = performance.now();
+      const keep = new Set();
+
+      (players || []).forEach(player => {
+        keep.add(player.username);
+        const existing = viewPlayers.get(player.username);
+        if (!existing) {
+          viewPlayers.set(player.username, {
+            player,
+            prevX: player.x,
+            prevY: player.y,
+            prevRadius: player.radius,
+            targetX: player.x,
+            targetY: player.y,
+            targetRadius: player.radius,
+            renderX: player.x,
+            renderY: player.y,
+            renderRadius: player.radius,
+            serverVx: 0,
+            serverVy: 0,
+            updatedAt: now
+          });
+          return;
+        }
+
+        const elapsedSeconds = Math.max(0.016, (now - existing.updatedAt) / 1000);
+        const nextServerVx = (player.x - existing.targetX) / elapsedSeconds;
+        const nextServerVy = (player.y - existing.targetY) / elapsedSeconds;
+        existing.player = player;
+        existing.prevX = existing.renderX;
+        existing.prevY = existing.renderY;
+        existing.prevRadius = existing.renderRadius;
+        existing.targetX = player.x;
+        existing.targetY = player.y;
+        existing.targetRadius = player.radius;
+        existing.serverVx = clampNumber(nextServerVx, -1800, 1800, 0);
+        existing.serverVy = clampNumber(nextServerVy, -1800, 1800, 0);
+        existing.updatedAt = now;
+      });
+
+      for (const username of viewPlayers.keys()) {
+        if (!keep.has(username)) {
+          viewPlayers.delete(username);
+          trailHistory.delete(username);
+        }
+      }
+    }
+
+    function interpolatedPlayer(view, now) {
+      const interval = getInterpolationInterval();
+      const elapsed = Math.max(0, now - view.updatedAt);
+      const t = Math.min(1, elapsed / interval);
+      const extrapolationSeconds = Math.max(0, Math.min(SMOOTHING_EXTRAPOLATION_MS, elapsed - interval)) / 1000;
+      const extrapolationWeight = 0.72;
+      const estimatedX = lerp(view.prevX, view.targetX, t) + (view.serverVx || 0) * extrapolationSeconds * extrapolationWeight;
+      const estimatedY = lerp(view.prevY, view.targetY, t) + (view.serverVy || 0) * extrapolationSeconds * extrapolationWeight;
+      const arenaWidth = state.config?.arenaWidth || 1920;
+      const arenaHeight = state.config?.arenaHeight || 1080;
+      view.renderRadius = lerp(view.prevRadius, view.targetRadius, easeOutCubic(t));
+      view.renderX = clampNumber(estimatedX, view.renderRadius, arenaWidth - view.renderRadius, view.targetX);
+      view.renderY = clampNumber(estimatedY, view.renderRadius, arenaHeight - view.renderRadius, view.targetY);
+      return Object.assign({}, view.player, {
+        x: view.renderX,
+        y: view.renderY,
+        radius: view.renderRadius
+      });
+    }
+
+    function updateTrail(player, point) {
+      if (renderStats.quality < 0.7 || state.players.length > 70) return;
+      const maxTrail = renderStats.quality > 0.88 ? 7 : 4;
+      const history = trailHistory.get(player.username) || [];
+      const last = history[history.length - 1];
+      if (!last || Math.hypot(last.x - point.x, last.y - point.y) > Math.max(4, point.radius * 0.18)) {
+        history.push({
+          x: point.x,
+          y: point.y,
+          radius: point.radius,
+          hue: hueFromColor(player.color)
+        });
+      }
+      while (history.length > maxTrail) history.shift();
+      trailHistory.set(player.username, history);
+    }
+
+    function drawTrails(players) {
+      if (renderStats.quality < 0.7 || players.length > 70) return;
+      ctx.save();
+      for (const player of players) {
+        const history = trailHistory.get(player.username) || [];
+        const hue = hueFromColor(player.color);
+        for (let i = 0; i < history.length; i++) {
+          const item = history[i];
+          const alpha = (i + 1) / history.length;
+          ctx.fillStyle = hsla(item.hue || hue, 90, 62, 0.045 * alpha);
+          ctx.beginPath();
+          ctx.arc(item.x, item.y, item.radius * (0.62 + alpha * 0.18), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawPlayer(player, now) {
+      const point = project(player);
+      updateTrail(player, point);
+      drawWeapon(player, point, now);
+
+      const hasAvatar = drawAvatarImage(player, point);
+      if (!hasAvatar) {
+        drawFallbackOrb(player, point);
+      }
+      drawAvatarChrome(player, point, hasAvatar);
+      drawAnimatedWeaponAttachment(player, point, now);
+
+      if (!hasAvatar) {
+        const initials = (player.nickname || player.username || '?').trim().slice(0, 2).toUpperCase();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${Math.max(10, Math.min(18, point.radius * 0.58))}px Segoe UI, Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initials, point.x, point.y);
+      }
+
+      const shouldLabel = renderStats.quality > 0.74 && point.radius >= 15 && (state.players.length <= 28 || player.mass >= 34);
+      if (shouldLabel) {
+        ctx.font = `600 ${Math.max(10, Math.min(15, point.radius * 0.38))}px Segoe UI, Arial`;
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.lineWidth = 3;
+        const name = clampText(player.nickname || player.username, player.username, 18);
+        ctx.strokeText(name, point.x, point.y + point.radius + 4);
+        ctx.fillText(name, point.x, point.y + point.radius + 4);
+      }
+    }
+
+    function pushEffect(effect) {
+      effects.push(effect);
+      if (effects.length > 90) {
+        effects.splice(0, effects.length - 90);
+      }
+    }
+
+    function drawEatingEffect(effect, progress, now) {
+      const point = project(effect);
+      const eased = easeOutCubic(progress);
+      const radius = Math.max(5, point.radius * (1 + eased * 2.2));
+      const hue = effect.reason === 'blackhole' ? 25 : effect.reason === 'pulse' ? 280 : 176;
+
+      ctx.save();
+      ctx.globalAlpha = (1 - progress) * 0.7;
+      ctx.strokeStyle = hsla(hue, 92, 65, 0.9);
+      ctx.lineWidth = Math.max(1.4, point.radius * 0.24);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (renderStats.quality > 0.64) {
+        ctx.fillStyle = hsla(hue, 96, 70, 0.75);
+        for (let i = 0; i < 4; i++) {
+          const angle = now / 160 + i * Math.PI * 0.5;
+          const sparkRadius = radius * 0.48 + i * 1.5;
+          ctx.beginPath();
+          ctx.arc(
+            point.x + Math.cos(angle) * sparkRadius,
+            point.y + Math.sin(angle) * sparkRadius,
+            Math.max(1.5, point.radius * 0.18 * (1 - progress)),
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawEffects(now) {
+      for (let i = effects.length - 1; i >= 0; i--) {
+        const effect = effects[i];
+        const progress = (Date.now() - effect.startedAt) / effect.duration;
+        if (progress >= 1) {
+          effects.splice(i, 1);
+          continue;
+        }
+
+        if (effect.type === 'eat') {
+          drawEatingEffect(effect, progress, now);
+          continue;
+        }
+
+        const point = project(effect);
+        ctx.beginPath();
+        ctx.strokeStyle = effect.color;
+        ctx.globalAlpha = (1 - progress) * 0.42;
+        ctx.lineWidth = 3;
+        ctx.arc(point.x, point.y, effect.radius * (1 + progress * 3), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function updateQuality(now) {
+      const frameMs = now - renderStats.lastFrameAt;
+      renderStats.lastFrameAt = now;
+      renderStats.frameCount += 1;
+      updateRendererStats();
+      if (frameMs > 0 && frameMs < 250) {
+        renderStats.avgFrameMs = renderStats.avgFrameMs * 0.92 + frameMs * 0.08;
+        renderStats.fps = Math.round((1000 / renderStats.avgFrameMs) * 10) / 10;
+      }
+
+      if (renderStats.frameCount % 24 !== 0) return;
+
+      const targetFrameMs = 1000 / getTargetFps();
+      if (renderStats.avgFrameMs > targetFrameMs * 1.8) {
+        renderStats.quality = Math.max(0.5, renderStats.quality - 0.15);
+      } else if (renderStats.avgFrameMs > targetFrameMs * 1.35) {
+        renderStats.quality = Math.max(0.65, renderStats.quality - 0.08);
+      } else if (renderStats.avgFrameMs < targetFrameMs * 1.12) {
+        renderStats.quality = Math.min(1, renderStats.quality + 0.06);
+      }
+    }
+
+    function draw(now = performance.now()) {
+      requestAnimationFrame(draw);
+      const targetFrameMs = 1000 / getTargetFps();
+      if (lastDrawAt && now - lastDrawAt < targetFrameMs - 0.5) {
+        renderStats.skippedFrames += 1;
+        return;
+      }
+      lastDrawAt = now;
+      updateQuality(now);
+      const renderLimit = getMaxRenderPlayers();
+      const players = Array.from(viewPlayers.values())
+        .map(view => interpolatedPlayer(view, now))
+        .sort((a, b) => a.radius - b.radius)
+        .slice(-renderLimit);
+      renderStats.visiblePlayers = players.length;
+      if (!renderEngine) {
+        renderEngine = new CanvasArenaRenderer();
+      }
+      renderEngine.render(now, players);
+      updateInfoRotator(now);
+    }
+
+    function applyState(nextState) {
+      const previousRenderScale = getRenderScale();
+      state = Object.assign({}, state, nextState || {});
+      if (nextState && Array.isArray(nextState.players)) {
+        reconcilePlayers(nextState.players);
+      }
+      updateRendererStats();
+      if (previousRenderScale !== getRenderScale()) {
+        resize();
+      }
+      updateHud();
+    }
+
+    socket.on('arena:state', applyState);
+    socket.on('arena:player-removed', data => {
+      if (!data?.username) return;
+      viewPlayers.delete(data.username);
+      trailHistory.delete(data.username);
+      state.players = (state.players || []).filter(player => player.username !== data.username);
+      updateHud();
+    });
+    socket.on('arena:weapon-activated', data => {
+      const player = (state.players || []).find(p => p.username === data.username);
+      if (!player) return;
+      pushEffect({
+        x: player.x,
+        y: player.y,
+        radius: player.radius,
+        color: weaponColor(data.weapon?.type),
+        startedAt: Date.now(),
+        duration: 620
+      });
+    });
+    socket.on('arena:weapon-collected', data => {
+      const player = (state.players || []).find(p => p.username === data.username);
+      if (!player) return;
+      pushEffect({
+        x: player.x,
+        y: player.y,
+        radius: player.radius * 1.1,
+        color: weaponColor(data.weapon?.type),
+        startedAt: Date.now(),
+        duration: 520
+      });
+    });
+    socket.on('arena:food-eaten', data => {
+      if (!data) return;
+      pushEffect({
+        type: 'eat',
+        x: Number(data.x) || 0,
+        y: Number(data.y) || 0,
+        radius: Math.max(4, Number(data.radius) || 5),
+        gain: Number(data.gain) || 1,
+        reason: data.reason || 'food',
+        startedAt: Date.now(),
+        duration: data.reason === 'blackhole' ? 520 : 380
+      });
+    });
+    socket.on('arena:mine-triggered', data => {
+      if (!data) return;
+      pushEffect({
+        x: Number(data.x) || 0,
+        y: Number(data.y) || 0,
+        radius: Math.max(12, Number(data.radius) || 40),
+        color: weaponColor('mine'),
+        startedAt: Date.now(),
+        duration: 520
+      });
+    });
+
+    socket.on('game-engine:config-updated', data => {
+      if (data.gameType !== 'arena') return;
+      applyState({
+        config: Object.assign({}, state.config, data.config || {})
+      });
+    });
+    socket.on('gift-catalog:updated', () => {
+      giftCatalogLoaded = false;
+      loadArenaGiftCatalogImages(true).then(() => updateInfoRotator());
+    });
+
+    if (infoRotatorIcon && infoRotatorIconText) {
+      infoRotatorIcon.addEventListener('error', () => {
+        const failedUrl = infoRotatorIcon.getAttribute('src');
+        if (failedUrl) {
+          failedInfoImageUrls.add(failedUrl);
+        }
+        infoRotatorIcon.hidden = true;
+        infoRotatorIcon.removeAttribute('src');
+        infoRotatorIconText.hidden = false;
+      });
+    }
+
+    fetch('/api/game-engine/arena/state')
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data) applyState(data);
+      })
+      .catch(() => {});
+    loadArenaGiftCatalogImages().then(() => updateInfoRotator());
+
+    window.addEventListener('resize', resize);
+    renderEngine = new CanvasArenaRenderer();
+    loadArenaRenderEngine().then(engine => {
+      if (engine) {
+        if (renderEngine && renderEngine.type !== 'canvas2d' && typeof renderEngine.destroy === 'function') {
+          renderEngine.destroy();
+        }
+        renderEngine = engine;
+        renderEngine.resize();
+        updateRendererStats();
+      }
+    });
+    resize();
+    updateHud();
+    draw();
+  </script>
+</body>
+</html>

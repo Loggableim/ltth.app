@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <title>CoinBattle - Admin Panel</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--color-bg-primary, #0a0e27);
+            color: var(--color-text-primary, #ffffff);
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-border, #2d3748);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary, #a0aec0);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab:hover {
+            color: var(--color-text-primary, #ffffff);
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--color-bg-card, #1a1f36);
+            border: 1px solid var(--color-border, #2d3748);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 1.5rem;
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary, #0f1419);
+            border: 1px solid var(--color-border, #2d3748);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary, #a0aec0);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-accent-primary, #667eea);
+        }
+
+        .stat-value.success { color: #48bb78; }
+        .stat-value.warning { color: #ed8936; }
+        .stat-value.danger { color: #f56565; }
+        .stat-value.info { color: #4299e1; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-text-primary, #ffffff);
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-bg-secondary, #0f1419);
+            border: 1px solid var(--color-border, #2d3748);
+            border-radius: 6px;
+            color: var(--color-text-primary, #ffffff);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary, #2d3748);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .match-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .match-status.active {
+            background: rgba(72, 187, 120, 0.2);
+            color: #48bb78;
+        }
+
+        .match-status.inactive {
+            background: rgba(160, 174, 192, 0.2);
+            color: #a0aec0;
+        }
+
+        .match-status.paused {
+            background: rgba(237, 137, 54, 0.2);
+            color: #ed8936;
+        }
+
+        .timer-display {
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-display.warning {
+            color: #ed8936;
+        }
+
+        .timer-display.danger {
+            color: #f56565;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border, #2d3748);
+        }
+
+        .leaderboard-table th {
+            background: var(--color-bg-secondary, #0f1419);
+            font-weight: 600;
+            color: var(--color-text-secondary, #a0aec0);
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .leaderboard-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-bg-secondary, #2d3748);
+        }
+
+        .player-name {
+            font-weight: 600;
+        }
+
+        .team-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .team-badge.red {
+            background: rgba(245, 101, 101, 0.2);
+            color: #f56565;
+        }
+
+        .team-badge.blue {
+            background: rgba(66, 153, 225, 0.2);
+            color: #4299e1;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 4px;
+        }
+
+        .badge.common {
+            background: rgba(160, 174, 192, 0.2);
+            color: #a0aec0;
+        }
+
+        .badge.rare {
+            background: rgba(66, 153, 225, 0.2);
+            color: #4299e1;
+        }
+
+        .badge.epic {
+            background: rgba(159, 122, 234, 0.2);
+            color: #9f7aea;
+        }
+
+        .badge.legendary {
+            background: rgba(237, 137, 54, 0.2);
+            color: #ed8936;
+        }
+
+        .multiplier-indicator {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 16px 0;
+        }
+
+        .multiplier-indicator .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .multiplier-indicator .label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .alert-info {
+            background: rgba(66, 153, 225, 0.2);
+            border: 1px solid #4299e1;
+            color: #4299e1;
+        }
+
+        .alert-success {
+            background: rgba(72, 187, 120, 0.2);
+            border: 1px solid #48bb78;
+            color: #48bb78;
+        }
+
+        .alert-warning {
+            background: rgba(237, 137, 54, 0.2);
+            border: 1px solid #ed8936;
+            color: #ed8936;
+        }
+
+        .alert-danger {
+            background: rgba(245, 101, 101, 0.2);
+            border: 1px solid #f56565;
+            color: #f56565;
+        }
+
+        .overlay-url {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .overlay-url input {
+            flex: 1;
+        }
+
+        .history-item {
+            padding: 16px;
+            background: var(--color-bg-secondary, #0f1419);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-meta {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary, #a0aec0);
+            margin-top: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary, #a0aec0);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Range input styling */
+        .form-range {
+            width: 100%;
+            height: 6px;
+            background: var(--color-bg-secondary, #2d3748);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-range::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-range::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .form-range::-moz-range-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .timer-display {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🎮 CoinBattle</h1>
+                <p>Live battle game management</p>
+            </div>
+            <div class="header-actions">
+                <select id="languageSelector" class="form-select" style="width: auto;">
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="control">🎮 Control</button>
+            <button class="tab" data-tab="settings">⚙️ Settings</button>
+            <button class="tab" data-tab="leaderboard">🏆 Leaderboard</button>
+            <button class="tab" data-tab="history">📊 History</button>
+        </div>
+
+        <!-- Control Tab -->
+        <div id="control-tab" class="tab-content active">
+            <div class="grid grid-4">
+                <div class="stat-card">
+                    <div class="stat-label">Match Status</div>
+                    <div class="stat-value" id="match-status-text">Inactive</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Time Remaining</div>
+                    <div class="stat-value info" id="time-remaining">--:--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Coins</div>
+                    <div class="stat-value success" id="total-coins">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Participants</div>
+                    <div class="stat-value warning" id="participant-count">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⏱️ Match Timer</div>
+                <div class="timer-display" id="timer-display">00:00</div>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-start-match">▶️ Start Match</button>
+                    <button class="btn btn-danger" id="btn-end-match" disabled>⏹️ End Match</button>
+                    <button class="btn btn-warning" id="btn-pause-match" disabled>⏸️ Pause</button>
+                    <button class="btn btn-warning" id="btn-extend-match" disabled>⏰ Extend +60s</button>
+                </div>
+            </div>
+
+            <div class="card" id="multiplier-card" style="display: none;">
+                <div class="card-title">✨ Active Multiplier</div>
+                <div class="multiplier-indicator">
+                    <div class="value" id="multiplier-value">2.0x</div>
+                    <div class="label" id="multiplier-time">Ends in <span id="multiplier-remaining">--</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎯 Match Controls</div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Match Mode</label>
+                        <select class="form-select" id="match-mode">
+                            <option value="solo">Solo</option>
+                            <option value="team">Team Battle</option>
+                            <option value="pyramid">Pyramid Battle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration (seconds)</label>
+                        <input type="number" class="form-input" id="match-duration" value="300" min="30" step="30">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button class="btn" id="btn-activate-multiplier">✨ Activate 2x Multiplier (30s)</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎪 Testing & Simulation</div>
+                <div class="alert alert-info">
+                    Test layouts and animations without TikTok Live connection
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="btn-start-simulation">🎲 Start Simulation</button>
+                    <button class="btn btn-danger" id="btn-stop-simulation" disabled>⏹️ Stop Simulation</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📺 Current Match Leaderboard</div>
+                <div id="current-leaderboard">
+                    <p class="loading">No active match</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">⚙️ Gameplay Settings</div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-autostart">
+                            <span>Auto-start on first gift</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-autoreset" checked>
+                            <span>Auto-reset after match</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-autoextension" checked>
+                            <span>Auto-extension on close match</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-multipliers" checked>
+                            <span>Enable multipliers</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Extension Threshold (coins)</label>
+                        <input type="number" class="form-input" id="setting-extension-threshold" value="15" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Extension Duration (seconds)</label>
+                        <input type="number" class="form-input" id="setting-extension-duration" value="60" min="10" step="10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">👥 Team Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Team Assignment Method</label>
+                    <select class="form-select" id="setting-team-assignment">
+                        <option value="random">Random</option>
+                        <option value="alternate">Alternate (Balance)</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">❤️ Likes & Interactions as Points</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;">
+                    Convert TikTok interactions (likes, shares, follows) into battle points during active matches.
+                </div>
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-likes-enabled">
+                        <span>Enable Likes & Interactions as Points</span>
+                    </label>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Likes per Point</label>
+                        <input type="number" class="form-input" id="setting-likes-per-point" value="100" min="1">
+                        <small class="form-help">How many likes = 1 battle point</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Shares per Point</label>
+                        <input type="number" class="form-input" id="setting-shares-per-point" value="50" min="1">
+                        <small class="form-help">How many shares = 1 battle point</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Follows per Point</label>
+                        <input type="number" class="form-input" id="setting-follows-per-point" value="10" min="1">
+                        <small class="form-help">How many follows = 1 battle point</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Comments per Point</label>
+                        <input type="number" class="form-input" id="setting-comments-per-point" value="25" min="1">
+                        <small class="form-help">How many comments = 1 battle point</small>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-save-likes-settings">💾 Save Likes Settings</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔺 Pyramid Mode Settings</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;">
+                    Pyramid Mode: Players compete to climb the pyramid by sending gifts or likes. The leader can be knocked out!
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-pyramid-enabled">
+                            <span>Enable Pyramid Mode</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-pyramid-autostart" checked>
+                            <span>Auto-start on first gift</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Number of Rows</label>
+                        <select class="form-select" id="setting-pyramid-rows">
+                            <option value="2">2 rows (1+2 = 3 slots)</option>
+                            <option value="3">3 rows (1+2+4 = 7 slots)</option>
+                            <option value="4" selected>4 rows (1+2+4+6 = 13 slots)</option>
+                            <option value="5">5 rows (1+2+4+6+8 = 21 slots)</option>
+                            <option value="6">6 rows (1+2+4+6+8+10 = 31 slots)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Round Duration (seconds)</label>
+                        <input type="number" class="form-input" id="setting-pyramid-duration" value="120" min="30" step="30">
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Extension per Coin (seconds)</label>
+                        <input type="number" class="form-input" id="setting-pyramid-extension" value="0.5" min="0" max="5" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Extension (seconds)</label>
+                        <input type="number" class="form-input" id="setting-pyramid-max-extension" value="300" min="0" step="30">
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Points per Coin</label>
+                        <input type="number" class="form-input" id="setting-pyramid-coins-per-point" value="100" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Points per Like</label>
+                        <input type="number" class="form-input" id="setting-pyramid-likes-per-point" value="1" min="1">
+                    </div>
+                </div>
+                
+                <!-- XP Rewards Integration -->
+                <div class="alert alert-success" style="margin-top: 20px; margin-bottom: 16px;">
+                    <strong>🎮 XP Rewards Integration</strong><br>
+                    Automatically award XP points to pyramid winners via the Viewer XP System plugin
+                </div>
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-pyramid-xp-enabled">
+                        <span>Enable XP Rewards for Winners</span>
+                    </label>
+                    <small class="form-help">Requires Viewer XP System plugin to be enabled</small>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Distribution Mode</label>
+                        <select class="form-select" id="setting-pyramid-xp-distribution">
+                            <option value="winner-takes-all">Winner Takes All (100%)</option>
+                            <option value="top3">Top 3 (50%, 30%, 20%)</option>
+                            <option value="top5">Top 5 (40%, 25%, 18%, 10%, 7%)</option>
+                            <option value="top10">Top 10 (30%, 20%, 15%, 10%, 8%, 6%, 5%, 3%, 2%, 1%)</option>
+                        </select>
+                        <small class="form-help">How XP is distributed among winners</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Points to XP Multiplier</label>
+                        <input type="number" class="form-input" id="setting-pyramid-xp-conversion" value="1.0" min="0.1" step="0.1">
+                        <small class="form-help">1 pyramid point = X XP (e.g., 1.0 means 100 points = 100 XP)</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Number of Rewarded Places</label>
+                    <select class="form-select" id="setting-pyramid-xp-places">
+                        <option value="1">Top 1 (Winner only)</option>
+                        <option value="3">Top 3</option>
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                    </select>
+                    <small class="form-help">How many top places receive XP rewards</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Pyramid Overlay URL</label>
+                    <div class="overlay-url">
+                        <input type="text" class="form-input" id="pyramid-overlay-url" readonly>
+                        <button class="btn btn-sm" id="btn-copy-pyramid-url">📋 Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid">👁️ Preview</button>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-save-pyramid-settings">💾 Save Pyramid Settings</button>
+                    <button class="btn" id="btn-start-pyramid">▶️ Start Pyramid</button>
+                    <button class="btn btn-danger" id="btn-stop-pyramid" disabled>⏹️ Stop Pyramid</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎨 Display Settings</div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Theme</label>
+                        <select class="form-select" id="setting-theme">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="neon">Neon</option>
+                            <option value="minimal">Minimal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Leaderboard Skin</label>
+                        <select class="form-select" id="setting-skin">
+                            <option value="gold">Gold</option>
+                            <option value="futuristic">Futuristic</option>
+                            <option value="retro">Retro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Layout</label>
+                        <select class="form-select" id="setting-layout">
+                            <option value="fullscreen">Fullscreen</option>
+                            <option value="compact">Compact</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Font Size</label>
+                        <input type="number" class="form-input" id="setting-fontsize" value="16" min="12" max="32">
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-show-avatars" checked>
+                            <span>Show player avatars</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-show-badges" checked>
+                            <span>Show badges</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-toaster-mode">
+                            <span>Toaster mode (performance)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🏆 Post-Match Display Settings</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;">
+                    Configure what to display after each match ends. Leaderboards and winner credits will show in the OBS overlay.
+                </div>
+                
+                <!-- Leaderboard Display -->
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-postmatch-leaderboard" checked>
+                        <span>Show Leaderboard After Match</span>
+                    </label>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Leaderboard Type(s)</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label class="form-checkbox" style="margin: 0;">
+                                <input type="checkbox" id="setting-postmatch-lb-weekly">
+                                <span>Weekly Leaderboard</span>
+                            </label>
+                            <label class="form-checkbox" style="margin: 0;">
+                                <input type="checkbox" id="setting-postmatch-lb-season">
+                                <span>Season Leaderboard</span>
+                            </label>
+                            <label class="form-checkbox" style="margin: 0;">
+                                <input type="checkbox" id="setting-postmatch-lb-lifetime" checked>
+                                <span>Lifetime Leaderboard</span>
+                            </label>
+                        </div>
+                        <small class="form-help">Select one or more leaderboards to display in sequence</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Display Duration (seconds)</label>
+                        <input type="range" class="form-range" id="setting-postmatch-lb-duration" min="5" max="60" step="5" value="15">
+                        <div style="text-align: center; margin-top: 8px;">
+                            <strong id="lb-duration-value">15</strong> seconds per leaderboard
+                        </div>
+                        <small class="form-help">How long to show each leaderboard type</small>
+                    </div>
+                </div>
+                
+                <!-- Winner Credits -->
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-postmatch-credits" checked>
+                        <span>Show Winner Credits Roll</span>
+                    </label>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="setting-postmatch-show-xp" checked>
+                            <span>Display XP Awards</span>
+                        </label>
+                        <small class="form-help">Show XP awarded to winners</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Credits Duration (seconds)</label>
+                        <input type="range" class="form-range" id="setting-postmatch-credits-duration" min="5" max="30" step="5" value="10">
+                        <div style="text-align: center; margin-top: 8px;">
+                            <strong id="credits-duration-value">10</strong> seconds
+                        </div>
+                        <small class="form-help">How long to show winner credits</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📺 Overlay Configuration</div>
+                <div class="form-group">
+                    <label class="form-label">OBS Browser Source URL</label>
+                    <div class="overlay-url">
+                        <input type="text" class="form-input" id="overlay-url" readonly>
+                        <button class="btn btn-sm" id="btn-copy-url">📋 Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay">👁️ Preview</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-success" id="btn-save-settings">💾 Save Settings</button>
+                <button class="btn btn-secondary" id="btn-reset-settings">🔄 Reset to Defaults</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="leaderboard-tab" class="tab-content">
+            <!-- Season Management Card -->
+            <div class="card">
+                <div class="card-title">🗓️ Season Configuration</div>
+                <div class="alert alert-info" style="margin-bottom: 16px;">
+                    Configure season leaderboard date range. Only one season can be active at a time.
+                </div>
+                
+                <div id="current-season-info" style="margin-bottom: 16px;">
+                    <p class="loading">Loading season info...</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Season Name</label>
+                        <input type="text" class="form-input" id="season-name" placeholder="e.g., Winter 2024">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-input" id="season-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-input" id="season-end-date">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" id="btn-save-season">💾 Create/Update Season</button>
+                </div>
+            </div>
+
+            <!-- Leaderboard Type Selector -->
+            <div class="card">
+                <div class="card-title">🏆 Leaderboards</div>
+                <div class="tabs" style="border-bottom: none; margin-bottom: 16px;">
+                    <button class="tab active" data-leaderboard="lifetime">📈 Lifetime</button>
+                    <button class="tab" data-leaderboard="weekly">📅 Weekly</button>
+                    <button class="tab" data-leaderboard="season">🏅 Season</button>
+                    <button class="tab" data-leaderboard="manage">👥 Manage Users</button>
+                </div>
+
+                <div id="lifetime-leaderboard-view" class="leaderboard-view">
+                    <div id="lifetime-leaderboard">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+
+                <div id="weekly-leaderboard-view" class="leaderboard-view" style="display: none;">
+                    <div class="alert alert-info" style="margin-bottom: 16px;">
+                        Shows top players from the last 7 days
+                    </div>
+                    <div id="weekly-leaderboard">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+
+                <div id="season-leaderboard-view" class="leaderboard-view" style="display: none;">
+                    <div class="alert alert-info" style="margin-bottom: 16px;" id="season-leaderboard-info">
+                        Configure a season above to see season leaderboard
+                    </div>
+                    <div id="season-leaderboard">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+
+                <div id="manage-leaderboard-view" class="leaderboard-view" style="display: none;">
+                    <div class="alert alert-warning" style="margin-bottom: 16px;">
+                        <strong>⚠️ Warning:</strong> Deleting a user will permanently remove them and all their data from all leaderboards. This action cannot be undone.
+                    </div>
+                    <div id="users-list">
+                        <p class="loading">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">📊 Match History</div>
+                <div id="match-history">
+                    <p class="loading">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/plugins/coinbattle/ui.js"></script>
+</body>
+</html>

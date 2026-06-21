@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plinko - LTTH Game Engine</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background: radial-gradient(ellipse at center, rgba(0, 20, 40, 0.3) 0%, transparent 70%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.3));
+    }
+
+    /* Ball label styles */
+    .ball-label {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+    }
+
+    .ball-label img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 25px rgba(0, 255, 255, 0.4);
+    }
+
+    /* Test mode controls */
+    #test-mode-controls {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10000;
+      color: white;
+      min-width: 200px;
+    }
+
+    #test-mode-controls h3 {
+      margin: 0 0 15px 0;
+      color: #4CAF50;
+    }
+
+    #test-mode-controls button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+      font-weight: bold;
+    }
+
+    #test-mode-controls .btn-start {
+      background: #4CAF50;
+    }
+
+    #test-mode-controls .btn-start:hover {
+      background: #45a049;
+    }
+
+    #test-mode-controls input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: white;
+    }
+
+    .ball-label .username {
+      font-size: 12px;
+      color: #00ffff;
+      text-shadow: 
+        0 0 8px rgba(0, 255, 255, 1), 
+        0 0 15px rgba(0, 255, 255, 0.8),
+        0 2px 4px rgba(0, 0, 0, 1);
+      white-space: nowrap;
+      margin-top: 2px;
+      font-weight: bold;
+    }
+
+    /* Slot labels */
+    .slot-label {
+      position: absolute;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 2px 8px rgba(0, 0, 0, 1);
+      pointer-events: none;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    
+    .slot-label.active {
+      transform: scale(1.3);
+      filter: brightness(1.5);
+    }
+
+    #heatmap {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 5px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 12px;
+      border-radius: 12px;
+      z-index: 5000;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+    }
+
+    .heatmap-bar {
+      width: 16px;
+      background: linear-gradient(180deg, #00ffff, #0088aa);
+      border-radius: 6px;
+      box-shadow: 
+        0 0 10px rgba(0, 255, 255, 0.6),
+        inset 0 0 5px rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .heatmap-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 30%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent);
+      border-radius: 6px 6px 0 0;
+    }
+    
+    .heatmap-bar:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 20px rgba(0, 255, 255, 1),
+        inset 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .glow {
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.8);
+    }
+
+    /* Leaderboard Container */
+    #leaderboard-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      max-width: 90vw;
+      background: rgba(0, 0, 0, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.6);
+      border: 3px solid #00ffff;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+      z-index: 10000;
+    }
+
+    #leaderboard-container.show {
+      display: block;
+      opacity: 1;
+    }
+
+    #leaderboard-title {
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: #00ffff;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    }
+
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      background: rgba(0, 255, 255, 0.1);
+      border-radius: 10px;
+      border-left: 4px solid #00ffff;
+      transition: all 0.3s ease;
+    }
+
+    .leaderboard-item:hover {
+      background: rgba(0, 255, 255, 0.2);
+      transform: translateX(5px);
+    }
+
+    .leaderboard-item.rank-1 {
+      border-left-color: #FFD700;
+      background: rgba(255, 215, 0, 0.15);
+    }
+
+    .leaderboard-item.rank-2 {
+      border-left-color: #C0C0C0;
+      background: rgba(192, 192, 192, 0.15);
+    }
+
+    .leaderboard-item.rank-3 {
+      border-left-color: #CD7F32;
+      background: rgba(205, 127, 50, 0.15);
+    }
+
+    .leaderboard-rank {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .leaderboard-rank.rank-1 { color: #FFD700; }
+    .leaderboard-rank.rank-2 { color: #C0C0C0; }
+    .leaderboard-rank.rank-3 { color: #CD7F32; }
+
+    .leaderboard-user {
+      flex: 1;
+      margin-left: 15px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .leaderboard-stats {
+      display: flex;
+      gap: 15px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .leaderboard-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .leaderboard-stat-value {
+      font-weight: bold;
+      color: #00ffff;
+      font-size: 16px;
+    }
+
+    .leaderboard-stat-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .leaderboard-profit-positive {
+      color: #4CAF50;
+    }
+
+    .leaderboard-profit-negative {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="heatmap"></div>
+
+  <!-- Leaderboard Container -->
+  <div id="leaderboard-container">
+    <div id="leaderboard-title">🏆 Plinko Leaderboard 🏆</div>
+    <ul id="leaderboard-list">
+      <!-- Leaderboard items will be populated dynamically -->
+    </ul>
+  </div>
+
+  <!-- Test Mode Controls -->
+  <div id="test-mode-controls">
+    <h3>🧪 Test Mode</h3>
+    <div>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Bet Amount (XP):</label>
+      <input type="number" id="test-bet-amount" value="100" min="10" max="1000" step="10">
+    </div>
+    <div>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Player Name:</label>
+      <input type="text" id="test-player-name" value="TestPlayer">
+    </div>
+    <div>
+      <label style="display: block; margin-bottom: 5px; font-size: 12px;">Ball Count:</label>
+      <input type="number" id="test-ball-count" value="1" min="1" max="10">
+    </div>
+    <button class="btn-start" id="test-drop-ball">🎰 Drop Ball</button>
+    <button class="btn-start" id="test-show-leaderboard" style="background: #2196F3;">📊 Show Leaderboard</button>
+  </div>
+
+  <script>
+    // Matter.js aliases
+    const Engine = Matter.Engine;
+    const Render = Matter.Render;
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+    const Body = Matter.Body;
+    const Events = Matter.Events;
+    const Composite = Matter.Composite;
+    const Runner = Matter.Runner;
+
+    // Leaderboard display timing configuration (in milliseconds)
+    const LEADERBOARD_CONFIG = {
+      DELAY_AFTER_BATCH: 2000,     // Wait 2 seconds after batch completes before showing leaderboard
+      DISPLAY_DURATION: 5000,       // Show leaderboard for 5 seconds
+      FADE_IN_DELAY: 100,          // Small delay for CSS transition to trigger properly
+      TEST_MODE_DURATION: 10000    // Show leaderboard for 10 seconds in test mode
+    };
+
+    // Check if test mode is enabled
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('testMode') === 'true';
+    const hideControls = urlParams.get('hideControls') === 'true';
+
+    // Configuration (defaults until server config loads)
+    let config = {
+      slots: [],
+      physicsSettings: {
+        gravity: 2.5, // Default - will be overridden by server config
+        ballRestitution: 0.6,
+        pegRestitution: 0.8,
+        pegRows: 12,
+        pegSpacing: 60,
+        testModeEnabled: false,
+        maxSimultaneousBalls: 5
+      },
+      giftMappings: {}
+    };
+
+    // Dimensions
+    let WIDTH = window.innerWidth;
+    let HEIGHT = window.innerHeight;
+    const PEG_RADIUS = 5;
+    const BALL_RADIUS = 12;
+    const SLOT_HEIGHT = 80;
+    let BOARD_WIDTH = Math.min(900, WIDTH * 0.85);
+    const BOARD_TOP = 100;
+
+    // Physics world
+    let engine;
+    let render;
+    let runner; // Matter.js runner for physics loop
+    let pegs = [];
+    let slots = [];
+    let balls = new Map(); // ballId -> { body, label, data }
+    let slotHitCounts = [];
+    let overlayTestMode = testMode;
+
+    // Socket.io
+    const socket = io();
+
+    function refreshDimensions() {
+      const container = document.getElementById('canvas-container');
+      WIDTH = container.clientWidth || window.innerWidth;
+      HEIGHT = container.clientHeight || window.innerHeight;
+      BOARD_WIDTH = Math.min(900, WIDTH * 0.85);
+    }
+
+    // Initialize Matter.js
+    function initPhysics() {
+      refreshDimensions();
+      // Create engine with explicit timing
+      engine = Engine.create({
+        gravity: {
+          x: 0,
+          y: config.physicsSettings.gravity
+        },
+        timing: {
+          timeScale: 1
+        }
+      });
+
+      // Create renderer
+      render = Render.create({
+        element: document.getElementById('canvas-container'),
+        engine: engine,
+        options: {
+          width: WIDTH,
+          height: HEIGHT,
+          wireframes: false,
+          background: 'transparent',
+          pixelRatio: Math.min(window.devicePixelRatio || 1, 2) // Clamp to 2x for performance
+        }
+      });
+
+      // Run physics with proper timing using Runner
+      runner = Runner.create();
+      Runner.run(runner, engine);
+      Render.run(render);
+
+      // Setup world
+      setupWorld();
+
+      // Collision detection for slots
+      Events.on(engine, 'collisionStart', handleCollisions);
+
+      // Run update loop
+      requestAnimationFrame(update);
+    }
+
+    // Setup pegs and slots
+    function setupWorld() {
+      // Clear existing bodies
+      World.clear(engine.world, false);
+      pegs = [];
+      slots = [];
+      if (!slotHitCounts.length || slotHitCounts.length !== config.slots.length) {
+        slotHitCounts = new Array(config.slots.length || 0).fill(0);
+      }
+      document.querySelectorAll('.slot-label').forEach(el => el.remove());
+
+      const pegRows = config.physicsSettings.pegRows;
+      const pegSpacing = config.physicsSettings.pegSpacing;
+      const startX = (WIDTH - BOARD_WIDTH) / 2;
+      const startY = BOARD_TOP;
+
+      // Create pegs in triangular pattern
+      for (let row = 0; row < pegRows; row++) {
+        const pegsInRow = row + 3; // Start with 3 pegs, increase each row
+        const rowWidth = (pegsInRow - 1) * pegSpacing;
+        const rowStartX = startX + (BOARD_WIDTH - rowWidth) / 2;
+
+        for (let col = 0; col < pegsInRow; col++) {
+          const x = rowStartX + col * pegSpacing;
+          const y = startY + row * pegSpacing;
+
+          const peg = Bodies.circle(x, y, PEG_RADIUS, {
+            isStatic: true,
+            restitution: config.physicsSettings.pegRestitution,
+            friction: 0.1,
+            render: {
+              fillStyle: '#00ffff',
+              strokeStyle: '#ffffff',
+              lineWidth: 2,
+              shadowBlur: 15,
+              shadowColor: '#00ffff'
+            },
+            plugin: {
+              plinko: {
+                type: 'peg'
+              }
+            }
+          });
+
+          World.add(engine.world, peg);
+          pegs.push(peg);
+        }
+      }
+
+      // Create slots at the bottom
+      const slotCount = config.slots.length;
+      const slotWidth = BOARD_WIDTH / slotCount;
+      const slotY = HEIGHT - SLOT_HEIGHT;
+
+      for (let i = 0; i < slotCount; i++) {
+        const slotX = startX + i * slotWidth;
+        const slot = config.slots[i];
+
+        // Slot floor
+        const slotFloor = Bodies.rectangle(
+          slotX + slotWidth / 2,
+          slotY + SLOT_HEIGHT / 2,
+          slotWidth - 4,
+          10,
+          {
+            isStatic: true,
+            isSensor: true,
+            render: {
+              fillStyle: slot.color,
+              strokeStyle: slot.color,
+              lineWidth: 2
+            },
+            plugin: {
+              plinko: {
+                type: 'slot',
+                slotIndex: i,
+                multiplier: slot.multiplier
+              }
+            }
+          }
+        );
+
+        // Slot walls
+        const leftWall = Bodies.rectangle(
+          slotX + 2,
+          slotY + SLOT_HEIGHT / 2,
+          4,
+          SLOT_HEIGHT,
+          {
+            isStatic: true,
+            render: {
+              fillStyle: '#444',
+              strokeStyle: '#444'
+            }
+          }
+        );
+
+        World.add(engine.world, slotFloor);
+        World.add(engine.world, leftWall);
+        slots.push({ floor: slotFloor, wall: leftWall, index: i });
+
+        // Add slot label
+        const label = document.createElement('div');
+        label.className = 'slot-label';
+        label.textContent = `${slot.multiplier}x`;
+        label.style.left = `${slotX + slotWidth / 2 - 30}px`;
+        label.style.top = `${slotY + 30}px`;
+        label.style.width = '60px';
+        label.style.color = slot.color;
+        document.body.appendChild(label);
+      }
+
+      // Add invisible walls on sides
+      const wallThickness = 50;
+      World.add(engine.world, [
+        Bodies.rectangle(startX - wallThickness / 2, HEIGHT / 2, wallThickness, HEIGHT, {
+          isStatic: true,
+          render: { visible: false }
+        }),
+        Bodies.rectangle(startX + BOARD_WIDTH + wallThickness / 2, HEIGHT / 2, wallThickness, HEIGHT, {
+          isStatic: true,
+          render: { visible: false }
+        })
+      ]);
+
+      renderHeatmap();
+    }
+
+    function renderHeatmap() {
+      const heatmapEl = document.getElementById('heatmap');
+      if (!heatmapEl) return;
+      heatmapEl.innerHTML = '';
+      const maxHits = Math.max(...slotHitCounts, 1);
+      slotHitCounts.forEach((count, idx) => {
+        const bar = document.createElement('div');
+        bar.className = 'heatmap-bar';
+        const height = Math.max(10, (count / maxHits) * 80);
+        bar.style.height = `${height}px`;
+        bar.style.opacity = count === 0 ? '0.3' : '1';
+        bar.title = `Slot ${idx + 1}: ${count}x`;
+        heatmapEl.appendChild(bar);
+      });
+    }
+
+    // Spawn a ball
+    function spawnBall(data) {
+      const startX = WIDTH / 2 + (Math.random() - 0.5) * 100; // Randomize spawn slightly
+      const startY = 50;
+      const ballColor = data.color || (data.ballType === 'golden' ? '#FFD700' : '#FF00FF');
+
+      // Create ball body with improved physics properties
+      const ball = Bodies.circle(startX, startY, BALL_RADIUS, {
+        restitution: config.physicsSettings.ballRestitution,
+        friction: 0.05,
+        frictionAir: 0.001,
+        density: 0.04, // Increased from 0.01 for better physics
+        slop: 0.05,
+        render: {
+          fillStyle: ballColor,
+          strokeStyle: '#ffffff',
+          lineWidth: 3
+        },
+        plugin: {
+          plinko: {
+            type: 'ball',
+            ballId: data.ballId,
+            username: data.username,
+            bet: data.bet
+          }
+        }
+      });
+
+      // Add slight initial horizontal velocity for variety
+      Body.setVelocity(ball, {
+        x: (Math.random() - 0.5) * 2,
+        y: 0
+      });
+
+      World.add(engine.world, ball);
+
+      // Create HTML label for user info
+      const label = document.createElement('div');
+      label.className = 'ball-label';
+      label.innerHTML = `
+        ${data.profilePictureUrl ? `<img src="${data.profilePictureUrl}" alt="${data.username}">` : ''}
+        <div class="username">${data.nickname || data.username}</div>
+      `;
+      label.classList.add('glow');
+      document.body.appendChild(label);
+
+      // Store ball data
+      balls.set(data.ballId, {
+        body: ball,
+        label: label,
+        data: data,
+        hasLanded: false
+      });
+
+      console.log(`🎰 Ball spawned: ${data.username} (${data.ballId})`);
+    }
+
+    // Handle collisions
+    function handleCollisions(event) {
+      const pairs = event.pairs;
+
+      for (const pair of pairs) {
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        // Check if ball hit a peg
+        if (bodyA.plugin?.plinko?.type === 'ball' && bodyB.plugin?.plinko?.type === 'peg') {
+          highlightPeg(bodyB);
+        } else if (bodyB.plugin?.plinko?.type === 'ball' && bodyA.plugin?.plinko?.type === 'peg') {
+          highlightPeg(bodyA);
+        }
+
+        // Check if ball hit a slot
+        if (bodyA.plugin?.plinko?.type === 'ball' && bodyB.plugin?.plinko?.type === 'slot') {
+          handleBallLanded(bodyA, bodyB);
+        } else if (bodyB.plugin?.plinko?.type === 'ball' && bodyA.plugin?.plinko?.type === 'slot') {
+          handleBallLanded(bodyB, bodyA);
+        }
+      }
+    }
+
+    // Highlight peg on collision with particle effect
+    function highlightPeg(peg) {
+      const originalFill = peg.render.fillStyle;
+      peg.render.fillStyle = '#ffffff';
+      peg.render.strokeStyle = '#ffffff';
+      peg.render.lineWidth = 4;
+      peg.render.shadowBlur = 25;
+
+      setTimeout(() => {
+        peg.render.fillStyle = originalFill;
+        peg.render.strokeStyle = '#ffffff';
+        peg.render.lineWidth = 2;
+        peg.render.shadowBlur = 15;
+      }, 200);
+    }
+
+    // Handle ball landing in slot
+    function handleBallLanded(ball, slot) {
+      const ballId = ball.plugin?.plinko?.ballId;
+      const slotIndex = slot.plugin?.plinko?.slotIndex;
+
+      if (!ballId || slotIndex === undefined) return;
+
+      const ballData = balls.get(ballId);
+      if (!ballData || ballData.hasLanded) return;
+
+      // Mark as landed
+      ballData.hasLanded = true;
+
+      console.log(`🎯 Ball ${ballId} landed in slot ${slotIndex}`);
+      if (slotHitCounts.length > slotIndex) {
+        slotHitCounts[slotIndex] = (slotHitCounts[slotIndex] || 0) + 1;
+        renderHeatmap();
+      }
+
+      // Enhanced slot glow animation
+      if (slot && slot.render) {
+        const originalColor = slot.render.fillStyle;
+        slot.render.fillStyle = '#ffffff';
+        slot.render.shadowBlur = 30;
+        slot.render.shadowColor = originalColor;
+        
+        // Animate slot label
+        const labels = document.querySelectorAll('.slot-label');
+        if (labels[slotIndex]) {
+          labels[slotIndex].classList.add('active');
+          setTimeout(() => {
+            labels[slotIndex].classList.remove('active');
+          }, 500);
+        }
+        
+        setTimeout(() => {
+          slot.render.fillStyle = originalColor;
+          slot.render.shadowBlur = 0;
+        }, 400);
+      }
+
+      // Notify server
+      socket.emit('plinko:ball-landed', {
+        ballId,
+        slotIndex
+      });
+
+      // Schedule cleanup
+      setTimeout(() => {
+        removeBall(ballId);
+      }, 3000);
+    }
+
+    // Remove ball from world
+    function removeBall(ballId) {
+      const ballData = balls.get(ballId);
+      if (!ballData) return;
+
+      // Remove body from world
+      World.remove(engine.world, ballData.body);
+
+      // Remove label
+      if (ballData.label && ballData.label.parentNode) {
+        ballData.label.style.opacity = '0';
+        setTimeout(() => {
+          if (ballData.label.parentNode) {
+            ballData.label.parentNode.removeChild(ballData.label);
+          }
+        }, 300);
+      }
+
+      // Remove from map
+      balls.delete(ballId);
+
+      console.log(`🗑️ Ball ${ballId} removed`);
+    }
+
+    // Update loop (for ball labels)
+    function update() {
+      // Update ball label positions
+      for (const [ballId, ballData] of balls.entries()) {
+        const pos = ballData.body.position;
+        ballData.label.style.left = `${pos.x - 40}px`;
+        ballData.label.style.top = `${pos.y - 50}px`;
+
+        // Fade out if landed
+        if (ballData.hasLanded) {
+          ballData.label.style.opacity = '0.5';
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    // ============================================
+    // LEADERBOARD FUNCTIONALITY
+    // ============================================
+
+    let leaderboardTimer = null;
+    let plinkoBoard = document.getElementById('canvas-container');
+    let leaderboardContainer = document.getElementById('leaderboard-container');
+    let leaderboardList = document.getElementById('leaderboard-list');
+
+    /**
+     * Show the Plinko board and hide the leaderboard
+     */
+    function showPlinkoBoard() {
+      if (plinkoBoard) {
+        plinkoBoard.style.display = 'block';
+      }
+      if (leaderboardContainer) {
+        leaderboardContainer.classList.remove('show');
+      }
+      console.log('📊 Showing Plinko board');
+    }
+
+    /**
+     * Hide the Plinko board and show the leaderboard
+     */
+    function showLeaderboard(duration = 5000) {
+      // Request leaderboard data from server
+      socket.emit('plinko:request-leaderboard', { limit: 10 });
+      
+      // Hide Plinko board
+      if (plinkoBoard) {
+        plinkoBoard.style.display = 'none';
+      }
+      
+      console.log(`📊 Showing leaderboard for ${duration}ms`);
+      
+      // Clear any existing timer
+      if (leaderboardTimer) {
+        clearTimeout(leaderboardTimer);
+      }
+      
+      // Auto-hide after duration
+      if (duration > 0) {
+        leaderboardTimer = setTimeout(() => {
+          showPlinkoBoard();
+        }, duration);
+      }
+    }
+
+    /**
+     * Render leaderboard data
+     */
+    function renderLeaderboard(data) {
+      if (!leaderboardList || !data || data.length === 0) {
+        console.warn('No leaderboard data to render');
+        return;
+      }
+
+      leaderboardList.innerHTML = '';
+
+      data.forEach((player, index) => {
+        const rank = index + 1;
+        const profit = player.totalProfit || 0;
+        const profitClass = profit >= 0 ? 'leaderboard-profit-positive' : 'leaderboard-profit-negative';
+        const profitSign = profit >= 0 ? '+' : '';
+
+        const item = document.createElement('li');
+        item.className = `leaderboard-item rank-${rank}`;
+        item.innerHTML = `
+          <div class="leaderboard-rank rank-${rank}">${rank}</div>
+          <div class="leaderboard-user">${player.user}</div>
+          <div class="leaderboard-stats">
+            <div class="leaderboard-stat">
+              <span class="leaderboard-stat-value ${profitClass}">${profitSign}${profit}</span>
+              <span class="leaderboard-stat-label">Profit</span>
+            </div>
+            <div class="leaderboard-stat">
+              <span class="leaderboard-stat-value">${player.totalGames || 0}</span>
+              <span class="leaderboard-stat-label">Games</span>
+            </div>
+            <div class="leaderboard-stat">
+              <span class="leaderboard-stat-value">${(player.avgMultiplier || 0).toFixed(2)}x</span>
+              <span class="leaderboard-stat-label">Avg</span>
+            </div>
+          </div>
+        `;
+        leaderboardList.appendChild(item);
+      });
+
+      // Show the leaderboard container with fade-in effect
+      // Small delay ensures CSS transition is triggered properly
+      setTimeout(() => {
+        if (leaderboardContainer) {
+          leaderboardContainer.classList.add('show');
+        }
+      }, LEADERBOARD_CONFIG.FADE_IN_DELAY);
+
+      console.log('📊 Leaderboard rendered with', data.length, 'players');
+    }
+
+    // Socket.io event handlers
+    socket.on('connect', () => {
+      console.log('✅ Connected to server');
+      // Request current config
+      socket.emit('plinko:request-config');
+    });
+
+    /**
+     * Apply display text tokens from displayTexts config to overlay elements
+     * @param {Object} dt - displayTexts object from plinko config
+     */
+    function applyDisplayTexts(dt) {
+      if (!dt || typeof dt !== 'object') return;
+      config.displayTexts = dt;
+      // Apply multiplier prefix to all slot labels
+      if (dt.labelMultiplierPrefix !== undefined) {
+        document.querySelectorAll('.slot-label').forEach(label => {
+          const mul = label.dataset.multiplier;
+          if (mul) label.textContent = `${dt.labelMultiplierPrefix}${mul}`;
+        });
+      }
+    }
+
+    socket.on('plinko:spawn-ball', (data) => {
+      console.log('🎰 Received spawn-ball event', data);
+      spawnBall(data);
+    });
+
+    socket.on('plinko:config-updated', (newConfig) => {
+      console.log('⚙️ Plinko config updated', newConfig);
+      config.slots = newConfig.slots;
+      config.physicsSettings = newConfig.physicsSettings;
+      config.giftMappings = newConfig.giftMappings;
+      overlayTestMode = overlayTestMode || !!config.physicsSettings.testModeEnabled;
+      
+      // Apply display texts
+      applyDisplayTexts(newConfig.displayTexts);
+      
+      // Update gravity
+      engine.gravity.y = config.physicsSettings.gravity;
+      
+      // Rebuild world
+      setupWorld();
+      updateTestModeControlsVisibility();
+    });
+
+    socket.on('plinko:config', (newConfig) => {
+      console.log('⚙️ Received Plinko config', newConfig);
+      if (newConfig) {
+        config.slots = newConfig.slots;
+        config.physicsSettings = newConfig.physicsSettings;
+        config.giftMappings = newConfig.giftMappings || {};
+        overlayTestMode = overlayTestMode || !!config.physicsSettings.testModeEnabled;
+        
+        // Apply display texts
+        applyDisplayTexts(newConfig.displayTexts);
+        
+        // Update gravity
+        engine.gravity.y = config.physicsSettings.gravity;
+        
+        // Rebuild world
+        setupWorld();
+        updateTestModeControlsVisibility();
+      }
+    });
+
+    socket.on('plinko:heatmap', (data) => {
+      if (data?.counts) {
+        slotHitCounts = data.counts;
+        renderHeatmap();
+      }
+    });
+
+    socket.on('plinko:batch-complete', (data) => {
+      console.log('🧾 Plinko batch summary', data);
+      // Show leaderboard after batch completes (game finishes)
+      // Wait a bit for final animations, then show leaderboard
+      setTimeout(() => {
+        showLeaderboard(LEADERBOARD_CONFIG.DISPLAY_DURATION);
+      }, LEADERBOARD_CONFIG.DELAY_AFTER_BATCH);
+    });
+
+    socket.on('plinko:leaderboard', (data) => {
+      console.log('📊 Received leaderboard data', data);
+      renderLeaderboard(data);
+    });
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      initPhysics();
+    });
+
+    window.addEventListener('resize', () => {
+      const oldWidth = WIDTH;
+      const oldHeight = HEIGHT;
+      
+      refreshDimensions();
+      
+      if (render && render.canvas) {
+        // Update canvas dimensions
+        render.canvas.width = WIDTH;
+        render.canvas.height = HEIGHT;
+        render.options.width = WIDTH;
+        render.options.height = HEIGHT;
+        render.bounds.max.x = WIDTH;
+        render.bounds.max.y = HEIGHT;
+        
+        // Rebuild world with new dimensions
+        setupWorld();
+        
+        // Scale existing balls to new coordinate system
+        const scaleX = WIDTH / oldWidth;
+        const scaleY = HEIGHT / oldHeight;
+        
+        for (const [ballId, ballData] of balls.entries()) {
+          if (ballData.body && !ballData.hasLanded) {
+            const pos = ballData.body.position;
+            Body.setPosition(ballData.body, {
+              x: pos.x * scaleX,
+              y: pos.y * scaleY
+            });
+          }
+        }
+        
+        console.log(`📐 Resized overlay: ${WIDTH}x${HEIGHT}`);
+      }
+    });
+
+    // Clean up on unload - proper disposal order
+    window.addEventListener('beforeunload', () => {
+      if (runner) Runner.stop(runner);
+      if (render) Render.stop(render);
+      if (engine && engine.world) World.clear(engine.world);
+      if (engine) Engine.clear(engine);
+    });
+
+    // ============================================
+    // TEST MODE FUNCTIONALITY
+    // ============================================
+
+    function updateTestModeControlsVisibility() {
+      const shouldHideControls = hideControls || !!config.physicsSettings.hideTestControls;
+      const controls = document.getElementById('test-mode-controls');
+      if (overlayTestMode && !shouldHideControls) {
+        enableTestModeUI();
+      } else if (controls) {
+        controls.style.display = 'none';
+      }
+    }
+
+    function enableTestModeUI() {
+      const controls = document.getElementById('test-mode-controls');
+      if (!controls) return;
+      controls.style.display = 'block';
+      
+      // Drop ball button
+      document.getElementById('test-drop-ball').onclick = () => {
+        const betAmount = parseInt(document.getElementById('test-bet-amount').value) || 100;
+        const playerName = document.getElementById('test-player-name').value || 'TestPlayer';
+        const count = Math.max(1, Math.min(10, parseInt(document.getElementById('test-ball-count').value) || 1));
+        
+        // Make sure Plinko board is visible when dropping balls
+        showPlinkoBoard();
+        
+        for (let i = 0; i < count; i++) {
+          const ballId = 'test_' + Date.now() + '_' + Math.random();
+          const ballData = {
+            ballId: ballId,
+            username: playerName,
+            nickname: playerName,
+            profilePictureUrl: '',
+            bet: betAmount,
+            isGolden: false,
+            timestamp: Date.now(),
+            color: '#00ffaa',
+            batchId: count > 1 ? 'localbatch_' + Date.now() : null
+          };
+          spawnBall(ballData);
+        }
+      };
+      
+      // Show leaderboard button (test mode only)
+      const leaderboardBtn = document.getElementById('test-show-leaderboard');
+      if (leaderboardBtn) {
+        leaderboardBtn.onclick = () => {
+          // Show leaderboard longer in test mode for manual testing
+          showLeaderboard(LEADERBOARD_CONFIG.TEST_MODE_DURATION);
+        };
+      }
+    }
+
+    if (overlayTestMode) {
+      console.log('🧪 Plinko test mode enabled');
+      updateTestModeControlsVisibility();
+    }
+  </script>
+</body>
+</html>

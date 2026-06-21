@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Alchemy - Configuration</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+
+        .config-group {
+            margin-bottom: 20px;
+        }
+
+        .config-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+
+        .config-description {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th,
+        .items-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .items-table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+        }
+
+        .items-table tr:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .rarity-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .rarity-common { background: #6b7280; color: white; }
+        .rarity-uncommon { background: #10b981; color: white; }
+        .rarity-rare { background: #3b82f6; color: white; }
+        .rarity-epic { background: #8b5cf6; color: white; }
+        .rarity-legendary { background: #f59e0b; color: white; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Stream Alchemy</h1>
+            <p>Transform TikTok gifts into virtual RPG items with crafting mechanics</p>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Statistics -->
+        <div class="card">
+            <div class="card-title">📊 Statistics</div>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Items</div>
+                    <div class="stat-value" id="stat-total-items">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Crafts</div>
+                    <div class="stat-value" id="stat-total-crafts">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Buffers</div>
+                    <div class="stat-value" id="stat-active-buffers">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="card">
+            <div class="card-title">⚙️ Configuration</div>
+            <form id="config-form">
+                <div class="config-group">
+                    <label class="config-label" for="craft-window">Crafting Time Window (seconds)</label>
+                    <div class="config-description">Time window for users to send 2 gifts to trigger crafting</div>
+                    <input type="number" id="craft-window" name="craftWindow" min="1" max="30" value="6">
+                </div>
+
+                <div class="config-group">
+                    <label class="config-label" for="openai-key">OpenAI API Key (optional)</label>
+                    <div class="config-description">Required for AI-generated item icons</div>
+                    <input type="text" id="openai-key" name="openaiApiKey" placeholder="sk-...">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </form>
+        </div>
+
+        <!-- Recent Items -->
+        <div class="card">
+            <div class="card-title">🎁 Recent Items</div>
+            <div id="items-container" class="loading">Loading items...</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let config = {};
+        let stats = {};
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/streamalchemy/config');
+                const data = await response.json();
+                if (data.success) {
+                    config = data.config;
+                    updateConfigForm();
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/streamalchemy/stats');
+                const data = await response.json();
+                if (data.success) {
+                    stats = data;
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load items
+        async function loadItems() {
+            try {
+                const response = await fetch('/api/streamalchemy/items');
+                const data = await response.json();
+                if (data.success) {
+                    displayItems(data.items);
+                }
+            } catch (error) {
+                console.error('Failed to load items:', error);
+                document.getElementById('items-container').innerHTML = '<div class="error">Failed to load items</div>';
+            }
+        }
+
+        // Update config form
+        function updateConfigForm() {
+            document.getElementById('craft-window').value = config.craftWindow || 6;
+            document.getElementById('openai-key').value = config.openaiApiKey || '';
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('stat-total-items').textContent = stats.database?.totalItems || 0;
+            document.getElementById('stat-total-crafts').textContent = stats.crafting?.totalCrafts || 0;
+            document.getElementById('stat-active-buffers').textContent = stats.activeBuffers || 0;
+        }
+
+        // Display items
+        function displayItems(items) {
+            const container = document.getElementById('items-container');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="loading">No items yet. Send gifts to generate items!</p>';
+                return;
+            }
+
+            const recentItems = items.slice(-20).reverse(); // Last 20 items
+            
+            const table = document.createElement('table');
+            table.className = 'items-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Rarity</th>
+                        <th>From Gift</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${recentItems.map(item => `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td>${item.type}</td>
+                            <td><span class="rarity-badge rarity-${item.rarity.toLowerCase()}">${item.rarity}</span></td>
+                            <td>${item.giftName}</td>
+                            <td>${new Date(item.createdAt).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newConfig = {
+                craftWindow: parseInt(formData.get('craftWindow')),
+                openaiApiKey: formData.get('openaiApiKey')
+            };
+
+            try {
+                const response = await fetch('/api/streamalchemy/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Configuration saved successfully!', 'success');
+                    config = data.config;
+                } else {
+                    showMessage('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save config:', error);
+                showMessage('Failed to save configuration', 'error');
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = type;
+            message.textContent = text;
+            container.appendChild(message);
+            
+            setTimeout(() => message.remove(), 5000);
+        }
+
+        // Listen for real-time updates
+        socket.on('streamalchemy:item_discovery', (data) => {
+            loadItems();
+            loadStats();
+        });
+
+        socket.on('streamalchemy:crafting_complete', (data) => {
+            loadItems();
+            loadStats();
+        });
+
+        // Initialize
+        loadConfig();
+        loadStats();
+        loadItems();
+
+        // Refresh stats periodically
+        setInterval(loadStats, 5000);
+    </script>
+</body>
+</html>

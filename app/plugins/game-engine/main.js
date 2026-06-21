@@ -75,6 +75,8 @@ class GameEnginePlugin {
     this.gcceCommandsRegistered = false;
     this.gcceRetryInterval = null;
     this.gcceRetryCount = 0;
+    this.gcceEventListenersRegistered = false;
+    this.gccePluginEventHandlers = [];
     
     // Gift event deduplication (prevent double triggers from rapid/duplicate events)
     this.recentGiftEvents = new Map(); // key: `${username}_${giftName}_${giftId}` -> timestamp
@@ -350,11 +352,17 @@ class GameEnginePlugin {
     if (Number(stored?.tickRateMs) === 100 || Number(stored?.tickRateMs) === 50) {
       config.tickRateMs = this.defaultConfigs.arena.tickRateMs;
     }
-    if (Number(stored?.stateEmitIntervalMs) === 120 || Number(stored?.stateEmitIntervalMs) === 50) {
+    if ([120, 50, 33].includes(Number(stored?.stateEmitIntervalMs))) {
       config.stateEmitIntervalMs = this.defaultConfigs.arena.stateEmitIntervalMs;
     }
-    if (Number(stored?.targetFps) === 30) {
+    if ([30, 60].includes(Number(stored?.targetFps))) {
       config.targetFps = this.defaultConfigs.arena.targetFps;
+    }
+    if (Number(stored?.renderScale) === 0.75) {
+      config.renderScale = this.defaultConfigs.arena.renderScale;
+    }
+    if (Number(stored?.maxRenderPlayers) === 60) {
+      config.maxRenderPlayers = this.defaultConfigs.arena.maxRenderPlayers;
     }
     if (Number(stored?.inactivityGraceMs) === 15000) {
       config.inactivityGraceMs = this.defaultConfigs.arena.inactivityGraceMs;
@@ -383,7 +391,7 @@ class GameEnginePlugin {
     if (Number(stored?.maxFood) === 90 || Number(stored?.maxFood) === 50) {
       config.maxFood = this.defaultConfigs.arena.maxFood;
     }
-    if (Number(stored?.maxFoodRender) === 52 || Number(stored?.maxFoodRender) === 25) {
+    if ([90, 52, 25].includes(Number(stored?.maxFoodRender))) {
       config.maxFoodRender = this.defaultConfigs.arena.maxFoodRender;
     }
     if (Number(stored?.foodValue) === 2.25) {
@@ -732,6 +740,7 @@ class GameEnginePlugin {
 
       // Register GCCE commands FIRST (before TikTok events)
       // This ensures we know if GCCE is available before deciding whether to register fallback chat handler
+      this.setupGCCEIntegrationListeners();
       this.registerGCCECommands();
       
       // Set up retry mechanism for GCCE command registration
@@ -790,6 +799,8 @@ class GameEnginePlugin {
       clearInterval(this.gcceRetryInterval);
       this.gcceRetryInterval = null;
     }
+
+    this.removeGCCEIntegrationListeners();
     
     // Clear gift deduplication cleanup interval and map
     if (this.giftDedupCleanupInterval) {
@@ -876,6 +887,71 @@ class GameEnginePlugin {
     } catch (error) {
       this.logger.error(`❌ [GAME ENGINE] Error unregistering GCCE commands: ${error.message}`);
     }
+  }
+
+  /**
+   * Listen for GCCE lifecycle events so command registration works even when
+   * GCCE is enabled or reloaded after the game engine has finished loading.
+   */
+  setupGCCEIntegrationListeners() {
+    if (this.gcceEventListenersRegistered || typeof this.api.on !== 'function') {
+      return;
+    }
+
+    const registerWhenGCCEIsAvailable = (eventName, payload) => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (eventName !== 'gcce:ready' && pluginId !== 'gcce') {
+        return;
+      }
+
+      this.logger.debug(`💬 [GAME ENGINE] GCCE lifecycle event received (${eventName}), registering commands`);
+      this.registerGCCECommands();
+    };
+
+    const markGCCEUnavailable = (payload) => {
+      const pluginId = typeof payload === 'string' ? payload : payload?.id;
+      if (pluginId !== 'gcce') {
+        return;
+      }
+
+      this.gcceCommandsRegistered = false;
+      this.logger.debug('💬 [GAME ENGINE] GCCE became unavailable, fallback chat handling remains active');
+    };
+
+    const listeners = [
+      ['gcce:ready', (payload) => registerWhenGCCEIsAvailable('gcce:ready', payload)],
+      ['plugin:loaded', (payload) => registerWhenGCCEIsAvailable('plugin:loaded', payload)],
+      ['plugin:enabled', (payload) => registerWhenGCCEIsAvailable('plugin:enabled', payload)],
+      ['plugin:reloaded', (payload) => registerWhenGCCEIsAvailable('plugin:reloaded', payload)],
+      ['plugin:unloaded', markGCCEUnavailable],
+      ['plugin:disabled', markGCCEUnavailable]
+    ];
+
+    listeners.forEach(([event, callback]) => {
+      if (this.api.on(event, callback)) {
+        this.gccePluginEventHandlers.push({ event, callback });
+      }
+    });
+
+    this.gcceEventListenersRegistered = true;
+  }
+
+  /**
+   * Remove GCCE lifecycle listeners registered through the plugin event bus.
+   */
+  removeGCCEIntegrationListeners() {
+    if (!this.gcceEventListenersRegistered) {
+      return;
+    }
+
+    this.gccePluginEventHandlers.forEach(({ event, callback }) => {
+      if (typeof this.api.removeListener === 'function') {
+        this.api.removeListener(event, callback);
+      }
+    });
+
+    this.gccePluginEventHandlers = [];
+    this.gcceEventListenersRegistered = false;
   }
 
   /**

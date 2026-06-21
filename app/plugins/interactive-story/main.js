@@ -1352,7 +1352,7 @@ class InteractiveStoryPlugin {
           if (!llmInit.ok || !this.llmService || !this.storyEngine) {
             this._debugLog('error', `${llmInit.providerName || 'LLM'} service not configured`, null);
             return res.status(400).json({
-              error: `${llmInit.providerName || 'LLM'} service not configured. Please add the required credentials in the Interactive Story settings.`
+              error: `${llmInit.providerName || 'LLM'} service not configured. Please add the required API key in the Interactive Story settings.`
             });
           }
         }
@@ -1708,7 +1708,10 @@ class InteractiveStoryPlugin {
 
     // Serve cached images
     this.api.registerRoute('get', '/api/interactive-story/image/:filename', (req, res) => {
-      const imagePath = path.join(this.imageCacheDir, req.params.filename);
+      const imagePath = this._resolveImageCachePath(req.params.filename);
+      if (!imagePath) {
+        return res.status(400).json({ error: 'Invalid image path' });
+      }
       if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
       } else {
@@ -2211,6 +2214,21 @@ class InteractiveStoryPlugin {
         );
       }
     });
+  }
+
+  _resolveImageCachePath(filename) {
+    const safeFilename = path.basename(filename || '');
+    if (!safeFilename || safeFilename !== filename) {
+      return null;
+    }
+
+    const cacheRoot = path.resolve(this.imageCacheDir);
+    const imagePath = path.resolve(cacheRoot, safeFilename);
+    if (imagePath !== cacheRoot && imagePath.startsWith(cacheRoot + path.sep)) {
+      return imagePath;
+    }
+
+    return null;
   }
 
   async destroy() {

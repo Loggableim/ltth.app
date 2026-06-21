@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.AppName}} - Launcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body.theme-night {
+            background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.35), rgba(58, 37, 95, 0.9)), #0f172a;
+            color: #e5e7eb;
+        }
+
+        body.theme-day {
+            background: linear-gradient(135deg, #667eea 0%, #f9fafb 80%);
+            color: #1f2937;
+        }
+
+        body.theme-highcontrast {
+            background: #000;
+            color: #fff;
+        }
+        
+        .launcher-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        /* Header with Logo and Profile Selector */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+        
+        .app-title {
+            color: #333;
+        }
+        
+        .app-title h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .app-title p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .profile-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .profile-selector label {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .profile-selector select {
+            padding: 8px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            background: white;
+            cursor: pointer;
+            min-width: 200px;
+        }
+        
+        .profile-selector select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+        
+        .language-selector {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .lang-btn {
+            padding: 5px 10px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .lang-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+        
+        .lang-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        /* Tabs and Content */
+        .tabs-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .tab-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .tab-button.active {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tab-content h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .tab-content p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        /* Changelog Styles */
+        #changelog-content {
+            max-height: 500px;
+            overflow-y: auto;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        #changelog-content h3 {
+            color: #667eea;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        #changelog-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .changelog-version {
+            color: #764ba2;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        /* API Keys Styles */
+        .api-key-item {
+            background: rgba(102, 126, 234, 0.05);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        
+        .api-key-item h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .api-key-item .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .badge.freemium {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .badge.paid {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .badge.mandatory {
+            background: #f44336;
+            color: white;
+        }
+        
+        .api-key-item p {
+            color: #555;
+            font-size: 13px;
+            margin: 5px 0;
+        }
+        
+        .api-key-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .api-key-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #856404;
+        }
+        
+        /* Community Links */
+        .community-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .community-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .community-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .community-link span:first-child {
+            font-size: 24px;
+        }
+        
+        .community-link span:last-child {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        /* Status Panel */
+        .status-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .status-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .status-text {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+            padding-right: 10px;
+        }
+        
+        .progress-bar-container {
+            background: #e0e0e0;
+            border-radius: 25px;
+            height: 40px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 25px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .community-links {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Theme Selector */
+        .theme-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .theme-selector label {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .theme-btn {
+            padding: 5px 10px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        
+        .theme-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+        
+        .theme-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Keep Open Option */
+        .launcher-options {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 15px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        
+        .option-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .option-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+        
+        .option-checkbox label {
+            color: #333;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .option-hint {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .app-link-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .app-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            cursor: pointer;
+        }
+        
+        .app-link:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .app-link.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .app-link-hint {
+            color: #666;
+            font-size: 11px;
+            max-width: 200px;
+        }
+
+        .manual-controls {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .manual-controls-title {
+            color: #333;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .manual-port-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .manual-port-row input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .manual-button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .manual-btn {
+            border: 0;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-weight: 700;
+            cursor: pointer;
+            color: #fff;
+            background: #4f46e5;
+        }
+
+        .manual-btn.secondary {
+            background: #475569;
+        }
+
+        .manual-btn.danger {
+            background: #b91c1c;
+        }
+
+        .manual-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .manual-status {
+            margin-top: 10px;
+            min-height: 18px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .maintenance-controls {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .maintenance-note {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .log-viewer {
+            background: #0f172a;
+            color: #e5e7eb;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            max-height: 480px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        body.theme-day .log-viewer {
+            background: #f8fafc;
+            color: #0f172a;
+            border-color: #e2e8f0;
+        }
+
+        body.theme-night .log-viewer {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        body.theme-highcontrast .log-viewer {
+            background: #000;
+            color: #0ff;
+            border-color: #fff;
+        }
+
+        body.theme-night .header,
+        body.theme-night .tabs-section,
+        body.theme-night .status-panel {
+            background: rgba(15, 23, 42, 0.9);
+            color: #e5e7eb;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        body.theme-day .header,
+        body.theme-day .tabs-section,
+        body.theme-day .status-panel {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1f2937;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        body.theme-highcontrast .header,
+        body.theme-highcontrast .tabs-section,
+        body.theme-highcontrast .status-panel {
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+
+        body.theme-night .app-title,
+        body.theme-night .tab-content h2,
+        body.theme-night .tab-content p,
+        body.theme-night .manual-controls-title,
+        body.theme-night .option-hint {
+            color: #cbd5e1;
+        }
+
+        body.theme-highcontrast .app-title,
+        body.theme-highcontrast .tab-content h2,
+        body.theme-highcontrast .tab-content p,
+        body.theme-highcontrast .manual-controls-title,
+        body.theme-highcontrast .option-hint {
+            color: #fff;
+        }
+
+        body.theme-night .tab-button {
+            color: #cbd5e1;
+        }
+
+        body.theme-night .tab-button.active {
+            color: #a5b4fc;
+            background: rgba(102, 126, 234, 0.12);
+        }
+
+        body.theme-highcontrast .tab-button {
+            color: #fff;
+        }
+
+        body.theme-highcontrast .tab-button.active {
+            background: #fff;
+            color: #000;
+        }
+
+        body.theme-night .warning-box,
+        body.theme-highcontrast .warning-box {
+            background: rgba(102, 126, 234, 0.08);
+            color: #e5e7eb;
+        }
+
+        body.theme-highcontrast .warning-box {
+            border-color: #fff;
+        }
+
+        body.theme-night .api-key-item,
+        body.theme-night .community-link {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.08);
+            color: #e5e7eb;
+        }
+
+        body.theme-highcontrast .api-key-item,
+        body.theme-highcontrast .community-link {
+            background: #000;
+            border-color: #fff;
+            color: #fff;
+        }
+
+        body.theme-night .status-title {
+            color: #a5b4fc;
+        }
+
+        body.theme-highcontrast .status-title {
+            color: #fff;
+        }
+
+        body.theme-night .status-text {
+            color: #e5e7eb;
+        }
+
+        body.theme-highcontrast .status-text {
+            color: #fff;
+        }
+
+        body.theme-night .progress-bar-container {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        body.theme-night .progress-bar {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            color: #0b1220;
+        }
+
+        body.theme-highcontrast .progress-bar-container {
+            background: #111;
+            border: 1px solid #fff;
+        }
+
+        body.theme-highcontrast .progress-bar {
+            background: #fff;
+            color: #000;
+        }
+
+        body.theme-highcontrast .theme-btn,
+        body.theme-highcontrast .lang-btn {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        body.theme-highcontrast .theme-btn.active,
+        body.theme-highcontrast .lang-btn.active {
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+<body class="theme-{{.CurrentTheme}}">
+    <div class="launcher-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <img src="/logo?theme={{.CurrentTheme}}" alt="LTTH Logo" class="logo">
+                <div class="app-title">
+                    <h1>{{.AppName}}</h1>
+                    <p>{{.TagLine}}</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <!-- Theme Selector -->
+                <div class="theme-selector">
+                    <label>{{.ThemeLabel}}:</label>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="theme-btn {{if eq .CurrentTheme "night"}}active{{end}}" data-theme="night" id="theme-night">{{.ThemeNight}}</button>
+                        <button class="theme-btn {{if eq .CurrentTheme "day"}}active{{end}}" data-theme="day" id="theme-day">{{.ThemeDay}}</button>
+                        <button class="theme-btn {{if eq .CurrentTheme "highcontrast"}}active{{end}}" data-theme="highcontrast" id="theme-highcontrast">{{.ThemeHighContrast}}</button>
+                    </div>
+                </div>
+                
+                <!-- Profile Selector -->
+                <div class="profile-selector">
+                    <label>{{.ProfileLabel}}:</label>
+                    <select id="profileSelector" {{if not .HasProfiles}}disabled{{end}}>
+                        {{if .HasProfiles}}
+                            {{range .Profiles}}
+                            <option value="{{.Username}}">{{.Username}}</option>
+                            {{end}}
+                        {{else}}
+                            <option>{{.NoProfilesText}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                
+                <!-- Language Selector -->
+                <div class="language-selector">
+                    <button class="lang-btn {{if eq .Locale "de"}}active{{end}}" data-lang="de">🇩🇪 DE</button>
+                    <button class="lang-btn {{if eq .Locale "en"}}active{{end}}" data-lang="en">🇬🇧 EN</button>
+                    <button class="lang-btn {{if eq .Locale "es"}}active{{end}}" data-lang="es">🇪🇸 ES</button>
+                    <button class="lang-btn {{if eq .Locale "fr"}}active{{end}}" data-lang="fr">🇫🇷 FR</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Launcher Options -->
+        <div class="launcher-options">
+            <div class="option-checkbox">
+                <input type="checkbox" id="keepLauncherOpen" checked>
+                <label for="keepLauncherOpen">{{.KeepOpenLabel}}</label>
+                <span class="option-hint">({{.KeepOpenHint}})</span>
+            </div>
+            
+            <div class="app-link-container">
+                <a href="http://localhost:3000/dashboard.html" class="app-link disabled" id="appLink" target="_blank">
+                    <span>🚀</span>
+                    <span>{{.OpenAppLabel}}</span>
+                </a>
+                <span class="app-link-hint" id="appLinkHint">{{.AppNotReady}}</span>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Tabs Section -->
+            <div class="tabs-section">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="changelog">📝 {{.TabChangelog}}</button>
+                    <button class="tab-button" data-tab="apikeys">🔑 {{.TabApiKeys}}</button>
+                    <button class="tab-button" data-tab="community">💜 {{.TabCommunity}}</button>
+                    <button class="tab-button" data-tab="logs">📜 {{.TabLogs}}</button>
+                </div>
+                
+                <!-- Changelog Tab -->
+                <div id="tab-changelog" class="tab-content active">
+                    <h2>{{.ChangelogTitle}}</h2>
+                    <div id="changelog-content">
+                        <p style="color: #999;">{{.ChangelogLoading}}</p>
+                    </div>
+                </div>
+                
+                <!-- API Keys Tab -->
+                <div id="tab-apikeys" class="tab-content">
+                    <h2>{{.ApiKeysTitle}}</h2>
+                    <p>{{.ApiKeysIntro}}</p>
+                    
+                    <div class="warning-box">
+                        <strong>{{.MandatoryWarning}}</strong><br>
+                        {{.FallbackWarning}}
+                    </div>
+                    
+                    <div class="api-key-item">
+                        <h3>
+                            ElevenLabs (Text-to-Speech)
+                            <span class="badge mandatory">Mandatory</span>
+                            <span class="badge freemium">Freemium</span>
+                        </h3>
+                        <p>{{.ElevenLabsDesc}}</p>
+                        <p><a href="https://elevenlabs.io" target="_blank">https://elevenlabs.io</a></p>
+                    </div>
+                    
+                    <div class="api-key-item">
+                        <h3>
+                            OpenAI (GPT)
+                            <span class="badge paid">Paid</span>
+                        </h3>
+                        <p>{{.OpenAIDesc}}</p>
+                        <p><a href="https://platform.openai.com" target="_blank">https://platform.openai.com</a></p>
+                    </div>
+                    
+                    <div class="api-key-item">
+                        <h3>
+                            SiliconFlow (AI Alternative)
+                            <span class="badge freemium">Freemium</span>
+                        </h3>
+                        <p>{{.SiliconFlowDesc}}</p>
+                        <p><a href="https://siliconflow.com" target="_blank">https://siliconflow.com</a></p>
+                    </div>
+                    
+                    <div class="api-key-item">
+                        <h3>
+                            Fish Audio (TTS Alternative)
+                            <span class="badge freemium">Freemium</span>
+                        </h3>
+                        <p>{{.FishAudioDesc}}</p>
+                        <p><a href="https://fish.audio" target="_blank">https://fish.audio</a></p>
+                    </div>
+                </div>
+                
+                <!-- Community Tab -->
+                <div id="tab-community" class="tab-content">
+                    <h2>{{.CommunityTitle}}</h2>
+                    <p>{{.CommunityIntro}}</p>
+                    <p><strong>{{.HelpAppreciated}}</strong></p>
+                    
+                    <div class="community-links">
+                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" class="community-link">
+                            <span>📦</span>
+                            <span>{{.LinkRepo}}</span>
+                        </a>
+                        <a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" class="community-link">
+                            <span>💬</span>
+                            <span>{{.LinkDiscussions}}</span>
+                        </a>
+                        <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" class="community-link">
+                            <span>🐛</span>
+                            <span>{{.LinkIssues}}</span>
+                        </a>
+                        <a href="https://discord.gg/pawsunited" target="_blank" class="community-link">
+                            <span>🎮</span>
+                            <span>{{.LinkDiscord}}</span>
+                        </a>
+                    </div>
+                    
+                    <p style="margin-top: 20px;"><strong>{{.ContributeQuestion}}</strong></p>
+                    <p>{{.ContributeText}}</p>
+                </div>
+
+                <!-- Logs Tab -->
+                <div id="tab-logs" class="tab-content">
+                    <h2>{{.LogsTitle}}</h2>
+                    <p>{{.LogsIntro}}</p>
+                    <pre id="logs-content" class="log-viewer">{{.LogsLoading}}</pre>
+                </div>
+            </div>
+            
+            <!-- Status Panel -->
+            <div class="status-panel">
+                <div class="status-title">{{.StatusTitle}}</div>
+                <div class="status-text" id="status">{{.StatusInitializing}}</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar">0%</div>
+                </div>
+                <div class="manual-controls">
+                    <div class="manual-controls-title">Server-Start</div>
+                    <div class="manual-port-row">
+                        <input type="number" id="manualPort" min="1" max="65535" value="3000" aria-label="Port">
+                        <button class="manual-btn secondary" id="savePortBtn" type="button">Port setzen</button>
+                    </div>
+                    <div class="manual-button-row">
+                        <button class="manual-btn" id="manualStartBtn" type="button">Server starten</button>
+                        <button class="manual-btn secondary" id="manualOpenBtn" type="button">App öffnen</button>
+                        <button class="manual-btn danger" id="manualStopBtn" type="button">Server stoppen</button>
+                        <button class="manual-btn secondary" id="refreshStatusBtn" type="button">Status prüfen</button>
+                    </div>
+                    <div class="maintenance-controls">
+                        <div class="manual-controls-title">Datenbank-Wartung</div>
+                        <button class="manual-btn secondary" id="vacuumDbBtn" type="button">Datenbank komprimieren (VACUUM)</button>
+                        <div class="maintenance-note" id="vacuumHint">Server vorher stoppen. VACUUM gibt freien Speicher nach geloeschten Detail-Logs frei.</div>
+                    </div>
+                    <div class="manual-status" id="manualStatus">Port 3000 wird automatisch versucht; bei Belegung nutzt der Server einen freien Folgeport.</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            {{.PoweredBy}} | Version {{.Version}}
+        </div>
+    </div>
+    
+    <script>
+        const allowedThemes = ['night', 'day', 'highcontrast'];
+        const LOG_POLL_INTERVAL_MS = 2000;
+        const THEME_STORAGE_KEY = 'ltth-launcher-theme';
+        const LANG_STORAGE_KEY = 'ltth-launcher-lang';
+        const urlParams = new URLSearchParams(window.location.search);
+        const templateTheme = '{{.CurrentTheme}}';
+        const LOGS_EMPTY_TEXT = '{{.LogsEmpty}}';
+        const LOGS_ERROR_TEXT = '{{.LogsError}}';
+
+        function resolveInitialTheme() {
+            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            const candidate = urlParams.get('theme') || storedTheme || templateTheme;
+            return allowedThemes.includes(candidate) ? candidate : 'night';
+        }
+
+        let currentTheme = resolveInitialTheme();
+        let logInterval = null;
+
+        function applyTheme(theme) {
+            document.body.classList.remove('theme-night', 'theme-day', 'theme-highcontrast');
+            document.body.classList.add('theme-' + theme);
+
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            const themeButton = document.getElementById('theme-' + theme);
+            if (themeButton) {
+                themeButton.classList.add('active');
+            }
+
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                logo.src = '/logo?theme=' + theme;
+            }
+        }
+
+        // Theme switching
+        function changeTheme(theme, skipPersist) {
+            if (!allowedThemes.includes(theme)) {
+                theme = 'night';
+            }
+
+            currentTheme = theme;
+            applyTheme(theme);
+
+            if (!skipPersist) {
+                localStorage.setItem(THEME_STORAGE_KEY, theme);
+                const url = new URL(window.location.href);
+                url.searchParams.set('theme', theme);
+                window.history.replaceState({}, '', url.toString());
+            }
+        }
+
+        changeTheme(currentTheme, true);
+
+        // Logging
+        const logsContentEl = document.getElementById('logs-content');
+
+        function fetchLogs() {
+            if (!logsContentEl) return;
+            if ((typeof document.visibilityState !== 'undefined' && document.visibilityState === 'hidden') ||
+                (typeof document.hidden !== 'undefined' && document.hidden)) {
+                return;
+            }
+
+            fetch('/logs')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load logs');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    const trimmed = text.trim();
+                    const content = trimmed ? text : LOGS_EMPTY_TEXT;
+                    logsContentEl.textContent = content;
+                    logsContentEl.scrollTop = logsContentEl.scrollHeight;
+                })
+                .catch(() => {
+                    logsContentEl.textContent = LOGS_ERROR_TEXT;
+                });
+        }
+
+        const manualPortEl = document.getElementById('manualPort');
+        const manualStatusEl = document.getElementById('manualStatus');
+        const vacuumDbBtn = document.getElementById('vacuumDbBtn');
+        const vacuumHintEl = document.getElementById('vacuumHint');
+        let vacuumInProgress = false;
+
+        function setManualStatus(text) {
+            if (manualStatusEl) manualStatusEl.textContent = text;
+        }
+
+        function formatBytes(bytes) {
+            let value = Number(bytes || 0);
+            const sign = value < 0 ? '-' : '';
+            value = Math.abs(value);
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let unitIndex = 0;
+            while (value >= 1024 && unitIndex < units.length - 1) {
+                value = value / 1024;
+                unitIndex++;
+            }
+            const digits = unitIndex === 0 || value >= 10 ? 0 : 1;
+            return sign + value.toFixed(digits) + ' ' + units[unitIndex];
+        }
+
+        async function postLauncherAction(url) {
+            const response = await fetch(url, { method: 'POST' });
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(text || response.statusText);
+            }
+            try {
+                return JSON.parse(text);
+            } catch {
+                return {};
+            }
+        }
+
+        async function refreshLauncherStatus() {
+            try {
+                const response = await fetch('/api/launcher/status');
+                if (!response.ok) throw new Error(response.statusText);
+                const data = await response.json();
+                const port = data.serverPort || data.runtimePort || data.preferredPort || 3000;
+
+                if (manualPortEl && document.activeElement !== manualPortEl) {
+                    manualPortEl.value = data.preferredPort || port;
+                }
+
+                const appLink = document.getElementById('appLink');
+                const appLinkHint = document.getElementById('appLinkHint');
+                if (appLink && port) {
+                    appLink.href = 'http://localhost:' + port + '/dashboard.html';
+                }
+
+                const vacuumBlocked = !data.vacuumAvailable;
+                if (vacuumDbBtn) {
+                    vacuumDbBtn.disabled = Boolean(vacuumBlocked);
+                }
+                if (vacuumHintEl) {
+                    if (vacuumBlocked) {
+                        vacuumHintEl.textContent = 'Server zuerst stoppen. VACUUM laeuft nur, wenn die Datenbank nicht aktiv ist.';
+                    } else if (data.activeProfile) {
+                        vacuumHintEl.textContent = 'Aktives Profil: ' + data.activeProfile + '. VACUUM gibt freien Speicher nach geloeschten Detail-Logs frei.';
+                    } else {
+                        vacuumHintEl.textContent = 'Profil auswaehlen, dann Server stoppen und Datenbank komprimieren.';
+                    }
+                }
+
+                if (!vacuumInProgress) {
+                    if (data.serverRunning || data.serverPort || data.runtimePort) {
+                        if (appLink) appLink.classList.remove('disabled');
+                        if (appLinkHint) appLinkHint.textContent = 'App erreichbar auf Port ' + port;
+                        setManualStatus('Serverstatus: erreichbar auf Port ' + port + '. Log: ' + (data.logPath || 'app/logs/launcher_*.log'));
+                    } else if (data.startupInProgress) {
+                        setManualStatus('Server startet... Wunschport: ' + (data.preferredPort || 3000));
+                    } else if (data.lastStartError) {
+                        setManualStatus('Letzter Startfehler: ' + data.lastStartError);
+                    } else {
+                        setManualStatus('Bereit. Wunschport: ' + (data.preferredPort || 3000));
+                    }
+                }
+            } catch (error) {
+                setManualStatus('Launcher-Status konnte nicht gelesen werden: ' + error.message);
+            }
+        }
+
+        document.getElementById('savePortBtn').addEventListener('click', async () => {
+            try {
+                const port = Number(manualPortEl.value || 3000);
+                await postLauncherAction('/api/launcher/port?port=' + encodeURIComponent(port));
+                setManualStatus('Port ' + port + ' gespeichert. Beim nächsten Serverstart wird dieser Port bevorzugt.');
+                refreshLauncherStatus();
+            } catch (error) {
+                setManualStatus('Port konnte nicht gesetzt werden: ' + error.message);
+            }
+        });
+
+        document.getElementById('manualStartBtn').addEventListener('click', async () => {
+            try {
+                const port = Number(manualPortEl.value || 3000);
+                await postLauncherAction('/api/launcher/start-server?port=' + encodeURIComponent(port));
+                setManualStatus('Manueller Serverstart läuft auf Wunschport ' + port + '...');
+                switchTab('logs');
+                refreshLauncherStatus();
+            } catch (error) {
+                setManualStatus('Serverstart fehlgeschlagen: ' + error.message);
+            }
+        });
+
+        document.getElementById('manualStopBtn').addEventListener('click', async () => {
+            try {
+                await postLauncherAction('/api/launcher/stop-server');
+                setManualStatus('Server wurde gestoppt.');
+                refreshLauncherStatus();
+            } catch (error) {
+                setManualStatus('Server konnte nicht gestoppt werden: ' + error.message);
+            }
+        });
+
+        document.getElementById('manualOpenBtn').addEventListener('click', async () => {
+            try {
+                const result = await postLauncherAction('/api/launcher/open-app');
+                setManualStatus('App geöffnet: ' + (result.url || 'Dashboard'));
+            } catch (error) {
+                setManualStatus('App konnte nicht geöffnet werden: ' + error.message);
+            }
+        });
+
+        document.getElementById('vacuumDbBtn').addEventListener('click', async () => {
+            if (!confirm('Datenbank jetzt komprimieren? Der Server muss gestoppt sein. Der Vorgang kann mehrere Minuten dauern.')) {
+                return;
+            }
+            try {
+                vacuumInProgress = true;
+                if (vacuumDbBtn) vacuumDbBtn.disabled = true;
+                setManualStatus('VACUUM laeuft... bitte Launcher offen lassen.');
+                const result = await postLauncherAction('/api/launcher/vacuum-database');
+                const freed = Number(result.freedBytes || 0);
+                const freedText = freed >= 0
+                    ? 'freigegeben: ' + formatBytes(freed)
+                    : 'Groesse veraendert: +' + formatBytes(Math.abs(freed));
+                setManualStatus('VACUUM fertig fuer Profil ' + (result.profile || 'aktiv') + ' - ' + freedText + '. Dauer: ' + Math.round((result.durationMillis || 0) / 1000) + 's.');
+            } catch (error) {
+                setManualStatus('VACUUM fehlgeschlagen: ' + error.message);
+            } finally {
+                vacuumInProgress = false;
+                setTimeout(refreshLauncherStatus, 2500);
+            }
+        });
+
+        document.getElementById('refreshStatusBtn').addEventListener('click', refreshLauncherStatus);
+        setInterval(refreshLauncherStatus, 3000);
+        refreshLauncherStatus();
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const tabEl = document.getElementById('tab-' + tabName);
+            if (tabEl) {
+                tabEl.classList.add('active');
+            }
+            const activeBtn = document.querySelector('.tab-button[data-tab="' + tabName + '"]');
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+
+            if (tabName === 'logs') {
+                fetchLogs();
+                if (!logInterval) {
+                    logInterval = setInterval(fetchLogs, LOG_POLL_INTERVAL_MS);
+                }
+            } else if (logInterval) {
+                clearInterval(logInterval);
+                logInterval = null;
+            }
+        }
+        
+        // Language switching
+        function changeLanguage(lang) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', lang);
+            url.searchParams.set('theme', currentTheme);
+            localStorage.setItem(LANG_STORAGE_KEY, lang);
+            window.location.href = url.toString();
+        }
+
+        document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
+            btn.addEventListener('click', () => changeTheme(btn.dataset.theme));
+        });
+
+        document.querySelectorAll('.tab-button[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
+            btn.addEventListener('click', () => changeLanguage(btn.dataset.lang));
+        });
+        
+        // Profile selection
+        document.getElementById('profileSelector').addEventListener('change', function() {
+            fetch('/api/select-profile?profile=' + encodeURIComponent(this.value), {
+                method: 'POST'
+            });
+        });
+        
+        // Server-Sent Events for progress updates
+        const evtSource = new EventSource('/events');
+        let serverReady = false;
+        
+        evtSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            // Handle server ready
+            if (data.progress === 100 || data.serverReady) {
+                serverReady = true;
+                
+                // Enable app link
+                const appLink = document.getElementById('appLink');
+                const appLinkHint = document.getElementById('appLinkHint');
+                const dashboardUrl = data.dashboardUrl || data.redirect;
+                if (dashboardUrl) {
+                    appLink.href = dashboardUrl;
+                }
+                appLink.classList.remove('disabled');
+                appLinkHint.textContent = '{{.AppReady}}';
+            }
+            
+            // Handle redirect
+            if (data.redirect || data.dashboardUrl) {
+                evtSource.close();
+                
+                const keepOpen = document.getElementById('keepLauncherOpen').checked;
+                const dashboardUrl = data.dashboardUrl || data.redirect;
+                
+                if (keepOpen) {
+                    setManualStatus('App wird geoeffnet. Launcher bleibt offen.');
+                    postLauncherAction('/api/launcher/open-app').catch(() => {
+                        window.open(dashboardUrl, '_blank');
+                    });
+                } else {
+                    // Redirect as normal
+                    setTimeout(function() {
+                        window.location.replace(dashboardUrl);
+                    }, 2000);
+                }
+                return;
+            }
+            
+            // Update progress
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('status');
+            
+            progressBar.style.width = data.progress + '%';
+            progressBar.textContent = data.progress + '%';
+            statusText.textContent = data.status;
+        };
+        
+        evtSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
+            evtSource.close();
+        };
+        
+        // Load changelog
+        fetch('/changelog')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('changelog-content').innerHTML = data;
+            })
+            .catch(error => {
+                document.getElementById('changelog-content').innerHTML = '<p style="color: #999;">{{.ChangelogError}}</p>';
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidekick - Admin Panel</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #4CAF50;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2 {
+      color: #64B5F6;
+      margin-top: 20px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #64B5F6;
+      padding-bottom: 5px;
+    }
+
+    h3 {
+      color: #FFC107;
+      margin-top: 15px;
+      margin-bottom: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #333;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: #2a2a3e;
+      border: none;
+      color: #eee;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.3s;
+    }
+
+    .tab:hover {
+      background: #3a3a4e;
+    }
+
+    .tab.active {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: #2a2a3e;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background: #3a3a4e;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    .stat-label {
+      color: #aaa;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      background: #1a1a2e;
+      color: #eee;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-secondary {
+      background: #666;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #555;
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #d32f2f;
+    }
+
+    .btn-warning {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #f57c00;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-connected {
+      background: #4CAF50;
+    }
+
+    .status-disconnected {
+      background: #f44336;
+    }
+
+    .status-muted {
+      background: #ff9800;
+    }
+
+    .event-log {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #1a1a2e;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .event-item {
+      padding: 5px;
+      border-bottom: 1px solid #333;
+    }
+
+    .event-item:last-child {
+      border-bottom: none;
+    }
+
+    .event-type {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      margin-right: 8px;
+      text-transform: uppercase;
+    }
+
+    .event-type.chat { background: #2196F3; }
+    .event-type.gift { background: #E91E63; }
+    .event-type.follow { background: #9C27B0; }
+    .event-type.share { background: #00BCD4; }
+    .event-type.subscribe { background: #FF9800; }
+    .event-type.join { background: #607D8B; }
+    .event-type.like { background: #F44336; }
+
+    .user-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .user-item:hover {
+      background: #3a3a4e;
+    }
+
+    .user-nickname {
+      font-weight: bold;
+    }
+
+    .user-stats {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #4CAF50;
+      transition: width 0.3s;
+    }
+
+    .inline-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .badge-success { background: #4CAF50; }
+    .badge-warning { background: #ff9800; }
+    .badge-danger { background: #f44336; }
+
+    .chart-container {
+      height: 200px;
+      background: #1a1a2e;
+      border-radius: 5px;
+      padding: 10px;
+      position: relative;
+    }
+
+    .chart-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .tabs {
+        flex-direction: column;
+      }
+      
+      .tab {
+        border-radius: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      🤖 Sidekick
+      <span id="status-badge" class="badge badge-success">Active</span>
+    </h1>
+    <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit Animaze Integration</p>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="status">Status</button>
+      <button class="tab" data-tab="settings">Einstellungen</button>
+      <button class="tab" data-tab="memory">Memory</button>
+      <button class="tab" data-tab="analytics">Analytics</button>
+      <button class="tab" data-tab="events">Events</button>
+    </div>
+
+    <!-- Status Tab -->
+    <div id="tab-status" class="tab-content active">
+      <div class="grid">
+        <div class="card">
+          <h3>🔌 Verbindungen</h3>
+          <div class="inline-row" style="margin-top: 15px;">
+            <span class="status-indicator" id="animaze-status-indicator"></span>
+            <span>Animaze: <span id="animaze-status-text">Disconnected</span></span>
+          </div>
+          <div class="inline-row" style="margin-top: 10px;">
+            <button id="btn-connect" class="btn-primary">Verbinden</button>
+            <button id="btn-disconnect" class="btn-secondary">Trennen</button>
+          </div>
+          <div style="margin-top: 15px;">
+            <label>Queue: <span id="queue-length">0</span> Nachrichten</label>
+            <div class="progress-bar">
+              <div class="progress-fill" id="queue-progress" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🎤 Steuerung</h3>
+          <div class="inline-row" style="margin-top: 15px;">
+            <button id="btn-mute" class="btn-warning">🔇 Mute</button>
+            <button id="btn-unmute" class="btn-primary">🔊 Unmute</button>
+            <button id="btn-reset" class="btn-danger">🔄 Reset Session</button>
+          </div>
+          <div style="margin-top: 15px;">
+            <label for="test-message">Test-Nachricht:</label>
+            <div class="inline-row">
+              <input type="text" id="test-message" placeholder="Nachricht eingeben...">
+              <button id="btn-test" class="btn-primary">Senden</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-chats">0</div>
+          <div class="stat-label">Chats/Min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-gifts">0</div>
+          <div class="stat-label">Gifts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-follows">0</div>
+          <div class="stat-label">Follows</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-viewers">0</div>
+          <div class="stat-label">Aktive Viewer</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 Session Statistiken</h3>
+        <div class="grid">
+          <div>
+            <p>Laufzeit: <strong id="session-duration">0:00:00</strong></p>
+            <p>Total Events: <strong id="session-events">0</strong></p>
+            <p>Responses gesendet: <strong id="session-responses">0</strong></p>
+          </div>
+          <div>
+            <p>Dedupe Hits: <strong id="session-dedupe">0</strong></p>
+            <p>Rate Limit Status: <strong id="ratelimit-status">OK</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card">
+        <h3>🔧 Animaze Verbindung</h3>
+        <div class="grid">
+          <div class="form-group">
+            <label for="animaze-host">Host</label>
+            <input type="text" id="animaze-host" value="127.0.0.1">
+          </div>
+          <div class="form-group">
+            <label for="animaze-port">Port</label>
+            <input type="number" id="animaze-port" value="9000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="animaze-enabled"> Animaze aktiviert
+          </label>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="animaze-autoconnect"> Auto-Connect beim Start
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>💬 Chat Einstellungen</h3>
+        <div class="grid">
+          <div class="form-group">
+            <label for="comment-enabled">
+              <input type="checkbox" id="comment-enabled"> Chat-Verarbeitung aktiviert
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="reply-threshold">Reply Threshold (0-1)</label>
+            <input type="number" id="reply-threshold" min="0" max="1" step="0.1" value="0.6">
+          </div>
+          <div class="form-group">
+            <label for="global-cooldown">Global Cooldown (Sek)</label>
+            <input type="number" id="global-cooldown" min="0" value="6">
+          </div>
+          <div class="form-group">
+            <label for="user-cooldown">Per-User Cooldown (Sek)</label>
+            <input type="number" id="user-cooldown" min="0" value="15">
+          </div>
+          <div class="form-group">
+            <label for="max-replies">Max Replies/Min</label>
+            <input type="number" id="max-replies" min="1" value="20">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="respond-greetings"> Auf Grüße antworten
+          </label>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="respond-thanks"> Auf Danke antworten
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>👋 Join Greetings</h3>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="joins-enabled"> Join Greetings aktiviert
+          </label>
+        </div>
+        <div class="grid">
+          <div class="form-group">
+            <label for="greet-delay">Greet nach (Sek)</label>
+            <input type="number" id="greet-delay" min="0" value="30">
+          </div>
+          <div class="form-group">
+            <label for="greet-cooldown">Global Greet Cooldown (Sek)</label>
+            <input type="number" id="greet-cooldown" min="0" value="180">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📦 Outbox Batching</h3>
+        <div class="grid">
+          <div class="form-group">
+            <label for="batch-window">Batch Window (Sek)</label>
+            <input type="number" id="batch-window" min="1" value="8">
+          </div>
+          <div class="form-group">
+            <label for="batch-max-items">Max Items pro Batch</label>
+            <input type="number" id="batch-max-items" min="1" value="8">
+          </div>
+          <div class="form-group">
+            <label for="batch-max-chars">Max Zeichen</label>
+            <input type="number" id="batch-max-chars" min="50" value="320">
+          </div>
+          <div class="form-group">
+            <label for="batch-separator">Separator</label>
+            <input type="text" id="batch-separator" value=" • ">
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-save-settings" class="btn-primary">💾 Einstellungen speichern</button>
+    </div>
+
+    <!-- Memory Tab -->
+    <div id="tab-memory" class="tab-content">
+      <div class="card">
+        <h3>🧠 Memory Statistiken</h3>
+        <div class="grid">
+          <div class="stat-card">
+            <div class="stat-value" id="memory-users">0</div>
+            <div class="stat-label">Gespeicherte User</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="memory-gifts">0</div>
+            <div class="stat-label">Total Gifts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="memory-follows">0</div>
+            <div class="stat-label">Total Follows</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <button id="btn-clear-memory" class="btn-danger">🗑️ Memory löschen</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🏆 Top User (Engagement)</h3>
+        <div class="user-list" id="top-users">
+          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔍 User Suche</h3>
+        <div class="inline-row" style="margin-bottom: 15px;">
+          <input type="text" id="search-user" placeholder="Nickname oder ID suchen...">
+          <button id="btn-search" class="btn-primary">Suchen</button>
+        </div>
+        <div class="user-list" id="search-results">
+          <p style="color: #666; padding: 20px; text-align: center;">Suchbegriff eingeben...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="tab-analytics" class="tab-content">
+      <div class="card">
+        <h3>📈 Live Rates (pro Minute)</h3>
+        <div class="grid">
+          <div class="stat-card">
+            <div class="stat-value" id="rate-chats">0</div>
+            <div class="stat-label">Chats/Min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="rate-gifts">0</div>
+            <div class="stat-label">Gifts/Min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="rate-likes">0</div>
+            <div class="stat-label">Likes/Min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="rate-joins">0</div>
+            <div class="stat-label">Joins/Min</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🎯 Top Gifter</h3>
+        <div class="user-list" id="top-gifters">
+          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 Event History</h3>
+        <div class="chart-container">
+          <div class="chart-placeholder">
+            Chart-Visualisierung (in zukünftiger Version)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Events Tab -->
+    <div id="tab-events" class="tab-content">
+      <div class="card">
+        <h3>📜 Event Log</h3>
+        <div class="inline-row" style="margin-bottom: 15px;">
+          <select id="event-filter">
+            <option value="">Alle Events</option>
+            <option value="chat">Chat</option>
+            <option value="gift">Gift</option>
+            <option value="follow">Follow</option>
+            <option value="share">Share</option>
+            <option value="subscribe">Subscribe</option>
+            <option value="join">Join</option>
+            <option value="like">Like</option>
+          </select>
+          <button id="btn-refresh-events" class="btn-secondary">🔄 Aktualisieren</button>
+        </div>
+        <div class="event-log" id="event-log">
+          <p style="color: #666; text-align: center;">Lade Events...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔍 Deduper Status</h3>
+        <div class="grid">
+          <div>
+            <p>Größe: <strong id="deduper-size">0</strong> Einträge</p>
+            <p>Total Checks: <strong id="deduper-checks">0</strong></p>
+          </div>
+          <div>
+            <p>Duplikate blockiert: <strong id="deduper-blocked">0</strong></p>
+            <p>Hit Rate: <strong id="deduper-hitrate">0%</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Initialize Socket.io
+    const socket = io();
+    
+    // State
+    let config = {};
+    let status = {};
+    
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+    
+    // Fetch status
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/sidekick/status');
+        const data = await res.json();
+        if (data.success) {
+          status = data.status;
+          updateStatusUI();
+        }
+      } catch (err) {
+        console.error('Failed to fetch status:', err);
+      }
+    }
+    
+    // Fetch config
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/sidekick/config');
+        const data = await res.json();
+        if (data.success) {
+          config = data.config;
+          updateConfigUI();
+        }
+      } catch (err) {
+        console.error('Failed to fetch config:', err);
+      }
+    }
+    
+    // Update status UI
+    function updateStatusUI() {
+      // Mute status badge
+      const badge = document.getElementById('status-badge');
+      if (status.muted) {
+        badge.className = 'badge badge-warning';
+        badge.textContent = 'Muted';
+      } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = 'Active';
+      }
+      
+      // Animaze connection
+      const animazeIndicator = document.getElementById('animaze-status-indicator');
+      const animazeText = document.getElementById('animaze-status-text');
+      if (status.animaze?.isConnected) {
+        animazeIndicator.className = 'status-indicator status-connected';
+        animazeText.textContent = 'Connected';
+      } else {
+        animazeIndicator.className = 'status-indicator status-disconnected';
+        animazeText.textContent = 'Disconnected';
+      }
+      
+      // Queue
+      const queueLength = status.outbox?.bufferSize || 0;
+      document.getElementById('queue-length').textContent = queueLength;
+      const queueProgress = Math.min(100, (queueLength / 8) * 100);
+      document.getElementById('queue-progress').style.width = queueProgress + '%';
+      
+      // Stats
+      const rates = status.currentRates || {};
+      document.getElementById('stat-chats').textContent = rates.chatsPerMinute || 0;
+      document.getElementById('stat-gifts').textContent = status.session?.totalGifts || 0;
+      document.getElementById('stat-follows').textContent = status.session?.totalFollows || 0;
+      document.getElementById('stat-viewers').textContent = status.activeViewers || 0;
+      
+      // Session
+      const duration = status.session?.duration || 0;
+      const hours = Math.floor(duration / 3600000);
+      const minutes = Math.floor((duration % 3600000) / 60000);
+      const seconds = Math.floor((duration % 60000) / 1000);
+      document.getElementById('session-duration').textContent = 
+        `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      document.getElementById('session-events').textContent = status.session?.totalEvents || 0;
+      document.getElementById('session-responses').textContent = status.session?.responsesSent || 0;
+      document.getElementById('session-dedupe').textContent = status.session?.dedupeHits || 0;
+      
+      // Rate limit
+      const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0 ? 'Cooldown' : 'OK';
+      document.getElementById('ratelimit-status').textContent = rlStatus;
+      
+      // Deduper
+      const deduper = status.deduper || {};
+      document.getElementById('deduper-size').textContent = deduper.size || 0;
+      document.getElementById('deduper-checks').textContent = deduper.totalChecks || 0;
+      document.getElementById('deduper-blocked').textContent = deduper.duplicatesBlocked || 0;
+      document.getElementById('deduper-hitrate').textContent = (deduper.hitRate || 0) + '%';
+      
+      // Analytics rates
+      document.getElementById('rate-chats').textContent = rates.chatsPerMinute || 0;
+      document.getElementById('rate-gifts').textContent = rates.giftsPerMinute || 0;
+      document.getElementById('rate-likes').textContent = rates.likesPerMinute || 0;
+      document.getElementById('rate-joins').textContent = rates.joinsPerMinute || 0;
+    }
+    
+    // Update config UI
+    function updateConfigUI() {
+      document.getElementById('animaze-host').value = config.animaze?.host || '127.0.0.1';
+      document.getElementById('animaze-port').value = config.animaze?.port || 9000;
+      document.getElementById('animaze-enabled').checked = config.animaze?.enabled || false;
+      document.getElementById('animaze-autoconnect').checked = config.animaze?.autoConnect || false;
+      
+      document.getElementById('comment-enabled').checked = config.comment?.enabled !== false;
+      document.getElementById('reply-threshold').value = config.comment?.replyThreshold || 0.6;
+      document.getElementById('global-cooldown').value = config.comment?.globalCooldown || 6;
+      document.getElementById('user-cooldown').value = config.comment?.perUserCooldown || 15;
+      document.getElementById('max-replies').value = config.comment?.maxRepliesPerMin || 20;
+      document.getElementById('respond-greetings').checked = config.comment?.respondToGreetings !== false;
+      document.getElementById('respond-thanks').checked = config.comment?.respondToThanks !== false;
+      
+      document.getElementById('joins-enabled').checked = config.joinRules?.enabled !== false;
+      document.getElementById('greet-delay').value = config.joinRules?.greetAfterSeconds || 30;
+      document.getElementById('greet-cooldown').value = config.joinRules?.greetGlobalCooldownSec || 180;
+      
+      document.getElementById('batch-window').value = config.outbox?.windowSeconds || 8;
+      document.getElementById('batch-max-items').value = config.outbox?.maxItems || 8;
+      document.getElementById('batch-max-chars').value = config.outbox?.maxChars || 320;
+      document.getElementById('batch-separator').value = config.outbox?.separator || ' • ';
+    }
+    
+    // Save config
+    async function saveConfig() {
+      const newConfig = {
+        animaze: {
+          host: document.getElementById('animaze-host').value,
+          port: parseInt(document.getElementById('animaze-port').value),
+          enabled: document.getElementById('animaze-enabled').checked,
+          autoConnect: document.getElementById('animaze-autoconnect').checked
+        },
+        comment: {
+          enabled: document.getElementById('comment-enabled').checked,
+          replyThreshold: parseFloat(document.getElementById('reply-threshold').value),
+          globalCooldown: parseInt(document.getElementById('global-cooldown').value),
+          perUserCooldown: parseInt(document.getElementById('user-cooldown').value),
+          maxRepliesPerMin: parseInt(document.getElementById('max-replies').value),
+          respondToGreetings: document.getElementById('respond-greetings').checked,
+          respondToThanks: document.getElementById('respond-thanks').checked
+        },
+        joinRules: {
+          enabled: document.getElementById('joins-enabled').checked,
+          greetAfterSeconds: parseInt(document.getElementById('greet-delay').value),
+          greetGlobalCooldownSec: parseInt(document.getElementById('greet-cooldown').value)
+        },
+        outbox: {
+          windowSeconds: parseInt(document.getElementById('batch-window').value),
+          maxItems: parseInt(document.getElementById('batch-max-items').value),
+          maxChars: parseInt(document.getElementById('batch-max-chars').value),
+          separator: document.getElementById('batch-separator').value
+        }
+      };
+      
+      try {
+        const res = await fetch('/api/sidekick/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newConfig)
+        });
+        const data = await res.json();
+        if (data.success) {
+          config = data.config;
+          alert('Einstellungen gespeichert!');
+        }
+      } catch (err) {
+        console.error('Failed to save config:', err);
+        alert('Fehler beim Speichern!');
+      }
+    }
+    
+    // Fetch memory stats
+    async function fetchMemoryStats() {
+      try {
+        const res = await fetch('/api/sidekick/memory/stats');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('memory-users').textContent = data.stats.userCount || 0;
+          document.getElementById('memory-gifts').textContent = data.stats.totalGifts || 0;
+          document.getElementById('memory-follows').textContent = data.stats.totalFollows || 0;
+        }
+      } catch (err) {
+        console.error('Failed to fetch memory stats:', err);
+      }
+    }
+    
+    // Fetch top users
+    async function fetchTopUsers() {
+      try {
+        const res = await fetch('/api/sidekick/memory/top?limit=10');
+        const data = await res.json();
+        if (data.success) {
+          const container = document.getElementById('top-users');
+          if (data.users.length === 0) {
+            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine User gefunden</p>';
+            return;
+          }
+          container.innerHTML = data.users.map((user, i) => `
+            <div class="user-item">
+              <div>
+                <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
+                <div class="user-stats">
+                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👍 ${user.likes || 0}
+                </div>
+              </div>
+              <span class="badge badge-success">${Math.round(user.score || 0)}</span>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to fetch top users:', err);
+      }
+    }
+    
+    // Fetch events
+    async function fetchEvents() {
+      const filter = document.getElementById('event-filter').value;
+      try {
+        const url = filter 
+          ? `/api/sidekick/events?type=${filter}&limit=50`
+          : '/api/sidekick/events?limit=50';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success) {
+          const container = document.getElementById('event-log');
+          if (data.events.length === 0) {
+            container.innerHTML = '<p style="color: #666; text-align: center;">Keine Events</p>';
+            return;
+          }
+          container.innerHTML = data.events.reverse().map(event => {
+            const time = new Date(event.ts).toLocaleTimeString();
+            return `
+              <div class="event-item">
+                <span class="event-type ${event.type}">${event.type}</span>
+                <strong>${event.nickname || event.uid}</strong>
+                ${event.payload?.comment ? `: ${event.payload.comment.substring(0, 50)}...` : ''}
+                ${event.payload?.giftName ? `: ${event.payload.giftName}` : ''}
+                <span style="color: #666; float: right;">${time}</span>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      }
+    }
+    
+    // Fetch metrics for analytics
+    async function fetchMetrics() {
+      try {
+        const res = await fetch('/api/sidekick/metrics');
+        const data = await res.json();
+        if (data.success && data.metrics) {
+          // Update top gifters
+          const gifters = data.metrics.topGifters || [];
+          const container = document.getElementById('top-gifters');
+          if (gifters.length === 0) {
+            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Gifter</p>';
+          } else {
+            container.innerHTML = gifters.map((user, i) => `
+              <div class="user-item">
+                <div>
+                  <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
+                  <div class="user-stats">🎁 ${user.gift || 0} Gifts | 💎 ${user.diamonds || 0} Diamonds</div>
+                </div>
+                <span class="badge badge-danger">${user.diamonds || 0} 💎</span>
+              </div>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch metrics:', err);
+      }
+    }
+    
+    // Search users
+    async function searchUsers() {
+      const query = document.getElementById('search-user').value;
+      if (!query) return;
+      
+      try {
+        const res = await fetch(`/api/sidekick/memory/search?q=${encodeURIComponent(query)}&limit=20`);
+        const data = await res.json();
+        const container = document.getElementById('search-results');
+        if (data.success && data.users.length > 0) {
+          container.innerHTML = data.users.map(user => `
+            <div class="user-item">
+              <div>
+                <span class="user-nickname">${user.nickname || user.uid}</span>
+                <div class="user-stats">
+                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👥 ${user.joins || 0}
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Ergebnisse</p>';
+        }
+      } catch (err) {
+        console.error('Failed to search users:', err);
+      }
+    }
+    
+    // Button handlers
+    document.getElementById('btn-connect').addEventListener('click', async () => {
+      await fetch('/api/sidekick/animaze/connect', { method: 'POST' });
+      fetchStatus();
+    });
+    
+    document.getElementById('btn-disconnect').addEventListener('click', async () => {
+      await fetch('/api/sidekick/animaze/disconnect', { method: 'POST' });
+      fetchStatus();
+    });
+    
+    document.getElementById('btn-mute').addEventListener('click', async () => {
+      await fetch('/api/sidekick/mute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ muted: true })
+      });
+      fetchStatus();
+    });
+    
+    document.getElementById('btn-unmute').addEventListener('click', async () => {
+      await fetch('/api/sidekick/mute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ muted: false })
+      });
+      fetchStatus();
+    });
+    
+    document.getElementById('btn-reset').addEventListener('click', async () => {
+      if (confirm('Session wirklich zurücksetzen?')) {
+        await fetch('/api/sidekick/reset', { method: 'POST' });
+        fetchStatus();
+      }
+    });
+    
+    document.getElementById('btn-test').addEventListener('click', async () => {
+      const message = document.getElementById('test-message').value;
+      if (!message) return;
+      await fetch('/api/sidekick/animaze/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      document.getElementById('test-message').value = '';
+    });
+    
+    document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
+    
+    document.getElementById('btn-clear-memory').addEventListener('click', async () => {
+      if (confirm('Memory wirklich löschen?')) {
+        await fetch('/api/sidekick/memory/clear', { method: 'POST' });
+        fetchMemoryStats();
+        fetchTopUsers();
+      }
+    });
+    
+    document.getElementById('btn-search').addEventListener('click', searchUsers);
+    document.getElementById('search-user').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchUsers();
+    });
+    
+    document.getElementById('btn-refresh-events').addEventListener('click', fetchEvents);
+    document.getElementById('event-filter').addEventListener('change', fetchEvents);
+    
+    // Socket events
+    socket.on('sidekick:status', (data) => {
+      status = data;
+      updateStatusUI();
+    });
+    
+    // Initial load
+    fetchStatus();
+    fetchConfig();
+    fetchMemoryStats();
+    fetchTopUsers();
+    fetchEvents();
+    fetchMetrics();
+    
+    // Periodic updates
+    setInterval(fetchStatus, 2000);
+    setInterval(() => {
+      fetchMemoryStats();
+      fetchTopUsers();
+      fetchMetrics();
+    }, 10000);
+  </script>
+</body>
+</html>

@@ -6,346 +6,319 @@
   <title>LTTH Bootstrapper</title>
   <style>
     :root {
-      --bg-deep: #0a0f1a;
-      --bg-card: #111827;
-      --bg-elevated: #1a2332;
-      --border: rgba(255,255,255,0.08);
-      --text: #e2e8f0;
-      --text-dim: #8899b4;
-      --accent: #14b8a6;
-      --accent-glow: rgba(20,184,166,0.3);
-      --accent-gradient: linear-gradient(135deg, #14b8a6, #0ea5e9);
-      --danger: #ef4444;
-      --success: #22c55e;
+      --bg: #0a1220;
+      --panel: #111d31;
+      --panel-2: #172743;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #edf4ff;
+      --muted: #a7b6cc;
+      --accent: #4fd1c5;
+      --accent-2: #f6ad55;
+      --danger: #fc8181;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      margin: 0;
       min-height: 100vh;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg-deep);
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
       color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(79, 209, 197, 0.22), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(246, 173, 85, 0.16), transparent 30%),
+        linear-gradient(160deg, #08101b, #0f1b2e 45%, #08101b);
       display: grid;
       place-items: center;
-      padding: 20px;
-      background-image:
-        radial-gradient(ellipse 80% 60% at 0% 0%, rgba(20,184,166,0.08), transparent),
-        radial-gradient(ellipse 60% 50% at 100% 100%, rgba(14,165,233,0.06), transparent);
+      padding: 24px;
     }
+
     .shell {
-      width: min(860px, 100%);
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
+      width: min(920px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+      background: rgba(8, 16, 27, 0.88);
+      box-shadow: 0 30px 120px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(18px);
     }
-    .head {
-      padding: 32px 32px 20px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+
+    .hero {
+      padding: 28px 28px 20px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent);
     }
-    .head-top {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 12px;
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.04em;
     }
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      background: var(--accent-gradient);
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      font-weight: 800;
-      color: #fff;
-      flex-shrink: 0;
-    }
-    .head h1 {
-      font-size: clamp(22px, 3.5vw, 32px);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-    }
-    .head h1 span { color: var(--accent); }
+
     .subline {
-      color: var(--text-dim);
-      font-size: 15px;
+      margin: 0;
+      color: var(--muted);
+      max-width: 700px;
       line-height: 1.5;
-      max-width: 600px;
     }
-    .chips {
+
+    .meta {
+      margin-top: 18px;
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 14px;
+      gap: 10px;
     }
+
     .chip {
-      padding: 5px 12px;
-      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border: 1px solid var(--line);
       border-radius: 999px;
-      font-size: 12px;
-      color: var(--text-dim);
-      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 13px;
     }
-    .grid {
+
+    .content {
       display: grid;
-      grid-template-columns: 1.4fr 1fr;
+      grid-template-columns: 1.35fr 0.95fr;
     }
-    .main-panel {
-      padding: 28px 32px;
+
+    .panel {
+      padding: 28px;
     }
-    .side-panel {
-      padding: 28px 32px;
-      border-left: 1px solid var(--border);
-      background: rgba(255,255,255,0.02);
+
+    .panel + .panel {
+      border-left: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
     }
-    .progress-card {
+
+    .cta {
       display: grid;
       gap: 16px;
+      align-content: start;
     }
+
+    .progress-wrap {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--panel);
+    }
+
     .progress-track {
       width: 100%;
-      height: 14px;
+      height: 12px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.06);
       overflow: hidden;
-      position: relative;
+      background: rgba(255, 255, 255, 0.08);
     }
+
     .progress-bar {
       height: 100%;
       width: 0%;
       border-radius: 999px;
-      background: var(--accent-gradient);
-      transition: width 200ms ease-out;
-      position: relative;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 180ms ease-out;
     }
-    .progress-bar::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-      animation: shimmer 2s ease-in-out infinite;
-    }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    .progress-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-    .pct {
-      font-size: 28px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .pct span { color: var(--accent); }
-    .dl-stats {
-      display: flex;
-      gap: 16px;
-      font-size: 13px;
-      color: var(--text-dim);
-      font-variant-numeric: tabular-nums;
-    }
-    .dl-stats span { white-space: nowrap; }
+
     .status-line {
+      margin-top: 12px;
+      min-height: 24px;
+      color: var(--text);
       font-weight: 600;
-      font-size: 15px;
-      min-height: 22px;
     }
+
     .error-line {
+      min-height: 24px;
       color: var(--danger);
-      font-size: 13px;
-      min-height: 20px;
-      word-break: break-word;
+      font-size: 14px;
     }
+
     .actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
-      margin-top: 4px;
     }
+
     button {
       appearance: none;
       border: 0;
-      border-radius: 12px;
-      padding: 13px 22px;
+      border-radius: 14px;
+      padding: 14px 18px;
       font: inherit;
-      font-weight: 600;
-      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
-      transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+      transition: transform 120ms ease, opacity 120ms ease;
     }
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
     button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
+      opacity: 0.5;
+      cursor: wait;
       transform: none;
     }
-    .btn-primary {
-      background: var(--accent-gradient);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--accent-glow);
+
+    .primary {
+      background: linear-gradient(90deg, var(--accent), #63b3ed);
+      color: #07101b;
     }
-    .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 28px var(--accent-glow); }
-    .btn-secondary {
-      background: rgba(255,255,255,0.06);
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.08);
       color: var(--text);
-      border: 1px solid var(--border);
+      border: 1px solid var(--line);
     }
-    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
-    .btn-success {
-      background: var(--success);
-      color: #fff;
-    }
-    details.advanced {
-      border: 1px solid var(--border);
-      border-radius: 14px;
+
+    .advanced {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
       overflow: hidden;
-      margin-top: 4px;
     }
-    details.advanced summary {
+
+    .advanced summary {
       cursor: pointer;
       list-style: none;
-      padding: 14px 18px;
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--text-dim);
-      user-select: none;
+      padding: 16px 18px;
+      font-weight: 700;
     }
-    details.advanced summary::-webkit-details-marker { display: none; }
-    details.advanced summary:hover { background: rgba(255,255,255,0.02); }
+
+    .advanced summary::-webkit-details-marker {
+      display: none;
+    }
+
     .advanced-body {
       padding: 0 18px 18px;
       display: grid;
-      gap: 12px;
+      gap: 14px;
     }
+
     label {
       display: grid;
-      gap: 5px;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-    input, select {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--bg-elevated);
-      color: var(--text);
-      padding: 10px 13px;
-      font: inherit;
+      gap: 6px;
+      color: var(--muted);
       font-size: 14px;
     }
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
     }
-    .facts { display: grid; gap: 12px; }
+
+    .facts {
+      display: grid;
+      gap: 12px;
+    }
+
     .fact {
       padding: 14px 16px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
     }
+
     .fact strong {
       display: block;
       margin-bottom: 4px;
-      font-size: 12px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--text-dim);
+      color: var(--muted);
     }
-    .fact span { line-height: 1.45; font-size: 14px; }
-    .success-badge {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      color: var(--success);
-      font-weight: 600;
-    }
-    .success-badge.visible { display: flex; }
-    .success-badge svg { width: 20px; height: 20px; }
 
-    @media (max-width: 700px) {
-      .grid { grid-template-columns: 1fr; }
-      .side-panel { border-left: 0; border-top: 1px solid var(--border); }
-      .dl-stats { flex-wrap: wrap; gap: 8px; }
+    .fact span {
+      line-height: 1.45;
+    }
+
+    @media (max-width: 840px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .panel + .panel {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
     }
   </style>
 </head>
 <body>
   <main class="shell">
-    <section class="head">
-      <div class="head-top">
-        <div class="logo">LT</div>
-        <div>
-          <h1>Little <span>Tik</span>Tool <span>Helper</span></h1>
-        </div>
-      </div>
-      <p class="subline">Schnelle Installation ohne Admin-Rechte. LTTH wird lokal installiert &mdash; inklusive Node.js Runtime und allen Abh&auml;ngigkeiten.</p>
-      <div class="chips">
-        <span class="chip">Bootstrapper v{{ .BootstrapperVersion }}</span>
+    <section class="hero">
+      <h1>LTTH installieren</h1>
+      <p class="subline">Kleiner Download, saubere Per-User-Installation und danach startet LTTH direkt lokal. Keine Admin-Rechte, kein manuelles Node- oder npm-Setup.</p>
+      <div class="meta">
+        <span class="chip">Bootstrapper {{ .BootstrapperVersion }}</span>
         <span class="chip">{{ .Platform }} / {{ .Architecture }}</span>
-        <span class="chip">{{ .Channel }}-Kanal</span>
+        <span class="chip">Manifest: {{ .Channel }}</span>
       </div>
     </section>
 
-    <section class="grid">
-      <div class="main-panel">
-        <div class="progress-card">
-          <div class="progress-track">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
-
-          <div class="progress-info">
-            <div class="pct"><span id="pctNum">0</span>%</div>
-            <div class="dl-stats" id="dlStats">
-              <span id="dlSize">—</span>
-              <span id="dlSpeed">—</span>
-              <span id="dlEta">—</span>
+    <section class="content">
+      <div class="panel">
+        <div class="cta">
+          <div class="progress-wrap">
+            <div class="progress-track">
+              <div class="progress-bar" id="progressBar"></div>
             </div>
-          </div>
-
-          <div class="status-line" id="statusLine">Bereit zur Installation</div>
-          <div class="error-line" id="errorLine"></div>
-
-          <div class="success-badge" id="successBadge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-            LTTH wurde erfolgreich installiert
+            <div class="status-line" id="statusLine">Bereit zur Installation</div>
+            <div class="error-line" id="errorLine"></div>
           </div>
 
           <div class="actions">
-            <button class="btn-primary" id="installButton">Installieren</button>
-            <button class="btn-secondary" id="openButton" disabled>LTTH &ouml;ffnen</button>
+            <button class="primary" id="installButton">Installieren</button>
+            <button class="secondary" id="openButton" disabled>LTTH öffnen</button>
           </div>
 
           <details class="advanced">
-            <summary>Erweiterte Einstellungen</summary>
+            <summary>Advanced</summary>
             <div class="advanced-body">
-              <label>Installationsordner<input id="installDir" value="{{ .InstallDir }}"></label>
-              <label>Kanal<select id="channel"><option value="stable"{{ if eq .Channel "stable" }} selected{{ end }}>stable</option><option value="beta"{{ if eq .Channel "beta" }} selected{{ end }}>beta</option></select></label>
-              <label>Manifest-URL<input id="manifestUrl" value="{{ .ManifestURL }}"></label>
+              <label>
+                Installationsordner
+                <input id="installDir" value="{{ .InstallDir }}">
+              </label>
+              <label>
+                Kanal
+                <select id="channel">
+                  <option value="stable" {{ if eq .Channel "stable" }}selected{{ end }}>stable</option>
+                  <option value="beta" {{ if eq .Channel "beta" }}selected{{ end }}>beta</option>
+                </select>
+              </label>
+              <label>
+                Manifest-URL
+                <input id="manifestUrl" value="{{ .ManifestURL }}">
+              </label>
             </div>
           </details>
         </div>
       </div>
 
-      <aside class="side-panel">
+      <aside class="panel">
         <div class="facts">
           <div class="fact">
-            <strong>Keine Admin-Rechte</strong>
-            <span>LTTH wird per-user in <code>%LOCALAPPDATA%\LTTH</code> installiert. Kein UAC, keine System&auml;nderungen.</span>
+            <strong>Installationsmodell</strong>
+            <span>LTTH landet per-user in einem lokalen App-Verzeichnis. Deine Daten bleiben getrennt vom Installationspayload.</span>
           </div>
           <div class="fact">
-            <strong>Updates &amp; Updates</strong>
-            <span>Einfach den Installer erneut ausf&uuml;hren. Deine Daten in <code>%LOCALAPPDATA%\pupcidslittletiktokhelper</code> bleiben erhalten.</span>
+            <strong>Payload</strong>
+            <span>Der Bootstrapper lädt ein signierbares Release-Paket mit App, Runtime und Version-Metadaten.</span>
           </div>
           <div class="fact">
-            <strong>Alles dabei</strong>
-            <span>Node.js Runtime, Express-Backend, SQLite, &uuml;ber 30 Plugins &mdash; fertig konfiguriert.</span>
+            <strong>Updates</strong>
+            <span>Dasselbe Manifest-/Payload-Protokoll kann später für Reinstall und Update wiederverwendet werden.</span>
           </div>
         </div>
       </aside>
@@ -353,127 +326,78 @@
   </main>
 
   <script>
-    const $ = id => document.getElementById(id);
-    const installBtn = $('installButton');
-    const openBtn = $('openButton');
-    const progressBar = $('progressBar');
-    const pctNum = $('pctNum');
-    const statusLine = $('statusLine');
-    const errorLine = $('errorLine');
-    const dlSize = $('dlSize');
-    const dlSpeed = $('dlSpeed');
-    const dlEta = $('dlEta');
-    const successBadge = $('successBadge');
-    const installDirInput = $('installDir');
-    const channelInput = $('channel');
-    const manifestUrlInput = $('manifestUrl');
+    const installButton = document.getElementById('installButton');
+    const openButton = document.getElementById('openButton');
+    const progressBar = document.getElementById('progressBar');
+    const statusLine = document.getElementById('statusLine');
+    const errorLine = document.getElementById('errorLine');
+    const installDirInput = document.getElementById('installDir');
+    const channelInput = document.getElementById('channel');
+    const manifestUrlInput = document.getElementById('manifestUrl');
 
     let installing = false;
 
     function applyStatus(payload) {
-      const pct = payload.progress || 0;
-      progressBar.style.width = `${pct}%`;
-      pctNum.textContent = pct;
+      progressBar.style.width = `${payload.progress || 0}%`;
       statusLine.textContent = payload.status || 'Bereit';
-
-      if (payload.error) {
-        errorLine.textContent = payload.error;
-      } else {
-        errorLine.textContent = '';
-      }
-
-      // Parse download stats from status message
-      // Format: "Lade Payload herunter … 45 MB / 158 MB (12 MB/s, ETA 9s)"
-      const match = payload.status ? payload.status.match(/Lade Payload herunter … (\d+) MB \/ (\d+) MB \(([\d.]+) MB\/s, ETA (\d+)s\)/) : null;
-      if (match) {
-        dlSize.textContent = `${match[1]} / ${match[2]} MB`;
-        dlSpeed.textContent = `${match[3]} MB/s`;
-        dlEta.textContent = `${match[4]}s rest`;
-      } else if (pct > 0 && pct < 100) {
-        dlSize.textContent = `${pct}%`;
-      } else if (pct === 0 || pct === 100) {
-        dlSize.textContent = '—';
-        dlSpeed.textContent = '—';
-        dlEta.textContent = '—';
-      }
-
+      errorLine.textContent = payload.error || '';
       installDirInput.value = payload.installDir || installDirInput.value;
       manifestUrlInput.value = payload.manifestUrl || manifestUrlInput.value;
       channelInput.value = payload.channel || channelInput.value;
-
-      const isComplete = pct >= 100;
-      const hasError = !!payload.error;
-
-      openBtn.disabled = !payload.installed;
-      installBtn.disabled = installing || isComplete;
-
-      if (isComplete && !hasError) {
-        successBadge.classList.add('visible');
-        installBtn.textContent = 'Neu installieren';
-      } else if (installing) {
-        successBadge.classList.remove('visible');
-        installBtn.textContent = 'Installiere...';
-      } else {
-        successBadge.classList.remove('visible');
-        installBtn.textContent = 'Installieren';
-      }
+      openButton.disabled = !payload.installed;
+      installButton.disabled = installing;
     }
 
     async function loadConfig() {
-      try {
-        const r = await fetch('/api/config');
-        const data = await r.json();
-        if (data && data.status) applyStatus(data.status);
-      } catch (e) {
-        errorLine.textContent = e.message;
+      const response = await fetch('/api/config');
+      const payload = await response.json();
+      if (payload && payload.status) {
+        applyStatus(payload.status);
       }
     }
 
-    installBtn.addEventListener('click', async () => {
+    installButton.addEventListener('click', async () => {
       installing = true;
       applyStatus({ status: 'Installation wird vorbereitet...' });
-      try {
-        const r = await fetch('/api/install', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            installDir: installDirInput.value.trim(),
-            channel: channelInput.value,
-            manifestUrl: manifestUrlInput.value.trim()
-          })
-        });
-        if (!r.ok) {
-          const msg = await r.text();
-          installing = false;
-          errorLine.textContent = msg;
-          installBtn.disabled = false;
-        }
-      } catch (e) {
+      const response = await fetch('/api/install', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          installDir: installDirInput.value.trim(),
+          channel: channelInput.value,
+          manifestUrl: manifestUrlInput.value.trim()
+        })
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
         installing = false;
-        errorLine.textContent = e.message;
-        installBtn.disabled = false;
+        errorLine.textContent = message;
+        installButton.disabled = false;
       }
     });
 
-    openBtn.addEventListener('click', async () => {
-      try {
-        const r = await fetch('/api/open', { method: 'POST' });
-        if (!r.ok) errorLine.textContent = await r.text();
-      } catch (e) {
-        errorLine.textContent = e.message;
+    openButton.addEventListener('click', async () => {
+      const response = await fetch('/api/open', { method: 'POST' });
+      if (!response.ok) {
+        errorLine.textContent = await response.text();
       }
     });
 
-    const es = new EventSource('/events');
-    es.onmessage = (event) => {
-      try {
-        const p = JSON.parse(event.data);
-        if (p.progress >= 100 || p.error) installing = false;
-        applyStatus(p);
-      } catch (_) {}
+    const eventStream = new EventSource('/events');
+    eventStream.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.progress >= 100 || payload.error) {
+        installing = false;
+      }
+      applyStatus(payload);
     };
 
-    loadConfig();
+    loadConfig().catch((error) => {
+      errorLine.textContent = error.message;
+    });
   </script>
 </body>
 </html>

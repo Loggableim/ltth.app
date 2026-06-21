@@ -34,7 +34,9 @@
     animationSpeed: 'normal',
     toasterMode: false,
     kothMode: false,
-    pyramidMode: false
+    pyramidMode: false,
+    overlayWidth: 1920,
+    overlayHeight: 1080
   };
 
   // State
@@ -95,6 +97,16 @@
     config.toasterMode = params.get('toasterMode') === 'true';
     config.kothMode = params.get('kothMode') === 'true';
     config.pyramidMode = params.get('pyramidMode') === 'true';
+    config.overlayWidth = clampOverlayDimension(params.get('overlayWidth'), 1920, 320, 7680);
+    config.overlayHeight = clampOverlayDimension(params.get('overlayHeight'), 1080, 240, 4320);
+  }
+
+  function clampOverlayDimension(value, defaultValue, min, max) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) {
+      return defaultValue;
+    }
+    return Math.min(max, Math.max(min, parsed));
   }
 
   /**
@@ -121,6 +133,8 @@
     
     // Set all classes at once
     document.body.className = classes.join(' ');
+    document.documentElement.style.setProperty('--configured-overlay-width', `${config.overlayWidth}px`);
+    document.documentElement.style.setProperty('--configured-overlay-height', `${config.overlayHeight}px`);
   }
 
   /**
@@ -488,6 +502,8 @@
     config.showBadges = newConfig.showBadges !== undefined ? newConfig.showBadges : config.showBadges;
     config.showXPAwards = newConfig.showXPAwards !== undefined ? newConfig.showXPAwards : config.showXPAwards;
     config.toasterMode = newConfig.toasterMode !== undefined ? newConfig.toasterMode : config.toasterMode;
+    config.overlayWidth = newConfig.overlayWidth || config.overlayWidth;
+    config.overlayHeight = newConfig.overlayHeight || config.overlayHeight;
 
     // Apply theme changes
     applyTheme();

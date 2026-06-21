@@ -1,0 +1,23 @@
+{
+  "id": "viewer-leaderboard",
+  "name": "Viewer XP & Leaderboard",
+  "version": "2.1.0",
+  "description": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, daily bonuses, rate limiting, anti-spam, event logging, and gifter rankings in one unified plugin.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "overlay",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, and gifter rankings in one plugin. v2.1.0 adds rate limiting, anti-spam, full event logging, and opt-out system.",
+    "de": "Umfassendes Zuschauer-XP-System mit integrierter Gifter-Bestenliste. Alle XP-Tracking-, Leveling-, Badge- und Gifter-Ranking-Funktionen in einem Plugin. v2.1.0 fügt Rate Limiting, Anti-Spam, vollständiges Event-Logging und Opt-Out hinzu.",
+    "es": "Sistema integral de XP de espectadores con tabla de clasificación de donantes integrada. Todas las funciones de seguimiento de XP, nivelación, insignias y clasificación de donantes en un solo plugin.",
+    "fr": "Système complet d'XP des spectateurs avec classement des donateurs intégré. Toutes les fonctionnalités de suivi XP, de mise à niveau, de badges et de classement des donateurs dans un seul plugin."
+  }
+}

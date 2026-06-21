@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Bot Now Playing Overlay</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg: rgba(20, 24, 38, 0.5);
+      --card: rgba(20, 24, 38, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #38bdf8;
+      --accent-strong: #60a5fa;
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --visualizer-opacity: 0.7;
+      --visualizer-bg: rgba(0, 0, 0, 0.16);
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+      font-family: var(--font-family);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #overlay-root {
+      position: fixed;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      box-sizing: border-box;
+    }
+
+    .thumb.artwork {
+      border-radius: 50%;
+      animation: spin-artwork 8s linear infinite;
+      animation-play-state: running;
+    }
+    body.overlay-paused .thumb.artwork {
+      animation-play-state: paused;
+    }
+    @keyframes spin-artwork {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .requester-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      background: rgba(15, 23, 42, 0.65);
+      flex-shrink: 0;
+    }
+
+    /* Position presets */
+    .pos-top-left { justify-content: flex-start; align-items: flex-start; }
+    .pos-top-right { justify-content: flex-end; align-items: flex-start; }
+    .pos-bottom-left { justify-content: flex-start; align-items: flex-end; }
+    .pos-bottom-right { justify-content: flex-end; align-items: flex-end; }
+    .pos-top-center { justify-content: center; align-items: flex-start; }
+    .pos-bottom-center { justify-content: center; align-items: flex-end; }
+
+    /* ===== COMPACT design (default / existing) ===== */
+    #widget-compact {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      min-width: 280px;
+      max-width: 520px;
+      padding: 12px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+    #widget-compact.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #widget-compact .thumb {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      background-size: cover;
+      background-position: center;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #widget-compact .meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex: 1;
+    }
+    #widget-compact .title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #widget-compact .artist,
+    #widget-compact .requester {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #widget-compact .progress {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #widget-compact .bar {
+      position: relative;
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    #widget-compact .bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+      transition: width 0.3s ease;
+    }
+    #widget-compact .time {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 84px;
+      text-align: right;
+    }
+
+    /* ===== FULLWIDTH design ===== */
+    #widget-fullwidth {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      width: 100vw;
+      padding: 10px 20px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      box-sizing: border-box;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+    #widget-fullwidth.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #widget-fullwidth .thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      background-size: cover;
+      background-position: center;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #widget-fullwidth .meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    #widget-fullwidth .title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #widget-fullwidth .artist {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #widget-fullwidth .requester {
+      margin: 0;
+      font-size: 11px;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #widget-fullwidth .progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 220px;
+      flex-shrink: 0;
+    }
+    #widget-fullwidth .bar {
+      position: relative;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    #widget-fullwidth .bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+      transition: width 0.3s ease;
+    }
+    #widget-fullwidth .time {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+    }
+    #widget-fullwidth .queue-count {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+      padding-left: 8px;
+    }
+
+    /* fullwidth needs no padding in overlay-root, override */
+    .design-fullwidth #overlay-root {
+      padding: 0;
+      align-items: flex-end;
+    }
+    .design-fullwidth .pos-top-left,
+    .design-fullwidth .pos-top-right,
+    .design-fullwidth .pos-top-center {
+      align-items: flex-start;
+    }
+
+    /* ===== MINIMAL design ===== */
+    #widget-minimal {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 600px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      overflow: hidden;
+    }
+    #widget-minimal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #widget-minimal .marquee-wrapper {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    #widget-minimal .marquee-text {
+      display: inline-block;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      animation: none;
+    }
+    #widget-minimal .marquee-text.scrolling {
+      animation: marquee-scroll 15s linear infinite;
+    }
+    @keyframes marquee-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ===== CARD design ===== */
+    #widget-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 280px;
+      padding: 20px 18px 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+      transition: opacity 250ms ease, transform 250ms ease;
+    }
+    #widget-card.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    #widget-card .thumb {
+      width: 200px;
+      height: 200px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      background-size: cover;
+      background-position: center;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #widget-card .meta {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: center;
+      text-align: center;
+    }
+    #widget-card .title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #widget-card .artist {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #widget-card .requester {
+      margin: 0;
+      font-size: 12px;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #widget-card .progress {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #widget-card .bar {
+      position: relative;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    #widget-card .bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+      transition: width 0.3s ease;
+    }
+    #widget-card .time {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+    }
+    #widget-card .queue-preview {
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+    #widget-card .queue-preview-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+    #widget-card .queue-preview-item {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 2px 0;
+    }
+
+    /* ===== Themes ===== */
+    .theme-dark {
+      --card: rgba(12, 16, 24, 0.8);
+      --border: rgba(255, 255, 255, 0.06);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    }
+    .theme-default {
+      --card: rgba(20, 24, 38, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #38bdf8;
+      --accent-strong: #60a5fa;
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --visualizer-opacity: 0.7;
+      --visualizer-bg: rgba(5, 12, 28, 0.3);
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    }
+    .theme-cyberpunk {
+      --card: rgba(8, 8, 20, 0.8);
+      --border: rgba(14, 255, 255, 0.35);
+      --text: #ecfeff;
+      --muted: #7dd3fc;
+      --accent: #ff00ff;
+      --accent-strong: #00f5ff;
+      --font-family: 'Orbitron', 'Rajdhani', 'Inter', sans-serif;
+      --visualizer-opacity: 0.88;
+      --visualizer-bg: rgba(10, 2, 26, 0.5);
+      --shadow: 0 0 36px rgba(255, 0, 255, 0.35);
+    }
+    .theme-minimal {
+      --card: rgba(15, 23, 42, 0.56);
+      --border: rgba(255, 255, 255, 0.18);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #f8fafc;
+      --accent-strong: #dbeafe;
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --visualizer-opacity: 0.45;
+      --visualizer-bg: rgba(255, 255, 255, 0.05);
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+    }
+    .theme-neon {
+      --card: rgba(10, 12, 26, 0.85);
+      --border: rgba(94, 234, 212, 0.35);
+      --text: #e2f3f5;
+      --muted: #94d2bd;
+      --accent: #7c3aed;
+      --accent-strong: #5eead4;
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --visualizer-opacity: 0.82;
+      --visualizer-bg: rgba(21, 4, 42, 0.35);
+      --shadow: 0 14px 48px rgba(124, 58, 237, 0.35);
+    }
+    .theme-cyberpunk .title,
+    .theme-cyberpunk .queue-preview-label {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .theme-minimal #widget-card,
+    .theme-minimal #widget-compact,
+    .theme-minimal #widget-fullwidth,
+    .theme-minimal #widget-minimal {
+      backdrop-filter: none;
+    }
+
+    .visualizer-canvas {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      width: calc(100vw - 32px);
+      height: 80px;
+      border-radius: 10px;
+      pointer-events: none;
+      background: var(--visualizer-bg);
+      opacity: 0;
+      transition: opacity 180ms ease;
+      z-index: 60;
+    }
+    .visualizer-canvas.active {
+      opacity: var(--visualizer-opacity);
+    }
+
+    /* ===== Vote-Skip Progress Bar ===== */
+    .vote-skip-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      opacity: 0;
+      transition: opacity 300ms ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .vote-skip-bar.active {
+      opacity: 1;
+    }
+    .vote-skip-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f59e0b, #ef4444);
+      transition: width 400ms ease;
+      border-radius: 0 2px 2px 0;
+    }
+    .vote-skip-label {
+      position: fixed;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 300ms ease;
+      z-index: 101;
+      pointer-events: none;
+      white-space: nowrap;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+    .vote-skip-label.active {
+      opacity: 1;
+    }
+
+    /* ===== Idle State ===== */
+    .idle-message {
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 300ms ease, transform 300ms ease;
+    }
+    .idle-message.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .up-next-widget {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 300px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 250ms ease, transform 250ms ease;
+      pointer-events: none;
+    }
+    .up-next-widget.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .up-next-title {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .up-next-item {
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay-root" class="pos-bottom-left">
+
+    <!-- COMPACT (default) -->
+    <div id="widget-compact" style="display:none">
+      <div id="compact-thumb" class="thumb" aria-hidden="true"></div>
+      <div class="meta">
+        <p id="compact-title" class="title">Waiting for music...</p>
+        <p id="compact-artist" class="artist"></p>
+        <p id="compact-requester" class="requester"></p>
+        <div class="progress">
+          <div class="bar">
+            <div id="compact-bar-fill" class="bar-fill"></div>
+          </div>
+          <div id="compact-time" class="time">--:-- / --:--</div>
+        </div>
+      </div>
+      <img id="compact-avatar" class="requester-avatar" alt="" style="display:none">
+    </div>
+
+    <!-- FULLWIDTH -->
+    <div id="widget-fullwidth" style="display:none">
+      <div id="fullwidth-thumb" class="thumb" aria-hidden="true"></div>
+      <div class="meta">
+        <p id="fullwidth-title" class="title">Waiting for music...</p>
+        <p id="fullwidth-artist" class="artist"></p>
+        <p id="fullwidth-requester" class="requester"></p>
+      </div>
+      <img id="fullwidth-avatar" class="requester-avatar" alt="" style="display:none">
+      <div class="progress-wrap">
+        <div class="bar">
+          <div id="fullwidth-bar-fill" class="bar-fill"></div>
+        </div>
+        <div id="fullwidth-time" class="time">--:-- / --:--</div>
+      </div>
+      <div id="fullwidth-queue-count" class="queue-count"></div>
+    </div>
+
+    <!-- MINIMAL -->
+    <div id="widget-minimal" style="display:none">
+      <div class="marquee-wrapper">
+        <span id="minimal-text" class="marquee-text">🎵 Waiting for music...</span>
+      </div>
+    </div>
+
+    <!-- CARD -->
+    <div id="widget-card" style="display:none">
+      <div id="card-thumb" class="thumb" aria-hidden="true"></div>
+      <img id="card-avatar" class="requester-avatar" alt="" style="display:none">
+      <div class="meta">
+        <p id="card-title" class="title">Waiting for music...</p>
+        <p id="card-artist" class="artist"></p>
+        <p id="card-requester" class="requester"></p>
+      </div>
+      <div class="progress">
+        <div class="bar">
+          <div id="card-bar-fill" class="bar-fill"></div>
+        </div>
+        <div id="card-time" class="time">--:-- / --:--</div>
+      </div>
+      <div id="card-queue-preview" class="queue-preview" style="display:none">
+        <div class="queue-preview-label">Nächste Songs</div>
+        <div id="card-queue-items"></div>
+      </div>
+    </div>
+
+    <div class="idle-message" id="idle-message">🎵 Queue ist leer – !sr um einen Song zu requesten</div>
+
+  </div>
+
+  <canvas id="visualizer-canvas" class="visualizer-canvas" width="1024" height="80" aria-hidden="true"></canvas>
+
+  <div class="vote-skip-bar" id="vote-skip-bar">
+    <div class="fill" id="vote-skip-fill"></div>
+  </div>
+  <div class="vote-skip-label" id="vote-skip-label"></div>
+  <div id="up-next-widget" class="up-next-widget">
+    <div class="up-next-title">Up Next</div>
+    <div id="up-next-items"></div>
+  </div>
+
+  <script>
+    (() => {
+      const allowedPositions = new Set([
+        'top-left', 'top-right', 'bottom-left', 'bottom-right', 'top-center', 'bottom-center'
+      ]);
+      const themeAliases = {
+        glass: 'default',
+        dark: 'default',
+        sunset: 'cyberpunk',
+        ice: 'minimal'
+      };
+      const allowedThemes = new Set(['default', 'cyberpunk', 'minimal', 'neon']);
+      const allowedDesigns = new Set(['compact', 'fullwidth', 'minimal', 'card']);
+
+      const params = new URLSearchParams(window.location.search);
+      const position = allowedPositions.has(params.get('position')) ? params.get('position') : 'bottom-left';
+      const rawTheme = String(params.get('theme') || 'default').toLowerCase();
+      const normalizedTheme = themeAliases[rawTheme] || rawTheme;
+      const theme = allowedThemes.has(normalizedTheme) ? normalizedTheme : 'default';
+      const design = allowedDesigns.has(params.get('design')) ? params.get('design') : 'compact';
+
+      const root = document.getElementById('overlay-root');
+      root.classList.add(`pos-${position}`);
+      document.body.classList.add(`theme-${theme}`);
+      document.body.classList.add(`design-${design}`);
+      refreshVisualizerThemeColors();
+
+      // Show only the active design widget
+      const widgetEl = document.getElementById(`widget-${design}`);
+      if (widgetEl) widgetEl.style.display = '';
+
+      // ---- Element refs per design ----
+      const refs = {
+        compact: {
+          widget: document.getElementById('widget-compact'),
+          thumb: document.getElementById('compact-thumb'),
+          avatar: document.getElementById('compact-avatar'),
+          title: document.getElementById('compact-title'),
+          artist: document.getElementById('compact-artist'),
+          requester: document.getElementById('compact-requester'),
+          barFill: document.getElementById('compact-bar-fill'),
+          time: document.getElementById('compact-time')
+        },
+        fullwidth: {
+          widget: document.getElementById('widget-fullwidth'),
+          thumb: document.getElementById('fullwidth-thumb'),
+          avatar: document.getElementById('fullwidth-avatar'),
+          title: document.getElementById('fullwidth-title'),
+          artist: document.getElementById('fullwidth-artist'),
+          requester: document.getElementById('fullwidth-requester'),
+          barFill: document.getElementById('fullwidth-bar-fill'),
+          time: document.getElementById('fullwidth-time'),
+          queueCount: document.getElementById('fullwidth-queue-count')
+        },
+        minimal: {
+          widget: document.getElementById('widget-minimal'),
+          text: document.getElementById('minimal-text')
+        },
+        card: {
+          widget: document.getElementById('widget-card'),
+          thumb: document.getElementById('card-thumb'),
+          avatar: document.getElementById('card-avatar'),
+          title: document.getElementById('card-title'),
+          artist: document.getElementById('card-artist'),
+          requester: document.getElementById('card-requester'),
+          barFill: document.getElementById('card-bar-fill'),
+          time: document.getElementById('card-time'),
+          queuePreview: document.getElementById('card-queue-preview'),
+          queueItems: document.getElementById('card-queue-items')
+        }
+      };
+
+      const r = refs[design];
+
+      let socket = null;
+      let currentTrack = null;
+      let state = 'idle';
+      let progressTimer = null;
+      let pausedProgress = 0;
+      let currentQueue = [];
+      let idleHideTimer = null;
+      const visualizerCanvas = document.getElementById('visualizer-canvas');
+      let visualizerCtx = null;
+      let visualizerAudioContext = null;
+      let visualizerAnalyser = null;
+      let visualizerSource = null;
+      let visualizerData = null;
+      let visualizerAnimationFrame = null;
+      let visualizerMediaElement = null;
+      let visualizerAccentColor = '#38bdf8';
+      let visualizerAccentStrongColor = '#60a5fa';
+      // Balance between responsive beat reaction and smooth bar movement in OBS.
+      const VISUALIZER_SMOOTHING_CONSTANT = 0.78;
+      // Good readability/performance balance for 1080p overlays.
+      const VISUALIZER_BAR_COUNT = 48;
+      const VISUALIZER_BAR_GAP = 3;
+      // Emphasizes stronger frequencies without losing quieter movement.
+      const VISUALIZER_EASING_EXPONENT = 1.25;
+      const UP_NEXT_LIMIT = 3;
+      const upNextWidget = document.getElementById('up-next-widget');
+      const upNextItems = document.getElementById('up-next-items');
+
+      function handleVoteSkipUpdate(data) {
+        const bar = document.getElementById('vote-skip-bar');
+        const fill = document.getElementById('vote-skip-fill');
+        const label = document.getElementById('vote-skip-label');
+        if (!bar || !fill || !label) return;
+
+        const votes = data.votes || 0;
+        const required = data.required || 1;
+        const percent = Math.min((votes / required) * 100, 100);
+
+        fill.style.width = `${percent}%`;
+        label.textContent = `Vote Skip: ${votes}/${required}`;
+
+        if (votes > 0 && !data.skipped) {
+          bar.classList.add('active');
+          label.classList.add('active');
+        } else {
+          bar.classList.remove('active');
+          label.classList.remove('active');
+        }
+      }
+
+      function handlePlaybackStopped() {
+        clearTrack();
+        // Show idle message
+        const idle = document.getElementById('idle-message');
+        if (idle) {
+          idle.classList.add('visible');
+          // Clear any existing timer before setting a new one
+          if (idleHideTimer) { clearTimeout(idleHideTimer); }
+          idleHideTimer = setTimeout(() => {
+            idle.classList.remove('visible');
+            idleHideTimer = null;
+          }, 10000);
+        }
+      }
+
+      function connect() {
+        if (typeof io !== 'function') {
+          console.warn('[music-bot overlay] Socket.IO not available.');
+          return;
+        }
+        socket = io();
+        socket.on('connect', () => socket.emit('musicbot:request-status'));
+        socket.on('musicbot:now-playing', handleNowPlaying);
+        socket.on('musicbot:paused', () => setState('paused'));
+        socket.on('musicbot:resumed', () => setState('playing'));
+        socket.on('musicbot:playback-stopped', handlePlaybackStopped);
+        socket.on('musicbot:queue-update', handleQueueUpdate);
+        socket.on('musicbot:volume-changed', () => {});
+        socket.on('musicbot:playback-sync', handleNowPlaying);
+        socket.on('musicbot:vote-skip-update', handleVoteSkipUpdate);
+      }
+
+      function handleQueueUpdate(payload) {
+        if (Array.isArray(payload?.queue)) {
+          currentQueue = payload.queue;
+        } else if (typeof payload?.length === 'number') {
+          // minimal payload without queue array
+        }
+        renderQueueExtras();
+      }
+
+      function handleNowPlaying(payload) {
+        if (!payload) { clearTrack(); return; }
+        const duration = Number(payload.duration) || 0;
+        const positionSeconds = Number(payload.position);
+        const baseStarted =
+          Number.isFinite(positionSeconds) && positionSeconds >= 0
+            ? Date.now() - positionSeconds * 1000
+            : payload.startedAt || Date.now();
+        currentTrack = {
+          title: payload.title || 'Unbekannter Titel',
+          artist: payload.artist || '',
+          requestedBy: payload.requestedBy || '',
+          requesterAvatar: payload.requesterAvatar || null,
+          duration,
+          startedAt: baseStarted,
+          thumbnail: payload.thumbnail || null,
+          state: payload.state || 'playing'
+        };
+        state = currentTrack.state || 'playing';
+        document.body.classList.toggle('overlay-paused', state === 'paused');
+        pausedProgress = 0;
+        tryConnectVisualizer();
+
+        // Hide idle message when a track starts
+        const idleMsg = document.getElementById('idle-message');
+        if (idleMsg) {
+          idleMsg.classList.remove('visible');
+          if (idleHideTimer) { clearTimeout(idleHideTimer); idleHideTimer = null; }
+        }
+
+        // Reset vote-skip bar when a new track starts
+        const voteBar = document.getElementById('vote-skip-bar');
+        const voteLabel = document.getElementById('vote-skip-label');
+        if (voteBar) voteBar.classList.remove('active');
+        if (voteLabel) voteLabel.classList.remove('active');
+
+        renderTrack();
+        setVisualizerActive(state === 'playing');
+      }
+
+      function renderTrack() {
+        if (!currentTrack) return;
+
+        if (design === 'compact' || design === 'fullwidth' || design === 'card') {
+          r.widget.classList.add('visible');
+          r.title.textContent = currentTrack.title;
+          if (r.artist) r.artist.textContent = currentTrack.artist || ' ';
+          if (r.requester) {
+            r.requester.textContent = currentTrack.requestedBy
+              ? `Requested by @${currentTrack.requestedBy}` : '';
+          }
+          if (r.thumb) {
+            r.thumb.classList.add('artwork');
+            r.thumb.style.backgroundImage = currentTrack.thumbnail
+              ? `url('${currentTrack.thumbnail}')`
+              : 'linear-gradient(135deg, rgba(56,189,248,0.35), rgba(14,165,233,0.2))';
+          }
+          if (r.avatar) {
+            if (currentTrack.requesterAvatar) {
+              r.avatar.src = currentTrack.requesterAvatar;
+              r.avatar.style.display = '';
+            } else {
+              r.avatar.style.display = 'none';
+              r.avatar.removeAttribute('src');
+            }
+          }
+          renderQueueExtras();
+          startProgressLoop();
+        } else if (design === 'minimal') {
+          r.widget.classList.add('visible');
+          const label = currentTrack.artist
+            ? `🎵 ${currentTrack.title} – ${currentTrack.artist}`
+            : `🎵 ${currentTrack.title}`;
+          r.text.textContent = label;
+          // Enable marquee if text is long
+          const wrapperWidth = r.widget.offsetWidth - 32;
+          const textWidth = r.text.scrollWidth;
+          if (textWidth > wrapperWidth) {
+            // Duplicate text for seamless loop
+            r.text.textContent = `${label}   •   ${label}`;
+            r.text.classList.add('scrolling');
+          } else {
+            r.text.classList.remove('scrolling');
+          }
+        }
+      }
+
+      function renderQueueExtras() {
+        const upNextSongs = currentQueue.slice(0, UP_NEXT_LIMIT);
+        if (upNextWidget && upNextItems) {
+          if (upNextSongs.length > 0) {
+            upNextWidget.classList.add('visible');
+            upNextItems.innerHTML = upNextSongs
+              .map((s, i) => {
+                const label = s.artist ? `${s.title} – ${s.artist}` : s.title;
+                return `<div class="up-next-item">${i + 1}. ${label}</div>`;
+              })
+              .join('');
+          } else {
+            upNextWidget.classList.remove('visible');
+            upNextItems.innerHTML = '';
+          }
+        }
+
+        if (design === 'fullwidth' && r.queueCount) {
+          const qLen = currentQueue.length;
+          r.queueCount.textContent = qLen > 0 ? `🎵 +${qLen} in Queue` : '';
+        }
+        if (design === 'card' && r.queuePreview && r.queueItems) {
+          const cardPreviewSongs = currentQueue.slice(0, UP_NEXT_LIMIT);
+          if (cardPreviewSongs.length > 0) {
+            r.queuePreview.style.display = '';
+            r.queueItems.innerHTML = cardPreviewSongs
+              .map((s, i) => {
+                const label = s.artist ? `${s.title} – ${s.artist}` : s.title;
+                return `<div class="queue-preview-item">${i + 1}. ${label}</div>`;
+              })
+              .join('');
+          } else {
+            r.queuePreview.style.display = 'none';
+          }
+        }
+      }
+
+      function setState(nextState) {
+        state = nextState;
+        document.body.classList.toggle('overlay-paused', state === 'paused');
+        if (state === 'paused') {
+          pausedProgress = computeElapsed();
+          updateProgress(true);
+          setVisualizerActive(false);
+        }
+        if (state === 'playing' && currentTrack) {
+          if (pausedProgress && currentTrack.duration) {
+            currentTrack.startedAt = Date.now() - pausedProgress * 1000;
+          }
+          startProgressLoop();
+          pausedProgress = 0;
+          setVisualizerActive(true);
+        }
+      }
+
+      function clearTrack() {
+        currentTrack = null;
+        document.body.classList.remove('overlay-paused');
+        if (r.widget) r.widget.classList.remove('visible');
+        stopProgressLoop();
+        if (r.barFill) r.barFill.style.width = '0%';
+        if (r.time) r.time.textContent = '--:-- / --:--';
+        if (r.avatar) {
+          r.avatar.style.display = 'none';
+          r.avatar.removeAttribute('src');
+        }
+        if (design === 'minimal' && r.text) {
+          r.text.textContent = '🎵 Waiting for music...';
+          r.text.classList.remove('scrolling');
+        }
+        setVisualizerActive(false);
+      }
+
+      function startProgressLoop() {
+        stopProgressLoop();
+        updateProgress();
+        if (design !== 'minimal') {
+          progressTimer = setInterval(updateProgress, 1000);
+        }
+      }
+
+      function stopProgressLoop() {
+        if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+      }
+
+      function updateProgress(force = false) {
+        if (!currentTrack || design === 'minimal') return;
+        if (!r.barFill || !r.time) return;
+        const duration = currentTrack.duration || 0;
+        const elapsed = state === 'paused' ? pausedProgress : computeElapsed();
+        const clamped = duration > 0 ? Math.min(elapsed, duration) : elapsed;
+        const percent = duration > 0 ? (clamped / duration) * 100 : 0;
+        if (state === 'playing' || force) {
+          r.barFill.style.width = `${Math.min(100, percent)}%`;
+        }
+        r.time.textContent = `${formatTime(clamped)} / ${duration ? formatTime(duration) : '--:--'}`;
+        if (duration > 0 && clamped >= duration && state === 'playing') {
+          clearTrack();
+        }
+      }
+
+      function computeElapsed() {
+        if (!currentTrack?.startedAt) return 0;
+        return Math.max(0, (Date.now() - currentTrack.startedAt) / 1000);
+      }
+
+      function refreshVisualizerThemeColors() {
+        const styles = getComputedStyle(document.body);
+        visualizerAccentColor = styles.getPropertyValue('--accent').trim() || '#38bdf8';
+        visualizerAccentStrongColor = styles.getPropertyValue('--accent-strong').trim() || '#60a5fa';
+      }
+
+      function initVisualizer() {
+        if (
+          !visualizerCanvas
+          || (typeof window.AudioContext !== 'function' && typeof window.webkitAudioContext !== 'function')
+        ) {
+          return;
+        }
+        tryConnectVisualizer();
+        const observer = new MutationObserver(() => {
+          if (!visualizerSource) {
+            tryConnectVisualizer();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+
+      function tryConnectVisualizer() {
+        if (visualizerSource) return true;
+        const media = findVisualizerMediaElement();
+        if (!media) {
+          setVisualizerActive(false);
+          return false;
+        }
+        visualizerMediaElement = media;
+        // Optional visualizer path: this can fail on restricted/unsupported media elements.
+        // In that case we keep the overlay functional and simply hide the visualizer.
+        try {
+          if (!visualizerAudioContext) {
+            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+            visualizerAudioContext = new AudioContextConstructor();
+          }
+          if (visualizerAudioContext.state === 'suspended') {
+            visualizerAudioContext.resume().catch(() => {
+              // Visualizer is optional; keep overlay functional if autoplay policy blocks resume.
+            });
+          }
+          visualizerAnalyser = visualizerAudioContext.createAnalyser();
+          visualizerAnalyser.fftSize = 256;
+          visualizerAnalyser.smoothingTimeConstant = VISUALIZER_SMOOTHING_CONSTANT;
+          visualizerSource = visualizerAudioContext.createMediaElementSource(media);
+          visualizerSource.connect(visualizerAnalyser);
+          visualizerAnalyser.connect(visualizerAudioContext.destination);
+          visualizerData = new Uint8Array(visualizerAnalyser.frequencyBinCount);
+          visualizerCtx = visualizerCanvas.getContext('2d');
+          if (visualizerCtx) {
+            startVisualizerLoop();
+            setVisualizerActive(state === 'playing');
+            return true;
+          }
+        } catch (_err) {
+          visualizerSource = null;
+          visualizerAnalyser = null;
+          visualizerData = null;
+          setVisualizerActive(false);
+        }
+        return false;
+      }
+
+      function findVisualizerMediaElement() {
+        // Optional extension point: external scripts may set window.musicBotVisualizerAudio
+        // to a HTMLMediaElement that carries the overlay audio source.
+        if (window.musicBotVisualizerAudio && window.musicBotVisualizerAudio instanceof HTMLMediaElement) {
+          return window.musicBotVisualizerAudio;
+        }
+        return document.querySelector('audio[data-musicbot-visualizer], video[data-musicbot-visualizer], audio, video');
+      }
+
+      function startVisualizerLoop() {
+        if (visualizerAnimationFrame) cancelAnimationFrame(visualizerAnimationFrame);
+        const draw = () => {
+          visualizerAnimationFrame = requestAnimationFrame(draw);
+          if (!visualizerCtx || !visualizerAnalyser || !visualizerData) return;
+          const width = visualizerCanvas.clientWidth || visualizerCanvas.width;
+          const height = visualizerCanvas.clientHeight || visualizerCanvas.height;
+          if (visualizerCanvas.width !== width || visualizerCanvas.height !== height) {
+            visualizerCanvas.width = width;
+            visualizerCanvas.height = height;
+          }
+
+          visualizerAnalyser.getByteFrequencyData(visualizerData);
+          visualizerCtx.clearRect(0, 0, width, height);
+          const barCount = VISUALIZER_BAR_COUNT;
+          const gap = VISUALIZER_BAR_GAP;
+          const barWidth = Math.max(2, (width - (barCount - 1) * gap) / barCount);
+          const active = state === 'playing' && visualizerCanvas.classList.contains('active');
+
+          for (let i = 0; i < barCount; i += 1) {
+            const idx = Math.floor((i / barCount) * visualizerData.length);
+            const value = visualizerData[idx] / 255;
+            const eased = Math.pow(value, VISUALIZER_EASING_EXPONENT);
+            const minHeight = active ? 2 : 1;
+            const barHeight = active ? Math.max(minHeight, eased * (height - 6)) : minHeight;
+            const x = i * (barWidth + gap);
+            const y = height - barHeight;
+            const gradient = visualizerCtx.createLinearGradient(0, y, 0, height);
+            gradient.addColorStop(0, visualizerAccentColor);
+            gradient.addColorStop(1, visualizerAccentStrongColor);
+            visualizerCtx.fillStyle = gradient;
+            visualizerCtx.fillRect(x, y, barWidth, barHeight);
+          }
+        };
+        draw();
+      }
+
+      function setVisualizerActive(isActive) {
+        if (!visualizerCanvas) return;
+        visualizerCanvas.classList.toggle('active', Boolean(isActive && visualizerAnalyser));
+      }
+
+      function formatTime(seconds) {
+        if (!Number.isFinite(seconds)) return '--:--';
+        const total = Math.max(0, Math.floor(seconds));
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
+
+      // Expose small debug API for manual previews
+      window.musicBotOverlay = {
+        show(track) {
+          handleNowPlaying({
+            title: track?.title || 'Sample Song',
+            artist: track?.artist || 'Sample Artist',
+            requestedBy: track?.requestedBy || 'viewer',
+            duration: track?.duration ?? 240,
+            startedAt: Date.now(),
+            thumbnail: track?.thumbnail || null,
+            state: 'playing'
+          });
+        },
+        hide: clearTrack
+      };
+
+      initVisualizer();
+      connect();
+    })();
+  </script>
+</body>
+</html>

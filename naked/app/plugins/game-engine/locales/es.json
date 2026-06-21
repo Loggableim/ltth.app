@@ -1,0 +1,151 @@
+{
+  "game_engine": {
+    "title": "LTTH Game Engine - Panel de Administración",
+    "tabs": {
+      "connect4": "Connect4",
+      "chess": "Ajedrez",
+      "plinko": "Plinko",
+      "wheel": "Rueda de la Fortuna",
+      "triggers": "Disparadores",
+      "xp_rewards": "Recompensas XP",
+      "media": "Medios",
+      "active_game": "Juego Activo",
+      "stats": "Estadísticas"
+    },
+    "connect4": {
+      "title": "Configuración de Connect4",
+      "board_design": "Diseño del Tablero",
+      "board_color": "Color del Tablero",
+      "player1_color": "Color Jugador 1",
+      "player2_color": "Color Jugador 2",
+      "text_color": "Color del Texto",
+      "font_family": "Familia de Fuente",
+      "show_coordinates": "Mostrar Coordenadas",
+      "animation_speed": "Velocidad de Animación (ms)",
+      "streamer_role": "Rol del Streamer",
+      "role_player1": "Jugador 1 (Rojo)",
+      "role_player2": "Jugador 2 (Amarillo)",
+      "challenge_flow": "Configuración de Desafío",
+      "show_challenge_screen": "Mostrar Pantalla de Desafío",
+      "challenge_timeout": "Tiempo de Espera del Desafío (segundos)",
+      "leaderboard": "Configuración de Tabla de Clasificación",
+      "leaderboard_enabled": "Mostrar Tabla de Clasificación Después del Juego",
+      "leaderboard_display_time": "Tiempo de Visualización por Tabla (segundos)",
+      "leaderboard_types": "Tablas a Mostrar",
+      "leaderboard_daily": "Diaria",
+      "leaderboard_season": "Temporada",
+      "leaderboard_lifetime": "Todo el Tiempo",
+      "leaderboard_elo": "ELO",
+      "save_config": "Guardar Configuración",
+      "config_saved": "¡Configuración guardada exitosamente!"
+    },
+    "chess": {
+      "title": "Configuración de Ajedrez",
+      "board_design": "Diseño del Tablero",
+      "board_theme": "Tema del Tablero",
+      "theme_dark": "Oscuro",
+      "theme_light": "Claro",
+      "theme_wood": "Madera",
+      "save_config": "Guardar Configuración",
+      "config_saved": "¡Configuración guardada exitosamente!"
+    },
+    "plinko": {
+      "title": "Configuración de Plinko",
+      "slot_editor": "Editor de Ranuras",
+      "add_slot": "Agregar Ranura",
+      "multiplier": "Multiplicador",
+      "color": "Color",
+      "physics": "Configuración de Física",
+      "gravity": "Gravedad",
+      "save_config": "Guardar Configuración",
+      "config_saved": "¡Configuración guardada exitosamente!"
+    },
+    "wheel": {
+      "title": "Configuración de Rueda de la Fortuna",
+      "wheels": "Ruedas",
+      "add_wheel": "Agregar Nueva Rueda",
+      "wheel_name": "Nombre de la Rueda",
+      "save_config": "Guardar Configuración",
+      "config_saved": "¡Configuración guardada exitosamente!"
+    },
+    "triggers": {
+      "title": "Disparadores de Juego",
+      "description": "Configura cómo se activan los juegos mediante regalos o comandos de chat",
+      "game_type": "Tipo de Juego",
+      "trigger_type": "Tipo de Disparador",
+      "gift": "Regalo",
+      "command": "Comando",
+      "trigger_value": "Valor del Disparador",
+      "add_trigger": "Agregar Disparador",
+      "remove_trigger": "Eliminar",
+      "no_triggers": "No hay disparadores configurados"
+    },
+    "xp_rewards": {
+      "title": "Recompensas XP",
+      "description": "Configura las recompensas XP para los resultados del juego",
+      "game_type": "Tipo de Juego",
+      "win": "Victoria",
+      "loss": "Derrota",
+      "draw": "Empate",
+      "participation": "Participación",
+      "save_rewards": "Guardar Recompensas",
+      "rewards_saved": "¡Recompensas XP guardadas exitosamente!"
+    },
+    "common": {
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "add": "Agregar",
+      "remove": "Eliminar",
+      "loading": "Cargando...",
+      "error": "Error",
+      "success": "Éxito"
+    },
+    "display_texts": {
+      "slot": {
+        "title": "🎰 SLOT MACHINE",
+        "label_loss": "😔 No Win",
+        "label_near_miss": "😬 Close!",
+        "label_small_win": "🎉 Small Win!",
+        "label_medium_win": "🎊 Win!",
+        "label_big_win": "🔥 Big Win!",
+        "label_jackpot": "🏆 JACKPOT!"
+      },
+      "wheel": {
+        "title": "🎡 LUCKY WHEEL",
+        "label_spin": "🔄 Spinning...",
+        "label_result": "🎉 Result:",
+        "label_niete": "💔 No prize!",
+        "label_win": "🎊 You won!",
+        "label_queued": "⏳ In queue..."
+      },
+      "plinko": {
+        "title": "🎰 PLINKO",
+        "label_drop": "⬇️ Ball dropped!",
+        "label_win": "🎉 Win!",
+        "multiplier_prefix": "×",
+        "label_queued": "⏳ In queue..."
+      },
+      "connect4": {
+        "title": "🔵 CONNECT 4",
+        "label_player1": "Player 1",
+        "label_player2": "Player 2",
+        "label_your_turn": "Your turn! Type A-G",
+        "label_waiting": "Waiting for opponent...",
+        "label_win": "🏆 {player} wins!",
+        "label_draw": "🤝 Draw!"
+      },
+      "chess": {
+        "title": "♟️ CHESS",
+        "label_white": "White",
+        "label_black": "Black",
+        "label_your_turn": "Your turn",
+        "label_check": "⚠️ Check!",
+        "label_checkmate": "♚ Checkmate!",
+        "label_draw": "🤝 Draw!",
+        "label_win": "🏆 {player} wins!"
+      }
+    }
+  }
+}

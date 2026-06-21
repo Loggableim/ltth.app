@@ -1,0 +1,48 @@
+{
+  "openshock": {
+    "title": "OpenShock & PiShock Integration",
+    "subtitle": "Hardware Shock Control",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable Shock Integration",
+      "api_provider": "API Provider",
+      "api_url": "API URL",
+      "api_token": "API Token",
+      "shocker_id": "Shocker ID",
+      "test_connection": "Test Connection",
+      "save": "Save Settings",
+      "pishock_username": "PiShock Username",
+      "pishock_api_key": "PiShock API Key",
+      "pishock_sharecodes": "ShareCodes",
+      "add_sharecode": "Add ShareCode"
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift": "Gift Events",
+      "follow": "Follow Events",
+      "subscribe": "Subscribe Events",
+      "threshold": "Coin Threshold",
+      "intensity": "Shock Intensity (1-100)",
+      "duration": "Duration (ms)",
+      "cooldown": "Cooldown (seconds)"
+    },
+    "safety": {
+      "title": "Safety Settings",
+      "max_intensity": "Maximum Intensity",
+      "max_duration": "Maximum Duration (ms)",
+      "daily_limit": "Daily Shock Limit",
+      "require_confirmation": "Require Manual Confirmation"
+    },
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "testing": "Testing Connection...",
+      "shocks_today": "Shocks Today",
+      "last_shock": "Last Shock"
+    },
+    "controls": {
+      "test_shock": "Send Test Shock",
+      "emergency_stop": "Emergency Stop"
+    }
+  }
+}

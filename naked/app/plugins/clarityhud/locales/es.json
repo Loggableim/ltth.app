@@ -1,0 +1,109 @@
+{
+  "clarityhud": {
+    "dashboard": {
+      "title": "ClarityHUD Dashboard",
+      "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live"
+    },
+    "chat_hud": {
+      "title": "Chat HUD",
+      "description": "Minimalistic chat-only overlay with clean typography"
+    },
+    "full_hud": {
+      "title": "Full Activity HUD",
+      "description": "Complete activity feed with layout modes and animations"
+    },
+    "buttons": {
+      "settings": "Configuración",
+      "test_event": "Test Event",
+      "refresh_preview": "Refresh Preview",
+      "copy_url": "Copiar URL",
+      "save": "Guardar Configuración",
+      "cancel": "Cancel",
+      "reset_defaults": "Reset to Defaults"
+    },
+    "labels": {
+      "overlay_url": "URL del Overlay",
+      "live_preview": "LIVE PREVIEW"
+    },
+    "settings": {
+      "title": "Configuración",
+      "tabs": {
+        "appearance": "Appearance",
+        "layout": "Layout",
+        "styling": "Styling",
+        "accessibility": "Accessibility",
+        "events": "Events",
+        "animation": "Animation",
+        "streams": "Streams"
+      },
+      "multi_stream": {
+        "streams_config": "Additional TikTok Streams",
+        "streams_help": "Configure up to 3 additional TikTok streams to display alongside your primary stream",
+        "stream": "Stream {number}",
+        "enable_stream": "Enable this stream",
+        "username": "TikTok Username",
+        "username_placeholder": "@username",
+        "username_help": "Without the @ symbol",
+        "display_name": "Display Name (Optional)",
+        "display_name_placeholder": "Stream {number}",
+        "display_name_help": "Custom label for this stream",
+        "text_color": "Text Color",
+        "bg_color": "Background Color",
+        "accent_color": "Accent Color",
+        "global_settings": "Global Settings",
+        "max_messages": "Max Messages",
+        "max_messages_help": "Maximum number of messages to keep in memory",
+        "enable_multi_hud": "Enable Multi-Stream HUD",
+        "layout_mode": "Layout Mode",
+        "layout": "Layout",
+        "layout_mixed": "Mixed Feed",
+        "layout_split": "Split Columns",
+        "layout_help": "Mixed: All streams in one feed. Split: Separate columns per stream",
+        "columns": "Columns",
+        "columns_auto": "Auto",
+        "columns_help": "Only applies to split layout",
+        "primary_span2": "Primary stream spans 2 columns",
+        "message_display": "Message Display",
+        "message_style": "Message Style",
+        "style_stripe": "Stripe",
+        "style_badge": "Badge",
+        "style_bg": "Background",
+        "style_help": "Stripe: Left border. Badge: Source label. BG: Colored background",
+        "density": "Density",
+        "density_ultra": "Ultra Compact",
+        "density_compact": "Compact",
+        "density_comfortable": "Comfortable",
+        "show_avatars": "Show Avatars",
+        "show_timestamps": "Show Timestamps",
+        "highlight_primary": "Highlight Primary Stream",
+        "auto_contrast": "Auto Contrast (better readability)",
+        "pulse_on_new": "Pulse animation on new messages",
+        "preview_title": "Message Style Preview",
+        "preview_stripe": "Stripe Style: Left border in accent color",
+        "preview_badge": "Badge Style: Source label badge",
+        "preview_bg": "Background Style: Colored background",
+        "preview_help": "Select your preferred message style in the Layout tab",
+        "vr_optimization": "VR Optimization",
+        "vr_features": "The Multi-Stream HUD is optimized for VRChat with:",
+        "vr_feature_compact": "Compact layout (~360px wide cards)",
+        "vr_feature_fonts": "Large, readable fonts",
+        "vr_feature_contrast": "High contrast colors",
+        "vr_feature_animations": "Minimal animations",
+        "vr_feature_scrolling": "Virtual scrolling for performance",
+        "vr_recommendation": "Recommended OBS resolution: 1920x1080 or higher for best VR clarity"
+      }
+    },
+    "messages": {
+      "url_copied": "URL copied to clipboard!",
+      "settings_saved": "Settings saved successfully!",
+      "preset_applied": "Applied {preset} preset",
+      "multi_streams_connected": "Connecting to multi-streams...",
+      "stream_connected": "Stream {number} connected: @{username}",
+      "stream_failed": "Failed to connect stream {number}: {error}"
+    },
+    "multi_hud": {
+      "title": "Multi-Stream HUD",
+      "description": "Display up to 3 additional TikTok livestream chats alongside your primary stream"
+    }
+  }
+}

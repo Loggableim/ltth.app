@@ -2906,11 +2906,40 @@
         }
 
         // Copy overlay URL
-        function copyOverlayUrl() {
-            const input = document.getElementById('overlayUrl');
+        function copyWithSelectionFallback(input) {
+            input.focus();
             input.select();
-            document.execCommand('copy');
-            showStatus('status.overlay_copied', 'success');
+            input.setSelectionRange(0, input.value.length);
+            return document.execCommand('copy');
+        }
+
+        async function copyOverlayUrl() {
+            const input = document.getElementById('overlayUrl');
+            if (!input || !input.value) {
+                showStatus('status.effect_trigger_error', 'danger', { error: 'Overlay URL not available' });
+                return;
+            }
+
+            input.removeAttribute('readonly');
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    try {
+                        await navigator.clipboard.writeText(input.value);
+                    } catch (error) {
+                        if (!copyWithSelectionFallback(input)) {
+                            throw error;
+                        }
+                    }
+                } else if (!copyWithSelectionFallback(input)) {
+                    throw new Error('Clipboard copy failed');
+                }
+                showStatus('status.overlay_copied', 'success');
+            } catch (error) {
+                showStatus('status.effect_trigger_error', 'danger', { error: error.message });
+            } finally {
+                input.setAttribute('readonly', 'readonly');
+            }
         }
 
         ensureHeatwaveCard();

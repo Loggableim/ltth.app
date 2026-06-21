@@ -1,6 +1,6 @@
 # Snapshot Status
 
-Last reviewed: 2026-04-26
+Last reviewed: 2026-06-20
 
 ## Scope
 
@@ -26,6 +26,9 @@ Dependencies were installed after the initial cleanup:
 - `app/node_modules/` is present.
 - `app/package-lock.json` is current for the installed app dependencies.
 - `jsdom` and `supertest` are now explicit dev dependencies because active Jest suites require them.
+- The installed dependency tree is currently clean under `npm audit`; overrides keep legacy transitive packages on patched replacements where needed.
+- Do not add a global `glob` override: Jest coverage uses `test-exclude@6`, which expects its own `glob@7` function API.
+- Safe-mode launcher runs (`LTTH_SAFE_MODE=true` or `DISABLE_PLUGINS=true`) intentionally suppress TikTok startup auto-reconnect and gift-catalog network calls.
 
 Reinstall backend dependencies with:
 
@@ -42,11 +45,11 @@ The root package has no dependency tree on purpose. It only forwards commands in
 - The old root `package-lock.json` described a stale Electron package and was removed.
 - Historical docs in `docs_archive/` may mention removed paths, old plugin names, previous architecture, and obsolete release processes.
 - Some app/wiki pages may still be user-facing historical copy and should be updated feature-by-feature when touched.
-- The active Jest suite still has failing behavioral/regression tests. The snapshot is cleaner, but not test-green yet.
+- The active Jest suite is currently test-green. Treat future failures as new regressions or environmental drift and investigate them from current output.
 
 ## Plugin Inventory
 
-The snapshot currently contains 35 plugin manifests:
+The snapshot currently contains 36 plugin manifests:
 
 - advanced-timer
 - animazingpal
@@ -57,6 +60,7 @@ The snapshot currently contains 35 plugin manifests:
 - config-import
 - data-source
 - fireworks
+- fireworks-dev
 - flame-overlay
 - game-engine
 - gcce
@@ -84,7 +88,7 @@ The snapshot currently contains 35 plugin manifests:
 - weather-control
 - webgpu-emoji-rain
 
-18 are enabled by default in their manifests and 17 are disabled by default.
+19 are enabled by default in their manifests and 17 are disabled by default.
 
 ## Validation Performed
 
@@ -109,29 +113,30 @@ Latest measured Jest state with dependencies installed:
 
 ```bash
 cd app
-npx jest --runInBand --silent --forceExit
+npm test -- --runInBand --silent
 ```
 
-Result: 117 passed suites, 37 failed suites, 154 total suites; 1660 passed tests, 126 failed tests, 1786 total tests.
+Result: 262 passed suites, 262 total suites; 2560 passed tests, 2560 total tests.
 
-Running normal `npm test -- --runInBand --silent` currently reaches the summary but does not exit cleanly because at least one suite leaves open async handles. Fix the remaining suite failures before treating `npm test` as reliable CI.
+Normal `npm test -- --runInBand --silent` exits cleanly in the current dependency state.
+
+Coverage also runs cleanly:
+
+```bash
+cd app
+npm run test:coverage -- --runInBand --silent
+```
+
+Result: 262 passed suites, 262 total suites; 2560 passed tests, 2560 total tests.
 
 ## Next Practical Step
 
-Work down the remaining failing Jest suites by cluster:
-
-- Game Engine queue/challenge behavior.
-- Viewer XP isolation and IFTTT integration.
-- Fireworks/WebGPU code-string regression tests.
-- Profile/localStorage tests needing browser storage setup.
-- TTS, TikTok reconnect, music bot, weather, and LastEvent behavioral assertions.
-- `plugins/openshock/ui.js`, `plugins/talking-heads/assets/ui-old.js`, and `test/animazingpal-enhanced-features.test.js` are ignored by ESLint because they currently contain parser-level issues or stale UI code. Revisit them when touching those areas.
-
-Then rerun:
+Keep the snapshot healthy by rerunning the current verification set after code or dependency changes:
 
 ```bash
 cd app
 npm test -- --runInBand --silent
+npm audit
 npm run build:css
 npm run lint
 npm start

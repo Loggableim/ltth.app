@@ -3,12 +3,14 @@
  */
 
 const GameEnginePlugin = require('../main');
+const EventEmitter = require('events');
 
 describe('Game Engine GCCE Integration', () => {
   let plugin;
   let mockApi;
   let mockSocketIO;
   let mockDb;
+  let pluginEvents;
   let registeredCommands = [];
 
   beforeEach(() => {
@@ -30,6 +32,8 @@ describe('Game Engine GCCE Integration', () => {
       }))
     };
 
+    pluginEvents = new EventEmitter();
+
     // Mock API
     mockApi = {
       log: jest.fn(),
@@ -41,6 +45,13 @@ describe('Game Engine GCCE Integration', () => {
       getConfig: jest.fn(() => Promise.resolve(null)),
       setConfig: jest.fn(() => Promise.resolve()),
       emit: jest.fn(),
+      on: jest.fn((event, callback) => {
+        pluginEvents.on(event, callback);
+        return true;
+      }),
+      removeListener: jest.fn((event, callback) => {
+        pluginEvents.removeListener(event, callback);
+      }),
       pluginLoader: {
         loadedPlugins: new Map([
           ['gcce', {
@@ -143,6 +154,44 @@ describe('Game Engine GCCE Integration', () => {
       
       // Check that gcceCommandsRegistered is false
       expect(plugin.gcceCommandsRegistered).toBe(false);
+    });
+
+    test('should register commands when GCCE loads after retry window ended', () => {
+      mockApi.pluginLoader.loadedPlugins = new Map();
+      plugin.db = {
+        getGameConfig: jest.fn(() => plugin.defaultConfigs.connect4),
+        getTriggers: jest.fn(() => [])
+      };
+
+      plugin.setupGCCEIntegrationListeners();
+      plugin.gcceRetryInterval = null;
+      plugin.gcceRetryCount = 5;
+
+      const gcceInstance = {
+        registry: {
+          getCommand: jest.fn(() => null)
+        },
+        registerCommandsForPlugin: jest.fn((pluginId, commands) => {
+          registeredCommands.push(...commands);
+          return {
+            registered: commands.map(cmd => cmd.name),
+            failed: []
+          };
+        }),
+        unregisterCommandsForPlugin: jest.fn()
+      };
+
+      mockApi.pluginLoader.loadedPlugins.set('gcce', { instance: gcceInstance });
+      pluginEvents.emit('plugin:loaded', { id: 'gcce', instance: gcceInstance });
+
+      expect(plugin.gcceCommandsRegistered).toBe(true);
+      expect(gcceInstance.registerCommandsForPlugin).toHaveBeenCalledWith(
+        'game-engine',
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'c4' }),
+          expect.objectContaining({ name: 'c4start' })
+        ])
+      );
     });
   });
 

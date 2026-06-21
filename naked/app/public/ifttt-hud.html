@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFTTT HUD Overlay - TikTok Stream Tool</title>
+    <link rel="stylesheet" href="/css/overlay-base.css">
+    <style>
+        #hud-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Overlay elements */
+        .overlay-element {
+            position: absolute;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        /* Image overlay */
+        .overlay-image {
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Video overlay */
+        .overlay-video {
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Text overlay */
+        .overlay-text {
+            padding: 16px 32px;
+            border-radius: 12px;
+            max-width: 800px;
+            word-wrap: break-word;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Position classes */
+        .position-center {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .position-top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .position-left {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .position-right {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .position-top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        .position-top-right {
+            top: 20px;
+            right: 20px;
+        }
+
+        .position-bottom-left {
+            bottom: 20px;
+            left: 20px;
+        }
+
+        .position-bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        /* Animation classes */
+        .anim-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .anim-fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+
+        .anim-slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .anim-slide-down {
+            animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .anim-slide-left {
+            animation: slideLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .anim-slide-right {
+            animation: slideRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .anim-zoom-in {
+            animation: zoomIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .anim-zoom-out {
+            animation: zoomOut 0.5s ease-out forwards;
+        }
+
+        .anim-bounce {
+            animation: bounce 0.8s ease-out forwards;
+        }
+
+        .anim-spin {
+            animation: spin 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 100px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -100px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideLeft {
+            from {
+                opacity: 0;
+                transform: translate(100px, -50%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideRight {
+            from {
+                opacity: 0;
+                transform: translate(-100%, -50%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes zoomOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+        }
+
+        @keyframes bounce {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.3);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(-180deg) scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(0) scale(1);
+            }
+        }
+
+        /* Exit animations */
+        .exit-fade {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+
+        .exit-slide-up {
+            animation: exitSlideUp 0.5s ease-out forwards;
+        }
+
+        .exit-slide-down {
+            animation: exitSlideDown 0.5s ease-out forwards;
+        }
+
+        .exit-zoom {
+            animation: zoomOut 0.5s ease-out forwards;
+        }
+
+        @keyframes exitSlideUp {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -100px);
+            }
+        }
+
+        @keyframes exitSlideDown {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, 100px);
+            }
+        }
+
+        /* Connection status indicator and debug panel are provided by overlay-base.css */
+        /* Map legacy ID selectors to shared class styles */
+        #connection-status {
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="hud-container"></div>
+    <div id="connection-status" class="overlay-connection-dot"></div>
+    <div id="debug-info" class="overlay-debug-panel">
+        <div class="overlay-debug-title">IFTTT HUD Debug</div>
+        <div id="debug-log"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        /**
+         * IFTTT HUD Overlay
+         * Displays images, videos, and text triggered by IFTTT flows
+         */
+        (function() {
+            'use strict';
+
+            // Configuration
+            const MAX_QUEUE_SIZE = 20;
+            const DEFAULT_DURATION = 5000; // 5 seconds
+            const MAX_DURATION = 60000; // 60 seconds
+            const ANIMATION_DURATION = 500; // Animation duration in ms
+
+            // State
+            const state = {
+                queue: [],
+                isPlaying: false,
+                activeElements: new Map(),
+                debugMode: false
+            };
+
+            // DOM Elements
+            const container = document.getElementById('hud-container');
+            const connectionStatus = document.getElementById('connection-status');
+            const debugInfo = document.getElementById('debug-info');
+            const debugLog = document.getElementById('debug-log');
+
+            // Check for debug mode via URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            state.debugMode = urlParams.get('debug') === 'true';
+
+            if (state.debugMode) {
+                debugInfo.classList.add('visible');
+                log('Debug mode enabled');
+            }
+
+            // Socket.io connection
+            let socket;
+            try {
+                socket = io({
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    reconnectionAttempts: 10
+                });
+            } catch (error) {
+                console.error('Failed to initialize socket.io:', error);
+                log('Socket.io initialization failed: ' + error.message, 'error');
+            }
+
+            if (socket) {
+                // Connection handlers
+                socket.on('connect', () => {
+                    console.log('IFTTT HUD connected');
+                    connectionStatus.classList.remove('disconnected');
+                    log('Connected to server');
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('IFTTT HUD disconnected');
+                    connectionStatus.classList.add('disconnected');
+                    log('Disconnected from server', 'warn');
+                });
+
+                socket.on('error', (error) => {
+                    console.error('Socket.io error:', error);
+                    log('Socket error: ' + error, 'error');
+                });
+
+                // IFTTT Overlay Events
+                socket.on('overlay:image', (data) => {
+                    log('Image overlay received: ' + (data.url || 'no url').substring(0, 50));
+                    queueOverlay({ type: 'image', ...data });
+                });
+
+                socket.on('overlay:video', (data) => {
+                    log('Video overlay received: ' + (data.url || 'no url').substring(0, 50));
+                    queueOverlay({ type: 'video', ...data });
+                });
+
+                socket.on('overlay:text', (data) => {
+                    log('Text overlay received: ' + (data.text || 'no text').substring(0, 50));
+                    queueOverlay({ type: 'text', ...data });
+                });
+
+                socket.on('overlay:media', (data) => {
+                    log('Media overlay received');
+                    queueOverlay(data);
+                });
+
+                // Clear all overlays
+                socket.on('overlay:clear', () => {
+                    log('Clear all overlays');
+                    clearAllOverlays();
+                });
+
+                // Remove specific overlay
+                socket.on('overlay:remove', (data) => {
+                    if (data && data.id) {
+                        log('Remove overlay: ' + data.id);
+                        removeOverlay(data.id);
+                    }
+                });
+            }
+
+            /**
+             * Log a debug message
+             */
+            function log(message, level = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](`[IFTTT HUD] ${message}`);
+
+                if (state.debugMode) {
+                    const entry = document.createElement('div');
+                    entry.className = 'overlay-debug-entry';
+                    entry.style.color = level === 'error' ? '#ff4444' : level === 'warn' ? '#ffaa00' : '#00ff00';
+                    entry.textContent = `[${timestamp}] ${message}`;
+                    debugLog.insertBefore(entry, debugLog.firstChild);
+
+                    // Keep only last 20 entries
+                    while (debugLog.children.length > 20) {
+                        debugLog.removeChild(debugLog.lastChild);
+                    }
+                }
+            }
+
+            /**
+             * Queue an overlay for display
+             */
+            function queueOverlay(data) {
+                if (state.queue.length >= MAX_QUEUE_SIZE) {
+                    log('Queue full, dropping oldest item', 'warn');
+                    state.queue.shift();
+                }
+
+                const overlay = {
+                    id: data.id || 'overlay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    type: data.type || 'image',
+                    url: data.url,
+                    text: data.text,
+                    duration: Math.min(data.duration ? data.duration * 1000 : DEFAULT_DURATION, MAX_DURATION),
+                    position: data.position || 'center',
+                    width: data.width,
+                    height: data.height,
+                    volume: data.volume !== undefined ? data.volume / 100 : 1.0,
+                    animation: data.animation || 'fade',
+                    fontSize: data.fontSize || 48,
+                    color: data.color || '#ffffff',
+                    backgroundColor: data.backgroundColor || 'rgba(0, 0, 0, 0.7)',
+                    borderRadius: data.borderRadius || 12,
+                    shadow: data.shadow !== false,
+                    loop: data.loop || false,
+                    timestamp: Date.now()
+                };
+
+                state.queue.push(overlay);
+                log(`Queued overlay: ${overlay.type} (${state.queue.length} in queue)`);
+
+                if (!state.isPlaying) {
+                    playNextOverlay();
+                }
+            }
+
+            /**
+             * Play the next overlay in the queue
+             */
+            async function playNextOverlay() {
+                if (state.queue.length === 0) {
+                    state.isPlaying = false;
+                    log('Queue empty, stopping playback');
+                    return;
+                }
+
+                state.isPlaying = true;
+                const overlay = state.queue.shift();
+
+                try {
+                    await displayOverlay(overlay);
+                } catch (error) {
+                    console.error('Error displaying overlay:', error);
+                    log('Display error: ' + error.message, 'error');
+                }
+
+                // Small delay between overlays
+                setTimeout(() => playNextOverlay(), 300);
+            }
+
+            /**
+             * Display an overlay
+             */
+            async function displayOverlay(overlay) {
+                return new Promise((resolve, reject) => {
+                    let element;
+
+                    try {
+                        if (overlay.type === 'image') {
+                            element = createImageOverlay(overlay);
+                        } else if (overlay.type === 'video') {
+                            element = createVideoOverlay(overlay, resolve);
+                        } else if (overlay.type === 'text') {
+                            element = createTextOverlay(overlay);
+                        } else {
+                            log('Unknown overlay type: ' + overlay.type, 'warn');
+                            resolve();
+                            return;
+                        }
+
+                        // Apply position
+                        element.classList.add('overlay-element');
+                        element.classList.add(`position-${overlay.position}`);
+
+                        // Apply entrance animation
+                        const animClass = getAnimationClass(overlay.animation);
+                        if (animClass) {
+                            element.classList.add(animClass);
+                        }
+
+                        // Add to container
+                        container.appendChild(element);
+                        state.activeElements.set(overlay.id, element);
+
+                        log(`Displayed overlay: ${overlay.id}`);
+
+                        // For non-video overlays, set up removal timer
+                        if (overlay.type !== 'video') {
+                            setTimeout(() => {
+                                removeOverlayWithAnimation(overlay.id, overlay.animation);
+                                resolve();
+                            }, overlay.duration);
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            /**
+             * Create an image overlay element
+             */
+            function createImageOverlay(overlay) {
+                const img = document.createElement('img');
+                img.className = 'overlay-image';
+                img.src = overlay.url;
+                img.alt = 'IFTTT Overlay';
+
+                if (overlay.width) {
+                    img.style.width = overlay.width + 'px';
+                }
+                if (overlay.height) {
+                    img.style.height = overlay.height + 'px';
+                }
+                if (overlay.borderRadius) {
+                    img.style.borderRadius = overlay.borderRadius + 'px';
+                }
+                if (!overlay.shadow) {
+                    img.style.boxShadow = 'none';
+                }
+
+                img.onerror = () => {
+                    log('Image failed to load: ' + overlay.url, 'error');
+                };
+
+                return img;
+            }
+
+            /**
+             * Create a video overlay element
+             */
+            function createVideoOverlay(overlay, resolveCallback) {
+                const video = document.createElement('video');
+                video.className = 'overlay-video';
+                video.src = overlay.url;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = overlay.volume === 0;
+                video.volume = Math.max(0, Math.min(1, overlay.volume));
+                video.loop = overlay.loop;
+
+                if (overlay.width) {
+                    video.style.width = overlay.width + 'px';
+                }
+                if (overlay.height) {
+                    video.style.height = overlay.height + 'px';
+                }
+                if (overlay.borderRadius) {
+                    video.style.borderRadius = overlay.borderRadius + 'px';
+                }
+                if (!overlay.shadow) {
+                    video.style.boxShadow = 'none';
+                }
+
+                // Handle video end
+                video.addEventListener('ended', () => {
+                    if (!overlay.loop) {
+                        removeOverlayWithAnimation(overlay.id, overlay.animation);
+                        if (resolveCallback) resolveCallback();
+                    }
+                });
+
+                // Handle video error
+                video.addEventListener('error', (e) => {
+                    log('Video failed to load: ' + overlay.url, 'error');
+                    removeOverlay(overlay.id);
+                    if (resolveCallback) resolveCallback();
+                });
+
+                // Safety timeout for videos
+                const maxDuration = overlay.loop ? overlay.duration : Math.min(overlay.duration, MAX_DURATION);
+                setTimeout(() => {
+                    removeOverlayWithAnimation(overlay.id, overlay.animation);
+                    if (resolveCallback) resolveCallback();
+                }, maxDuration);
+
+                return video;
+            }
+
+            /**
+             * Create a text overlay element
+             */
+            function createTextOverlay(overlay) {
+                const div = document.createElement('div');
+                div.className = 'overlay-text';
+                div.textContent = overlay.text;
+
+                div.style.fontSize = overlay.fontSize + 'px';
+                div.style.color = overlay.color;
+                div.style.backgroundColor = overlay.backgroundColor;
+
+                if (overlay.borderRadius) {
+                    div.style.borderRadius = overlay.borderRadius + 'px';
+                }
+                if (!overlay.shadow) {
+                    div.style.boxShadow = 'none';
+                }
+
+                return div;
+            }
+
+            /**
+             * Get CSS animation class for entrance animation
+             */
+            function getAnimationClass(animation) {
+                const animations = {
+                    'fade': 'anim-fade-in',
+                    'slide-up': 'anim-slide-up',
+                    'slide-down': 'anim-slide-down',
+                    'slide-left': 'anim-slide-left',
+                    'slide-right': 'anim-slide-right',
+                    'zoom': 'anim-zoom-in',
+                    'bounce': 'anim-bounce',
+                    'spin': 'anim-spin',
+                    'none': null
+                };
+                return animations[animation] || animations['fade'];
+            }
+
+            /**
+             * Get CSS animation class for exit animation
+             */
+            function getExitAnimationClass(animation) {
+                const exitAnimations = {
+                    'fade': 'exit-fade',
+                    'slide-up': 'exit-slide-up',
+                    'slide-down': 'exit-slide-down',
+                    'zoom': 'exit-zoom',
+                    'none': 'exit-fade'
+                };
+                return exitAnimations[animation] || exitAnimations['fade'];
+            }
+
+            /**
+             * Remove an overlay with exit animation
+             */
+            function removeOverlayWithAnimation(id, animation) {
+                const element = state.activeElements.get(id);
+                if (!element) return;
+
+                const exitClass = getExitAnimationClass(animation);
+                element.classList.add(exitClass);
+
+                setTimeout(() => {
+                    removeOverlay(id);
+                }, ANIMATION_DURATION);
+            }
+
+            /**
+             * Remove an overlay immediately
+             */
+            function removeOverlay(id) {
+                const element = state.activeElements.get(id);
+                if (element) {
+                    // Stop video/audio if applicable
+                    if (element.tagName === 'VIDEO' || element.tagName === 'AUDIO') {
+                        element.pause();
+                        element.src = '';
+                    }
+
+                    element.remove();
+                    state.activeElements.delete(id);
+                    log(`Removed overlay: ${id}`);
+                }
+            }
+
+            /**
+             * Clear all active overlays
+             */
+            function clearAllOverlays() {
+                state.queue = [];
+                state.activeElements.forEach((element, id) => {
+                    removeOverlay(id);
+                });
+                state.isPlaying = false;
+                log('Cleared all overlays');
+            }
+
+            // Test function (can be called from console)
+            window.testOverlay = function(type = 'image', options = {}) {
+                const defaults = {
+                    image: {
+                        url: 'https://via.placeholder.com/300x200/3b82f6/ffffff?text=Test+Image',
+                        duration: 5,
+                        position: 'center',
+                        animation: 'zoom'
+                    },
+                    video: {
+                        url: '/sounds/test.mp4',
+                        duration: 10,
+                        position: 'center',
+                        animation: 'fade',
+                        volume: 80
+                    },
+                    text: {
+                        text: 'Hello! This is a test overlay! 🎉',
+                        duration: 5,
+                        position: 'top',
+                        animation: 'slide-down',
+                        fontSize: 48,
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(59, 130, 246, 0.9)'
+                    }
+                };
+
+                const data = { type, ...defaults[type], ...options };
+                queueOverlay(data);
+                console.log('Test overlay queued:', data);
+            };
+
+            // Keyboard shortcut for debug toggle
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'd') {
+                    state.debugMode = !state.debugMode;
+                    debugInfo.classList.toggle('visible', state.debugMode);
+                    log('Debug mode ' + (state.debugMode ? 'enabled' : 'disabled'));
+                }
+            });
+
+            log('IFTTT HUD Overlay initialized');
+            console.log('IFTTT HUD Overlay ready. Use testOverlay() for testing.');
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "id": "config-import",
+  "name": "Config Backup & Restore",
+  "version": "2.0.0",
+  "description": "Full configuration backup and restore system. Export all settings to a ZIP archive, import from a backup, preview conflicts, and migrate from legacy installations.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "utility",
+  "devStatus": "working-beta",
+  "permissions": [
+    "routes",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Full configuration backup and restore system. Export all settings to a ZIP archive, import from a backup, preview conflicts, and migrate from legacy installations.",
+    "de": "Vollständiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von älteren Installationen.",
+    "es": "Sistema completo de copia de seguridad y restauración de configuración. Exporte todos los ajustes a un archivo ZIP, importe desde una copia de seguridad, previsualice conflictos y migre desde instalaciones antiguas.",
+    "fr": "Système complet de sauvegarde et restauration de configuration. Exportez tous les paramètres dans une archive ZIP, importez depuis une sauvegarde, prévisualisez les conflits et migrez depuis d'anciennes installations."
+  }
+}

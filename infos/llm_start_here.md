@@ -9,7 +9,7 @@ LTTH is a local TikTok LIVE helper with a Node.js backend, Socket.IO realtime la
 This workspace is a local snapshot:
 
 - No `.git` directory is present.
-- Dependencies are not installed yet.
+- Dependencies are installed in `app/`; root `node_modules/` remains intentionally absent.
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
@@ -148,9 +148,9 @@ npm run build:css
 ## Known Snapshot Issues
 
 - No Git metadata.
-- No installed dependencies.
 - No active Electron main-process source.
 - `docs_archive/` contains many historical reports that can be stale.
 - Some user wiki pages may still contain older feature counts or release wording.
+- Root `node_modules/` is intentionally absent because root package scripts forward into `app/`.
 
 Treat code as the final source of truth.

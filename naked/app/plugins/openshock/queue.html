@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Openshock Queue</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/openshock/openshock.css">
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('dashboard-theme');
+            if (savedTheme && savedTheme !== 'night') {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+        })();
+    </script>
+    <style>
+        .queue-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--card-bg, #1a1a1a);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .queue-stats {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted, #888);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-primary, #fff);
+            margin-top: 4px;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-clear:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-clear:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .current-processing {
+            background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+            border: 2px solid #ffa500;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(255, 165, 0, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 16px rgba(255, 165, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 4px 20px rgba(255, 165, 0, 0.4);
+            }
+        }
+
+        .processing-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .processing-icon {
+            font-size: 24px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .processing-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffa500;
+        }
+
+        .processing-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            color: var(--text-muted, #888);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: var(--text-primary, #fff);
+            font-weight: 500;
+        }
+
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .queue-item {
+            background: var(--card-bg, #2a2a2a);
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        .queue-item:hover {
+            background: var(--card-hover-bg, #333);
+            transform: translateX(4px);
+        }
+
+        .queue-item.pending {
+            border-left-color: #4a90e2;
+        }
+
+        .queue-item.processing {
+            border-left-color: #ffa500;
+            background: #3a3a2a;
+        }
+
+        .queue-item.completed {
+            border-left-color: #2ecc71;
+            opacity: 0.7;
+        }
+
+        .queue-item.failed {
+            border-left-color: #e74c3c;
+        }
+
+        .queue-item-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .queue-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .queue-position {
+            background: var(--primary, #4a90e2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .queue-source {
+            font-weight: 600;
+            color: var(--text-primary, #fff);
+            font-size: 15px;
+        }
+
+        .queue-item-details {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted, #999);
+        }
+
+        .detail-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .queue-item-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .queue-time {
+            font-size: 12px;
+            color: var(--text-muted, #888);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: rgba(74, 144, 226, 0.2);
+            color: #4a90e2;
+        }
+
+        .status-processing {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+        }
+
+        .status-completed {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .status-failed {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        .queue-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted, #888);
+        }
+
+        .queue-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .queue-empty-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary, #fff);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .type-icon {
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="queue-container">
+        <!-- Header with stats and controls -->
+        <div class="queue-header">
+            <div class="queue-stats">
+                <div class="stat-item">
+                    <div class="stat-label">In Queue</div>
+                    <div class="stat-value" id="queueLength">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Processing</div>
+                    <div class="stat-value" id="processingCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Processed</div>
+                    <div class="stat-value" id="totalProcessed">0</div>
+                </div>
+            </div>
+            <button class="btn-clear" id="btnClearQueue" onclick="clearQueue()">
+                🗑️ Queue leeren
+            </button>
+        </div>
+
+        <!-- Current processing item -->
+        <div id="current-item"></div>
+
+        <!-- Pending queue items -->
+        <div id="queue-section">
+            <div class="section-title">⏳ Wartende Shocks</div>
+            <div id="queue-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentState = null;
+
+        // Socket event listener for queue updates
+        socket.on('openshock:queue:update', (state) => {
+            currentState = state;
+            renderQueue(state);
+        });
+
+        // Request initial state on load
+        socket.on('connect', () => {
+            fetchQueueState();
+        });
+
+        // Fetch queue state from API
+        function fetchQueueState() {
+            fetch('/api/openshock/queue')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        currentState = data.state;
+                        renderQueue(data.state);
+                    }
+                })
+                .catch(err => console.error('Failed to fetch queue state:', err));
+        }
+
+        // Render the queue UI
+        function renderQueue(state) {
+            if (!state) return;
+
+            // Update stats
+            document.getElementById('queueLength').textContent = state.pending || 0;
+            document.getElementById('processingCount').textContent = state.processing || 0;
+            document.getElementById('totalProcessed').textContent = state.stats?.totalProcessed || 0;
+
+            // Update clear button state
+            const btnClear = document.getElementById('btnClearQueue');
+            const hasItems = (state.pending || 0) + (state.processing || 0) > 0;
+            btnClear.disabled = !hasItems;
+
+            // Render current processing item
+            renderCurrentItem(state);
+
+            // Render pending queue items
+            renderQueueList(state);
+        }
+
+        // Render currently processing item
+        function renderCurrentItem(state) {
+            const currentDiv = document.getElementById('current-item');
+
+            if (!state.isProcessing || !state.currentItem) {
+                currentDiv.innerHTML = '';
+                return;
+            }
+
+            const item = state.currentItem;
+            const command = item.command || {};
+            
+            currentDiv.innerHTML = `
+                <div class="current-processing">
+                    <div class="processing-header">
+                        <span class="processing-icon">🔄</span>
+                        <span class="processing-title">Aktuell in Verarbeitung</span>
+                    </div>
+                    <div class="processing-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Quelle</div>
+                            <div class="detail-value">${escapeHtml(item.source || 'Unknown')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Typ</div>
+                            <div class="detail-value">${getTypeIcon(command.type)} ${escapeHtml(command.type || 'N/A')}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Intensität</div>
+                            <div class="detail-value">${command.intensity || 0}%</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Dauer</div>
+                            <div class="detail-value">${command.duration || 0}ms</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Device</div>
+                            <div class="detail-value">${escapeHtml(command.deviceName || command.deviceId || 'N/A')}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render pending queue items
+        function renderQueueList(state) {
+            const queueDiv = document.getElementById('queue-list');
+            
+            // Get pending items from queue
+            const pendingItems = state.queueItems?.filter(item => item.status === 'pending') || [];
+
+            if (pendingItems.length === 0) {
+                queueDiv.innerHTML = `
+                    <div class="queue-empty">
+                        <div class="queue-empty-icon">✨</div>
+                        <div class="queue-empty-text">Keine wartenden Shocks</div>
+                    </div>
+                `;
+                return;
+            }
+
+            queueDiv.innerHTML = pendingItems.map((item, index) => {
+                const command = item.command || {};
+                const createdTime = new Date(item.enqueuedAt).toLocaleTimeString('de-DE');
+                
+                return `
+                    <div class="queue-item ${item.status}">
+                        <div class="queue-item-main">
+                            <div class="queue-item-header">
+                                <span class="queue-position">#${index + 1}</span>
+                                <span class="queue-source">${escapeHtml(item.source || 'Unknown')}</span>
+                            </div>
+                            <div class="queue-item-details">
+                                <span class="detail-badge">
+                                    <span class="type-icon">${getTypeIcon(command.type)}</span>
+                                    ${escapeHtml(command.type || 'N/A')}
+                                </span>
+                                <span class="detail-badge">
+                                    ⚡ ${command.intensity || 0}%
+                                </span>
+                                <span class="detail-badge">
+                                    ⏱️ ${command.duration || 0}ms
+                                </span>
+                                <span class="detail-badge">
+                                    🎯 ${escapeHtml(command.deviceName || command.deviceId || 'N/A')}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="queue-item-meta">
+                            <span class="queue-time">${createdTime}</span>
+                            <span class="status-badge status-${item.status}">${item.status}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Get icon for command type
+        function getTypeIcon(type) {
+            const typeMap = {
+                'shock': '⚡',
+                'vibrate': '📳',
+                'sound': '🔊',
+                'beep': '🔔'
+            };
+            return typeMap[type?.toLowerCase()] || '❓';
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Clear queue button handler
+        function clearQueue() {
+            if (!confirm('Möchtest du wirklich die gesamte Queue leeren?\n\nAlle wartenden Shocks werden entfernt.')) {
+                return;
+            }
+
+            socket.emit('openshock:queue:clear');
+            
+            // Show immediate feedback
+            const btnClear = document.getElementById('btnClearQueue');
+            const originalText = btnClear.textContent;
+            btnClear.textContent = '✓ Geleert';
+            btnClear.disabled = true;
+            
+            setTimeout(() => {
+                btnClear.textContent = originalText;
+            }, 2000);
+        }
+
+        // Initial load
+        fetchQueueState();
+
+        // Refresh every 5 seconds as fallback (socket events are primary)
+        setInterval(() => {
+            if (!currentState || !currentState.isProcessing) {
+                fetchQueueState();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

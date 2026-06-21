@@ -25,6 +25,11 @@ describe('VotingSystem', () => {
     votingSystem = new VotingSystem(mockLogger, mockIo);
   });
 
+  afterEach(() => {
+    votingSystem.stop();
+    jest.useRealTimers();
+  });
+
   test('should initialize with inactive state', () => {
     expect(votingSystem.active).toBe(false);
     expect(votingSystem.choices).toEqual([]);

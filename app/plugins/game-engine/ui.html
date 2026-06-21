@@ -2625,6 +2625,7 @@
             <select id="arena-render-scale">
               <option value="0.5">50% - maximale FPS</option>
               <option value="0.67">67% - fluessig</option>
+              <option value="0.7">70% - empfohlen</option>
               <option value="0.75">75% - empfohlen</option>
               <option value="1">100% - scharf</option>
             </select>
@@ -5093,9 +5094,9 @@
         setArenaField('arena-food-spawn-batch-size', config.foodSpawnBatchSize !== undefined ? config.foodSpawnBatchSize : 2);
         setArenaField('arena-food-despawn-ms', config.foodDespawnMs !== undefined ? config.foodDespawnMs : 120000);
         setArenaField('arena-food-burst-despawn-ms', config.foodBurstDespawnMs !== undefined ? config.foodBurstDespawnMs : 90000);
-        setArenaField('arena-render-scale', config.renderScale !== undefined ? config.renderScale : 0.75);
-        setArenaField('arena-target-fps', config.targetFps || 60);
-        setArenaField('arena-max-render-players', config.maxRenderPlayers || config.maxPlayers || 60);
+        setArenaField('arena-render-scale', config.renderScale !== undefined ? config.renderScale : 0.7);
+        setArenaField('arena-target-fps', config.targetFps || 45);
+        setArenaField('arena-max-render-players', config.maxRenderPlayers || config.maxPlayers || 48);
         setArenaField('arena-renderer-mode', config.rendererMode || 'auto');
         setArenaField('arena-max-weapon-pickups', config.maxWeaponPickups);
         setArenaField('arena-weapon-pickup-chance', config.weaponPickupChance);
@@ -5151,14 +5152,14 @@
         arenaHeight: getArenaNumber('arena-height', base.arenaHeight || 1080),
         maxPlayers: getArenaNumber('arena-max-players', base.maxPlayers || 80),
         maxFood: getArenaNumber('arena-max-food', base.maxFood || 90),
-        maxFoodRender: getArenaNumber('arena-max-food-render', base.maxFoodRender || 52),
+        maxFoodRender: getArenaNumber('arena-max-food-render', base.maxFoodRender || 72),
         foodSpawnIntervalMs: getArenaNumber('arena-food-spawn-interval', base.foodSpawnIntervalMs !== undefined ? base.foodSpawnIntervalMs : 1600),
         foodSpawnBatchSize: getArenaNumber('arena-food-spawn-batch-size', base.foodSpawnBatchSize !== undefined ? base.foodSpawnBatchSize : 2),
         foodDespawnMs: getArenaNumber('arena-food-despawn-ms', base.foodDespawnMs !== undefined ? base.foodDespawnMs : 120000),
         foodBurstDespawnMs: getArenaNumber('arena-food-burst-despawn-ms', base.foodBurstDespawnMs !== undefined ? base.foodBurstDespawnMs : 90000),
-        renderScale: getArenaNumber('arena-render-scale', base.renderScale || 0.75),
-        targetFps: getArenaNumber('arena-target-fps', base.targetFps || 60),
-        maxRenderPlayers: getArenaNumber('arena-max-render-players', base.maxRenderPlayers || base.maxPlayers || 60),
+        renderScale: getArenaNumber('arena-render-scale', base.renderScale || 0.7),
+        targetFps: getArenaNumber('arena-target-fps', base.targetFps || 45),
+        maxRenderPlayers: getArenaNumber('arena-max-render-players', base.maxRenderPlayers || base.maxPlayers || 48),
         rendererMode: document.getElementById('arena-renderer-mode')?.value || base.rendererMode || 'auto',
         maxWeaponPickups: getArenaNumber('arena-max-weapon-pickups', base.maxWeaponPickups || 8),
         weaponPickupChance: getArenaNumber('arena-weapon-pickup-chance', base.weaponPickupChance || 0.45),

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Engine HUD - LTTH</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .hud-container {
+      position: fixed;
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      min-width: 250px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(76, 175, 80, 0.3);
+      transition: all 0.3s ease;
+      display: none;
+    }
+
+    .hud-container.active {
+      display: block;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Position presets via URL params */
+    .hud-container.top-left {
+      top: 20px;
+      left: 20px;
+    }
+
+    .hud-container.top-right {
+      top: 20px;
+      right: 20px;
+    }
+
+    .hud-container.bottom-left {
+      bottom: 20px;
+      left: 20px;
+    }
+
+    .hud-container.bottom-right {
+      bottom: 20px;
+      right: 20px;
+    }
+
+    .hud-container.center {
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .hud-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .hud-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4CAF50;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .game-icon {
+      font-size: 18px;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4CAF50;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.waiting {
+      background: #FFC107;
+      animation: none;
+    }
+
+    .status-indicator.ended {
+      background: #f44336;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { 
+        opacity: 1;
+        box-shadow: 0 0 5px #4CAF50;
+      }
+      50% { 
+        opacity: 0.6;
+        box-shadow: 0 0 10px #4CAF50;
+      }
+    }
+
+    .hud-content {
+      font-size: 13px;
+    }
+
+    .game-status-text {
+      text-align: center;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .players-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+
+    .player-row.active-turn {
+      background: rgba(76, 175, 80, 0.2);
+      border-left: 3px solid #4CAF50;
+      padding-left: 7px;
+      animation: turnPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes turnPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 rgba(76, 175, 80, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+      }
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .player-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .player-name {
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .player-role {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    .turn-indicator {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: rgba(76, 175, 80, 0.3);
+      border-radius: 4px;
+      color: #4CAF50;
+      font-weight: 600;
+    }
+
+    .game-stats {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-around;
+      font-size: 11px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      color: #64B5F6;
+      margin-bottom: 2px;
+    }
+
+    .stat-label {
+      color: #888;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .game-result {
+      text-align: center;
+      padding: 10px;
+      background: rgba(76, 175, 80, 0.2);
+      border-radius: 6px;
+      margin-top: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #4CAF50;
+    }
+
+    .game-result.draw {
+      background: rgba(255, 193, 7, 0.2);
+      color: #FFC107;
+    }
+
+    /* Minimal mode */
+    .hud-container.minimal {
+      padding: 8px 12px;
+      min-width: 180px;
+    }
+
+    .hud-container.minimal .hud-title {
+      font-size: 12px;
+    }
+
+    .hud-container.minimal .player-name {
+      font-size: 11px;
+    }
+
+    .hud-container.minimal .game-stats {
+      display: none;
+    }
+
+    /* Hidden when no game */
+    .hud-container.hide-when-inactive {
+      display: none !important;
+    }
+
+    /* Plinko notification */
+    .plinko-notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px 30px;
+      border-radius: 12px;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      color: #00ffff;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 9999;
+      display: none;
+      animation: plinkoNotify 0.3s ease-out;
+    }
+
+    @keyframes plinkoNotify {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .plinko-notification.show {
+      display: block;
+    }
+
+    .plinko-ball-icon {
+      font-size: 24px;
+      margin-right: 10px;
+    }
+
+    /* Plinko activity indicator */
+    .plinko-activity {
+      padding: 12px;
+      background: rgba(0, 255, 255, 0.1);
+      border-radius: 8px;
+      margin-top: 10px;
+      border-left: 3px solid #00ffff;
+    }
+
+    .plinko-activity-title {
+      font-size: 12px;
+      color: #00ffff;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .plinko-ball-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .plinko-ball-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .plinko-player-name {
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .plinko-bet-amount {
+      color: #00ffff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud" class="hud-container top-right">
+    <div class="hud-header">
+      <div class="hud-title">
+        <span class="game-icon">🎮</span>
+        <span id="game-name">Connect4</span>
+      </div>
+      <div class="status-indicator" id="status-indicator"></div>
+    </div>
+
+    <div class="hud-content">
+      <div class="game-status-text" id="game-status">
+        Warte auf Spiel...
+      </div>
+
+      <div class="players-container" id="players-container" style="display: none;">
+        <div class="player-row" id="player1-row">
+          <div class="player-info">
+            <div class="player-color" id="player1-color"></div>
+            <div>
+              <div class="player-name" id="player1-name">Player 1</div>
+              <div class="player-role" id="player1-role">viewer</div>
+            </div>
+          </div>
+          <div class="turn-indicator" id="player1-turn" style="display: none;">
+            AM ZUG
+          </div>
+        </div>
+
+        <div class="player-row" id="player2-row">
+          <div class="player-info">
+            <div class="player-color" id="player2-color"></div>
+            <div>
+              <div class="player-name" id="player2-name">Player 2</div>
+              <div class="player-role" id="player2-role">streamer</div>
+            </div>
+          </div>
+          <div class="turn-indicator" id="player2-turn" style="display: none;">
+            AM ZUG
+          </div>
+        </div>
+      </div>
+
+      <div class="game-stats" id="game-stats" style="display: none;">
+        <div class="stat-item">
+          <span class="stat-value" id="move-count">0</span>
+          <span class="stat-label">Züge</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="game-time">0:00</span>
+          <span class="stat-label">Zeit</span>
+        </div>
+      </div>
+
+      <div class="game-result" id="game-result" style="display: none;"></div>
+
+      <!-- Plinko activity indicator -->
+      <div class="plinko-activity" id="plinko-activity" style="display: none;">
+        <div class="plinko-activity-title">🎰 Plinko Aktivität</div>
+        <div id="plinko-balls-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plinko notification popup -->
+  <div class="plinko-notification" id="plinko-notification">
+    <span class="plinko-ball-icon">🎰</span>
+    <span id="plinko-notification-text">Ball dropped!</span>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const position = urlParams.get('position') || 'top-right';
+    const minimal = urlParams.get('minimal') === 'true';
+    const hideWhenInactive = urlParams.get('hideWhenInactive') === 'true';
+    
+    const hud = document.getElementById('hud');
+    const statusIndicator = document.getElementById('status-indicator');
+    const gameStatus = document.getElementById('game-status');
+    const playersContainer = document.getElementById('players-container');
+    const gameStats = document.getElementById('game-stats');
+    const gameResult = document.getElementById('game-result');
+    const moveCount = document.getElementById('move-count');
+    const gameTime = document.getElementById('game-time');
+    const plinkoActivity = document.getElementById('plinko-activity');
+    const plinkoBallsList = document.getElementById('plinko-balls-list');
+    const plinkoNotification = document.getElementById('plinko-notification');
+    const plinkoNotificationText = document.getElementById('plinko-notification-text');
+    
+    let currentSession = null;
+    let gameStartTime = null;
+    let gameTimeInterval = null;
+    let activePlinkoBalls = new Map(); // Track active Plinko balls
+
+    // Game time estimation configuration
+    // When loading an active session, we estimate the start time based on the number of moves made.
+    // This provides an approximate game duration for the timer display.
+    const TIME_ESTIMATION = {
+      SECONDS_PER_MOVE: 5, // Average time per move (conservative estimate)
+      MS_PER_SECOND: 1000
+    };
+
+    // Apply settings
+    hud.className = `hud-container ${position}`;
+    if (minimal) {
+      hud.classList.add('minimal');
+    }
+    if (hideWhenInactive) {
+      hud.classList.add('hide-when-inactive');
+    }
+
+    // Update game time
+    function updateGameTime() {
+      if (!gameStartTime) return;
+      
+      const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      gameTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Update HUD with game state
+    // Supports Connect4 (player1/player2), Chess (whitePlayer/blackPlayer), and Plinko
+    function updateHUD(state, gameType) {
+      if (!state) return;
+
+      // Update game name based on type
+      const gameNameEl = document.getElementById('game-name');
+      if (gameType === 'chess') {
+        gameNameEl.textContent = 'Blitzschach';
+      } else if (gameType === 'plinko') {
+        gameNameEl.textContent = 'Plinko';
+      } else {
+        gameNameEl.textContent = 'Connect4';
+      }
+
+      // Update status indicator
+      if (state.status === 'active') {
+        statusIndicator.className = 'status-indicator';
+        gameStatus.textContent = 'Spiel läuft';
+      } else if (state.status === 'completed') {
+        statusIndicator.className = 'status-indicator ended';
+        gameStatus.textContent = 'Spiel beendet';
+      } else {
+        statusIndicator.className = 'status-indicator waiting';
+        gameStatus.textContent = 'Warte auf Spiel...';
+      }
+
+      // Show/hide players container (not applicable for Plinko)
+      if (gameType === 'plinko') {
+        playersContainer.style.display = 'none';
+        gameStats.style.display = 'none';
+      } else if (state.status === 'active' || state.status === 'completed') {
+        playersContainer.style.display = 'flex';
+        gameStats.style.display = 'flex';
+
+        // Get player info based on game type
+        let player1Info, player2Info;
+        
+        if (gameType === 'chess') {
+          // Chess uses whitePlayer/blackPlayer
+          player1Info = state.whitePlayer || state.player1;
+          player2Info = state.blackPlayer || state.player2;
+        } else {
+          // Connect4 uses player1/player2
+          player1Info = state.player1;
+          player2Info = state.player2;
+        }
+
+        // Update player info with null checks
+        if (player1Info) {
+          document.getElementById('player1-name').textContent = player1Info.nickname || player1Info.username || 'Player 1';
+          document.getElementById('player1-role').textContent = gameType === 'chess' 
+            ? ((player1Info.side === 'white' || player1Info.side === 'black') ? (player1Info.side === 'white' ? 'Weiß' : 'Schwarz') : 'Spieler')
+            : (player1Info.role || 'viewer');
+          document.getElementById('player1-color').style.background = player1Info.color || '#4CAF50';
+        }
+
+        if (player2Info) {
+          document.getElementById('player2-name').textContent = player2Info.nickname || player2Info.username || 'Player 2';
+          document.getElementById('player2-role').textContent = gameType === 'chess'
+            ? ((player2Info.side === 'white' || player2Info.side === 'black') ? (player2Info.side === 'white' ? 'Weiß' : 'Schwarz') : 'Spieler')
+            : (player2Info.role || 'viewer');
+          document.getElementById('player2-color').style.background = player2Info.color || '#2196F3';
+        }
+
+        // Update turn indicators
+        const player1Row = document.getElementById('player1-row');
+        const player2Row = document.getElementById('player2-row');
+        const player1Turn = document.getElementById('player1-turn');
+        const player2Turn = document.getElementById('player2-turn');
+
+        if (state.status === 'active') {
+          // Determine which player is current based on game type
+          let isPlayer1Turn = false;
+          
+          if (gameType === 'chess') {
+            // Chess: currentPlayer is 'white' or 'black'
+            isPlayer1Turn = state.currentPlayer === 'white';
+          } else {
+            // Connect4: currentPlayer is 1 or 2
+            isPlayer1Turn = state.currentPlayer === 1;
+          }
+          
+          if (isPlayer1Turn) {
+            player1Row.classList.add('active-turn');
+            player2Row.classList.remove('active-turn');
+            player1Turn.style.display = 'block';
+            player2Turn.style.display = 'none';
+          } else {
+            player1Row.classList.remove('active-turn');
+            player2Row.classList.add('active-turn');
+            player1Turn.style.display = 'none';
+            player2Turn.style.display = 'block';
+          }
+        } else {
+          player1Row.classList.remove('active-turn');
+          player2Row.classList.remove('active-turn');
+          player1Turn.style.display = 'none';
+          player2Turn.style.display = 'none';
+        }
+
+        // Update move count
+        moveCount.textContent = state.moveCount || 0;
+      } else {
+        playersContainer.style.display = 'none';
+        gameStats.style.display = 'none';
+      }
+
+      // Show HUD when game is active (if not in hideWhenInactive mode)
+      if (state.status === 'active' || state.status === 'completed') {
+        if (hideWhenInactive) {
+          hud.classList.remove('hide-when-inactive');
+        }
+        hud.classList.add('active');
+      } else if (hideWhenInactive) {
+        hud.classList.add('hide-when-inactive');
+      }
+    }
+
+    // Show game result
+    // Supports Connect4 (player1/player2 with winner 1/2), Chess (whitePlayer/blackPlayer with winner 'white'/'black')
+    function showGameResult(data) {
+      gameResult.style.display = 'block';
+      
+      if (data.winner) {
+        let winnerInfo;
+        const state = data.state;
+        
+        // Determine winner info based on game type
+        if (currentGameType === 'chess') {
+          // Chess: winner is 'white' or 'black'
+          if (data.winner === 'white' || state.winner === 'white') {
+            winnerInfo = state.whitePlayer;
+          } else if (data.winner === 'black' || state.winner === 'black') {
+            winnerInfo = state.blackPlayer;
+          }
+        } else {
+          // Connect4: winner is 1 or 2
+          const winnerNum = data.winner || state.winner;
+          winnerInfo = winnerNum === 1 ? state.player1 : state.player2;
+        }
+        
+        if (winnerInfo) {
+          gameResult.textContent = `🏆 ${winnerInfo.nickname || winnerInfo.username} gewinnt!`;
+        } else {
+          gameResult.textContent = '🏆 Gewonnen!';
+        }
+        gameResult.className = 'game-result';
+      } else if (data.reason === 'draw' || data.reason === 'stalemate') {
+        gameResult.textContent = '🤝 Unentschieden!';
+        gameResult.className = 'game-result draw';
+      } else {
+        gameResult.textContent = 'Spiel beendet';
+        gameResult.className = 'game-result';
+      }
+
+      // Stop game time
+      if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+        gameTimeInterval = null;
+      }
+
+      // Hide result after 5 seconds
+      setTimeout(() => {
+        gameResult.style.display = 'none';
+        if (hideWhenInactive) {
+          setTimeout(() => {
+            hud.classList.add('hide-when-inactive');
+          }, 2000);
+        }
+      }, 5000);
+    }
+
+    // Track current game type for proper handling
+    let currentGameType = 'connect4';
+
+    // Plinko notification helper
+    function showPlinkoNotification(text, duration = 3000) {
+      plinkoNotificationText.textContent = text;
+      plinkoNotification.classList.add('show');
+      
+      setTimeout(() => {
+        plinkoNotification.classList.remove('show');
+      }, duration);
+    }
+
+    // Update Plinko activity display
+    function updatePlinkoActivity() {
+      if (activePlinkoBalls.size === 0) {
+        plinkoActivity.style.display = 'none';
+        return;
+      }
+
+      plinkoActivity.style.display = 'block';
+      
+      // Build list of active balls
+      let html = '';
+      for (const [ballId, ballData] of activePlinkoBalls.entries()) {
+        html += `
+          <div class="plinko-ball-item">
+            <span class="plinko-player-name">${ballData.nickname || ballData.username}</span>
+            <span class="plinko-bet-amount">${ballData.bet} XP</span>
+          </div>
+        `;
+      }
+      
+      plinkoBallsList.innerHTML = html;
+      
+      // Show HUD when Plinko is active
+      hud.classList.add('active');
+      if (hideWhenInactive) {
+        hud.classList.remove('hide-when-inactive');
+      }
+    }
+
+    // Socket event handlers
+    socket.on('game-engine:game-started', (data) => {
+      console.log('Game started:', data);
+      currentSession = data.sessionId;
+      currentGameType = data.gameType || 'connect4';
+      gameStartTime = Date.now();
+      
+      // Start game time counter
+      if (gameTimeInterval) {
+        clearInterval(gameTimeInterval);
+      }
+      gameTimeInterval = setInterval(updateGameTime, 1000);
+      
+      updateHUD(data.state, currentGameType);
+    });
+
+    socket.on('game-engine:move-made', (data) => {
+      if (data.sessionId === currentSession) {
+        updateHUD(data.state, currentGameType);
+      }
+    });
+
+    socket.on('game-engine:game-ended', (data) => {
+      if (data.sessionId === currentSession) {
+        updateHUD(data.state, currentGameType);
+        showGameResult(data);
+        currentSession = null;
+        gameStartTime = null;
+      }
+    });
+
+    // Plinko-specific events
+    socket.on('plinko:spawn-ball', (data) => {
+      console.log('Plinko ball spawned:', data);
+      
+      // Add to active balls
+      activePlinkoBalls.set(data.ballId, {
+        username: data.username,
+        nickname: data.nickname,
+        bet: data.bet,
+        ballType: data.ballType
+      });
+      
+      // Show notification
+      showPlinkoNotification(`🎰 ${data.nickname || data.username} dropped ${data.bet} XP!`, 2000);
+      
+      // Update activity display
+      updatePlinkoActivity();
+    });
+
+    socket.on('plinko:ball-result', (data) => {
+      console.log('Plinko ball result:', data);
+      
+      // Remove from active balls
+      activePlinkoBalls.delete(data.ballId);
+      
+      // Calculate net profit
+      const netProfit = data.netProfit || (data.winnings - data.bet);
+      
+      // Select appropriate emoji based on result
+      let resultEmoji = '😐'; // Neutral (break even)
+      if (netProfit > 0) {
+        resultEmoji = '🎉'; // Win
+      } else if (netProfit < 0) {
+        resultEmoji = '😢'; // Loss
+      }
+      
+      // Format profit with + or - sign
+      const profitSign = netProfit >= 0 ? '+' : '';
+      const playerName = data.nickname || data.username;
+      
+      // Build result text
+      const resultText = `${resultEmoji} ${playerName}: ${data.multiplier}x = ${data.winnings} XP (${profitSign}${netProfit})`;
+      showPlinkoNotification(resultText, 3000);
+      
+      // Update activity display
+      updatePlinkoActivity();
+    });
+
+    socket.on('plinko:config-updated', (data) => {
+      console.log('Plinko config updated:', data);
+    });
+
+    // Load active session on init
+    fetch('/api/game-engine/active-session')
+      .then(res => res.json())
+      .then(data => {
+        // Support all game types: connect4, chess, plinko
+        if (data && data.gameType && data.state) {
+          currentSession = data.sessionId;
+          currentGameType = data.gameType;
+          
+          // Estimate game start time based on move count
+          // Since we don't have the exact start time, we calculate backwards from now
+          // using the move count and our estimated time per move
+          const estimatedElapsedMs = (data.state.moveCount || 0) * 
+                                      TIME_ESTIMATION.SECONDS_PER_MOVE * 
+                                      TIME_ESTIMATION.MS_PER_SECOND;
+          gameStartTime = Date.now() - estimatedElapsedMs;
+          
+          if (gameTimeInterval) {
+            clearInterval(gameTimeInterval);
+          }
+          gameTimeInterval = setInterval(updateGameTime, 1000);
+          
+          updateHUD(data.state, currentGameType);
+        } else if (!hideWhenInactive) {
+          hud.classList.add('active');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load active session:', err);
+        if (!hideWhenInactive) {
+          hud.classList.add('active');
+        }
+      });
+  </script>
+</body>
+</html>

@@ -33,6 +33,9 @@
       });
       this.webglScene.updateEncounter(this.encounterController.getState('skirmish', 'Arena idle'));
       this.webglScene.resize(profile.resolutionScale);
+      if (typeof this.fxGraph.configure === 'function') {
+        this.fxGraph.configure(this.config);
+      }
       this.fxGraph.resize(profile.resolutionScale);
       this.hudController.updateEncounter(
         this.encounterController.getState('skirmish', 'Arena idle'),

@@ -1,0 +1,77 @@
+{
+  "multicam": {
+    "title": "Multi-Cam Switcher",
+    "subtitle": "Stream Camera Management",
+    "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
+    "current_scene": "Current Scene:",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
+    "connection": {
+      "title": "Connection",
+      "host": "Hôte",
+      "port": "Port",
+      "password": "Mot de passe",
+      "connect": "Connect OBS",
+      "disconnect": "Disconnect OBS",
+      "save_settings": "Enregistrer les Paramètres",
+      "auto_connect_settings": "Paramètres de Connexion Automatique",
+      "connect_on_start": "Connecter au Démarrage",
+      "connect_on_start_desc": "Se connecter automatiquement à OBS lors de l'initialisation du plugin",
+      "connect_delay_ms": "Délai de Connexion (ms)",
+      "connect_delay_ms_desc": "Délai avant la connexion au démarrage",
+      "auto_reconnect_enabled": "Activer la Reconnexion Automatique",
+      "auto_reconnect_enabled_desc": "Se reconnecter automatiquement si la connexion est perdue",
+      "max_reconnect_minutes": "Durée Max. de Reconnexion (min)",
+      "max_reconnect_minutes_desc": "Arrêter la reconnexion après ce nombre de minutes",
+      "health_check_settings": "Paramètres de Vérification de Santé",
+      "health_check_enabled": "Activer la Vérification de Santé",
+      "health_check_enabled_desc": "Vérifier périodiquement que la connexion OBS est saine",
+      "health_check_interval_ms": "Intervalle de Vérification de Santé (ms)",
+      "health_check_interval_ms_desc": "Temps entre les vérifications de santé"
+    },
+    "switcher": {
+      "title": "Scene Switcher",
+      "select_scene": "Select Scene...",
+      "switch": "Switch"
+    },
+    "hot_buttons": {
+      "title": "Hot Buttons"
+    },
+    "gift_mapping": {
+      "title": "Mappage de Cadeau à Scène",
+      "description": "Sélectionnez un cadeau et assignez-le à une scène OBS. Lorsque les utilisateurs envoient ce cadeau, la scène changera automatiquement.",
+      "select_gift": "Sélectionner un Cadeau",
+      "loading": "Chargement des cadeaux...",
+      "select_scene": "Scène Cible",
+      "select_scene_placeholder": "Sélectionner une Scène...",
+      "min_coins": "Pièces Min. (optionnel)",
+      "add": "Ajouter un Mappage",
+      "refresh_gifts": "Actualiser les Cadeaux",
+      "current_mappings": "Mappages Actuels:"
+    },
+    "log": {
+      "title": "Activity Log",
+      "waiting": "Waiting for events..."
+    },
+    "cameras": {
+      "title": "Camera Sources",
+      "add": "Add Camera",
+      "name": "Camera Name",
+      "url": "Source URL",
+      "active": "Active",
+      "preview": "Aperçu"
+    },
+    "overlay": {
+      "title": "Overlay Settings",
+      "url": "URL de l'Overlay",
+      "copy": "Copier l'URL",
+      "open": "Ouvrir l'Overlay"
+    },
+    "settings": {
+      "save": "Enregistrer les Paramètres",
+      "reset": "Reset to Defaults"
+    }
+  }
+}

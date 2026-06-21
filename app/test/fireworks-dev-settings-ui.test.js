@@ -51,6 +51,18 @@ describe('Fireworks Dev Settings UI', () => {
     expect(settingsJs).toContain('config.sceneLayerOpacity');
   });
 
+  test('supports config-driven finale and gift mapping editors plus benchmark parity scenes', () => {
+    expect(settingsHtml).toContain('id="test-shape-double-ring-btn"');
+    expect(settingsHtml).toContain('id="finale-pattern-profiles"');
+    expect(settingsHtml).toContain('id="gift-visual-mappings"');
+    expect(settingsJs).toContain("updateJsonEditor('finale-pattern-profiles'");
+    expect(settingsJs).toContain("updateJsonEditor('gift-visual-mappings'");
+    expect(settingsJs).toContain("setupJsonTextarea('finale-pattern-profiles'");
+    expect(settingsJs).toContain("setupJsonTextarea('gift-visual-mappings'");
+    expect(settingsJs).toContain("shape: 'double-ring'");
+    expect(settingsJs).toContain("giftName: 'Corgi'");
+  });
+
   test('sends dev scene payload fields during manual tests', () => {
     expect(settingsJs).toContain('theme: config.theme');
     expect(settingsJs).toContain('encounterMode: config.encounterMode');

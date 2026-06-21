@@ -5,7 +5,9 @@ const LEGACY_DEFAULT_TICK_RATE_MS = 100;
 const PREVIOUS_DEFAULT_TICK_RATE_MS = 50;
 const LEGACY_DEFAULT_STATE_EMIT_INTERVAL_MS = 120;
 const PREVIOUS_DEFAULT_STATE_EMIT_INTERVAL_MS = 50;
+const PREVIOUS_HIGH_FREQUENCY_STATE_EMIT_INTERVAL_MS = 33;
 const LEGACY_DEFAULT_TARGET_FPS = 30;
+const PREVIOUS_HIGH_DEFAULT_TARGET_FPS = 60;
 const LEGACY_DEFAULT_INACTIVITY_GRACE_MS = 15000;
 const LEGACY_DEFAULT_INACTIVITY_SHRINK_PER_SECOND = 5;
 const LEGACY_DEFAULT_MAX_MASS = 90;
@@ -18,6 +20,7 @@ const LEGACY_DEFAULT_MAX_FOOD = 90;
 const LEGACY_DEFAULT_MAX_FOOD_RENDER = 52;
 const PREVIOUS_SPARSE_MAX_FOOD = 50;
 const PREVIOUS_SPARSE_MAX_FOOD_RENDER = 25;
+const PREVIOUS_HIGH_MAX_FOOD_RENDER = 90;
 const LEGACY_DEFAULT_FOOD_VALUE = 2.25;
 const PREVIOUS_DEFAULT_PLAYER_ABSORB_MASS_RATIO = 0.7;
 const PREVIOUS_DEFAULT_PLAYER_ABSORB_LIFE_STEAL_RATIO = 0.7;
@@ -170,10 +173,10 @@ const DEFAULT_CONFIG = {
   largeBallMinOpacity: 0.42,
   maxPlayers: 80,
   maxFood: 130,
-  maxFoodRender: 90,
-  renderScale: 0.75,
-  targetFps: 60,
-  maxRenderPlayers: 60,
+  maxFoodRender: 72,
+  renderScale: 0.7,
+  targetFps: 45,
+  maxRenderPlayers: 48,
   rendererMode: 'auto',
   topOverlayDesign: 'framed-field',
   topOverlayPosition: 'top-center',
@@ -247,7 +250,7 @@ const DEFAULT_CONFIG = {
   playerAbsorbMassRatio: 0.9,
   playerAbsorbLifeStealRatio: 0.9,
   tickRateMs: DEFAULT_TICK_RATE_MS,
-  stateEmitIntervalMs: DEFAULT_TICK_RATE_MS,
+  stateEmitIntervalMs: 66,
   feverIntervalMs: 180000,
   feverDurationMs: 30000,
   feverFoodMultiplier: 2,
@@ -262,18 +265,18 @@ const DEFAULT_CONFIG = {
   },
   movement: {
     baseSpeed: 90,
-    fleeDistance: 320,
-    huntDistance: 460,
-    weaponSenseDistance: 540,
+    fleeDistance: 360,
+    huntDistance: 520,
+    weaponSenseDistance: 620,
     foodSenseDistance: 460,
     steeringStrength: 0.3,
     randomTurn: 0.032,
-    fleeMassRatio: 1.03,
-    huntMassRatio: 1.04,
+    fleeMassRatio: 0.98,
+    huntMassRatio: 1.02,
     huntLeadSeconds: 0.65,
     threatLookaheadSeconds: 0.9,
-    fleeSpeedBoost: 0.3,
-    huntSpeedBoost: 0.18,
+    fleeSpeedBoost: 0.36,
+    huntSpeedBoost: 0.24,
     huntStrikeDistance: 260,
     huntStrikeBoost: 1.18,
     smallMassSpeedBoost: 0.35,
@@ -282,8 +285,8 @@ const DEFAULT_CONFIG = {
     maxMassSpeedMultiplier: 1.35,
     boundaryAvoidanceDistance: 90,
     boundaryAvoidanceStrength: 0.8,
-    behaviorMemoryMs: 3200,
-    targetSwitchScoreMargin: 5,
+    behaviorMemoryMs: 2600,
+    targetSwitchScoreMargin: 3.8,
     pressureMassAdvantageRatio: 1.12,
     armedPressureMinMassRatio: 0.78,
     wanderTurnIntervalMs: 850,
@@ -972,7 +975,11 @@ class ArenaGame {
       if (context.weapon && (!player.weapon || personality.weaponFocus >= 0.8)) {
         const escapeRoute = this._weaponEscapeRoute(player, context);
         if (escapeRoute.viable) {
-          candidates.push(this._createEvadeWeaponIntent(player, context, threatScore, escapeRoute));
+          const evadeIntent = this._createEvadeWeaponIntent(player, context, threatScore, escapeRoute);
+          if (!player.weapon) {
+            evadeIntent.score += survivalNeed * 2.6 + personality.weaponFocus * 0.75;
+          }
+          candidates.push(evadeIntent);
         }
       }
     }
@@ -997,12 +1004,15 @@ class ArenaGame {
           : this._vectorToTarget(player, context.prey.target).x * context.threat.vector.x +
             this._vectorToTarget(player, context.prey.target).y * context.threat.vector.y)
         : 0;
+      const massAdvantage = Math.max(1, player.mass / Math.max(context.prey.target.mass, 1));
+      const predatorBonus = this._clamp((massAdvantage - 1.25) * 2.1, 0, 5.8) *
+        sizeProfile.attackIntentScale;
       const riskBonus = riskAppetite * (2.6 + laneAlignment * 2.4);
       candidates.push(this._createAttackIntent(
         player,
         context,
         (context.prey.score - threatPenalty - staminaPenalty + combatReadiness * 1.2 + riskBonus +
-          chainsawCommitmentBonus) * sizeProfile.attackIntentScale
+          chainsawCommitmentBonus + predatorBonus) * sizeProfile.attackIntentScale
       ));
     }
 
@@ -1033,6 +1043,9 @@ class ArenaGame {
       if (player.weapon) {
         weaponUrgency = hasActiveChainsaw ? 0.24 : 0.75;
       }
+      const unarmedThreatBonus = context.threat && !player.weapon
+        ? threatScore * 0.35 + survivalNeed * 2.4
+        : 0;
       candidates.push({
         mode: 'hunt-weapon',
         intent: 'arm',
@@ -1041,7 +1054,8 @@ class ArenaGame {
         score: (
           context.weapon.score * weaponUrgency +
           personality.weaponFocus * 1.1 +
-          survivalNeed * 1.25
+          survivalNeed * 1.25 +
+          unarmedThreatBonus
         ) * sizeProfile.weaponIntentScale,
         metadata: this._aiMetadata({
           reason: player.weapon ? 'upgrade-weapon' : 'get-weapon'
@@ -4562,7 +4576,7 @@ class ArenaGame {
     const baseMass = Number(config.baseMass) || DEFAULT_CONFIG.baseMass;
     const minMass = Number(config.minMass) || DEFAULT_CONFIG.minMass;
     const smallness = Math.max(0, (baseMass - player.mass) / Math.max(1, baseMass - minMass));
-    const threatScale = this._clamp((massRatio - 1) * 0.14, 0, 0.42);
+    const threatScale = this._clamp((massRatio - 1) * 0.18, 0, 0.38);
     const activeWeapon = other && other.weapon && other.weapon.type ? other.weapon.type : null;
     const weaponThreatScale = activeWeapon === 'chainsaw'
       ? 0.22
@@ -4570,7 +4584,7 @@ class ArenaGame {
         ? 0.16
         : 0;
     const personalityScale = this._clamp(0.82 + personality.fear * 0.22 - (personality.aggression - 1) * 0.08, 0.72, 1.2);
-    return base * (1 + threatScale + smallness * 0.12 + weaponThreatScale) * personalityScale;
+    return base * (1 + threatScale + smallness * 0.2 + weaponThreatScale) * personalityScale;
   }
 
   _currentFleeThreatLimit(player, threat, dynamicFleeDistance, weaponThreat = null) {
@@ -4585,7 +4599,7 @@ class ArenaGame {
 
     const personality = this._personalityTraits(player);
     const fearSlack = this._clamp((personality.fear - 1) * 110, 0, 75);
-    return dynamicFleeDistance + threatRadius * 0.55 + playerRadius * 0.25 + fearSlack;
+    return dynamicFleeDistance + threatRadius * 0.4 + playerRadius * 0.25 + fearSlack;
   }
 
   _predictThreatPosition(player, threat, movement, config, lookaheadSeconds) {
@@ -6624,12 +6638,22 @@ class ArenaGame {
     }
     if (
       Number(stored?.stateEmitIntervalMs) === LEGACY_DEFAULT_STATE_EMIT_INTERVAL_MS ||
-      Number(stored?.stateEmitIntervalMs) === PREVIOUS_DEFAULT_STATE_EMIT_INTERVAL_MS
+      Number(stored?.stateEmitIntervalMs) === PREVIOUS_DEFAULT_STATE_EMIT_INTERVAL_MS ||
+      Number(stored?.stateEmitIntervalMs) === PREVIOUS_HIGH_FREQUENCY_STATE_EMIT_INTERVAL_MS
     ) {
       config.stateEmitIntervalMs = DEFAULT_CONFIG.stateEmitIntervalMs;
     }
-    if (Number(stored?.targetFps) === LEGACY_DEFAULT_TARGET_FPS) {
+    if (
+      Number(stored?.targetFps) === LEGACY_DEFAULT_TARGET_FPS ||
+      Number(stored?.targetFps) === PREVIOUS_HIGH_DEFAULT_TARGET_FPS
+    ) {
       config.targetFps = DEFAULT_CONFIG.targetFps;
+    }
+    if (Number(stored?.renderScale) === 0.75) {
+      config.renderScale = DEFAULT_CONFIG.renderScale;
+    }
+    if (Number(stored?.maxRenderPlayers) === 60) {
+      config.maxRenderPlayers = DEFAULT_CONFIG.maxRenderPlayers;
     }
     if (Number(stored?.inactivityGraceMs) === LEGACY_DEFAULT_INACTIVITY_GRACE_MS) {
       config.inactivityGraceMs = DEFAULT_CONFIG.inactivityGraceMs;
@@ -6687,7 +6711,8 @@ class ArenaGame {
     }
     if (
       Number(stored?.maxFoodRender) === LEGACY_DEFAULT_MAX_FOOD_RENDER ||
-      Number(stored?.maxFoodRender) === PREVIOUS_SPARSE_MAX_FOOD_RENDER
+      Number(stored?.maxFoodRender) === PREVIOUS_SPARSE_MAX_FOOD_RENDER ||
+      Number(stored?.maxFoodRender) === PREVIOUS_HIGH_MAX_FOOD_RENDER
     ) {
       config.maxFoodRender = DEFAULT_CONFIG.maxFoodRender;
     }

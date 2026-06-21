@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <title>CoinBattle Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/plugins/coinbattle/overlay/styles.css">
+</head>
+<body>
+    <!-- Main container -->
+    <div id="overlay-container" class="overlay-container">
+        <!-- Match Timer -->
+        <div id="timer-container" class="timer-container">
+            <div class="timer-bg"></div>
+            <div class="timer-content">
+                <div class="timer-label">TIME</div>
+                <div id="timer-display" class="timer-display">05:00</div>
+            </div>
+            <svg class="timer-circle" viewBox="0 0 100 100">
+                <circle class="timer-circle-bg" cx="50" cy="50" r="45"></circle>
+                <circle id="timer-circle-progress" class="timer-circle-progress" cx="50" cy="50" r="45"></circle>
+            </svg>
+        </div>
+
+        <!-- Multiplier Indicator -->
+        <div id="multiplier-container" class="multiplier-container" style="display: none;">
+            <div class="multiplier-icon">✨</div>
+            <div class="multiplier-value" id="multiplier-value">2.0x</div>
+            <div class="multiplier-time" id="multiplier-time">30s</div>
+        </div>
+
+        <!-- Team Scores (for team mode) -->
+        <div id="team-scores-container" class="team-scores-container" style="display: none;">
+            <div class="team-score team-red">
+                <div class="team-header">
+                    <img id="team-red-image" class="team-image" style="display: none;" alt="Red Team">
+                    <div class="team-name" id="team-red-name">RED TEAM</div>
+                </div>
+                <div class="team-coins" id="team-red-coins">0</div>
+                <div class="team-players" id="team-red-players">
+                    <!-- Player avatars will be added here -->
+                </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="team-score team-blue">
+                <div class="team-header">
+                    <img id="team-blue-image" class="team-image" style="display: none;" alt="Blue Team">
+                    <div class="team-name" id="team-blue-name">BLUE TEAM</div>
+                </div>
+                <div class="team-coins" id="team-blue-coins">0</div>
+                <div class="team-players" id="team-blue-players">
+                    <!-- Player avatars will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="leaderboard-container" class="leaderboard-container">
+            <div class="leaderboard-header">
+                <div class="leaderboard-title">🏆 LEADERBOARD</div>
+            </div>
+            <div id="leaderboard-content" class="leaderboard-content">
+                <!-- Dynamic leaderboard entries -->
+            </div>
+        </div>
+        
+        <!-- King of the Hill Mode -->
+        <div id="koth-container" class="koth-container" style="display: none;">
+            <div class="koth-header">
+                <div class="koth-title">👑 KING OF THE HILL</div>
+            </div>
+            <div class="koth-king" id="koth-king">
+                <!-- King position -->
+            </div>
+            <div class="koth-challengers" id="koth-challengers">
+                <!-- 3 challenger positions -->
+            </div>
+        </div>
+
+        <!-- Pyramid Mode -->
+        <div id="pyramid-container" class="pyramid-container" style="display: none;">
+            <div class="pyramid-header">
+                <div class="pyramid-title">🔺 PYRAMID BATTLE</div>
+                <div class="pyramid-timer" id="pyramid-timer">02:00</div>
+            </div>
+            <div class="pyramid-rows" id="pyramid-rows">
+                <!-- Row 1: 1 player (top) -->
+                <div class="pyramid-row pyramid-row-1" id="pyramid-row-1">
+                    <!-- Player slots will be added dynamically -->
+                </div>
+                <!-- Row 2: 2 players -->
+                <div class="pyramid-row pyramid-row-2" id="pyramid-row-2">
+                    <!-- Player slots will be added dynamically -->
+                </div>
+                <!-- Row 3: 4 players -->
+                <div class="pyramid-row pyramid-row-3" id="pyramid-row-3">
+                    <!-- Player slots will be added dynamically -->
+                </div>
+                <!-- Row 4: 6 players -->
+                <div class="pyramid-row pyramid-row-4" id="pyramid-row-4">
+                    <!-- Player slots will be added dynamically -->
+                </div>
+            </div>
+            <div class="pyramid-knockout" id="pyramid-knockout" style="display: none;">
+                <div class="knockout-text">🥊 KNOCKOUT!</div>
+            </div>
+        </div>
+
+        <!-- Winner Reveal -->
+        <div id="winner-reveal" class="winner-reveal" style="display: none;">
+            <div class="winner-bg"></div>
+            <div class="winner-content">
+                <div class="winner-trophy">🏆</div>
+                <div class="winner-label">WINNER</div>
+                <div class="winner-name" id="winner-name">Player Name</div>
+                <div class="winner-stats">
+                    <div class="winner-stat">
+                        <span class="stat-label">Coins:</span>
+                        <span class="stat-value" id="winner-coins">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="confetti-container" id="confetti"></div>
+        </div>
+
+        <!-- Gift Animation Container -->
+        <div id="gift-animations" class="gift-animations"></div>
+
+        <!-- Badge Notification -->
+        <div id="badge-notification" class="badge-notification" style="display: none;">
+            <div class="badge-icon" id="badge-icon">🏆</div>
+            <div class="badge-text">
+                <div class="badge-title" id="badge-title">Achievement Unlocked!</div>
+                <div class="badge-name" id="badge-name">Badge Name</div>
+            </div>
+        </div>
+
+        <!-- Post-Match Leaderboard Display -->
+        <div id="post-match-leaderboard" class="post-match-leaderboard" style="display: none;">
+            <div class="post-match-bg"></div>
+            <div class="post-match-content">
+                <div class="post-match-header">
+                    <div class="post-match-trophy">🏆</div>
+                    <div class="post-match-title" id="post-match-lb-title">LEADERBOARD</div>
+                </div>
+                <div class="post-match-leaderboard-list" id="post-match-lb-list">
+                    <!-- Leaderboard entries will be added dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Credits Roll -->
+        <div id="winner-credits" class="winner-credits" style="display: none;">
+            <div class="credits-bg"></div>
+            <div class="credits-scroll">
+                <div class="credits-title">🎮 MATCH WINNERS 🎮</div>
+                <div class="credits-list" id="credits-list">
+                    <!-- Winner credits will be added dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/plugins/coinbattle/overlay/overlay.js"></script>
+</body>
+</html>

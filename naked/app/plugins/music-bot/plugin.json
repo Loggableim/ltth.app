@@ -1,0 +1,12 @@
+{
+  "id": "music-bot",
+  "name": "Music Bot",
+  "description": "Viewer-controlled music bot for TikTok LIVE streams. Chat commands to request, skip, and manage songs via YouTube/SoundCloud.",
+  "version": "1.2.0",
+  "author": "PupCid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "integration",
+  "dependencies": [],
+  "permissions": ["tiktok-events", "database", "filesystem", "network"]
+}

@@ -11,6 +11,7 @@ class QueueManager {
         this.queue = [];
         this.isProcessing = false;
         this.currentItem = null;
+        this.processingTimer = null;
 
         // Rate limiting: track user message timestamps
         this.userRateLimits = new Map();
@@ -244,6 +245,10 @@ class QueueManager {
     stopProcessing() {
         this.isProcessing = false;
         this.currentItem = null;
+        if (this.processingTimer) {
+            clearTimeout(this.processingTimer);
+            this.processingTimer = null;
+        }
         // Cancel any pending pre-generations
         this.preGenerationInProgress.clear();
         this.logger.info('TTS Queue processing stopped, pre-generations cancelled');
@@ -427,7 +432,10 @@ class QueueManager {
 
         if (!item) {
             // Queue empty, check again in 500ms (optimized from 1000ms)
-            setTimeout(() => this._processNextOptimized(playCallback), 500);
+            this.processingTimer = setTimeout(() => {
+                this.processingTimer = null;
+                this._processNextOptimized(playCallback);
+            }, 500);
             return;
         }
 
@@ -467,7 +475,10 @@ class QueueManager {
             this.currentItem = null;
 
             // Process next item (optimized delay: 50ms instead of 100ms)
-            setTimeout(() => this._processNextOptimized(playCallback), 50);
+            this.processingTimer = setTimeout(() => {
+                this.processingTimer = null;
+                this._processNextOptimized(playCallback);
+            }, 50);
         }
     }
 

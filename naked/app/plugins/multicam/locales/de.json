@@ -1,0 +1,77 @@
+{
+  "multicam": {
+    "title": "Multi-Cam Umschalter",
+    "subtitle": "Stream-Kamera-Verwaltung",
+    "safety_lock": "⚠️ SICHERHEITSSPERRE AKTIV - Zu viele schnelle Umschaltungen erkannt. Warte 60 Sekunden...",
+    "current_scene": "Aktuelle Szene:",
+    "status": {
+      "connected": "Verbunden",
+      "disconnected": "Getrennt"
+    },
+    "connection": {
+      "title": "Verbindung",
+      "host": "Host",
+      "port": "Port",
+      "password": "Passwort",
+      "connect": "OBS verbinden",
+      "disconnect": "OBS trennen",
+      "save_settings": "Einstellungen speichern",
+      "auto_connect_settings": "Auto-Verbindungs-Einstellungen",
+      "connect_on_start": "Beim Start verbinden",
+      "connect_on_start_desc": "Automatisch mit OBS verbinden, wenn Plugin initialisiert wird",
+      "connect_delay_ms": "Verbindungsverzögerung (ms)",
+      "connect_delay_ms_desc": "Verzögerung vor Verbindung beim Start",
+      "auto_reconnect_enabled": "Auto-Wiederverbindung aktivieren",
+      "auto_reconnect_enabled_desc": "Automatisch wiederverbinden, wenn Verbindung verloren geht",
+      "max_reconnect_minutes": "Max. Wiederverbindungsdauer (Min)",
+      "max_reconnect_minutes_desc": "Wiederverbindungsversuche nach dieser Zeit stoppen",
+      "health_check_settings": "Gesundheitsprüfungs-Einstellungen",
+      "health_check_enabled": "Gesundheitsprüfung aktivieren",
+      "health_check_enabled_desc": "Regelmäßig prüfen, ob OBS-Verbindung gesund ist",
+      "health_check_interval_ms": "Gesundheitsprüfungs-Intervall (ms)",
+      "health_check_interval_ms_desc": "Zeit zwischen Gesundheitsprüfungen"
+    },
+    "switcher": {
+      "title": "Szenen-Umschalter",
+      "select_scene": "Szene auswählen...",
+      "switch": "Umschalten"
+    },
+    "hot_buttons": {
+      "title": "Schnell-Tasten"
+    },
+    "gift_mapping": {
+      "title": "Geschenk-zu-Szene-Zuordnung",
+      "description": "Wählen Sie ein Geschenk und weisen Sie es einer OBS-Szene zu. Wenn Benutzer dieses Geschenk senden, wird die Szene automatisch umgeschaltet.",
+      "select_gift": "Geschenk auswählen",
+      "loading": "Geschenke werden geladen...",
+      "select_scene": "Zielszene",
+      "select_scene_placeholder": "Szene auswählen...",
+      "min_coins": "Min. Coins (optional)",
+      "add": "Zuordnung hinzufügen",
+      "refresh_gifts": "Geschenke aktualisieren",
+      "current_mappings": "Aktuelle Zuordnungen:"
+    },
+    "log": {
+      "title": "Aktivitätsprotokoll",
+      "waiting": "Warte auf Ereignisse..."
+    },
+    "cameras": {
+      "title": "Kameraquellen",
+      "add": "Kamera hinzufügen",
+      "name": "Kameraname",
+      "url": "Quell-URL",
+      "active": "Aktiv",
+      "preview": "Vorschau"
+    },
+    "overlay": {
+      "title": "Overlay-Einstellungen",
+      "url": "Overlay-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen"
+    },
+    "settings": {
+      "save": "Einstellungen speichern",
+      "reset": "Auf Standard zurücksetzen"
+    }
+  }
+}

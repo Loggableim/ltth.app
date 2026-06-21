@@ -1,0 +1,24 @@
+{
+  "id": "milestone-leaderboard",
+  "name": "Milestone Leaderboard",
+  "version": "1.0.0",
+  "description": "Mega plugin that merges Gift Milestone celebrations with the real-time gifter leaderboard overlay.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "overlay",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "descriptions": {
+    "en": "Mega plugin that merges Gift Milestone celebrations with the real-time gifter leaderboard overlay.",
+    "de": "Mega-Plugin, das die Gift-Milestone-Feiern mit dem Echtzeit-Gifter-Leaderboard-Overlay kombiniert.",
+    "es": "Mega plugin que combina las celebraciones de Gift Milestone con el overlay del leaderboard de donadores en tiempo real.",
+    "fr": "Mega plugin qui fusionne les célébrations Gift Milestone avec l’overlay de classement des donateurs en temps réel."
+  }
+}

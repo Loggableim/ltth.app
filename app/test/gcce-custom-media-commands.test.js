@@ -144,6 +144,13 @@ describe('GCCE Custom Media Commands', () => {
     await gcce.init();
   });
 
+  afterEach(async () => {
+    if (gcce && typeof gcce.destroy === 'function') {
+      await gcce.destroy();
+    }
+    gcce = null;
+  });
+
   test('should register custom media commands from media library', () => {
     const allCommands = gcce.registry.getAllCommands();
     

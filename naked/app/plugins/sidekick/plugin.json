@@ -1,0 +1,24 @@
+{
+  "id": "sidekick",
+  "name": "Sidekick",
+  "version": "1.0.0",
+  "description": "Intelligenter Stream-Assistent mit Animaze/ChatPal Integration, Event-Analyse und automatischen Reaktionen",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "tool",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "gcce-integration"
+  ],
+  "descriptions": {
+    "en": "Intelligent stream assistant with Animaze/ChatPal integration. Features event analysis, automatic responses, user memory with decay, message batching, relevance scoring, and comprehensive stream analytics.",
+    "de": "Intelligenter Stream-Assistent mit Animaze/ChatPal Integration. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik.",
+    "es": "Asistente de stream inteligente con integración Animaze/ChatPal. Incluye análisis de eventos, respuestas automáticas, memoria de usuarios con decaimiento, agrupación de mensajes, puntuación de relevancia y análisis completo de streams.",
+    "fr": "Assistant de stream intelligent avec intégration Animaze/ChatPal. Comprend l'analyse d'événements, les réponses automatiques, la mémoire utilisateur avec déclin, le regroupement de messages, le scoring de pertinence et l'analytique complète de streams."
+  }
+}

@@ -155,6 +155,7 @@ class EffectsEngine {
             console.error('Failed to load config:', error);
             this.config = {
                 effectType: 'flames',
+                qualityMode: 'obs-safe',
                 resolutionPreset: 'tiktok-portrait',
                 customWidth: 720,
                 customHeight: 1280,
@@ -162,35 +163,43 @@ class EffectsEngine {
                 frameThickness: 150,
                 flameColor: '#ff6600',
                 flameSpeed: 0.5,
-                flameIntensity: 1.3,
-                flameBrightness: 0.38,
+                flameIntensity: 1.48,
+                flameBrightness: 0.46,
                 enableGlow: true,
                 enableAdditiveBlend: true,
                 maskOnlyEdges: true,
-                noiseOctaves: 8,
+                noiseOctaves: 9,
                 useHighQualityTextures: true,
                 detailScaleAuto: true,
-                edgeFeather: 0.42,
-                frameCurve: 0.08,
-                frameNoiseAmount: 0.12,
+                edgeFeather: 0.52,
+                frameCurve: 0.14,
+                frameNoiseAmount: 0.18,
                 animationEasing: 'linear',
                 pulseEnabled: false,
                 pulseAmount: 0.2,
                 pulseSpeed: 1.0,
                 bloomEnabled: true,
-                bloomIntensity: 0.8,
-                bloomThreshold: 0.6,
-                bloomRadius: 4,
+                bloomIntensity: 1.05,
+                bloomThreshold: 0.52,
+                bloomRadius: 5,
                 layersEnabled: true,
                 layerCount: 3,
                 layerParallax: 0.3,
-                chromaticAberration: 0.005,
-                filmGrain: 0.03,
-                depthIntensity: 0.65,
+                chromaticAberration: 0.006,
+                filmGrain: 0.025,
+                depthIntensity: 0.78,
+                cinematicContrast: 1.18,
+                coreWhiteness: 0.72,
+                emberTrailAmount: 0.42,
+                sparkEnabled: true,
+                sparkDensity: 0.78,
+                heatDistortionEnabled: true,
+                heatDistortionStrength: 0.32,
                 smokeEnabled: true,
-                smokeIntensity: 0.4,
-                smokeSpeed: 0.3,
-                smokeColor: '#333333'
+                smokeIntensity: 0.48,
+                smokeSpeed: 0.28,
+                smokeColor: '#2d2623',
+                visualProfileVersion: 3
             };
         }
     }
@@ -643,6 +652,13 @@ uniform bool uLayersEnabled;
 uniform int uLayerCount; // 1-3
 uniform float uLayerParallax; // 0.0-1.0
 
+// Cinematic HDR v3 settings
+uniform float uSparkDensity;
+uniform float uHeatDistortionStrength;
+uniform float uCinematicContrast;
+uniform float uCoreWhiteness;
+uniform float uEmberTrailAmount;
+
 varying vec2 vTexCoord;
 varying vec3 vPosition;
 
@@ -733,6 +749,13 @@ float applyEasing(float t, int easingType) {
     return t; // linear
 }
 
+float easedCycleTime(float timeValue, int easingType) {
+    float cycleTime = timeValue * 0.1;
+    float cycle = floor(cycleTime);
+    float phase = fract(cycleTime);
+    return (cycle + applyEasing(phase, easingType)) * 10.0;
+}
+
 // Blackbody radiation
 vec3 blackbodyColor(float temp) {
     temp = temp * 39000.0 + 1000.0;
@@ -807,19 +830,20 @@ vec4 sampleFireLayer(vec3 loc, vec4 scale, float layerOffset, float speedMult, f
     loc.xz = loc.xz * 2.0 - 1.0;
     vec2 st = vec2(sqrt(dot(loc.xz, loc.xz)), loc.y);
     
-    // Apply easing and pulse
+    // Apply easing without resetting motion at cycle boundaries.
     float timeAdjusted = uTime;
-    if (uPulseEnabled) {
-        timeAdjusted += sin(uTime * uPulseSpeed) * uPulseAmount;
-    }
-    timeAdjusted = applyEasing(fract(timeAdjusted * 0.1), uAnimationEasing) * 10.0;
+    timeAdjusted = easedCycleTime(timeAdjusted, uAnimationEasing);
+    float pulseWave = uPulseEnabled ? sin(uTime * uPulseSpeed) * uPulseAmount : 0.0;
     
     loc.y -= timeAdjusted * scale.w * uFlameSpeed * speedMult;
     loc *= scale.xyz;
     loc.y += layerOffset;
     
     // Lower octave count when high quality textures are disabled.
-    int effectiveOctaves = uUseHighQualityTextures ? uNoiseOctaves : min(uNoiseOctaves, 4);
+    int effectiveOctaves = uNoiseOctaves;
+    if (!uUseHighQualityTextures && effectiveOctaves > 4) {
+        effectiveOctaves = 4;
+    }
     float offset = sqrt(st.y) * uFlameIntensity * fbm(loc.xy * uDetailScale, effectiveOctaves);
     st.y += offset;
     
@@ -837,10 +861,16 @@ vec4 sampleFireLayer(vec3 loc, vec4 scale, float layerOffset, float speedMult, f
     // Apply blackbody color or custom color
     float temp = result.r; // Use red channel as temperature
     vec3 bbColor = blackbodyColor(temp);
-    result.rgb = mix(uFlameColor * result.rgb, bbColor, 0.3);
+    vec3 hotCore = mix(bbColor, vec3(1.0, 0.92, 0.68), clamp(temp * uCoreWhiteness, 0.0, 1.0));
+    vec3 emberEdge = mix(vec3(0.42, 0.055, 0.012), uFlameColor, 0.58);
+    result.rgb = mix(emberEdge * result.rgb, hotCore, clamp(temp * 0.76 + uCoreWhiteness * 0.18, 0.0, 1.0));
     
     // Apply brightness multiplier for this layer
     result.rgb *= brightnessMult;
+    float pulseBrightness = 1.0 + pulseWave * 0.35;
+    float pulseAlpha = 1.0 + pulseWave * 0.18;
+    result.rgb *= pulseBrightness;
+    result.a *= pulseAlpha;
     
     // Fake depth (inner glow)
     if (uDepthIntensity > 0.0) {
@@ -849,6 +879,29 @@ vec4 sampleFireLayer(vec3 loc, vec4 scale, float layerOffset, float speedMult, f
     }
     
     return result;
+}
+
+float cinematicSpark(vec2 pixelPos, vec2 frameResolution, float edgeDist, float seedOffset) {
+    vec2 cell = vec2(38.0, 84.0);
+    vec2 moving = vec2(pixelPos.x / cell.x, (pixelPos.y + uTime * (85.0 + seedOffset * 27.0)) / cell.y);
+    vec2 id = floor(moving);
+    vec2 gv = fract(moving) - 0.5;
+    float rnd = hash(id + vec2(seedOffset));
+    if (rnd > 0.18 * uSparkDensity) return 0.0;
+    vec2 drift = (random2(id + vec2(seedOffset)) - 0.5) * vec2(0.72, 0.34);
+    float dist = length(gv - drift);
+    float lift = smoothstep(0.02, 0.82, edgeDist);
+    float emberLife = smoothstep(1.0, 0.08, fract(moving.y + rnd));
+    return exp(-dist * dist * 190.0) * lift * emberLife * uSparkDensity;
+}
+
+vec3 cinematicToneMap(vec3 color, float alpha, float edgeDist) {
+    float contrast = max(uCinematicContrast, 0.01);
+    color = pow(max(color, vec3(0.0)), vec3(1.0 / contrast));
+    float rim = pow(1.0 - clamp(edgeDist, 0.0, 1.0), 2.2);
+    vec3 hot = vec3(1.0, 0.9, 0.62) * rim * alpha * (0.28 + uCoreWhiteness * 0.32);
+    vec3 deep = vec3(0.16, 0.012, 0.0) * (1.0 - alpha) * 0.18;
+    return color + hot + deep;
 }
 
 void main() {
@@ -919,31 +972,40 @@ void main() {
         return;
     }
     
+    vec2 effectUv = clamp(pixelPos / frameResolution, 0.0, 1.0);
+    vec2 flameUv = effectUv;
+    if (uHeatDistortionStrength > 0.0) {
+        float heatNoise = fbm(vec2(effectUv.x * 6.0, edgeDist * 3.0 - uTime * 0.42), 4);
+        float shimmer = sin((effectUv.x + heatNoise * 0.12) * 48.0 + uTime * 6.2);
+        flameUv.x += (heatNoise * 0.018 + shimmer * 0.0035) * uHeatDistortionStrength * smoothstep(0.03, 0.65, edgeDist);
+        flameUv.x = clamp(flameUv.x, 0.0, 1.0);
+    }
+
     // Multi-layer compositing
     vec4 finalColor = vec4(0.0);
     
     if (uLayersEnabled && uLayerCount > 1) {
         // Background layer: large, slow, dark
-        vec3 samplePos1 = vec3(uv.x, edgeDist, uv.y);
+        vec3 samplePos1 = vec3(flameUv.x, edgeDist, flameUv.y);
         samplePos1.x += uLayerParallax * 0.02;
         vec4 layer1 = sampleFireLayer(samplePos1, vec4(0.8, 2.0, 0.8, 0.5), 0.0, 0.5, 0.6 * uFlameBrightness);
         finalColor = layer1;
         
         // Midground layer: normal
-        vec3 samplePos2 = vec3(uv.x, edgeDist, uv.y);
+        vec3 samplePos2 = vec3(flameUv.x, edgeDist, flameUv.y);
         vec4 layer2 = sampleFireLayer(samplePos2, vec4(1.0, 2.0, 1.0, 0.5), 0.0, 1.0, 1.0 * uFlameBrightness);
         finalColor = mix(finalColor, layer2, layer2.a);
         
         if (uLayerCount >= 3) {
             // Foreground layer: small, fast, bright
-            vec3 samplePos3 = vec3(uv.x, edgeDist, uv.y);
+            vec3 samplePos3 = vec3(flameUv.x, edgeDist, flameUv.y);
             samplePos3.x -= uLayerParallax * 0.02;
             vec4 layer3 = sampleFireLayer(samplePos3, vec4(1.2, 2.0, 1.2, 0.5), 0.0, 1.5, 1.2 * uFlameBrightness);
             finalColor = mix(finalColor, layer3, layer3.a);
         }
     } else {
         // Single layer
-        vec3 samplePos = vec3(uv.x, edgeDist, uv.y);
+        vec3 samplePos = vec3(flameUv.x, edgeDist, flameUv.y);
         finalColor = sampleFireLayer(samplePos, vec4(1.0, 2.0, 1.0, 0.5), 0.0, 1.0, uFlameBrightness);
     }
     
@@ -961,9 +1023,14 @@ void main() {
     float rim = pow(1.0 - clamp(edgeDist, 0.0, 1.0), 2.4);
     float hotCore = rim * finalColor.a;
     float filament = pow(max(0.0, sin(pixelPos.x * 0.045 + uTime * 8.0)), 12.0) * rim;
-    finalColor.rgb += vec3(1.0, 0.82, 0.42) * hotCore * 0.22 * uFlameBrightness;
-    finalColor.rgb += mix(uFlameColor, vec3(1.0, 0.9, 0.55), 0.45) * filament * 0.18;
-    finalColor.a = clamp(finalColor.a + hotCore * 0.08 + filament * 0.05, 0.0, 1.0);
+    float sparkA = cinematicSpark(pixelPos, frameResolution, edgeDist, 1.0) +
+        cinematicSpark(pixelPos + vec2(19.0, 7.0), frameResolution, edgeDist, 5.0) * 0.65;
+    vec3 sparkColor = mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.92, 0.62), clamp(sparkA * 2.2, 0.0, 1.0));
+    finalColor.rgb += vec3(1.0, 0.82, 0.42) * hotCore * 0.26 * uFlameBrightness;
+    finalColor.rgb += mix(uFlameColor, vec3(1.0, 0.9, 0.55), 0.45) * filament * 0.2;
+    finalColor.rgb += sparkColor * sparkA * (0.65 + uEmberTrailAmount * 0.7);
+    finalColor.rgb = cinematicToneMap(finalColor.rgb, finalColor.a, edgeDist);
+    finalColor.a = clamp(finalColor.a + hotCore * 0.1 + filament * 0.05 + sparkA * 0.46, 0.0, 1.0);
     
     gl_FragColor = finalColor;
 }
@@ -1057,7 +1124,6 @@ float smokeFbm(vec2 p) {
 void main() {
     vec2 pixelPos = gl_FragCoord.xy - uFrameRect.xy;
     vec2 frameResolution = uFrameRect.zw;
-    vec2 uv = vTexCoord;
     
     if (pixelPos.x < 0.0 || pixelPos.y < 0.0 || pixelPos.x > frameResolution.x || pixelPos.y > frameResolution.y) {
         gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
@@ -1109,10 +1175,12 @@ void main() {
         return;
     }
     
+    vec2 effectUv = clamp(pixelPos / frameResolution, 0.0, 1.0);
+
     // Smoke moves upward slowly
-    vec2 smokePos = uv;
+    vec2 smokePos = effectUv;
     smokePos.y += uTime * uSmokeSpeed * 0.1;
-    smokePos.x += simplexNoise(vec2(uv.y * 3.0, uTime * 0.5)) * 0.1;
+    smokePos.x += simplexNoise(vec2(effectUv.y * 3.0, uTime * 0.5)) * 0.1;
     
     // Create wispy smoke pattern
     float smoke = smokeFbm(smokePos * uDetailScale * 2.0);
@@ -1452,7 +1520,8 @@ void main() {
                     return;
                 }
                 
-                gl_FragColor = renderEnergyWaves(vTexCoord, pixelPos, edgeDist);
+                vec2 effectUv = clamp(pixelPos / frameResolution, 0.0, 1.0);
+                gl_FragColor = renderEnergyWaves(effectUv, pixelPos, edgeDist);
                 gl_FragColor.a = clamp(gl_FragColor.a, 0.0, 1.0);
             }
         `;
@@ -1629,7 +1698,8 @@ void main() {
                     return;
                 }
                 
-                gl_FragColor = renderLightning(vTexCoord, pixelPos, edgeDist);
+                vec2 effectUv = clamp(pixelPos / frameResolution, 0.0, 1.0);
+                gl_FragColor = renderLightning(effectUv, pixelPos, edgeDist);
                 gl_FragColor.a = clamp(gl_FragColor.a, 0.0, 1.0);
             }
         `;
@@ -1747,6 +1817,11 @@ void main() {
             layersEnabled: this.gl.getUniformLocation(program, 'uLayersEnabled'),
             layerCount: this.gl.getUniformLocation(program, 'uLayerCount'),
             layerParallax: this.gl.getUniformLocation(program, 'uLayerParallax'),
+            sparkDensity: this.gl.getUniformLocation(program, 'uSparkDensity'),
+            heatDistortionStrength: this.gl.getUniformLocation(program, 'uHeatDistortionStrength'),
+            cinematicContrast: this.gl.getUniformLocation(program, 'uCinematicContrast'),
+            coreWhiteness: this.gl.getUniformLocation(program, 'uCoreWhiteness'),
+            emberTrailAmount: this.gl.getUniformLocation(program, 'uEmberTrailAmount'),
             // Smoke uniforms
             smokeIntensity: this.gl.getUniformLocation(program, 'uSmokeIntensity'),
             smokeSpeed: this.gl.getUniformLocation(program, 'uSmokeSpeed'),
@@ -1866,6 +1941,56 @@ void main() {
         return Math.max(0.5, avgRes / 1000.0);
     }
 
+    getQualitySettings() {
+        const modes = {
+            'low-load': {
+                maxNoiseOctaves: 6,
+                sparkScale: 0.35,
+                bloomScale: 0.55,
+                heatScale: 0.45,
+                distortionSamples: 0.55
+            },
+            'obs-safe': {
+                maxNoiseOctaves: 9,
+                sparkScale: 0.82,
+                bloomScale: 0.82,
+                heatScale: 0.72,
+                distortionSamples: 0.8
+            },
+            'max-quality': {
+                maxNoiseOctaves: 12,
+                sparkScale: 1.15,
+                bloomScale: 1.05,
+                heatScale: 1,
+                distortionSamples: 1
+            }
+        };
+        return modes[this.config.qualityMode] || modes['obs-safe'];
+    }
+
+    getEffectiveNoiseOctaves() {
+        const quality = this.getQualitySettings();
+        const configured = this.numberOr(this.config.noiseOctaves, 9);
+        return Math.round(this.clamp(configured, 0, quality.maxNoiseOctaves));
+    }
+
+    getEffectiveSparkDensity() {
+        if (this.config.sparkEnabled === false) return 0;
+        const quality = this.getQualitySettings();
+        return this.clamp(this.numberOr(this.config.sparkDensity, 0.78) * quality.sparkScale, 0, 2);
+    }
+
+    getEffectiveHeatDistortionStrength() {
+        if (this.config.heatDistortionEnabled === false) return 0;
+        const quality = this.getQualitySettings();
+        return this.clamp(this.numberOr(this.config.heatDistortionStrength, 0.32) * quality.heatScale, 0, 1);
+    }
+
+    getEffectiveBloomIntensity() {
+        const quality = this.getQualitySettings();
+        return this.numberOr(this.config.bloomIntensity, 1.05) * quality.bloomScale;
+    }
+
     getDevicePixelRatio() {
         if (!this.config.highDPI) return 1;
         return this.numberOr(window.devicePixelRatio, 1);
@@ -1956,7 +2081,7 @@ void main() {
         
         // New v2.2.0 uniforms
         if (this.hasUniform(this.uniforms.noiseOctaves)) {
-            this.gl.uniform1i(this.uniforms.noiseOctaves, this.numberOr(this.config.noiseOctaves, 8));
+            this.gl.uniform1i(this.uniforms.noiseOctaves, this.getEffectiveNoiseOctaves());
         }
         if (this.hasUniform(this.uniforms.useHighQualityTextures)) {
             this.gl.uniform1i(this.uniforms.useHighQualityTextures, this.config.useHighQualityTextures ? 1 : 0);
@@ -1996,6 +2121,21 @@ void main() {
         }
         if (this.hasUniform(this.uniforms.layerParallax)) {
             this.gl.uniform1f(this.uniforms.layerParallax, this.numberOr(this.config.layerParallax, 0.0));
+        }
+        if (this.hasUniform(this.uniforms.sparkDensity)) {
+            this.gl.uniform1f(this.uniforms.sparkDensity, this.getEffectiveSparkDensity());
+        }
+        if (this.hasUniform(this.uniforms.heatDistortionStrength)) {
+            this.gl.uniform1f(this.uniforms.heatDistortionStrength, this.getEffectiveHeatDistortionStrength());
+        }
+        if (this.hasUniform(this.uniforms.cinematicContrast)) {
+            this.gl.uniform1f(this.uniforms.cinematicContrast, this.numberOr(this.config.cinematicContrast, 1.18));
+        }
+        if (this.hasUniform(this.uniforms.coreWhiteness)) {
+            this.gl.uniform1f(this.uniforms.coreWhiteness, this.numberOr(this.config.coreWhiteness, 0.72));
+        }
+        if (this.hasUniform(this.uniforms.emberTrailAmount)) {
+            this.gl.uniform1f(this.uniforms.emberTrailAmount, this.numberOr(this.config.emberTrailAmount, 0.42));
         }
         
         // Smoke uniforms
@@ -2209,7 +2349,7 @@ void main() {
                 this.postProcessor.textures.scene,
                 {
                     bloomThreshold: this.numberOr(this.config.bloomThreshold, 0.6),
-                    bloomRadius: this.numberOr(this.config.bloomRadius, 4)
+                    bloomRadius: this.numberOr(this.config.bloomRadius, 4) * this.getQualitySettings().bloomScale
                 }
             );
             
@@ -2223,7 +2363,7 @@ void main() {
                 this.postProcessor.textures.scene,
                 bloomTexture,
                 {
-                    bloomIntensity: this.numberOr(this.config.bloomIntensity, 0.8),
+                    bloomIntensity: this.getEffectiveBloomIntensity(),
                     chromaticAberration: this.numberOr(this.config.chromaticAberration, 0.005),
                     filmGrain: this.numberOr(this.config.filmGrain, 0.03)
                 },

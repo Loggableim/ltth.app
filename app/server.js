@@ -58,6 +58,7 @@ const { GoalManager } = require('./modules/goals');
 const ConfigPathManager = require('./modules/config-path-manager');
 const UserProfileManager = require('./modules/user-profiles');
 const ConfigRepair = require('./modules/config-repair');
+const { shouldAutoReconnectOnStartup } = require('./modules/tiktok-auto-reconnect-policy');
 // PERFORMANCE OPTIMIZATION: VDONinjaManager is loaded via plugin system, removed direct import
 // const VDONinjaManager = require('./modules/vdoninja'); // PATCH: VDO.Ninja Integration
 
@@ -1289,11 +1290,23 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+function buildRestartingApiState(endpoint) {
+    return {
+        success: false,
+        status: 'restarting',
+        restarting: true,
+        endpoint,
+        message: 'Server restart in progress. Please retry shortly.',
+        timestamp: new Date().toISOString()
+    };
+}
+
 app.get('/api/status', apiLimiter, (req, res) => {
     res.json({
         isConnected: tiktok.isActive(),
         username: tiktok.currentUsername,
-        stats: tiktok.getStats()
+        stats: tiktok.getStats(),
+        restarting: serverRestartScheduled
     });
 });
 
@@ -1317,6 +1330,7 @@ app.get('/api/live-stats', apiLimiter, (req, res) => {
             success: true,
             isConnected: tiktok.isActive(),
             username: tiktok.currentUsername,
+            restarting: serverRestartScheduled,
             stats: {
                 runtime: runtimeFormatted,
                 streamDuration: streamDuration,
@@ -1367,6 +1381,10 @@ app.post('/api/deduplication-clear', authLimiter, (req, res) => {
 // ========== CONNECTION DIAGNOSTICS ROUTES ==========
 
 app.get('/api/diagnostics', apiLimiter, async (req, res) => {
+    if (serverRestartScheduled) {
+        return res.status(503).json(buildRestartingApiState('diagnostics'));
+    }
+
     try {
         const username = req.query.username || tiktok.currentUsername || 'tiktok';
         const diagnostics = await tiktok.runDiagnostics(username);
@@ -1379,9 +1397,16 @@ app.get('/api/diagnostics', apiLimiter, async (req, res) => {
 });
 
 app.get('/api/connection-health', apiLimiter, async (req, res) => {
+    if (serverRestartScheduled) {
+        return res.status(503).json(buildRestartingApiState('connection-health'));
+    }
+
     try {
         const health = await tiktok.getConnectionHealth();
-        res.json(health);
+        res.json({
+            ...health,
+            restarting: false
+        });
     } catch (error) {
         logger.error('Connection health check error:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -3794,10 +3819,15 @@ const pluginCacheControl = (req, res, next) => {
     const GIFT_CATALOG_UPDATE_DELAY_MS = 3000; // Wait 3 seconds for gift catalog update
 
     // TikTok auto-reconnect (if configured)
-    const autoReconnectEnabled = db.getSetting('tiktok_auto_reconnect') !== 'false'; // Default to true
+    const autoReconnectSetting = db.getSetting('tiktok_auto_reconnect');
     const savedUsername = db.getSetting('last_connected_username');
+    const autoReconnectPolicy = shouldAutoReconnectOnStartup({
+        autoReconnectSetting,
+        savedUsername,
+        env: process.env
+    });
     
-    if (autoReconnectEnabled && savedUsername) {
+    if (autoReconnectPolicy.enabled) {
         logger.info(`🔄 Auto-Reconnect aktiviert: Versuche Verbindung zu @${savedUsername}...`);
         setTimeout(async () => {
             try {
@@ -3810,28 +3840,30 @@ const pluginCacheControl = (req, res, next) => {
                 logger.info('   Sie können manuell über das Dashboard verbinden.');
             }
         }, TIKTOK_AUTO_RECONNECT_DELAY_MS);
-    } else if (!autoReconnectEnabled && savedUsername) {
+    } else if (savedUsername) {
         logger.info(`ℹ️  Auto-Reconnect deaktiviert. Letzter Stream: @${savedUsername}`);
         
         // Update gift catalog independently when not auto-connecting
         // (When auto-connecting, this happens automatically during tiktok.connect())
-        logger.info(`🎁 Aktualisiere Gift-Katalog für @${savedUsername}...`);
-        setTimeout(async () => {
-            try {
-                const result = await tiktok.updateGiftCatalog({
-                    preferConnected: true,
-                    username: savedUsername
-                });
-                if (result.ok) {
-                    logger.info(`✅ ${result.message}`);
-                } else {
-                    logger.info(`ℹ️  Gift-Katalog-Update: ${result.message}`);
+        if (autoReconnectPolicy.reason !== 'safe_mode' && autoReconnectPolicy.reason !== 'env_disabled') {
+            logger.info(`🎁 Aktualisiere Gift-Katalog für @${savedUsername}...`);
+            setTimeout(async () => {
+                try {
+                    const result = await tiktok.updateGiftCatalog({
+                        preferConnected: true,
+                        username: savedUsername
+                    });
+                    if (result.ok) {
+                        logger.info(`✅ ${result.message}`);
+                    } else {
+                        logger.info(`ℹ️  Gift-Katalog-Update: ${result.message}`);
+                    }
+                } catch (error) {
+                    logger.warn('⚠️  Gift-Katalog konnte nicht automatisch aktualisiert werden:', error.message);
+                    logger.info('   Dies ist normal wenn der Stream nicht live ist.');
                 }
-            } catch (error) {
-                logger.warn('⚠️  Gift-Katalog konnte nicht automatisch aktualisiert werden:', error.message);
-                logger.info('   Dies ist normal wenn der Stream nicht live ist.');
-            }
-        }, GIFT_CATALOG_UPDATE_DELAY_MS);
+            }, GIFT_CATALOG_UPDATE_DELAY_MS);
+        }
     }
 
         // Cloud Sync initialisieren (wenn aktiviert)

@@ -1,0 +1,132 @@
+{
+  "navigation": {
+    "animazingpal": "AnimazingPal"
+  },
+  "animazingpal": {
+    "title": "AnimazingPal - AI VTuber Brain",
+    "description": "Intelligent VTuber avatar control with AI-powered responses",
+    "status": {
+      "connected": "Connected to Animaze",
+      "disconnected": "Disconnected",
+      "connecting": "Connecting...",
+      "error": "Connection Error"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "brain": "Brain & AI",
+      "personalities": "Personalities",
+      "memories": "Memories",
+      "events": "Event Actions",
+      "gifts": "Gift Mappings",
+      "chatpal": "ChatPal",
+      "settings": "Settings"
+    },
+    "brain": {
+      "title": "AI Brain Engine",
+      "description": "The brain processes all stream events and decides when and how to respond",
+      "enabled": "Brain Enabled",
+      "api_key": "OpenAI API Key",
+      "model": "AI Model",
+      "test_connection": "Test Connection",
+      "connection_success": "API connection successful!",
+      "connection_failed": "API connection failed",
+      "response_settings": "Response Settings",
+      "auto_respond_chat": "Respond to Chat Messages",
+      "auto_respond_gifts": "Thank for Gifts",
+      "auto_respond_follows": "Welcome Followers",
+      "auto_respond_shares": "Thank for Shares",
+      "auto_respond_likes": "React to Likes",
+      "auto_respond_subscribe": "Welcome Subscribers",
+      "chat_probability": "Chat Response Probability",
+      "max_responses_minute": "Max Responses per Minute",
+      "speak_threshold": "Speak Threshold",
+      "speak_threshold_help": "How important an event must be to trigger speech (0-1)"
+    },
+    "personalities": {
+      "title": "Streamer Personalities",
+      "description": "Choose how your AI avatar behaves and speaks",
+      "select": "Select Personality",
+      "create_custom": "Create Custom",
+      "edit": "Edit",
+      "delete": "Delete",
+      "active": "Active",
+      "custom": "Custom",
+      "builtin": "Built-in",
+      "name": "Name",
+      "display_name": "Display Name",
+      "description_label": "Description",
+      "system_prompt": "System Prompt",
+      "voice_style": "Voice Style",
+      "catchphrases": "Catchphrases",
+      "topics": "Topics of Interest",
+      "language": "Language",
+      "presets": {
+        "friendly_streamer": "Friendly Streamer",
+        "friendly_streamer_desc": "Warm, enthusiastic streamer who welcomes everyone",
+        "gaming_pro": "Gaming Pro",
+        "gaming_pro_desc": "Competitive gamer with expertise and dry humor",
+        "entertainer": "Entertainer",
+        "entertainer_desc": "Charismatic entertainer who never gets bored",
+        "chill_vibes": "Chill Vibes",
+        "chill_vibes_desc": "Relaxed streamer for cozy sessions",
+        "anime_fan": "Anime Fan",
+        "anime_fan_desc": "Passionate anime and manga fan with otaku culture"
+      }
+    },
+    "memories": {
+      "title": "Memory System",
+      "description": "Long-term memories stored per streamer profile",
+      "search": "Search Memories",
+      "recent": "Recent Memories",
+      "important": "Important Memories",
+      "archived": "Archived",
+      "user_profiles": "User Profiles",
+      "total_memories": "Total Memories",
+      "total_users": "Known Users",
+      "archive_old": "Archive Old Memories",
+      "clear_old": "Clear Old Data",
+      "streamer_profile": "Streamer Profile",
+      "streamer_profile_help": "Memories are stored separately for each connected streamer"
+    },
+    "events": {
+      "title": "Event Actions",
+      "description": "Configure how the avatar reacts to stream events",
+      "gift": "Gift Received",
+      "chat": "Chat Message",
+      "follow": "New Follower",
+      "share": "Stream Shared",
+      "like": "Likes Received",
+      "subscribe": "New Subscriber",
+      "action_type": "Action Type",
+      "action_value": "Action",
+      "message": "Message Template",
+      "enabled": "Enabled",
+      "threshold": "Threshold"
+    },
+    "settings": {
+      "title": "Connection Settings",
+      "host": "Animaze Host",
+      "port": "Animaze Port",
+      "auto_connect": "Auto Connect on Start",
+      "auto_reconnect": "Auto Reconnect on Disconnect",
+      "reconnect_delay": "Reconnect Delay (ms)",
+      "verbose_logging": "Verbose Logging"
+    },
+    "actions": {
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "refresh": "Refresh Data",
+      "save": "Save",
+      "cancel": "Cancel",
+      "test": "Test",
+      "reset": "Reset to Default"
+    },
+    "messages": {
+      "config_saved": "Configuration saved",
+      "config_error": "Error saving configuration",
+      "connected": "Successfully connected to Animaze",
+      "disconnected": "Disconnected from Animaze",
+      "connection_error": "Could not connect to Animaze"
+    }
+  }
+}

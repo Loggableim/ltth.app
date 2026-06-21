@@ -146,7 +146,8 @@
      */
     function reloadPluginIframe(pluginId) {
         // Find the view element for this plugin
-        const viewElement = document.querySelector(`[data-plugin="${pluginId}"]`);
+        const viewElement = document.getElementById(`view-${pluginId}`) ||
+            document.querySelector(`.view-content[data-plugin="${pluginId}"]`);
         if (!viewElement) {
             console.log(`⚠️ [Navigation] No view found for plugin: ${pluginId}`);
             return;
@@ -588,6 +589,10 @@
                 return;
             }
 
+            const availablePlugins = new Map(
+                (data.plugins || []).map((plugin) => [plugin.id, plugin])
+            );
+
             // Create set of active plugin IDs
             const activePlugins = new Set(
                 data.plugins
@@ -597,20 +602,34 @@
 
             console.log('✅ [Navigation] Active plugins loaded:', Array.from(activePlugins));
 
-            // Hide sidebar items, shortcuts, AND views for inactive plugins
+            // Keep plugin shells visible when a manifest exists so operators can still
+            // access disabled-plugin flows and conflict messaging.
             // Exclude quick action buttons - they are handled separately in dashboard-enhancements.js
             const pluginElements = document.querySelectorAll('[data-plugin]:not(.quick-action-btn)');
             pluginElements.forEach(element => {
                 const requiredPlugin = element.getAttribute('data-plugin');
+                const pluginInfo = availablePlugins.get(requiredPlugin);
+                const isInstalled = Boolean(pluginInfo);
+                const isEnabled = activePlugins.has(requiredPlugin);
 
-                if (!activePlugins.has(requiredPlugin)) {
+                if (!isInstalled) {
                     element.style.display = 'none';
-                    console.log(`Hiding element for inactive plugin: ${requiredPlugin}`);
-                } else {
-                    // Remove inline style to let CSS take over
-                    element.style.removeProperty('display');
-                    console.log(`Showing element for active plugin: ${requiredPlugin}`);
+                    element.dataset.pluginState = 'missing';
+                    element.classList.add('plugin-missing');
+                    element.classList.remove('plugin-disabled');
+                    return;
                 }
+
+                element.style.removeProperty('display');
+                element.dataset.pluginState = isEnabled ? 'enabled' : 'disabled';
+                element.classList.toggle('plugin-disabled', !isEnabled);
+                element.classList.remove('plugin-missing');
+
+                if (element.classList.contains('sidebar-item')) {
+                    element.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
+                }
+
+                console.log(`${isEnabled ? 'Showing' : 'Marking inactive'} element for plugin: ${requiredPlugin}`);
             });
 
             // Re-initialize Lucide icons

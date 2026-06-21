@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Control - Transparency Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            background: transparent !important;
+            background-color: transparent !important;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #checkerboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
+                linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            z-index: 1;
+        }
+        
+        #test-canvas {
+            position: fixed;
+            top: 50px;
+            left: 50px;
+            width: 400px;
+            height: 300px;
+            border: 2px solid #00ff00;
+            z-index: 2;
+        }
+        
+        #results {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 8px;
+            max-width: 400px;
+            z-index: 3;
+        }
+        
+        .pass { color: #00ff00; }
+        .fail { color: #ff0000; }
+        .info { color: #ffff00; }
+    </style>
+</head>
+<body>
+    <div id="checkerboard"></div>
+    <canvas id="test-canvas"></canvas>
+    <div id="results">
+        <h3>🧪 Transparency Test Results</h3>
+        <div id="test-output"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('test-canvas');
+        const resultsDiv = document.getElementById('test-output');
+        const tests = [];
+
+        function addTest(name, passed, details = '') {
+            const status = passed ? '<span class="pass">✅ PASS</span>' : '<span class="fail">❌ FAIL</span>';
+            tests.push(`<div style="margin: 8px 0;"><strong>${name}:</strong> ${status}<br>${details ? '<span class="info">' + details + '</span>' : ''}</div>`);
+        }
+
+        // Test 1: Canvas context with alpha
+        try {
+            const ctx = canvas.getContext('2d', { 
+                alpha: true,
+                premultipliedAlpha: true 
+            });
+            
+            if (!ctx) {
+                addTest('Canvas Context Creation', false, 'Failed to get 2D context');
+            } else {
+                addTest('Canvas Context Creation', true);
+                
+                const attrs = ctx.getContextAttributes();
+                
+                // Test 2: Alpha channel enabled
+                addTest('Alpha Channel', attrs.alpha === true, `alpha: ${attrs.alpha}`);
+                
+                // Test 3: Premultiplied alpha
+                addTest('Premultiplied Alpha', attrs.premultipliedAlpha === true, `premultipliedAlpha: ${attrs.premultipliedAlpha}`);
+                
+                // Test 4: Canvas transparency
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, 1, 1);
+                const [r, g, b, a] = imageData.data;
+                addTest('Canvas Background Transparency', a === 0, `RGBA: [${r}, ${g}, ${b}, ${a}]`);
+                
+                // Test 5: Draw semi-transparent shape
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.fillRect(50, 50, 100, 100);
+                const testPixel = ctx.getImageData(100, 100, 1, 1).data;
+                addTest('Semi-transparent Rendering', testPixel[3] > 0 && testPixel[3] < 255, 
+                    `Alpha value: ${testPixel[3]} (expected between 0-255)`);
+                
+                // Test 6: Clear maintains transparency
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const clearedPixel = ctx.getImageData(100, 100, 1, 1).data;
+                addTest('clearRect() Maintains Transparency', clearedPixel[3] === 0,
+                    `Alpha after clear: ${clearedPixel[3]}`);
+            }
+        } catch (error) {
+            addTest('Canvas Tests', false, `Error: ${error.message}`);
+        }
+
+        // Test 7: HTML/Body transparency
+        const htmlBg = window.getComputedStyle(document.documentElement).backgroundColor;
+        const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        addTest('HTML Background', htmlBg === 'rgba(0, 0, 0, 0)' || htmlBg === 'transparent', `Computed: ${htmlBg}`);
+        addTest('Body Background', bodyBg === 'rgba(0, 0, 0, 0)' || bodyBg === 'transparent', `Computed: ${bodyBg}`);
+
+        // Display results
+        resultsDiv.innerHTML = tests.join('');
+
+        // Summary
+        const passCount = tests.filter(t => t.includes('PASS')).length;
+        const totalCount = tests.length;
+        const summaryClass = passCount === totalCount ? 'pass' : (passCount > totalCount / 2 ? 'info' : 'fail');
+        resultsDiv.innerHTML += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+            <strong class="${summaryClass}">Summary: ${passCount}/${totalCount} tests passed</strong>
+        </div>`;
+
+        console.log('🧪 Transparency Test Complete');
+        console.log(`✅ Passed: ${passCount}/${totalCount}`);
+    </script>
+</body>
+</html>

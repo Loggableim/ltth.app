@@ -1281,15 +1281,16 @@ class PluginLoader extends EventEmitter {
      */
     async reloadPlugin(pluginId) {
         try {
+            const safePluginId = assertPluginId(pluginId);
             // Track Reload-Count für Memory-Leak-Warnung
-            if (!this.state[pluginId]) {
-                this.state[pluginId] = {};
+            if (!this.state[safePluginId]) {
+                this.state[safePluginId] = {};
             }
-            this.state[pluginId].reloadCount = (this.state[pluginId].reloadCount || 0) + 1;
-            this.state[pluginId].lastReload = new Date().toISOString();
+            this.state[safePluginId].reloadCount = (this.state[safePluginId].reloadCount || 0) + 1;
+            this.state[safePluginId].lastReload = new Date().toISOString();
 
             // Warnung bei häufigem Reload
-            if (this.state[pluginId].reloadCount > 10) {
+            if (this.state[safePluginId].reloadCount > 10) {
                 this.logger.warn(`⚠️ Plugin ${pluginId} has been reloaded ${this.state[pluginId].reloadCount} times. Consider server restart to prevent memory leak.`);
             }
 
@@ -1309,12 +1310,12 @@ class PluginLoader extends EventEmitter {
             // (race condition on first start), or as a safety-net to ensure all queued
             // events are properly attached to the EventEmitter.
             if (this.tiktok) {
-                this.registerPluginTikTokEvents(this.tiktok, pluginId);
-                this.logger.debug(`Re-registered TikTok events for reloaded plugin: ${pluginId}`);
+                this.registerPluginTikTokEvents(this.tiktok, safePluginId);
+                this.logger.debug(`Re-registered TikTok events for reloaded plugin: ${safePluginId}`);
             }
 
-            this.logger.info(`Reloaded plugin: ${pluginId} (reload count: ${this.state[pluginId].reloadCount})`);
-            this.emit('plugin:reloaded', pluginId);
+            this.logger.info(`Reloaded plugin: ${safePluginId} (reload count: ${this.state[safePluginId].reloadCount})`);
+            this.emit('plugin:reloaded', safePluginId);
 
             return true;
         } catch (error) {

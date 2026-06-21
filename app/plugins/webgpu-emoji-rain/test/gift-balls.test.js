@@ -147,6 +147,28 @@ describe('WebGPU Emoji Rain - Geschenk-Kugeln', () => {
     expect(api.emissions[0].data.price).toBe(99);
   });
 
+  test('gift balls use the gift catalog image instead of the event gift icon', () => {
+    const api = new MockAPI({}, [{
+      id: 456,
+      name: 'Catalog Rose',
+      image_url: 'https://example.test/catalog-rose.png',
+      diamond_count: 20
+    }]);
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    plugin.spawnEmojiRain('gift', {
+      uniqueId: 'gifter',
+      giftId: 456,
+      giftName: 'Rose',
+      giftPictureUrl: 'https://example.test/generic-gift-icon.png',
+      diamondCount: 20,
+      repeatCount: 1
+    });
+
+    expect(api.emissions[0].event).toBe('webgpu-emoji-rain:gift-balls');
+    expect(api.emissions[0].data.giftImageUrl).toBe('https://example.test/catalog-rose.png');
+  });
+
   test('gift balls can be disabled without disabling normal gift emoji rain', () => {
     const api = new MockAPI({ gift_balls_enabled: false });
     const plugin = new WebGPUEmojiRainPlugin(api);

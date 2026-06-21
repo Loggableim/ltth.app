@@ -156,6 +156,7 @@ const CONFIG_ENUMS = {
   ]),
   frameMode: new Set(['bottom', 'top', 'sides', 'all']),
   animationEasing: new Set(['linear', 'sine', 'quad', 'elastic']),
+  qualityMode: new Set(['obs-safe', 'max-quality', 'low-load']),
   triggerPreset: new Set([...Object.keys(TRIGGER_PRESETS), 'custom'])
 };
 const NUMERIC_CONFIG_RANGES = {
@@ -182,6 +183,11 @@ const NUMERIC_CONFIG_RANGES = {
   depthIntensity: { min: 0, max: 1 },
   smokeIntensity: { min: 0, max: 1 },
   smokeSpeed: { min: 0.1, max: 1 },
+  sparkDensity: { min: 0, max: 2 },
+  heatDistortionStrength: { min: 0, max: 1 },
+  cinematicContrast: { min: 0, max: 2 },
+  coreWhiteness: { min: 0, max: 1 },
+  emberTrailAmount: { min: 0, max: 1 },
   triggerCooldown: { min: 0, max: 600000, integer: true },
   triggerMaxStack: { min: 1, max: 50, integer: true },
   visualProfileVersion: { min: 1, max: 100, integer: true }
@@ -197,6 +203,8 @@ const BOOLEAN_CONFIG_KEYS = new Set([
   'bloomEnabled',
   'layersEnabled',
   'smokeEnabled',
+  'sparkEnabled',
+  'heatDistortionEnabled',
   'triggersEnabled',
   'chatColorCommands'
 ]);
@@ -240,6 +248,7 @@ class FlameOverlayPlugin {
         const defaultConfig = {
             // Effect type selection
             effectType: 'flames', // 'flames', 'particles', 'energy', 'lightning'
+            qualityMode: 'obs-safe',
             
             // Resolution settings
             resolutionPreset: 'tiktok-portrait',
@@ -275,14 +284,14 @@ class FlameOverlayPlugin {
             
             // ===== NEW FEATURES (v2.2.0) =====
             // Quality Settings
-            noiseOctaves: 8, // 4-12 octaves for fBm
+            noiseOctaves: 9, // 4-12 octaves for fBm
             useHighQualityTextures: true, // Enable when HQ textures are available
             detailScaleAuto: true, // Automatic detail scaling based on resolution
             
             // Edge Settings
-            edgeFeather: 0.42, // 0.0-1.0: Soft edge blending amount
-            frameCurve: 0.08, // 0.0-1.0: Curved frame edges (0=sharp corners)
-            frameNoiseAmount: 0.12, // 0.0-1.0: Noise modulation on frame edges
+            edgeFeather: 0.52, // 0.0-1.0: Soft edge blending amount
+            frameCurve: 0.14, // 0.0-1.0: Curved frame edges (0=sharp corners)
+            frameNoiseAmount: 0.18, // 0.0-1.0: Noise modulation on frame edges
             
             // Animation
             animationEasing: 'linear', // 'linear', 'sine', 'quad', 'elastic'
@@ -292,9 +301,9 @@ class FlameOverlayPlugin {
             
             // Bloom
             bloomEnabled: true, // Enable bloom post-processing
-            bloomIntensity: 0.8, // 0.0-2.0: Bloom strength
-            bloomThreshold: 0.6, // 0.0-1.0: Brightness threshold for bloom
-            bloomRadius: 4, // 1-10: Bloom blur radius
+            bloomIntensity: 1.05, // 0.0-2.0: Bloom strength
+            bloomThreshold: 0.52, // 0.0-1.0: Brightness threshold for bloom
+            bloomRadius: 5, // 1-10: Bloom blur radius
             
             // Layers
             layersEnabled: true, // Enable multi-layer compositing
@@ -302,15 +311,22 @@ class FlameOverlayPlugin {
             layerParallax: 0.3, // 0.0-1.0: Parallax effect strength
             
             // Post-FX
-            chromaticAberration: 0.005, // 0.0-0.02: RGB channel offset
-            filmGrain: 0.03, // 0.0-0.1: Film grain intensity
-            depthIntensity: 0.65, // 0.0-1.0: Fake depth/inner glow
+            chromaticAberration: 0.006, // 0.0-0.02: RGB channel offset
+            filmGrain: 0.025, // 0.0-0.1: Film grain intensity
+            depthIntensity: 0.78, // 0.0-1.0: Fake depth/inner glow
+            cinematicContrast: 1.18,
+            coreWhiteness: 0.72,
+            emberTrailAmount: 0.42,
+            sparkEnabled: true,
+            sparkDensity: 0.78,
+            heatDistortionEnabled: true,
+            heatDistortionStrength: 0.32,
             
             // Smoke
             smokeEnabled: true, // Enable smoke layer
-            smokeIntensity: 0.4, // 0.0-1.0: Smoke opacity
-            smokeSpeed: 0.3, // 0.1-1.0: Smoke movement speed
-            smokeColor: '#333333', // Smoke color
+            smokeIntensity: 0.48, // 0.0-1.0: Smoke opacity
+            smokeSpeed: 0.28, // 0.1-1.0: Smoke movement speed
+            smokeColor: '#2d2623', // Smoke color
 
             // ===== TRIGGER SYSTEM (v3.0.0) =====
             triggersEnabled: true,
@@ -319,7 +335,7 @@ class FlameOverlayPlugin {
             triggerCooldown: 2000,
             triggerMaxStack: 5,
             triggerPreset: 'default',
-            visualProfileVersion: 2
+            visualProfileVersion: 3
         };
         
         this.defaultConfig = this.cloneConfig(defaultConfig);
@@ -341,27 +357,48 @@ class FlameOverlayPlugin {
     }
 
     applyVisualUpgradeDefaults(savedConfig) {
-        if (!savedConfig || savedConfig.visualProfileVersion >= 2) return;
+        if (!savedConfig || Number(savedConfig.visualProfileVersion) >= 3) return;
 
         const upgrades = {
-            flameBrightness: { from: 0.25, to: 0.38 },
-            useHighQualityTextures: { from: false, to: true },
-            edgeFeather: { from: 0.3, to: 0.42 },
-            frameCurve: { from: 0.0, to: 0.08 },
-            frameNoiseAmount: { from: 0.0, to: 0.12 },
-            bloomEnabled: { from: false, to: true },
-            layersEnabled: { from: false, to: true },
-            depthIntensity: { from: 0.5, to: 0.65 },
-            smokeEnabled: { from: false, to: true }
+            flameIntensity: { from: [1.3], to: this.defaultConfig.flameIntensity },
+            flameBrightness: { from: [0.25, 0.38], to: this.defaultConfig.flameBrightness },
+            noiseOctaves: { from: [8], to: this.defaultConfig.noiseOctaves },
+            edgeFeather: { from: [0.3, 0.42], to: this.defaultConfig.edgeFeather },
+            frameCurve: { from: [0, 0.08], to: this.defaultConfig.frameCurve },
+            frameNoiseAmount: { from: [0, 0.12], to: this.defaultConfig.frameNoiseAmount },
+            bloomIntensity: { from: [0.8], to: this.defaultConfig.bloomIntensity },
+            bloomThreshold: { from: [0.6], to: this.defaultConfig.bloomThreshold },
+            bloomRadius: { from: [4], to: this.defaultConfig.bloomRadius },
+            chromaticAberration: { from: [0.005], to: this.defaultConfig.chromaticAberration },
+            filmGrain: { from: [0.03], to: this.defaultConfig.filmGrain },
+            depthIntensity: { from: [0.5, 0.65], to: this.defaultConfig.depthIntensity },
+            smokeIntensity: { from: [0.4], to: this.defaultConfig.smokeIntensity },
+            smokeSpeed: { from: [0.3], to: this.defaultConfig.smokeSpeed },
+            smokeColor: { from: ['#333333'], to: this.defaultConfig.smokeColor }
         };
 
         for (const [field, { from, to }] of Object.entries(upgrades)) {
-            if (savedConfig[field] === undefined || savedConfig[field] === from) {
+            if (savedConfig[field] === undefined || from.includes(savedConfig[field])) {
                 this.config[field] = to;
             }
         }
 
-        this.config.visualProfileVersion = 2;
+        for (const field of [
+            'qualityMode',
+            'sparkEnabled',
+            'sparkDensity',
+            'heatDistortionEnabled',
+            'heatDistortionStrength',
+            'cinematicContrast',
+            'coreWhiteness',
+            'emberTrailAmount'
+        ]) {
+            if (savedConfig[field] === undefined) {
+                this.config[field] = this.defaultConfig[field];
+            }
+        }
+
+        this.config.visualProfileVersion = 3;
         this.saveConfig();
     }
 

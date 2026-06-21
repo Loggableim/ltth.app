@@ -1469,9 +1469,11 @@ class TalkingHeadsPlugin {
     // Serve sprite images (from avatars/ directory)
     this.api.registerRoute('get', '/api/talkingheads/sprite/:filename', async (req, res) => {
       try {
-        const filename = req.params.filename;
         const pluginDataDir = this.api.getPluginDataDir();
-        const filepath = path.join(pluginDataDir, 'avatars', filename);
+        const filepath = this._resolveAvatarSpritePath(pluginDataDir, req.params.filename);
+        if (!filepath) {
+          return res.status(400).json({ success: false, error: 'Invalid sprite path' });
+        }
 
         // Check if file exists
         await fs.access(filepath);
@@ -2127,6 +2129,7 @@ class TalkingHeadsPlugin {
         }
       }
     }, Math.min(timeoutMs, 60000));
+    this.viewerCleanupInterval.unref?.();
 
     this._log('Viewer bar events registered', 'info');
   }
@@ -2382,8 +2385,24 @@ Keep the description focused and specific. This will be used to generate the act
         this.logger.error('TalkingHeads: Cache cleanup failed', error);
       }
     }, 86400000); // 24 hours
+    this.cacheCleanupInterval.unref?.();
 
     this.logger.info('TalkingHeads: Cache cleanup scheduled');
+  }
+
+  _resolveAvatarSpritePath(pluginDataDir, filename) {
+    const safeFilename = path.basename(filename || '');
+    if (!safeFilename || safeFilename !== filename) {
+      return null;
+    }
+
+    const avatarsRoot = path.resolve(pluginDataDir, 'avatars');
+    const filepath = path.resolve(avatarsRoot, safeFilename);
+    if (filepath !== avatarsRoot && filepath.startsWith(avatarsRoot + path.sep)) {
+      return filepath;
+    }
+
+    return null;
   }
 
   /**

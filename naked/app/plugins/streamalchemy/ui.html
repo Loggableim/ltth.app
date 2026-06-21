@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamAlchemy Relaunch</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--color-bg-primary, #111827);
+      color: var(--color-text-primary, #f8fafc);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      background: var(--color-bg-secondary, #182033);
+      border-right: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+    }
+
+    .brand {
+      margin-bottom: 26px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      line-height: 1.25;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.84rem;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav button {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-secondary, #a7b0c0);
+      cursor: pointer;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      color: var(--color-text-primary, #f8fafc);
+      background: rgba(148, 163, 184, 0.12);
+      border-color: var(--color-border, rgba(148, 163, 184, 0.25));
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .topline h2 {
+      margin: 0;
+      font-size: 1.45rem;
+      line-height: 1.25;
+    }
+
+    .topline p {
+      max-width: 760px;
+      margin: 7px 0 0;
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+      border-radius: 6px;
+      background: var(--color-bg-secondary, #182033);
+      color: var(--color-text-primary, #f8fafc);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .button.primary {
+      background: var(--color-accent-primary, #2563eb);
+      border-color: var(--color-accent-primary, #2563eb);
+      color: #fff;
+    }
+
+    .button:disabled {
+      opacity: 0.55;
+      cursor: progress;
+    }
+
+    .notice {
+      display: none;
+      margin-bottom: 18px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+      border-radius: 6px;
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .notice.active {
+      display: block;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .metric,
+    .panel,
+    .item,
+    .recipe,
+    .job {
+      border: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+      border-radius: 8px;
+      background: var(--color-bg-card, rgba(15, 23, 42, 0.7));
+    }
+
+    .metric {
+      padding: 14px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 16px;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+    }
+
+    .provider-list,
+    .analysis-list,
+    .item-list,
+    .recipe-list,
+    .job-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .provider-row,
+    .analysis-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+    }
+
+    .provider-row:last-child,
+    .analysis-row:last-child {
+      border-bottom: 0;
+    }
+
+    .status {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--color-text-primary, #f8fafc);
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status.ready,
+    .status.succeeded,
+    .status.installed {
+      background: rgba(22, 163, 74, 0.22);
+      color: #86efac;
+    }
+
+    .status.failed,
+    .status.unreachable,
+    .status.missing_api_key,
+    .status.missing {
+      background: rgba(220, 38, 38, 0.2);
+      color: #fca5a5;
+    }
+
+    .status.running,
+    .status.installing,
+    .status.partial {
+      background: rgba(37, 99, 235, 0.22);
+      color: #93c5fd;
+    }
+
+    .item,
+    .recipe,
+    .job {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .item {
+      grid-template-columns: 60px minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .item-frame {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 68px;
+      height: 68px;
+      padding: 5px;
+      border: 2px solid rgba(148, 163, 184, 0.7);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .item-frame::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      pointer-events: none;
+    }
+
+    .item-frame img {
+      width: 58px;
+      height: 58px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.16);
+    }
+
+    .frame-common {
+      border-color: #b7791f;
+      background: linear-gradient(145deg, rgba(92, 57, 23, 0.86), rgba(15, 23, 42, 0.78));
+      box-shadow: inset 0 0 0 1px rgba(255, 237, 213, 0.22), 0 8px 22px rgba(180, 83, 9, 0.22);
+    }
+
+    .frame-rare {
+      border-color: #93c5fd;
+      background: linear-gradient(145deg, rgba(30, 64, 175, 0.62), rgba(226, 232, 240, 0.16));
+      box-shadow: inset 0 0 0 1px rgba(219, 234, 254, 0.3), 0 8px 24px rgba(59, 130, 246, 0.24);
+    }
+
+    .frame-legendary {
+      border-color: #facc15;
+      background: linear-gradient(145deg, rgba(161, 98, 7, 0.82), rgba(15, 23, 42, 0.72));
+      box-shadow: inset 0 0 0 1px rgba(254, 240, 138, 0.42), 0 8px 28px rgba(250, 204, 21, 0.34);
+    }
+
+    .frame-mythic {
+      border-color: #d8b4fe;
+      background: radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.28), transparent 38%), linear-gradient(145deg, rgba(88, 28, 135, 0.82), rgba(30, 41, 59, 0.76));
+      box-shadow: inset 0 0 0 1px rgba(233, 213, 255, 0.4), 0 8px 32px rgba(168, 85, 247, 0.36);
+    }
+
+    .muted {
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.84rem;
+    }
+
+    .name {
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      min-height: 38px;
+      width: 100%;
+      border: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+      border-radius: 6px;
+      background: var(--color-bg-secondary, #182033);
+      color: var(--color-text-primary, #f8fafc);
+      padding: 8px 10px;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      min-height: auto;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 14px;
+      color: var(--color-text-primary, #f8fafc);
+      font-weight: 700;
+    }
+
+    .model-installer {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+    }
+
+    .model-help {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--color-text-secondary, #a7b0c0);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .model-error {
+      display: none;
+      padding: 9px 10px;
+      border: 1px solid rgba(220, 38, 38, 0.35);
+      border-radius: 6px;
+      background: rgba(220, 38, 38, 0.12);
+      color: #fca5a5;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .model-error.active {
+      display: block;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--color-accent-primary, #2563eb);
+      transition: width 180ms ease;
+    }
+
+    .empty {
+      padding: 18px;
+      border: 1px dashed var(--color-border, rgba(148, 163, 184, 0.25));
+      border-radius: 8px;
+      color: var(--color-text-secondary, #a7b0c0);
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border, rgba(148, 163, 184, 0.25));
+      }
+
+      .nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      main {
+        padding: 20px;
+      }
+
+      .topline,
+      .layout {
+        display: block;
+      }
+
+      .actions {
+        margin-top: 14px;
+        justify-content: flex-start;
+      }
+
+      .metric-grid,
+      .field-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .metric-grid,
+      .field-grid,
+      .nav {
+        grid-template-columns: 1fr;
+      }
+
+          .item {
+            grid-template-columns: 58px minmax(0, 1fr);
+          }
+
+          .item-frame {
+            width: 58px;
+            height: 58px;
+            padding: 4px;
+          }
+
+          .item-frame img {
+            width: 48px;
+            height: 48px;
+          }
+        }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>StreamAlchemy</h1>
+        <p>Relaunch Runtime</p>
+      </div>
+      <nav class="nav" aria-label="StreamAlchemy Bereiche">
+        <button class="active" data-target="overview">Overview</button>
+        <button data-target="items">Items</button>
+        <button data-target="recipes">Recipes</button>
+        <button data-target="generation-jobs">Generation</button>
+        <button data-target="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="topline">
+        <div>
+          <h2 id="viewTitle">Overview</h2>
+          <p id="viewSubtitle">Live status for inventory, cached recipes, generation providers, and local model readiness.</p>
+        </div>
+        <div class="actions">
+          <button class="button" id="refreshBtn" type="button">Refresh</button>
+          <a class="button" href="/streamalchemy/overlay" target="_blank" rel="noreferrer">Overlay</a>
+        </div>
+      </div>
+
+      <div class="notice" id="notice" role="status"></div>
+
+      <section class="view active" data-view="overview">
+        <div class="metric-grid">
+          <div class="metric"><span>Items</span><strong id="metricItems">0</strong></div>
+          <div class="metric"><span>Recipes</span><strong id="metricRecipes">0</strong></div>
+          <div class="metric"><span>Jobs</span><strong id="metricJobs">0</strong></div>
+          <div class="metric"><span>Provider</span><strong id="metricProvider">0</strong></div>
+        </div>
+        <div class="layout">
+          <div class="panel">
+            <h3>Provider Status</h3>
+            <div class="provider-list" id="providerList"></div>
+          </div>
+          <div class="panel">
+            <h3>System Analysis</h3>
+            <div class="analysis-list" id="analysisList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="items">
+        <div class="item-list" id="itemList"></div>
+      </section>
+
+      <section class="view" data-view="recipes">
+        <div class="recipe-list" id="recipeList"></div>
+      </section>
+
+      <section class="view" data-view="generation-jobs">
+        <div class="job-list" id="jobList"></div>
+      </section>
+
+      <section class="view" data-view="settings">
+        <form class="panel" id="settingsForm">
+          <label class="check-row">
+            <input type="checkbox" id="enabled">
+            Plugin enabled
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="autoCrafting">
+            Auto crafting enabled
+          </label>
+          <div class="field-grid">
+            <label>Crafting window ms
+              <input type="number" id="craftingWindowMs" min="1000" max="30000" step="500">
+            </label>
+            <label>Default style
+              <select id="defaultStyle">
+                <option value="rpg">RPG</option>
+                <option value="fantasy">Fantasy</option>
+                <option value="pixel">Pixel</option>
+                <option value="anime">Anime</option>
+                <option value="cyberpunk">Cyberpunk</option>
+                <option value="cartoon">Cartoon</option>
+              </select>
+            </label>
+            <label>Provider order
+              <input type="text" id="providerOrder">
+            </label>
+            <label>ComfyUI URL
+              <input type="url" id="comfyUrl">
+            </label>
+            <label>Local model
+              <input type="text" id="localModel">
+            </label>
+            <label>Hugging Face token
+              <input type="password" id="hfToken" autocomplete="off" placeholder="hf_...">
+            </label>
+            <label>Local size
+              <input type="text" id="localSize">
+            </label>
+            <label>Local steps
+              <input type="number" id="localSteps" min="1" max="40">
+            </label>
+            <label>Local concurrency
+              <input type="number" id="localConcurrency" min="1" max="4">
+            </label>
+          </div>
+          <div class="model-installer">
+            <div class="provider-row" style="border-bottom: 0; padding: 0;">
+              <div>
+                <div class="name">Local model installer</div>
+                <div class="muted" id="localModelPath">-</div>
+              </div>
+              <span class="status" id="localModelState">unknown</span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-bar" id="localModelProgress"></div>
+            </div>
+            <div class="model-error" id="localModelError" role="alert"></div>
+            <div class="actions" style="justify-content: flex-start;">
+              <button class="button" id="installLocalModelBtn" type="button">Install local model</button>
+              <span class="muted" id="localModelBytes"></span>
+            </div>
+            <ul class="model-help">
+              <li>The installer downloads the configured local model into the plugin data directory and keeps the UI open while progress is polled.</li>
+              <li>For gated Hugging Face models, accept the model terms in your Hugging Face account and set HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.</li>
+              <li>If automatic download is blocked, download the model manually and place it at the path shown above, then refresh this page.</li>
+            </ul>
+          </div>
+          <div class="actions" style="margin-top: 16px;">
+            <button class="button primary" type="submit">Save Settings</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      config: null,
+      items: [],
+      recipes: [],
+      jobs: [],
+      providers: [],
+      analysis: null,
+      localModel: null
+    };
+    let localModelPollTimer = null;
+
+    const titles = {
+      overview: ['Overview', 'Live status for inventory, cached recipes, generation providers, and local model readiness.'],
+      items: ['Items', 'Base gifts and crafted results persisted in the StreamAlchemy store.'],
+      recipes: ['Recipes', 'Cached craft combinations reuse their existing images and avoid repeated generation costs.'],
+      'generation-jobs': ['Generation', 'Provider attempts, prompts, and image generation results.'],
+      settings: ['Settings', 'Runtime configuration for crafting behavior, provider routing, and local model installation.']
+    };
+
+    const notice = document.getElementById('notice');
+
+    function showNotice(message, kind = 'info') {
+      notice.textContent = message;
+      notice.className = `notice active ${kind}`;
+      clearTimeout(showNotice.timer);
+      showNotice.timer = setTimeout(() => {
+        notice.className = 'notice';
+      }, 5000);
+    }
+
+    async function getJson(url, options) {
+      const response = await fetch(url, options);
+      const payload = await response.json();
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.error || `Request failed: ${url}`);
+      }
+      return payload;
+    }
+
+    function safeText(value) {
+      return value === null || value === undefined || value === '' ? '-' : String(value);
+    }
+
+    function escapeHtml(value) {
+      return safeText(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function classToken(value) {
+      return safeText(value).replace(/[^a-z0-9_-]/gi, '_');
+    }
+
+    const RARITY_FRAMES = {
+      common: { className: 'frame-common', label: 'Bronze frame' },
+      rare: { className: 'frame-rare', label: 'Silver frame' },
+      legendary: { className: 'frame-legendary', label: 'Gold frame' },
+      mythic: { className: 'frame-mythic', label: 'Arcane frame' }
+    };
+
+    function frameDefinition(rarity) {
+      return RARITY_FRAMES[safeText(rarity).toLowerCase()] || RARITY_FRAMES.common;
+    }
+
+    function frameClass(rarity) {
+      return frameDefinition(rarity).className;
+    }
+
+    function frameLabel(rarity) {
+      return frameDefinition(rarity).label;
+    }
+
+    function formatBytes(value) {
+      const bytes = Number(value) || 0;
+      if (!bytes) return '-';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let current = bytes;
+      let unitIndex = 0;
+      while (current >= 1024 && unitIndex < units.length - 1) {
+        current /= 1024;
+        unitIndex += 1;
+      }
+      return `${current.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function installerErrorMessage(model) {
+      if (!model?.error) return '';
+      const tokenHint = model.error.includes('HTTP_401') || model.error.includes('HTTP_403')
+        ? ' Accept the Hugging Face model terms and set HF_TOKEN or HUGGINGFACE_TOKEN before starting LTTH.'
+        : '';
+      return `Install failed: ${model.error}.${tokenHint} You can also download the model manually and place it at the path shown above.`;
+    }
+
+    function imageSource(item) {
+      return item.image_url || item.imageURL || item.imageUrl || '';
+    }
+
+    function itemName(item) {
+      return item.name || item.item_name || item.itemId || item.item_id || 'Unknown item';
+    }
+
+    function renderMetrics() {
+      document.getElementById('metricItems').textContent = state.items.length;
+      document.getElementById('metricRecipes').textContent = state.recipes.length;
+      document.getElementById('metricJobs').textContent = state.jobs.length;
+      document.getElementById('metricProvider').textContent = state.providers.filter(provider => provider.state === 'ready').length;
+    }
+
+    function renderProviders() {
+      const list = document.getElementById('providerList');
+      if (!state.providers.length) {
+        list.innerHTML = '<div class="empty">No provider status available.</div>';
+        return;
+      }
+
+      list.innerHTML = state.providers.map(provider => `
+        <div class="provider-row">
+          <div>
+            <div class="name">${escapeHtml(provider.provider)}</div>
+            <div class="muted">${escapeHtml(provider.model || provider.detail || provider.lastError)}</div>
+          </div>
+          <span class="status ${classToken(provider.state)}">${escapeHtml(provider.state)}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderAnalysis() {
+      const list = document.getElementById('analysisList');
+      const analysis = state.analysis || {};
+      const rows = [
+        ['CPU', analysis.cpu?.model || analysis.cpuModel],
+        ['RAM', analysis.memory?.totalGb ? `${analysis.memory.totalGb} GB` : analysis.ramGb],
+        ['GPU', analysis.gpu?.name || analysis.gpuName],
+        ['VRAM', analysis.gpu?.vramGb ? `${analysis.gpu.vramGb} GB` : analysis.vramGb],
+        ['ComfyUI', analysis.comfy?.state || analysis.comfyState],
+        ['Recommendation', analysis.recommendation?.model || analysis.recommendedModel]
+      ];
+
+      list.innerHTML = rows.map(([label, value]) => `
+        <div class="analysis-row">
+          <span class="muted">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderItems() {
+      const list = document.getElementById('itemList');
+      if (!state.items.length) {
+        list.innerHTML = '<div class="empty">No items stored yet.</div>';
+        return;
+      }
+
+          list.innerHTML = state.items.map(item => `
+            <article class="item">
+              <div class="item-frame ${frameClass(item.rarity)}" title="${escapeHtml(frameLabel(item.rarity))}">
+                <img src="${escapeHtml(imageSource(item))}" alt="">
+              </div>
+              <div>
+                <div class="name">${escapeHtml(itemName(item))}</div>
+            <div class="meta">
+              <span class="status">${escapeHtml(item.rarity)}</span>
+              <span class="muted">${item.is_crafted || item.isCrafted ? 'crafted' : 'base'}</span>
+              <span class="muted">${escapeHtml(item.coin_value || item.coinValue)} coins</span>
+            </div>
+          </div>
+          <span class="muted">x${escapeHtml(item.quantity || 0)}</span>
+        </article>
+      `).join('');
+    }
+
+    function renderRecipes() {
+      const list = document.getElementById('recipeList');
+      if (!state.recipes.length) {
+        list.innerHTML = '<div class="empty">No cached recipes yet.</div>';
+        return;
+      }
+
+      list.innerHTML = state.recipes.map(recipe => `
+        <article class="recipe">
+          <div class="name">${escapeHtml(recipe.recipe_key || recipe.recipeKey)}</div>
+          <div class="muted">Result: ${escapeHtml(recipe.result_item_id || recipe.resultItemId)}</div>
+          <div class="muted">Prompt version: ${escapeHtml(recipe.prompt_version || recipe.promptVersion)}</div>
+        </article>
+      `).join('');
+    }
+
+    function renderJobs() {
+      const list = document.getElementById('jobList');
+      if (!state.jobs.length) {
+        list.innerHTML = '<div class="empty">No generation jobs recorded yet.</div>';
+        return;
+      }
+
+      list.innerHTML = state.jobs.map(job => `
+        <article class="job">
+          <div class="provider-row" style="border-bottom: 0; padding: 0;">
+            <div>
+              <div class="name">${escapeHtml(job.provider)}</div>
+              <div class="muted">${escapeHtml(job.model)}</div>
+            </div>
+            <span class="status ${classToken(job.status)}">${escapeHtml(job.status)}</span>
+          </div>
+          <div class="muted">${escapeHtml(job.prompt)}</div>
+          ${job.error ? `<div class="muted">Error: ${escapeHtml(job.error)}</div>` : ''}
+        </article>
+      `).join('');
+    }
+
+    function renderSettings() {
+      const config = state.config || {};
+      const local = config.localGeneration || {};
+      document.getElementById('enabled').checked = config.enabled !== false;
+      document.getElementById('autoCrafting').checked = config.autoCrafting !== false;
+      document.getElementById('craftingWindowMs').value = config.craftingWindowMs || 6000;
+      document.getElementById('defaultStyle').value = config.defaultStyle || 'rpg';
+      document.getElementById('providerOrder').value = (config.providerOrder || []).join(', ');
+      document.getElementById('comfyUrl').value = local.comfyUrl || 'http://127.0.0.1:8188';
+      document.getElementById('localModel').value = local.model || 'black-forest-labs/FLUX.1-schnell';
+      document.getElementById('hfToken').value = '';
+      document.getElementById('localSize').value = `${local.width || 768}x${local.height || 768}`;
+      document.getElementById('localSteps').value = local.steps || 4;
+      document.getElementById('localConcurrency').value = local.concurrency || 1;
+      renderLocalModelInstaller();
+    }
+
+    function renderLocalModelInstaller() {
+      const model = state.localModel || {};
+      const installButton = document.getElementById('installLocalModelBtn');
+      const stateValue = model.state || 'unknown';
+      const progress = model.bytesTotal
+        ? Math.min(100, Math.round(((model.bytesDownloaded || 0) / model.bytesTotal) * 100))
+        : (stateValue === 'installed' ? 100 : 0);
+
+      document.getElementById('localModelState').textContent = stateValue;
+      document.getElementById('localModelState').className = `status ${classToken(stateValue)}`;
+      document.getElementById('localModelPath').textContent = model.targetPath || 'Model path not resolved yet.';
+      document.getElementById('localModelProgress').style.width = `${progress}%`;
+      document.getElementById('localModelBytes').textContent = model.bytesTotal
+        ? `${formatBytes(model.bytesDownloaded)} / ${formatBytes(model.bytesTotal)}`
+        : formatBytes(model.sizeBytes);
+
+      const errorMessage = installerErrorMessage(model);
+      const errorBox = document.getElementById('localModelError');
+      errorBox.textContent = errorMessage;
+      errorBox.classList.toggle('active', Boolean(errorMessage));
+
+      installButton.disabled = stateValue === 'installing' || model.canInstall === false;
+      installButton.textContent = stateValue === 'installing'
+        ? 'Installing...'
+        : (stateValue === 'installed' ? 'Local model installed' : (stateValue === 'failed' ? 'Retry local model install' : 'Install local model'));
+    }
+
+    function renderAll() {
+      renderMetrics();
+      renderProviders();
+      renderAnalysis();
+      renderItems();
+      renderRecipes();
+      renderJobs();
+      renderSettings();
+    }
+
+    async function refresh() {
+      document.getElementById('refreshBtn').disabled = true;
+      try {
+        const [config, items, recipes, jobs, providers, analysis, localModel] = await Promise.all([
+          getJson('/api/streamalchemy/config'),
+          getJson('/api/streamalchemy/items'),
+          getJson('/api/streamalchemy/recipes'),
+          getJson('/api/streamalchemy/generation-jobs'),
+          getJson('/api/streamalchemy/providers/status'),
+          getJson('/api/streamalchemy/system-analysis'),
+          getJson('/api/streamalchemy/local-model/status')
+        ]);
+
+        state.config = config.config;
+        state.items = items.items || [];
+        state.recipes = recipes.recipes || [];
+        state.jobs = jobs.jobs || [];
+        state.providers = providers.providers || [];
+        state.analysis = analysis.analysis || null;
+        state.localModel = localModel.model || null;
+        renderAll();
+        scheduleLocalModelPoll();
+      } catch (error) {
+        showNotice(error.message, 'error');
+      } finally {
+        document.getElementById('refreshBtn').disabled = false;
+      }
+    }
+
+    document.querySelectorAll('.nav button').forEach(button => {
+      button.addEventListener('click', () => {
+        const view = button.dataset.target;
+        document.querySelectorAll('.nav button').forEach(item => item.classList.toggle('active', item === button));
+        document.querySelectorAll('.view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
+        document.getElementById('viewTitle').textContent = titles[view][0];
+        document.getElementById('viewSubtitle').textContent = titles[view][1];
+      });
+    });
+
+    document.getElementById('settingsForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const [width, height] = document.getElementById('localSize').value.split('x').map(value => Number(value.trim()));
+      const body = {
+        enabled: document.getElementById('enabled').checked,
+        autoCrafting: document.getElementById('autoCrafting').checked,
+        craftingWindowMs: Number(document.getElementById('craftingWindowMs').value),
+        defaultStyle: document.getElementById('defaultStyle').value,
+        providerOrder: document.getElementById('providerOrder').value.split(',').map(value => value.trim()).filter(Boolean),
+        localGeneration: {
+          comfyUrl: document.getElementById('comfyUrl').value.trim(),
+          model: document.getElementById('localModel').value.trim(),
+          width: width || 768,
+          height: height || 768,
+          steps: Number(document.getElementById('localSteps').value),
+          concurrency: Number(document.getElementById('localConcurrency').value)
+        }
+      };
+      const hfToken = document.getElementById('hfToken').value.trim();
+      if (hfToken) {
+        body.localGeneration.modelAuthToken = hfToken;
+      }
+
+      try {
+        await getJson('/api/streamalchemy/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        showNotice('Settings saved.');
+        await refresh();
+      } catch (error) {
+        showNotice(error.message, 'error');
+      }
+    });
+
+    async function loadLocalModelStatus() {
+      try {
+        const previousState = state.localModel?.state;
+        const payload = await getJson('/api/streamalchemy/local-model/status');
+        state.localModel = payload.model || null;
+        renderLocalModelInstaller();
+        if (previousState === 'installing' && state.localModel?.state === 'failed') {
+          showNotice(installerErrorMessage(state.localModel), 'error');
+        }
+        scheduleLocalModelPoll();
+      } catch (error) {
+        showNotice(error.message, 'error');
+      }
+    }
+
+    function scheduleLocalModelPoll() {
+      clearTimeout(localModelPollTimer);
+      if (state.localModel?.state === 'installing') {
+        localModelPollTimer = setTimeout(loadLocalModelStatus, 1500);
+      }
+    }
+
+    document.getElementById('installLocalModelBtn').addEventListener('click', async () => {
+      const button = document.getElementById('installLocalModelBtn');
+      button.disabled = true;
+      try {
+        const payload = await getJson('/api/streamalchemy/local-model/install', { method: 'POST' });
+        state.localModel = payload.model || null;
+        renderLocalModelInstaller();
+        showNotice('Local model installation started.');
+        scheduleLocalModelPoll();
+      } catch (error) {
+        showNotice(error.message, 'error');
+      } finally {
+        renderLocalModelInstaller();
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    refresh();
+  </script>
+</body>
+</html>

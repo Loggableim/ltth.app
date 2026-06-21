@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slot Machine – LTTH Game Engine</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --slot-bg:        #1a0a2e;
+      --slot-border:    #FFD700;
+      --reel-bg:        #0d0620;
+      --reel-border:    #5a3a8a;
+      --win-glow:       rgba(255,215,0,0.7);
+      --jackpot-color:  #FFD700;
+      --near-miss:      #FF6B6B;
+      --symbol-size:    72px;
+      --font-main:      'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: var(--font-main);
+    }
+
+    /* ── Container ─────────────────────────────────────── */
+    #slot-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ── Main machine panel ─────────────────────────────── */
+    #slot-machine {
+      background: linear-gradient(160deg, #2a0a4e 0%, #1a0a2e 100%);
+      border: 4px solid var(--slot-border);
+      border-radius: 24px;
+      padding: 24px 28px 20px;
+      box-shadow:
+        0 0 40px rgba(255,215,0,0.25),
+        0 0 80px rgba(100,50,200,0.2),
+        inset 0 0 40px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: scale(0.6) translateY(40px);
+      transition: opacity 0.45s cubic-bezier(0.34,1.56,0.64,1),
+                  transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+      min-width: 420px;
+    }
+
+    #slot-machine.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* ── Title bar ─────────────────────────────────────── */
+    #slot-title {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--slot-border);
+      margin-bottom: 6px;
+      text-shadow: 0 0 12px rgba(255,215,0,0.6);
+    }
+
+    #slot-player {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #ccc;
+      margin-bottom: 16px;
+      min-height: 1.2em;
+    }
+
+    /* ── Reel area ─────────────────────────────────────── */
+    #reels-wrapper {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      background: var(--reel-bg);
+      border: 3px solid var(--reel-border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Win-line indicator */
+    #win-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 3px;
+      background: rgba(255,215,0,0.3);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Individual reel ─────────────────────────────── */
+    .reel {
+      width: calc(var(--symbol-size) + 16px);
+      height: calc(var(--symbol-size) + 16px);
+      overflow: hidden;
+      border-radius: 10px;
+      background: #140830;
+      border: 2px solid var(--reel-border);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .reel-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      /* Vertical scroll driven by JS animation */
+      will-change: transform;
+    }
+
+    .reel-symbol {
+      width: 100%;
+      height: calc(var(--symbol-size) + 16px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: var(--symbol-size);
+      line-height: 1;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    /* Reel shimmer while spinning */
+    .reel.spinning .reel-track {
+      animation: spinBlur 0.12s linear infinite;
+    }
+
+    .reel.stopping .reel-track {
+      transition: transform 0.55s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    @keyframes spinBlur {
+      0%   { filter: blur(0px); }
+      50%  { filter: blur(3px); }
+      100% { filter: blur(0px); }
+    }
+
+    /* ── Result area ──────────────────────────────────── */
+    #result-area {
+      margin-top: 16px;
+      text-align: center;
+      min-height: 2.4rem;
+    }
+
+    #result-text {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.35s, transform 0.35s;
+    }
+
+    #result-text.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Category-specific colours */
+    #result-text.small_win  { color: #90EE90; }
+    #result-text.medium_win { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.6); }
+    #result-text.big_win    { color: #FF9500; text-shadow: 0 0 30px rgba(255,149,0,0.7); }
+    #result-text.jackpot    { color: var(--jackpot-color); text-shadow: 0 0 40px rgba(255,215,0,0.9); animation: jackpotPulse 0.6s ease-in-out infinite; }
+    #result-text.near_miss  { color: var(--near-miss); }
+
+    @keyframes jackpotPulse {
+      0%,100% { transform: scale(1) translateY(0); }
+      50%      { transform: scale(1.08) translateY(0); }
+    }
+
+    /* ── Win glow overlay on reels ─────────────────────── */
+    #reels-wrapper.win-glow {
+      box-shadow: 0 0 0 3px var(--slot-border), 0 0 30px var(--win-glow);
+      transition: box-shadow 0.3s;
+    }
+    #reels-wrapper.jackpot-glow {
+      animation: jackpotBorder 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes jackpotBorder {
+      from { box-shadow: 0 0 0 3px #FFD700, 0 0 40px rgba(255,215,0,0.8); }
+      to   { box-shadow: 0 0 0 6px #FFA500, 0 0 80px rgba(255,165,0,1); }
+    }
+    #reels-wrapper.near-miss-shake {
+      animation: nearMissShake 0.5s ease-in-out;
+    }
+    @keyframes nearMissShake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+
+    /* ── Winning reel highlight ────────────────────────── */
+    .reel.win-flash {
+      animation: reelFlash 0.5s ease-in-out 3;
+    }
+    @keyframes reelFlash {
+      0%,100% { background: #140830; }
+      50%      { background: #3a2040; border-color: var(--slot-border); }
+    }
+
+    /* ── Jackpot confetti overlay ─────────────────────── */
+    #confetti-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 200;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      top: -20px;
+      width: 10px;
+      height: 14px;
+      opacity: 0.9;
+      animation: confettiFall linear forwards;
+      border-radius: 2px;
+    }
+
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── Overlay modes ─────────────────────────────────────
+     * Applied as a class on #slot-container.
+     * The engine selects the mode; the overlay only renders.
+     * ─────────────────────────────────────────────────────── */
+
+    /* Mode: large (default) – centred, full-size feature */
+    #slot-container.mode-large #slot-machine {
+      min-width: 420px;
+    }
+
+    /* Mode: horizontal – wide, compact height */
+    #slot-container.mode-horizontal {
+      align-items: flex-end;
+      padding-bottom: 20px;
+    }
+    #slot-container.mode-horizontal #slot-machine {
+      min-width: 560px;
+      padding: 14px 24px 12px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 20px;
+    }
+    #slot-container.mode-horizontal #slot-title,
+    #slot-container.mode-horizontal #slot-player {
+      min-width: 120px;
+      text-align: left;
+      margin-bottom: 0;
+    }
+    #slot-container.mode-horizontal #result-area {
+      margin-top: 0;
+      margin-left: 12px;
+      min-width: 130px;
+    }
+
+    /* Mode: vertical – tall, narrow */
+    #slot-container.mode-vertical {
+      align-items: flex-start;
+      padding-left: 20px;
+    }
+    #slot-container.mode-vertical #slot-machine {
+      min-width: 200px;
+      max-width: 260px;
+    }
+    #slot-container.mode-vertical .reel {
+      width: calc(var(--symbol-size) * 0.8 + 12px);
+      height: calc(var(--symbol-size) * 0.8 + 12px);
+    }
+    #slot-container.mode-vertical .reel-symbol {
+      font-size: calc(var(--symbol-size) * 0.8);
+      height: calc(var(--symbol-size) * 0.8 + 12px);
+    }
+
+    /* Mode: compact-hud – small icons, corner HUD */
+    #slot-container.mode-compact-hud {
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 12px;
+    }
+    #slot-container.mode-compact-hud #slot-machine {
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border-width: 2px;
+    }
+    #slot-container.mode-compact-hud #slot-title { font-size: 0.7rem; margin-bottom: 2px; }
+    #slot-container.mode-compact-hud #slot-player { font-size: 0.65rem; margin-bottom: 8px; }
+    #slot-container.mode-compact-hud .reel {
+      width: calc(var(--symbol-size) * 0.55 + 8px);
+      height: calc(var(--symbol-size) * 0.55 + 8px);
+    }
+    #slot-container.mode-compact-hud .reel-symbol {
+      font-size: calc(var(--symbol-size) * 0.55);
+      height: calc(var(--symbol-size) * 0.55 + 8px);
+    }
+    #slot-container.mode-compact-hud #reels-wrapper { gap: 6px; padding: 8px 10px; }
+    #slot-container.mode-compact-hud #result-text { font-size: 0.85rem; margin-top: 6px; }
+
+    /* Mode: compact-featured – medium icons, eye-catching but smaller */
+    #slot-container.mode-compact-featured {
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+    #slot-container.mode-compact-featured #slot-machine {
+      min-width: 300px;
+      max-width: 380px;
+    }
+    #slot-container.mode-compact-featured .reel {
+      width: calc(var(--symbol-size) * 0.75 + 12px);
+      height: calc(var(--symbol-size) * 0.75 + 12px);
+    }
+    #slot-container.mode-compact-featured .reel-symbol {
+      font-size: calc(var(--symbol-size) * 0.75);
+      height: calc(var(--symbol-size) * 0.75 + 12px);
+    }
+
+    /* Icon preset: large – bigger symbols */
+    #slot-container.icon-large { --symbol-size: 96px; }
+    /* Icon preset: small */
+    #slot-container.icon-small { --symbol-size: 52px; }
+
+    /* Image symbols */
+    .reel-symbol img.sym-image {
+      width: calc(var(--symbol-size) * 0.85);
+      height: calc(var(--symbol-size) * 0.85);
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Mode: icons-only – bare reels, no title/player/result ──── */
+    #slot-container.mode-icons-only #slot-title  { display: none; }
+    #slot-container.mode-icons-only #slot-player { display: none; }
+    #slot-container.mode-icons-only #result-area { display: none; }
+    #slot-container.mode-icons-only #slot-machine {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 8px;
+      min-width: 0;
+    }
+    #slot-container.mode-icons-only #reels-wrapper {
+      background: transparent;
+      border: none;
+      padding: 6px;
+      gap: 8px;
+    }
+    #slot-container.mode-icons-only .reel {
+      background: transparent;
+      border: none;
+    }
+
+    /* ── Design theme: neon ──────────────────────────────────────── */
+    #slot-container.theme-neon {
+      --slot-bg:       #000000;
+      --slot-border:   #00ff88;
+      --reel-bg:       #0a0a0a;
+      --reel-border:   #ff00cc;
+      --jackpot-color: #00ff88;
+      --near-miss:     #ff00cc;
+      --font-main:     'Courier New', monospace;
+    }
+    #slot-container.theme-neon #slot-machine {
+      background: linear-gradient(160deg, #001a0d 0%, #000000 100%);
+      border-color: #00ff88;
+      box-shadow:
+        0 0 20px rgba(0,255,136,0.4),
+        0 0 60px rgba(255,0,204,0.2),
+        inset 0 0 30px rgba(0,0,0,0.6);
+    }
+    /* Scanlines overlay */
+    #slot-container.theme-neon #slot-machine::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,136,0.03) 2px,
+        rgba(0,255,136,0.03) 4px
+      );
+      pointer-events: none;
+      border-radius: inherit;
+      z-index: 5;
+    }
+    #slot-container.theme-neon #slot-title {
+      color: #00ff88;
+      text-shadow: 0 0 16px rgba(0,255,136,0.9), 0 0 30px rgba(0,255,136,0.5);
+    }
+    #slot-container.theme-neon #reels-wrapper {
+      border-color: #ff00cc;
+      box-shadow: 0 0 12px rgba(255,0,204,0.4);
+    }
+    #slot-container.theme-neon .reel {
+      border-color: #ff00cc;
+      box-shadow: inset 0 0 10px rgba(255,0,204,0.2), 0 0 8px rgba(0,255,136,0.3);
+    }
+
+    /* ── Design theme: retro ─────────────────────────────────────── */
+    #slot-container.theme-retro {
+      --slot-bg:       #c8a96e;
+      --slot-border:   #6b4c11;
+      --reel-bg:       #f5e6c8;
+      --reel-border:   #8b6914;
+      --jackpot-color: #8b1a1a;
+      --near-miss:     #c05000;
+      --font-main:     'Courier New', 'Lucida Console', monospace;
+    }
+    #slot-container.theme-retro #slot-machine {
+      background: linear-gradient(160deg, #d4b07a 0%, #c8a96e 100%);
+      border: 4px solid #6b4c11;
+      border-radius: 8px;
+      box-shadow:
+        4px 4px 0px #6b4c11,
+        0 0 0 2px #f5e6c8;
+      image-rendering: pixelated;
+    }
+    #slot-container.theme-retro #slot-title {
+      color: #6b4c11;
+      text-shadow: 2px 2px 0px rgba(107,76,17,0.4);
+      letter-spacing: 0.2em;
+    }
+    #slot-container.theme-retro #slot-player { color: #5a3a00; }
+    #slot-container.theme-retro #reels-wrapper {
+      background: #f5e6c8;
+      border: 3px solid #8b6914;
+      border-radius: 4px;
+      box-shadow: inset 2px 2px 0px rgba(107,76,17,0.3);
+    }
+    #slot-container.theme-retro .reel {
+      border: 2px solid #8b6914;
+      border-radius: 4px;
+      background: #fff8e8;
+    }
+
+    /* ── Design theme: minimal ───────────────────────────────────── */
+    #slot-container.theme-minimal {
+      --slot-bg:       transparent;
+      --slot-border:   #e0e0e0;
+      --reel-bg:       #f8f8f8;
+      --reel-border:   #cccccc;
+      --jackpot-color: #2196F3;
+      --near-miss:     #ff7043;
+      --font-main:     'Helvetica Neue', Arial, sans-serif;
+    }
+    #slot-container.theme-minimal #slot-machine {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    #slot-container.theme-minimal #slot-title {
+      color: #333333;
+      text-shadow: none;
+    }
+    #slot-container.theme-minimal #slot-player { color: #666666; }
+    #slot-container.theme-minimal #reels-wrapper {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      box-shadow: none;
+    }
+    #slot-container.theme-minimal .reel {
+      border: 1px solid #cccccc;
+      background: #ffffff;
+      box-shadow: none;
+    }
+    #slot-container.theme-minimal #result-text { color: #333333; text-shadow: none; }
+    #slot-container.theme-minimal #result-text.jackpot { color: #2196F3; }
+
+    /* ── Design theme: dark-pro ──────────────────────────────────── */
+    #slot-container.theme-dark-pro {
+      --slot-bg:       #1a1e2e;
+      --slot-border:   #3d6cb5;
+      --reel-bg:       #12151f;
+      --reel-border:   #2a3a5a;
+      --jackpot-color: #5b9cf6;
+      --near-miss:     #e57373;
+      --font-main:     'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+    #slot-container.theme-dark-pro #slot-machine {
+      background: linear-gradient(160deg, #1e2438 0%, #141820 100%);
+      border: 2px solid #3d6cb5;
+      border-radius: 16px;
+      box-shadow:
+        0 0 24px rgba(61,108,181,0.2),
+        0 4px 24px rgba(0,0,0,0.5);
+    }
+    #slot-container.theme-dark-pro #slot-title {
+      color: #7ab3f5;
+      text-shadow: 0 0 10px rgba(91,156,246,0.4);
+    }
+    #slot-container.theme-dark-pro #slot-player { color: #8898aa; }
+    #slot-container.theme-dark-pro #reels-wrapper {
+      background: #12151f;
+      border-color: #2a3a5a;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+    }
+    #slot-container.theme-dark-pro .reel {
+      border-color: #2a3a5a;
+      background: #0e1118;
+    }
+    #slot-container.theme-dark-pro #result-text.jackpot {
+      color: #5b9cf6;
+      text-shadow: 0 0 20px rgba(91,156,246,0.6);
+    }
+  </style>
+</head>
+<body>
+  <div id="slot-container">
+    <!-- Jackpot confetti (shown on jackpot) -->
+    <div id="confetti-overlay"></div>
+
+    <div id="slot-machine">
+      <div id="slot-title">🎰 Slot Machine</div>
+      <div id="slot-player"></div>
+
+      <div id="reels-wrapper">
+        <div id="win-line"></div>
+        <div class="reel" id="reel-0"><div class="reel-track" id="track-0"></div></div>
+        <div class="reel" id="reel-1"><div class="reel-track" id="track-1"></div></div>
+        <div class="reel" id="reel-2"><div class="reel-track" id="track-2"></div></div>
+      </div>
+
+      <div id="result-area">
+        <div id="result-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────
+    // Slot Overlay – socket event handler
+    // RNG is server-authoritative. The overlay only animates.
+    // ─────────────────────────────────────────────────────
+
+    let RESULT_LABELS = {
+      loss:       '😔 Kein Gewinn',
+      near_miss:  '😬 Fast!',
+      small_win:  '🎉 Kleiner Gewinn!',
+      medium_win: '🎊 Gewinn!',
+      big_win:    '🔥 Großer Gewinn!',
+      jackpot:    '🏆 JACKPOT!'
+    };
+
+    const REEL_SYMBOL_HEIGHT = 88; // px – legacy fallback (72 + 16); use getReelSymbolHeight() instead
+
+    // Returns the actual rendered height of a .reel-symbol element.
+    // Reads from the DOM so it works in all overlay modes and icon presets.
+    function getReelSymbolHeight() {
+      const sample = document.querySelector('.reel-symbol');
+      if (sample) return sample.getBoundingClientRect().height;
+      // Fallback: derive from --symbol-size CSS custom property
+      const symbolSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--symbol-size')) || 72;
+      return symbolSize + 16;
+    }
+    const REEL_STOP_DELAY    = 400; // ms between reel stops (default, overridden by settings)
+    const TRACK_SYMBOL_COUNT = 10;  // symbols to pre-fill per track (longer = smoother blur)
+
+    // Valid overlay mode names (maps to CSS class)
+    const OVERLAY_MODES = {
+      'large':            'mode-large',
+      'horizontal':       'mode-horizontal',
+      'vertical':         'mode-vertical',
+      'compact-hud':      'mode-compact-hud',
+      'compact_hud':      'mode-compact-hud',
+      'compact-featured': 'mode-compact-featured',
+      'compact_featured': 'mode-compact-featured',
+      'icons-only':       'mode-icons-only',
+      'icons_only':       'mode-icons-only'
+    };
+
+    const ICON_PRESETS = {
+      'large':  'icon-large',
+      'small':  'icon-small',
+      'normal': ''
+    };
+
+    // ── State ─────────────────────────────────────────────
+    let currentSymbols  = [];
+    let lastSettings    = {};
+    let hideTimer       = null;
+    let currentSpinId   = null; // track active spin for spin-completed reporting
+
+    const socket = io({ transports: ['websocket'] });
+
+    const container  = document.getElementById('slot-container');
+    const machine    = document.getElementById('slot-machine');
+    const playerEl   = document.getElementById('slot-player');
+    const reelsWrap  = document.getElementById('reels-wrapper');
+    const resultEl   = document.getElementById('result-text');
+    const confettiEl = document.getElementById('confetti-overlay');
+
+    // ── Apply overlay mode ────────────────────────────────
+    function applyOverlayMode(mode, iconPreset) {
+      // Remove any previous mode classes
+      Object.values(OVERLAY_MODES).forEach(c => container.classList.remove(c));
+      Object.values(ICON_PRESETS).forEach(c => c && container.classList.remove(c));
+
+      const modeClass = OVERLAY_MODES[mode] || 'mode-large';
+      container.classList.add(modeClass);
+
+      const iconClass = ICON_PRESETS[iconPreset || 'normal'] || '';
+      if (iconClass) container.classList.add(iconClass);
+    }
+
+    // ── Apply design settings (colors, title, win labels, theme) ──
+    const THEME_CLASSES = ['theme-neon', 'theme-retro', 'theme-minimal', 'theme-dark-pro'];
+
+    function applyDesignSettings(ds) {
+      if (!ds) return;
+      const root = document.documentElement;
+      if (ds.bgColor)     root.style.setProperty('--slot-bg',       ds.bgColor);
+      if (ds.borderColor) root.style.setProperty('--slot-border',   ds.borderColor);
+      if (ds.reelBgColor) root.style.setProperty('--reel-bg',       ds.reelBgColor);
+      if (ds.winColor)    root.style.setProperty('--jackpot-color',  ds.winColor);
+      if (ds.textColor) {
+        root.style.setProperty('--slot-text', ds.textColor);
+        machine.style.color = ds.textColor;
+      }
+      const titleEl = document.getElementById('slot-title');
+      if (titleEl && ds.titleText) titleEl.textContent = ds.titleText;
+
+      // Update result labels from design settings (fall back to defaults if not set)
+      if (ds.labelLoss      !== undefined) RESULT_LABELS.loss       = ds.labelLoss;
+      if (ds.labelNearMiss  !== undefined) RESULT_LABELS.near_miss  = ds.labelNearMiss;
+      if (ds.labelSmallWin  !== undefined) RESULT_LABELS.small_win  = ds.labelSmallWin;
+      if (ds.labelMediumWin !== undefined) RESULT_LABELS.medium_win = ds.labelMediumWin;
+      if (ds.labelBigWin    !== undefined) RESULT_LABELS.big_win    = ds.labelBigWin;
+      if (ds.labelJackpot   !== undefined) RESULT_LABELS.jackpot    = ds.labelJackpot;
+
+      // Apply design theme (orthogonal to overlay mode)
+      THEME_CLASSES.forEach(c => container.classList.remove(c));
+      if (ds.theme && ds.theme !== 'default') {
+        const themeClass = 'theme-' + ds.theme;
+        if (THEME_CLASSES.includes(themeClass)) {
+          container.classList.add(themeClass);
+        }
+      }
+    }
+
+    // ── Helper: create a symbol element (emoji text or image) ─
+    function makeSymbolNode(sym) {
+      if (sym && sym.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'sym-image';
+        img.crossOrigin = 'anonymous';
+        img.src = sym.imageUrl;
+        img.alt = sym.label || sym.emoji || '';
+        img.draggable = false;
+        return img;
+      }
+      return document.createTextNode(sym ? (sym.emoji || sym.label || '?') : '?');
+    }
+
+    // ── Helper: populate a reel track with random symbols ──
+    // Guard: if symbols is empty, fill with a placeholder
+    function fillTrack(trackEl, symbols, count) {
+      trackEl.innerHTML = '';
+      const safe = (symbols && symbols.length > 0) ? symbols : [{ emoji: '?', label: '?' }];
+      for (let i = 0; i < count; i++) {
+        const sym = safe[Math.floor(Math.random() * safe.length)];
+        const div = document.createElement('div');
+        div.className = 'reel-symbol';
+        div.appendChild(makeSymbolNode(sym));
+        trackEl.appendChild(div);
+      }
+    }
+
+    // ── Reel spin animation ────────────────────────────────
+    // Each reel uses a boolean flag to stop instead of a stale RAF ID.
+    function startReel(index) {
+      const track = document.getElementById(`track-${index}`);
+      const reel  = document.getElementById(`reel-${index}`);
+      if (!track || !reel) return;
+
+      // Cancel any previous spin for this reel
+      if (reel._stopSpin) reel._stopSpin();
+
+      reel.classList.add('spinning');
+
+      let spinning = true;
+      let offset   = 0;
+      const speed  = 14 + Math.random() * 4; // px per frame
+      const symbolHeight = getReelSymbolHeight(); // cache once per spin
+
+      function step() {
+        if (!spinning) return;
+        offset += speed;
+        const totalH = track.children.length * symbolHeight;
+        if (offset >= totalH) offset -= totalH;
+        track.style.transform = `translateY(-${offset}px)`;
+        if (spinning) requestAnimationFrame(step); // double-guard against race condition
+      }
+
+      // Expose a stop function so stopReel() can halt this closure
+      reel._stopSpin = () => { spinning = false; };
+
+      requestAnimationFrame(step);
+    }
+
+    function stopReel(index, resultSymbol, callback) {
+      const track = document.getElementById(`track-${index}`);
+      const reel  = document.getElementById(`reel-${index}`);
+      if (!track || !reel) { if (callback) callback(); return; }
+
+      // Stop the RAF loop
+      if (reel._stopSpin) {
+        reel._stopSpin();
+        reel._stopSpin = null;
+      }
+      reel.classList.remove('spinning');
+
+      // Place the result symbol in the LAST slot of the track
+      const lastSlot = track.lastElementChild;
+      if (lastSlot) {
+        lastSlot.innerHTML = '';
+        const fallback = { emoji: '❓' };
+        lastSlot.appendChild(makeSymbolNode(resultSymbol || fallback));
+      }
+
+      // Snap to show the last symbol (= result) in the reel viewport
+      const symbolHeight = getReelSymbolHeight();
+      const snapTo = (track.children.length - 1) * symbolHeight;
+
+      // Disable transition, pre-snap one symbol above the target, force reflow,
+      // then enable the CSS transition so it animates in from the correct position.
+      // This prevents the last queued RAF frame from overwriting the snap position.
+      track.style.transition = 'none';
+      track.style.transform = `translateY(-${snapTo + symbolHeight}px)`;
+      track.offsetHeight; // force reflow so transition:none is applied before re-enabling transitions
+      track.style.transition = '';
+      track.classList.add('stopping');
+      track.style.transform = `translateY(-${snapTo}px)`;
+
+      setTimeout(() => {
+        track.classList.remove('stopping');
+        if (callback) callback();
+      }, 600);
+    }
+
+    // ── Show the machine ───────────────────────────────────
+    function showMachine() {
+      machine.classList.add('visible');
+    }
+
+    // ── Reset all visual state ────────────────────────────
+    function resetVisualState() {
+      reelsWrap.classList.remove('win-glow', 'jackpot-glow');
+      resultEl.className = '';
+      resultEl.classList.remove('visible');
+      resultEl.textContent = '';
+      confettiEl.innerHTML = '';
+      document.querySelectorAll('.reel').forEach(r => r.classList.remove('win-flash'));
+    }
+
+    // ── Hide the machine (after delay) ────────────────────
+    function scheduledHide(ms) {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        machine.classList.remove('visible');
+        resetVisualState();
+        hideTimer = null;
+      }, ms);
+    }
+
+    // ── Confetti ───────────────────────────────────────────
+    function launchConfetti() {
+      const colors = ['#FFD700','#FF6B6B','#4ECDC4','#A8E6CF','#FF8C94','#FFD3B6'];
+      for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left             = `${Math.random() * 100}vw`;
+        piece.style.background       = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDuration = `${1.5 + Math.random() * 2}s`;
+        piece.style.animationDelay   = `${Math.random() * 0.8}s`;
+        piece.style.transform        = `rotate(${Math.random() * 360}deg)`;
+        confettiEl.appendChild(piece);
+      }
+      setTimeout(() => { confettiEl.innerHTML = ''; }, 4000);
+    }
+
+    // ── Display result label ───────────────────────────────
+    function showResult(category, isWin, settings, spinId) {
+      const label = RESULT_LABELS[category] || category;
+      resultEl.textContent = label;
+      resultEl.className = category;
+      resultEl.classList.add('visible');
+
+      if (isWin) {
+        reelsWrap.classList.add('win-glow');
+        document.querySelectorAll('.reel').forEach(r => r.classList.add('win-flash'));
+      }
+      if (category === 'near_miss') {
+        reelsWrap.classList.add('near-miss-shake');
+        setTimeout(() => reelsWrap.classList.remove('near-miss-shake'), 600);
+      }
+      if (category === 'jackpot') {
+        reelsWrap.classList.add('jackpot-glow');
+        launchConfetti();
+      }
+
+      const showMs = (settings && settings.showResultDuration) ? settings.showResultDuration : 5000;
+
+      // ── Notify server: animation complete, dispatch rewards ──
+      // Fire as soon as the result is visible (reels have stopped).
+      if (spinId) {
+        socket.emit('slot:spin-completed', { spinId, category, isWin });
+      }
+
+      scheduledHide(showMs + 1200);
+    }
+
+    // ── Audio playback ─────────────────────────────────────
+    const audioCache = {};
+    let currentMachineId = null;
+
+    function getAudioPath(audioType, machineId) {
+      // Custom sounds are served from /game-engine/sounds/slot/custom/:machineId/:type.mp3
+      // Default sounds are served from /game-engine/sounds/slot/:type.mp3
+      const defaultPaths = {
+        spin:       '/game-engine/sounds/slot/spin.mp3',
+        small_win:  '/game-engine/sounds/slot/small-win.mp3',
+        medium_win: '/game-engine/sounds/slot/medium-win.mp3',
+        big_win:    '/game-engine/sounds/slot/big-win.mp3',
+        jackpot:    '/game-engine/sounds/slot/jackpot.mp3',
+        near_miss:  '/game-engine/sounds/slot/near-miss.mp3',
+        reel_stop:  '/game-engine/sounds/slot/reel-stop.mp3'
+      };
+      if (machineId) {
+        return `/game-engine/sounds/slot/custom/${machineId}/${audioType}.mp3`;
+      }
+      return defaultPaths[audioType] || null;
+    }
+
+    function playAudio(audioType, settings, machineId) {
+      const s = settings || lastSettings;
+      if (s.soundEnabled === false) return;
+      const vol = (s.soundVolume !== undefined) ? Math.min(1, Math.max(0, s.soundVolume)) : 0.7;
+      const mid = machineId || currentMachineId;
+
+      // Try custom path first, fall back to default
+      const customSrc = mid ? `/game-engine/sounds/slot/custom/${mid}/${audioType}.mp3` : null;
+      const defaultPaths = {
+        spin:       '/game-engine/sounds/slot/spin.mp3',
+        small_win:  '/game-engine/sounds/slot/small-win.mp3',
+        medium_win: '/game-engine/sounds/slot/medium-win.mp3',
+        big_win:    '/game-engine/sounds/slot/big-win.mp3',
+        jackpot:    '/game-engine/sounds/slot/jackpot.mp3',
+        near_miss:  '/game-engine/sounds/slot/near-miss.mp3',
+        reel_stop:  '/game-engine/sounds/slot/reel-stop.mp3'
+      };
+      const defaultSrc = defaultPaths[audioType];
+      if (!defaultSrc && !customSrc) return;
+
+      const cacheKey = `${mid || 'default'}:${audioType}`;
+
+      function tryPlay(src) {
+        if (!src) return;
+        try {
+          if (!audioCache[cacheKey] || audioCache[cacheKey]._src !== src) {
+            const a = new Audio(src);
+            a._src = src;
+            // On error (e.g. 204/404 for custom), fall back to default
+            a.addEventListener('error', () => {
+              delete audioCache[cacheKey];
+              if (src !== defaultSrc && defaultSrc) tryPlay(defaultSrc);
+            });
+            audioCache[cacheKey] = a;
+          }
+          const audio = audioCache[cacheKey];
+          audio.volume = vol;
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        } catch (e) { /* ignore */ }
+      }
+
+      tryPlay(customSrc || defaultSrc);
+    }
+
+    // ── Socket event: spin started ─────────────────────────
+    socket.on('slot:spin-started', (data) => {
+      currentSymbols = (data.symbols && data.symbols.length > 0) ? data.symbols : currentSymbols;
+      lastSettings   = data.settings || {};
+      currentSpinId  = data.spinId || null;
+
+      // Track current machine for custom sound routing
+      if (data.machineId && data.machineId !== currentMachineId) {
+        // Machine changed – clear audio cache so new machine's sounds load fresh
+        Object.keys(audioCache).forEach(k => delete audioCache[k]);
+        currentMachineId = data.machineId;
+      }
+
+      // Apply overlay mode from server
+      const overlayConfig = lastSettings.overlayMode || {};
+      applyOverlayMode(data.overlayMode || overlayConfig.defaultMode || 'large', overlayConfig.iconPreset);
+
+      // Apply design settings (colors, title text)
+      applyDesignSettings(data.designSettings || lastSettings.designSettings);
+
+      // Cancel any pending hide and reset visuals
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+
+      // Stop any currently running reels (rapid second spin)
+      for (let i = 0; i < 3; i++) {
+        const reel = document.getElementById(`reel-${i}`);
+        if (reel && reel._stopSpin) { reel._stopSpin(); reel._stopSpin = null; }
+      }
+
+      resetVisualState();
+
+      // Player info (textContent = XSS-safe)
+      playerEl.textContent = data.nickname || data.username || '';
+
+      // Fill tracks with random symbols
+      for (let i = 0; i < 3; i++) {
+        const track = document.getElementById(`track-${i}`);
+        if (track) fillTrack(track, currentSymbols, TRACK_SYMBOL_COUNT);
+      }
+
+      showMachine();
+
+      // Start spinning all reels
+      for (let i = 0; i < 3; i++) startReel(i);
+
+      playAudio('spin', lastSettings, currentMachineId);
+    });
+
+    // ── Socket event: audio updated – flush cache for this machine ─
+    socket.on('slot:audio-updated', (data) => {
+      const mid = data.machineId ? String(data.machineId) : null;
+      if (!mid) return;
+      // Remove stale cache entries for this machine so next play re-fetches
+      const prefix = `${mid}:`;
+      Object.keys(audioCache).forEach(k => {
+        if (k.startsWith(prefix)) delete audioCache[k];
+      });
+    });
+
+    // ── Socket event: spin result ──────────────────────────
+    socket.on('slot:spin-result', (data) => {
+      const reels     = data.reels    || [];
+      const category  = data.category || 'loss';
+      const isWin     = data.isWin    || false;
+      const settings  = data.settings || lastSettings;
+      const stopDelay = settings.reelStopDelay || REEL_STOP_DELAY;
+      const spinId    = data.spinId   || currentSpinId;
+
+      // Update last known settings
+      lastSettings = settings;
+
+      // Track how many reels have actually stopped
+      let stoppedCount = 0;
+
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          playAudio('reel_stop', settings, currentMachineId);
+          stopReel(i, reels[i] || { emoji: '❓' }, () => {
+            stoppedCount++;
+            if (stoppedCount === 3) {
+              // All reels stopped – show result and notify server
+              setTimeout(() => showResult(category, isWin, settings, spinId), 200);
+            }
+          });
+        }, i * stopDelay);
+      }
+    });
+
+    // ── Socket event: spin error – reset overlay ───────────
+    socket.on('slot:spin-error', () => {
+      // Stop any running reels and reset to idle
+      for (let i = 0; i < 3; i++) {
+        const reel = document.getElementById(`reel-${i}`);
+        if (!reel) continue;
+        if (reel._stopSpin) { reel._stopSpin(); reel._stopSpin = null; }
+        reel.classList.remove('spinning');
+      }
+      resetVisualState();
+      machine.classList.remove('visible');
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      currentSpinId = null;
+    });
+
+    // ── Socket event: spin timeout (queue safety) ──────────
+    socket.on('slot:spin-timeout', () => {
+      // Force reset if overlay is stuck
+      for (let i = 0; i < 3; i++) {
+        const reel = document.getElementById(`reel-${i}`);
+        if (!reel) continue;
+        if (reel._stopSpin) { reel._stopSpin(); reel._stopSpin = null; }
+        reel.classList.remove('spinning');
+      }
+      resetVisualState();
+      machine.classList.remove('visible');
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      currentSpinId = null;
+    });
+
+    // ── Socket event: play-audio (from reward dispatch) ────
+    socket.on('slot:play-audio', (data) => {
+      playAudio(data.audioType || 'win', lastSettings, currentMachineId);
+    });
+
+    // ── Socket event: overlay effect (from reward dispatch) ─
+    socket.on('slot:overlay-effect', (data) => {
+      if (data.effect === 'win') {
+        reelsWrap.classList.add('win-glow');
+        document.querySelectorAll('.reel').forEach(r => r.classList.add('win-flash'));
+      }
+    });
+  </script>
+</body>
+</html>

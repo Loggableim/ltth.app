@@ -248,6 +248,13 @@ class FireworksPlugin {
             randomShapeEnabled: false, // Enable random shape selection from active shapes
             activeShapes: ['burst'], // Array of active shapes for random selection
             giftShapeMappings: {}, // giftId -> shape
+            giftVisualMappings: {}, // giftId/name -> visual profile
+            finalePatternProfiles: {
+                small: 'line-sweep',
+                medium: 'arc-sweep',
+                big: 'crown-arc',
+                massive: 'siege-crown'
+            },
             
             // User avatar integration
             userAvatarEnabled: false, // Use user avatars as particles
@@ -329,42 +336,169 @@ class FireworksPlugin {
             windStrength: 0.02
         };
         
-        this.config.theme = this.config.theme || 'inferno-siege';
-        this.config.availableThemes = this.config.availableThemes || ['inferno-siege', 'neon-reactor', 'celestial-titan'];
-        this.config.encounterMode = this.config.encounterMode || 'skirmish';
-        this.config.qualityProfile = this.config.qualityProfile || 'ultra';
-        this.config.proMode = this.config.proMode === true;
-        this.config.ultimateThreshold = this.config.ultimateThreshold || 5;
-        this.config.bossEnergyDecay = this.config.bossEnergyDecay || 0.08;
-        this.config.hudEnabled = this.config.hudEnabled !== false;
-        this.config.bloomStrength = this.config.bloomStrength || 0.75;
-        this.config.shockwaveEnabled = this.config.shockwaveEnabled !== false;
-        this.config.heatHazeEnabled = this.config.heatHazeEnabled !== false;
-        this.config.maxConcurrentUltimates = this.config.maxConcurrentUltimates || 2;
-        this.config.sceneBackdropEnabled = this.config.sceneBackdropEnabled === true;
-        this.config.sceneBackdropOpacity = typeof this.config.sceneBackdropOpacity === 'number' ? this.config.sceneBackdropOpacity : 0.92;
-        this.config.sceneLayerVisibility = {
+        this.config = this.normalizeConfig(this.config);
+
+        this.COMBO_TIMEOUT = this.config.comboTimeout;
+    }
+
+    normalizeGiftMappingName(name) {
+        return String(name || '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, ' ');
+    }
+
+    normalizeLegacyGiftShapeMappings(mappings) {
+        if (!mappings || typeof mappings !== 'object') {
+            return {};
+        }
+
+        return Object.entries(mappings).reduce((acc, [giftKey, mapping]) => {
+            if (!mapping || typeof mapping !== 'object') {
+                return acc;
+            }
+
+            acc[String(giftKey)] = {
+                shape: mapping.shape || 'burst',
+                colors: Array.isArray(mapping.colors) && mapping.colors.length ? mapping.colors : null,
+                intensity: Number.isFinite(mapping.intensity) ? mapping.intensity : (Number(mapping.intensity) || 1)
+            };
+            return acc;
+        }, {});
+    }
+
+    normalizeGiftVisualMappings(mappings) {
+        if (!mappings || typeof mappings !== 'object') {
+            return {};
+        }
+
+        return Object.entries(mappings).reduce((acc, [giftKey, mapping]) => {
+            const resolved = mapping && typeof mapping === 'object'
+                ? mapping
+                : { shape: mapping };
+            const normalizedKey = String(giftKey);
+
+            acc[normalizedKey] = {
+                giftId: normalizedKey,
+                giftName: resolved.giftName || null,
+                shape: resolved.shape || 'burst',
+                shapes: Array.isArray(resolved.shapes) && resolved.shapes.length ? resolved.shapes : null,
+                colors: Array.isArray(resolved.colors) && resolved.colors.length ? resolved.colors : null,
+                intensity: Number.isFinite(resolved.intensity) ? resolved.intensity : (Number(resolved.intensity) || 1),
+                patternOverride: resolved.patternOverride || null,
+                finalePattern: resolved.finalePattern || null,
+                rocketShapeSequence: Array.isArray(resolved.rocketShapeSequence) && resolved.rocketShapeSequence.length
+                    ? resolved.rocketShapeSequence
+                    : null,
+                hudLabel: resolved.hudLabel || null,
+                screenFxPreset: resolved.screenFxPreset || null,
+                cameraImpulse: Number.isFinite(resolved.cameraImpulse) ? resolved.cameraImpulse : (Number(resolved.cameraImpulse) || 0),
+                tier: resolved.tier || null
+            };
+
+            return acc;
+        }, {});
+    }
+
+    normalizeFinalePatternProfiles(profiles) {
+        return {
+            small: 'line-sweep',
+            medium: 'arc-sweep',
+            big: 'crown-arc',
+            massive: 'siege-crown',
+            ...(profiles || {})
+        };
+    }
+
+    normalizeConfig(nextConfig) {
+        const normalized = { ...(nextConfig || {}) };
+
+        normalized.theme = normalized.theme || 'inferno-siege';
+        normalized.availableThemes = normalized.availableThemes || ['inferno-siege', 'neon-reactor', 'celestial-titan'];
+        normalized.encounterMode = normalized.encounterMode || 'skirmish';
+        normalized.qualityProfile = normalized.qualityProfile || 'ultra';
+        normalized.proMode = normalized.proMode === true;
+        normalized.ultimateThreshold = normalized.ultimateThreshold || 5;
+        normalized.bossEnergyDecay = normalized.bossEnergyDecay || 0.08;
+        normalized.hudEnabled = normalized.hudEnabled !== false;
+        normalized.bloomStrength = normalized.bloomStrength || 0.75;
+        normalized.shockwaveEnabled = normalized.shockwaveEnabled !== false;
+        normalized.heatHazeEnabled = normalized.heatHazeEnabled !== false;
+        normalized.maxConcurrentUltimates = normalized.maxConcurrentUltimates || 2;
+        normalized.sceneBackdropEnabled = normalized.sceneBackdropEnabled === true;
+        normalized.sceneBackdropOpacity = typeof normalized.sceneBackdropOpacity === 'number' ? normalized.sceneBackdropOpacity : 0.92;
+        normalized.sceneLayerVisibility = {
             sky: true,
             stars: true,
             grid: true,
             sigil: true,
             fog: true,
-            ...(this.config.sceneLayerVisibility || {})
+            ...(normalized.sceneLayerVisibility || {})
         };
-        this.config.sceneLayerOpacity = {
+        normalized.sceneLayerOpacity = {
             sky: 1,
             stars: 0.85,
             grid: 0.92,
             sigil: 0.7,
             fog: 1,
-            ...(this.config.sceneLayerOpacity || {})
+            ...(normalized.sceneLayerOpacity || {})
         };
-        this.config.benchmarkMuteAudio = this.config.benchmarkMuteAudio !== false;
-        this.config.audioCooldownMs = this.config.audioCooldownMs || 140;
-        this.config.maxSimultaneousSounds = this.config.maxSimultaneousSounds || 2;
-        this.config.rendererMode = 'webgl2-only';
+        normalized.benchmarkMuteAudio = normalized.benchmarkMuteAudio !== false;
+        normalized.audioCooldownMs = Math.max(40, Number(normalized.audioCooldownMs) || 140);
+        normalized.maxSimultaneousSounds = Math.max(1, Number(normalized.maxSimultaneousSounds) || 2);
+        normalized.giftShapeMappings = this.normalizeLegacyGiftShapeMappings(normalized.giftShapeMappings);
+        normalized.giftVisualMappings = this.normalizeGiftVisualMappings(
+            normalized.giftVisualMappings && Object.keys(normalized.giftVisualMappings).length
+                ? normalized.giftVisualMappings
+                : normalized.giftShapeMappings
+        );
+        normalized.finalePatternProfiles = this.normalizeFinalePatternProfiles(normalized.finalePatternProfiles);
+        normalized.rendererMode = 'webgl2-only';
 
-        this.COMBO_TIMEOUT = this.config.comboTimeout;
+        return normalized;
+    }
+
+    resolveGiftVisualMapping(giftId, giftName = '') {
+        const mappingById = this.config.giftVisualMappings?.[String(giftId)];
+        if (mappingById) {
+            return mappingById;
+        }
+
+        const normalizedName = this.normalizeGiftMappingName(giftName);
+        if (!normalizedName) {
+            return null;
+        }
+
+        return Object.values(this.config.giftVisualMappings || {}).find((mapping) =>
+            this.normalizeGiftMappingName(mapping.giftName) === normalizedName
+        ) || null;
+    }
+
+    resolveGiftImageUrl(giftPictureUrl, giftInfo = null) {
+        if (typeof giftPictureUrl === 'string' && giftPictureUrl.trim()) {
+            return giftPictureUrl;
+        }
+
+        if (giftPictureUrl && typeof giftPictureUrl === 'object') {
+            const candidates = [
+                giftPictureUrl.giftPictureUrl,
+                giftPictureUrl.url,
+                giftPictureUrl.urlList,
+                giftPictureUrl.url_list,
+                giftPictureUrl.urls
+            ];
+
+            for (const candidate of candidates) {
+                if (Array.isArray(candidate) && candidate.length > 0 && typeof candidate[0] === 'string') {
+                    return candidate[0];
+                }
+                if (typeof candidate === 'string' && candidate.trim()) {
+                    return candidate;
+                }
+            }
+        }
+
+        return giftInfo ? giftInfo.image_url : null;
     }
 
     /**
@@ -443,7 +577,7 @@ class FireworksPlugin {
         this.api.registerRoute('post', '/api/fireworks-dev/config', (req, res) => {
             try {
                 const updates = req.body;
-                this.config = { ...this.config, ...updates };
+                this.config = this.normalizeConfig({ ...this.config, ...updates });
                 this.saveConfig();
                 
                 // Restart random timer if relevant settings changed
@@ -503,6 +637,9 @@ class FireworksPlugin {
                     colors,
                     position,
                     giftId,
+                    giftName,
+                    particleCount,
+                    tier,
                     duration,
                     userAvatar,
                     theme,
@@ -511,6 +648,10 @@ class FireworksPlugin {
                     impactLevel,
                     ultimateTier,
                     hudLabel,
+                    shapes,
+                    patternOverride,
+                    finalePattern,
+                    rocketShapeSequence,
                     cameraImpulse,
                     screenFxPreset
                 } = req.body;
@@ -522,6 +663,9 @@ class FireworksPlugin {
                     colors: colors || null,
                     position: position || { x: 0.5, y: 0.7 },
                     giftId: giftId || null,
+                    giftName: giftName || null,
+                    particleCount: particleCount || 50,
+                    tier: tier || 'medium',
                     userAvatar: userAvatar || null,
                     duration: duration || 2000,
                     theme: theme || this.config.theme,
@@ -530,6 +674,10 @@ class FireworksPlugin {
                     impactLevel: impactLevel || 'medium',
                     ultimateTier: ultimateTier || null,
                     hudLabel: hudLabel || null,
+                    shapes: shapes || null,
+                    patternOverride: patternOverride || null,
+                    finalePattern: finalePattern || null,
+                    rocketShapeSequence: rocketShapeSequence || null,
                     cameraImpulse: cameraImpulse || 0,
                     screenFxPreset: screenFxPreset || null,
                     reason: 'manual',
@@ -554,6 +702,7 @@ class FireworksPlugin {
                     impactLevel,
                     ultimateTier,
                     hudLabel,
+                    finalePattern,
                     cameraImpulse,
                     screenFxPreset
                 } = req.body;
@@ -564,6 +713,7 @@ class FireworksPlugin {
                     impactLevel,
                     ultimateTier,
                     hudLabel,
+                    finalePattern,
                     cameraImpulse,
                     screenFxPreset
                 });
@@ -603,7 +753,8 @@ class FireworksPlugin {
             try {
                 res.json({
                     success: true,
-                    mappings: this.config.giftShapeMappings
+                    mappings: this.config.giftVisualMappings,
+                    legacyMappings: this.config.giftShapeMappings
                 });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -613,17 +764,37 @@ class FireworksPlugin {
         // Set gift shape mapping
         this.api.registerRoute('post', '/api/fireworks-dev/gift-mappings', (req, res) => {
             try {
-                const { giftId, shape, colors, intensity } = req.body;
+                const { giftId, giftName, shape, colors, intensity, finalePattern, rocketShapeSequence, hudLabel, patternOverride, shapes, screenFxPreset, cameraImpulse, tier } = req.body;
                 
                 if (!giftId) {
                     return res.status(400).json({ success: false, error: 'giftId is required' });
                 }
-                
-                this.config.giftShapeMappings[giftId] = {
+
+                const mappingKey = String(giftId);
+                this.config.giftVisualMappings[mappingKey] = {
+                    ...(this.config.giftVisualMappings[mappingKey] || {}),
+                    giftId: mappingKey,
+                    giftName: giftName || null,
                     shape: shape || 'burst',
-                    colors: colors || null,
-                    intensity: intensity || 1.0
+                    colors: Array.isArray(colors) && colors.length ? colors : null,
+                    intensity: intensity || 1.0,
+                    finalePattern: finalePattern || null,
+                    rocketShapeSequence: Array.isArray(rocketShapeSequence) && rocketShapeSequence.length ? rocketShapeSequence : null,
+                    hudLabel: hudLabel || null,
+                    patternOverride: patternOverride || null,
+                    shapes: Array.isArray(shapes) && shapes.length ? shapes : null,
+                    screenFxPreset: screenFxPreset || null,
+                    cameraImpulse: Number(cameraImpulse) || 0,
+                    tier: tier || null
                 };
+
+                this.config.giftShapeMappings[mappingKey] = {
+                    shape: this.config.giftVisualMappings[mappingKey].shape || 'burst',
+                    colors: this.config.giftVisualMappings[mappingKey].colors || null,
+                    intensity: this.config.giftVisualMappings[mappingKey].intensity || 1.0
+                };
+
+                this.config = this.normalizeConfig(this.config);
                 this.saveConfig();
                 
                 res.json({ success: true, message: 'Gift mapping updated' });
@@ -717,7 +888,10 @@ class FireworksPlugin {
                 if (!this.benchmarkPreset) {
                     this.benchmarkPreset = { ...this.config };
                 }
-                Object.assign(this.config, preset);
+                this.config = this.normalizeConfig({
+                    ...this.config,
+                    ...preset
+                });
 
                 // Notify overlay about config change
                 this.api.emit('fireworks-dev:config-update', { config: this.config });
@@ -751,7 +925,7 @@ class FireworksPlugin {
             try {
                 // Restore original config after benchmark
                 if (this.benchmarkPreset) {
-                    this.config = { ...this.benchmarkPreset };
+                    this.config = this.normalizeConfig({ ...this.benchmarkPreset });
                     this.benchmarkPreset = null;
                     this.api.emit('fireworks-dev:config-update', { config: this.config });
                 }
@@ -863,8 +1037,10 @@ class FireworksPlugin {
         const comboMultiplier = this.updateComboState(userId, username);
 
         // Get gift-specific settings
-        const giftSettings = this.config.giftShapeMappings[giftId] || {};
         const giftInfo = this.getGiftInfo(giftId);
+        const giftName = data.giftName || (giftInfo ? giftInfo.name : null);
+        const giftSettings = this.resolveGiftVisualMapping(giftId, giftName) ||
+            this.config.giftShapeMappings[giftId] || {};
 
         // Determine shape - support random selection from active shapes
         let shape = giftSettings.shape || this.config.defaultShape;
@@ -919,16 +1095,24 @@ class FireworksPlugin {
             type: 'gift',
             intensity: finalIntensity,
             shape: shape,
+            shapes: giftSettings.shapes || null,
             colors: colors,
             position: position,
             giftId: giftId,
-            giftImage: giftPictureUrl || (giftInfo ? giftInfo.image_url : null),
+            giftName,
+            giftImage: this.resolveGiftImageUrl(giftPictureUrl, giftInfo),
             userAvatar: avatarImage,
             particleCount: particleCount,
             tier: tier,
             username: username,
             coins: effectiveCoins,
             combo: this.comboState.get(userId) || 1,
+            patternOverride: giftSettings.patternOverride || null,
+            finalePattern: giftSettings.finalePattern || null,
+            rocketShapeSequence: giftSettings.rocketShapeSequence || null,
+            hudLabel: giftSettings.hudLabel || null,
+            screenFxPreset: giftSettings.screenFxPreset || null,
+            cameraImpulse: giftSettings.cameraImpulse || 0,
             reason: 'gift'
         });
     }
@@ -1194,6 +1378,7 @@ class FireworksPlugin {
             position: options.position || { x: 0.5, y: 0.5 },
             particleCount: options.particleCount || 50,
             giftId: options.giftId || null,
+            giftName: options.giftName || null,
             giftImage: options.giftImage || null,
             userAvatar: options.userAvatar || null,
             tier: options.tier || 'medium',
@@ -1207,6 +1392,10 @@ class FireworksPlugin {
             impactLevel: options.impactLevel || 'medium',
             ultimateTier: options.ultimateTier || null,
             hudLabel: options.hudLabel || null,
+            shapes: options.shapes || null,
+            patternOverride: options.patternOverride || null,
+            finalePattern: options.finalePattern || null,
+            rocketShapeSequence: options.rocketShapeSequence || null,
             cameraImpulse: options.cameraImpulse || 0,
             screenFxPreset: options.screenFxPreset || null,
             reason: options.reason || 'manual',
@@ -1282,7 +1471,7 @@ class FireworksPlugin {
             // Finale-specific settings
             burstCount: Math.round(5 * intensity),
             burstInterval: 300,
-            shapes: ['burst', 'heart', 'star', 'ring', 'spiral'],
+            shapes: ['burst', 'heart', 'star', 'ring', 'double-ring', 'spiral', 'paws'],
             colors: this.config.themeColors,
             theme: sceneOverrides.theme || this.config.theme,
             encounterMode: sceneOverrides.encounterMode || 'finale',
@@ -1290,6 +1479,7 @@ class FireworksPlugin {
             impactLevel: sceneOverrides.impactLevel || 'ultimate',
             ultimateTier: sceneOverrides.ultimateTier || 'finale',
             hudLabel: sceneOverrides.hudLabel || 'Finale',
+            finalePattern: sceneOverrides.finalePattern || this.config.finalePatternProfiles.massive,
             cameraImpulse: sceneOverrides.cameraImpulse || Math.max(0.4, intensity * 0.15),
             screenFxPreset: sceneOverrides.screenFxPreset || 'finale',
             
@@ -1465,13 +1655,19 @@ class FireworksPlugin {
      */
     triggerGift(giftId, options = {}) {
         const giftInfo = this.getGiftInfo(giftId);
-        const giftSettings = this.config.giftShapeMappings[giftId] || {};
+        const giftSettings = this.resolveGiftVisualMapping(giftId, giftInfo ? giftInfo.name : '') ||
+            this.config.giftShapeMappings[giftId] || {};
         
         this.triggerFirework({
             type: 'gift',
             shape: giftSettings.shape || this.config.defaultShape,
             colors: giftSettings.colors || null,
             intensity: giftSettings.intensity || 1.0,
+            shapes: giftSettings.shapes || null,
+            patternOverride: giftSettings.patternOverride || null,
+            finalePattern: giftSettings.finalePattern || null,
+            rocketShapeSequence: giftSettings.rocketShapeSequence || null,
+            giftName: giftInfo ? giftInfo.name : null,
             giftId: giftId,
             giftImage: giftInfo ? giftInfo.image_url : null,
             ...options

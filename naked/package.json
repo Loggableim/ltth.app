@@ -1,0 +1,35 @@
+{
+  "name": "ltth-desktop2-snapshot",
+  "version": "1.3.3",
+  "description": "PupCid's Little TikTool Helper snapshot - backend app plus Windows launcher sources",
+  "private": true,
+  "license": "CC-BY-NC-4.0",
+  "scripts": {
+    "start": "cd app && npm start",
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build",
+    "build:css": "cd app && npm run build:css",
+    "test": "cd app && npm test",
+    "test:coverage": "cd app && npm run test:coverage",
+    "lint": "cd app && npm run lint",
+    "build:launcher:win": "cd build-src && go build -o ../launcher.exe -ldflags \"-H windowsgui -s -w\" launcher-gui.go sysproc_windows.go",
+    "build:launcher:console": "cd build-src && go build -o ../launcher-console.exe -ldflags \"-s -w\" launcher.go",
+    "build:launcher:dev": "cd build-src && go build -o ../dev_launcher.exe -ldflags \"-s -w\" dev-launcher.go"
+  },
+  "engines": {
+    "node": ">=18.0.0 <25.0.0"
+  },
+  "keywords": [
+    "tiktok",
+    "streaming",
+    "obs",
+    "overlay",
+    "socket.io",
+    "sqlite",
+    "plugins"
+  ],
+  "notes": {
+    "snapshot": "This workspace is not a Git checkout and currently does not include the Electron main-process folder. Use app/package.json for Node dependencies.",
+    "install": "Run npm install in app/ before starting the backend."
+  }
+}

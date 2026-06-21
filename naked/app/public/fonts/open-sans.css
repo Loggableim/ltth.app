@@ -1,0 +1,32 @@
+/* Open Sans Font Replacement with Web-Safe Alternatives */
+/* CSP-compliant alternative to Google Fonts - Humanist sans-serif */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  /* Humanist sans-serif with similar characteristics to Open Sans */
+  src: local('Segoe UI'), local('Calibri'), local('Trebuchet MS'), local('Helvetica Neue'), local('Arial');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Segoe UI Semibold'), local('Calibri Bold'), local('Trebuchet MS Bold'), local('Arial Bold');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Segoe UI Bold'), local('Calibri Bold'), local('Trebuchet MS Bold'), local('Arial Bold');
+}
+
+/* Enhanced fallback font stack for Open Sans */
+body {
+  font-family: 'Open Sans', 'Segoe UI', 'Calibri', 'Trebuchet MS', 'Helvetica Neue', Arial, sans-serif;
+}

@@ -1983,6 +1983,7 @@ class GlobalChatCommandEngine {
         this.cleanupInterval = setInterval(() => {
             this.parser.cleanupRateLimits();
         }, 60000); // Every minute
+        this.cleanupInterval.unref?.();
 
         this.api.log('[GCCE] Cleanup timer started', 'debug');
     }

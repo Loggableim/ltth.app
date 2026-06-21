@@ -1,0 +1,23 @@
+{
+  "id": "viewer-profiles",
+  "name": "Viewer Profiles",
+  "version": "1.1.0",
+  "description": "Comprehensive viewer tracking and analytics system with VIP management, birthday tracking, activity heatmaps, and detailed profile management.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "utility",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Comprehensive viewer tracking and analytics system with VIP management, birthday tracking, activity heatmaps, and detailed profile management. Track coins, watchtime, interactions, and more.",
+    "de": "Umfassendes Zuschauer-Tracking- und Analysesystem mit VIP-Verwaltung, Geburtstags-Tracking, Aktivitäts-Heatmaps und detaillierter Profilverwaltung. Verfolgen Sie Münzen, Watchtime, Interaktionen und mehr.",
+    "es": "Sistema integral de seguimiento y análisis de espectadores con gestión VIP, seguimiento de cumpleaños, mapas de calor de actividad y gestión detallada de perfiles.",
+    "fr": "Système complet de suivi et d'analyse des spectateurs avec gestion VIP, suivi des anniversaires, cartes thermiques d'activité et gestion détaillée des profils."
+  }
+}

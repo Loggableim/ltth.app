@@ -55,22 +55,6 @@ if (Test-Path $nodeDir) {
   Remove-Item -Recurse -Force $nodeDir
 }
 Move-Item $expandedNodeRoot.FullName $nodeDir
-
-# Rebuild native modules against the bundled Node.js runtime
-Write-Host "Rebuilding native modules for Node $NodeRuntimeVersion..."
-$appDir = Join-Path $payloadRoot 'app'
-$nodeExe = Join-Path $nodeDir 'node.exe'
-$npmDir = Join-Path $nodeDir 'node_modules\npm'
-
-if (Test-Path $npmDir) {
-  Push-Location $appDir
-  $env:Path = "$nodeDir;$env:Path"
-  & npm rebuild 2>&1 | ForEach-Object { Write-Host "  $_" }
-  Pop-Location
-} else {
-  Write-Warning "npm not found in portable Node"
-}
-
 Set-Content -Path (Join-Path $nodeDir 'version.txt') -Value $NodeRuntimeVersion -NoNewline
 
 $payloadName = "ltth-payload-windows-amd64-$Version.zip"

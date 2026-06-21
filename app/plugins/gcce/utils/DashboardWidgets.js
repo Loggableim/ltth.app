@@ -84,6 +84,7 @@ class DashboardWidgets {
         }
       }
     }, 1000);
+    this.updateInterval.unref?.();
   }
 
   /**

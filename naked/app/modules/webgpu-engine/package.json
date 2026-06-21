@@ -1,0 +1,42 @@
+{
+  "name": "@ltth/webgpu-engine",
+  "version": "1.0.0",
+  "description": "Production-ready WebGPU engine for LTTH plugins",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "node dist/examples/offscreen-smoke-test.js",
+    "test:hotreload": "node dist/examples/hot-reload-test.js"
+  },
+  "keywords": [
+    "webgpu",
+    "rendering",
+    "ltth",
+    "plugin"
+  ],
+  "author": "Pup Cid",
+  "license": "CC-BY-NC-4.0",
+  "devDependencies": {
+    "@types/node": "^24.10.2",
+    "@webgpu/types": "^0.1.67",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "winston": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "winston": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

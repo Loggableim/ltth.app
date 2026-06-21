@@ -727,6 +727,15 @@ class EulerstreamAdapter extends BaseAdapter {
             if (this.currentUsername && this.autoReconnectCount < this.maxAutoReconnects) {
                 this.autoReconnectCount++;
                 const delay = Math.min(5000 * this.autoReconnectCount, 30000);
+                this.broadcastStatus('retrying', {
+                    error: code === 1011
+                        ? 'Eulerstream returned 1011 INTERNAL_SERVER_ERROR. Retrying automatically.'
+                        : `WebSocket closed (${code || 'unknown'}). Retrying automatically.`,
+                    delay,
+                    attempt: this.autoReconnectCount,
+                    maxRetries: this.maxAutoReconnects,
+                    username: this.currentUsername
+                });
                 this.logger.info(`🔄 Attempting auto-reconnect ${this.autoReconnectCount}/${this.maxAutoReconnects} in ${delay / 1000}s...`);
                 this._scheduleReconnectTimer('_autoReconnectTimer', delay, () => {
                     this.connect(this.currentUsername).catch(err => {
@@ -2951,15 +2960,18 @@ class EulerstreamAdapter extends BaseAdapter {
         let status = 'healthy';
         let message = 'Connection ready';
         
-        if (!this.isConnected && this.currentUsername) {
+        if (!this.isConnected && this.currentUsername && this.autoReconnectCount > 0) {
+            status = 'reconnecting';
+            message = `Retry ${this.autoReconnectCount}/${this.maxAutoReconnects} in progress`;
+        } else if (!this.isConnected && this.currentUsername) {
             status = 'disconnected';
             message = 'Not connected';
-        } else if (recentFailures >= 3) {
-            status = 'degraded';
-            message = `${recentFailures} recent failures`;
         } else if (recentFailures >= 5) {
             status = 'critical';
             message = 'Repeated connection errors';
+        } else if (recentFailures >= 3) {
+            status = 'degraded';
+            message = `${recentFailures} recent failures`;
         }
         
         return {

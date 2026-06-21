@@ -1,0 +1,151 @@
+{
+  "game_engine": {
+    "title": "LTTH Game Engine - Panneau d'Administration",
+    "tabs": {
+      "connect4": "Puissance 4",
+      "chess": "Échecs",
+      "plinko": "Plinko",
+      "wheel": "Roue de la Fortune",
+      "triggers": "Déclencheurs",
+      "xp_rewards": "Récompenses XP",
+      "media": "Médias",
+      "active_game": "Jeu Actif",
+      "stats": "Statistiques"
+    },
+    "connect4": {
+      "title": "Paramètres Puissance 4",
+      "board_design": "Design du Plateau",
+      "board_color": "Couleur du Plateau",
+      "player1_color": "Couleur Joueur 1",
+      "player2_color": "Couleur Joueur 2",
+      "text_color": "Couleur du Texte",
+      "font_family": "Police de Caractères",
+      "show_coordinates": "Afficher les Coordonnées",
+      "animation_speed": "Vitesse d'Animation (ms)",
+      "streamer_role": "Rôle du Streamer",
+      "role_player1": "Joueur 1 (Rouge)",
+      "role_player2": "Joueur 2 (Jaune)",
+      "challenge_flow": "Paramètres de Défi",
+      "show_challenge_screen": "Afficher l'Écran de Défi",
+      "challenge_timeout": "Délai du Défi (secondes)",
+      "leaderboard": "Paramètres du Classement",
+      "leaderboard_enabled": "Afficher le Classement Après le Jeu",
+      "leaderboard_display_time": "Durée d'Affichage par Classement (secondes)",
+      "leaderboard_types": "Classements à Afficher",
+      "leaderboard_daily": "Quotidien",
+      "leaderboard_season": "Saison",
+      "leaderboard_lifetime": "Tous les Temps",
+      "leaderboard_elo": "ELO",
+      "save_config": "Enregistrer la Configuration",
+      "config_saved": "Configuration enregistrée avec succès !"
+    },
+    "chess": {
+      "title": "Paramètres des Échecs",
+      "board_design": "Design du Plateau",
+      "board_theme": "Thème du Plateau",
+      "theme_dark": "Sombre",
+      "theme_light": "Clair",
+      "theme_wood": "Bois",
+      "save_config": "Enregistrer la Configuration",
+      "config_saved": "Configuration enregistrée avec succès !"
+    },
+    "plinko": {
+      "title": "Paramètres Plinko",
+      "slot_editor": "Éditeur de Cases",
+      "add_slot": "Ajouter une Case",
+      "multiplier": "Multiplicateur",
+      "color": "Couleur",
+      "physics": "Paramètres de Physique",
+      "gravity": "Gravité",
+      "save_config": "Enregistrer la Configuration",
+      "config_saved": "Configuration enregistrée avec succès !"
+    },
+    "wheel": {
+      "title": "Paramètres de la Roue de la Fortune",
+      "wheels": "Roues",
+      "add_wheel": "Ajouter une Nouvelle Roue",
+      "wheel_name": "Nom de la Roue",
+      "save_config": "Enregistrer la Configuration",
+      "config_saved": "Configuration enregistrée avec succès !"
+    },
+    "triggers": {
+      "title": "Déclencheurs de Jeu",
+      "description": "Configurez comment les jeux sont déclenchés via des cadeaux ou des commandes de chat",
+      "game_type": "Type de Jeu",
+      "trigger_type": "Type de Déclencheur",
+      "gift": "Cadeau",
+      "command": "Commande",
+      "trigger_value": "Valeur du Déclencheur",
+      "add_trigger": "Ajouter un Déclencheur",
+      "remove_trigger": "Supprimer",
+      "no_triggers": "Aucun déclencheur configuré"
+    },
+    "xp_rewards": {
+      "title": "Récompenses XP",
+      "description": "Configurez les récompenses XP pour les résultats de jeu",
+      "game_type": "Type de Jeu",
+      "win": "Victoire",
+      "loss": "Défaite",
+      "draw": "Match Nul",
+      "participation": "Participation",
+      "save_rewards": "Enregistrer les Récompenses",
+      "rewards_saved": "Récompenses XP enregistrées avec succès !"
+    },
+    "common": {
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "add": "Ajouter",
+      "remove": "Supprimer",
+      "loading": "Chargement...",
+      "error": "Erreur",
+      "success": "Succès"
+    },
+    "display_texts": {
+      "slot": {
+        "title": "🎰 SLOT MACHINE",
+        "label_loss": "😔 No Win",
+        "label_near_miss": "😬 Close!",
+        "label_small_win": "🎉 Small Win!",
+        "label_medium_win": "🎊 Win!",
+        "label_big_win": "🔥 Big Win!",
+        "label_jackpot": "🏆 JACKPOT!"
+      },
+      "wheel": {
+        "title": "🎡 LUCKY WHEEL",
+        "label_spin": "🔄 Spinning...",
+        "label_result": "🎉 Result:",
+        "label_niete": "💔 No prize!",
+        "label_win": "🎊 You won!",
+        "label_queued": "⏳ In queue..."
+      },
+      "plinko": {
+        "title": "🎰 PLINKO",
+        "label_drop": "⬇️ Ball dropped!",
+        "label_win": "🎉 Win!",
+        "multiplier_prefix": "×",
+        "label_queued": "⏳ In queue..."
+      },
+      "connect4": {
+        "title": "🔵 CONNECT 4",
+        "label_player1": "Player 1",
+        "label_player2": "Player 2",
+        "label_your_turn": "Your turn! Type A-G",
+        "label_waiting": "Waiting for opponent...",
+        "label_win": "🏆 {player} wins!",
+        "label_draw": "🤝 Draw!"
+      },
+      "chess": {
+        "title": "♟️ CHESS",
+        "label_white": "White",
+        "label_black": "Black",
+        "label_your_turn": "Your turn",
+        "label_check": "⚠️ Check!",
+        "label_checkmate": "♚ Checkmate!",
+        "label_draw": "🤝 Draw!",
+        "label_win": "🏆 {player} wins!"
+      }
+    }
+  }
+}

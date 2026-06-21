@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>StreamAlchemy Overlay</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .toast,
+    .craft {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.86);
+      color: #fff;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 260ms ease, transform 260ms ease;
+    }
+
+    .toast.active,
+    .craft.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast {
+      right: 44px;
+      bottom: 44px;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 300px);
+      gap: 14px;
+      min-height: 112px;
+      padding: 14px;
+    }
+
+    .rarity-frame {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 6px;
+      border: 3px solid rgba(148, 163, 184, 0.74);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.78);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 18px 50px rgba(0, 0, 0, 0.34);
+    }
+
+    .rarity-frame::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    .toast-frame {
+      width: 92px;
+      height: 92px;
+    }
+
+    .craft-frame {
+      width: 128px;
+      height: 128px;
+    }
+
+    .rarity-frame img {
+      object-fit: cover;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .toast-frame img {
+      width: 80px;
+      height: 80px;
+    }
+
+    .kicker {
+      color: #a7f3d0;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .title {
+      margin-top: 5px;
+      font-size: 1.28rem;
+      font-weight: 900;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .subtitle {
+      margin-top: 5px;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+
+    .craft {
+      left: 50%;
+      top: 50%;
+      width: 620px;
+      min-height: 250px;
+      padding: 26px;
+      isolation: isolate;
+      overflow: visible;
+      transform: translate(-50%, calc(-50% + 20px));
+    }
+
+    .craft.active {
+      transform: translate(-50%, -50%);
+    }
+
+    .craft.item-crafting {
+      border-color: rgba(250, 204, 21, 0.72);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.36), 0 0 42px rgba(250, 204, 21, 0.26);
+    }
+
+    .craft.item-crafting::before {
+      content: "";
+      position: absolute;
+      inset: -18px;
+      z-index: -1;
+      border-radius: 14px;
+      background: conic-gradient(from 0deg, rgba(34, 211, 238, 0), rgba(34, 211, 238, 0.52), rgba(250, 204, 21, 0.72), rgba(244, 114, 182, 0.52), rgba(34, 211, 238, 0));
+      filter: blur(12px);
+      opacity: 0.72;
+      animation: alchemy-spin 2.4s linear infinite;
+    }
+
+    .craft-row {
+      display: grid;
+      grid-template-columns: 1fr 82px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .slot {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .craft-frame img {
+      width: 116px;
+      height: 116px;
+    }
+
+    .frame-common {
+      border-color: #b7791f;
+      background: linear-gradient(145deg, rgba(92, 57, 23, 0.9), rgba(15, 23, 42, 0.78));
+      box-shadow: inset 0 0 0 1px rgba(255, 237, 213, 0.24), 0 18px 48px rgba(180, 83, 9, 0.28);
+    }
+
+    .frame-rare {
+      border-color: #93c5fd;
+      background: linear-gradient(145deg, rgba(30, 64, 175, 0.68), rgba(226, 232, 240, 0.18));
+      box-shadow: inset 0 0 0 1px rgba(219, 234, 254, 0.34), 0 18px 52px rgba(59, 130, 246, 0.28);
+    }
+
+    .frame-legendary {
+      border-color: #facc15;
+      background: linear-gradient(145deg, rgba(161, 98, 7, 0.88), rgba(15, 23, 42, 0.72));
+      box-shadow: inset 0 0 0 1px rgba(254, 240, 138, 0.48), 0 18px 58px rgba(250, 204, 21, 0.38);
+    }
+
+    .frame-mythic {
+      border-color: #d8b4fe;
+      background: radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.32), transparent 38%), linear-gradient(145deg, rgba(88, 28, 135, 0.88), rgba(30, 41, 59, 0.78));
+      box-shadow: inset 0 0 0 1px rgba(233, 213, 255, 0.44), 0 18px 64px rgba(168, 85, 247, 0.42);
+    }
+
+    .slot strong {
+      max-width: 210px;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .merge {
+      display: grid;
+      place-items: center;
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.26);
+      color: #bfdbfe;
+      font-size: 2.2rem;
+      font-weight: 900;
+    }
+
+    .craft.item-crafting .merge {
+      background: conic-gradient(from 0deg, rgba(34, 211, 238, 0.34), rgba(250, 204, 21, 0.42), rgba(244, 114, 182, 0.34), rgba(34, 211, 238, 0.34));
+      color: #fff7ed;
+      animation: alchemy-pulse 760ms ease-in-out infinite alternate;
+    }
+
+    .craft.item-crafting .craft-frame {
+      animation: alchemy-frame-pulse 920ms ease-in-out infinite alternate;
+    }
+
+    .craft-status {
+      margin-top: 22px;
+      text-align: center;
+      color: #dbeafe;
+      font-weight: 800;
+    }
+
+    .craft.item-crafting .craft-status {
+      color: #fef3c7;
+      text-transform: uppercase;
+    }
+
+    @keyframes alchemy-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes alchemy-pulse {
+      from {
+        transform: scale(0.96);
+        box-shadow: 0 0 18px rgba(250, 204, 21, 0.2);
+      }
+
+      to {
+        transform: scale(1.08);
+        box-shadow: 0 0 34px rgba(34, 211, 238, 0.4);
+      }
+    }
+
+    @keyframes alchemy-frame-pulse {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-4px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <section class="craft" id="craftPanel" aria-live="polite">
+        <div class="craft-row">
+          <div class="slot">
+          <div class="rarity-frame craft-frame frame-common" id="craftFrameA">
+            <img id="craftImageA" alt="">
+          </div>
+          <strong id="craftNameA"></strong>
+        </div>
+        <div class="merge">+</div>
+        <div class="slot">
+          <div class="rarity-frame craft-frame frame-common" id="craftFrameB">
+            <img id="craftImageB" alt="">
+          </div>
+          <strong id="craftNameB"></strong>
+        </div>
+      </div>
+      <div class="craft-status" id="craftStatus">Crafting...</div>
+    </section>
+
+    <section class="toast" id="toast" aria-live="polite">
+      <div class="rarity-frame toast-frame frame-common" id="toastFrame">
+        <img id="toastImage" alt="">
+      </div>
+      <div>
+        <div class="kicker" id="toastKicker">StreamAlchemy</div>
+        <div class="title" id="toastTitle"></div>
+        <div class="subtitle" id="toastSubtitle"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const socket = io();
+    const toast = document.getElementById('toast');
+    const craftPanel = document.getElementById('craftPanel');
+    let toastTimer = null;
+    let craftTimer = null;
+
+    function imageSource(item) {
+      return item?.image_url || item?.imageURL || item?.imageUrl || '';
+    }
+
+    function itemName(item) {
+      return item?.name || item?.item_name || item?.itemId || item?.item_id || 'Unknown item';
+    }
+
+    const RARITY_FRAME_CLASSES = ['frame-common', 'frame-rare', 'frame-legendary', 'frame-mythic'];
+    const RARITY_FRAMES = {
+      common: 'frame-common',
+      rare: 'frame-rare',
+      legendary: 'frame-legendary',
+      mythic: 'frame-mythic'
+    };
+
+    function frameClass(rarity) {
+      return RARITY_FRAMES[String(rarity || 'Common').trim().toLowerCase()] || RARITY_FRAMES.common;
+    }
+
+    function applyFrame(element, rarity) {
+      element.classList.remove(...RARITY_FRAME_CLASSES);
+      element.classList.add(frameClass(rarity));
+    }
+
+    function showToast({ kicker, title, subtitle, image, rarity }) {
+      clearTimeout(toastTimer);
+      document.getElementById('toastKicker').textContent = kicker || 'StreamAlchemy';
+      document.getElementById('toastTitle').textContent = title || '';
+      document.getElementById('toastSubtitle').textContent = subtitle || '';
+      document.getElementById('toastImage').src = image || '';
+      applyFrame(document.getElementById('toastFrame'), rarity);
+      toast.classList.add('active');
+      toastTimer = setTimeout(() => toast.classList.remove('active'), 5200);
+    }
+
+    function setCraftItems(itemA, itemB, status) {
+      document.getElementById('craftImageA').src = imageSource(itemA);
+      document.getElementById('craftImageB').src = imageSource(itemB);
+      applyFrame(document.getElementById('craftFrameA'), itemA?.rarity);
+      applyFrame(document.getElementById('craftFrameB'), itemB?.rarity);
+      document.getElementById('craftNameA').textContent = itemName(itemA);
+      document.getElementById('craftNameB').textContent = itemName(itemB);
+      document.getElementById('craftStatus').textContent = status || 'Crafting...';
+    }
+
+    function showCraft(itemA, itemB, status, mode = 'crafting') {
+      clearTimeout(craftTimer);
+      setCraftItems(itemA, itemB, status);
+      craftPanel.classList.toggle('item-crafting', mode === 'item-crafting');
+      craftPanel.classList.add('active');
+    }
+
+    function hideCraft(delay = 1800) {
+      clearTimeout(craftTimer);
+      craftTimer = setTimeout(() => {
+        craftPanel.classList.remove('active', 'item-crafting');
+      }, delay);
+    }
+
+    socket.on('streamalchemy:base_item_obtained', data => {
+      const item = data.item || data.baseItem || data;
+      showToast({
+        kicker: 'Item obtained',
+        title: itemName(item),
+        subtitle: `${data.username || data.user || 'Viewer'} received ${item.rarity || 'an item'}`,
+        image: imageSource(item),
+        rarity: item?.rarity
+      });
+    });
+
+    socket.on('streamalchemy:crafting_started', data => {
+      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, 'Crafting...');
+    });
+
+    socket.on('streamalchemy:item_crafting', data => {
+      showCraft(data.itemA || data.inputA, data.itemB || data.inputB, 'Item crafting...', 'item-crafting');
+    });
+
+    socket.on('streamalchemy:crafting_completed', data => {
+      const item = data.item || data.craftedItem || data.resultItem || data.result;
+      document.getElementById('craftStatus').textContent = 'Crafting complete';
+      hideCraft(900);
+      setTimeout(() => {
+        showToast({
+          kicker: 'Crafted',
+          title: itemName(item),
+          subtitle: data.cached ? 'Recipe cache reused' : 'New recipe discovered',
+          image: imageSource(item),
+          rarity: item?.rarity
+        });
+      }, 950);
+    });
+
+    socket.on('streamalchemy:crafting_failed', data => {
+      document.getElementById('craftStatus').textContent = 'Crafting failed';
+      hideCraft(1600);
+      showToast({
+        kicker: 'Crafting failed',
+        title: data.reason || data.error || 'Generation unavailable',
+        subtitle: 'Inputs were restored to inventory',
+        image: '',
+        rarity: 'Common'
+      });
+    });
+
+    socket.on('streamalchemy:recipe_cache_hit', data => {
+      const item = data.item || data.craftedItem || data.resultItem || data.result;
+      showToast({
+        kicker: 'Recipe cache',
+        title: itemName(item),
+        subtitle: 'Existing image reused',
+        image: imageSource(item),
+        rarity: item?.rarity
+      });
+    });
+  </script>
+</body>
+</html>

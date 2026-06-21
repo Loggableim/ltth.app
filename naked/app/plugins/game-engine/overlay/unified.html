@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Game Engine Overlay - LTTH</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #unified-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .game-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    .game-frame.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Idle state */
+    #idle-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    #idle-state.visible {
+      opacity: 1;
+    }
+
+    .idle-message {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.3);
+      font-family: 'Arial', sans-serif;
+      font-size: 24px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Queue indicator */
+    #queue-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 15px 20px;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(76, 175, 80, 0.3);
+      display: none;
+      z-index: 1000;
+    }
+
+    #queue-indicator.visible {
+      display: block;
+      animation: slideInRight 0.4s ease-out;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .queue-title {
+      font-weight: 600;
+      color: #4CAF50;
+      margin-bottom: 5px;
+    }
+
+    .queue-item {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="unified-container">
+    <!-- Game iframes (lazy-loaded: src is set only when the game first becomes active) -->
+    <iframe id="frame-connect4" class="game-frame" data-src="/overlay/game-engine/connect4"></iframe>
+    <iframe id="frame-chess" class="game-frame" data-src="/overlay/game-engine/chess"></iframe>
+    <iframe id="frame-plinko" class="game-frame" data-src="/overlay/game-engine/plinko"></iframe>
+    <iframe id="frame-wheel" class="game-frame" data-src="/overlay/game-engine/wheel"></iframe>
+    <iframe id="frame-slot" class="game-frame" data-src="/overlay/game-engine/slot"></iframe>
+    
+    <!-- Idle state -->
+    <div id="idle-state" class="visible">
+      <div class="idle-message">
+        🎮 Waiting for game...
+      </div>
+    </div>
+    
+    <!-- Queue indicator -->
+    <div id="queue-indicator">
+      <div class="queue-title">📋 Queue</div>
+      <div id="queue-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentGame = null;
+
+    // Game switched event
+    socket.on('game-engine:game-switched', (data) => {
+      console.log('Game switched:', data);
+      switchToGame(data.gameType);
+    });
+
+    // Game started event (backwards compatibility)
+    socket.on('game-engine:game-started', (data) => {
+      if (data.useUnified) {
+        console.log('Game started (unified):', data);
+        switchToGame(data.gameType);
+      }
+    });
+
+    // Game ended event
+    // Bug 1 fix: reset currentGame to null before the timeout so showIdleState() can fire
+    socket.on('game-engine:game-ended', (data) => {
+      console.log('Game ended:', data);
+      currentGame = null;
+      setTimeout(() => {
+        if (!currentGame) {
+          showIdleState();
+        }
+      }, 2000);
+    });
+
+    // Bug 2 fix: receive current state from backend when overlay loads/reconnects
+    socket.on('game-engine:current-state', (data) => {
+      if (data.hasActiveGame && data.useUnified) {
+        switchToGame(data.gameType);
+      } else {
+        showIdleState();
+      }
+    });
+
+    // Queue update events (individual game-type queued events)
+    socket.on('unified-queue:connect4-queued', (data) => {
+      console.log('Connect4 queued:', data);
+      updateQueueFromEvent(data);
+    });
+
+    socket.on('unified-queue:chess-queued', (data) => {
+      console.log('Chess queued:', data);
+      updateQueueFromEvent(data);
+    });
+
+    socket.on('unified-queue:plinko-queued', (data) => {
+      console.log('Plinko queued:', data);
+      updateQueueFromEvent(data);
+    });
+
+    socket.on('unified-queue:wheel-queued', (data) => {
+      console.log('Wheel queued:', data);
+      updateQueueFromEvent(data);
+    });
+
+    // Bug 4 fix: listen to authoritative queue status and cleared events
+    socket.on('unified-queue:status', (data) => {
+      updateQueueIndicator(data.queueLength || 0);
+    });
+
+    socket.on('unified-queue:cleared', () => {
+      updateQueueIndicator(0);
+    });
+
+    // Idle event
+    socket.on('game-engine:idle', () => {
+      showIdleState();
+    });
+
+    // Bug 5 fix: lazy-load iframe src only when the game first becomes active
+    function switchToGame(gameType) {
+      // Hide all frames
+      document.querySelectorAll('.game-frame').forEach(frame => {
+        frame.classList.remove('active');
+      });
+
+      // Hide idle state
+      document.getElementById('idle-state').classList.remove('visible');
+
+      // Show active game frame
+      const frame = document.getElementById(`frame-${gameType}`);
+      if (frame) {
+        // Load iframe content only on first activation to save resources
+        if (!frame.dataset.loaded) {
+          frame.src = frame.dataset.src;
+          frame.dataset.loaded = 'true';
+        }
+        frame.classList.add('active');
+        currentGame = gameType;
+      } else {
+        console.error('Unknown game type:', gameType);
+        showIdleState();
+      }
+    }
+
+    function showIdleState() {
+      // Hide all frames
+      document.querySelectorAll('.game-frame').forEach(frame => {
+        frame.classList.remove('active');
+      });
+
+      // Show idle state
+      document.getElementById('idle-state').classList.add('visible');
+      currentGame = null;
+    }
+
+    // Bug 4 fix: driven by authoritative backend events (unified-queue:status / unified-queue:cleared)
+    function updateQueueIndicator(queueLength) {
+      const indicator = document.getElementById('queue-indicator');
+      const list = document.getElementById('queue-list');
+
+      if (queueLength > 0) {
+        indicator.classList.add('visible');
+        list.innerHTML = `<div class="queue-item">${queueLength} game(s) in queue</div>`;
+      } else {
+        indicator.classList.remove('visible');
+      }
+    }
+
+    function updateQueueFromEvent(data) {
+      updateQueueIndicator(data.queueLength || 0);
+    }
+
+    // Request initial state so the overlay shows correctly on load/refresh (Bug 2)
+    socket.emit('game-engine:request-state');
+
+    console.log('Unified Game Engine Overlay loaded');
+  </script>
+</body>
+</html>

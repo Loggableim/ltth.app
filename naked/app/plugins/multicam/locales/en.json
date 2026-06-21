@@ -1,0 +1,77 @@
+{
+  "multicam": {
+    "title": "Multi-Cam Switcher",
+    "subtitle": "Stream Camera Management",
+    "safety_lock": "⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...",
+    "current_scene": "Current Scene:",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
+    "connection": {
+      "title": "Connection",
+      "host": "Host",
+      "port": "Port",
+      "password": "Password",
+      "connect": "Connect OBS",
+      "disconnect": "Disconnect OBS",
+      "save_settings": "Save Settings",
+      "auto_connect_settings": "Auto-Connect Settings",
+      "connect_on_start": "Connect on Start",
+      "connect_on_start_desc": "Automatically connect to OBS when plugin initializes",
+      "connect_delay_ms": "Connection Delay (ms)",
+      "connect_delay_ms_desc": "Delay before connecting on start",
+      "auto_reconnect_enabled": "Enable Auto-Reconnect",
+      "auto_reconnect_enabled_desc": "Automatically reconnect if connection is lost",
+      "max_reconnect_minutes": "Max Reconnect Duration (min)",
+      "max_reconnect_minutes_desc": "Stop reconnecting after this many minutes",
+      "health_check_settings": "Health Check Settings",
+      "health_check_enabled": "Enable Health Check",
+      "health_check_enabled_desc": "Periodically verify OBS connection is healthy",
+      "health_check_interval_ms": "Health Check Interval (ms)",
+      "health_check_interval_ms_desc": "Time between health checks"
+    },
+    "switcher": {
+      "title": "Scene Switcher",
+      "select_scene": "Select Scene...",
+      "switch": "Switch"
+    },
+    "hot_buttons": {
+      "title": "Hot Buttons"
+    },
+    "gift_mapping": {
+      "title": "Gift to Scene Mapping",
+      "description": "Select a gift and assign it to an OBS scene. When users send this gift, the scene will automatically switch.",
+      "select_gift": "Select Gift",
+      "loading": "Loading gifts...",
+      "select_scene": "Target Scene",
+      "select_scene_placeholder": "Select Scene...",
+      "min_coins": "Min Coins (optional)",
+      "add": "Add Mapping",
+      "refresh_gifts": "Refresh Gifts",
+      "current_mappings": "Current Mappings:"
+    },
+    "log": {
+      "title": "Activity Log",
+      "waiting": "Waiting for events..."
+    },
+    "cameras": {
+      "title": "Camera Sources",
+      "add": "Add Camera",
+      "name": "Camera Name",
+      "url": "Source URL",
+      "active": "Active",
+      "preview": "Preview"
+    },
+    "overlay": {
+      "title": "Overlay Settings",
+      "url": "Overlay URL",
+      "copy": "Copy URL",
+      "open": "Open Overlay"
+    },
+    "settings": {
+      "save": "Save Settings",
+      "reset": "Reset to Defaults"
+    }
+  }
+}

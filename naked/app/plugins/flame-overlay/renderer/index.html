@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flame Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        body {
+            background: transparent;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #flameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="flameCanvas"></canvas>
+    
+    <!-- Socket.io for live config updates -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Post-Processor for Bloom Effects -->
+    <script src="post-processor.js"></script>
+
+    <!-- All shader source code lives in effects-engine.js as JS template literals -->
+    <script src="effects-engine.js"></script>
+</body>
+</html>

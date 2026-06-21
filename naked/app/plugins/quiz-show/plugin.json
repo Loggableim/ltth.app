@@ -1,0 +1,56 @@
+{
+  "id": "quiz-show",
+  "name": "Pup Cid's Little Quiz Show Plugin",
+  "version": "1.1.0",
+  "description": "Interactive quiz show plugin for TikTok livestreams with chat integration, category voting, duel mode, achievements, seasons, jokers, and leaderboard",
+  "author": "TikTok Helper",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "module",
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "features": [
+    "Question database management with upload, manual creation, cooldowns, and packages",
+    "Show playlists with audience category voting",
+    "Interactive quiz rounds with countdown timer",
+    "Duel mode for two users or teams",
+    "TikTok chat integration for answers and votes",
+    "Superfan and gift-triggered jokers",
+    "Persistent season leaderboard with automation",
+    "Achievements and overlay popups",
+    "Configurable overlay themes, accessibility, and avatar performance",
+    "Sound upload and event sound management",
+    "Health panel and setup wizard",
+    "Import and export for questions and leaderboard"
+  ],
+  "config": {
+    "roundDuration": 30,
+    "pointsFirstCorrect": 100,
+    "pointsOtherCorrect": 50,
+    "showAnswersAfterTime": true,
+    "multipleWinners": true,
+    "shuffleAnswers": false,
+    "randomQuestions": true,
+    "questionCooldownHours": 24,
+    "categoryVotingEnabled": false,
+    "categoryVoteDuration": 20,
+    "joker50Enabled": true,
+    "jokerInfoEnabled": true,
+    "jokerTimeEnabled": true,
+    "joker25Enabled": true,
+    "jokerTimeBoost": 15,
+    "jokersPerRound": 3
+  },
+  "descriptions": {
+    "en": "Interactive quiz show plugin for TikTok livestreams with category voting, duel mode, achievements, seasons, chat integration, jokers, and high-end overlays.",
+    "de": "Interaktives Quiz-Show-Plugin fuer TikTok-Livestreams mit Kategorie-Voting, Duel-Modus, Achievements, Seasons, Chat-Integration, Jokern und hochwertigen Overlays.",
+    "es": "Plugin de concurso interactivo para directos de TikTok con votacion de categorias, modo duelo, logros, temporadas, chat, comodines y overlays.",
+    "fr": "Plugin de quiz interactif pour livestreams TikTok avec vote de categories, mode duel, succes, saisons, chat, jokers et overlays."
+  }
+}

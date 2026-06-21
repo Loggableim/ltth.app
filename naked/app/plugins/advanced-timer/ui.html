@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Timer - Multi-Timer System</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/i18n-client.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container { display: flex; height: 100vh; }
+        .sidebar { 
+            width: 240px; 
+            background: var(--color-bg-secondary); 
+            border-right: 1px solid var(--color-border); 
+            padding: 24px 16px; 
+            overflow-y: auto; 
+            flex-shrink: 0;
+        }
+        .main-content { flex: 1; padding: 24px 28px; overflow-y: auto; }
+
+        .logo { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            background: var(--gradient-primary); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            margin-bottom: 20px; 
+        }
+
+        .nav-btn {
+            width: 100%;
+            padding: 10px 14px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            text-align: left;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .nav-btn:hover { background: var(--color-active-bg); }
+        .nav-btn.active { background: var(--color-accent-primary); color: white; }
+
+        .btn { 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            border: none; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--color-accent-primary); color: white; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-success { background: var(--color-accent-success); color: white; }
+        .btn-warning { background: var(--color-accent-warning); color: white; }
+        .btn-danger { background: var(--color-accent-danger); color: white; }
+        .btn-secondary { 
+            background: var(--color-btn-secondary-bg); 
+            color: var(--color-btn-secondary-text); 
+        }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        .btn-xs { padding: 3px 8px; font-size: 0.75rem; }
+
+        /* ── Timer Card ───────────────────────────────────────────── */
+        .timer-card { 
+            background: var(--color-bg-card); 
+            border-radius: 14px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border: 1px solid var(--color-border); 
+        }
+        .timer-card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px;
+        }
+        .timer-title { font-size: 1.15rem; font-weight: 700; }
+        .timer-mode-badge { 
+            padding: 3px 10px; 
+            border-radius: 10px; 
+            font-size: 0.72rem; 
+            font-weight: 600; 
+            background: var(--color-active-bg);
+            color: var(--color-accent-primary);
+            text-transform: uppercase;
+        }
+
+        .timer-display {
+            text-align: center;
+            font-size: 2.8rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            margin: 12px 0;
+            color: var(--color-accent-primary);
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+        .timer-display.running { animation: pulse 2s ease-in-out infinite; }
+
+        .timer-state-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .state-running { background: var(--color-accent-success); color: white; }
+        .state-paused { background: var(--color-accent-warning); color: white; }
+        .state-stopped { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
+        .state-completed { background: var(--color-accent-primary); color: white; }
+
+        .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+
+        /* ── Overlay URL inline ───────────────────────────────────── */
+        .overlay-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .overlay-url-text {
+            flex: 1;
+            background: var(--color-bg-tertiary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.78rem;
+            word-break: break-all;
+            min-width: 0;
+        }
+
+        /* ── Collapsible sections ────────────────────────────────── */
+        .section-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: transparent;
+            border: none;
+            border-top: 1px solid var(--color-border);
+            padding: 10px 0;
+            cursor: pointer;
+            color: var(--color-text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        .section-toggle:hover { color: var(--color-accent-primary); }
+        .section-toggle .chevron { transition: transform 0.2s; font-size: 0.75rem; }
+        .section-toggle.open .chevron { transform: rotate(180deg); }
+        .section-body { display: none; padding: 12px 0 4px 0; }
+        .section-body.open { display: block; }
+
+        /* ── Interactions grid ─────────────────────────────── */
+        .interactions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 900px) { .interactions-grid { grid-template-columns: 1fr; } }
+
+        .interaction-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .interaction-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            flex: 1;
+            white-space: nowrap;
+        }
+        .interaction-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .interaction-input {
+            width: 80px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-size: 0.85rem;
+            text-align: right;
+        }
+        .interaction-input:focus { outline: none; border-color: var(--color-accent-primary); }
+        .interaction-unit { font-size: 0.75rem; color: var(--color-text-secondary); }
+        .save-indicator { 
+            font-size: 0.7rem; 
+            color: var(--color-accent-success); 
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .save-indicator.show { opacity: 1; }
+
+        /* ── Multiplier ───────────────────────────────────────────── */
+        .multiplier-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--color-bg-tertiary);
+            border-radius: 22px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            width: 16px; height: 16px;
+            left: 3px; bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        input:checked + .toggle-slider { background: var(--color-accent-primary); }
+        input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+        /* ── Shortcuts ────────────────────────────────────────────── */
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .shortcut-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .shortcut-label { font-size: 0.82rem; color: var(--color-text-secondary); flex: 1; }
+        .shortcut-input {
+            width: 110px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-size: 0.82rem;
+        }
+        .shortcut-input:focus { outline: none; border-color: var(--color-accent-primary); }
+
+        /* ── Activity Log ─────────────────────────────────────────── */
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 0.82rem;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .log-time { color: var(--color-text-secondary); font-size: 0.75rem; flex-shrink: 0; margin-left: 8px; }
+        .log-change { font-weight: 600; flex-shrink: 0; margin-left: 8px; }
+        .log-change.positive { color: var(--color-accent-success); }
+        .log-change.negative { color: var(--color-accent-danger); }
+
+        /* ── Settings section ────────────────────────────────────── */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .field-label { font-size: 0.8rem; color: var(--color-text-secondary); }
+        .field-input {
+            padding: 7px 10px;
+            border-radius: 7px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-size: 0.85rem;
+        }
+        .field-input:focus { outline: none; border-color: var(--color-accent-primary); }
+
+        /* ── Form (Create) ───────────────────────────────────────── */
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-weight: 600; margin-bottom: 6px; }
+        .form-control { 
+            width: 100%; padding: 9px 12px; border-radius: 8px; 
+            border: 1px solid var(--color-border); 
+            background: var(--color-bg-primary); color: var(--color-text-primary); 
+        }
+        .form-control:focus { outline: none; border-color: var(--color-accent-primary); }
+        .form-row { display: flex; gap: 14px; }
+        .form-row .form-group { flex: 1; }
+
+        .info-box {
+            background: var(--color-active-bg);
+            border-left: 4px solid var(--color-accent-primary);
+            padding: 14px;
+            border-radius: 8px;
+            margin: 14px 0;
+            font-size: 0.9rem;
+        }
+        .info-box-title { font-weight: 700; margin-bottom: 6px; }
+
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: var(--color-text-secondary);
+        }
+        .empty-state-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.3; }
+        .empty-state-text { font-size: 1rem; margin-bottom: 20px; }
+
+        /* ── Profiles ────────────────────────────────────────────── */
+        .profile-card {
+            background: var(--color-bg-card);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .profile-name { font-weight: 600; }
+        .profile-meta { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 2px; }
+
+        .adv-events-link {
+            font-size: 0.78rem;
+            color: var(--color-accent-primary);
+            text-decoration: none;
+            cursor: pointer;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        .adv-events-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">⏱️ Advanced Timer</div>
+        <button class="nav-btn active" data-tab="timers">📊 Timers</button>
+        <button class="nav-btn" data-tab="create">➕ Create Timer</button>
+        <button class="nav-btn" data-tab="profiles">💾 Profiles</button>
+        <button class="nav-btn" data-tab="help">❓ Help</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- ── Timers Tab ─────────────────────────────── -->
+        <div id="tab-timers" class="tab-content active">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h1>Active Timers</h1>
+                <button class="btn btn-primary" data-tab="create">➕ New Timer</button>
+            </div>
+            <div id="timers-container"></div>
+        </div>
+
+        <!-- ── Create Timer Tab ───────────────────────── -->
+        <div id="tab-create" class="tab-content" style="display:none;">
+            <h1 style="margin-bottom:20px;">Create New Timer</h1>
+            <form id="timer-form">
+                <div class="form-group">
+                    <label class="form-label">Timer Name</label>
+                    <input type="text" class="form-control" id="timer-name" placeholder="My Timer" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Timer Mode</label>
+                    <select class="form-control" id="timer-mode" required>
+                        <option value="countdown">Countdown – count down from a time</option>
+                        <option value="countup">Count Up – count up to a target</option>
+                        <option value="stopwatch">Stopwatch – count up indefinitely</option>
+                        <option value="loop">Loop – repeat countdown continuously</option>
+                        <option value="interval">Interval – repeat up to target</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" id="initial-duration-group">
+                        <label class="form-label">Initial Duration (seconds)</label>
+                        <input type="number" class="form-control" id="initial-duration" min="1" value="300">
+                    </div>
+                    <div class="form-group" id="target-value-group" style="display:none;">
+                        <label class="form-label">Target Value (seconds)</label>
+                        <input type="number" class="form-control" id="target-value" min="0" value="300">
+                    </div>
+                </div>
+                <div class="info-box">
+                    <div class="info-box-title">💡 Quick Setup</div>
+                    <p>After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card — no separate event rules needed for basic interactions.</p>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button type="submit" class="btn btn-primary">Create Timer</button>
+                    <button type="button" class="btn btn-secondary" data-tab="timers">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── Profiles Tab ───────────────────────────── -->
+        <div id="tab-profiles" class="tab-content" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h1>Timer Profiles</h1>
+                <button class="btn btn-primary" id="save-profile-btn">💾 Save Current Setup</button>
+            </div>
+            <div id="profiles-container"></div>
+        </div>
+
+        <!-- ── Help Tab ───────────────────────────────── -->
+        <div id="tab-help" class="tab-content" style="display:none;">
+            <h1 style="margin-bottom:20px;">Help & Documentation</h1>
+            <div class="info-box">
+                <div class="info-box-title">🎯 Timer Modes</div>
+                <p><strong>Countdown:</strong> Counts down to zero – great for subathon timers</p>
+                <p><strong>Count Up:</strong> Counts up to a target value</p>
+                <p><strong>Stopwatch:</strong> Counts up indefinitely</p>
+                <p><strong>Loop:</strong> Continuously repeats countdown</p>
+                <p><strong>Interval:</strong> Counts up to target, then resets and repeats</p>
+            </div>
+            <div class="info-box" style="margin-top:14px;">
+                <div class="info-box-title">⚡ Direct Interactions</div>
+                <p>Set <em>Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message</em> directly on each timer card. Use positive values to add time, negative to reduce.</p>
+                <p style="margin-top:6px;">Enable the <strong>x Multiplier</strong> to multiply all interaction values by a factor (e.g. ×10 for events).</p>
+            </div>
+            <div class="info-box" style="margin-top:14px;">
+                <div class="info-box-title">🔗 Advanced Event Rules</div>
+                <p>Need gift-name filters or chat-command matching? Use the <em>Advanced Event Rules</em> link on each timer card to configure per-gift / per-command rules.</p>
+            </div>
+            <div class="info-box" style="margin-top:14px;">
+                <div class="info-box-title">📊 OBS Overlay</div>
+                <p>Each timer card shows its overlay URL. Add it as a Browser Source in OBS.</p>
+            </div>
+        </div>
+
+    </div><!-- /main-content -->
+</div><!-- /app-container -->
+
+<script src="/advanced-timer/ui.js"></script>
+</body>
+</html>
