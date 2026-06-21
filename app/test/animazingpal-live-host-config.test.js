@@ -7,6 +7,35 @@ const {
 } = require('../plugins/animazingpal/brain/live-host-config');
 
 describe('AnimazingPal live host configuration', () => {
+  test('live-host defaults are production-ready except for installation-specific values', () => {
+    const defaults = buildLiveHostDefaults();
+
+    expect(defaults).toEqual(expect.objectContaining({
+      enabled: true,
+      provider: 'ollama',
+      source: expect.objectContaining({
+        username: '', autoConnect: true, watchdogIntervalMs: 30000,
+        eventStaleMs: 300000, reconnectOnEventStale: true
+      }),
+      response: expect.objectContaining({
+        decisionMode: 'auto', minDecisionScore: 0.55,
+        maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2
+      }),
+      tts: expect.objectContaining({
+        enabled: true, engine: 'fishaudio', voiceId: '', streaming: true,
+        volume: 80, fallbackBehavior: 'silent'
+      }),
+      audio: expect.objectContaining({
+        outputDeviceId: '', monitoringEnabled: false, missingDeviceBehavior: 'mute'
+      }),
+      viewerMemory: expect.objectContaining({ streamerId: '', enabled: true, writeMemories: true })
+    }));
+    expect(defaults.providers.ollama).toEqual(expect.objectContaining({
+      baseUrl: 'https://ollama.com', model: 'nemotron-3-nano:30b-cloud',
+      timeoutMs: 30000, maxRetries: 2, retryBackoffMs: 1000, thinking: true
+    }));
+  });
+
   test('safe-live preset supplies editable defaults for every live subsystem', () => {
     const configured = applyLiveHostPreset(buildLiveHostDefaults(), 'safe-live');
 
@@ -25,6 +54,54 @@ describe('AnimazingPal live host configuration', () => {
     expect(Object.isFrozen(configured)).toBe(false);
   });
 
+  test('normalization preserves every explicit existing value over production defaults', () => {
+    const configured = normalizeLiveHostConfig({
+      enabled: false,
+      provider: 'gemini',
+      source: { autoConnect: false, username: 'saved-stream' },
+      response: { maxResponsesPerMinute: 17 },
+      audio: { outputDeviceId: 'saved-cable' },
+      tts: { voiceId: 'saved-fish' },
+      viewerMemory: { streamerId: 'saved-profile' }
+    });
+
+    expect(configured).toEqual(expect.objectContaining({ enabled: false, provider: 'gemini' }));
+    expect(configured.source).toEqual(expect.objectContaining({ autoConnect: false, username: 'saved-stream' }));
+    expect(configured.response.maxResponsesPerMinute).toBe(17);
+    expect(configured.audio.outputDeviceId).toBe('saved-cable');
+    expect(configured.tts.voiceId).toBe('saved-fish');
+    expect(configured.viewerMemory.streamerId).toBe('saved-profile');
+  });
+
+  test('production preset restores canonical values without clearing installation setup', () => {
+    const current = normalizeLiveHostConfig({
+      provider: 'gemini',
+      providers: { ollama: { apiKey: 'saved-secret' } },
+      response: { maxResponsesPerMinute: 99 },
+      events: { subscribe: { enabled: false, templateEnabled: true } },
+      tts: { enabled: false, voiceId: 'saved-fish', fallbackBehavior: 'error' },
+      audio: { outputDeviceId: 'saved-cable', outputDeviceLabel: 'CABLE Input' },
+      source: { username: 'saved-stream' },
+      privacy: { includeContactFields: true },
+      diagnostics: { includePromptBodies: true }
+    });
+
+    const configured = applyLiveHostPreset(current, 'production-24-7');
+
+    expect(configured.providers.ollama.apiKey).toBe('saved-secret');
+    expect(configured.tts.voiceId).toBe('saved-fish');
+    expect(configured.audio).toEqual(expect.objectContaining({
+      outputDeviceId: 'saved-cable', outputDeviceLabel: 'CABLE Input'
+    }));
+    expect(configured.source.username).toBe('saved-stream');
+    expect(configured).toEqual(expect.objectContaining({ enabled: true, provider: 'ollama' }));
+    expect(configured.response.maxResponsesPerMinute).toBe(4);
+    expect(configured.events.subscribe).toEqual(expect.objectContaining({ enabled: true, templateEnabled: false }));
+    expect(configured.tts).toEqual(expect.objectContaining({ enabled: true, fallbackBehavior: 'silent' }));
+    expect(configured.privacy.includeContactFields).toBe(false);
+    expect(configured.diagnostics.includePromptBodies).toBe(false);
+  });
+
   test('normalizes automatic host decision settings', () => {
     const configured = normalizeLiveHostConfig({
       response: { decisionMode: 'bad-mode', minDecisionScore: 99, silenceWarnAfterEvents: 9999, queueWarnRatio: 9 }
@@ -34,6 +111,46 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.response.minDecisionScore).toBe(1);
     expect(configured.response.silenceWarnAfterEvents).toBe(1000);
     expect(configured.response.queueWarnRatio).toBe(1);
+  });
+
+  test('normalizes boolean and enum settings instead of accepting truthy strings', () => {
+    const configured = normalizeLiveHostConfig({
+      enabled: 'false',
+      source: { autoConnect: 'false', reconnectOnEventStale: 'false' },
+      response: { cacheEnabled: 'false' },
+      events: { chat: {
+        enabled: 'false', brainEnabled: 'false', templateEnabled: 'true', avatarActionEnabled: 'false'
+      } },
+      tts: { enabled: 'false', engine: 'other', streaming: 'false', duckOtherAudio: 'false', fallbackBehavior: 'bad' },
+      audio: { monitoringEnabled: 'true' },
+      viewerMemory: { enabled: 'false', writeMemories: 'false', includeInsights: 'false', includeGiftHistory: 'false' },
+      privacy: { includeNotes: 'true', includeBirthday: 'true', includeContactFields: 'true', redactPromptPayloads: 'false' },
+      avatarSwitch: { enabled: 'false', persistUntilNextSwitch: 'false', matchGiftNameFallback: 'false', waitForRepeatEnd: 'false' },
+      idleMotion: { enabled: 'false', includeEmotes: 'false', alternateActionTypes: 'false' },
+      diagnostics: { verboseLogging: 'true', emitEvents: 'false', includePromptBodies: 'true' }
+    });
+
+    expect(configured.enabled).toBe(false);
+    expect(configured.source).toEqual(expect.objectContaining({ autoConnect: false, reconnectOnEventStale: false }));
+    expect(configured.response.cacheEnabled).toBe(false);
+    expect(configured.events.chat).toEqual(expect.objectContaining({
+      enabled: false, brainEnabled: false, templateEnabled: true, avatarActionEnabled: false
+    }));
+    expect(configured.tts).toEqual(expect.objectContaining({
+      enabled: false, engine: 'fishaudio', streaming: false, duckOtherAudio: false, fallbackBehavior: 'silent'
+    }));
+    expect(configured.audio.monitoringEnabled).toBe(true);
+    expect(configured.viewerMemory).toEqual(expect.objectContaining({
+      enabled: false, writeMemories: false, includeInsights: false, includeGiftHistory: false
+    }));
+    expect(configured.privacy).toEqual({
+      includeNotes: true, includeBirthday: true, includeContactFields: true, redactPromptPayloads: false
+    });
+    expect(configured.avatarSwitch).toEqual(expect.objectContaining({
+      enabled: false, persistUntilNextSwitch: false, matchGiftNameFallback: false, waitForRepeatEnd: false
+    }));
+    expect(configured.idleMotion).toEqual(expect.objectContaining({ enabled: false, includeEmotes: false, alternateActionTypes: false }));
+    expect(configured.diagnostics).toEqual(expect.objectContaining({ verboseLogging: true, emitEvents: false, includePromptBodies: true }));
   });
 
   test('normalizes numeric fine settings to documented safety bounds', () => {

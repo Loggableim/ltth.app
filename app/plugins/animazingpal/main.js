@@ -48,7 +48,7 @@ class AnimazingPalPlugin {
     this.isConnected = false;
     this.reconnectTimer = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 10;
+    this.maxReconnectAttempts = 0;
     
     // Brain Engine - AI Intelligence System
     this.brainEngine = null;
@@ -158,7 +158,10 @@ class AnimazingPalPlugin {
     // Initialize Brain Engine with robust error handling
     try {
       this.brainEngine = new BrainEngine(this.api);
-      await this.brainEngine.initialize();
+      const brainInitialized = await this.brainEngine.initialize();
+      if (!brainInitialized) {
+        throw new Error('Brain Engine initialization returned false');
+      }
       
       // Configure brain with saved settings
       if (this.config.brain) {
@@ -207,17 +210,17 @@ class AnimazingPalPlugin {
 
   getDefaultConfig() {
     return {
-      enabled: false,
+      enabled: true,
       platform: {
         active: 'animaze',
         profiles: {
           animaze: {
             host: '127.0.0.1',
-            port: 8008,
+            port: 9000,
             autoConnect: true,
             reconnectOnDisconnect: true,
             reconnectDelay: 5000,
-            maxReconnectAttempts: 10,
+            maxReconnectAttempts: 0,
             connectionTimeoutMs: 10000,
             autoRefreshData: true,
             verboseLogging: false
@@ -243,10 +246,10 @@ class AnimazingPalPlugin {
       },
       autoConnect: true,
       host: '127.0.0.1',
-      port: 8008,
+      port: 9000,
       reconnectOnDisconnect: true,
       reconnectDelay: 5000,
-      maxReconnectAttempts: 10,
+      maxReconnectAttempts: 0,
       connectionTimeoutMs: 10000,
       // Auto-refresh Animaze data on connect
       autoRefreshData: true,
@@ -326,43 +329,43 @@ class AnimazingPalPlugin {
         follow: {
           enabled: true,
           actionType: 'specialAction', // 'emote', 'specialAction', 'pose', 'idle', 'chatMessage'
-          actionValue: 0,          // itemName for emote, index for others
+          actionValue: null,
           chatMessage: null,
           useEcho: null            // Per-event echo override (null = use global, true/false = override)
         },
         share: {
           enabled: true,
           actionType: 'specialAction',
-          actionValue: 6,
+          actionValue: null,
           chatMessage: null,
           useEcho: null
         },
         subscribe: {
           enabled: true,
           actionType: 'emote',
-          actionValue: 'Emote_Confetti_Template',
+          actionValue: null,
           chatMessage: null,
           useEcho: null
         },
         like: {
           enabled: true,
           actionType: 'emote',
-          actionValue: 'Emote_Hearts',
+          actionValue: null,
           chatMessage: null,
           useEcho: null,
-          threshold: 15           // Only trigger after this many likes
+          threshold: 10
         },
         gift: {
           enabled: true,
           actionType: 'emote',        // Default: Emote triggern
           actionValue: null,          // User wählt selbst
-          chatMessage: 'Wow, danke {username} für {giftName}!',
+          chatMessage: null,
           useEcho: null
         },
         chat: {
           enabled: true,
           actionType: 'idle',
-          actionValue: 18,
+          actionValue: null,
           chatMessage: null,
           useEcho: null
         }
@@ -375,12 +378,12 @@ class AnimazingPalPlugin {
       eventCooldowns: this.getDefaultEventCooldowns(),
       // Brain/AI settings
       brain: {
-        enabled: false,
+        enabled: true,
         standaloneMode: false,        // Standalone mode: TTS-only, no GPT calls
         forceTtsOnlyOnActions: false, // Force TTS-only (echo) for all automated actions
         openaiApiKey: null,
         model: 'gpt-4o-mini',      // Use efficient model by default
-        activePersonality: null,
+        activePersonality: 'entertainer',
         // Persona storage
         personaStoragePath: null,  // Will use plugin data directory
         // Memory settings
@@ -400,8 +403,8 @@ class AnimazingPalPlugin {
           like: false               // React to likes
         },
         // Rate limiting
-        maxResponsesPerMinute: 10,
-        chatResponseProbability: 0.3,  // Respond to 30% of chats
+        maxResponsesPerMinute: 4,
+        chatResponseProbability: 0.1,
         liveHost: buildLiveHostDefaults()
       },
       // Logic Matrix for event-driven actions
@@ -1052,7 +1055,7 @@ class AnimazingPalPlugin {
       normalized.reconnectOnDisconnect = normalized.platform.profiles.animaze.reconnectOnDisconnect;
       normalized.reconnectDelay = normalized.platform.profiles.animaze.reconnectDelay;
       const maxReconnectAttempts = parseInt(normalized.platform.profiles.animaze.maxReconnectAttempts, 10);
-      normalized.maxReconnectAttempts = Math.max(0, Math.min(100, Number.isFinite(maxReconnectAttempts) ? maxReconnectAttempts : 10));
+      normalized.maxReconnectAttempts = Math.max(0, Math.min(100, Number.isFinite(maxReconnectAttempts) ? maxReconnectAttempts : 0));
       normalized.connectionTimeoutMs = Math.max(1000, Math.min(120000, parseInt(normalized.platform.profiles.animaze.connectionTimeoutMs, 10) || 10000));
       normalized.autoRefreshData = normalized.platform.profiles.animaze.autoRefreshData;
       normalized.verboseLogging = normalized.platform.profiles.animaze.verboseLogging;
@@ -1065,12 +1068,12 @@ class AnimazingPalPlugin {
 
   normalizeStandaloneEventActions(eventActions = {}, defaults = {}) {
     const standaloneDefaults = {
-      follow: { enabled: true, actionType: 'specialAction', actionValue: 0, chatMessage: null, useEcho: null },
-      share: { enabled: true, actionType: 'specialAction', actionValue: 6, chatMessage: null, useEcho: null },
-      subscribe: { enabled: true, actionType: 'emote', actionValue: 'Emote_Confetti_Template', chatMessage: null, useEcho: null },
-      like: { enabled: true, actionType: 'emote', actionValue: 'Emote_Hearts', chatMessage: null, useEcho: null, threshold: 15 },
-      gift: { enabled: true, actionType: 'emote', actionValue: 'Emote_Hearts', chatMessage: null, useEcho: null },
-      chat: { enabled: true, actionType: 'idle', actionValue: 18, chatMessage: null, useEcho: null }
+      follow: { enabled: true, actionType: 'specialAction', actionValue: null, chatMessage: null, useEcho: null },
+      share: { enabled: true, actionType: 'specialAction', actionValue: null, chatMessage: null, useEcho: null },
+      subscribe: { enabled: true, actionType: 'emote', actionValue: null, chatMessage: null, useEcho: null },
+      like: { enabled: true, actionType: 'emote', actionValue: null, chatMessage: null, useEcho: null, threshold: 10 },
+      gift: { enabled: true, actionType: 'emote', actionValue: null, chatMessage: null, useEcho: null },
+      chat: { enabled: true, actionType: 'idle', actionValue: null, chatMessage: null, useEcho: null }
     };
     const legacyDefaults = {
       follow: { actionType: 'emote', actionValue: null, chatMessage: null },

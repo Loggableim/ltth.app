@@ -18,6 +18,34 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  test('fresh installs use the canonical 24/7 production profile', () => {
+    const plugin = Object.create(AnimazingPalPlugin.prototype);
+    const defaults = plugin.getDefaultConfig();
+
+    expect(defaults).toEqual(expect.objectContaining({
+      enabled: true,
+      host: '127.0.0.1',
+      port: 9000,
+      autoConnect: true,
+      reconnectOnDisconnect: true,
+      reconnectDelay: 5000,
+      maxReconnectAttempts: 0,
+      connectionTimeoutMs: 10000
+    }));
+    expect(defaults.platform.profiles.animaze).toEqual(expect.objectContaining({
+      host: '127.0.0.1', port: 9000, autoConnect: true,
+      reconnectOnDisconnect: true, maxReconnectAttempts: 0
+    }));
+    expect(defaults.brain).toEqual(expect.objectContaining({
+      enabled: true,
+      standaloneMode: false,
+      forceTtsOnlyOnActions: false,
+      activePersonality: 'entertainer'
+    }));
+    expect(defaults.brain.liveHost.enabled).toBe(true);
+    expect(defaults.chatToAvatar.enabled).toBe(false);
+  });
+
   test('sends host responses through Fish.audio with configurable voice fine settings', async () => {
     const { plugin, ttsPlugin } = createPlugin();
 
@@ -25,7 +53,7 @@ describe('AnimazingPal live host integration', () => {
 
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
       text: 'Willkommen zurück!', username: 'viewer', engine: 'fishaudio', voiceId: 'fish-host',
-      source: 'animazingpal', teamLevel: 99, priority: 91, emotion: 'happy', pitch: 2, volume: 73, speed: 1.1
+      source: 'animazingpal', teamLevel: 99, priority: 70, emotion: 'happy', pitch: 2, volume: 73, speed: 1.1
     }));
     expect(result.success).toBe(true);
   });
@@ -183,6 +211,7 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.config.brain.liveHost.response.maxResponsesPerMinute).toBe(17);
     expect(plugin.brainEngine.configure).toHaveBeenCalled();
     expect(res.json.mock.calls[0][0].config.providers.ollama.apiKey).toBeUndefined();
+    plugin.stopLiveHostIdleMotion();
   });
 
   test('routes generated host responses to Fish.audio instead of Animaze ChatPal', async () => {
@@ -1278,6 +1307,7 @@ describe('AnimazingPal live host integration', () => {
 
     await plugin.init();
 
+    expect(plugin.brainEngine).toBeNull();
     expect(plugin.connect).toHaveBeenCalledTimes(1);
     expect(plugin.scheduleReconnect).toHaveBeenCalledTimes(1);
   });
