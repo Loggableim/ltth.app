@@ -563,4 +563,31 @@ describe('Sidekick ASR upload routes', () => {
       })
     }));
   });
+
+  test('ASR status returns persisted microphone and runtime settings', async () => {
+    const { app } = createHarness({
+      config: {
+        asr: {
+          deviceId: 'persisted-device-id',
+          unsafeOverride: true,
+          silenceTimeoutMs: 1111,
+          maxSegmentMs: 9000
+        }
+      }
+    });
+
+    const response = await request(app)
+      .get('/api/sidekick/asr/status')
+      .expect(200);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      success: true,
+      status: expect.objectContaining({
+        deviceId: 'persisted-device-id',
+        unsafeOverride: true,
+        silenceTimeoutMs: 1111,
+        maxSegmentMs: 9000
+      })
+    }));
+  });
 });

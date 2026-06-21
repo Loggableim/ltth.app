@@ -1048,7 +1048,11 @@ class SidekickPlugin {
       rateLimitWindowMs: this._clampInteger(asr.rateLimitWindowMs, 1000, 10 * 60 * 1000, 60 * 1000),
       minTranscriptChars: Number.isFinite(configuredMin) && configuredMin > 0
         ? Math.min(Math.round(configuredMin), 500)
-        : (Number.isFinite(conversationMin) && conversationMin > 0 ? Math.min(Math.round(conversationMin), 500) : 1)
+        : (Number.isFinite(conversationMin) && conversationMin > 0 ? Math.min(Math.round(conversationMin), 500) : 1),
+      deviceId: this._sanitizeAsrPublicText(asr.deviceId, 256),
+      unsafeOverride: asr.unsafeOverride === true || asr.unsafeOverride === 'true',
+      silenceTimeoutMs: this._clampInteger(asr.silenceTimeoutMs, 250, 5000, 900),
+      maxSegmentMs: this._clampInteger(asr.maxSegmentMs, 1000, 30000, 12000)
     };
   }
 
@@ -1243,14 +1247,26 @@ class SidekickPlugin {
       || Object.prototype.hasOwnProperty.call(query, 'micUnsafeOverride')
       || Object.prototype.hasOwnProperty.call(query, 'micLabel')
       || Object.prototype.hasOwnProperty.call(query, 'micDeviceId');
-    if (!hasMicMetadata) return {};
+    const asrConfig = this._getAsrRuntimeConfig();
+    const safeDeviceId = this._sanitizeAsrPublicText(asrConfig.deviceId, 120);
+
+    if (!hasMicMetadata) {
+      return {
+        microphone: {
+          blocked: false,
+          unsafeOverride: !!asrConfig.unsafeOverride,
+          label: '',
+          deviceId: safeDeviceId || ''
+        }
+      };
+    }
 
     return {
       microphone: {
         blocked: this._isTruthyRequestValue(query.micBlocked),
         unsafeOverride: this._isTruthyRequestValue(query.micUnsafeOverride),
         label: this._sanitizeAsrPublicText(query.micLabel, 120),
-        deviceId: this._sanitizeAsrPublicText(query.micDeviceId, 120)
+        deviceId: this._sanitizeAsrPublicText(query.micDeviceId, 120) || safeDeviceId
       }
     };
   }
@@ -1270,6 +1286,10 @@ class SidekickPlugin {
       maxAudioBytes: readiness.config.maxAudioBytes,
       language: readiness.config.language,
       minTranscriptChars: readiness.config.minTranscriptChars,
+      deviceId: readiness.config.deviceId,
+      unsafeOverride: readiness.config.unsafeOverride,
+      silenceTimeoutMs: readiness.config.silenceTimeoutMs,
+      maxSegmentMs: readiness.config.maxSegmentMs,
       rateLimitMax: readiness.config.rateLimitMax,
       rateLimitWindowMs: readiness.config.rateLimitWindowMs,
       lastTranscriptAt: this.asrDiagnostics.lastTranscriptAt,
@@ -1743,12 +1763,13 @@ class SidekickPlugin {
     }
 
     const decision = this.conversationCoordinator.shouldAcceptHostSpeech(text, metadata);
-    if (!decision.accept) {
+    if (decision?.respond === false || decision?.accept === false) {
       this.logger.debug(`Sidekick host speech rejected: ${decision.reason}`);
       return {
         accepted: false,
         delegated: false,
         reason: decision.reason,
+        score: decision.score,
         decision
       };
     }

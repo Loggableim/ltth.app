@@ -18,6 +18,8 @@ const DEFAULT_ASR_MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const ASR_LANGUAGE_PATTERN = /^[a-zA-Z]{2,3}(?:[-_][a-zA-Z]{2,4})?$/;
 const DEFAULT_ASR_RATE_LIMIT_MAX = 10;
 const DEFAULT_ASR_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const DEFAULT_ASR_SILENCE_TIMEOUT_MS = 900;
+const DEFAULT_ASR_MAX_SEGMENT_MS = 12000;
 
 function clamp(value, min, max, fallback) {
   const number = Number(value);
@@ -67,8 +69,29 @@ function normalizeAsrConfig(input = {}, conversationConfig = {}) {
       1000,
       10 * 60 * 1000,
       DEFAULT_CONFIG.asr.rateLimitWindowMs
+    )),
+    deviceId: safeAsrDeviceId(source.deviceId),
+    unsafeOverride: toBoolean(source.unsafeOverride, DEFAULT_CONFIG.asr.unsafeOverride),
+    silenceTimeoutMs: Math.round(clamp(
+      source.silenceTimeoutMs,
+      250,
+      5000,
+      DEFAULT_ASR_SILENCE_TIMEOUT_MS
+    )),
+    maxSegmentMs: Math.round(clamp(
+      source.maxSegmentMs,
+      1000,
+      30000,
+      DEFAULT_ASR_MAX_SEGMENT_MS
     ))
   };
+}
+
+function safeAsrDeviceId(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return '';
+  if (trimmed.length > 256) return trimmed.slice(0, 256);
+  return trimmed;
 }
 
 const DEFAULT_CONFIG = {
@@ -97,7 +120,11 @@ const DEFAULT_CONFIG = {
     language: null,
     minTranscriptChars: null,
     rateLimitMax: DEFAULT_ASR_RATE_LIMIT_MAX,
-    rateLimitWindowMs: DEFAULT_ASR_RATE_LIMIT_WINDOW_MS
+    rateLimitWindowMs: DEFAULT_ASR_RATE_LIMIT_WINDOW_MS,
+    deviceId: '',
+    unsafeOverride: false,
+    silenceTimeoutMs: DEFAULT_ASR_SILENCE_TIMEOUT_MS,
+    maxSegmentMs: DEFAULT_ASR_MAX_SEGMENT_MS
   },
   
   // Style settings

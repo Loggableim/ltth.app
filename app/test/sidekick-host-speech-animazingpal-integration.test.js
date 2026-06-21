@@ -39,7 +39,11 @@ function createAnimazingPal() {
 
 describe('Sidekick host speech to AnimazingPal integration', () => {
   test('default host speech event reaches AnimazingPal dedicated host brain path with consumed comment field', async () => {
-    const coordinator = new ConversationCoordinator({ hostName: 'Streamer' });
+    const coordinator = new ConversationCoordinator({
+      hostName: 'Streamer',
+      hostReplyProbability: 1,
+      hostMinConfidence: 0
+    });
     const { plugin, ttsPlugin } = createAnimazingPal();
     const decision = coordinator.shouldAcceptHostSpeech('Kannst du das im Chat sehen?', { now: 1000 });
     const event = coordinator.buildHostSpeechEvent('Kannst du das im Chat sehen?', {
@@ -47,10 +51,13 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       provider: 'future-asr'
     });
 
+    const originalRandom = Math.random;
+    Math.random = () => 0;
     const result = await plugin.processSidekickHostSpeech(event, {
       ...decision,
       source: 'sidekick-host-speech'
     });
+    Math.random = originalRandom;
 
     expect(event).toEqual(expect.objectContaining({
       eventType: 'chat',
@@ -70,8 +77,8 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       'Streamer',
       'Kannst du das im Chat sehen?',
       expect.objectContaining({
-        forceRespond: true,
-        decision: expect.objectContaining({ reason: 'sidekick-selected' })
+        forceRespond: false,
+        decision: expect.objectContaining({ reason: 'accepted' })
       })
     );
     expect(plugin.brainEngine.processChat).not.toHaveBeenCalled();
@@ -80,5 +87,29 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       engine: 'fishaudio',
       username: 'Streamer'
     }));
+  });
+
+  test('does not speak when Sidekick decision explicitly blocks host response', async () => {
+    const coordinator = new ConversationCoordinator({ hostName: 'Streamer' });
+    const { plugin, ttsPlugin } = createAnimazingPal();
+    const decision = {
+      ...coordinator.shouldAcceptHostSpeech('Kannst du das im Chat sehen?', { now: 1000 }),
+      respond: false,
+      reason: 'too_short'
+    };
+    const event = coordinator.buildHostSpeechEvent('Kannst du das im Chat sehen?', {
+      confidence: 0.91,
+      provider: 'future-asr'
+    });
+
+    const result = await plugin.processSidekickHostSpeech(event, decision);
+
+    expect(result).toEqual(expect.objectContaining({
+      handled: true,
+      responded: false,
+      reason: 'too_short'
+    }));
+    expect(plugin.brainEngine.processHostSpeech).not.toHaveBeenCalled();
+    expect(ttsPlugin.speak).not.toHaveBeenCalled();
   });
 });

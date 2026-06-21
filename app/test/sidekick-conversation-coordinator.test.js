@@ -1,4 +1,4 @@
-const {
+﻿const {
   ConversationCoordinator
 } = require('../plugins/sidekick/backend/conversation-coordinator');
 
@@ -18,58 +18,195 @@ describe('Sidekick conversation coordinator', () => {
 
   test('suppresses exact normalized echo from recent Sidekick speech', () => {
     const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
       echoWindowMs: 10000,
       minHostSpeechChars: 3
     });
 
     coordinator.recordSidekickSpeech('Hallo   Stream!', { now: 1000 });
 
-    expect(coordinator.shouldAcceptHostSpeech('hallo stream!', { now: 2000 })).toEqual(expect.objectContaining({
-      accept: false,
-      reason: 'echo'
-    }));
-    expect(coordinator.shouldAcceptHostSpeech('hallo stream!', { now: 12001 })).toEqual(expect.objectContaining({
-      accept: true,
-      reason: 'accepted'
-    }));
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('hallo stream!', { now: 2000 })).toEqual(expect.objectContaining({
+        accept: false,
+        reason: 'echo'
+      }));
+      expect(coordinator.shouldAcceptHostSpeech('hallo stream!', { now: 12001 })).toEqual(expect.objectContaining({
+        accept: true,
+        reason: 'accepted'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('suppresses duplicate recent host transcripts', () => {
     const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0,
       echoWindowMs: 10000,
       minHostSpeechChars: 3
     });
 
-    expect(coordinator.shouldAcceptHostSpeech('Can you see chat?', { now: 1000 })).toEqual(expect.objectContaining({
-      accept: true,
-      normalizedText: 'can you see chat?'
-    }));
-    coordinator.recordHostSpeech('Can you see chat?', { now: 1000 });
-    expect(coordinator.shouldAcceptHostSpeech('can   you see chat?', { now: 2000 })).toEqual(expect.objectContaining({
-      accept: false,
-      reason: 'duplicate'
-    }));
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Can you see chat?', { now: 1000 })).toEqual(expect.objectContaining({
+        accept: true,
+        normalizedText: 'can you see chat?'
+      }));
+      coordinator.recordHostSpeech('Can you see chat?', { now: 1000 });
+      expect(coordinator.shouldAcceptHostSpeech('can   you see chat?', { now: 2000 })).toEqual(expect.objectContaining({
+        accept: false,
+        reason: 'duplicate'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('accepted host speech is not treated as duplicate until committed', () => {
     const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0,
       echoWindowMs: 10000,
       minHostSpeechChars: 3
     });
 
-    expect(coordinator.shouldAcceptHostSpeech('Retry me', { now: 1000 })).toEqual(expect.objectContaining({
-      accept: true
-    }));
-    expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 2000 })).toEqual(expect.objectContaining({
-      accept: true
-    }));
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Retry me', { now: 1000 })).toEqual(expect.objectContaining({
+        accept: true
+      }));
+      expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 2000 })).toEqual(expect.objectContaining({
+        accept: true
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
 
     coordinator.recordHostSpeech('Retry me', { now: 2000 });
 
-    expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 3000 })).toEqual(expect.objectContaining({
+    const originalRandom2 = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('retry me', { now: 3000 })).toEqual(expect.objectContaining({
+        accept: false,
+        reason: 'duplicate'
+      }));
+    } finally {
+      Math.random = originalRandom2;
+    }
+  });
+
+  test('enforces active context cooldown for host speech decisions', () => {
+    const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 6000
+    });
+
+    coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 1000 });
+    expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 5000 })).toEqual(expect.objectContaining({
       accept: false,
-      reason: 'duplicate'
+      reason: 'active_pause'
     }));
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 12000 })).toEqual(expect.objectContaining({
+        accept: true,
+        reason: 'accepted'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('enforces anti-overtalk cooldown against recent host and sidekick speech', () => {
+    const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostOvertalkCooldownMs: 1800
+    });
+
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    coordinator.recordSidekickSpeech('Kurzer Satz', { now: 1000 });
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Wie geht es dir?', { now: 2000 })).toEqual(expect.objectContaining({
+        accept: false,
+        reason: 'overtalk'
+      }));
+      expect(coordinator.shouldAcceptHostSpeech('Wie geht es dir?', { now: 3000 })).toEqual(expect.objectContaining({
+        accept: true,
+        reason: 'accepted'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
+  test('rejects long-form host utterances as unclear context', () => {
+    const coordinator = new ConversationCoordinator({
+      hostLongFormWordLimit: 3,
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0
+    });
+
+    const decision = coordinator.shouldAcceptHostSpeech('Das ist eine sehr lange Aussage mit mehr als drei Worten', { now: 1000 });
+    expect(decision).toEqual(expect.objectContaining({
+      accept: false,
+      reason: 'context_unclear'
+    }));
+    expect(decision.features?.isLongForm).toBe(true);
+  });
+
+  test('rejects low-confidence transcriptions', () => {
+    const coordinator = new ConversationCoordinator({
+      hostMinConfidence: 0.8,
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0
+    });
+    const decision = coordinator.shouldAcceptHostSpeech('Kurzer Satz', {
+      now: 1000,
+      confidence: 0.2
+    });
+    expect(decision).toEqual(expect.objectContaining({
+      accept: false,
+      reason: 'low_confidence',
+      score: expect.any(Number),
+      features: expect.objectContaining({
+        wordCount: 2
+      })
+    }));
+    expect(decision.confidence).toBe(0.2);
+  });
+
+  test('blocks host replies probabilistically when reply probability is low', () => {
+    const coordinator = new ConversationCoordinator({
+      hostReplyProbability: 0,
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostMinConfidence: 0
+    });
+
+    const originalRandom = Math.random;
+    Math.random = () => 0.5;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Kannst du mir helfen?', { now: 1000 })).toEqual(expect.objectContaining({
+        accept: false,
+        reason: 'low_score'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   test('builds a sanitized host speech event for AnimazingPal', () => {
@@ -192,3 +329,5 @@ describe('Sidekick conversation coordinator', () => {
     }));
   });
 });
+
+

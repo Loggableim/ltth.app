@@ -18,7 +18,12 @@ const DEFAULT_CONVERSATION_COORDINATOR_CONFIG = {
   // intentionally uses exact normalized matches for deterministic safety.
   duplicateSimilarity: 1,
   hostSpeechEventType: 'chat',
-  viewerEventTypes: ['chat', 'gift', 'follow', 'share', 'subscribe', 'like']
+  viewerEventTypes: ['chat', 'gift', 'follow', 'share', 'subscribe', 'like'],
+  hostReplyProbability: 0.75,
+  hostMinConfidence: 0.35,
+  hostContextCooldownMs: 6000,
+  hostOvertalkCooldownMs: 1800,
+  hostLongFormWordLimit: 48
 };
 
 function normalizeSpeechText(text) {
@@ -68,14 +73,21 @@ function normalizeConversationConfig(config = {}) {
     maxRecentUtterances: Math.round(clamp(input.maxRecentUtterances, 1, 200, defaults.maxRecentUtterances)),
     duplicateSimilarity: clamp(input.duplicateSimilarity, 0, 1, defaults.duplicateSimilarity),
     hostSpeechEventType: SUPPORTED_EVENT_TYPES.includes(input.hostSpeechEventType) ? input.hostSpeechEventType : defaults.hostSpeechEventType,
-    viewerEventTypes: viewerEventTypes.length > 0 ? viewerEventTypes : defaults.viewerEventTypes
+    viewerEventTypes: viewerEventTypes.length > 0 ? viewerEventTypes : defaults.viewerEventTypes,
+    hostReplyProbability: clamp(input.hostReplyProbability, 0, 1, defaults.hostReplyProbability),
+    hostMinConfidence: clamp(input.hostMinConfidence, 0, 1, defaults.hostMinConfidence),
+    hostContextCooldownMs: Math.round(clamp(input.hostContextCooldownMs, 0, 60 * 60 * 1000, defaults.hostContextCooldownMs)),
+    hostOvertalkCooldownMs: Math.round(clamp(input.hostOvertalkCooldownMs, 0, 5 * 60 * 1000, defaults.hostOvertalkCooldownMs)),
+    hostLongFormWordLimit: Math.round(clamp(input.hostLongFormWordLimit, 1, 500, defaults.hostLongFormWordLimit))
   };
 }
 
 function sanitizeDecision(decision = {}) {
   if (!decision || typeof decision !== 'object' || Array.isArray(decision)) return {};
   const sanitized = {};
-  if (decision.respond !== undefined) sanitized.respond = normalizeBoolean(decision.respond, false);
+  if (decision.respond !== undefined) {
+    sanitized.respond = normalizeBoolean(decision.respond, false);
+  }
   if (decision.score !== undefined) sanitized.score = clamp(decision.score, 0, 1, 0);
   for (const key of ['reason', 'type', 'selection']) {
     if (decision[key] !== undefined && decision[key] !== null) {
@@ -85,7 +97,56 @@ function sanitizeDecision(decision = {}) {
   if (decision.priority !== undefined) {
     sanitized.priority = Math.round(clamp(decision.priority, 0, 100, 0));
   }
+  if (decision.features && typeof decision.features === 'object') {
+    sanitized.features = {};
+    const allowedFeatureKeys = ['isQuestion', 'isLongForm', 'isGreeting', 'wordCount', 'charCount'];
+    for (const key of allowedFeatureKeys) {
+      if (decision.features[key] !== undefined) {
+        sanitized.features[key] = decision.features[key];
+      }
+    }
+  }
   return sanitized;
+}
+
+function countWords(text = '') {
+  return safeString(text, 2000)
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function hasQuestionStructure(cleanText) {
+  if (!cleanText) return false;
+  if (cleanText.endsWith('?')) return true;
+  const startsWithQuestionWord = /^(wer|was|wie|wann|wo|wieso|warum|weshalb|was ist|was ist|wie lange|kann|können|kannst|sind|war|wie viele|wie viel|is|are|do|does|did|can|could|would|should|who|what|where|when|why|which|who's|what's)\b/i.test(cleanText);
+  return startsWithQuestionWord;
+}
+
+function isGreeting(text) {
+  return /^(hey|hi|hallo|servus|moin|guten tag|guten abend|guten morgen|hello|yo)\b/i.test(text);
+}
+
+function buildHostSpeechFeatures(text, config = {}) {
+  const normalized = normalizeSpeechText(text);
+  const clean = cleanSpeechText(text);
+  const wordCount = countWords(clean);
+  const longFormLimit = Math.max(1, Number(config.hostLongFormWordLimit || 0) || 48);
+  const isLongForm = wordCount > 0 && wordCount > longFormLimit;
+  return {
+    isQuestion: hasQuestionStructure(clean) || hasQuestionStructure(normalized),
+    isGreeting: isGreeting(clean),
+    isLongForm,
+    wordCount,
+    charCount: clean.length
+  };
+}
+
+function computeHostSpeechScore(features, config) {
+  let score = 0.45;
+  if (features.isQuestion) score += 0.35;
+  if (features.isGreeting) score += 0.15;
+  if (features.isLongForm) score -= 0.35;
+  return clamp(score, 0, 1, 0.45);
 }
 
 class ConversationCoordinator {
@@ -95,6 +156,7 @@ class ConversationCoordinator {
     this.lastAcceptedHostSpeechReason = null;
     this.lastRejectedHostSpeechReason = null;
     this.lastHostSpeechDecision = null;
+    this.lastHostSpeechDecisionAt = null;
   }
 
   updateConfig(config = {}) {
@@ -136,6 +198,8 @@ class ConversationCoordinator {
     const normalizedText = normalizeSpeechText(text);
     const cleanText = cleanSpeechText(text);
     const timestamp = this._getTimestamp(metadata);
+    const confidence = Number(metadata?.confidence);
+    const features = buildHostSpeechFeatures(cleanText, this.config);
 
     if (!this.config.enabled) {
       return this._reject('disabled', normalizedText);
@@ -146,26 +210,65 @@ class ConversationCoordinator {
     }
 
     if (cleanText.length < Number(this.config.minHostSpeechChars || 0)) {
-      return this._reject('too_short', normalizedText);
+      return this._reject('too_short', normalizedText, features, 0, timestamp);
+    }
+
+    const contextCooldownMs = Math.max(0, Number(this.config.hostContextCooldownMs || 0));
+    if (contextCooldownMs > 0 && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < contextCooldownMs) {
+      return this._reject('active_pause', normalizedText, features, 0, timestamp);
+    }
+
+    const overtalkCooldownMs = Math.max(0, Number(this.config.hostOvertalkCooldownMs || 0));
+    const lastHostRelatedUtterance = this._getMostRecentUtteranceTimestamp(['sidekick', 'host'], timestamp);
+    if (overtalkCooldownMs > 0 && Number.isFinite(lastHostRelatedUtterance) && (timestamp - lastHostRelatedUtterance) < overtalkCooldownMs) {
+      return this._reject('overtalk', normalizedText, features, 0, timestamp);
+    }
+
+    if (features.wordCount > Number(this.config.hostLongFormWordLimit || 0)) {
+      return this._reject('context_unclear', normalizedText, {
+        ...features,
+        isLongForm: true
+      }, 0, timestamp);
+    }
+
+    const score = computeHostSpeechScore(features, this.config);
+    const confidenceValue = Number.isFinite(confidence) ? confidence : null;
+    if (Number.isFinite(confidenceValue) && confidenceValue < this.config.hostMinConfidence) {
+      return this._reject('low_confidence', normalizedText, { ...features, confidence: confidenceValue }, confidenceValue, timestamp);
+    }
+
+    if (Number.isFinite(confidenceValue) && score < this.config.hostMinConfidence) {
+      return this._reject('low_score', normalizedText, { ...features, confidence: confidenceValue }, score, timestamp);
+    }
+
+    if (Math.random() > (Number(this.config.hostReplyProbability) * score)) {
+      return this._reject('low_score', normalizedText, { ...features, confidence: confidenceValue }, score, timestamp);
     }
 
     this._prune(timestamp);
 
     if (this._hasRecentMatch(normalizedText, 'sidekick', timestamp)) {
-      return this._reject('echo', normalizedText);
+      return this._reject('echo', normalizedText, features, score, timestamp);
     }
 
     if (this._hasRecentMatch(normalizedText, 'host', timestamp)) {
-      return this._reject('duplicate', normalizedText);
+      return this._reject('duplicate', normalizedText, features, score, timestamp);
     }
 
     const decision = {
       accept: true,
+      respond: true,
+      score,
       reason: 'accepted',
-      normalizedText
+      selection: 'host-speech',
+      type: 'host',
+      features,
+      normalizedText,
+      ...(Number.isFinite(confidence) ? { confidence } : {}),
     };
     this.lastAcceptedHostSpeechReason = decision.reason;
     this.lastHostSpeechDecision = decision;
+    this.lastHostSpeechDecisionAt = timestamp;
     return decision;
   }
 
@@ -247,24 +350,42 @@ class ConversationCoordinator {
       maxRecentUtterances: this.config.maxRecentUtterances,
       duplicateSimilarity: this.config.duplicateSimilarity,
       hostSpeechEventType: this.config.hostSpeechEventType,
+      hostReplyProbability: this.config.hostReplyProbability,
+      hostMinConfidence: this.config.hostMinConfidence,
+      hostContextCooldownMs: this.config.hostContextCooldownMs,
+      hostOvertalkCooldownMs: this.config.hostOvertalkCooldownMs,
+      hostLongFormWordLimit: this.config.hostLongFormWordLimit,
       viewerEventTypes: [...this.config.viewerEventTypes],
       recentUtteranceCount: this.recentUtterances.length,
       recentSidekickUtteranceCount,
       recentHostUtteranceCount,
       lastAcceptedHostSpeechReason: this.lastAcceptedHostSpeechReason,
       lastRejectedHostSpeechReason: this.lastRejectedHostSpeechReason,
+      lastHostSpeechDecisionAt: this.lastHostSpeechDecisionAt,
       lastHostSpeechDecision: this.lastHostSpeechDecision
     };
   }
 
-  _reject(reason, normalizedText) {
+  _reject(reason, normalizedText, features = null, score = 0, timestamp = null) {
+    const decisionAt = Number.isFinite(timestamp) ? timestamp : this._getTimestamp({});
     const decision = {
       accept: false,
+      respond: false,
+      score,
       reason,
-      normalizedText
+      normalizedText,
+      confidence: features?.confidence,
+      features: features ? {
+        isQuestion: !!features.isQuestion,
+        isLongForm: !!features.isLongForm,
+        isGreeting: !!features.isGreeting,
+        wordCount: features.wordCount,
+        charCount: features.charCount
+      } : undefined
     };
     this.lastRejectedHostSpeechReason = reason;
     this.lastHostSpeechDecision = decision;
+    this.lastHostSpeechDecisionAt = decisionAt;
     return decision;
   }
 
@@ -307,6 +428,29 @@ class ConversationCoordinator {
       }
     }
     return sanitized;
+  }
+
+  _getMostRecentUtteranceTimestamp(types = [], now = Date.now()) {
+    const referenceNow = Number(now);
+    const fallbackNow = Number.isFinite(referenceNow) ? referenceNow : Date.now();
+    const acceptedTypes = new Set(Array.isArray(types) ? types : []);
+    let timestamp = null;
+    for (let index = this.recentUtterances.length - 1; index >= 0; index -= 1) {
+      const item = this.recentUtterances[index];
+      if (acceptedTypes.size > 0 && !acceptedTypes.has(item.type)) continue;
+      const itemTimestamp = Number(item.timestamp);
+      if (!Number.isFinite(itemTimestamp)) continue;
+      if (timestamp === null || itemTimestamp > timestamp) {
+        timestamp = itemTimestamp;
+      }
+    }
+    if (timestamp === null) {
+      return fallbackNow - Math.max(
+        Number(this.config.hostContextCooldownMs || 0),
+        Number(this.config.hostOvertalkCooldownMs || 0)
+      );
+    }
+    return timestamp;
   }
 }
 

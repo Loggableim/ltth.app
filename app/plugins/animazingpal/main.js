@@ -4595,9 +4595,12 @@ class AnimazingPalPlugin {
     const decision = {
       respond: true,
       score: Number(evaluation?.score) || 1,
-      reason: 'sidekick-selected',
+      reason: evaluation?.reason || 'sidekick-selected',
       selection: evaluation?.type || 'host-speech'
     };
+    if (evaluation?.respond === false) {
+      return complete({ handled: true, responded: false, decision, reason: evaluation.reason || 'decision-blocked' });
+    }
 
     if (event.avatarActionEnabled && this.isConnected) {
       const action = this.selectSituationalAvatarAction('chat', {
@@ -4623,7 +4626,7 @@ class AnimazingPalPlugin {
 
     const response = await this.brainEngine.processHostSpeech(username, message, {
       nickname: data.nickname,
-      forceRespond: true,
+      forceRespond: false,
       deferCommit: true,
       source: evaluation.source || 'sidekick-host-speech',
       systemPromptOverride: event.prompt,

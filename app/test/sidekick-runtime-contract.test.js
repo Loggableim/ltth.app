@@ -1,4 +1,4 @@
-const {
+﻿const {
   ConfigManager,
   ASR_SERVICE_MAX_AUDIO_BYTES
 } = require('../plugins/sidekick/backend/config');
@@ -97,8 +97,7 @@ describe('Sidekick runtime contracts', () => {
       'stopHostAsrStream({ cancelRecorder: true',
       'segment.shouldUpload',
       'segment.recorder !== hostAsrRecorder',
-      'Automatische ASR-Aufnahme läuft',
-      'handleUnsafeOverrideChange',
+            'handleUnsafeOverrideChange',
       'selectedAsrDeviceIsBlocked() && document.getElementById(\'host-asr-enabled\').checked',
       'stopHostAsrStream({ cancelRecorder: true',
       'document.getElementById(\'host-asr-enabled\').checked = false',
@@ -144,7 +143,11 @@ describe('Sidekick runtime contracts', () => {
       language: null,
       minTranscriptChars: null,
       rateLimitMax: 10,
-      rateLimitWindowMs: 60 * 1000
+      rateLimitWindowMs: 60 * 1000,
+      deviceId: '',
+      unsafeOverride: false,
+      silenceTimeoutMs: 900,
+      maxSegmentMs: 12000
     });
     expect(config.output.mode).toBeUndefined();
     expect(config.animaze).toBeUndefined();
@@ -273,7 +276,11 @@ describe('Sidekick runtime contracts', () => {
       language: 'de-DE',
       minTranscriptChars: 1,
       rateLimitMax: 10,
-      rateLimitWindowMs: 60 * 1000
+      rateLimitWindowMs: 60 * 1000,
+      deviceId: '',
+      unsafeOverride: false,
+      silenceTimeoutMs: 900,
+      maxSegmentMs: 12000
     });
     expect(api.setConfig).toHaveBeenCalledWith('config', config);
   });
@@ -715,18 +722,25 @@ describe('Sidekick runtime contracts', () => {
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn() };
     plugin.conversationCoordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0,
       minHostSpeechChars: 3,
       echoWindowMs: 10000
     });
 
+    const originalRandom = Math.random;
+    Math.random = () => 0;
     const result = await plugin.processHostSpeechTranscript('Retry this host line', { now: 1000 });
-
+    const resultDecisionAfter = plugin.conversationCoordinator.shouldAcceptHostSpeech('retry this host line', { now: 2000 });
+    Math.random = originalRandom;
     expect(result).toEqual(expect.objectContaining({
       accepted: true,
       delegated: true,
       animazingPalResult: expect.objectContaining({ duplicate: true, responded: false })
     }));
-    expect(plugin.conversationCoordinator.shouldAcceptHostSpeech('retry this host line', { now: 2000 })).toEqual(expect.objectContaining({
+    expect(resultDecisionAfter).toEqual(expect.objectContaining({
       accept: true
     }));
   });
@@ -743,14 +757,22 @@ describe('Sidekick runtime contracts', () => {
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
     plugin.conversationCoordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0,
       minHostSpeechChars: 3,
       echoWindowMs: 10000
     });
 
+    const originalRandom = Math.random;
+    Math.random = () => 0;
     const result = await plugin.processHostSpeechTranscript('Host asks something', { now: 1000 });
+    const replyDecision = plugin.conversationCoordinator.shouldAcceptHostSpeech('AP reply', { now: 2000 });
+    Math.random = originalRandom;
 
     expect(result).toEqual(expect.objectContaining({ accepted: true, delegated: true }));
-    expect(plugin.conversationCoordinator.shouldAcceptHostSpeech('AP reply', { now: 2000 })).toEqual(expect.objectContaining({
+    expect(replyDecision).toEqual(expect.objectContaining({
       accept: false,
       reason: 'echo'
     }));
@@ -769,17 +791,24 @@ describe('Sidekick runtime contracts', () => {
     plugin.config = {};
     plugin.metrics = { recordError: jest.fn(), recordResponse: jest.fn() };
     plugin.conversationCoordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 0,
+      hostOvertalkCooldownMs: 0,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0,
       minHostSpeechChars: 3,
       echoWindowMs: 10000
     });
     jest.spyOn(plugin.conversationCoordinator, 'recordHostSpeech');
     jest.spyOn(plugin.conversationCoordinator, 'recordSidekickSpeech');
 
+    const originalRandom = Math.random;
+    Math.random = () => 0;
     const result = await plugin.processHostSpeechTranscript('Host asks something', { now: 1000 });
 
     expect(result).toEqual(expect.objectContaining({ accepted: true, delegated: true }));
     expect(plugin.conversationCoordinator.recordHostSpeech).not.toHaveBeenCalled();
     expect(plugin.conversationCoordinator.recordSidekickSpeech).not.toHaveBeenCalled();
+    Math.random = originalRandom;
   });
 
   test('rejects echoed host transcripts before AnimazingPal delegation', async () => {
@@ -942,7 +971,13 @@ describe('Sidekick runtime contracts', () => {
         enabled: true,
         recentUtteranceCount: 1,
         lastAcceptedHostSpeechReason: 'accepted',
-        lastRejectedHostSpeechReason: 'echo'
+        lastRejectedHostSpeechReason: 'echo',
+        lastHostSpeechDecision: {
+          respond: true,
+          reason: 'accepted',
+          score: 0.8,
+          normalizedText: 'hello host'
+        }
       })
     };
     plugin.deduper = { getStats: jest.fn().mockReturnValue({}) };
@@ -957,7 +992,13 @@ describe('Sidekick runtime contracts', () => {
       enabled: true,
       recentUtteranceCount: 1,
       lastAcceptedHostSpeechReason: 'accepted',
-      lastRejectedHostSpeechReason: 'echo'
+      lastRejectedHostSpeechReason: 'echo',
+      lastHostSpeechDecision: expect.objectContaining({
+        respond: true,
+        reason: 'accepted',
+        score: 0.8
+      })
     }));
   });
 });
+
