@@ -82,6 +82,24 @@ describe('Sidekick runtime contracts', () => {
     expect(html).toMatch(/CABLE|VB-Audio|loopback|stereo mix|speaker|monitor/i);
   });
 
+  test('Sidekick UI guards ASR recorder lifecycle and preserves backend ASR config', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'plugins', 'sidekick', 'ui.html'), 'utf8');
+
+    [
+      'cancelAsrSegment',
+      'stopAsrSegment({ shouldUpload: false',
+      'stopHostAsrStream({ cancelRecorder: true',
+      'segment.shouldUpload',
+      'segment.recorder !== hostAsrRecorder',
+      'Automatische ASR-Aufnahme läuft',
+      'enabled: config.asr?.enabled !== false'
+    ].forEach(fragment => {
+      expect(html).toContain(fragment);
+    });
+
+    expect(html).not.toMatch(/asr:\s*{[^}]*enabled:\s*true/s);
+  });
+
   test('runtime has no legacy direct assistant output route or method', () => {
     const api = createApi();
     const plugin = new SidekickPlugin(api);

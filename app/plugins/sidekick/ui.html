@@ -769,11 +769,9 @@
     let hostAsrAudioContext = null;
     let hostAsrAnalyser = null;
     let hostAsrRecorder = null;
-    let hostAsrChunks = [];
+    let hostAsrActiveSegment = null;
+    let hostAsrSegmentId = 0;
     let hostAsrVadFrame = null;
-    let hostAsrRecordingStartedAt = 0;
-    let hostAsrLastVoiceAt = 0;
-    let hostAsrHadVoice = false;
     let hostAsrManualMode = false;
     let hostAsrUploading = false;
 
@@ -965,7 +963,7 @@
         setAsrRecorderStatus('Mikrofon bereit', 'asr-ok');
         await refreshAsrDevices();
         if (selectedAsrDeviceIsBlocked()) {
-          stopHostAsrStream();
+          stopHostAsrStream({ cancelRecorder: true });
           setAsrError('Unsicheres Eingabegerät nach Berechtigung erkannt und blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
           setAsrRecorderStatus('Unsafe device blocked', 'asr-error');
           return null;
@@ -979,7 +977,7 @@
     }
 
     async function openHostAsrStream() {
-      stopHostAsrStream();
+      stopHostAsrStream({ cancelRecorder: true });
       const deviceId = document.getElementById('host-asr-device').value;
       const audio = deviceId ? { deviceId: { exact: deviceId } } : true;
       hostAsrStream = await navigator.mediaDevices.getUserMedia({ audio });
@@ -991,15 +989,23 @@
       return hostAsrStream;
     }
 
-    function stopHostAsrStream() {
+    function stopHostAsrStream({ cancelRecorder = true } = {}) {
       if (hostAsrVadFrame) {
         cancelAnimationFrame(hostAsrVadFrame);
         hostAsrVadFrame = null;
       }
       if (hostAsrRecorder && hostAsrRecorder.state !== 'inactive') {
-        hostAsrRecorder.stop();
+        if (cancelRecorder) {
+          cancelAsrSegment('stream-cleanup');
+        } else {
+          stopAsrSegment({ shouldUpload: true });
+        }
       }
-      hostAsrRecorder = null;
+      if (cancelRecorder) {
+        hostAsrRecorder = null;
+        hostAsrActiveSegment = null;
+        hostAsrManualMode = false;
+      }
       if (hostAsrStream) {
         hostAsrStream.getTracks().forEach(track => track.stop());
         hostAsrStream = null;
@@ -1026,7 +1032,7 @@
 
     function stopAsrListening() {
       saveHostAsrSettings();
-      stopHostAsrStream();
+      stopHostAsrStream({ cancelRecorder: true });
       setAsrRecorderStatus('Idle', 'asr-muted');
     }
 
@@ -1050,18 +1056,21 @@
         const maxSegmentMs = readNumberInput('host-asr-max-segment', 12000);
         const hasVoice = rms > 0.018;
         if (hasVoice) {
-          hostAsrLastVoiceAt = now;
-          hostAsrHadVoice = true;
+          if (hostAsrActiveSegment) {
+            hostAsrActiveSegment.lastVoiceAt = now;
+            hostAsrActiveSegment.hadVoice = true;
+          }
           if (!hostAsrRecorder || hostAsrRecorder.state === 'inactive') {
             startAsrSegment(false);
           }
         }
 
-        if (hostAsrRecorder?.state === 'recording' && !hostAsrManualMode) {
-          const silentTooLong = hostAsrHadVoice && now - hostAsrLastVoiceAt > silenceTimeoutMs;
-          const segmentTooLong = now - hostAsrRecordingStartedAt > maxSegmentMs;
+        const segment = hostAsrActiveSegment;
+        if (segment?.recorder?.state === 'recording' && !segment.manualMode) {
+          const silentTooLong = segment.hadVoice && now - segment.lastVoiceAt > silenceTimeoutMs;
+          const segmentTooLong = now - segment.startedAt > maxSegmentMs;
           if (silentTooLong || segmentTooLong) {
-            stopAsrSegment();
+            stopAsrSegment({ shouldUpload: true });
           }
         }
 
@@ -1073,6 +1082,7 @@
 
     function startAsrSegment(manualMode) {
       if (!hostAsrStream || hostAsrUploading) return;
+      if (hostAsrRecorder && hostAsrRecorder.state !== 'inactive') return;
       if (typeof MediaRecorder === 'undefined') {
         setAsrError('MediaRecorder wird von diesem Browser nicht unterstützt.');
         return;
@@ -1083,44 +1093,88 @@
         return;
       }
 
-      hostAsrChunks = [];
+      const now = Date.now();
+      const segment = {
+        id: hostAsrSegmentId += 1,
+        recorder: new MediaRecorder(hostAsrStream, { mimeType }),
+        chunks: [],
+        mimeType,
+        manualMode,
+        startedAt: now,
+        lastVoiceAt: now,
+        hadVoice: manualMode,
+        shouldUpload: true
+      };
+      hostAsrActiveSegment = segment;
+      hostAsrRecorder = segment.recorder;
       hostAsrManualMode = manualMode;
-      hostAsrHadVoice = manualMode;
-      hostAsrRecordingStartedAt = Date.now();
-      hostAsrLastVoiceAt = Date.now();
-      hostAsrRecorder = new MediaRecorder(hostAsrStream, { mimeType });
-      hostAsrRecorder.addEventListener('dataavailable', (event) => {
+
+      segment.recorder.addEventListener('dataavailable', (event) => {
+        if (segment.recorder !== hostAsrRecorder || hostAsrActiveSegment !== segment) return;
         if (event.data && event.data.size > 0) {
-          hostAsrChunks.push(event.data);
+          segment.chunks.push(event.data);
         }
       });
-      hostAsrRecorder.addEventListener('stop', () => {
-        const durationMs = Date.now() - hostAsrRecordingStartedAt;
-        const blob = new Blob(hostAsrChunks, { type: mimeType });
-        hostAsrChunks = [];
-        if (!manualMode && (durationMs < 450 || blob.size < 1024 || !hostAsrHadVoice)) {
+      segment.recorder.addEventListener('stop', () => {
+        if (segment.recorder !== hostAsrRecorder || hostAsrActiveSegment !== segment) return;
+        const durationMs = Date.now() - segment.startedAt;
+        const blob = new Blob(segment.chunks, { type: segment.mimeType });
+        clearAsrSegment(segment);
+        if (!segment.shouldUpload) {
+          setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle', document.getElementById('host-asr-enabled').checked ? 'asr-ok' : 'asr-muted');
+          return;
+        }
+        if (!segment.manualMode && (durationMs < 450 || blob.size < 1024 || !segment.hadVoice)) {
           setAsrRecorderStatus('Listening', 'asr-ok');
           return;
         }
-        uploadAsrBlob(blob, manualMode).catch(err => {
+        uploadAsrBlob(blob, segment.manualMode).catch(err => {
           setAsrError(`ASR Upload fehlgeschlagen: ${err.message}`);
           setAsrRecorderStatus(document.getElementById('host-asr-enabled').checked ? 'Listening' : 'Idle');
         });
       });
-      hostAsrRecorder.start();
+      segment.recorder.start();
       setAsrRecorderStatus(manualMode ? 'Test recording...' : 'Recording speech...', 'asr-ok');
     }
 
-    function stopAsrSegment() {
-      if (hostAsrRecorder && hostAsrRecorder.state === 'recording') {
-        hostAsrRecorder.stop();
+    function clearAsrSegment(segment) {
+      if (hostAsrActiveSegment === segment) {
+        hostAsrActiveSegment = null;
       }
+      if (segment.recorder === hostAsrRecorder) {
+        hostAsrRecorder = null;
+      }
+      if (segment.manualMode === hostAsrManualMode) {
+        hostAsrManualMode = false;
+      }
+    }
+
+    function stopAsrSegment({ shouldUpload = true } = {}) {
+      const segment = hostAsrActiveSegment;
+      if (!segment) return;
+      segment.shouldUpload = shouldUpload;
+      if (segment.recorder.state === 'recording') {
+        segment.recorder.stop();
+      } else {
+        clearAsrSegment(segment);
+      }
+    }
+
+    function cancelAsrSegment(reason = 'cancelled') {
+      const segment = hostAsrActiveSegment;
+      if (!segment) return;
+      segment.cancelReason = reason;
+      stopAsrSegment({ shouldUpload: false });
     }
 
     async function toggleAsrTestRecording() {
       if (hostAsrRecorder?.state === 'recording' && hostAsrManualMode) {
-        stopAsrSegment();
+        stopAsrSegment({ shouldUpload: true });
         document.getElementById('btn-asr-test').textContent = 'Test-Aufnahme starten';
+        return;
+      }
+      if (hostAsrRecorder?.state === 'recording') {
+        setAsrError('Automatische ASR-Aufnahme läuft gerade. Bitte kurz warten, bis das Sprachsegment fertig ist.');
         return;
       }
 
@@ -1307,7 +1361,7 @@
           username: document.getElementById('output-username').value.trim() || 'Sidekick'
         },
         asr: {
-          enabled: true,
+          enabled: config.asr?.enabled !== false,
           language: document.getElementById('host-asr-language').value.trim() || null,
           maxAudioBytes: parseInt(document.getElementById('host-asr-max-bytes').value),
           minTranscriptChars: parseInt(document.getElementById('host-asr-min-transcript').value)
