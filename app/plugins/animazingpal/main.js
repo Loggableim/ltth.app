@@ -4569,6 +4569,110 @@ class AnimazingPalPlugin {
     });
   }
 
+  async processSidekickHostSpeech(data = {}, evaluation = {}) {
+    this.ensureLiveHostRuntime();
+    const liveHost = this.config?.brain?.liveHost;
+    const event = liveHost?.events?.chat;
+    const complete = result => {
+      this.recordLiveHostEventOutcome('hostSpeech', result);
+      return result;
+    };
+
+    if (!liveHost?.enabled) return complete({ handled: false, responded: false, reason: 'live-host-disabled' });
+    if (!event?.enabled) return complete({ handled: false, responded: false, reason: 'event-disabled' });
+    if (!event.brainEnabled || !this.brainEngine) {
+      return complete({ handled: true, responded: false, reason: 'brain-unavailable' });
+    }
+
+    if (!this.canUseLiveHostResponseSlot(liveHost)) {
+      return complete({ handled: true, responded: false, rateLimited: true, reason: 'rate-limited' });
+    }
+
+    const username = data.username || data.uniqueId || data.nickname || evaluation.hostName || 'Host';
+    const message = String(data.message || data.comment || data.text || '').trim();
+    if (!message) return complete({ handled: true, responded: false, reason: 'empty-host-speech' });
+
+    const decision = {
+      respond: true,
+      score: Number(evaluation?.score) || 1,
+      reason: 'sidekick-selected',
+      selection: evaluation?.type || 'host-speech'
+    };
+
+    if (event.avatarActionEnabled && this.isConnected) {
+      const action = this.selectSituationalAvatarAction('chat', {
+        ...data,
+        comment: message,
+        isHostSpeech: true,
+        source: data.source || 'host-mic'
+      });
+      if (action) {
+        await this.executeAction(action, {
+          username,
+          nickname: data.nickname || username,
+          giftName: '',
+          count: 1
+        });
+        this.liveHostLastAvatarActionAt = Date.now();
+      }
+    }
+
+    let response = null;
+    if (typeof this.brainEngine.processHostSpeech === 'function') {
+      response = await this.brainEngine.processHostSpeech(username, message, {
+        nickname: data.nickname,
+        forceRespond: true,
+        source: evaluation.source || 'sidekick-host-speech',
+        systemPromptOverride: event.prompt,
+        decision,
+        liveContext: {
+          recentEvents: Array.isArray(data.recentEvents) ? data.recentEvents : [],
+          viewerCount: data.viewerCount
+        }
+      });
+    } else if (typeof this.brainEngine.processChat === 'function') {
+      response = await this.brainEngine.processChat(username, message, {
+        nickname: data.nickname,
+        forceRespond: true,
+        systemPromptOverride: event.prompt,
+        decision,
+        isHostSpeech: true,
+        source: evaluation.source || 'sidekick-host-speech'
+      });
+    }
+
+    if (!response?.text) {
+      return complete({ handled: true, responded: false, decision, reason: 'no-brain-response' });
+    }
+
+    const spokenText = this._formatLiveHostMessage(response.text);
+    const speechResult = await this.speakHostResponse(spokenText, {
+      eventType: 'hostSpeech',
+      username,
+      userId: data.userId || 'sidekick-host'
+    });
+    if (speechResult?.success === false || speechResult?.blocked) {
+      const speechBlocked = !!speechResult?.blocked;
+      return complete({
+        handled: true,
+        responded: false,
+        decision,
+        reason: speechBlocked ? 'speech-blocked' : 'speech-failed',
+        speechBlocked,
+        speechFailed: !speechBlocked,
+        speechFailureReason: speechResult?.reason || speechResult?.error || 'speech-failed'
+      });
+    }
+
+    this.recordLiveHostResponseSlot();
+    return complete({
+      handled: true,
+      responded: true,
+      decision,
+      spokenText
+    });
+  }
+
   setLiveHostOperatingMode(mode, options = {}) {
     if (!['standalone', 'sidekick'].includes(mode)) return false;
     if (options.persist === false) {

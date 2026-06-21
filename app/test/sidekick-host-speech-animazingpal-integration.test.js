@@ -31,13 +31,14 @@ function createAnimazingPal() {
   plugin.recordLiveHostResponseSlot = jest.fn();
   plugin.speechState = { markStarted: jest.fn(), markEnded: jest.fn() };
   plugin.brainEngine = {
-    processChat: jest.fn().mockResolvedValue({ text: 'Antwort vom Host-Brain.' })
+    processHostSpeech: jest.fn().mockResolvedValue({ text: 'Antwort vom Host-Brain.' }),
+    processChat: jest.fn()
   };
   return { plugin, ttsPlugin };
 }
 
 describe('Sidekick host speech to AnimazingPal integration', () => {
-  test('default host speech event reaches AnimazingPal chat brain path with consumed comment field', async () => {
+  test('default host speech event reaches AnimazingPal dedicated host brain path with consumed comment field', async () => {
     const coordinator = new ConversationCoordinator({ hostName: 'Streamer' });
     const { plugin, ttsPlugin } = createAnimazingPal();
     const decision = coordinator.shouldAcceptHostSpeech('Kannst du das im Chat sehen?', { now: 1000 });
@@ -46,7 +47,7 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       provider: 'future-asr'
     });
 
-    const result = await plugin.processSidekickEvent(event.eventType, event, {
+    const result = await plugin.processSidekickHostSpeech(event, {
       ...decision,
       source: 'sidekick-host-speech'
     });
@@ -65,7 +66,7 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       responded: true,
       spokenText: 'Antwort vom Host-Brain.'
     }));
-    expect(plugin.brainEngine.processChat).toHaveBeenCalledWith(
+    expect(plugin.brainEngine.processHostSpeech).toHaveBeenCalledWith(
       'Streamer',
       'Kannst du das im Chat sehen?',
       expect.objectContaining({
@@ -73,6 +74,7 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
         decision: expect.objectContaining({ reason: 'sidekick-selected' })
       })
     );
+    expect(plugin.brainEngine.processChat).not.toHaveBeenCalled();
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
       text: 'Antwort vom Host-Brain.',
       engine: 'fishaudio',

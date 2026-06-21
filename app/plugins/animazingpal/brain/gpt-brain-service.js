@@ -291,6 +291,40 @@ Antworte auf Chat-Nachrichten NATÜRLICH und AUTHENTISCH.
   }
 
   /**
+   * Generate a co-host response to the streamer/host.
+   */
+  async generateHostSpeechResponse(hostName, message, personality, context = {}) {
+    let systemPrompt = `Du bist der KI-Sidekick und Co-Host eines Livestreams mit folgender PersÃ¶nlichkeit: ${personality}
+
+Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
+- Halte die Antwort kurz, natÃ¼rlich und TTS-tauglich (1-2 SÃ¤tze)
+- Sei ein hilfreicher Co-Host mit Live-Stream-Bewusstsein
+- Erfinde keine Zuschauerprofile und speichere den Host nicht als Viewer
+- Wenn Live-Events relevant sind, beziehe sie locker ein`;
+
+    const liveContext = context.liveContext || {};
+    const recentEvents = Array.isArray(liveContext.recentEvents) ? liveContext.recentEvents.slice(0, 5) : [];
+    const viewerCount = Number(liveContext.viewerCount);
+    if (Number.isFinite(viewerCount) && viewerCount > 0) {
+      systemPrompt += `\nAktuelle Zuschauerzahl: ${viewerCount}.`;
+    }
+    if (recentEvents.length > 0) {
+      const eventText = recentEvents
+        .map(event => `${event.type || event.eventType || 'event'} von ${event.username || event.uniqueId || event.nickname || 'jemandem'}`)
+        .join(', ');
+      systemPrompt += `\nKÃ¼rzliche Live-Events: ${eventText}.`;
+    }
+
+    const situation = `${hostName || 'Host'} sagt zum Sidekick: "${message}"`;
+
+    return this.generateResponse(systemPrompt, situation, context.conversationHistory || [], {
+      maxTokens: 120,
+      temperature: 0.8,
+      skipCache: true
+    });
+  }
+
+  /**
    * Summarize memories for archival
    */
   async summarizeMemories(memories, personality) {

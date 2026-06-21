@@ -199,7 +199,48 @@ describe('Sidekick runtime contracts', () => {
     }));
   });
 
-  test('processes accepted host transcripts through AnimazingPal Sidekick events', async () => {
+  test('processes accepted host transcripts through dedicated AnimazingPal host pipeline', async () => {
+    const processSidekickHostSpeech = jest.fn().mockResolvedValue({ handled: true, responded: true });
+    const processSidekickEvent = jest.fn();
+    const api = createApi({
+      getPluginInstance: jest.fn().mockImplementation((pluginId) => {
+        if (pluginId === 'animazingpal') return { processSidekickHostSpeech, processSidekickEvent };
+        return null;
+      })
+    });
+    const plugin = new SidekickPlugin(api);
+    plugin.config = {};
+    plugin.conversationCoordinator = {
+      shouldAcceptHostSpeech: jest.fn().mockReturnValue({
+        accept: true,
+        reason: 'accepted',
+        normalizedText: 'hello chat'
+      }),
+      buildHostSpeechEvent: jest.fn().mockReturnValue({
+        eventType: 'chat',
+        username: 'Host',
+        message: 'Hello chat',
+        comment: 'Hello chat',
+        isHostSpeech: true,
+        source: 'host-mic'
+      })
+    };
+
+    const result = await plugin.processHostSpeechTranscript('Hello chat', { confidence: 0.91 });
+
+    expect(result).toEqual(expect.objectContaining({
+      accepted: true,
+      delegated: true,
+      animazingPalResult: { handled: true, responded: true }
+    }));
+    expect(processSidekickHostSpeech).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Hello chat', comment: 'Hello chat', source: 'host-mic', isHostSpeech: true }),
+      expect.objectContaining({ reason: 'accepted', source: 'sidekick-host-speech' })
+    );
+    expect(processSidekickEvent).not.toHaveBeenCalled();
+  });
+
+  test('falls back to AnimazingPal Sidekick event path when dedicated host pipeline is unavailable', async () => {
     const processSidekickEvent = jest.fn().mockResolvedValue({ handled: true, responded: true });
     const api = createApi({
       getPluginInstance: jest.fn().mockImplementation((pluginId) => {

@@ -501,6 +501,84 @@ class BrainEngine {
   }
 
   /**
+   * Process speech from the streamer/host without treating it as viewer chat.
+   */
+  async processHostSpeech(hostName, message, options = {}) {
+    if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
+      return null;
+    }
+
+    if (!message || !String(message).trim()) {
+      return null;
+    }
+
+    if (!options.forceRespond && !this.config.autoRespond?.chat) {
+      return null;
+    }
+
+    if (!this._checkRateLimit()) {
+      this.logger.debug('Rate limit reached, skipping host speech response');
+      return null;
+    }
+
+    try {
+      const conversationHistory = this.memoryDb.getConversationHistory(this.currentSession, 10);
+      this.memoryDb.storeConversation(this.currentSession, 'user', message, hostName || 'Host');
+      this.storeMemory(`Host ${hostName || 'Host'} sagte: "${message}"`, {
+        type: 'host_speech',
+        event: 'host_speech',
+        importance: 0.35
+      });
+
+      const personality = [
+        this._resolveSystemPrompt(options),
+        'Rolle: Du bist der Sidekick/Co-Host und antwortest dem Streamer, nicht einem Zuschauer.'
+      ].filter(Boolean).join('\n\n');
+
+      const result = typeof this.gptBrain.generateHostSpeechResponse === 'function'
+        ? await this.gptBrain.generateHostSpeechResponse(
+          hostName || 'Host',
+          message,
+          personality,
+          {
+            liveContext: options.liveContext || this.streamContext || {},
+            conversationHistory: conversationHistory.map(c => ({
+              role: c.role,
+              content: c.content
+            }))
+          }
+        )
+        : await this.gptBrain.generateChatResponse(
+          hostName || 'Host',
+          message,
+          personality,
+          {
+            conversationHistory: conversationHistory.map(c => ({
+              role: c.role,
+              content: c.content
+            }))
+          }
+        );
+
+      this.memoryDb.storeConversation(this.currentSession, 'assistant', result.content, null, this._selectEmotion());
+      this.storeMemory(`Ich antwortete Host ${hostName || 'Host'}: "${result.content}"`, {
+        type: 'host_response',
+        event: 'host_speech_response',
+        importance: 0.3
+      });
+
+      return {
+        text: result.content,
+        emotion: this._selectEmotion(),
+        cached: result.cached
+      };
+    } catch (error) {
+      this.logger.error(`Failed to generate host speech response: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * Process a gift event and generate thank you
    */
   async processGift(username, giftName, giftValue, options = {}) {
