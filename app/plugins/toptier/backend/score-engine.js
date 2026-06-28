@@ -3,6 +3,8 @@
 /**
  * Score processing engine for the TopTier plugin.
  * Handles like, gift, and chat events, updating leaderboards and emitting rank changes.
+ * Gift score = coins directly (1 rose = 1 coin = 1 point, 1 galaxy = 1000 coins = 1000 points).
+ * No gift multipliers — coins are the score.
  */
 class ScoreEngine {
   /**
@@ -37,11 +39,10 @@ class ScoreEngine {
   _getDefaultConfig() {
     return {
       likesBoard: { enabled: true, displayCount: 5, scoreMultiplier: 1.0 },
-      giftsBoard: { enabled: true, displayCount: 5, giftMultiplierRules: [] },
+      giftsBoard: { enabled: true, displayCount: 5 },
       decay: { enabled: true, intervalMs: 10000, type: 'linear', decayAmount: 5, decayPercent: 10, idleThresholdMs: 30000, stepThreshold: 50, scoreFloor: 0, decayOnlyWhenConnected: true },
-      overlay: { variant: 'animated-race', theme: 'dark', position: 'top-right', size: 'M', displayCount: 5, rotationIntervalMs: 8000, showAvatars: true, showScoreBars: true, rankIcons: { 1: '\u{1F451}', 2: '\u{1F948}', 3: '\u{1F949}' }, customCSS: '', accentColor: '#f59e0b', bgOpacity: 0.85 },
+      overlay: { variant: 'animated-race', theme: 'dark', orientation: 'landscape', size: 'M', displayCount: 5, rotationIntervalMs: 8000, showAvatars: true, showScoreBars: true, rankIcons: { 1: '\u{1F451}', 2: '\u{1F948}', 3: '\u{1F949}' }, customCSS: '', accentColor: '#f59e0b', bgOpacity: 0.85 },
       sound: { playOnNewLeader: false, playOnRankChange: false },
-      allTime: { enabled: true },
       chat: { rankCommandEnabled: true, rankCommandKeyword: '!rank' }
     };
   }
@@ -76,6 +77,7 @@ class ScoreEngine {
 
   /**
    * Process a gift event from TikTok.
+   * Score = coins directly. No multipliers.
    * @param {object} data - TikTok gift event data
    */
   handleGiftEvent(data) {
@@ -85,21 +87,11 @@ class ScoreEngine {
       const username = data.uniqueId || data.username || 'unknown';
       const nickname = data.nickname || username;
       const profilePictureUrl = data.profilePictureUrl || '';
+      // Coins = score directly. 1 rose = 1 coin = 1 point, 1 galaxy = 1000 coins = 1000 points.
       const baseCoins = (data.coins || data.diamondCount || 0) * (data.repeatCount || data.count || 1);
-      const sessionId = this.sessionManager.getCurrentSessionId();
-
-      // Apply gift multiplier rules
-      let multiplier = 1.0;
-      const rules = config.giftsBoard.giftMultiplierRules || [];
-      for (const rule of rules) {
-        if ((rule.giftName && rule.giftName.toLowerCase() === (data.giftName || '').toLowerCase()) ||
-            (rule.giftId && rule.giftId === data.giftId)) {
-          multiplier = rule.multiplier || 1.0;
-          break;
-        }
-      }
-      const delta = Math.floor(baseCoins * multiplier);
+      const delta = baseCoins;
       if (delta <= 0) return;
+      const sessionId = this.sessionManager.getCurrentSessionId();
 
       this.db.upsertScore('gifts', sessionId, username, nickname, profilePictureUrl, delta);
       this.db.updateRanks('gifts', sessionId);

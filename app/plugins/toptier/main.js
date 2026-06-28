@@ -7,7 +7,8 @@ const DecayScheduler = require('./backend/decay-scheduler');
 
 /**
  * TopTier Plugin - Live Like & Gift Leaderboard with decay mechanics,
- * rank animations, and 7 OBS overlay variants.
+ * rank animations, and OBS overlay variants.
+ * Session-only: no all-time tracking. Coins = score directly.
  */
 class TopTierPlugin {
   /**
@@ -99,18 +100,6 @@ class TopTierPlugin {
       }
     });
 
-    // GET /api/plugins/toptier/alltime/:boardType
-    this.api.registerRoute('GET', '/alltime/:boardType', (req, res) => {
-      try {
-        const { boardType } = req.params;
-        if (!['likes', 'gifts'].includes(boardType)) return res.status(400).json({ success: false, error: 'Invalid board type' });
-        const board = this.dbHandler.getAllTime(boardType, 20);
-        res.json({ success: true, board });
-      } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-      }
-    });
-
     // POST /api/plugins/toptier/reset/:boardType
     this.api.registerRoute('POST', '/reset/:boardType', (req, res) => {
       try {
@@ -171,7 +160,7 @@ class TopTierPlugin {
     // GET /api/plugins/toptier/session/current
     this.api.registerRoute('GET', '/session/current', (req, res) => {
       try {
-        res.json({ success: true, sessionId: this.sessionManager.getCurrentSessionId() });
+        res.json({ success: true, sessionId: this.sessionManager.getCurrentSessionId(), streamUsername: this.sessionManager.getCurrentStreamUsername() });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -251,6 +240,7 @@ class TopTierPlugin {
 
   /**
    * Register TikTok LIVE event handlers.
+   * Reconnect logic: only reset session when a different streamer connects.
    * @private
    */
   _registerTikTokEvents() {
@@ -266,13 +256,14 @@ class TopTierPlugin {
       this.scoreEngine.handleChatEvent(data);
     });
 
-    this.api.registerTikTokEvent('connected', () => {
+    this.api.registerTikTokEvent('connected', (data) => {
       this.decayScheduler.setConnected(true);
+      const streamUsername = (data && data.username) || null;
       const config = this.api.getConfig('toptier_config') || {};
-      const auto = !config.decay || config.decay.decayOnlyWhenConnected !== false;
-      if (auto) {
-        this.sessionManager.endSession();
-        this.sessionManager.startNewSession();
+      const isNewStream = this.sessionManager.handleConnect(streamUsername);
+
+      if (isNewStream) {
+        // New stream — restart decay scheduler with fresh session
         if (config.decay && config.decay.enabled) {
           this.decayScheduler.stop();
           this.decayScheduler.start(config);
@@ -286,7 +277,8 @@ class TopTierPlugin {
       if (config.decay && config.decay.decayOnlyWhenConnected) {
         this.decayScheduler.stop();
       }
-      this.sessionManager.endSession();
+      // Do NOT end session on disconnect — only on new stream connect
+      // This allows temporary disconnects/reconnects to keep the leaderboard
     });
   }
 

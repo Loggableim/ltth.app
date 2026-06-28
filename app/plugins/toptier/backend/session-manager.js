@@ -3,7 +3,9 @@ const { randomUUID } = require('crypto');
 
 /**
  * Manages leaderboard sessions for the TopTier plugin.
- * Each session corresponds to a TikTok LIVE connection period.
+ * Each session corresponds to a TikTok LIVE stream.
+ * A new session is only started when a different streamer connects,
+ * not on every reconnect to the same stream.
  */
 class SessionManager {
   /**
@@ -14,17 +16,21 @@ class SessionManager {
     this.api = api;
     this.db = db;
     this._sessionId = null;
+    this._streamUsername = null;
   }
 
   /**
    * Start a new leaderboard session with a fresh UUID.
+   * @param {string} [streamUsername] - The TikTok username of the stream
    * @returns {string} The new session ID
    */
-  startNewSession() {
+  startNewSession(streamUsername) {
     this._sessionId = randomUUID();
+    this._streamUsername = streamUsername || null;
     this.api.setConfig('currentSessionId', this._sessionId);
-    this.api.emit('toptier:session-start', { sessionId: this._sessionId });
-    this.api.log(`[TopTier] New session started: ${this._sessionId}`, 'info');
+    this.api.setConfig('currentStreamUsername', this._streamUsername);
+    this.api.emit('toptier:session-start', { sessionId: this._sessionId, streamUsername: this._streamUsername });
+    this.api.log(`[TopTier] New session started: ${this._sessionId} (stream: ${this._streamUsername || 'unknown'})`, 'info');
     return this._sessionId;
   }
 
@@ -35,28 +41,59 @@ class SessionManager {
   getCurrentSessionId() {
     if (!this._sessionId) {
       this._sessionId = this.api.getConfig('currentSessionId');
+      this._streamUsername = this.api.getConfig('currentStreamUsername') || null;
       if (!this._sessionId) this._sessionId = this.startNewSession();
     }
     return this._sessionId;
   }
 
   /**
-   * End the current session, persisting all-time stats for each board.
+   * Get the stream username associated with the current session.
+   * @returns {string|null}
+   */
+  getCurrentStreamUsername() {
+    if (!this._streamUsername) {
+      this._streamUsername = this.api.getConfig('currentStreamUsername') || null;
+    }
+    return this._streamUsername;
+  }
+
+  /**
+   * Handle a TikTok connection event.
+   * Only starts a new session if the streamer is different from the current one.
+   * @param {string} streamUsername - The username of the connected streamer
+   * @returns {boolean} True if a new session was started, false if same stream
+   */
+  handleConnect(streamUsername) {
+    const currentStream = this.getCurrentStreamUsername();
+    const currentSession = this.getCurrentSessionId();
+
+    if (streamUsername && currentStream === streamUsername && currentSession) {
+      // Same stream reconnecting — keep session alive
+      this.api.log(`[TopTier] Same stream reconnect (@${streamUsername}), keeping session ${currentSession}`, 'info');
+      return false;
+    }
+
+    // Different stream or first connect — start new session
+    this.endSession();
+    this.startNewSession(streamUsername);
+    return true;
+  }
+
+  /**
+   * End the current session.
+   * Session-only mode: no all-time persistence.
    */
   endSession() {
     if (!this._sessionId) return;
     try {
-      for (const boardType of ['likes', 'gifts']) {
-        const board = this.db.getBoard(boardType, this._sessionId, 9999);
-        for (const entry of board) {
-          this.db.updateAllTime(boardType, entry.username, entry.nickname, entry.profile_picture_url, entry.score);
-        }
-      }
       this.api.emit('toptier:session-end', { sessionId: this._sessionId });
       this.api.log(`[TopTier] Session ended: ${this._sessionId}`, 'info');
     } catch (err) {
       this.api.log(`[TopTier] Error ending session: ${err.message}`, 'error');
     }
+    this._sessionId = null;
+    this._streamUsername = null;
   }
 }
 

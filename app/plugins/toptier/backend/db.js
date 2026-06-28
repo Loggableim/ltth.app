@@ -3,6 +3,7 @@
 /**
  * Database handler for the TopTier plugin.
  * All operations are synchronous using better-sqlite3 prepared statements.
+ * Session-only: no all-time tables.
  */
 class TopTierDB {
   /**
@@ -42,19 +43,6 @@ class TopTierDB {
         score_before INTEGER NOT NULL,
         score_after INTEGER NOT NULL,
         decayed_at INTEGER DEFAULT (strftime('%s','now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS toptier_all_time (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        board_type TEXT NOT NULL,
-        username TEXT NOT NULL,
-        nickname TEXT DEFAULT '',
-        profile_picture_url TEXT DEFAULT '',
-        best_score INTEGER DEFAULT 0,
-        total_score INTEGER DEFAULT 0,
-        sessions_in_top3 INTEGER DEFAULT 0,
-        last_seen_at INTEGER DEFAULT 0,
-        UNIQUE(board_type, username)
       );
     `);
 
@@ -113,30 +101,6 @@ class TopTierDB {
     this._stmts.updateScoreAfterDecay = this.db.prepare(`
       UPDATE toptier_scores SET score = @newScore
       WHERE board_type = @boardType AND session_id = @sessionId AND username = @username
-    `);
-
-    this._stmts.upsertAllTime = this.db.prepare(`
-      INSERT INTO toptier_all_time (board_type, username, nickname, profile_picture_url, best_score, total_score, sessions_in_top3, last_seen_at)
-      VALUES (@boardType, @username, @nickname, @profilePictureUrl, @sessionScore, @sessionScore, 0, @now)
-      ON CONFLICT(board_type, username)
-      DO UPDATE SET
-        nickname = @nickname,
-        profile_picture_url = @profilePictureUrl,
-        best_score = MAX(best_score, @sessionScore),
-        total_score = total_score + @sessionScore,
-        last_seen_at = @now
-    `);
-
-    this._stmts.incrementTop3 = this.db.prepare(`
-      UPDATE toptier_all_time SET sessions_in_top3 = sessions_in_top3 + 1
-      WHERE board_type = @boardType AND username = @username
-    `);
-
-    this._stmts.getAllTime = this.db.prepare(`
-      SELECT * FROM toptier_all_time
-      WHERE board_type = @boardType
-      ORDER BY best_score DESC
-      LIMIT @limit
     `);
 
     this._stmts.getDecayLog = this.db.prepare(`
@@ -224,33 +188,6 @@ class TopTierDB {
     for (let i = 0; i < rows.length; i++) {
       updateRank.run({ rank: i + 1, id: rows[i].id });
     }
-  }
-
-  /**
-   * Update or create an all-time record for a user.
-   * @param {string} boardType - 'likes' or 'gifts'
-   * @param {string} username - TikTok unique ID
-   * @param {string} nickname - Display name
-   * @param {string} profilePictureUrl - Avatar URL
-   * @param {number} sessionScore - Score from the ended session
-   */
-  updateAllTime(boardType, username, nickname, profilePictureUrl, sessionScore) {
-    const now = Math.floor(Date.now() / 1000);
-    this._stmts.upsertAllTime.run({
-      boardType, username, nickname,
-      profilePictureUrl: profilePictureUrl || '',
-      sessionScore, now
-    });
-  }
-
-  /**
-   * Get the all-time leaderboard.
-   * @param {string} boardType - 'likes' or 'gifts'
-   * @param {number} limit - Maximum entries to return
-   * @returns {Array} All-time entries sorted by best_score DESC
-   */
-  getAllTime(boardType, limit) {
-    return this._stmts.getAllTime.all({ boardType, limit });
   }
 
   /**

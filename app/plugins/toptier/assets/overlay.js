@@ -1,7 +1,7 @@
 /**
- * TopTier Overlay – overlay.js
- * All 7 overlay variant render functions, Socket.IO integration,
- * and security helpers (escHtml / escAttr).
+ * TopTier Overlay – overlay.js  v3.0
+ * State-of-the-art overlay with number formatting, score tick animations,
+ * spotlight float, pulse ring for #1, and staggered entry animations.
  */
 (function () {
   'use strict';
@@ -30,12 +30,24 @@
   }
 
   // ==============================
+  // Number formatting — 1.2K, 3.4M, etc.
+  // ==============================
+  function formatScore(num) {
+    if (num == null) return '0';
+    var n = Number(num);
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(n);
+  }
+
+  // ==============================
   // URL params
   // ==============================
   var params = new URLSearchParams(window.location.search);
   var paramBoard = params.get('board') || 'likes';
   var paramVariant = params.get('variant') || 'animated-race';
   var paramTheme = params.get('theme') || 'dark';
+  var paramOrientation = params.get('orientation') || 'landscape';
   var paramSize = params.get('size') || 'M';
   var paramCount = parseInt(params.get('count'), 10) || 5;
   var paramAccent = params.get('accent') || '#f59e0b';
@@ -54,6 +66,7 @@
   var likesData = [];
   var giftsData = [];
   var previousScores = {};
+  var previousRenderedScores = {};
   var spotlightIdx = 0;
   var spotlightTimer = null;
 
@@ -64,10 +77,11 @@
     var container = document.getElementById('tt-root');
     if (!container) return;
 
-    // Apply theme, size, variant classes
+    // Apply theme, size, variant, orientation classes
     container.className = 'tt-container tt-size-' + escHtml(paramSize) +
       ' tt-theme-' + escHtml(paramTheme) +
-      ' tt-variant-' + escHtml(paramVariant);
+      ' tt-variant-' + escHtml(paramVariant) +
+      ' tt-orientation-' + escHtml(paramOrientation);
     container.style.setProperty('--tt-accent', paramAccent);
     container.style.setProperty('--tt-bg-opacity', String(paramOpacity));
 
@@ -75,10 +89,10 @@
     var socket = io();
 
     socket.on('connect', function () {
-      if (paramBoard === 'both' || paramBoard === 'likes') {
+      if (paramBoard === 'both' || paramBoard === 'likes' || paramBoard === 'combined') {
         socket.emit('toptier:get-board', { board: 'likes' });
       }
-      if (paramBoard === 'both' || paramBoard === 'gifts') {
+      if (paramBoard === 'both' || paramBoard === 'gifts' || paramBoard === 'combined') {
         socket.emit('toptier:get-board', { board: 'gifts' });
       }
     });
@@ -123,16 +137,21 @@
     var container = document.getElementById('tt-root');
     if (!container) return;
 
-    var boards = getActiveBoards();
     var html = '';
 
-    for (var b = 0; b < boards.length; b++) {
-      var boardInfo = boards[b];
-      html += renderBoard(boardInfo.type, boardInfo.data, boardInfo.label);
+    if (paramVariant === 'combined') {
+      html += renderCombined();
+    } else {
+      var boards = getActiveBoards();
+      for (var b = 0; b < boards.length; b++) {
+        var boardInfo = boards[b];
+        html += renderBoard(boardInfo.type, boardInfo.data, boardInfo.label);
+      }
     }
 
     container.innerHTML = html;
     attachAvatarFallbacks();
+    triggerScoreTicks();
   }
 
   function getActiveBoards() {
@@ -160,6 +179,50 @@
   }
 
   // ==============================
+  // Stagger class helper
+  // ==============================
+  function staggerClass(index) {
+    var n = Math.min(index + 1, 5);
+    return 'tt-stagger-' + n;
+  }
+
+  // ==============================
+  // Combined View (Likes + Gifts side by side or stacked)
+  // ==============================
+  function renderCombined() {
+    var html = '<div class="tt-combined-wrap">';
+
+    // Likes section
+    html += '<div class="tt-combined-section tt-combined-likes">';
+    html += '<div class="tt-board-title">\u2764\uFE0F Likes</div>';
+    if (likesData.length) {
+      var maxLikes = likesData[0].score || 1;
+      for (var i = 0; i < likesData.length; i++) {
+        html += renderEntry(likesData[i], maxLikes, 'tt-fade-in ' + staggerClass(i));
+      }
+    } else {
+      html += '<div class="tt-no-entries">Keine Eintr\u00E4ge</div>';
+    }
+    html += '</div>';
+
+    // Gifts section
+    html += '<div class="tt-combined-section tt-combined-gifts">';
+    html += '<div class="tt-board-title">\uD83C\uDF81 Gifts</div>';
+    if (giftsData.length) {
+      var maxGifts = giftsData[0].score || 1;
+      for (var j = 0; j < giftsData.length; j++) {
+        html += renderEntry(giftsData[j], maxGifts, 'tt-fade-in ' + staggerClass(j));
+      }
+    } else {
+      html += '<div class="tt-no-entries">Keine Eintr\u00E4ge</div>';
+    }
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  }
+
+  // ==============================
   // 1. Classic List
   // ==============================
   function renderClassicList(boardType, entries, label) {
@@ -167,7 +230,7 @@
     var maxScore = entries[0].score || 1;
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     for (var i = 0; i < entries.length; i++) {
-      html += renderEntry(entries[i], maxScore, 'tt-fade-in');
+      html += renderEntry(entries[i], maxScore, 'tt-fade-in ' + staggerClass(i));
     }
     html += '</div>';
     return html;
@@ -198,15 +261,17 @@
     var entry = entries[idx];
     var avatarSrc = entry.profile_picture_url || AVATAR_PLACEHOLDER;
     var rankIcon = RANK_ICONS[entry.rank] || '#' + entry.rank;
+    var isRank1 = entry.rank === 1;
 
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     html += '<div class="tt-spotlight-card tt-slide-in">';
     if (paramShowAvatars) {
-      html += '<img class="tt-spotlight-avatar" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback>';
+      var avatarStyle = isRank1 ? ' style="animation: tt-float 3s ease-in-out infinite, tt-pulse-ring 2s ease-out infinite"' : ' style="animation: tt-float 3s ease-in-out infinite"';
+      html += '<img class="tt-spotlight-avatar" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback' + avatarStyle + '>';
     }
     html += '<div class="tt-spotlight-rank">' + escHtml(String(rankIcon)) + '</div>';
     html += '<div class="tt-spotlight-name">' + escHtml(entry.nickname || entry.username) + '</div>';
-    html += '<div class="tt-spotlight-score">' + escHtml(String(entry.score)) + '</div>';
+    html += '<div class="tt-spotlight-score" data-score="' + escAttr(String(entry.score)) + '">' + escHtml(formatScore(entry.score)) + '</div>';
     html += '</div></div>';
     return html;
   }
@@ -242,7 +307,7 @@
         html += '<img class="tt-podium-avatar" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback>';
       }
       html += '<div class="tt-podium-name">' + escHtml(e.nickname || e.username) + '</div>';
-      html += '<div class="tt-podium-score">' + escHtml(String(e.score)) + '</div>';
+      html += '<div class="tt-podium-score" data-score="' + escAttr(String(e.score)) + '">' + escHtml(formatScore(e.score)) + '</div>';
       html += '</div>';
     }
     html += '</div>';
@@ -250,7 +315,7 @@
     if (rest.length) {
       html += '<div class="tt-podium-rest">';
       for (var j = 0; j < rest.length; j++) {
-        html += renderEntry(rest[j], maxScore, '');
+        html += renderEntry(rest[j], maxScore, 'tt-fade-in ' + staggerClass(j));
       }
       html += '</div>';
     }
@@ -278,7 +343,7 @@
         html += '<img class="tt-ticker-avatar" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback>';
       }
       html += '<span class="tt-name">' + escHtml(e.nickname || e.username) + '</span>';
-      html += '<span class="tt-ticker-score">' + escHtml(String(e.score)) + '</span>';
+      html += '<span class="tt-ticker-score" data-score="' + escAttr(String(e.score)) + '">' + escHtml(formatScore(e.score)) + '</span>';
       html += '</div>';
     }
     html += '</div></div></div>';
@@ -305,7 +370,7 @@
         html += '<img class="tt-holo-avatar" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback>';
       }
       html += '<div class="tt-holo-name">' + escHtml(e.nickname || e.username) + '</div>';
-      html += '<div class="tt-holo-score">' + escHtml(String(e.score)) + '</div>';
+      html += '<div class="tt-holo-score" data-score="' + escAttr(String(e.score)) + '">' + escHtml(formatScore(e.score)) + '</div>';
       html += '</div>';
     }
     html += '</div></div>';
@@ -320,7 +385,7 @@
 
     var html = '<div class="tt-board"><div class="tt-board-title">' + escHtml(label) + '</div>';
     html += '<table class="tt-scoreboard-table"><thead><tr>';
-    html += '<th>Rank</th><th></th><th>Name</th><th>Score</th><th>\u0394</th><th>Decay</th>';
+    html += '<th>Rank</th><th></th><th>Name</th><th>Score</th><th>\u0394</th>';
     html += '</tr></thead><tbody>';
 
     for (var i = 0; i < entries.length; i++) {
@@ -331,7 +396,7 @@
       var prevScore = previousScores[key];
       var delta = (prevScore !== undefined) ? e.score - prevScore : 0;
       previousScores[key] = e.score;
-      var deltaStr = delta > 0 ? '+' + delta : (delta < 0 ? String(delta) : '-');
+      var deltaStr = delta > 0 ? '+' + formatScore(delta) : (delta < 0 ? formatScore(delta) : '\u2013');
       var deltaColor = delta > 0 ? 'color:#22c55e' : (delta < 0 ? 'color:#ef4444' : '');
 
       html += '<tr class="tt-scoreboard-row">';
@@ -342,9 +407,8 @@
         html += '<td></td>';
       }
       html += '<td class="tt-sb-name">' + escHtml(e.nickname || e.username) + '</td>';
-      html += '<td class="tt-sb-score">' + escHtml(String(e.score)) + '</td>';
+      html += '<td class="tt-sb-score" data-score="' + escAttr(String(e.score)) + '">' + escHtml(formatScore(e.score)) + '</td>';
       html += '<td class="tt-sb-delta" style="' + escAttr(deltaColor) + '">' + escHtml(deltaStr) + '</td>';
-      html += '<td><div class="tt-decay-bar-wrap"><div class="tt-decay-bar"></div></div></td>';
       html += '</tr>';
     }
 
@@ -361,8 +425,9 @@
     var barWidth = maxScore > 0 ? Math.round((entry.score / maxScore) * 100) : 0;
     var avatarClass = paramShowAvatars ? 'tt-avatar' : 'tt-avatar tt-avatar-hidden';
     var barClass = paramShowBars ? 'tt-score-bar-wrap' : 'tt-score-bar-wrap tt-score-bar-hidden';
+    var rankClass = entry.rank <= 3 ? ' tt-rank-' + entry.rank : '';
 
-    var html = '<div class="tt-entry ' + (extraClass || '') + '" data-username="' + escAttr(entry.username) + '">';
+    var html = '<div class="tt-entry ' + (extraClass || '') + rankClass + '" data-username="' + escAttr(entry.username) + '">';
     html += '<div class="tt-rank-badge">' + escHtml(String(rankIcon)) + '</div>';
     html += '<img class="' + avatarClass + '" src="' + escAttr(avatarSrc) + '" alt="" loading="lazy" data-fallback>';
     html += '<div class="tt-info">';
@@ -371,9 +436,32 @@
       html += '<div class="' + barClass + '"><div class="tt-score-bar" style="width:' + barWidth + '%"></div></div>';
     }
     html += '</div>';
-    html += '<div class="tt-score">' + escHtml(String(entry.score)) + '</div>';
+    html += '<div class="tt-score" data-score="' + escAttr(String(entry.score)) + '">' + escHtml(formatScore(entry.score)) + '</div>';
     html += '</div>';
     return html;
+  }
+
+  // ==============================
+  // Score tick animation — triggers on score change
+  // ==============================
+  function triggerScoreTicks() {
+    var scoreEls = document.querySelectorAll('.tt-score[data-score], .tt-sb-score[data-score], .tt-spotlight-score[data-score], .tt-holo-score[data-score], .tt-ticker-score[data-score], .tt-podium-score[data-score]');
+    for (var i = 0; i < scoreEls.length; i++) {
+      (function (el) {
+        var score = el.getAttribute('data-score');
+        var parent = el.closest('[data-username]');
+        var username = parent ? parent.getAttribute('data-username') : null;
+        var key = el.className + ':' + (username || i);
+        var prev = previousRenderedScores[key];
+        if (prev !== undefined && prev !== score) {
+          el.classList.remove('tt-score-tick-anim');
+          void el.offsetWidth;
+          el.style.animation = 'tt-score-tick 0.5s ease-out';
+          setTimeout(function () { el.style.animation = ''; }, 500);
+        }
+        previousRenderedScores[key] = score;
+      })(scoreEls[i]);
+    }
   }
 
   // ==============================

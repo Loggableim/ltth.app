@@ -81,11 +81,6 @@
     }
     .tt-url-box .tt-copy-btn { flex-shrink: 0; padding: 4px 10px; font-size: 0.8em; }
 
-    /* Gift rule list */
-    .tt-gift-rule { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-    .tt-gift-rule input { margin-bottom: 0; flex: 1; }
-    .tt-gift-rule .tt-btn { flex-shrink: 0; }
-
     /* Variant radio grid */
     .tt-variant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
     .tt-variant-option {
@@ -107,12 +102,18 @@
 
     /* Avatar in table */
     .tt-tbl-avatar { width: 24px; height: 24px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+
+    /* Info box */
+    .tt-info-box {
+      padding: 10px 14px; border-radius: 6px; background: var(--color-bg-secondary, #1e293b);
+      border: 1px solid var(--color-border, #334155); font-size: 0.82em; margin-bottom: 12px; opacity: 0.8;
+    }
   </style>
 </head>
 <body>
 <div class="tt-app">
-  <h1>🏆 Top Tier <span>v1.0.0</span></h1>
-  <p style="font-size:0.85em;opacity:0.6;margin-bottom:16px;">Live-Leaderboard f&uuml;r TikTok LIVE Likes &amp; Geschenke</p>
+  <h1>🏆 Top Tier <span>v2.0.0</span></h1>
+  <p style="font-size:0.85em;opacity:0.6;margin-bottom:16px;">Live-Leaderboard f&uuml;r TikTok LIVE Likes &amp; Geschenke &mdash; Session-basiert, Coins = Punkte</p>
 
   <!-- Tabs -->
   <div class="tt-tabs">
@@ -123,13 +124,13 @@
     <div class="tt-tab" data-tab="decay-cfg">📉 Decay</div>
     <div class="tt-tab" data-tab="overlay-cfg">🎨 Overlay</div>
     <div class="tt-tab" data-tab="sound-chat">🔊 Sound &amp; Chat</div>
-    <div class="tt-tab" data-tab="alltime">🏅 Hall of Fame</div>
     <div class="tt-tab" data-tab="controls">⚙️ Controls</div>
   </div>
 
   <!-- ==================== LIVE BOARDS ==================== -->
   <div class="tt-panel active" id="panel-live">
     <h2>Live Leaderboards</h2>
+    <div class="tt-info-box">Session-basiert: Boards werden nur bei einem neuen Stream zur&uuml;ckgesetzt. Kurzzeitige Reconnects behalten die Daten.</div>
     <div class="tt-row">
       <div>
         <h3>❤️ Likes Board</h3>
@@ -137,7 +138,7 @@
       </div>
       <div>
         <h3>🎁 Gifts Board</h3>
-        <table><thead><tr><th>#</th><th>User</th><th>Score</th></tr></thead><tbody id="gifts-tbody"></tbody></table>
+        <table><thead><tr><th>#</th><th>User</th><th>Coins</th></tr></thead><tbody id="gifts-tbody"></tbody></table>
       </div>
     </div>
     <p style="font-size:0.75em;opacity:0.4;margin-top:8px;">Aktualisiert sich automatisch via Socket.IO</p>
@@ -146,7 +147,17 @@
   <!-- ==================== OBS URLS ==================== -->
   <div class="tt-panel" id="panel-obs">
     <h2>OBS Overlay URLs</h2>
-    <p style="font-size:0.82em;opacity:0.6;margin-bottom:12px;">Kopiere eine URL und f&uuml;ge sie als Browser-Quelle in OBS ein.</p>
+    <p style="font-size:0.82em;opacity:0.6;margin-bottom:12px;">Kopiere eine URL und f&uuml;ge sie als Browser-Quelle in OBS ein. W&auml;hle Hochformat (Portrait) f&uuml;r vertikale Streams oder Querformat (Landscape) f&uuml;r normale Streams.</p>
+    <div class="tt-row" style="margin-bottom:14px;">
+      <div>
+        <label for="obs-orientation">Ausrichtung</label>
+        <select id="obs-orientation"><option value="landscape" selected>Querformat (Landscape)</option><option value="portrait">Hochformat (Portrait)</option></select>
+      </div>
+      <div>
+        <label for="obs-theme">Theme</label>
+        <select id="obs-theme"><option value="dark" selected>Dark</option><option value="neon">Neon</option><option value="light">Light</option><option value="minimal">Minimal</option></select>
+      </div>
+    </div>
     <div id="obs-urls-container"></div>
   </div>
 
@@ -166,9 +177,10 @@
     <div class="tt-toggle"><input type="checkbox" id="gifts-enabled"><label for="gifts-enabled">Board aktiviert</label></div>
     <label for="gifts-count">Anzahl angezeigte Eintr&auml;ge</label>
     <input type="number" id="gifts-count" min="1" max="50" value="5">
-    <h3>Geschenk-Multiplikator-Regeln</h3>
-    <div id="gift-rules-list"></div>
-    <button class="tt-btn tt-btn-secondary" id="add-gift-rule">+ Regel hinzuf&uuml;gen</button>
+    <div class="tt-info-box" style="margin-top:12px;">
+      <strong>Coins = Punkte:</strong> 1 Rose = 1 Coin = 1 Punkt &middot; 1 Galaxy = 1000 Coins = 1000 Punkte.<br>
+      Die Geschenk-Werte direkt von TikTok &uuml;bernommen, keine Multiplikatoren.
+    </div>
   </div>
 
   <!-- ==================== DECAY CONFIG ==================== -->
@@ -210,21 +222,30 @@
         <select id="ov-theme"><option value="dark">Dark</option><option value="neon">Neon</option><option value="light">Light</option><option value="minimal">Minimal</option></select>
       </div>
       <div>
-        <label for="ov-size">Gr&ouml;&szlig;e</label>
-        <select id="ov-size"><option value="S">S (Klein)</option><option value="M" selected>M (Normal)</option><option value="L">L (Gro&szlig;)</option></select>
+        <label for="ov-orientation">Ausrichtung</label>
+        <select id="ov-orientation"><option value="landscape" selected>Querformat (Landscape)</option><option value="portrait">Hochformat (Portrait)</option></select>
       </div>
     </div>
     <div class="tt-row">
+      <div>
+        <label for="ov-size">Gr&ouml;&szlig;e</label>
+        <select id="ov-size"><option value="S">S (Klein)</option><option value="M" selected>M (Normal)</option><option value="L">L (Gro&szlig;)</option></select>
+      </div>
       <div><label for="ov-count">Angezeigte Eintr&auml;ge</label><input type="number" id="ov-count" min="1" max="20" value="5"></div>
-      <div><label for="ov-rotation">Rotation-Intervall (ms)</label><input type="number" id="ov-rotation" min="2000" max="60000" step="1000" value="8000"></div>
     </div>
     <div class="tt-row">
+      <div><label for="ov-rotation">Rotation-Intervall (ms)</label><input type="number" id="ov-rotation" min="2000" max="60000" step="1000" value="8000"></div>
       <div>
         <div class="tt-toggle"><input type="checkbox" id="ov-avatars" checked><label for="ov-avatars">Avatare anzeigen</label></div>
         <div class="tt-toggle"><input type="checkbox" id="ov-bars" checked><label for="ov-bars">Score-Balken anzeigen</label></div>
       </div>
+    </div>
+    <div class="tt-row">
       <div>
-        <label for="ov-accent">Akzentfarbe</label><input type="color" id="ov-accent" value="#f59e0b">
+        <label for="ov-accent">Akzentfarbe</label>
+        <input type="color" id="ov-accent" value="#f59e0b">
+      </div>
+      <div>
         <label for="ov-opacity">Hintergrund-Transparenz: <span id="ov-opacity-val">0.85</span></label>
         <input type="range" id="ov-opacity" min="0" max="1" step="0.05" value="0.85">
       </div>
@@ -245,16 +266,6 @@
     <input type="text" id="chat-keyword" value="!rank">
   </div>
 
-  <!-- ==================== HALL OF FAME ==================== -->
-  <div class="tt-panel" id="panel-alltime">
-    <h2>🏅 All-Time Hall of Fame</h2>
-    <div class="tt-tabs" style="margin-bottom:10px;">
-      <div class="tt-tab active" data-hof="likes">❤️ Likes</div>
-      <div class="tt-tab" data-hof="gifts">🎁 Gifts</div>
-    </div>
-    <table><thead><tr><th>#</th><th>User</th><th>Best</th><th>Total</th><th>Top-3 Sessions</th></tr></thead><tbody id="alltime-tbody"></tbody></table>
-  </div>
-
   <!-- ==================== CONTROLS ==================== -->
   <div class="tt-panel" id="panel-controls">
     <h2>⚙️ Steuerung</h2>
@@ -269,6 +280,7 @@
       <button class="tt-btn tt-btn-secondary" id="new-session">Neue Session starten</button>
     </div>
     <p style="font-size:0.8em;opacity:0.5;margin-top:6px;">Aktuelle Session: <span id="current-session-id">–</span></p>
+    <p style="font-size:0.8em;opacity:0.5;margin-top:4px;">Stream: <span id="current-stream-username">–</span></p>
   </div>
 
   <!-- SAVE -->
@@ -295,7 +307,6 @@
   var API_BASE = '/api/plugins/toptier';
   var socket = io();
   var currentConfig = null;
-  var currentHofBoard = 'likes';
 
   // ==============================
   // Tabs
@@ -313,17 +324,6 @@
     });
   }
 
-  // HoF tabs
-  var hofTabs = document.querySelectorAll('[data-hof]');
-  for (var h = 0; h < hofTabs.length; h++) {
-    hofTabs[h].addEventListener('click', function () {
-      for (var j = 0; j < hofTabs.length; j++) hofTabs[j].classList.remove('active');
-      this.classList.add('active');
-      currentHofBoard = this.getAttribute('data-hof');
-      loadHallOfFame();
-    });
-  }
-
   // ==============================
   // Variant grid
   // ==============================
@@ -332,9 +332,10 @@
     { id: 'animated-race', name: 'Animated Race', desc: 'FLIP-Technik, Kronen-Glow' },
     { id: 'spotlight', name: 'Spotlight', desc: 'Rotiert durch Top N' },
     { id: 'podium', name: 'Podium View', desc: 'Klassisches 3-Stufen-Podium' },
-    { id: 'ticker', name: 'Ticker', desc: 'Horizontale Laufschrift' },
+    { id: 'ticker', name: 'Ticker', desc: 'Laufschrift (horizontal/vertikal)' },
     { id: 'holographic', name: 'Holographic Cards', desc: 'Glassmorphism / Neon-Glow' },
-    { id: 'scoreboard', name: 'Scoreboard', desc: 'ESports-Tabelle mit Delta' }
+    { id: 'scoreboard', name: 'Scoreboard', desc: 'ESports-Tabelle mit Delta' },
+    { id: 'combined', name: 'Combined', desc: 'Likes + Gifts in einem View' }
   ];
 
   function buildVariantGrid(selected) {
@@ -363,11 +364,13 @@
     var container = document.getElementById('obs-urls-container');
     if (!container) return;
     var base = window.location.protocol + '//' + window.location.host + '/plugins/toptier/overlay.html';
-    var boards = ['likes', 'gifts', 'both'];
+    var orientation = document.getElementById('obs-orientation').value || 'landscape';
+    var theme = document.getElementById('obs-theme').value || 'dark';
+    var boards = ['likes', 'gifts', 'both', 'combined'];
     var html = '';
     for (var b = 0; b < boards.length; b++) {
       for (var v = 0; v < VARIANTS.length; v++) {
-        var url = base + '?board=' + boards[b] + '&variant=' + VARIANTS[v].id;
+        var url = base + '?board=' + boards[b] + '&variant=' + VARIANTS[v].id + '&orientation=' + orientation + '&theme=' + theme;
         html += '<div class="tt-url-box"><span>' + escHtml(VARIANTS[v].name) + ' (' + escHtml(boards[b]) + '): </span><code style="flex:1;word-break:break-all">' + escHtml(url) + '</code>';
         html += '<button class="tt-btn tt-btn-secondary tt-copy-btn" data-url="' + escAttr(url) + '">Kopieren</button></div>';
       }
@@ -387,33 +390,9 @@
     }
   }
 
-  // ==============================
-  // Gift multiplier rules
-  // ==============================
-  function renderGiftRules(rules) {
-    var container = document.getElementById('gift-rules-list');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!rules) rules = [];
-    for (var i = 0; i < rules.length; i++) {
-      addGiftRuleRow(container, rules[i].giftName || '', rules[i].multiplier || 1);
-    }
-  }
-
-  function addGiftRuleRow(container, name, mult) {
-    var div = document.createElement('div');
-    div.className = 'tt-gift-rule';
-    div.innerHTML = '<input type="text" placeholder="Geschenk-Name" value="' + escAttr(name) + '" class="tt-rule-name">' +
-      '<input type="number" placeholder="Multiplikator" value="' + escAttr(String(mult)) + '" min="0.1" step="0.1" class="tt-rule-mult" style="max-width:100px">' +
-      '<button class="tt-btn tt-btn-danger tt-rule-remove" style="padding:4px 10px">✕</button>';
-    div.querySelector('.tt-rule-remove').addEventListener('click', function () { div.remove(); });
-    container.appendChild(div);
-  }
-
-  document.getElementById('add-gift-rule').addEventListener('click', function () {
-    var container = document.getElementById('gift-rules-list');
-    addGiftRuleRow(container, '', 1);
-  });
+  // Rebuild OBS URLs when orientation/theme changes
+  document.getElementById('obs-orientation').addEventListener('change', buildObsUrls);
+  document.getElementById('obs-theme').addEventListener('change', buildObsUrls);
 
   // ==============================
   // Load config
@@ -435,7 +414,6 @@
     // Gifts
     document.getElementById('gifts-enabled').checked = cfg.giftsBoard ? cfg.giftsBoard.enabled !== false : true;
     document.getElementById('gifts-count').value = (cfg.giftsBoard && cfg.giftsBoard.displayCount) || 5;
-    renderGiftRules((cfg.giftsBoard && cfg.giftsBoard.giftMultiplierRules) || []);
 
     // Decay
     var d = cfg.decay || {};
@@ -454,6 +432,7 @@
     var ov = cfg.overlay || {};
     buildVariantGrid(ov.variant || 'animated-race');
     document.getElementById('ov-theme').value = ov.theme || 'dark';
+    document.getElementById('ov-orientation').value = ov.orientation || 'landscape';
     document.getElementById('ov-size').value = ov.size || 'M';
     document.getElementById('ov-count').value = ov.displayCount || 5;
     document.getElementById('ov-rotation').value = ov.rotationIntervalMs || 8000;
@@ -491,15 +470,6 @@
   });
 
   function buildConfigFromUI() {
-    // Gift rules
-    var ruleEls = document.querySelectorAll('.tt-gift-rule');
-    var rules = [];
-    for (var i = 0; i < ruleEls.length; i++) {
-      var name = ruleEls[i].querySelector('.tt-rule-name').value.trim();
-      var mult = parseFloat(ruleEls[i].querySelector('.tt-rule-mult').value) || 1;
-      if (name) rules.push({ giftName: name, multiplier: mult });
-    }
-
     // Selected variant
     var selVar = document.querySelector('.tt-variant-option.selected');
     var variant = selVar ? selVar.getAttribute('data-variant') : 'animated-race';
@@ -512,8 +482,7 @@
       },
       giftsBoard: {
         enabled: document.getElementById('gifts-enabled').checked,
-        displayCount: parseInt(document.getElementById('gifts-count').value, 10) || 5,
-        giftMultiplierRules: rules
+        displayCount: parseInt(document.getElementById('gifts-count').value, 10) || 5
       },
       decay: {
         enabled: document.getElementById('decay-enabled').checked,
@@ -529,6 +498,7 @@
       overlay: {
         variant: variant,
         theme: document.getElementById('ov-theme').value,
+        orientation: document.getElementById('ov-orientation').value,
         size: document.getElementById('ov-size').value,
         displayCount: parseInt(document.getElementById('ov-count').value, 10) || 5,
         rotationIntervalMs: parseInt(document.getElementById('ov-rotation').value, 10) || 8000,
@@ -544,7 +514,6 @@
         playOnNewLeader: document.getElementById('snd-leader').checked,
         playOnRankChange: document.getElementById('snd-rank').checked
       },
-      allTime: { enabled: true },
       chat: {
         rankCommandEnabled: document.getElementById('chat-rank-enabled').checked,
         rankCommandKeyword: document.getElementById('chat-keyword').value.trim() || '!rank'
@@ -595,29 +564,6 @@
   });
 
   // ==============================
-  // Hall of Fame
-  // ==============================
-  function loadHallOfFame() {
-    fetch(API_BASE + '/alltime/' + currentHofBoard).then(function (r) { return r.json(); }).then(function (data) {
-      var tbody = document.getElementById('alltime-tbody');
-      if (!data.success || !data.board || !data.board.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:0.4">Keine Daten</td></tr>';
-        return;
-      }
-      var html = '';
-      for (var i = 0; i < data.board.length; i++) {
-        var e = data.board[i];
-        html += '<tr><td>' + escHtml(String(i + 1)) + '</td>';
-        html += '<td>' + escHtml(e.nickname || e.username) + '</td>';
-        html += '<td>' + escHtml(String(e.best_score)) + '</td>';
-        html += '<td>' + escHtml(String(e.total_score)) + '</td>';
-        html += '<td>' + escHtml(String(e.sessions_in_top3)) + '</td></tr>';
-      }
-      tbody.innerHTML = html;
-    });
-  }
-
-  // ==============================
   // Controls
   // ==============================
   document.getElementById('reset-likes').addEventListener('click', function () {
@@ -642,10 +588,13 @@
     });
   });
 
-  // Load session ID
+  // Load session info
   function loadSession() {
     fetch(API_BASE + '/session/current').then(function (r) { return r.json(); }).then(function (data) {
-      if (data.success) document.getElementById('current-session-id').textContent = data.sessionId || '–';
+      if (data.success) {
+        document.getElementById('current-session-id').textContent = data.sessionId || '–';
+        document.getElementById('current-stream-username').textContent = data.streamUsername || '–';
+      }
     });
   }
 
@@ -664,7 +613,6 @@
   // ==============================
   loadConfig();
   loadSession();
-  loadHallOfFame();
 })();
 </script>
 </body>
