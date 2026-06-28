@@ -85,7 +85,34 @@ async function refreshTimer(id) {
         if (data.success) {
             const idx = timers.findIndex(t => t.id === id);
             if (idx !== -1) timers[idx] = data.timer; else timers.push(data.timer);
+            // Save section states before replacing
+            const oldCard = document.getElementById('tc-' + id);
+            const sectionStates = {};
+            if (oldCard) {
+                oldCard.querySelectorAll('.section-toggle').forEach(btn => {
+                    const sec = btn.getAttribute('data-sec');
+                    const body = oldCard.querySelector('[data-sec-body="' + sec + '"]');
+                    sectionStates[sec] = body ? body.classList.contains('open') : false;
+                });
+            }
             renderSingleTimer(data.timer);
+            // Restore section states
+            const newCard = document.getElementById('tc-' + id);
+            if (newCard && Object.keys(sectionStates).length > 0) {
+                newCard.querySelectorAll('.section-toggle').forEach(btn => {
+                    const sec = btn.getAttribute('data-sec');
+                    const wasOpen = sectionStates[sec];
+                    if (wasOpen !== undefined) {
+                        const body = newCard.querySelector('[data-sec-body="' + sec + '"]');
+                        if (body) {
+                            body.classList.toggle('open', wasOpen);
+                            btn.classList.toggle('open', wasOpen);
+                            const chev = btn.querySelector('.chevron');
+                            if (chev) chev.style.transform = wasOpen ? 'rotate(180deg)' : '';
+                        }
+                    }
+                });
+            }
         }
     } catch (e) { console.error('refreshTimer', e); }
 }
