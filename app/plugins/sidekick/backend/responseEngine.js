@@ -8,6 +8,45 @@
 /**
  * Relevance scorer for chat messages
  */
+
+function clampValue(value, min, max, fallback) {
+  const normalized = Number(value);
+  if (!Number.isFinite(normalized)) return fallback;
+  return Math.min(max, Math.max(min, normalized));
+}
+
+function sanitizeList(value, fallback = []) {
+  if (!Array.isArray(value)) return fallback;
+  return value
+    .map((item) => String(item || '').trim().toLowerCase())
+    .filter((item) => item.length >= 2)
+    .filter((item, index, items) => items.indexOf(item) === index);
+}
+
+function normalizeDecisionMode(mode) {
+  const safe = String(mode || 'auto').toLowerCase().trim();
+  if (safe === 'always' || safe === 'mentions' || safe === 'probability' || safe === 'off') {
+    return safe;
+  }
+  return 'auto';
+}
+
+function buildSafeReason(value) {
+  const safe = String(value || '').trim();
+  return safe.length > 80 ? `${safe.slice(0, 77)}...` : safe;
+}
+
+function findMention(text, terms = []) {
+  if (!Array.isArray(terms) || terms.length === 0) return null;
+  const normalized = text.toLowerCase();
+  for (const term of terms) {
+    const token = String(term || '').trim().toLowerCase();
+    if (!token || token.length < 2) continue;
+    if (normalized.includes(token)) return token;
+  }
+  return null;
+}
+
 class Relevance {
   constructor(config) {
     this.config = config;
@@ -106,29 +145,54 @@ class Relevance {
    */
   score(text) {
     const low = text.toLowerCase().trim();
-    let score = 0;
+    let score = 0.25;
     
     // Question mark bonus
     if (low.includes('?')) {
-      score += 0.6;
+      score += 0.45;
     }
     
     // Keyword bonus
     if (this.keywordsBonus.some(k => low.includes(k))) {
-      score += 0.35;
+      score += 0.3;
     }
     
     // Length bonus
-    if (low.length >= 7) {
-      score += 0.1;
+    if (low.length >= 4) {
+      score += 0.15;
     }
     
     // Punctuation bonus (indicates engagement)
     if (/[!:;]/.test(low)) {
-      score += 0.05;
+      score += 0.1;
+    }
+
+    if (this.config.comment?.mentionEnabled) {
+      const mentions = sanitizeList(this.config.comment.mentionTerms, []);
+      const mentioned = findMention(low, mentions);
+      if (mentioned) score += 0.25;
     }
     
     return Math.min(1.0, score);
+  }
+
+  extractFeatures(text, commentConfig = {}) {
+    const clean = String(text || '').trim();
+    const low = clean.toLowerCase();
+    const words = low.split(/\s+/).filter(Boolean);
+    const mentionTerms = sanitizeList(commentConfig.mentionTerms, []);
+    const mention = findMention(low, mentionTerms);
+    return {
+      textLength: clean.length,
+      wordCount: words.length,
+      isQuestion: low.includes('?'),
+      isLongForm: words.length > Number(commentConfig.longFormWordLimit || 45),
+      mentionTerm: mention,
+      mentionsKnownName: Boolean(mention),
+      hasEmoji: /\p{Extended_Pictographic}/u.test(clean),
+      startsWithCommand: low.startsWith('!') || low.startsWith('/'),
+      hasPunctuation: /[!?.,;:]/.test(low)
+    };
   }
 }
 
@@ -189,6 +253,45 @@ class ResponseEngine {
     this.config = config;
     this.relevance.updateConfig(config);
   }
+
+  _getConversationState(context = {}) {
+    const state = context?.conversationState || context?.conversation || null;
+    if (!state || typeof state !== 'object' || Array.isArray(state)) return null;
+    return state;
+  }
+
+  _getConversationBias(conversationState = null, features = {}) {
+    if (!conversationState) {
+      return {
+        thresholdBoost: 0,
+        probabilityBoost: 0,
+        mentionRelaxed: false
+      };
+    }
+
+    let thresholdBoost = 0;
+    let probabilityBoost = 0;
+    if (conversationState.active) {
+      thresholdBoost += 0.15;
+      probabilityBoost += 0.1;
+    }
+    if (conversationState.lastSpeaker === 'host') {
+      thresholdBoost += 0.05;
+      probabilityBoost += 0.05;
+    }
+    if (Number.isFinite(Number(conversationState.turnCount)) && Number(conversationState.turnCount) >= 4) {
+      thresholdBoost += 0.05;
+    }
+    if (features.isQuestion) {
+      thresholdBoost += 0.05;
+    }
+
+    return {
+      thresholdBoost: clampValue(thresholdBoost, 0, 0.35, 0),
+      probabilityBoost: clampValue(probabilityBoost, 0, 0.3, 0),
+      mentionRelaxed: conversationState.active && Number(conversationState.turnCount) >= 2
+    };
+  }
   
   /**
    * Get a random template response
@@ -217,17 +320,53 @@ class ResponseEngine {
    * @param {string} text - Message text
    * @returns {Object|null} Response object or null
    */
-  evaluateChat(uid, nickname, text) {
+  evaluateChat(uid, nickname, text, context = {}) {
     const commentConfig = this.config.comment || {};
+    const decisionMode = normalizeDecisionMode(commentConfig.decisionMode || 'auto');
+    const minLength = commentConfig.minLength || 3;
+    // Keep Sidekick a bit more conversational than the raw threshold suggests.
+    const responseBias = clampValue(commentConfig.responseBias, 0, 0.5, 0.2);
+    const decisionMinScore = Math.max(0, clampValue(commentConfig.replyThreshold, 0, 1, 0.6) - responseBias);
+    const decisionProbability = clampValue(commentConfig.decisionProbability, 0, 1, commentConfig.chatResponseProbability ?? 1);
+    const mentionTerms = sanitizeList(commentConfig.mentionTerms, ['sidekick', 'animazingpal', 'pal']);
+    const conversationState = this._getConversationState(context);
+    const features = this.relevance.extractFeatures(text, {
+      ...commentConfig,
+      mentionTerms
+    });
+    const conversationBias = this._getConversationBias(conversationState, features);
+    const effectiveDecisionMinScore = Math.max(0, decisionMinScore - conversationBias.thresholdBoost);
+    const effectiveDecisionProbability = Math.min(1, decisionProbability + conversationBias.probabilityBoost);
+    const effectiveMinLength = conversationBias.mentionRelaxed ? Math.min(minLength, 2) : minLength;
     
     // Check minimum length
-    if (text.length < (commentConfig.minLength || 3)) {
-      return null;
+    if (text.length < effectiveMinLength) {
+      return {
+        respond: false,
+        score: 0,
+        mode: decisionMode,
+        reason: 'too_short',
+        skipReason: 'too_short',
+        selection: 'none',
+        type: 'chat',
+        priority: 0,
+        features
+      };
     }
     
     // Check if ignored
     if (this.relevance.isIgnored(text)) {
-      return null;
+      return {
+        respond: false,
+        score: 0,
+        mode: decisionMode,
+        reason: 'ignored',
+        skipReason: 'ignored',
+        selection: 'none',
+        type: 'chat',
+        priority: 0,
+        features
+      };
     }
     
     // Check for greeting
@@ -235,9 +374,15 @@ class ResponseEngine {
       // Don't respond to greetings that are also questions
       if (!text.includes('?') && text.split(/\s+/).length <= 4) {
         return {
+          respond: true,
           type: 'greeting',
           response: this.getTemplateResponse('greeting', { nickname }),
-          priority: 1
+          priority: 1,
+          mode: decisionMode,
+          score: 0.65,
+          reason: 'greeting',
+          selection: 'greeting',
+          features
         };
       }
     }
@@ -245,33 +390,112 @@ class ResponseEngine {
     // Check for thanks
     if (commentConfig.respondToThanks && this.relevance.isThanks(text)) {
       return {
+        respond: true,
         type: 'thanks',
         response: this.getTemplateResponse('thanks', { nickname }),
-        priority: 1
+        priority: 1,
+        mode: decisionMode,
+        score: 0.65,
+        reason: 'thanks',
+        selection: 'thanks',
+        features
       };
     }
     
+    // Sidekick decision mode gate
+    if (decisionMode === 'off') {
+      return {
+        respond: false,
+        score: 0,
+        mode: decisionMode,
+        reason: 'mode_off',
+        skipReason: 'mode_off',
+        selection: 'none',
+        type: 'chat',
+        priority: 0,
+        features
+      };
+    }
+
     // Score relevance
     const score = this.relevance.score(text);
-    const threshold = commentConfig.replyThreshold || 0.6;
-    
-    // Guard against misconfigured high threshold (>0.8 would rarely trigger)
-    // If threshold is too high, use a sensible default of 0.4 to ensure some responses
-    // This prevents user confusion when no responses are generated
-    const effectiveThreshold = threshold > 0.8 ? 0.4 : threshold;
-    
-    if (score >= effectiveThreshold) {
-      // For now, return a generic acknowledgment
-      // In future, could integrate LLM for intelligent responses
+    const needsMention =
+      decisionMode === 'mentions'
+      && !features.isQuestion
+      && !features.isLongForm
+      && !features.mentionsKnownName
+      && !commentConfig.respondToGreetings
+      && !conversationBias.mentionRelaxed;
+    if (needsMention) {
       return {
-        type: 'relevant',
+        respond: false,
         score,
-        response: `@${nickname}: ${text}`, // Echo the relevant message
-        priority: 2
+        mode: decisionMode,
+        reason: 'mention_required',
+        skipReason: 'mention_required',
+        selection: 'none',
+        type: 'chat',
+        priority: 0,
+        features,
+        matchedMention: null
+      };
+    }
+
+    let passed = score >= effectiveDecisionMinScore;
+    if (decisionMode === 'probability') {
+      const roll = Math.random();
+      passed = passed && roll <= effectiveDecisionProbability;
+      return {
+        respond: passed,
+        score,
+        mode: decisionMode,
+        probability: effectiveDecisionProbability,
+        roll,
+        reason: passed ? 'auto' : 'probability_reject',
+        skipReason: passed ? null : 'probability_reject',
+        threshold: effectiveDecisionMinScore,
+        selection: passed ? 'chat' : 'none',
+        type: 'chat',
+        priority: passed ? 2 : 0,
+        features,
+        matchedMention: features.mentionsKnownName ? features.mentionTerm : null,
+        mentionTerms: mentionTerms.slice(0, 20)
+      };
+    }
+
+    if (!passed) {
+      return {
+        respond: false,
+        score,
+        mode: decisionMode,
+        reason: 'score_below_threshold',
+        skipReason: 'score_below_threshold',
+        threshold: decisionMinScore,
+        selection: 'none',
+        type: 'chat',
+        priority: 0,
+        features
       };
     }
     
-    return null;
+    // Additional relevance boost for explicit user mentions
+    const hasMention = !!features.mentionsKnownName || !!findMention(text.toLowerCase(), mentionTerms);
+    return {
+      respond: true,
+      type: 'relevant',
+      score,
+      mode: decisionMode,
+      reason: hasMention ? 'mention_or_threshold' : 'relevance',
+      threshold: effectiveDecisionMinScore,
+      selection: 'chat',
+      priority: 2,
+      matchedMention: hasMention ? (features.mentionTerm || findMention(text.toLowerCase(), mentionTerms)) : null,
+      mentionTerms: mentionTerms.slice(0, 20),
+      response: buildSafeReason(`@${nickname}: ${text}`),
+      features
+    }
+    
+    // unreachable fallback
   }
   
   /**

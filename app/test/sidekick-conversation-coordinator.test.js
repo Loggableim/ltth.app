@@ -299,6 +299,9 @@ describe('Sidekick conversation coordinator', () => {
       diamondCount: 1,
       repeatCount: 3,
       source: 'sidekick-viewer',
+      conversationState: expect.objectContaining({
+        turnCount: expect.any(Number)
+      }),
       decision: {
         type: 'gift',
         priority: 7
@@ -327,6 +330,61 @@ describe('Sidekick conversation coordinator', () => {
       recentUtteranceCount: 2,
       recentSidekickUtteranceCount: 2
     }));
+  });
+
+  test('exposes a compact conversation state snapshot for active dialogs', () => {
+    const coordinator = new ConversationCoordinator({
+      conversationWindowMs: 60000,
+      conversationActiveWindowMs: 15000,
+      conversationTurnLimit: 4
+    });
+
+    coordinator.recordHostSpeech('Wie geht es dem Chat?', { now: 1000, source: 'host-mic' });
+    coordinator.recordSidekickSpeech('Ich bin bereit.', { now: 2000, source: 'sidekick-output' });
+
+    const state = coordinator.getConversationState({ now: 3000 });
+
+    expect(state).toEqual(expect.objectContaining({
+      active: true,
+      turnCount: 2,
+      lastSpeaker: 'sidekick',
+      summary: expect.stringContaining('Dialog aktiv')
+    }));
+    expect(state.recentTurns).toEqual([
+      expect.objectContaining({ speaker: 'host', text: 'Wie geht es dem Chat?' }),
+      expect.objectContaining({ speaker: 'sidekick', text: 'Ich bin bereit.' })
+    ]);
+
+    expect(coordinator.buildHostSpeechEvent('Weiter gehts', { now: 3000 })).toEqual(expect.objectContaining({
+      conversationState: expect.objectContaining({
+        active: true,
+        turnCount: 2
+      })
+    }));
+  });
+
+  test('relaxes host speech gating while the dialog is active', () => {
+    const coordinator = new ConversationCoordinator({
+      hostContextCooldownMs: 6000,
+      hostOvertalkCooldownMs: 1800,
+      hostReplyProbability: 1,
+      hostMinConfidence: 0
+    });
+
+    coordinator.recordHostSpeech('Sag kurz was dazu.', { now: 1000 });
+    coordinator.recordSidekickSpeech('Klar.', { now: 2000 });
+
+    const originalRandom = Math.random;
+    Math.random = () => 0;
+    try {
+      expect(coordinator.shouldAcceptHostSpeech('Noch eine kurze Frage?', { now: 3000 })).toEqual(expect.objectContaining({
+        accept: true,
+        respond: true,
+        reason: 'accepted'
+      }));
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 });
 

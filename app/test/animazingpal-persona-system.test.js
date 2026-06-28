@@ -21,6 +21,62 @@ describe('AnimazingPal Persona System', function() {
     } catch (err) {
       console.log('Could not load modules, skipping tests:', err.message);
     }
+
+    it('returns an english follow fallback when language is set to en', async function() {
+      const response = await brainEngine.processFollow('carol', { nickname: 'Carol', language: 'en' });
+
+      assert.ok(response, 'Should return a fallback follow response');
+      assert.strictEqual(response.text, 'Thanks for following, Carol!');
+    });
+
+  describe('Persona Tone Settings', function() {
+    it('should have valid tone settings structure', function() {
+      const personas = memoryDb.getPersonalities();
+      
+      personas.forEach(persona => {
+        const toneSettings = JSON.parse(persona.tone_settings);
+        
+        assert.ok('temperature' in toneSettings);
+        assert.ok('presencePenalty' in toneSettings);
+        assert.ok('frequencyPenalty' in toneSettings);
+        
+        assert.ok(toneSettings.temperature >= 0 && toneSettings.temperature <= 2);
+        assert.ok(toneSettings.presencePenalty >= 0 && toneSettings.presencePenalty <= 2);
+        assert.ok(toneSettings.frequencyPenalty >= 0 && toneSettings.frequencyPenalty <= 2);
+      });
+    });
+
+    it('should have valid emote config structure', function() {
+      const personas = memoryDb.getPersonalities();
+      
+      personas.forEach(persona => {
+        const emoteConfig = JSON.parse(persona.emote_config);
+        
+        assert.ok('defaultEmote' in emoteConfig);
+        assert.ok('highEnergyEmote' in emoteConfig);
+        assert.ok('lowEnergyEmote' in emoteConfig);
+        
+        assert.ok(typeof emoteConfig.defaultEmote === 'string');
+        assert.ok(typeof emoteConfig.highEnergyEmote === 'string');
+        assert.ok(typeof emoteConfig.lowEnergyEmote === 'string');
+      });
+    });
+
+    it('should have valid memory behavior structure', function() {
+      const personas = memoryDb.getPersonalities();
+      
+      personas.forEach(persona => {
+        const memoryBehavior = JSON.parse(persona.memory_behavior);
+        
+        assert.ok('importanceThreshold' in memoryBehavior);
+        assert.ok('maxContextMemories' in memoryBehavior);
+        
+        assert.ok(memoryBehavior.importanceThreshold >= 0 && memoryBehavior.importanceThreshold <= 1);
+        assert.ok(memoryBehavior.maxContextMemories > 0);
+      });
+    });
+  });
+
   });
 
   beforeEach(function() {
@@ -240,58 +296,32 @@ describe('AnimazingPal Persona System', function() {
       const persona = brainEngine.getPersonality('delete_test');
       assert.strictEqual(persona, undefined);
     });
-  });
 
-  describe('Persona Tone Settings', function() {
-    it('should have valid tone settings structure', function() {
-      const personas = memoryDb.getPersonalities();
-      
-      personas.forEach(persona => {
-        const toneSettings = JSON.parse(persona.tone_settings);
-        
-        assert.ok('temperature' in toneSettings);
-        assert.ok('presencePenalty' in toneSettings);
-        assert.ok('frequencyPenalty' in toneSettings);
-        
-        assert.ok(toneSettings.temperature >= 0 && toneSettings.temperature <= 2);
-        assert.ok(toneSettings.presencePenalty >= 0 && toneSettings.presencePenalty <= 2);
-        assert.ok(toneSettings.frequencyPenalty >= 0 && toneSettings.frequencyPenalty <= 2);
-      });
+    it('returns a fallback follow response when GPT service is unavailable', async function() {
+      const response = await brainEngine.processFollow('alice', { nickname: 'Alice' });
+
+      assert.ok(response, 'Should return a fallback follow response');
+      assert.strictEqual(response.text, 'Danke für den Follow, Alice!');
+      assert.strictEqual(response.emotion, 'happy');
     });
 
-    it('should have valid emote config structure', function() {
-      const personas = memoryDb.getPersonalities();
-      
-      personas.forEach(persona => {
-        const emoteConfig = JSON.parse(persona.emote_config);
-        
-        assert.ok('defaultEmote' in emoteConfig);
-        assert.ok('highEnergyEmote' in emoteConfig);
-        assert.ok('lowEnergyEmote' in emoteConfig);
-        
-        assert.ok(typeof emoteConfig.defaultEmote === 'string');
-        assert.ok(typeof emoteConfig.highEnergyEmote === 'string');
-        assert.ok(typeof emoteConfig.lowEnergyEmote === 'string');
-      });
-    });
+    it('falls back to a static follow response when GPT generation fails', async function() {
+      brainEngine.gptBrain = {
+        generateFollowResponse: async () => {
+          throw new Error('provider failure');
+        }
+      };
 
-    it('should have valid memory behavior structure', function() {
-      const personas = memoryDb.getPersonalities();
-      
-      personas.forEach(persona => {
-        const memoryBehavior = JSON.parse(persona.memory_behavior);
-        
-        assert.ok('importanceThreshold' in memoryBehavior);
-        assert.ok('maxContextMemories' in memoryBehavior);
-        
-        assert.ok(memoryBehavior.importanceThreshold >= 0 && memoryBehavior.importanceThreshold <= 1);
-        assert.ok(memoryBehavior.maxContextMemories > 0);
-      });
+      const response = await brainEngine.processFollow('bob', { nickname: 'Bob' });
+
+      assert.ok(response, 'Should return fallback follow response on generation failure');
+      assert.strictEqual(response.text, 'Danke für den Follow, Bob!');
     });
   });
+
 
   describe('Default Personas', function() {
-    const expectedPersonas = ['friendly_streamer', 'gaming_pro', 'entertainer', 'chill_vibes', 'anime_fan'];
+    const expectedPersonas = ['friendly_streamer', 'gaming_pro', 'entertainer', 'rex', 'chill_vibes', 'anime_fan'];
 
     expectedPersonas.forEach(personaName => {
       it(`should have ${personaName} persona with complete attributes`, function() {

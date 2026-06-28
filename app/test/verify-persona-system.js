@@ -57,7 +57,7 @@ console.log('\nTest 2: Default Personas');
 const personas = memoryDb.getPersonalities();
 console.log(`  Found ${personas.length} personas`);
 
-const expectedPersonas = ['friendly_streamer', 'gaming_pro', 'entertainer', 'chill_vibes', 'anime_fan'];
+const expectedPersonas = ['friendly_streamer', 'gaming_pro', 'entertainer', 'rex', 'chill_vibes', 'anime_fan'];
 let allFound = true;
 expectedPersonas.forEach(name => {
   const persona = personas.find(p => p.name === name);

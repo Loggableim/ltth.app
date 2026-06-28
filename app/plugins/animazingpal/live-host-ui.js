@@ -1,10 +1,10 @@
-(function () {
+﻿(function () {
   'use strict';
 
   const PROVIDERS = ['openai', 'gemini', 'openrouter', 'ollama'];
   const EVENTS = ['chat', 'gift', 'follow', 'share', 'like', 'subscribe', 'join'];
   const PROFILE_FIELDS = ['display_name', 'language', 'tags', 'is_vip', 'vip_tier', 'total_visits', 'total_comments', 'total_gifts_sent', 'total_coins_spent'];
-  const LIVE_HOST_HEALTH_REFRESH_MS = 10000;
+  const LIVE_HOST_HEALTH_REFRESH_MS = 5000;
   const state = {
     config: null,
     voices: [],
@@ -155,17 +155,20 @@
         label: `${device.label || device.deviceId}${device.source === 'system' ? ' (System-Fallback)' : ''}`
       }))
     ];
-    const configuredId = get('audio.outputDeviceId');
-    if (configuredId && !options.some(option => option.value === configuredId)) {
-      options.splice(1, 0, {
-        value: configuredId,
-        label: `${get('audio.outputDeviceLabel') || configuredId} (nicht freigegeben / neu auswählen)`
-      });
+    const configuredEntries = [
+      { value: get('animaze.audioOutputDeviceId'), label: get('animaze.audioOutputDeviceLabel') },
+      { value: get('audio.outputDeviceId'), label: get('audio.outputDeviceLabel') }
+    ].filter(entry => entry.value);
+    for (const entry of configuredEntries) {
+      if (!options.some(option => option.value === entry.value)) {
+        options.splice(1, 0, {
+          value: entry.value,
+          label: `${entry.label || entry.value} (nicht freigegeben / neu auswählen)`
+        });
+      }
     }
     return options;
-  }
-
-  function hostInputOptions() {
+  }  function hostInputOptions() {
     const options = [
       { value: '', label: 'Browser-Standardmikrofon' },
       ...state.inputDevices.map(device => ({
@@ -193,8 +196,9 @@
   }
 
   function renderAudioRoutingStatus() {
-    const outputLabel = get('audio.outputDeviceLabel') || 'Windows-Standardgerät';
-    const outputId = get('audio.outputDeviceId');
+    const animazeOutputLabel = get('animaze.audioOutputDeviceLabel') || 'Windows-Standardgerät';
+    const animazeOutputId = get('animaze.audioOutputDeviceId') || get('audio.outputDeviceId');
+    const browserFallbackLabel = get('audio.outputDeviceLabel') || 'nicht gesetzt';
     const sinkSupported = supportsSinkId();
     const ttsStatus = state.ttsStatus.status || state.ttsStatus;
     const ttsReady = ttsStatus.initialized !== false;
@@ -206,14 +210,15 @@
     const lastError = playback.lastError || '';
     const sinkClass = sinkSupported ? 'text-green-400' : 'text-yellow-300';
     const routingHint = sinkSupported
-      ? 'Browser kann das gespeicherte Ausgabegerät direkt ansteuern.'
+      ? 'Browser kann die Animaze-Ausgabe direkt ansteuern.'
       : 'setSinkId nicht verfügbar: Audio läuft über das Windows-Standardgerät. Setze Windows-Standardausgabe auf CABLE Input oder nutze Chrome/Edge mit Audiogerätefreigabe.';
 
     return `<div id="liveHostAudioRoutingStatus" class="rounded-lg border border-gray-700 bg-gray-900/70 p-3 text-sm">
       <div class="font-semibold mb-2">Audio-Betriebsstatus</div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div>Fish.audio: <strong class="${ttsReady ? 'text-green-400' : 'text-red-400'}">${ttsReady ? 'bereit' : 'nicht bereit'}</strong> (${escapeHtml(ttsEngine)})</div>
-        <div>Ausgabe: <strong>${escapeHtml(outputLabel)}</strong>${outputId ? '' : ' (Default)'}</div>
+        <div>Animaze-Ausgabe: <strong>${escapeHtml(animazeOutputLabel)}</strong>${animazeOutputId ? '' : ' (Default)'}</div>
+        <div>Browser-Fallback: <strong>${escapeHtml(browserFallbackLabel)}</strong>${get('audio.outputDeviceId') ? '' : ' (optional)'}</div>
         <div>setSinkId: <strong class="${sinkClass}">${sinkSupported ? 'verfügbar' : 'nicht verfügbar'}</strong></div>
         <div>TTS-Queue: <strong>${escapeHtml(queueSize)}</strong>${currentText ? ` · ${escapeHtml(String(currentText).slice(0, 80))}` : ''}</div>
         <div>Browser-Playback: <strong class="${lastError ? 'text-red-400' : 'text-green-400'}">${escapeHtml(playback.status || 'idle')}</strong></div>
@@ -223,9 +228,7 @@
       ${lastRouting.reason ? `<p class="text-xs text-yellow-300 mt-2">Routing-Hinweis: ${escapeHtml(lastRouting.reason)}</p>` : ''}
       <p class="text-xs text-gray-400 mt-2">${escapeHtml(routingHint)}</p>
     </div>`;
-  }
-
-  function renderRuntimeDiagnostics() {
+  }  function renderRuntimeDiagnostics() {
     const runtime = state.status.liveHostRuntime || {};
     const diagnostics = runtime.diagnostics || {};
     const movement = diagnostics.lastMovementTest || null;
@@ -340,7 +343,7 @@
   function getBrowserPreflightState() {
     const audio = document.getElementById('animazingpal-tts-audio');
     const configuredOutputDeviceAvailable = isConfiguredOutputDeviceAvailable();
-    const outputSelect = document.querySelector('[data-lh="audio.outputDeviceId"]');
+    const outputSelect = document.querySelector('[data-lh="animaze.audioOutputDeviceId"]');
     const sinkSupported = Boolean(audio?.setSinkId) || supportsSinkId();
     return {
       browser: {
@@ -354,13 +357,11 @@
   }
 
   function isConfiguredOutputDeviceAvailable() {
-    const configuredId = get('audio.outputDeviceId');
+    const configuredId = get('animaze.audioOutputDeviceId') || get('audio.outputDeviceId');
     if (!configuredId) return true;
     if (configuredId.startsWith('system:')) return true;
     return state.devices.some(device => device.source !== 'system' && device.deviceId === configuredId);
-  }
-
-  function render() {
+  }  function render() {
     const root = document.getElementById('liveHostSettings');
     if (!root || !state.config) return;
     root.innerHTML = `
@@ -462,18 +463,19 @@
       ${input('tts.streaming', 'Streaming', { type: 'checkbox' })}${input('tts.priority', 'Queue-Priorität', { type: 'number', min: 0, max: 100 })}
       ${input('tts.duckOtherAudio', 'Audio-Ducking', { type: 'checkbox' })}${input('tts.fallbackBehavior', 'Fallback', { type: 'select', options: ['silent', 'default-voice', 'error'] })}${input('tts.probeStaleMs', 'Probe-Stale nach ms', { type: 'number', min: 30000, max: 86400000 })}
     </div><label class="block mt-3"><span class="text-gray-400 text-sm">Testtext</span><input id="liveHostTestText" class="input" value="Hallo, ich bin dein intelligenter AnimazingPal Live Host."></label><button class="btn btn-success mt-3" data-speak-test>Sprachtest</button>${actions('tts')}</div>
-    <div class="card"><h2 class="text-xl font-bold mb-3">Audio-Routing</h2><div class="grid grid-cols-1 gap-3">
-      ${input('audio.outputDeviceId', 'Wiedergabegerät', { type: 'select', options: deviceOptions() })}
+    <div class="card"><h2 class="text-xl font-bold mb-3">Animaze-Ausgabe / Virtual Cable</h2><div class="grid grid-cols-1 gap-3">
+      ${input('animaze.audioOutputDeviceId', 'Animaze-Ausgabe / Virtual Cable', { type: 'select', options: deviceOptions() })}
+      ${renderAudioRoutingStatus()}
+      ${actions('animaze')}
+      <p class="text-xs text-gray-500">Animaze-Ausgabe und Browser-Fallback werden getrennt gespeichert. Wenn der Browser kein setSinkId unterstützt, nutzt die Ausgabe das Windows-Standardgerät.</p>
+      <button class="btn btn-success" data-pick-output-device>Animaze-Ausgabegerät auswählen und speichern</button>
+      <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
+      ${input('audio.outputDeviceId', 'Browser-Fallback / Monitoring', { type: 'select', options: deviceOptions() })}
       ${input('audio.monitoringEnabled', 'Monitoring aktiv', { type: 'checkbox' })}${input('audio.monitoringVolume', 'Monitoring-Lautstärke', { type: 'number', min: 0, max: 100 })}
       ${input('audio.missingDeviceBehavior', 'Fehlendes Gerät', { type: 'select', options: ['mute', 'default', 'error'] })}
-      ${renderAudioRoutingStatus()}
-      <p class="text-xs text-gray-500">System-Fallback-Geräte kommen von Windows. Für direktes Browser-Routing muss das Gerät über den Auswahlbutton freigegeben sein; sonst nutzt der Player das Windows-Standardgerät.</p>
-      <button class="btn btn-success" data-pick-output-device>Audiogerät auswählen und speichern</button>
-      <button class="btn btn-secondary" data-refresh-devices>Geräte aktualisieren</button>
-    </div>${actions('audio')}</div></section>`;
-  }
-
-  function renderMemory() {
+      ${actions('audio')}
+    </div></div></section>`;
+  }  function renderMemory() {
     const allowed = get('viewerMemory.allowedProfileFields', []);
     return `<section class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4"><div class="card"><h2 class="text-xl font-bold mb-3">Viewer Profiles & Long-Term Memory</h2><div class="grid grid-cols-2 gap-3">
       ${input('viewerMemory.enabled', 'Viewer Memory aktiv', { type: 'checkbox' })}${input('viewerMemory.streamerId', 'Streamer-ID')}
@@ -564,14 +566,16 @@
       const device = document.querySelector('[data-lh="audio.outputDeviceId"]');
       set(patch, 'audio.outputDeviceLabel', device?.selectedOptions?.[0]?.textContent || '');
     }
+    if (section === 'animaze' || section === 'all') {
+      const device = document.querySelector('[data-lh="animaze.audioOutputDeviceId"]');
+      set(patch, 'animaze.audioOutputDeviceLabel', device?.selectedOptions?.[0]?.textContent || '');
+    }
     if (section === 'asr' || section === 'all') {
       const device = document.querySelector('[data-lh="asr.deviceId"]');
       set(patch, 'asr.deviceLabel', device?.selectedOptions?.[0]?.textContent || '');
     }
     return patch;
-  }
-
-  async function request(url, options = {}) {
+  }  async function request(url, options = {}) {
     const response = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
     const body = await response.json();
     if (!response.ok || body.success === false) throw new Error(body.error || `HTTP ${response.status}`);
@@ -668,18 +672,16 @@
     state.devices = [...state.devices.filter(item => item.deviceId !== device.deviceId), device];
     const body = await request('/api/animazingpal/live-host/config', {
       method: 'POST',
-      body: JSON.stringify({ audio: {
-        ...state.config.audio,
-        outputDeviceId: device.deviceId,
-        outputDeviceLabel: device.label || 'Ausgewähltes Audiogerät'
+      body: JSON.stringify({ animaze: {
+        ...state.config.animaze,
+        audioOutputDeviceId: device.deviceId,
+        audioOutputDeviceLabel: device.label || 'Ausgewähltes Animaze-Gerät'
       } })
     });
     state.config = body.config;
     render();
-    notify(`Audiogerät gespeichert: ${device.label || device.deviceId}`);
-  }
-
-  async function runPreflight() {
+    notify(`Animaze-Ausgabegerät gespeichert: ${device.label || device.deviceId}`);
+  }  async function runPreflight() {
     const body = await request('/api/animazingpal/live-host/preflight', {
       method: 'POST',
       body: JSON.stringify(getBrowserPreflightState())
@@ -1205,3 +1207,6 @@
     });
   });
 }());
+
+
+

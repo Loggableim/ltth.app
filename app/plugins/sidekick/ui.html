@@ -736,6 +736,39 @@
       </div>
 
       <div class="card">
+        <h3>Sidekick Decision Funnel</h3>
+        <div class="grid">
+          <div class="stat-card">
+            <div class="stat-value" id="decision-attempts">0</div>
+            <div class="stat-label">Attempts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="decision-selected">0</div>
+            <div class="stat-label">Selected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="decision-rejected">0</div>
+            <div class="stat-label">Rejected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="decision-responses">0</div>
+            <div class="stat-label">Responses</div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top: 15px;">
+          <div class="stat-card">
+            <div class="stat-value" id="decision-acceptance">0.0%</div>
+            <div class="stat-label">Acceptance Rate</div>
+          </div>
+          <div class="stat-card" style="text-align: left;">
+            <div class="stat-label">Top Reject Reasons</div>
+            <div id="decision-reasons" class="help-text" style="margin-top: 8px;">-</div>
+          </div>
+        </div>
+        <div class="help-text" style="margin-top: 10px;" id="decision-types">By event type: -</div>
+      </div>
+
+      <div class="card">
         <h3>ðŸŽ¯ Top Gifter</h3>
         <div class="user-list" id="top-gifters">
           <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
@@ -1716,6 +1749,27 @@
               </div>
             `).join('');
           }
+
+          const decision = data.metrics.sidekickDecision || {};
+          document.getElementById('decision-attempts').textContent = decision.attempts || 0;
+          document.getElementById('decision-selected').textContent = decision.selected || 0;
+          document.getElementById('decision-rejected').textContent = decision.rejected || 0;
+          document.getElementById('decision-responses').textContent = decision.responses || 0;
+          document.getElementById('decision-acceptance').textContent = `${decision.acceptanceRate || '0.0'}%`;
+
+          const rejectReasons = Object.entries(decision.rejectedReasons || {})
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([reason, count]) => `${reason}: ${count}`)
+            .join(' · ');
+          document.getElementById('decision-reasons').textContent = rejectReasons || '-';
+
+          const selectedByEventType = Object.entries(decision.selectedByEventType || {})
+            .sort((a, b) => (b[1]?.selected || 0) - (a[1]?.selected || 0))
+            .slice(0, 5)
+            .map(([type, counts]) => `${type}: ${counts.selected || 0}/${counts.attempts || 0}`)
+            .join(' · ');
+          document.getElementById('decision-types').textContent = `By event type: ${selectedByEventType || '-'}`;
         }
       } catch (err) {
         console.error('Failed to fetch metrics:', err);

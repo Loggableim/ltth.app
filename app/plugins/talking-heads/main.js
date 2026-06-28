@@ -14,6 +14,13 @@ const CacheManager = require('./utils/cache-manager');
 const RoleManager = require('./utils/role-manager');
 const { getAllStyleTemplates, getStyleKeys } = require('./utils/style-templates');
 
+const ALLOWED_TTS_SOURCES = new Set([
+  'animazingpal',
+  'animazingpal-host',
+  'animazingpal-host-speech-output',
+  'talking-heads-preview'
+]);
+
 class TalkingHeadsPlugin {
   constructor(api) {
     this.api = api;
@@ -1848,7 +1855,14 @@ class TalkingHeadsPlugin {
     }
 
     const startHandler = async (payload = {}) => {
-      const isPreview = payload.source === 'talking-heads-preview';
+      const source = String(payload.source || '').toLowerCase();
+      const isPreview = source === 'talking-heads-preview';
+
+      if (!ALLOWED_TTS_SOURCES.has(source)) {
+        this._log(`Ignoring playback source '${source || 'unknown'}' for talking head bridge`, 'debug');
+        return;
+      }
+
       // Allow preview to work even if plugin is not enabled
       if (!this.config.enabled && !isPreview) return;
       
@@ -1879,6 +1893,12 @@ class TalkingHeadsPlugin {
     };
 
     const endHandler = (payload = {}) => {
+      const source = String(payload.source || '').toLowerCase();
+      if (!ALLOWED_TTS_SOURCES.has(source)) {
+        this._log(`Ignoring playback end for source '${source || 'unknown'}'`, 'debug');
+        return;
+      }
+
       const userId = payload.userId || payload.username;
       if (!userId || !this.animationController) return;
       this.animationController.stopAnimation(userId);

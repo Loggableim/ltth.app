@@ -2548,7 +2548,7 @@ class TTSPlugin {
      * Main speak method - synthesizes and queues TTS
      * @param {object} params - { text, userId, username, voiceId?, engine?, source?, teamLevel?, ... }
      */
-    async speak(params) {
+  async speak(params) {
         // ===== GLOBAL TTS ENABLE/DISABLE CHECK =====
         // This check MUST be first to block ALL TTS calls when disabled
         const db = this.api.getDatabase();
@@ -2796,7 +2796,7 @@ class TTSPlugin {
             
             // Prioritize user custom voices over source-provided voices
             // EXCEPT for system sources (quiz-show, manual) which should use their configured voice
-            const isSystemSource = source === 'quiz-show' || source === 'manual';
+            const isSystemSource = source === 'quiz-show' || source === 'manual' || source === 'animazingpal' || source === 'animazingpal-host';
 
             const autoAssignedFishVoice = this._maybeAssignTeamLevelFishVoice({
                 userId,
@@ -3414,11 +3414,106 @@ class TTSPlugin {
         }
     }
 
-    /**
-     * Synthesize audio for pre-generation (used by queue manager)
-     * @private
-     */
-    async _synthesizeForPreGeneration(text, voice, engine, options = {}) {
+  /**
+   * Enqueue already prepared TTS audio without running synthesis.
+   * Useful for cached greetings and externally generated audio.
+   * @param {object} params - { text, userId, username, voiceId?, engine?, source?, teamLevel?, isSubscriber?, priority?, audioData, volume?, speed?, bypassDuplicateFilter? }
+   */
+  async enqueuePreparedAudio(params = {}) {
+    const {
+      text,
+      userId,
+      username,
+      voiceId = null,
+      engine = null,
+      source = 'unknown',
+      teamLevel = 0,
+      isSubscriber = false,
+      priority = null,
+      audioData,
+      volume = Number(this.config?.volume || 80),
+      speed = Number(this.config?.speed || 1),
+      bypassDuplicateFilter = true,
+      hasUserAssignedVoice = false
+    } = params;
+
+    this._logDebug('ENQUEUE_PREPARED', 'Using prepared audio cache', {
+      text: String(text || '').substring(0, 50),
+      userId,
+      username,
+      source,
+      voiceId,
+      engine,
+      volume,
+      speed,
+      priority
+    });
+
+    try {
+      const selectedEngine = engine || this.config?.defaultEngine || 'fishaudio';
+      const selectedVoice = voiceId || this.config?.defaultVoice || 'fish-dumble';
+
+      const queueResult = this.queueManager.enqueue({
+        userId,
+        username,
+        text: String(text || ''),
+        voice: selectedVoice,
+        engine: selectedEngine,
+        audioData,
+        isStreaming: false,
+        source,
+        teamLevel,
+        isSubscriber,
+        priority,
+        duckOther: false,
+        volume: Number(volume),
+        speed: Number(speed),
+        hasAssignedVoice: hasUserAssignedVoice === true || voiceId !== null,
+        bypassDuplicateFilter
+      });
+
+      if (!queueResult || queueResult.success !== true) {
+        return {
+          success: false,
+          cached: false,
+          queued: false,
+          error: queueResult?.reason || queueResult?.error || 'enqueue-failed',
+          details: queueResult
+        };
+      }
+
+      return {
+        success: true,
+        cached: true,
+        queued: true,
+        id: queueResult.id,
+        position: queueResult.position,
+        queueSize: queueResult.queueSize,
+        estimatedWaitMs: queueResult.estimatedWaitMs,
+        voice: selectedVoice,
+        engine: selectedEngine
+      };
+    } catch (error) {
+      this._logDebug('ENQUEUE_PREPARED', 'Failed to enqueue prepared audio', {
+        error: error.message,
+        stack: error.stack
+      });
+      this.logger.error(`TTS enqueuePreparedAudio error: ${error.message}`);
+      return {
+        success: false,
+        cached: false,
+        queued: false,
+        error: 'enqueue-prepared-failed',
+        message: error.message
+      };
+    }
+  }
+
+  /**
+   * Synthesize audio for pre-generation (used by queue manager)
+   * @private
+   */
+  async _synthesizeForPreGeneration(text, voice, engine, options = {}) {
         const ttsEngine = this.engines[engine];
         
         if (!ttsEngine) {
@@ -3538,16 +3633,17 @@ class TTSPlugin {
                             ...(item.synthesisOptions || {}),
                             customVoices: this.config.customFishVoices,
                             onChunk: (base64Chunk, isFirst) => {
-                                this.api.emit('tts:stream:chunk', {
-                                    id: item.id,
-                                    chunk: base64Chunk,
-                                    isFirst: isFirst,
-                                    volume: item.volume,
-                                    speed: item.speed,
-                                    format: 'mp3',
-                                    duckOther: item.duckOther ?? this.config.duckOtherAudio,
-                                    duckVolume: this.config.duckVolume
-                                });
+                            this.api.emit('tts:stream:chunk', {
+                                id: item.id,
+                                chunk: base64Chunk,
+                                isFirst: isFirst,
+                                volume: item.volume,
+                                speed: item.speed,
+                                format: 'mp3',
+                                source: item.source || 'unknown',
+                                duckOther: item.duckOther ?? this.config.duckOtherAudio,
+                                duckVolume: this.config.duckVolume
+                            });
 
                                 this._logDebug('PLAYBACK', 'WebSocket chunk emitted', {
                                     id: item.id,
@@ -3564,7 +3660,8 @@ class TTSPlugin {
                                     id: item.id,
                                     totalChunks: totalChunks,
                                     totalBytes: totalBytes,
-                                    format: 'mp3'
+                                    format: 'mp3',
+                                    source: item.source || 'unknown'
                                 });
 
                                 this._logDebug('PLAYBACK', 'WebSocket stream ended', {
@@ -3580,7 +3677,8 @@ class TTSPlugin {
                             id: item.id,
                             username: item.username,
                             text: item.text,
-                            isStreaming: true
+                            isStreaming: true,
+                            source: item.source || 'unknown'
                         });
 
                         if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
@@ -3660,6 +3758,7 @@ class TTSPlugin {
                                 volume: item.volume,
                                 speed: item.speed,
                                 format: streamResult.format || 'mp3',
+                                source: item.source || 'unknown',
                                 duckOther: item.duckOther ?? this.config.duckOtherAudio,
                                 duckVolume: this.config.duckVolume
                             });
@@ -3686,7 +3785,8 @@ class TTSPlugin {
                                     id: item.id,
                                     totalChunks: chunks.length,
                                     totalBytes: totalBytes,
-                                    format: streamResult.format || 'mp3'
+                                    format: streamResult.format || 'mp3',
+                                    source: item.source || 'unknown'
                                 });
                                 
                                 resolve();
@@ -3742,7 +3842,8 @@ class TTSPlugin {
                             this.api.emit('tts:playback:started', {
                                 id: item.id,
                                 username: item.username,
-                                text: item.text
+                                text: item.text,
+                                source: item.source || 'unknown'
                             });
 
                             this.api.emit('tts:play', {
@@ -3754,6 +3855,7 @@ class TTSPlugin {
                                 audioData: audioData,
                                 volume: item.volume,
                                 speed: item.speed,
+                                source: item.source || 'unknown',
                                 duckOther: item.duckOther ?? this.config.duckOtherAudio,
                                 duckVolume: this.config.duckVolume
                             });
@@ -3783,7 +3885,8 @@ class TTSPlugin {
                 this.api.emit('tts:playback:started', {
                     id: item.id,
                     username: item.username,
-                    text: item.text
+                    text: item.text,
+                    source: item.source || 'unknown'
                 });
 
                 // Send audio to clients for playback
@@ -3796,6 +3899,7 @@ class TTSPlugin {
                     audioData: item.audioData,
                     volume: item.volume,
                     speed: item.speed,
+                    source: item.source || 'unknown',
                     duckOther: item.duckOther ?? this.config.duckOtherAudio,
                     duckVolume: this.config.duckVolume
                 });
@@ -3834,7 +3938,8 @@ class TTSPlugin {
             // Emit playback end event
             this.api.emit('tts:playback:ended', {
                 id: item.id,
-                username: item.username
+                username: item.username,
+                source: item.source || 'unknown'
             });
 
             if (this.api.pluginLoader && typeof this.api.pluginLoader.emit === 'function') {
@@ -3860,7 +3965,8 @@ class TTSPlugin {
             this.logger.error(`TTS playback error: ${error.message}`);
             this.api.emit('tts:playback:error', {
                 id: item.id,
-                error: error.message
+                error: error.message,
+                source: item.source || 'unknown'
             });
         }
     }

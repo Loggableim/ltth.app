@@ -14,6 +14,9 @@ const DEFAULT_CONVERSATION_COORDINATOR_CONFIG = {
   minHostSpeechChars: 3,
   echoWindowMs: 12000,
   maxRecentUtterances: 20,
+  conversationWindowMs: 120000,
+  conversationActiveWindowMs: 30000,
+  conversationTurnLimit: 8,
   // Reserved for a future fuzzy duplicate implementation. Current protection
   // intentionally uses exact normalized matches for deterministic safety.
   duplicateSimilarity: 1,
@@ -71,6 +74,9 @@ function normalizeConversationConfig(config = {}) {
     minHostSpeechChars: Math.round(clamp(input.minHostSpeechChars, 1, 500, defaults.minHostSpeechChars)),
     echoWindowMs: Math.round(clamp(input.echoWindowMs, 1000, 300000, defaults.echoWindowMs)),
     maxRecentUtterances: Math.round(clamp(input.maxRecentUtterances, 1, 200, defaults.maxRecentUtterances)),
+    conversationWindowMs: Math.round(clamp(input.conversationWindowMs, 5000, 600000, defaults.conversationWindowMs)),
+    conversationActiveWindowMs: Math.round(clamp(input.conversationActiveWindowMs, 1000, 600000, defaults.conversationActiveWindowMs)),
+    conversationTurnLimit: Math.round(clamp(input.conversationTurnLimit, 2, 20, defaults.conversationTurnLimit)),
     duplicateSimilarity: clamp(input.duplicateSimilarity, 0, 1, defaults.duplicateSimilarity),
     hostSpeechEventType: SUPPORTED_EVENT_TYPES.includes(input.hostSpeechEventType) ? input.hostSpeechEventType : defaults.hostSpeechEventType,
     viewerEventTypes: viewerEventTypes.length > 0 ? viewerEventTypes : defaults.viewerEventTypes,
@@ -89,13 +95,25 @@ function sanitizeDecision(decision = {}) {
     sanitized.respond = normalizeBoolean(decision.respond, false);
   }
   if (decision.score !== undefined) sanitized.score = clamp(decision.score, 0, 1, 0);
-  for (const key of ['reason', 'type', 'selection']) {
+  for (const key of ['reason', 'type', 'selection', 'mode', 'source', 'matchedMention']) {
     if (decision[key] !== undefined && decision[key] !== null) {
       sanitized[key] = safeString(decision[key], 80);
     }
   }
+  if (decision.skipReason !== undefined && decision.skipReason !== null) {
+    sanitized.skipReason = safeString(decision.skipReason, 80);
+  }
   if (decision.priority !== undefined) {
     sanitized.priority = Math.round(clamp(decision.priority, 0, 100, 0));
+  }
+  if (decision.threshold !== undefined) {
+    sanitized.threshold = clamp(decision.threshold, 0, 1, 0);
+  }
+  if (decision.probability !== undefined) {
+    sanitized.probability = clamp(decision.probability, 0, 1, 0);
+  }
+  if (decision.roll !== undefined) {
+    sanitized.roll = Number.isFinite(Number(decision.roll)) ? Number(decision.roll) : 0;
   }
   if (decision.features && typeof decision.features === 'object') {
     sanitized.features = {};
@@ -106,7 +124,95 @@ function sanitizeDecision(decision = {}) {
       }
     }
   }
+  if (Array.isArray(decision.mentionTerms)) {
+    sanitized.mentionTerms = decision.mentionTerms
+      .map((term) => safeString(term, 40))
+      .filter(Boolean)
+      .slice(0, 20);
+  }
   return sanitized;
+}
+
+function sanitizeConversationSummary(summary = {}) {
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return null;
+
+  const sanitized = {};
+  if (summary.uid !== undefined && summary.uid !== null) {
+    sanitized.uid = safeString(summary.uid, 128);
+  }
+  if (summary.nickname !== undefined && summary.nickname !== null) {
+    sanitized.nickname = safeString(summary.nickname, 128);
+  }
+  if (summary.messageCount !== undefined && summary.messageCount !== null) {
+    sanitized.messageCount = Math.round(clamp(summary.messageCount, 0, 10000, 0));
+  }
+  if (summary.summary !== undefined && summary.summary !== null) {
+    sanitized.summary = safeString(summary.summary, 1200);
+  }
+  if (Array.isArray(summary.recentMessages)) {
+    sanitized.recentMessages = summary.recentMessages
+      .map((entry) => {
+        if (typeof entry === 'string') {
+          const text = entry.trim();
+          if (!text) return null;
+          return { text: safeString(text, 160) };
+        }
+        if (!entry || typeof entry !== 'object') return null;
+        const text = safeString(entry.text, 160);
+        if (!text) return null;
+        const ts = Number(entry.ts);
+        return {
+          text,
+          ...(Number.isFinite(ts) ? { ts } : {})
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 5);
+  }
+
+  return Object.keys(sanitized).length > 0 ? sanitized : null;
+}
+
+function sanitizeUserContext(userContext = {}) {
+  if (!userContext || typeof userContext !== 'object' || Array.isArray(userContext)) return null;
+
+  const sanitized = {};
+  for (const key of ['uid', 'nickname']) {
+    if (userContext[key] !== undefined && userContext[key] !== null) {
+      sanitized[key] = safeString(userContext[key], 128);
+    }
+  }
+  for (const key of ['firstSeen', 'lastSeen', 'lastJoin', 'lastFollow', 'lastSub', 'lastShare', 'lastGift', 'lastLike', 'lastGreet']) {
+    if (userContext[key] !== undefined && userContext[key] !== null) {
+      const value = Number(userContext[key]);
+      if (Number.isFinite(value)) sanitized[key] = Math.round(value);
+    }
+  }
+  for (const key of ['likes', 'gifts', 'follows', 'subs', 'shares', 'joins', 'messageCount']) {
+    if (userContext[key] !== undefined && userContext[key] !== null) {
+      sanitized[key] = Math.round(clamp(userContext[key], 0, 1000000, 0));
+    }
+  }
+  for (const key of ['isFollower', 'isSubscriber', 'isModerator']) {
+    if (userContext[key] !== undefined && userContext[key] !== null) {
+      sanitized[key] = normalizeBoolean(userContext[key], false);
+    }
+  }
+
+  return Object.keys(sanitized).length > 0 ? sanitized : null;
+}
+
+function sanitizeRoleFlags(roleFlags = {}) {
+  if (!roleFlags || typeof roleFlags !== 'object' || Array.isArray(roleFlags)) return null;
+
+  const sanitized = {};
+  for (const key of ['isFollower', 'isSubscriber', 'isModerator']) {
+    if (roleFlags[key] !== undefined && roleFlags[key] !== null) {
+      sanitized[key] = normalizeBoolean(roleFlags[key], false);
+    }
+  }
+
+  return Object.keys(sanitized).length > 0 ? sanitized : null;
 }
 
 function countWords(text = '') {
@@ -194,12 +300,58 @@ class ConversationCoordinator {
     return record;
   }
 
+  getConversationState(options = {}) {
+    const now = this._getTimestamp(options);
+    const windowMs = Math.max(1000, Number(this.config.conversationWindowMs || 0));
+    const activeWindowMs = Math.max(1000, Number(this.config.conversationActiveWindowMs || 0));
+    const turnLimit = Math.max(2, Number(this.config.conversationTurnLimit || 0));
+    const recentUtterances = this.recentUtterances
+      .filter((item) => Number.isFinite(item.timestamp) && (now - item.timestamp) <= windowMs)
+      .slice(-turnLimit);
+
+    const recentTurns = recentUtterances.map((item) => ({
+      speaker: item.type,
+      text: item.text,
+      normalizedText: item.normalizedText,
+      timestamp: item.timestamp,
+      ageMs: Math.max(0, now - item.timestamp),
+      source: item.metadata?.source || null,
+      eventType: item.metadata?.eventType || null,
+      username: item.metadata?.username || null
+    }));
+
+    const lastTurn = recentTurns.length > 0 ? recentTurns[recentTurns.length - 1] : null;
+    const lastHostSpeech = [...recentTurns].reverse().find((item) => item.speaker === 'host') || null;
+    const lastSidekickSpeech = [...recentTurns].reverse().find((item) => item.speaker === 'sidekick') || null;
+    const active = Boolean(lastTurn && lastTurn.ageMs <= activeWindowMs && recentTurns.length >= 2);
+    const summaryParts = [];
+    if (active) summaryParts.push('Dialog aktiv');
+    if (lastHostSpeech) summaryParts.push(`Host: ${lastHostSpeech.text}`);
+    if (lastSidekickSpeech) summaryParts.push(`Sidekick: ${lastSidekickSpeech.text}`);
+    if (recentTurns.length > 0) summaryParts.push(`Turns=${recentTurns.length}`);
+
+    return {
+      active,
+      hostName: this.config.hostName,
+      turnCount: recentTurns.length,
+      lastSpeaker: lastTurn?.speaker || null,
+      lastHostSpeech,
+      lastSidekickSpeech,
+      recentTurns,
+      summary: summaryParts.join(' | ') || null,
+      windowMs,
+      activeWindowMs,
+      lastUpdatedAt: lastTurn?.timestamp || null
+    };
+  }
+
   shouldAcceptHostSpeech(text, metadata = {}) {
     const normalizedText = normalizeSpeechText(text);
     const cleanText = cleanSpeechText(text);
     const timestamp = this._getTimestamp(metadata);
     const confidence = Number(metadata?.confidence);
     const features = buildHostSpeechFeatures(cleanText, this.config);
+    const conversationState = this.getConversationState({ now: timestamp });
 
     if (!this.config.enabled) {
       return this._reject('disabled', normalizedText);
@@ -213,14 +365,21 @@ class ConversationCoordinator {
       return this._reject('too_short', normalizedText, features, 0, timestamp);
     }
 
+    const activeConversation = conversationState.active;
     const contextCooldownMs = Math.max(0, Number(this.config.hostContextCooldownMs || 0));
-    if (contextCooldownMs > 0 && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < contextCooldownMs) {
+    const effectiveContextCooldownMs = activeConversation
+      ? Math.min(contextCooldownMs, 2500)
+      : contextCooldownMs;
+    if (effectiveContextCooldownMs > 0 && this.lastHostSpeechDecisionAt && (timestamp - this.lastHostSpeechDecisionAt) < effectiveContextCooldownMs) {
       return this._reject('active_pause', normalizedText, features, 0, timestamp);
     }
 
     const overtalkCooldownMs = Math.max(0, Number(this.config.hostOvertalkCooldownMs || 0));
+    const effectiveOvertalkCooldownMs = activeConversation
+      ? Math.min(overtalkCooldownMs, 900)
+      : overtalkCooldownMs;
     const lastHostRelatedUtterance = this._getMostRecentUtteranceTimestamp(['sidekick', 'host'], timestamp);
-    if (overtalkCooldownMs > 0 && Number.isFinite(lastHostRelatedUtterance) && (timestamp - lastHostRelatedUtterance) < overtalkCooldownMs) {
+    if (effectiveOvertalkCooldownMs > 0 && Number.isFinite(lastHostRelatedUtterance) && (timestamp - lastHostRelatedUtterance) < effectiveOvertalkCooldownMs) {
       return this._reject('overtalk', normalizedText, features, 0, timestamp);
     }
 
@@ -241,7 +400,9 @@ class ConversationCoordinator {
       return this._reject('low_score', normalizedText, { ...features, confidence: confidenceValue }, score, timestamp);
     }
 
-    if (Math.random() > (Number(this.config.hostReplyProbability) * score)) {
+    const conversationBoost = activeConversation ? 0.15 : 0;
+    const effectiveReplyProbability = Math.min(1, Math.max(0, Number(this.config.hostReplyProbability) + conversationBoost));
+    if (Math.random() > (effectiveReplyProbability * score)) {
       return this._reject('low_score', normalizedText, { ...features, confidence: confidenceValue }, score, timestamp);
     }
 
@@ -264,6 +425,7 @@ class ConversationCoordinator {
       type: 'host',
       features,
       normalizedText,
+      conversationState,
       ...(Number.isFinite(confidence) ? { confidence } : {}),
     };
     this.lastAcceptedHostSpeechReason = decision.reason;
@@ -296,6 +458,10 @@ class ConversationCoordinator {
     if (metadata.provider !== undefined && metadata.provider !== null) {
       event.provider = safeString(metadata.provider, 64);
     }
+    event.conversationState = this.getConversationState({ now: metadata.now ?? metadata.timestamp ?? Date.now() });
+    event.conversationHistory = Array.isArray(event.conversationState?.recentTurns)
+      ? event.conversationState.recentTurns
+      : [];
     for (const key of ['startedAt', 'endedAt']) {
       if (metadata[key] !== undefined && metadata[key] !== null) event[key] = safeString(metadata[key], 64);
     }
@@ -308,6 +474,9 @@ class ConversationCoordinator {
 
     const username = safeString(data.uniqueId || data.username || data.userId || data.nickname, 128, 'Viewer') || 'Viewer';
     const message = cleanSpeechText(data.comment || data.message || '', 500);
+    const conversationSummary = sanitizeConversationSummary(data.conversationSummary);
+    const userContext = sanitizeUserContext(data.userContext);
+    const roleFlags = sanitizeRoleFlags(data.roleFlags);
     const event = {
       eventType,
       username,
@@ -319,6 +488,19 @@ class ConversationCoordinator {
       decision: sanitizeDecision(decision)
     };
 
+    if (conversationSummary) {
+      event.conversationSummary = conversationSummary;
+    }
+    if (userContext) {
+      event.userContext = userContext;
+    }
+    if (roleFlags) {
+      event.roleFlags = roleFlags;
+    }
+    event.conversationState = this.getConversationState({ now: data.now ?? decision.now ?? Date.now() });
+    event.conversationHistory = Array.isArray(event.conversationState?.recentTurns)
+      ? event.conversationState.recentTurns
+      : [];
     if (data.giftName !== undefined && data.giftName !== null) {
       event.giftName = safeString(data.giftName, 160);
     }
@@ -332,8 +514,17 @@ class ConversationCoordinator {
     if (data.followRole !== undefined && data.followRole !== null) {
       event.followRole = safeString(data.followRole, 80);
     }
-    if (data.isSubscriber !== undefined && data.isSubscriber !== null) {
-      event.isSubscriber = normalizeBoolean(data.isSubscriber, false);
+    const followerValue = data.isFollower ?? data.follower ?? roleFlags?.isFollower ?? userContext?.isFollower;
+    const subscriberValue = data.isSubscriber ?? data.subscriber ?? roleFlags?.isSubscriber ?? userContext?.isSubscriber;
+    const moderatorValue = data.isModerator ?? data.moderator ?? roleFlags?.isModerator ?? userContext?.isModerator;
+    if (followerValue !== undefined && followerValue !== null) {
+      event.isFollower = normalizeBoolean(followerValue, false);
+    }
+    if (subscriberValue !== undefined && subscriberValue !== null) {
+      event.isSubscriber = normalizeBoolean(subscriberValue, false);
+    }
+    if (moderatorValue !== undefined && moderatorValue !== null) {
+      event.isModerator = normalizeBoolean(moderatorValue, false);
     }
 
     return event;
@@ -355,10 +546,14 @@ class ConversationCoordinator {
       hostContextCooldownMs: this.config.hostContextCooldownMs,
       hostOvertalkCooldownMs: this.config.hostOvertalkCooldownMs,
       hostLongFormWordLimit: this.config.hostLongFormWordLimit,
+      conversationWindowMs: this.config.conversationWindowMs,
+      conversationActiveWindowMs: this.config.conversationActiveWindowMs,
+      conversationTurnLimit: this.config.conversationTurnLimit,
       viewerEventTypes: [...this.config.viewerEventTypes],
       recentUtteranceCount: this.recentUtterances.length,
       recentSidekickUtteranceCount,
       recentHostUtteranceCount,
+      conversationState: this.getConversationState(),
       lastAcceptedHostSpeechReason: this.lastAcceptedHostSpeechReason,
       lastRejectedHostSpeechReason: this.lastRejectedHostSpeechReason,
       lastHostSpeechDecisionAt: this.lastHostSpeechDecisionAt,

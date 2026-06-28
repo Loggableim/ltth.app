@@ -132,14 +132,18 @@ const DEFAULT_CONFIG = {
     maxLineLength: 140
   },
   
-  // Comment/chat response settings
+    // Comment/chat response settings
   comment: {
     enabled: true,
     globalCooldown: 6,       // seconds between any response
     perUserCooldown: 15,     // seconds between responses to same user
     minLength: 3,            // minimum comment length to process
     maxRepliesPerMin: 20,    // rate limit
-    replyThreshold: 0.6,     // relevance score threshold (0-1)
+    replyThreshold: 0.6,     // base relevance score threshold (engine applies a small conversational bias)
+    decisionMode: 'auto',
+    decisionProbability: 1,
+    mentionEnabled: true,
+    mentionTerms: ['sidekick', 'animazingpal', 'pal'],
     respondToGreetings: true,
     greetingCooldown: 360,   // seconds between greeting responses per user
     respondToThanks: true,

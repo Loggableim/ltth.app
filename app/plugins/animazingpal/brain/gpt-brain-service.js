@@ -162,6 +162,157 @@ class GPTBrainService {
     });
   }
 
+  _shortenPromptText(value, maxLength = 280) {
+    if (value === null || value === undefined) return '';
+    const text = String(value).trim().replace(/\s+/g, ' ');
+    if (!text) return '';
+    return text.length > maxLength ? `${text.slice(0, Math.max(0, maxLength - 1))}…` : text;
+  }
+
+  _formatConversationState(conversationState = null) {
+    if (!conversationState) return '';
+    if (typeof conversationState === 'string') {
+      return this._shortenPromptText(conversationState, 420);
+    }
+    if (typeof conversationState !== 'object') return '';
+
+    const parts = [];
+    if (conversationState.summary) {
+      const summary = this._shortenPromptText(conversationState.summary, 240);
+      if (summary) parts.push(summary);
+    }
+    if (conversationState.hostName) {
+      parts.push(`Host=${this._shortenPromptText(conversationState.hostName, 40)}`);
+    }
+    if (conversationState.active !== undefined && conversationState.active !== null) {
+      parts.push(conversationState.active ? 'aktiv' : 'inaktiv');
+    }
+    if (Number.isFinite(Number(conversationState.turnCount))) {
+      parts.push(`Turns=${Math.round(Number(conversationState.turnCount))}`);
+    }
+    if (conversationState.lastSpeaker) {
+      parts.push(`Last=${this._shortenPromptText(conversationState.lastSpeaker, 20)}`);
+    }
+    if (Array.isArray(conversationState.recentTurns)) {
+      const recent = conversationState.recentTurns
+        .slice(-3)
+        .map((turn) => {
+          const speaker = this._shortenPromptText(turn?.speaker, 20) || 'turn';
+          const text = this._shortenPromptText(turn?.text, 100);
+          return text ? `[${speaker}] ${text}` : null;
+        })
+        .filter(Boolean)
+        .join(' | ');
+      if (recent) parts.push(`Recent=${recent}`);
+    }
+
+    return this._shortenPromptText(parts.join(' | '), 420);
+  }
+
+  _appendSidekickPromptContext(systemPrompt, context = {}, username = null) {
+    const userInfo = context?.userInfo || {};
+    const sidekickContext = context?.sidekickContext || {};
+    const lines = [];
+
+    const conversationSummary = userInfo.sidekickConversationSummary || sidekickContext.conversationSummary;
+    let conversationText = '';
+    if (typeof conversationSummary === 'string') {
+      conversationText = this._shortenPromptText(conversationSummary, 360);
+    } else if (conversationSummary && typeof conversationSummary === 'object') {
+      conversationText = this._shortenPromptText(conversationSummary.summary, 360);
+      if (!conversationText) {
+        const recent = Array.isArray(conversationSummary.recentMessages)
+          ? conversationSummary.recentMessages
+              .slice(0, 3)
+              .map((item) => this._shortenPromptText(item?.text, 120))
+              .filter(Boolean)
+              .join(' | ')
+          : '';
+        const parts = [];
+        if (conversationSummary.nickname) {
+          parts.push(`Name=${this._shortenPromptText(conversationSummary.nickname, 40)}`);
+        }
+        if (conversationSummary.messageCount !== undefined && conversationSummary.messageCount !== null) {
+          const count = Number(conversationSummary.messageCount);
+          if (Number.isFinite(count)) parts.push(`Messages=${Math.round(count)}`);
+        }
+        if (recent) {
+          parts.push(`Recent=${recent}`);
+        }
+        conversationText = this._shortenPromptText(parts.join(' | '), 360);
+      }
+    } else {
+      conversationText = this._shortenPromptText(conversationSummary, 360);
+    }
+    if (conversationText) {
+      lines.push(`Sidekick-Kontext${username ? ` für ${username}` : ''}: ${conversationText}`);
+    }
+
+    const userContextSummary = userInfo.sidekickUserContextSummary || sidekickContext.userContext;
+    let userContextText = '';
+    if (typeof userContextSummary === 'string') {
+      userContextText = this._shortenPromptText(userContextSummary, 360);
+    } else if (userContextSummary && typeof userContextSummary === 'object') {
+      userContextText = this._shortenPromptText(userContextSummary.summary, 360);
+      if (!userContextText) {
+        const parts = [];
+        if (userContextSummary.nickname) {
+          parts.push(`Name=${this._shortenPromptText(userContextSummary.nickname, 40)}`);
+        }
+        const countFields = ['messages', 'likes', 'gifts', 'follows', 'subs', 'shares', 'joins', 'messageCount'];
+        for (const field of countFields) {
+          if (userContextSummary[field] !== undefined && userContextSummary[field] !== null) {
+            const count = Number(userContextSummary[field]);
+            if (Number.isFinite(count)) {
+              const label = field === 'messageCount' ? 'Messages' : field.replace(/^./, (char) => char.toUpperCase());
+              parts.push(`${label}=${Math.round(count)}`);
+            }
+          }
+        }
+        const roleFlags = [];
+        if (userContextSummary.isFollower) roleFlags.push('Follower');
+        if (userContextSummary.isSubscriber) roleFlags.push('Subscriber');
+        if (userContextSummary.isModerator) roleFlags.push('Moderator');
+        if (roleFlags.length > 0) parts.push(roleFlags.join('/'));
+        userContextText = this._shortenPromptText(parts.join(', '), 360);
+      }
+    } else {
+      userContextText = this._shortenPromptText(userContextSummary, 360);
+    }
+    if (userContextText) {
+      lines.push(`Viewer-Kontext: ${userContextText}`);
+    }
+
+    const roleSummary = userInfo.sidekickRoleSummary || sidekickContext.roleFlags;
+    let roleText = '';
+    if (typeof roleSummary === 'string') {
+      roleText = this._shortenPromptText(roleSummary, 120);
+    } else if (roleSummary && typeof roleSummary === 'object') {
+      roleText = Object.entries(roleSummary)
+        .filter(([, value]) => !!value)
+        .map(([key]) => key.replace(/^is/, '').replace(/^./, (char) => char.toUpperCase()))
+        .join('/');
+    }
+    if (roleText) {
+      lines.push(`Viewer-Rollen: ${this._shortenPromptText(roleText, 120)}`);
+    }
+
+    const conversationStateText = this._formatConversationState(
+      userInfo.sidekickConversationState || sidekickContext.conversationState
+    );
+    if (conversationStateText) {
+      lines.push(`Dialogstatus: ${conversationStateText}`);
+    }
+
+    const decisionReason = userInfo.sidekickDecisionReason || sidekickContext.decision?.reason;
+    const decisionText = this._shortenPromptText(decisionReason, 120);
+    if (decisionText) {
+      lines.push(`Sidekick-Entscheidung: ${decisionText}`);
+    }
+
+    return lines.length > 0 ? `${systemPrompt}\n\n${lines.join('\n')}` : systemPrompt;
+  }
+
   /**
    * Generate a response using GPT
    * @param {string} systemPrompt - System context (personality, rules)
@@ -207,12 +358,21 @@ class GPTBrainService {
   /**
    * Generate a quick reaction (optimized for speed)
    */
-  async generateQuickReaction(situation, personality, emotion = 'neutral') {
+  async generateQuickReaction(situation, personality, emotion = 'neutral', context = {}) {
     const systemPrompt = `Du bist ein Livestreamer mit folgender Persönlichkeit: ${personality}
 Reagiere KURZ und SPONTAN auf die Situation. Maximal 1-2 Sätze.
 Aktuelle Emotion: ${emotion}`;
-    
-    return this.generateResponse(systemPrompt, situation, [], {
+    let contextualPrompt = systemPrompt;
+    if (context.userInfo) {
+      const ui = context.userInfo;
+      contextualPrompt += `\n\nInfo über ${context.username || 'den Zuschauer'}:`;
+      if (ui.relationship_level) contextualPrompt += ` Beziehung: ${ui.relationship_level}.`;
+      if (ui.interaction_count > 10) contextualPrompt += ` Häufiger Chatter (${ui.interaction_count} Interaktionen).`;
+      if (ui.personality_notes) contextualPrompt += ` Notizen: ${ui.personality_notes}`;
+    }
+    const promptWithSidekickContext = this._appendSidekickPromptContext(contextualPrompt, context, context.username || null);
+
+    return this.generateResponse(promptWithSidekickContext, situation, [], {
       maxTokens: 100,
       temperature: 0.9
     });
@@ -234,10 +394,11 @@ Aktuelle Emotion: ${emotion}`;
     
     const systemPrompt = `Du bist ein Livestreamer mit folgender Persönlichkeit: ${personality}
 Bedanke dich AUTHENTISCH und PERSÖNLICH für ein Geschenk. Maximal 2-3 Sätze.${userContext}`;
+    const promptWithSidekickContext = this._appendSidekickPromptContext(systemPrompt, { userInfo }, username);
     
     const situation = `${username} hat dir "${giftName}" geschenkt (Wert: ${giftValue} Diamonds)`;
     
-    return this.generateResponse(systemPrompt, situation, [], {
+    return this.generateResponse(promptWithSidekickContext, situation, [], {
       maxTokens: 150,
       temperature: 0.8
     });
@@ -246,13 +407,22 @@ Bedanke dich AUTHENTISCH und PERSÖNLICH für ein Geschenk. Maximal 2-3 Sätze.$
   /**
    * Generate a welcome message for a new follower
    */
-  async generateFollowResponse(username, personality, isReturning = false) {
+  async generateFollowResponse(username, personality, isReturning = false, context = {}) {
     const systemPrompt = `Du bist ein Livestreamer mit folgender Persönlichkeit: ${personality}
 Begrüße ${isReturning ? 'einen zurückkehrenden Zuschauer' : 'einen neuen Follower'} HERZLICH. Maximal 2 Sätze.`;
+    let contextualPrompt = systemPrompt;
+    if (context.userInfo) {
+      const ui = context.userInfo;
+      contextualPrompt += `\n\nInfo über ${username}:`;
+      if (ui.relationship_level) contextualPrompt += ` Beziehung: ${ui.relationship_level}.`;
+      if (ui.interaction_count > 10) contextualPrompt += ` Häufiger Viewer (${ui.interaction_count} Interaktionen).`;
+      if (ui.personality_notes) contextualPrompt += ` Notizen: ${ui.personality_notes}`;
+    }
+    const promptWithSidekickContext = this._appendSidekickPromptContext(contextualPrompt, context, username);
     
     const situation = `${username} folgt dir jetzt${isReturning ? ' wieder' : ''}!`;
     
-    return this.generateResponse(systemPrompt, situation, [], {
+    return this.generateResponse(promptWithSidekickContext, situation, [], {
       maxTokens: 100,
       temperature: 0.8
     });
@@ -267,7 +437,8 @@ Begrüße ${isReturning ? 'einen zurückkehrenden Zuschauer' : 'einen neuen Foll
 Antworte auf Chat-Nachrichten NATÜRLICH und AUTHENTISCH.
 - Halte dich kurz (1-3 Sätze)
 - Sei freundlich aber nicht übertrieben
-- Behalte deinen Charakter bei`;
+- Behalte deinen Charakter bei
+- Wenn der Dialogkontext aktiv ist, knüpfe an den letzten Sprecherwechsel an statt ein neues Thema zu beginnen`;
 
     if (context.memories && context.memories.length > 0) {
       systemPrompt += `\n\nRelevante Erinnerungen:\n${context.memories.map(m => `- ${m}`).join('\n')}`;
@@ -280,6 +451,7 @@ Antworte auf Chat-Nachrichten NATÜRLICH und AUTHENTISCH.
       if (ui.interaction_count > 10) systemPrompt += ` Häufiger Chatter (${ui.interaction_count} Interaktionen).`;
       if (ui.personality_notes) systemPrompt += ` Notizen: ${ui.personality_notes}`;
     }
+    systemPrompt = this._appendSidekickPromptContext(systemPrompt, context, username);
     
     const situation = `${username} schreibt: "${message}"`;
     
@@ -300,11 +472,15 @@ Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
 - Halte die Antwort kurz, natuerlich und TTS-tauglich (1-2 Saetze)
 - Sei ein hilfreicher Co-Host mit Live-Stream-Bewusstsein
 - Erfinde keine Zuschauerprofile und speichere den Host nicht als Viewer
+- Führe ein laufendes Gespräch mit Host und Chat fort, statt isoliert auf jeden Satz zu reagieren
+- Wenn der Dialog bereits aktiv ist, greife die letzten Sprecherwechsel auf und knüpfe direkt daran an
 - Wenn Live-Events relevant sind, beziehe sie locker ein`;
 
     const liveContext = context.liveContext || {};
     const recentEvents = Array.isArray(liveContext.recentEvents) ? liveContext.recentEvents.slice(0, 5) : [];
+    const conversationTurns = Array.isArray(liveContext.conversationHistory) ? liveContext.conversationHistory.slice(-4) : [];
     const viewerCount = Number(liveContext.viewerCount);
+    const conversationStateText = this._formatConversationState(liveContext.conversationState);
     if (Number.isFinite(viewerCount) && viewerCount > 0) {
       systemPrompt += `\nAktuelle Zuschauerzahl: ${viewerCount}.`;
     }
@@ -313,6 +489,25 @@ Antworte direkt auf den Streamer/Host, nicht wie auf normalen Zuschauerchat.
         .map(event => `${event.type || event.eventType || 'event'} von ${event.username || event.uniqueId || event.nickname || 'jemandem'}`)
         .join(', ');
       systemPrompt += `\nKuerzliche Live-Events: ${eventText}.`;
+    }
+    if (conversationStateText) {
+      systemPrompt += `\nAktueller Dialog: ${conversationStateText}`;
+    }
+    if (conversationTurns.length > 0) {
+      const turnText = conversationTurns
+        .map((turn) => {
+          const speaker = this._shortenPromptText(turn?.speaker || turn?.role || 'turn', 20);
+          const text = this._shortenPromptText(turn?.text || turn?.content, 100);
+          return text ? `[${speaker}] ${text}` : null;
+        })
+        .filter(Boolean)
+        .join(' | ');
+      if (turnText) {
+        systemPrompt += `\nLetzte Dialog-Turns: ${turnText}.`;
+      }
+    }
+    if (liveContext.activeConversation) {
+      systemPrompt += '\nDer Dialog ist aktiv. Antworte wie in einem laufenden Gespräch und halte den Faden.';
     }
 
     const situation = `${hostName || 'Host'} sagt zum Sidekick: "${message}"`;

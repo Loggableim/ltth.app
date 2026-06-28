@@ -1,4 +1,4 @@
-// AnimazingPal UI JavaScript
+﻿// AnimazingPal UI JavaScript
 const socket = io();
 let currentConfig = {};
 let animazeData = {};
@@ -12,6 +12,15 @@ let animazingPalAudioUnlocked = false;
 let pendingAnimazingPalTTS = [];
 let animazingPalSinkWarningShown = false;
 const animazingPalStreamingBuffers = new Map();
+const ALLOWED_ANIMAZINGPAL_TTS_SOURCES = new Set([
+  'animazingpal-host-speech-output'
+]);
+
+function isAnimazingPalTTSSource(data = {}) {
+  const source = String(data?.source || '').toLowerCase();
+  return ALLOWED_ANIMAZINGPAL_TTS_SOURCES.has(source);
+}
+
 window.animazingPalTTSPlaybackState = {
   status: 'idle',
   lastStartedAt: null,
@@ -43,14 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   socket.on('tts:play', (data) => {
+    if (!isAnimazingPalTTSSource(data)) return;
     playAnimazingPalTTS(data);
   });
 
   socket.on('tts:stream:chunk', (data) => {
+    if (!isAnimazingPalTTSSource(data)) return;
     handleAnimazingPalStreamChunk(data);
   });
 
   socket.on('tts:stream:end', (data) => {
+    if (!isAnimazingPalTTSSource(data)) return;
     handleAnimazingPalStreamEnd(data);
   });
 
@@ -1364,7 +1376,7 @@ function showAnimazingPalAudioPrompt() {
   prompt.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 max-w-2xl';
   prompt.style.zIndex = '99999';
   prompt.innerHTML = `
-    <span><strong>AnimazingPal Audio:</strong> klicken, damit Fish.audio auf das konfigurierte Ausgabegerät geroutet wird.</span>
+    <span><strong>AnimazingPal Audio:</strong> klicken, damit Fish.audio auf das konfigurierte Animaze-Ausgabegerät geroutet wird.</span>
     <button id="animazingpal-enable-audio-btn" class="bg-white text-indigo-700 px-4 py-2 rounded font-semibold hover:bg-indigo-50 transition flex-shrink-0">
       Audio aktivieren
     </button>
@@ -1545,7 +1557,7 @@ function showAnimazingPalSinkWarningIfNeeded(routing) {
   if (routing.reason !== 'setSinkId_unsupported') return;
 
   animazingPalSinkWarningShown = true;
-  showToast('Browser kann das Ausgabegerät nicht direkt wählen. Setze Windows-Standardausgabe auf CABLE Input oder nutze einen Browser mit setSinkId.', 'error');
+  showToast('Browser kann das Animaze-Ausgabegerät nicht direkt wählen. Setze Windows-Standardausgabe auf CABLE Input oder nutze einen Browser mit setSinkId.', 'error');
 }
 
 function showToast(message, type = 'info') {
@@ -2599,3 +2611,4 @@ window.editPersona = editPersona;
 window.deletePersona = deletePersona;
 window.toggleOverride = toggleOverride;
 window.playAnimazingPalTTS = playAnimazingPalTTS;
+

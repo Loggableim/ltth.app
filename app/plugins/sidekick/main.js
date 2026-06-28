@@ -657,7 +657,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      message: comment
+      message: comment,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Skip response if muted
@@ -674,24 +678,39 @@ class SidekickPlugin {
   }
   
   async _processComment(uid, nickname, comment) {
+    const audienceContext = this._buildSidekickAudienceContext(uid);
+    const activeConversation = !!audienceContext.conversationState?.active;
+
     // Check global rate limit
-    if (!this.rateLimiter.canSendGlobal()) {
+    if (!activeConversation && !this.rateLimiter.canSendGlobal()) {
+      this.metrics?.recordSidekickDecisionRejected?.('chat', 'global-cooldown');
       return;
     }
     
     // Check per-user cooldown
-    if (this.rateLimiter.isUserOnCooldown(uid)) {
+    if (!activeConversation && this.rateLimiter.isUserOnCooldown(uid)) {
+      this.metrics?.recordSidekickDecisionRejected?.('chat', 'user-cooldown');
       return;
     }
     
     // Evaluate relevance
-    const evaluation = this.responseEngine.evaluateChat(uid, nickname, comment);
-    
+    const evaluation = this.responseEngine.evaluateChat(uid, nickname, comment, audienceContext);
     if (!evaluation) return;
-    
+    const decision = this._normalizeSidekickDecisionForTracking(evaluation, 'chat');
+    if (!decision.respond) {
+      await this._dispatchSelectedEvent('chat', {
+        uniqueId: uid,
+        nickname,
+        comment,
+        ...audienceContext
+      }, evaluation);
+      return;
+    }
+
     // Handle greeting with special cooldown
     if (evaluation.type === 'greeting') {
       if (!this.rateLimiter.canGreetUser(uid)) {
+        this.metrics?.recordSidekickDecisionRejected?.('chat', 'greeting-cooldown');
         return;
       }
       this.rateLimiter.setGreetingCooldown(uid);
@@ -704,7 +723,12 @@ class SidekickPlugin {
     this.rateLimiter.setUserCooldown(uid);
 
     try {
-      await this._dispatchSelectedEvent('chat', { uniqueId: uid, nickname, comment }, evaluation);
+      await this._dispatchSelectedEvent('chat', {
+        uniqueId: uid,
+        nickname,
+        comment,
+        ...audienceContext
+      }, evaluation);
     } catch (error) {
       this.logger.error(`Sidekick chat dispatch failed: ${error.message}`);
       this.metrics?.recordError?.();
@@ -740,7 +764,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      giftInc: repeatCount
+      giftInc: repeatCount,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Skip response if muted
@@ -748,7 +776,10 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateGift(nickname, giftName, repeatCount);
-    this._queueSelectedEvent('gift', data, evaluation);
+    this._queueSelectedEvent('gift', {
+      ...data,
+      ...this._buildSidekickAudienceContext(uid)
+    }, evaluation);
     
   }
   
@@ -773,7 +804,11 @@ class SidekickPlugin {
       
       this.memoryStore.rememberEvent(uid, {
         nickname,
-        likeInc: likeCount
+        likeInc: likeCount,
+        ...this._getViewerRoleFlags(data),
+        follower: this._parseBooleanRole(data.follower, data.isFollower),
+        subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+        moderator: this._parseBooleanRole(data.moderator, data.isModerator)
       });
       
       // Could add like announcement here if enabled
@@ -803,7 +838,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      join: true
+      join: true,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Schedule greeting if enabled
@@ -835,7 +874,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      follow: true
+      follow: true,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower, true),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Skip response if muted
@@ -843,7 +886,10 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateFollow(nickname);
-    this._queueSelectedEvent('follow', data, evaluation);
+    this._queueSelectedEvent('follow', {
+      ...data,
+      ...this._buildSidekickAudienceContext(uid)
+    }, evaluation);
     
   }
   
@@ -870,7 +916,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      share: true
+      share: true,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Skip response if muted
@@ -878,7 +928,10 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateShare(nickname);
-    this._queueSelectedEvent('share', data, evaluation);
+    this._queueSelectedEvent('share', {
+      ...data,
+      ...this._buildSidekickAudienceContext(uid)
+    }, evaluation);
     
   }
   
@@ -905,7 +958,11 @@ class SidekickPlugin {
     // Remember in memory
     this.memoryStore.rememberEvent(uid, {
       nickname,
-      sub: true
+      sub: true,
+      ...this._getViewerRoleFlags(data),
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber, true),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
     });
     
     // Skip response if muted
@@ -913,7 +970,10 @@ class SidekickPlugin {
     
     // Generate response
     const evaluation = this.responseEngine.evaluateSubscribe(nickname);
-    this._queueSelectedEvent('subscribe', data, evaluation);
+    this._queueSelectedEvent('subscribe', {
+      ...data,
+      ...this._buildSidekickAudienceContext(uid)
+    }, evaluation);
     
   }
   
@@ -1824,8 +1884,11 @@ class SidekickPlugin {
     const speechDelivered = animazingPalResult?.responded === true
       && !animazingPalResult?.speechFailed
       && !animazingPalResult?.speechBlocked;
-    if (speechDelivered) {
+    const shouldRememberHostSpeech = decision?.respond !== false && decision?.accept !== false;
+    if (shouldRememberHostSpeech) {
       this.conversationCoordinator.recordHostSpeech?.(text, metadata);
+    }
+    if (speechDelivered) {
       if (spokenText) {
         this.conversationCoordinator.recordSidekickSpeech?.(spokenText, {
           ...metadata,
@@ -1856,7 +1919,8 @@ class SidekickPlugin {
     const result = await animazingPal.speakHostResponse(text, {
       eventType: output.eventType || 'sidekick',
       username: output.username || 'Sidekick',
-      userId: 'sidekick-assistant'
+      userId: 'sidekick-assistant',
+      source: 'animazingpal-host-speech-output'
     });
     const success = result?.success !== false && !result?.blocked;
 
@@ -1925,9 +1989,26 @@ class SidekickPlugin {
   }
 
   async _dispatchSelectedEvent(eventType, data, evaluation = {}) {
+    const normalizedDecision = this._normalizeSidekickDecisionForTracking(evaluation, eventType);
+    this.metrics?.recordSidekickDecisionAttempt?.(eventType);
+
+    if (!normalizedDecision.respond) {
+      this.metrics?.recordSidekickDecisionRejected?.(
+        eventType,
+        normalizedDecision.skipReason || normalizedDecision.reason || 'not-selected'
+      );
+      return {
+        handled: false,
+        responded: false,
+        reason: normalizedDecision.reason || 'sidekick-decision-blocked',
+        decision: normalizedDecision
+      };
+    }
+
     const animazingPal = this._getAnimazingPal();
     if (!animazingPal || typeof animazingPal.processSidekickEvent !== 'function') {
       this.logger.warn('Sidekick decision skipped: AnimazingPal Brain pipeline unavailable');
+      this.metrics?.recordSidekickDecisionRejected?.(eventType, 'animazingpal-unavailable');
       this.metrics?.recordError?.();
       return { handled: false, responded: false, reason: 'animazingpal-unavailable' };
     }
@@ -1935,9 +2016,19 @@ class SidekickPlugin {
       ? this.conversationCoordinator.buildViewerEvent(eventType, data, evaluation)
       : data;
     if (!event) {
+      this.metrics?.recordSidekickDecisionRejected?.(eventType, 'viewer-event-disabled');
       return { handled: false, responded: false, reason: 'viewer-event-disabled' };
     }
-    const result = await animazingPal.processSidekickEvent(eventType, event, evaluation);
+    if (this.metrics?.recordSidekickDecisionSelected) {
+      this.metrics.recordSidekickDecisionSelected(eventType);
+    }
+    let result;
+    try {
+      result = await animazingPal.processSidekickEvent(eventType, event, evaluation);
+    } catch (error) {
+      this.metrics?.recordSidekickDecisionRejected?.(eventType, 'animazingpal-error');
+      throw error;
+    }
     if (result?.responded) {
       this.metrics?.recordResponse();
       const spokenText = result.spokenText || result.message || result.text;
@@ -1948,8 +2039,78 @@ class SidekickPlugin {
           source: 'animazingpal-delegated-output'
         });
       }
+    } else {
+      this.metrics?.recordSidekickDecisionRejected?.(
+        eventType,
+        result?.reason || normalizedDecision.skipReason || normalizedDecision.reason || 'not-responded'
+      );
     }
     return result;
+  }
+
+  _normalizeSidekickDecisionForTracking(evaluation = {}, eventType = 'unknown') {
+    const reason = String(
+      evaluation?.reason
+      || (evaluation?.respond === false ? 'sidekick-decision-blocked' : `sidekick-${eventType}`)
+    );
+    return {
+      respond: evaluation?.respond !== false,
+      reason,
+      skipReason: evaluation?.skipReason || null,
+      score: Number.isFinite(Number(evaluation?.score)) ? Number(evaluation.score) : 0,
+      mode: String(evaluation?.mode || 'sidekick'),
+      type: String(evaluation?.type || eventType),
+      selection: String(evaluation?.selection || evaluation?.type || eventType),
+      priority: Number.isFinite(Number(evaluation?.priority)) ? Math.round(Number(evaluation.priority)) : 0,
+      threshold: Number.isFinite(Number(evaluation?.threshold)) ? Number(evaluation.threshold) : null,
+      probability: Number.isFinite(Number(evaluation?.probability)) ? Number(evaluation.probability) : null,
+      roll: Number.isFinite(Number(evaluation?.roll)) ? Number(evaluation.roll) : null,
+      matchedMention: evaluation?.matchedMention ? String(evaluation.matchedMention) : null,
+      mentionTerms: Array.isArray(evaluation?.mentionTerms) ? evaluation.mentionTerms.slice(0, 20) : [],
+      features: evaluation?.features || null
+    };
+  }
+
+  _parseBooleanRole(...values) {
+    for (const value of values) {
+      if (value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true') {
+        return true;
+      }
+      if (value === false || value === 0 || value === '0' || String(value).toLowerCase() === 'false') {
+        return false;
+      }
+    }
+    return undefined;
+  }
+
+  _getViewerRoleFlags(data = {}) {
+    return {
+      follower: this._parseBooleanRole(data.follower, data.isFollower),
+      subscriber: this._parseBooleanRole(data.subscriber, data.isSubscriber),
+      moderator: this._parseBooleanRole(data.moderator, data.isModerator)
+    };
+  }
+
+  _buildSidekickAudienceContext(uid) {
+    if (!this.memoryStore) return {};
+    const userContext = this.memoryStore.getUserContextSummary
+      ? this.memoryStore.getUserContextSummary(uid)
+      : null;
+    const conversationState = this.conversationCoordinator?.getConversationState
+      ? this.conversationCoordinator.getConversationState()
+      : null;
+    return {
+      conversationSummary: this.memoryStore.getConversationSummaryForAI
+        ? this.memoryStore.getConversationSummaryForAI(uid)
+        : null,
+      userContext,
+      conversationState,
+      roleFlags: userContext ? {
+        isFollower: !!userContext.isFollower,
+        isSubscriber: !!userContext.isSubscriber,
+        isModerator: !!userContext.isModerator
+      } : null
+    };
   }
 
   _queueSelectedEvent(eventType, data, evaluation = {}) {

@@ -105,11 +105,11 @@ function buildLiveHostDefaults() {
     response: {
       decisionMode: 'auto',
       minDecisionScore: 0.55,
-      maxResponsesPerMinute: 4,
-      chatProbability: 0.1,
+      maxResponsesPerMinute: 18,
+      chatProbability: 0.45,
       maxSentences: 2,
       maxCharacters: 500,
-      hostReplyProbability: 0.75,
+      hostReplyProbability: 1,
       hostMinConfidence: 0.35,
       hostContextCooldownMs: 6000,
       hostOvertalkCooldownMs: 1800,
@@ -148,6 +148,10 @@ function buildLiveHostDefaults() {
       monitoringVolume: 30,
       missingDeviceBehavior: 'mute'
     },
+    animaze: {
+      audioOutputDeviceId: '',
+      audioOutputDeviceLabel: ''
+    },
     asr: {
       enabled: true,
       deviceId: '',
@@ -155,14 +159,14 @@ function buildLiveHostDefaults() {
       unsafeOverride: false,
       language: 'de',
       maxAudioBytes: 8 * 1024 * 1024,
-      minTranscriptChars: 2,
+      minTranscriptChars: 1,
       rateLimitMax: 30,
       rateLimitWindowMs: 60000,
       silenceTimeoutMs: 1200,
       maxSegmentMs: 8000,
       speechRmsThreshold: 0.008,
       speechPeakThreshold: 0.04,
-      minSpeechMs: 300
+      minSpeechMs: 250
     },
     viewerMemory: {
       enabled: true,
@@ -271,6 +275,12 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.hostLongFormWordLimit = Math.round(clamp(configured.response.hostLongFormWordLimit, 1, 500, defaults.response.hostLongFormWordLimit));
   configured.response.sidekickName = safeString(configured.response.sidekickName, 80, defaults.response.sidekickName);
   configured.response.chatProbability = clamp(configured.response.chatProbability, 0, 1, defaults.response.chatProbability);
+  if (configured.response.maxResponsesPerMinute <= 4) {
+    configured.response.maxResponsesPerMinute = defaults.response.maxResponsesPerMinute;
+  }
+  if (configured.response.chatProbability <= 0.1) {
+    configured.response.chatProbability = defaults.response.chatProbability;
+  }
   configured.response.maxSentences = Math.round(clamp(configured.response.maxSentences, 1, 10, defaults.response.maxSentences));
   configured.response.maxCharacters = Math.round(clamp(configured.response.maxCharacters, 20, 4000, 500));
   configured.response.cacheTtlMs = Math.round(clamp(configured.response.cacheTtlMs, 0, 86400000, 300000));
@@ -298,6 +308,12 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.tts.duckOtherAudio = normalizeBoolean(configured.tts.duckOtherAudio, defaults.tts.duckOtherAudio);
   configured.tts.fallbackBehavior = ['silent', 'default-voice', 'error'].includes(configured.tts.fallbackBehavior)
     ? configured.tts.fallbackBehavior : defaults.tts.fallbackBehavior;
+  if (!input?.animaze && configured.audio.outputDeviceId) {
+    configured.animaze.audioOutputDeviceId = configured.audio.outputDeviceId;
+    configured.animaze.audioOutputDeviceLabel = configured.audio.outputDeviceLabel;
+  }
+  configured.animaze.audioOutputDeviceId = safeString(configured.animaze.audioOutputDeviceId, 500);
+  configured.animaze.audioOutputDeviceLabel = safeString(configured.animaze.audioOutputDeviceLabel, 500);
   configured.audio.monitoringEnabled = normalizeBoolean(configured.audio.monitoringEnabled, defaults.audio.monitoringEnabled);
   configured.audio.monitoringVolume = clamp(configured.audio.monitoringVolume, 0, 100, 30);
   configured.asr.enabled = normalizeBoolean(configured.asr.enabled, defaults.asr.enabled);
@@ -448,6 +464,8 @@ function applyLiveHostPreset(config, preset) {
   production.tts.voiceId = current.tts.voiceId;
   production.audio.outputDeviceId = current.audio.outputDeviceId;
   production.audio.outputDeviceLabel = current.audio.outputDeviceLabel;
+  production.animaze.audioOutputDeviceId = current.animaze.audioOutputDeviceId;
+  production.animaze.audioOutputDeviceLabel = current.animaze.audioOutputDeviceLabel;
   production.asr = current.asr;
   production.viewerMemory.streamerId = current.viewerMemory.streamerId;
   production.avatarBundles = current.avatarBundles;

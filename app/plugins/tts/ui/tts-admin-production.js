@@ -720,6 +720,10 @@ function addFishCustomVoice() {
     // Debug: Log addition
     console.log(`[TTS Config] Added custom voice "${name}" (${referenceId}). Total voices: ${Object.keys(currentConfig.customFishVoices).length}`);
 
+    // Sync into global voices object immediately so assignment dialogs see it
+    if (!voices.fishaudio) voices.fishaudio = {};
+    voices.fishaudio[name] = currentConfig.customFishVoices[name];
+
     // Clear form
     nameInput.value = '';
     referenceIdInput.value = '';
@@ -727,6 +731,10 @@ function addFishCustomVoice() {
 
     // Re-render list
     renderFishCustomVoices();
+    // Refresh all voice dropdowns so the new voice appears in assignment dialogs
+    renderModalVoiceList();
+    populateManualVoiceSelect();
+    populateEventTTSVoiceSelect();
 
     // Show success message
     showNotification(`Custom voice "${name}" added successfully. Don't forget to save your configuration!`, 'success');
@@ -758,8 +766,17 @@ function removeFishCustomVoice(voiceId) {
     // Remove the voice
     delete currentConfig.customFishVoices[voiceId];
 
+    // Remove from global voices object so assignment dialogs update immediately
+    if (voices.fishaudio) {
+        delete voices.fishaudio[voiceId];
+    }
+
     // Re-render list
     renderFishCustomVoices();
+    // Refresh all voice dropdowns
+    renderModalVoiceList();
+    populateManualVoiceSelect();
+    populateEventTTSVoiceSelect();
 
     // Show success message
     showNotification(`Custom voice "${voiceId}" removed. Don't forget to save your configuration!`, 'success');
@@ -793,6 +810,7 @@ async function loadVoices() {
         populateVoiceSelect();
         populateManualVoiceSelect(); // Also populate manual assignment dropdown
         populateEventTTSVoiceSelect(); // Populate Event TTS voice dropdown
+        renderModalVoiceList(); // Refresh voice assignment modal if open
 
     } catch (error) {
         console.error('Failed to load voices:', error);

@@ -150,4 +150,22 @@ describe('Talking Heads TTS Preview', () => {
       expect.stringContaining('Preview TTS request received')
     );
   });
+
+  test('TTS playback bridge ignores non-allowed TTS sources', async () => {
+    await plugin.init();
+
+    const onCalls = mockApi.pluginLoader.on.mock.calls;
+    const startedHandler = onCalls.find(call => call[0] === 'tts:playback:started');
+    const handleTTSEventSpy = jest.spyOn(plugin, '_handleTTSEvent');
+
+    await startedHandler[1]({
+      userId: 'chat_user',
+      username: 'Chat User',
+      text: 'Chat message',
+      source: 'chat',
+      duration: 5000
+    });
+
+    expect(handleTTSEventSpy).not.toHaveBeenCalled();
+  });
 });

@@ -32,6 +32,11 @@ class Metrics {
       totalSubscribes: 0,
       totalDiamonds: 0,
       responsesSent: 0,
+      sidekickDecisionAttempts: 0,
+      sidekickDecisionSelected: 0,
+      sidekickDecisionRejected: 0,
+      sidekickDecisionRejectedByReason: {},
+      sidekickDecisionResponses: 0,
       dedupeHits: 0,
       errors: 0
     };
@@ -58,6 +63,12 @@ class Metrics {
       shares: 0,
       subscribes: 0,
       diamonds: 0,
+      sidekickDecisionAttempts: 0,
+      sidekickDecisionSelected: 0,
+      sidekickDecisionRejected: 0,
+      sidekickDecisionResponses: 0,
+      sidekickDecisionRejectedByReason: {},
+      sidekickDecisionByType: {},
       responses: 0
     };
   }
@@ -166,7 +177,59 @@ class Metrics {
    */
   recordResponse() {
     this.currentWindow.responses++;
+    this.currentWindow.sidekickDecisionResponses++;
+    this.session.sidekickDecisionResponses++;
     this.session.responsesSent++;
+  }
+
+  recordSidekickDecisionAttempt(eventType = 'unknown') {
+    this.currentWindow.sidekickDecisionAttempts += 1;
+    this.session.sidekickDecisionAttempts += 1;
+    this._recordDecisionByType(eventType, 'attempts', 1);
+  }
+
+  recordSidekickDecisionSelected(eventType = 'unknown') {
+    this.currentWindow.sidekickDecisionSelected += 1;
+    this.session.sidekickDecisionSelected += 1;
+    this._recordDecisionByType(eventType, 'selected', 1);
+  }
+
+  recordSidekickDecisionRejected(eventType = 'unknown', reason = 'not-selected') {
+    const safeReason = this._safeString(reason, 80, 'not-selected');
+    this.currentWindow.sidekickDecisionRejected += 1;
+    this.session.sidekickDecisionRejected += 1;
+    this._recordDecisionByType(eventType, 'rejected', 1);
+    this.currentWindow.sidekickDecisionRejectedByReason[safeReason] = (this.currentWindow.sidekickDecisionRejectedByReason[safeReason] || 0) + 1;
+    this.session.sidekickDecisionRejectedByReason[safeReason] = (this.session.sidekickDecisionRejectedByReason[safeReason] || 0) + 1;
+  }
+
+  _recordDecisionByType(eventType = 'unknown', kind = 'attempts', amount = 0) {
+    const safeEventType = this._safeString(eventType, 40, 'unknown');
+    const safeKind = String(kind || 'attempts');
+    if (!this.currentWindow.sidekickDecisionByType) this.currentWindow.sidekickDecisionByType = {};
+    if (!this.session.sidekickDecisionByType) this.session.sidekickDecisionByType = {};
+    this.currentWindow.sidekickDecisionByType[safeEventType] = this.currentWindow.sidekickDecisionByType[safeEventType] || {
+      attempts: 0,
+      selected: 0,
+      rejected: 0
+    };
+    this.session.sidekickDecisionByType[safeEventType] = this.session.sidekickDecisionByType[safeEventType] || {
+      attempts: 0,
+      selected: 0,
+      rejected: 0
+    };
+    if (this.currentWindow.sidekickDecisionByType[safeEventType][safeKind] !== undefined) {
+      this.currentWindow.sidekickDecisionByType[safeEventType][safeKind] += amount;
+    }
+    if (this.session.sidekickDecisionByType[safeEventType][safeKind] !== undefined) {
+      this.session.sidekickDecisionByType[safeEventType][safeKind] += amount;
+    }
+  }
+
+  _safeString(value, maximum = 40, fallback = 'unknown') {
+    const safe = String(value || fallback).trim();
+    if (!safe) return fallback;
+    return safe.substring(0, maximum) || fallback;
   }
   
   /**
@@ -230,7 +293,11 @@ class Metrics {
       followsPerMinute: this.currentWindow.follows,
       sharesPerMinute: this.currentWindow.shares,
       subscribesPerMinute: this.currentWindow.subscribes,
-      responsesPerMinute: this.currentWindow.responses
+      responsesPerMinute: this.currentWindow.responses,
+      sidekickDecisionAttemptsPerMinute: this.currentWindow.sidekickDecisionAttempts,
+      sidekickDecisionSelectedPerMinute: this.currentWindow.sidekickDecisionSelected,
+      sidekickDecisionRejectedPerMinute: this.currentWindow.sidekickDecisionRejected,
+      sidekickDecisionResponsePerMinute: this.currentWindow.sidekickDecisionResponses
     };
   }
   
@@ -247,7 +314,10 @@ class Metrics {
       durationMinutes: Math.floor(minutes),
       ...this.session,
       averageChatsPerMinute: minutes > 0 ? (this.session.totalChats / minutes).toFixed(1) : 0,
-      averageGiftsPerMinute: minutes > 0 ? (this.session.totalGifts / minutes).toFixed(2) : 0
+      averageGiftsPerMinute: minutes > 0 ? (this.session.totalGifts / minutes).toFixed(2) : 0,
+      sidekickDecisionAcceptanceRate: this.session.sidekickDecisionAttempts > 0
+        ? ((this.session.sidekickDecisionSelected / this.session.sidekickDecisionAttempts) * 100).toFixed(1)
+        : '0.0'
     };
   }
   
@@ -289,7 +359,13 @@ class Metrics {
       follows: w.follows,
       shares: w.shares,
       subscribes: w.subscribes,
-      responses: w.responses
+      responses: w.responses,
+      sidekickDecisionAttempts: w.sidekickDecisionAttempts,
+      sidekickDecisionSelected: w.sidekickDecisionSelected,
+      sidekickDecisionRejected: w.sidekickDecisionRejected,
+      sidekickDecisionResponses: w.sidekickDecisionResponses,
+      sidekickDecisionByType: w.sidekickDecisionByType,
+      sidekickDecisionRejectedByReason: w.sidekickDecisionRejectedByReason
     }));
     
     // Add current window
@@ -302,7 +378,13 @@ class Metrics {
       follows: this.currentWindow.follows,
       shares: this.currentWindow.shares,
       subscribes: this.currentWindow.subscribes,
-      responses: this.currentWindow.responses
+      responses: this.currentWindow.responses,
+      sidekickDecisionAttempts: this.currentWindow.sidekickDecisionAttempts,
+      sidekickDecisionSelected: this.currentWindow.sidekickDecisionSelected,
+      sidekickDecisionRejected: this.currentWindow.sidekickDecisionRejected,
+      sidekickDecisionResponses: this.currentWindow.sidekickDecisionResponses,
+      sidekickDecisionByType: this.currentWindow.sidekickDecisionByType,
+      sidekickDecisionRejectedByReason: this.currentWindow.sidekickDecisionRejectedByReason
     });
     
     return data;
@@ -316,6 +398,17 @@ class Metrics {
     return {
       currentRates: this.getCurrentRates(),
       session: this.getSessionStats(),
+      sidekickDecision: {
+        attempts: this.session.sidekickDecisionAttempts,
+        selected: this.session.sidekickDecisionSelected,
+        rejected: this.session.sidekickDecisionRejected,
+        responses: this.session.sidekickDecisionResponses,
+        acceptanceRate: this.session.sidekickDecisionAttempts > 0
+          ? ((this.session.sidekickDecisionSelected / this.session.sidekickDecisionAttempts) * 100).toFixed(1)
+          : '0.0',
+        selectedByEventType: this.session.sidekickDecisionByType || {},
+        rejectedReasons: this.session.sidekickDecisionRejectedByReason || {}
+      },
       topUsers: this.getTopUsers(5),
       topGifters: this.getTopGifters(5)
     };
@@ -337,6 +430,12 @@ class Metrics {
       totalShares: 0,
       totalSubscribes: 0,
       totalDiamonds: 0,
+      sidekickDecisionAttempts: 0,
+      sidekickDecisionSelected: 0,
+      sidekickDecisionRejected: 0,
+      sidekickDecisionRejectedByReason: {},
+      sidekickDecisionResponses: 0,
+      sidekickDecisionByType: {},
       responsesSent: 0,
       dedupeHits: 0,
       errors: 0

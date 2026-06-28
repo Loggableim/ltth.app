@@ -4,14 +4,17 @@ describe('TTS output device router', () => {
   test('routes audio to the configured output device', async () => {
     const audio = { setSinkId: jest.fn().mockResolvedValue(), muted: false, volume: 1 };
     const router = createTTSOutputRouter({
-      loadConfig: async () => ({ audio: { outputDeviceId: 'cable-input', monitoringEnabled: false, missingDeviceBehavior: 'mute' } })
+      loadConfig: async () => ({
+        animaze: { audioOutputDeviceId: 'animaze-cable' },
+        audio: { outputDeviceId: 'legacy-cable', monitoringEnabled: false, missingDeviceBehavior: 'mute' }
+      })
     });
 
     const result = await router.routeAudioElement(audio);
 
-    expect(audio.setSinkId).toHaveBeenCalledWith('cable-input');
+    expect(audio.setSinkId).toHaveBeenCalledWith('animaze-cable');
     expect(audio.muted).toBe(false);
-    expect(result).toEqual(expect.objectContaining({ routed: true, deviceId: 'cable-input' }));
+    expect(result).toEqual(expect.objectContaining({ routed: true, deviceId: 'animaze-cable' }));
   });
 
   test('mutes instead of leaking to the default device when setSinkId is unsupported', async () => {

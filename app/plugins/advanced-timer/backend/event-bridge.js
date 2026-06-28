@@ -162,7 +162,7 @@ class TimerEventBridge {
 
             const actionValue = parseFloat(ev.action_value) || 0;
             let units = 1;
-            if (eventType === 'gift') units = (data.coins || 0) * (data.repeatCount || 1);
+            if (eventType === 'gift') units = (data.coins || 0); // coins is already diamondCount * repeatCount from the adapter
             else if (eventType === 'like') units = data.likeCount || 1;
 
             const actualValue = actionValue * units;
@@ -190,7 +190,8 @@ class TimerEventBridge {
     async handleGiftEvent(data) {
         try {
             const { giftName, coins, uniqueId, repeatCount } = data;
-            const totalCoins = (coins || 0) * (repeatCount || 1);
+            // coins is already diamondCount * repeatCount from the adapter, do NOT multiply by repeatCount again
+            const totalCoins = (coins || 0);
 
             // Fast flat path (per_coin)
             this._applyFlat(

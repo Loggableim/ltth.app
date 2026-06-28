@@ -28,8 +28,9 @@
     async function routeAudioElement(audio, force = false) {
       if (!audio) return { routed: false, reason: 'audio_element_missing' };
       const config = await getConfig(force);
+      const animazeConfig = config.animaze || {};
       const audioConfig = config.audio || {};
-      const deviceId = audioConfig.outputDeviceId || '';
+      const deviceId = animazeConfig.audioOutputDeviceId || animazeConfig.outputDeviceId || audioConfig.outputDeviceId || '';
       const fallback = audioConfig.missingDeviceBehavior || 'mute';
 
       if (!deviceId) {

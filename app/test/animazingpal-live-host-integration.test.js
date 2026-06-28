@@ -118,7 +118,10 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.brainEngine.processChat).toHaveBeenCalledWith(
       'testviewer',
       'Wie geht es dir?',
-      expect.objectContaining({ forceRespond: true, decision: expect.objectContaining({ reason: 'sidekick-selected' }) })
+      expect.objectContaining({
+        forceRespond: true,
+        decision: expect.objectContaining({ respond: true, score: expect.any(Number) })
+      })
     );
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
       text: 'Willkommen zurück, Testviewer!',
@@ -160,7 +163,7 @@ describe('AnimazingPal live host integration', () => {
       'Streamer',
       'Kannst du kurz reagieren?',
       expect.objectContaining({
-        forceRespond: true,
+        forceRespond: false,
         source: 'sidekick-host-speech',
         decision: expect.objectContaining({ reason: 'sidekick-selected' })
       })
@@ -411,11 +414,11 @@ describe('AnimazingPal live host integration', () => {
       speechPeakThreshold: 0.04,
       minSpeechMs: 250
     }));
-    expect(liveHost.response).toEqual(expect.objectContaining({
+  expect(liveHost.response).toEqual(expect.objectContaining({
       hostReplyProbability: 1,
-      hostMinConfidence: 0.2,
-      hostContextCooldownMs: 2500,
-      hostOvertalkCooldownMs: 1200,
+      hostMinConfidence: 0.35,
+      hostContextCooldownMs: 6000,
+      hostOvertalkCooldownMs: 1800,
       hostLongFormWordLimit: 48
     }));
   });
@@ -535,6 +538,32 @@ describe('AnimazingPal live host integration', () => {
     }));
   });
 
+  test('host speech decision accepts viewer-addressed opening phrases', () => {
+    const { plugin } = createPlugin();
+    plugin.config.brain.liveHost.response.hostReplyProbability = 1;
+    plugin.config.brain.liveHost.response.minDecisionScore = 0.55;
+    plugin.config.brain.liveHost.response.sidekickName = 'Luna';
+    plugin.config.brain.liveHost.avatarBundles = [
+      { id: 'luna-bundle', name: 'Moon Avatar', sidekickName: 'Luna' }
+    ];
+    plugin.config.brain.liveHost.activeAvatarBundleId = 'luna-bundle';
+    plugin.lastHostSpeechDecision = null;
+    plugin.lastHostSpeechDecisionAt = null;
+    plugin.liveHostHostSpeechHistory = [];
+
+    const decision = plugin.shouldAcceptHostSpeech('Hallo Luna, kannst du mir kurz helfen?', {
+      source: 'animazingpal-host-asr',
+      timestamp: 100000
+    });
+
+    expect(decision).toEqual(expect.objectContaining({
+      accept: true,
+      respond: true,
+      reason: 'accepted',
+      features: expect.objectContaining({ isViewerAddressed: true })
+    }));
+  });
+
   test('host speech score gate uses minDecisionScore instead of ASR confidence threshold', () => {
     const { plugin } = createPlugin();
     const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.1);
@@ -545,7 +574,7 @@ describe('AnimazingPal live host integration', () => {
     plugin.lastHostSpeechDecisionAt = null;
     plugin.liveHostHostSpeechHistory = [];
 
-    const decision = plugin.shouldAcceptHostSpeech('kurzer kommentar', {
+    const decision = plugin.shouldAcceptHostSpeech('kurzer kommentar?', {
       source: 'animazingpal-host-asr',
       timestamp: 100000
     });
@@ -554,7 +583,7 @@ describe('AnimazingPal live host integration', () => {
       accept: true,
       respond: true,
       reason: 'accepted',
-      score: 0.45
+      score: 0.7
     }));
     randomSpy.mockRestore();
   });
@@ -799,7 +828,7 @@ describe('AnimazingPal live host integration', () => {
       enabled: true,
       standaloneMode: false,
       forceTtsOnlyOnActions: false,
-      activePersonality: 'entertainer'
+      activePersonality: 'rex'
     }));
     expect(defaults.brain.liveHost.enabled).toBe(true);
     expect(defaults.chatToAvatar.enabled).toBe(false);
@@ -1152,7 +1181,7 @@ describe('AnimazingPal live host integration', () => {
     expect(plugin.getLiveHostRuntimeStatus().diagnostics.lastEventResult).toEqual(expect.objectContaining({
       eventType: 'chat',
       responded: false,
-      reason: 'decision:low_signal'
+      reason: 'decision:chat_base'
     }));
   });
 
@@ -1240,7 +1269,7 @@ describe('AnimazingPal live host integration', () => {
       lastEventResult: expect.objectContaining({
         eventType: 'chat',
         responded: false,
-        reason: 'decision:low_signal'
+        reason: 'decision:chat_base'
       })
     }));
   });
@@ -1302,6 +1331,28 @@ describe('AnimazingPal live host integration', () => {
       forceRespond: true, systemPromptOverride: 'Antworte besonders trocken.'
     }));
     expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Na endlich.' }));
+  });
+
+  test('falls back to default follow thanks when follow has no configured response', async () => {
+    const { plugin, ttsPlugin } = createPlugin();
+
+    Object.assign(plugin.config.brain.liveHost.events.follow, {
+      enabled: true,
+      probability: 1,
+      cooldownMs: 0,
+      templateEnabled: false,
+      brainEnabled: false,
+      avatarActionEnabled: false,
+      template: ''
+    });
+
+    await plugin.processLiveHostEvent('follow', { uniqueId: 'alice', nickname: 'Alice' });
+
+    expect(ttsPlugin.speak).toHaveBeenCalledWith(expect.objectContaining({
+      text: expect.stringContaining('Danke'),
+      source: 'animazingpal-host-speech-output',
+      username: 'alice'
+    }));
   });
 
   test('status route exposes live-host runtime diagnostics', () => {
@@ -1368,6 +1419,28 @@ describe('AnimazingPal live host integration', () => {
       expect.objectContaining({ id: 'audio.browser', status: 'ok' }),
       expect.objectContaining({ id: 'animaze.connection', status: 'ok' }),
       expect.objectContaining({ id: 'source.readOnly', status: 'ok' })
+    ]));
+  });
+
+  test('preflight uses the dedicated animaze output device when it is configured', () => {
+    const { plugin } = createPlugin();
+    plugin.isConnected = true;
+    plugin.config.brain.liveHost.provider = 'ollama';
+    plugin.config.brain.liveHost.providers.ollama.apiKey = 'ollama-secret';
+    plugin.config.brain.liveHost.source.username = 'jeffreestar';
+    plugin.config.brain.liveHost.animaze.audioOutputDeviceId = 'animaze-cable';
+    plugin.config.brain.liveHost.animaze.audioOutputDeviceLabel = 'Animaze Cable';
+    plugin.api.tiktok = { isConnected: () => true };
+    plugin.api.getPluginInstance = jest.fn(id => id === 'tts'
+      ? { isInitialized: true, config: { defaultEngine: 'fishaudio' }, queueManager: { getInfo: () => ({ size: 0 }) } }
+      : null);
+
+    const preflight = plugin.evaluateLiveHostPreflight({ browser: { sinkSupported: true, audioUnlocked: true } });
+
+    expect(preflight.ready).toBe(true);
+    expect(preflight.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'audio.output', status: 'ok' }),
+      expect.objectContaining({ id: 'audio.playback', status: 'warn' })
     ]));
   });
 

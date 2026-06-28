@@ -6,6 +6,7 @@ const { buildLiveHostDefaults } = require('../plugins/animazingpal/brain/live-ho
 describe('AnimazingPal live-host configuration UI', () => {
   const html = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.html'), 'utf8');
   const uiScript = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/ui.js'), 'utf8');
+  const ttsScript = fs.readFileSync(path.join(__dirname, '../plugins/tts/main.js'), 'utf8');
   const script = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/live-host-ui.js'), 'utf8');
 
   test('exposes the live-host tab and section controls', () => {
@@ -31,6 +32,10 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(script).toContain('navigator.mediaDevices.enumerateDevices');
     expect(script).toContain('navigator.mediaDevices.selectAudioOutput');
     expect(script).toContain('data-pick-output-device');
+    expect(script).toContain('animaze.audioOutputDeviceId');
+    expect(script).toContain('animaze.audioOutputDeviceLabel');
+    expect(script).toContain('Animaze-Ausgabe / Virtual Cable');
+    expect(script).toContain('Browser-Fallback / Monitoring');
     expect(script).toContain('viewerMemory');
     expect(script).toContain('avatarBundles');
     expect(script).toContain('response.queueWarnRatio');
@@ -126,6 +131,15 @@ describe('AnimazingPal live-host configuration UI', () => {
     expect(uiScript).toContain('window.TTSOutputRouter.routeAudioElement');
     expect(uiScript).toContain('lastRouting');
     expect(script).toContain('tts.probeStaleMs');
+    expect(uiScript).toContain('ALLOWED_ANIMAZINGPAL_TTS_SOURCES');
+    expect(uiScript).toContain('isAnimazingPalTTSSource(data)');
+    expect(uiScript).toContain("if (!isAnimazingPalTTSSource(data)) return;");
+  });
+
+  test('animazingpal UI filters incoming TTS to own speech sources', () => {
+    expect(ttsScript).toContain("source: item.source || 'unknown'");
+    expect(uiScript).toContain('animazingpal');
+    expect(uiScript).toContain('animazingpal-host-speech-output');
   });
 
   test('live-host UI exposes operator diagnostics for audio and runtime health', () => {

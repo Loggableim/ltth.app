@@ -26,13 +26,15 @@ function isLoopbackHost(hostname) {
 
 function providerRequiresApiKey(provider, providerConfig = {}) {
   if (provider === 'openai' || provider === 'gemini' || provider === 'openrouter') return true;
-  if (provider !== 'ollama') return false;
-  try {
-    const baseUrl = new URL(providerConfig.baseUrl || 'http://localhost:11434');
-    return !isLoopbackHost(baseUrl.hostname);
-  } catch (_) {
-    return true;
-  }
+  return false;
+}
+
+function normalizeLanguageCode(value, fallback = 'de') {
+  const normalized = String(value || '').trim().toLowerCase().replace(/_/g, '-');
+  if (!normalized) return fallback;
+  if (normalized.startsWith('en')) return 'en';
+  if (normalized.startsWith('de')) return 'de';
+  return fallback;
 }
 
 class BrainEngine {
@@ -72,7 +74,7 @@ class BrainEngine {
       
       // Response settings - more human-like defaults
       autoRespond: {
-        chat: false,
+        chat: true,
         gifts: true,
         follows: true,
         shares: true,
@@ -86,8 +88,8 @@ class BrainEngine {
       contextAwareness: true,   // Consider stream context
       
       // Rate limiting
-      maxResponsesPerMinute: 10,
-      chatResponseProbability: 0.3, // Only respond to 30% of chats when enabled
+      maxResponsesPerMinute: 18,
+      chatResponseProbability: 0.45, // Only respond to 45% of chats when enabled
       
       ...options
     };
@@ -178,6 +180,26 @@ class BrainEngine {
     const liveHost = normalizeLiveHostConfig(liveHostInput, newConfig);
     this.config.liveHost = liveHost;
     this.config.enabled = newConfig.enabled === true || liveHost.enabled === true;
+    if (newConfig.autoRespond && typeof newConfig.autoRespond === 'object') {
+      const autoRespond = { ...newConfig.autoRespond };
+      if (Object.prototype.hasOwnProperty.call(autoRespond, 'like') && !Object.prototype.hasOwnProperty.call(autoRespond, 'likes')) {
+        autoRespond.likes = autoRespond.like;
+      }
+      this.config.autoRespond = {
+        ...this.config.autoRespond,
+        ...autoRespond
+      };
+    }
+    if (Number.isFinite(Number(newConfig.maxResponsesPerMinute))) {
+      this.config.maxResponsesPerMinute = Number(newConfig.maxResponsesPerMinute);
+    } else {
+      this.config.maxResponsesPerMinute = liveHost.response.maxResponsesPerMinute;
+    }
+    if (Number.isFinite(Number(newConfig.chatResponseProbability))) {
+      this.config.chatResponseProbability = Number(newConfig.chatResponseProbability);
+    } else {
+      this.config.chatResponseProbability = liveHost.response.chatProbability;
+    }
     const providerConfig = {
       ...liveHost.providers[liveHost.provider],
       provider: liveHost.provider,
@@ -191,8 +213,6 @@ class BrainEngine {
       this.gptBrain = null;
     }
 
-    this.config.maxResponsesPerMinute = liveHost.response.maxResponsesPerMinute;
-    this.config.chatResponseProbability = liveHost.response.chatProbability;
     if (this.streamContext) {
       this.streamContext.speakCooldown = liveHost.response.speakCooldownMs;
     }
@@ -204,9 +224,17 @@ class BrainEngine {
   }
 
   _resolveSystemPrompt(options = {}) {
+    const language = normalizeLanguageCode(
+      options.language || this.config?.liveHost?.response?.language,
+      'de'
+    );
+    const languageInstruction = language === 'en'
+      ? 'IMPORTANT: Write all responses in English.'
+      : 'WICHTIG: Antworte auf Deutsch.';
     return [
       this.currentPersonality?.system_prompt,
       this.config.liveHost?.response?.systemPrompt,
+      languageInstruction,
       options.systemPromptOverride
     ].filter(Boolean).join('\n\n');
   }
@@ -405,6 +433,198 @@ class BrainEngine {
     return memories.slice(0, this.config.maxContextMemories);
   }
 
+  _getSidekickContext(options = {}) {
+    const raw = options.sidekickContext || options.audienceContext || {};
+    return {
+      conversationSummary: raw.conversationSummary || options.conversationSummary || null,
+      userContext: raw.userContext || options.userContext || null,
+      roleFlags: raw.roleFlags || options.roleFlags || null,
+      conversationState: raw.conversationState || options.conversationState || null,
+      conversationHistory: raw.conversationHistory || options.conversationHistory || null,
+      decision: raw.decision || options.decision || null,
+      eventType: raw.eventType || options.eventType || null,
+      source: raw.source || options.source || null
+    };
+  }
+
+  _formatSidekickConversationState(conversationState = null) {
+    if (!conversationState) return null;
+    if (typeof conversationState === 'string') {
+      const text = conversationState.trim();
+      return text ? text.slice(0, 400) : null;
+    }
+    if (typeof conversationState !== 'object') return null;
+
+    const parts = [];
+    if (conversationState.summary) {
+      const summary = String(conversationState.summary).trim();
+      if (summary) parts.push(summary.slice(0, 280));
+    }
+    if (conversationState.active !== undefined && conversationState.active !== null) {
+      parts.push(conversationState.active ? 'active' : 'idle');
+    }
+    if (Number.isFinite(Number(conversationState.turnCount))) {
+      parts.push(`Turns=${Math.round(Number(conversationState.turnCount))}`);
+    }
+    if (Array.isArray(conversationState.recentTurns)) {
+      const recent = conversationState.recentTurns
+        .slice(-3)
+        .map((turn) => {
+          const speaker = String(turn?.speaker || 'turn').trim();
+          const text = String(turn?.text || '').trim();
+          return text ? `[${speaker}] ${text}` : null;
+        })
+        .filter(Boolean)
+        .join(' | ');
+      if (recent) parts.push(`Recent=${recent.slice(0, 220)}`);
+    }
+
+    return parts.length > 0 ? parts.join(' | ').slice(0, 400) : null;
+  }
+
+  _formatSidekickConversationSummary(conversationSummary = null) {
+    if (!conversationSummary) return null;
+    if (typeof conversationSummary === 'string') {
+      const text = conversationSummary.trim();
+      return text ? text.slice(0, 400) : null;
+    }
+    if (typeof conversationSummary !== 'object') return null;
+
+    const summary = String(conversationSummary.summary || '').trim();
+    if (summary) {
+      return summary.slice(0, 400);
+    }
+
+    const parts = [];
+    if (conversationSummary.nickname) {
+      parts.push(`Name=${String(conversationSummary.nickname).trim().slice(0, 40)}`);
+    }
+    if (Number.isFinite(Number(conversationSummary.messageCount))) {
+      parts.push(`Messages=${Math.round(Number(conversationSummary.messageCount))}`);
+    }
+    if (Array.isArray(conversationSummary.recentMessages)) {
+      const recent = conversationSummary.recentMessages
+        .slice(0, 3)
+        .map((item) => String(item?.text || '').trim())
+        .filter(Boolean)
+        .join(' | ');
+      if (recent) parts.push(`Recent=${recent.slice(0, 200)}`);
+    }
+
+    return parts.length > 0 ? parts.join(' | ').slice(0, 400) : null;
+  }
+
+  _formatSidekickUserContext(userContext = null) {
+    if (!userContext) return null;
+    if (typeof userContext === 'string') {
+      const text = userContext.trim();
+      return text ? text.slice(0, 400) : null;
+    }
+    if (typeof userContext !== 'object') return null;
+
+    if (userContext.summary) {
+      const summary = String(userContext.summary).trim();
+      if (summary) return summary.slice(0, 400);
+    }
+
+    const parts = [];
+    if (userContext.nickname) {
+      parts.push(`Name=${String(userContext.nickname).trim().slice(0, 40)}`);
+    }
+    const countFields = [
+      ['messages', 'Messages'],
+      ['likes', 'Likes'],
+      ['gifts', 'Gifts'],
+      ['follows', 'Follows'],
+      ['subs', 'Subs'],
+      ['shares', 'Shares'],
+      ['joins', 'Joins'],
+      ['messageCount', 'Messages']
+    ];
+    for (const [field, label] of countFields) {
+      if (userContext[field] !== undefined && userContext[field] !== null) {
+        const value = Number(userContext[field]);
+        if (Number.isFinite(value)) parts.push(`${label}=${Math.round(value)}`);
+      }
+    }
+    const roleFlags = [];
+    if (userContext.isFollower) roleFlags.push('Follower');
+    if (userContext.isSubscriber) roleFlags.push('Subscriber');
+    if (userContext.isModerator) roleFlags.push('Moderator');
+    if (roleFlags.length > 0) parts.push(roleFlags.join('/'));
+
+    return parts.length > 0 ? parts.join(', ').slice(0, 400) : null;
+  }
+
+  _formatSidekickRoleSummary(roleFlags = null) {
+    if (!roleFlags) return null;
+    if (typeof roleFlags === 'string') {
+      const text = roleFlags.trim();
+      return text ? text.slice(0, 120) : null;
+    }
+    if (typeof roleFlags !== 'object') return null;
+
+    const parts = [];
+    if (roleFlags.isFollower) parts.push('Follower');
+    if (roleFlags.isSubscriber) parts.push('Subscriber');
+    if (roleFlags.isModerator) parts.push('Moderator');
+    return parts.length > 0 ? parts.join('/').slice(0, 120) : null;
+  }
+
+  _decorateUserInfoWithSidekickContext(userInfo = {}, sidekickContext = {}) {
+    const next = { ...userInfo };
+    const conversationSummary = this._formatSidekickConversationSummary(sidekickContext.conversationSummary);
+    const conversationState = this._formatSidekickConversationState(sidekickContext.conversationState);
+    const userContextSummary = this._formatSidekickUserContext(sidekickContext.userContext);
+    const roleSummary = this._formatSidekickRoleSummary(sidekickContext.roleFlags || sidekickContext.userContext);
+
+    if (conversationSummary) next.sidekickConversationSummary = conversationSummary;
+    if (conversationState) next.sidekickConversationState = conversationState;
+    if (userContextSummary) next.sidekickUserContextSummary = userContextSummary;
+    if (roleSummary) next.sidekickRoleSummary = roleSummary;
+    if (sidekickContext.decision?.reason) {
+      next.sidekickDecisionReason = String(sidekickContext.decision.reason).trim().slice(0, 120);
+    }
+    if (sidekickContext.decision?.selection) {
+      next.sidekickDecisionSelection = String(sidekickContext.decision.selection).trim().slice(0, 80);
+    }
+    if (sidekickContext.eventType) {
+      next.sidekickEventType = String(sidekickContext.eventType).trim().slice(0, 40);
+    }
+    if (sidekickContext.source) {
+      next.sidekickSource = String(sidekickContext.source).trim().slice(0, 40);
+    }
+
+    return next;
+  }
+
+  _formatSidekickMemoryContext(sidekickContext = {}) {
+    return [
+      this._formatSidekickConversationSummary(sidekickContext.conversationSummary),
+      this._formatSidekickConversationState(sidekickContext.conversationState),
+      this._formatSidekickUserContext(sidekickContext.userContext),
+      this._formatSidekickRoleSummary(sidekickContext.roleFlags || sidekickContext.userContext)
+    ].filter(Boolean).join(' | ') || null;
+  }
+
+  _prependSidekickContextMemories(memories = [], sidekickContext = {}) {
+    const next = Array.isArray(memories) ? [...memories] : [];
+    const sidekickMemories = [
+      this._formatSidekickConversationSummary(sidekickContext.conversationSummary),
+      this._formatSidekickConversationState(sidekickContext.conversationState),
+      this._formatSidekickUserContext(sidekickContext.userContext),
+      this._formatSidekickRoleSummary(sidekickContext.roleFlags || sidekickContext.userContext)
+    ].filter(Boolean);
+
+    for (const memory of sidekickMemories.reverse()) {
+      if (!next.includes(memory)) {
+        next.unshift(memory);
+      }
+    }
+
+    return next.slice(0, this.config.maxContextMemories);
+  }
+
   /**
    * Store a new memory
    */
@@ -451,6 +671,8 @@ class BrainEngine {
     if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
     
     // Get or create user profile
     const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
@@ -465,7 +687,9 @@ class BrainEngine {
       type: 'chat',
       user: username,
       event: 'chat',
-      importance: 0.4
+      importance: 0.4,
+      context: this._formatSidekickMemoryContext(sidekickContext),
+      tags: ['chat']
     });
     
     // Store in conversation history
@@ -489,7 +713,10 @@ class BrainEngine {
     
     try {
       // Get context - include user memories and interaction history
-      const contextMemories = this._getContextMemories(message, username);
+      const contextMemories = this._prependSidekickContextMemories(
+        this._getContextMemories(message, username),
+        sidekickContext
+      );
       const conversationHistory = this.memoryDb.getConversationHistory(this.currentSession, 10);
       const interactionHistory = this.memoryDb.getInteractionHistory(username, 5);
       const viewerContext = this.config.liveHost?.viewerMemory?.enabled
@@ -506,6 +733,7 @@ class BrainEngine {
         recent_interactions: interactionHistory.length,
         last_topic: userProfile.last_topic || 'unknown'
       };
+      const sidekickAwareUserInfo = this._decorateUserInfoWithSidekickContext(enhancedUserInfo, sidekickContext);
       
       // Generate response with enriched context
       const result = await this.gptBrain.generateChatResponse(
@@ -514,7 +742,8 @@ class BrainEngine {
         this._resolveSystemPrompt(options),
         {
           memories: contextMemories,
-          userInfo: enhancedUserInfo,
+          userInfo: sidekickAwareUserInfo,
+          sidekickContext,
           conversationHistory: conversationHistory.map(c => ({
             role: c.role,
             content: c.content
@@ -682,6 +911,8 @@ class BrainEngine {
     if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
     
     // Get user profile and record gift
     const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
@@ -700,6 +931,7 @@ class BrainEngine {
       user: username,
       event: 'gift',
       importance,
+      context: this._formatSidekickMemoryContext(sidekickContext),
       tags: ['gift', giftName]
     });
     
@@ -716,11 +948,11 @@ class BrainEngine {
     try {
       // Get interaction history for personalized response
       const interactionHistory = this.memoryDb.getInteractionHistory(username, 5);
-      const enhancedUserInfo = {
+      const enhancedUserInfo = this._decorateUserInfoWithSidekickContext({
         ...userProfile,
         interaction_history: interactionHistory,
         recent_gifts: interactionHistory.filter(i => i.type === 'gift').length
-      };
+      }, sidekickContext);
       
       // Generate response
       const result = await this.gptBrain.generateGiftResponse(
@@ -755,12 +987,22 @@ class BrainEngine {
    * Process a follow event
    */
   async processFollow(username, options = {}) {
-    if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
+    if (!this.config.enabled) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
     
     const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
     const isReturning = Boolean(options.isReturning) && Number(userProfile.interaction_count || 0) > 1;
+    const displayName = String(options.nickname || username || '').trim() || username;
+    const language = normalizeLanguageCode(options.language, 'de');
+    const followFallback = {
+      text: language === 'en'
+        ? `Thanks for following, ${displayName}!`
+        : `Danke f\u00fcr den Follow, ${displayName}!`,
+      emotion: 'happy'
+    };
     
     // Add to interaction history
     this.memoryDb.addInteractionToHistory(username, 'follow', '', {
@@ -773,7 +1015,9 @@ class BrainEngine {
       type: 'follow',
       user: username,
       event: 'follow',
-      importance: isReturning ? 0.6 : 0.4
+      importance: isReturning ? 0.6 : 0.4,
+      context: this._formatSidekickMemoryContext(sidekickContext),
+      tags: ['follow']
     });
     
     // Check if we should respond
@@ -787,11 +1031,23 @@ class BrainEngine {
     }
     
     try {
+
+      if (!this.gptBrain || !this.currentPersonality) {
+        return followFallback;
+      }
+
       const result = await this.gptBrain.generateFollowResponse(
         username,
         this._resolveSystemPrompt(options),
-        isReturning
+        isReturning,
+        {
+          userInfo: this._decorateUserInfoWithSidekickContext(userProfile, sidekickContext),
+          sidekickContext
+        }
       );
+      if (!result || !result.content) {
+        return followFallback;
+      }
       
       // Add response to interaction history
       this.memoryDb.addInteractionToHistory(username, 'response', result.content, {
@@ -806,7 +1062,7 @@ class BrainEngine {
       };
     } catch (error) {
       this.logger.error(`Failed to generate follow response: ${error.message}`);
-      return null;
+      return followFallback;
     }
   }
 
@@ -817,13 +1073,18 @@ class BrainEngine {
     if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
+    const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
     
     // Store as memory
     this.storeMemory(`${username} hat den Stream geteilt!`, {
       type: 'share',
       user: username,
       event: 'share',
-      importance: 0.5
+      importance: 0.5,
+      context: this._formatSidekickMemoryContext(sidekickContext),
+      tags: ['share']
     });
     
     if (!this.config.autoRespond.shares && !options.forceRespond) {
@@ -838,7 +1099,12 @@ class BrainEngine {
       const result = await this.gptBrain.generateQuickReaction(
         `${username} hat deinen Stream geteilt!`,
         this._resolveSystemPrompt(options),
-        'grateful'
+        'grateful',
+        {
+          username,
+          userInfo: this._decorateUserInfoWithSidekickContext(userProfile, sidekickContext),
+          sidekickContext
+        }
       );
       
       return {
@@ -1286,6 +1552,8 @@ class BrainEngine {
     if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
     
     const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
     
@@ -1293,7 +1561,9 @@ class BrainEngine {
       type: 'subscribe',
       user: username,
       event: 'subscribe',
-      importance: 0.9
+      importance: 0.9,
+      context: this._formatSidekickMemoryContext(sidekickContext),
+      tags: ['subscribe']
     });
     
     if (!this.config.autoRespond.subscribe && !options.forceRespond) {
@@ -1304,7 +1574,12 @@ class BrainEngine {
       const result = await this.gptBrain.generateQuickReaction(
         `${username} hat gerade abonniert! Das ist ein besonderer Moment.`,
         this._resolveSystemPrompt(options),
-        'excited'
+        'excited',
+        {
+          username,
+          userInfo: this._decorateUserInfoWithSidekickContext(userProfile, sidekickContext),
+          sidekickContext
+        }
       );
       
       return {
@@ -1325,6 +1600,9 @@ class BrainEngine {
     if (!this.config.enabled || !this.gptBrain || !this.currentPersonality) {
       return null;
     }
+
+    const sidekickContext = this._getSidekickContext(options);
+    const userProfile = this.memoryDb.getOrCreateUserProfile(username, options.nickname);
     
     // Only respond to significant like bursts
     if (likeCount < 50 && !options.forceRespond) {
@@ -1339,7 +1617,12 @@ class BrainEngine {
       const result = await this.gptBrain.generateQuickReaction(
         `Wow, ${likeCount} Likes von ${username}!`,
         this._resolveSystemPrompt(options),
-        'happy'
+        'happy',
+        {
+          username,
+          userInfo: this._decorateUserInfoWithSidekickContext(userProfile, sidekickContext),
+          sidekickContext
+        }
       );
       
       return {

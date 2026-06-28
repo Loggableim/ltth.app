@@ -29,6 +29,10 @@ describe('AnimazingPal live host configuration', () => {
       audio: expect.objectContaining({
         outputDeviceId: '', monitoringEnabled: false, missingDeviceBehavior: 'mute'
       }),
+      animaze: expect.objectContaining({
+        audioOutputDeviceId: '',
+        audioOutputDeviceLabel: ''
+      }),
       viewerMemory: expect.objectContaining({ streamerId: '', enabled: true, writeMemories: true })
     }));
     expect(defaults.providers.ollama).toEqual(expect.objectContaining({
@@ -93,6 +97,7 @@ describe('AnimazingPal live host configuration', () => {
       source: { autoConnect: false, username: 'saved-stream' },
       response: { maxResponsesPerMinute: 17 },
       audio: { outputDeviceId: 'saved-cable' },
+      animaze: { audioOutputDeviceId: 'saved-animaze', audioOutputDeviceLabel: 'Saved Animaze' },
       tts: { voiceId: 'saved-fish' },
       viewerMemory: { streamerId: 'saved-profile' }
     });
@@ -101,8 +106,23 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.source).toEqual(expect.objectContaining({ autoConnect: false, username: 'saved-stream' }));
     expect(configured.response.maxResponsesPerMinute).toBe(17);
     expect(configured.audio.outputDeviceId).toBe('saved-cable');
+    expect(configured.animaze).toEqual(expect.objectContaining({
+      audioOutputDeviceId: 'saved-animaze',
+      audioOutputDeviceLabel: 'Saved Animaze'
+    }));
     expect(configured.tts.voiceId).toBe('saved-fish');
     expect(configured.viewerMemory.streamerId).toBe('saved-profile');
+  });
+
+  test('normalization migrates legacy browser output into the dedicated animaze output when no animaze block exists', () => {
+    const configured = normalizeLiveHostConfig({
+      audio: { outputDeviceId: 'legacy-cable', outputDeviceLabel: 'Legacy Cable' }
+    });
+
+    expect(configured.animaze).toEqual(expect.objectContaining({
+      audioOutputDeviceId: 'legacy-cable',
+      audioOutputDeviceLabel: 'Legacy Cable'
+    }));
   });
 
   test('production preset restores canonical values without clearing installation setup', () => {
@@ -113,6 +133,7 @@ describe('AnimazingPal live host configuration', () => {
       events: { subscribe: { enabled: false, templateEnabled: true } },
       tts: { enabled: false, voiceId: 'saved-fish', fallbackBehavior: 'error' },
       audio: { outputDeviceId: 'saved-cable', outputDeviceLabel: 'CABLE Input' },
+      animaze: { audioOutputDeviceId: 'saved-animaze', audioOutputDeviceLabel: 'Animaze CABLE Input' },
       source: { username: 'saved-stream' },
       privacy: { includeContactFields: true },
       diagnostics: { includePromptBodies: true }
@@ -124,6 +145,10 @@ describe('AnimazingPal live host configuration', () => {
     expect(configured.tts.voiceId).toBe('saved-fish');
     expect(configured.audio).toEqual(expect.objectContaining({
       outputDeviceId: 'saved-cable', outputDeviceLabel: 'CABLE Input'
+    }));
+    expect(configured.animaze).toEqual(expect.objectContaining({
+      audioOutputDeviceId: 'saved-animaze',
+      audioOutputDeviceLabel: 'Animaze CABLE Input'
     }));
     expect(configured.source.username).toBe('saved-stream');
     expect(configured).toEqual(expect.objectContaining({ enabled: true, provider: 'ollama' }));

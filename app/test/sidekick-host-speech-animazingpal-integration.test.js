@@ -66,7 +66,10 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       source: 'host-mic',
       isHostSpeech: true,
       message: 'Kannst du das im Chat sehen?',
-      comment: 'Kannst du das im Chat sehen?'
+      comment: 'Kannst du das im Chat sehen?',
+      conversationState: expect.objectContaining({
+        turnCount: expect.any(Number)
+      })
     }));
     expect(result).toEqual(expect.objectContaining({
       handled: true,
@@ -78,6 +81,12 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       'Kannst du das im Chat sehen?',
       expect.objectContaining({
         forceRespond: false,
+        liveContext: expect.objectContaining({
+          conversationState: expect.objectContaining({
+            turnCount: expect.any(Number)
+          }),
+          conversationHistory: expect.any(Array)
+        }),
         decision: expect.objectContaining({ reason: 'accepted' })
       })
     );

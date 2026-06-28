@@ -6,6 +6,50 @@
  * Uses SQLite for persistence via LTTH database.
  */
 
+const MEMORY_TABLE = 'sidekick_memory';
+
+function safeJson(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (_) {
+      return fallback;
+    }
+  }
+  if (typeof value === 'object') return value;
+  return fallback;
+}
+
+function sanitizeMessageEntry(entry, fallbackTs) {
+  if (typeof entry === 'string') {
+    const text = entry.trim();
+    if (!text) return null;
+    return { text, ts: fallbackTs };
+  }
+  if (!entry || typeof entry !== 'object') return null;
+  const text = String(entry.text || '').trim();
+  if (!text) return null;
+  const ts = Number(entry.ts);
+  return {
+    text,
+    ts: Number.isFinite(ts) ? ts : fallbackTs
+  };
+}
+
+function formatAgeLabel(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 'unbekannt';
+  const ageMs = Math.max(0, Date.now() - numeric);
+  const ageMinutes = Math.max(0, Math.floor(ageMs / 60000));
+  if (ageMinutes === 0) return 'vor <1m';
+  if (ageMinutes < 60) return `vor ${ageMinutes}m`;
+  const ageHours = Math.floor(ageMinutes / 60);
+  if (ageHours < 24) return `vor ${ageHours}h`;
+  const ageDays = Math.floor(ageHours / 24);
+  return `vor ${ageDays}d`;
+}
+
 /**
  * Memory store for user data with decay
  */
@@ -14,7 +58,6 @@ class MemoryStore {
     this.api = api;
     this.config = config;
     this.db = api.getDatabase();
-    this.tableName = 'sidekick_memory';
     
     // In-memory cache for active users
     this.cache = new Map();
@@ -34,7 +77,7 @@ class MemoryStore {
   _initTable() {
     try {
       this.db.exec(`
-        CREATE TABLE IF NOT EXISTS ${this.tableName} (
+        CREATE TABLE IF NOT EXISTS ${MEMORY_TABLE} (
           uid TEXT PRIMARY KEY,
           nickname TEXT,
           first_seen INTEGER,
@@ -45,22 +88,55 @@ class MemoryStore {
           subs INTEGER DEFAULT 0,
           shares INTEGER DEFAULT 0,
           joins INTEGER DEFAULT 0,
+          last_join INTEGER DEFAULT 0,
+          last_follow INTEGER DEFAULT 0,
+          last_sub INTEGER DEFAULT 0,
+          last_share INTEGER DEFAULT 0,
+          last_gift INTEGER DEFAULT 0,
+          last_like INTEGER DEFAULT 0,
           messages TEXT DEFAULT '[]',
           last_greet INTEGER DEFAULT 0,
+          is_subscriber INTEGER DEFAULT 0,
+          is_follower INTEGER DEFAULT 0,
+          is_moderator INTEGER DEFAULT 0,
           background TEXT DEFAULT '{}',
           updated_at INTEGER
         )
       `);
-      
-      // Create index for cleanup queries
-      this.db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_${this.tableName}_last_seen 
-        ON ${this.tableName}(last_seen)
-      `);
-      
+      this._ensureTableSchema();
       this.api.log('Memory store table initialized', 'info');
     } catch (error) {
       this.api.log(`Failed to initialize memory table: ${error.message}`, 'error');
+    }
+  }
+
+  _getExistingColumns() {
+    const rows = this.db.prepare(`PRAGMA table_info(${MEMORY_TABLE})`).all();
+    return new Set(rows.map((row) => row.name));
+  }
+
+  _ensureTableSchema() {
+    const existingColumns = this._getExistingColumns();
+    const requiredColumns = {
+      last_join: 'INTEGER DEFAULT 0',
+      last_follow: 'INTEGER DEFAULT 0',
+      last_sub: 'INTEGER DEFAULT 0',
+      last_share: 'INTEGER DEFAULT 0',
+      last_gift: 'INTEGER DEFAULT 0',
+      last_like: 'INTEGER DEFAULT 0',
+      is_subscriber: 'INTEGER DEFAULT 0',
+      is_follower: 'INTEGER DEFAULT 0',
+      is_moderator: 'INTEGER DEFAULT 0'
+    };
+
+    for (const [column, definition] of Object.entries(requiredColumns)) {
+      if (existingColumns.has(column)) continue;
+      try {
+        this.db.exec(`ALTER TABLE ${MEMORY_TABLE} ADD COLUMN ${column} ${definition}`);
+        existingColumns.add(column);
+      } catch (error) {
+        this.api.log(`Failed to add memory table column ${column}: ${error.message}`, 'error');
+      }
     }
   }
   
@@ -76,7 +152,7 @@ class MemoryStore {
     }
     
     try {
-      const stmt = this.db.prepare(`SELECT * FROM ${this.tableName} WHERE uid = ?`);
+      const stmt = this.db.prepare(`SELECT * FROM ${MEMORY_TABLE} WHERE uid = ?`);
       const row = stmt.get(uid);
       
       if (row) {
@@ -109,8 +185,17 @@ class MemoryStore {
       subs: 0,
       shares: 0,
       joins: 0,
+      lastJoin: 0,
+      lastFollow: 0,
+      lastSub: 0,
+      lastShare: 0,
+      lastGift: 0,
+      lastLike: 0,
       messages: [],
       lastGreet: 0,
+      isSubscriber: false,
+      isFollower: false,
+      isModerator: false,
       background: {}
     };
     this.cache.set(uid, user);
@@ -122,6 +207,15 @@ class MemoryStore {
    * @private
    */
   _rowToUser(row) {
+    const fallbackTs = row.last_seen || Date.now();
+    const rawMessages = safeJson(row.messages, []);
+    const messages = Array.isArray(rawMessages)
+      ? rawMessages
+          .map((entry) => sanitizeMessageEntry(entry, fallbackTs))
+          .filter(Boolean)
+          .slice(-200)
+      : [];
+    
     return {
       uid: row.uid,
       nickname: row.nickname || '',
@@ -133,9 +227,80 @@ class MemoryStore {
       subs: row.subs || 0,
       shares: row.shares || 0,
       joins: row.joins || 0,
-      messages: JSON.parse(row.messages || '[]'),
+      lastJoin: row.last_join || 0,
+      lastFollow: row.last_follow || 0,
+      lastSub: row.last_sub || 0,
+      lastShare: row.last_share || 0,
+      lastGift: row.last_gift || 0,
+      lastLike: row.last_like || 0,
+      messages,
       lastGreet: row.last_greet || 0,
-      background: JSON.parse(row.background || '{}')
+      isSubscriber: Number(row.is_subscriber) === 1,
+      isFollower: Number(row.is_follower) === 1,
+      isModerator: Number(row.is_moderator) === 1,
+      background: safeJson(row.background, {})
+    };
+  }
+
+  getRecentMessageHistory(uid, limit = 12) {
+    const user = this.getUser(uid);
+    const maxMessages = Math.max(1, Math.min(64, Number.isFinite(Number(limit)) ? Number(limit) : 12));
+    const messages = Array.isArray(user.messages) ? user.messages : [];
+    return messages
+      .slice(-maxMessages)
+      .map((message) => ({ ...message }));
+  }
+
+  getUserContextSummary(uid) {
+    const user = this.getUser(uid);
+    return {
+      uid: user.uid,
+      nickname: user.nickname,
+      firstSeen: user.firstSeen,
+      lastSeen: user.lastSeen,
+      likes: user.likes,
+      gifts: user.gifts,
+      follows: user.follows,
+      subs: user.subs,
+      shares: user.shares,
+      joins: user.joins,
+      lastJoin: user.lastJoin,
+      lastFollow: user.lastFollow,
+      lastSub: user.lastSub,
+      lastShare: user.lastShare,
+      lastGift: user.lastGift,
+      lastLike: user.lastLike,
+      lastGreet: user.lastGreet,
+      isSubscriber: user.isSubscriber,
+      isFollower: user.isFollower,
+      isModerator: user.isModerator,
+      messageCount: Array.isArray(user.messages) ? user.messages.length : 0
+    };
+  }
+
+  getConversationSummaryForAI(uid, options = {}) {
+    const user = this.getUser(uid);
+    const maxMessages = Number(options.maxMessages);
+    const messageLimit = Number.isFinite(maxMessages) ? Math.max(1, Math.min(20, Math.floor(maxMessages))) : 8;
+    const messages = this.getRecentMessageHistory(uid, messageLimit);
+    const recentLines = messages
+      .map((message) => message.text)
+      .filter(Boolean)
+      .map((text) => `- ${text}`)
+      .join('\\n');
+    
+    const summaryLines = [
+      `Nutzer ${user.nickname || user.uid}: likes=${user.likes}, gifts=${user.gifts}, follows=${user.follows}, shares=${user.shares}, subs=${user.subs}, joins=${user.joins}.`,
+      `Letzte Aktionen: Geschenk ${formatAgeLabel(user.lastGift)}, Like ${formatAgeLabel(user.lastLike)}, Follow ${formatAgeLabel(user.lastFollow)}, Share ${formatAgeLabel(user.lastShare)}, Join ${formatAgeLabel(user.lastJoin)}, Sub ${formatAgeLabel(user.lastSub)}.`
+    ];
+    
+    return {
+      uid,
+      nickname: user.nickname,
+      messageCount: messages.length,
+      summary: summaryLines.join(' ') + (recentLines ? ` Relevante letze Nachrichten:\\n${recentLines}` : ''),
+      recentMessages: messages,
+      raw: this.getUserContextSummary(uid)
     };
   }
   
@@ -146,9 +311,13 @@ class MemoryStore {
   saveUser(user) {
     try {
       const stmt = this.db.prepare(`
-        INSERT INTO ${this.tableName} 
-        (uid, nickname, first_seen, last_seen, likes, gifts, follows, subs, shares, joins, messages, last_greet, background, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO ${MEMORY_TABLE} 
+        (
+          uid, nickname, first_seen, last_seen, likes, gifts, follows, subs, shares, joins,
+          last_join, last_follow, last_sub, last_share, last_gift, last_like,
+          messages, last_greet, is_subscriber, is_follower, is_moderator, background, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(uid) DO UPDATE SET
           nickname = excluded.nickname,
           last_seen = excluded.last_seen,
@@ -158,13 +327,21 @@ class MemoryStore {
           subs = excluded.subs,
           shares = excluded.shares,
           joins = excluded.joins,
+          last_join = excluded.last_join,
+          last_follow = excluded.last_follow,
+          last_sub = excluded.last_sub,
+          last_share = excluded.last_share,
+          last_gift = excluded.last_gift,
+          last_like = excluded.last_like,
           messages = excluded.messages,
           last_greet = excluded.last_greet,
+          is_subscriber = excluded.is_subscriber,
+          is_follower = excluded.is_follower,
+          is_moderator = excluded.is_moderator,
           background = excluded.background,
           updated_at = excluded.updated_at
       `);
       
-      // Limit messages array size
       const maxHistory = this.config.memory?.perUserHistory || 100;
       const messages = user.messages.slice(-maxHistory);
       
@@ -179,8 +356,17 @@ class MemoryStore {
         user.subs,
         user.shares,
         user.joins,
+        user.lastJoin,
+        user.lastFollow,
+        user.lastSub,
+        user.lastShare,
+        user.lastGift,
+        user.lastLike,
         JSON.stringify(messages),
         user.lastGreet,
+        user.isSubscriber ? 1 : 0,
+        user.isFollower ? 1 : 0,
+        user.isModerator ? 1 : 0,
         JSON.stringify(user.background),
         Date.now()
       );
@@ -206,21 +392,51 @@ class MemoryStore {
     share = false,
     join = false,
     message = null,
-    background = null
+    background = null,
+    follower,
+    subscriber,
+    moderator
   } = {}) {
     if (!this.config.memory?.enabled) return;
     
     const user = this.getUser(uid);
-    user.lastSeen = Date.now();
+    const now = Date.now();
+    user.lastSeen = now;
     
     if (nickname) user.nickname = nickname;
     if (likeInc) user.likes += likeInc;
     if (giftInc) user.gifts += giftInc;
-    if (follow) user.follows += 1;
-    if (sub) user.subs += 1;
-    if (share) user.shares += 1;
-    if (join) user.joins += 1;
-    if (message) user.messages.push(message);
+    if (follow) {
+      user.follows += 1;
+      user.lastFollow = now;
+    }
+    if (sub) {
+      user.subs += 1;
+      user.lastSub = now;
+    }
+    if (share) {
+      user.shares += 1;
+      user.lastShare = now;
+    }
+    if (join) {
+      user.joins += 1;
+      user.lastJoin = now;
+    }
+    if (likeInc) {
+      user.lastLike = now;
+    }
+    if (giftInc) {
+      user.lastGift = now;
+    }
+    if (message) {
+      const text = String(message).trim();
+      if (text) {
+        user.messages.push({ text, ts: now });
+      }
+    }
+    if (typeof follower === 'boolean') user.isFollower = follower;
+    if (typeof subscriber === 'boolean') user.isSubscriber = subscriber;
+    if (typeof moderator === 'boolean') user.isModerator = moderator;
     if (background) Object.assign(user.background, background);
     
     this.saveUser(user);
@@ -236,11 +452,6 @@ class MemoryStore {
     this.saveUser(user);
   }
   
-  /**
-   * Get background info string for a user
-   * @param {string} uid - User unique ID
-   * @returns {string} Background info
-   */
   /**
    * Get background info string for a user
    * @param {string} uid - User unique ID
@@ -272,7 +483,7 @@ class MemoryStore {
     const cutoffTime = Date.now() - (decayDays * 24 * 60 * 60 * 1000);
     
     try {
-      const stmt = this.db.prepare(`DELETE FROM ${this.tableName} WHERE last_seen < ?`);
+      const stmt = this.db.prepare(`DELETE FROM ${MEMORY_TABLE} WHERE last_seen < ?`);
       const result = stmt.run(cutoffTime);
       
       // Clear cache entries for deleted users
@@ -295,7 +506,7 @@ class MemoryStore {
    */
   clearAll() {
     try {
-      this.db.exec(`DELETE FROM ${this.tableName}`);
+      this.db.exec(`DELETE FROM ${MEMORY_TABLE}`);
       this.cache.clear();
       this.api.log('All memories cleared', 'info');
     } catch (error) {
@@ -309,7 +520,7 @@ class MemoryStore {
    */
   getStats() {
     try {
-      const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM ${this.tableName}`);
+      const countStmt = this.db.prepare(`SELECT COUNT(*) as count FROM ${MEMORY_TABLE}`);
       const countResult = countStmt.get();
       
       const statsStmt = this.db.prepare(`
@@ -320,7 +531,7 @@ class MemoryStore {
           SUM(subs) as totalSubs,
           SUM(shares) as totalShares,
           SUM(joins) as totalJoins
-        FROM ${this.tableName}
+        FROM ${MEMORY_TABLE}
       `);
       const statsResult = statsStmt.get();
       
@@ -358,7 +569,7 @@ class MemoryStore {
   searchUsers(query, limit = 20) {
     try {
       const stmt = this.db.prepare(`
-        SELECT * FROM ${this.tableName}
+        SELECT * FROM ${MEMORY_TABLE}
         WHERE nickname LIKE ? OR uid LIKE ?
         ORDER BY last_seen DESC
         LIMIT ?
@@ -381,7 +592,7 @@ class MemoryStore {
     try {
       const stmt = this.db.prepare(`
         SELECT *, (likes + gifts * 10 + follows * 5 + subs * 20 + shares * 3 + joins) as score
-        FROM ${this.tableName}
+        FROM ${MEMORY_TABLE}
         ORDER BY score DESC
         LIMIT ?
       `);
@@ -398,3 +609,4 @@ class MemoryStore {
 }
 
 module.exports = MemoryStore;
+
