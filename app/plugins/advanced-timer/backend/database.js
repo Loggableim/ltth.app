@@ -244,6 +244,19 @@ class TimerDatabase {
 
             // Migrate simple timer_events entries into per_* columns
             this.migrateSimpleEventsToPerFields();
+
+            // Gift overrides table — per-timer per-gift custom seconds
+            this.db.prepare(`
+                CREATE TABLE IF NOT EXISTS advanced_timer_gift_overrides (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timer_id TEXT NOT NULL,
+                    gift_id INTEGER NOT NULL,
+                    gift_name TEXT NOT NULL,
+                    seconds REAL NOT NULL DEFAULT 0,
+                    FOREIGN KEY (timer_id) REFERENCES advanced_timers(id) ON DELETE CASCADE,
+                    UNIQUE(timer_id, gift_id)
+                )
+            `).run();
         } catch (error) {
             this.api.log(`Error initializing timer database: ${error.message}`, 'error');
             throw error;
@@ -822,6 +835,77 @@ class TimerDatabase {
             }
         } catch (error) {
             this.api.log(`Error closing database: ${error.message}`, 'error');
+        }
+    }
+
+    // ========== GIFT OVERRIDES ==========
+
+    /**
+     * Get all gift overrides for a timer
+     */
+    getGiftOverrides(timerId) {
+        try {
+            return this.db.prepare('SELECT * FROM advanced_timer_gift_overrides WHERE timer_id = ? ORDER BY gift_name ASC').all(timerId);
+        } catch (error) {
+            this.api.log(`Error getting gift overrides: ${error.message}`, 'error');
+            return [];
+        }
+    }
+
+    /**
+     * Get a single gift override by timer_id + gift_id
+     */
+    getGiftOverride(timerId, giftId) {
+        try {
+            return this.db.prepare('SELECT * FROM advanced_timer_gift_overrides WHERE timer_id = ? AND gift_id = ?').get(timerId, giftId);
+        } catch (error) {
+            this.api.log(`Error getting gift override: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    /**
+     * Save (insert or update) a gift override
+     */
+    saveGiftOverride(timerId, giftId, giftName, seconds) {
+        try {
+            this.db.prepare(`
+                INSERT INTO advanced_timer_gift_overrides (timer_id, gift_id, gift_name, seconds)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(timer_id, gift_id) DO UPDATE SET
+                    gift_name = excluded.gift_name,
+                    seconds = excluded.seconds
+            `).run(timerId, giftId, giftName, seconds);
+            return true;
+        } catch (error) {
+            this.api.log(`Error saving gift override: ${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Delete a gift override
+     */
+    deleteGiftOverride(id) {
+        try {
+            this.db.prepare('DELETE FROM advanced_timer_gift_overrides WHERE id = ?').run(id);
+            return true;
+        } catch (error) {
+            this.api.log(`Error deleting gift override: ${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Delete all gift overrides for a timer
+     */
+    clearGiftOverrides(timerId) {
+        try {
+            this.db.prepare('DELETE FROM advanced_timer_gift_overrides WHERE timer_id = ?').run(timerId);
+            return true;
+        } catch (error) {
+            this.api.log(`Error clearing gift overrides: ${error.message}`, 'error');
+            return false;
         }
     }
 }

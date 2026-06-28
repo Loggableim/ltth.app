@@ -219,6 +219,17 @@ function buildTimerCard(t) {
             '<a href="/api/advanced-timer/timers/' + t.id + '/export-logs" target="_blank" class="btn btn-sm btn-secondary">📥 Export</a>' +
           '</div>' +
         '</div>' +
+        // Gift Overrides section
+        '<button class="section-toggle" data-sec="gift-overrides">🎁 Gift Overrides <span class="chevron">▼</span></button>' +
+        '<div class="section-body" data-sec-body="gift-overrides">' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Override per_coin for specific gifts. When set, the flat per_coin value is NOT applied for this gift — only the override counts.</p>' +
+          '<div class="gift-override-list" id="gol-' + t.id + '"><p style="color:var(--color-text-secondary);font-size:0.82rem;">Click to load.</p></div>' +
+          '<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">' +
+            '<select class="field-input" id="go-gift-select-' + t.id + '" style="flex:1;min-width:140px;"><option value="">— Select Gift —</option></select>' +
+            '<input type="number" class="field-input" id="go-seconds-' + t.id + '" placeholder="Seconds" value="30" min="0" step="0.01" style="width:90px;">' +
+            '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">➕ Add</button>' +
+          '</div>' +
+        '</div>' +
         // Delete
         '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:12px;display:flex;justify-content:flex-end;">' +
           '<button class="btn btn-sm btn-danger delete-timer-btn">🗑️ Delete Timer</button>' +
@@ -300,6 +311,19 @@ function buildTimerCard(t) {
 
     // Advanced event rules link
     card.querySelector('[data-adv-timer]')?.addEventListener('click', () => openAdvancedEvents(tid));
+
+    // Gift overrides: populate select on first open
+    let goLoaded = false;
+    card.querySelector('[data-sec="gift-overrides"]')?.addEventListener('click', () => {
+        if (!goLoaded) {
+            goLoaded = true;
+            loadGiftOverrides(tid);
+            populateGiftSelect(tid);
+        }
+    });
+
+    // Gift override: add button
+    card.querySelector('#go-add-btn-' + tid)?.addEventListener('click', () => addGiftOverride(tid));
 
     // Delete
     card.querySelector('.delete-timer-btn')?.addEventListener('click', () => deleteTimer(tid));
@@ -743,4 +767,81 @@ function escapeHtml(text) {
     const d = document.createElement('div');
     d.textContent = text ?? '';
     return d.innerHTML;
+}
+
+// ---------------------------------------------------------------------------
+// Gift Overrides
+// ---------------------------------------------------------------------------
+
+async function loadGiftOverrides(timerId) {
+    const container = document.getElementById('gol-' + timerId);
+    if (!container) return;
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/gift-overrides');
+        const data = await res.json();
+        if (!data.success || !data.overrides.length) {
+            container.innerHTML = '<p style="color:var(--color-text-secondary);font-size:0.82rem;">No gift overrides yet.</p>';
+            return;
+        }
+        container.innerHTML = data.overrides.map(o =>
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-border);font-size:0.84rem;">' +
+                '<span><strong>' + escapeHtml(o.gift_name) + '</strong> → ' + (o.seconds > 0 ? '+' : '') + o.seconds + 's</span>' +
+                '<button class="btn btn-xs btn-danger go-del-btn" data-go-id="' + o.id + '" data-timer="' + timerId + '">🗑️</button>' +
+            '</div>'
+        ).join('');
+        // Attach delete handlers
+        container.querySelectorAll('.go-del-btn').forEach(btn => {
+            btn.addEventListener('click', () => deleteGiftOverride(btn.getAttribute('data-go-id'), timerId));
+        });
+    } catch (e) { console.error('loadGiftOverrides', e); }
+}
+
+function populateGiftSelect(timerId) {
+    const select = document.getElementById('go-gift-select-' + timerId);
+    if (!select) return;
+    // Keep existing options if already populated
+    if (select.options.length > 1) return;
+    // Add gift catalog items
+    for (const gift of giftCatalog) {
+        const opt = document.createElement('option');
+        opt.value = gift.id;
+        opt.textContent = gift.name + ' (' + gift.diamond_count + '💎)';
+        select.appendChild(opt);
+    }
+}
+
+async function addGiftOverride(timerId) {
+    const select = document.getElementById('go-gift-select-' + timerId);
+    const secondsInput = document.getElementById('go-seconds-' + timerId);
+    if (!select || !secondsInput) return;
+    const giftId = parseInt(select.value);
+    if (!giftId) { alert('Please select a gift from the catalog.'); return; }
+    const seconds = parseFloat(secondsInput.value) || 0;
+    // Find gift name from catalog
+    const gift = giftCatalog.find(g => g.id === giftId);
+    const giftName = gift ? gift.name : 'Unknown';
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/gift-overrides', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gift_id: giftId, gift_name: giftName, seconds })
+        });
+        const data = await res.json();
+        if (data.success) {
+            select.value = '';
+            secondsInput.value = '30';
+            loadGiftOverrides(timerId);
+        } else {
+            alert(data.error || 'Failed to save');
+        }
+    } catch (e) { console.error('addGiftOverride', e); }
+}
+
+async function deleteGiftOverride(overrideId, timerId) {
+    if (!confirm('Remove this gift override?')) return;
+    try {
+        const res = await fetch('/api/advanced-timer/gift-overrides/' + overrideId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) loadGiftOverrides(timerId);
+    } catch (e) { console.error('deleteGiftOverride', e); }
 }

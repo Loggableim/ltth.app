@@ -15,6 +15,9 @@ class TimerEventBridge {
         // In-memory cache: timerId → { per_coin, per_follow, … , multiplier, multiplier_enabled }
         this.cache = new Map();
 
+        // Gift override cache: timerId → Map<giftId, seconds>
+        this.giftOverrideCache = new Map();
+
         // Pre-computed set of timer IDs that have advanced event rules
         this.timersWithAdvancedRules = new Set();
 
@@ -31,6 +34,7 @@ class TimerEventBridge {
         try {
             this.cache.clear();
             this.timersWithAdvancedRules.clear();
+            this.giftOverrideCache.clear();
             const timers = this.plugin.db.getAllTimers();
             for (const t of timers) {
                 this.cache.set(t.id, {
@@ -43,6 +47,15 @@ class TimerEventBridge {
                     multiplier: parseFloat(t.multiplier) || 1.0,
                     multiplier_enabled: t.multiplier_enabled ? true : false
                 });
+                // Load gift overrides for this timer
+                const overrides = this.plugin.db.getGiftOverrides(t.id);
+                if (overrides.length > 0) {
+                    const overrideMap = new Map();
+                    for (const ov of overrides) {
+                        overrideMap.set(ov.gift_id, ov.seconds);
+                    }
+                    this.giftOverrideCache.set(t.id, overrideMap);
+                }
             }
             // Pre-compute which timers have advanced event rules (gift-name filters, conditions, etc.)
             const allEvents = this.plugin.db.db.prepare('SELECT DISTINCT timer_id FROM advanced_timer_events WHERE enabled = 1').all();
@@ -87,20 +100,22 @@ class TimerEventBridge {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Apply a flat per_* interaction to all cached timers.
+     * Apply a flat per_* interaction to all cached timers (or a subset).
      * @param {string} field   - e.g. 'per_coin'
      * @param {number} units   - number of units (coins, likes, …)
      * @param {string} source  - source string for logging
      * @param {string} logType - event type name for the log entry
      * @param {string} userId  - TikTok uniqueId
      * @param {string} logMsg  - human-readable description
+     * @param {Set<string>} [timerFilter] - optional set of timer IDs to restrict to
      */
-    _applyFlat(field, units, source, logType, userId, logMsg) {
+    _applyFlat(field, units, source, logType, userId, logMsg, timerFilter) {
         if (this.cache.size === 0) {
             this.api.log(`EventBridge _applyFlat: no timers in cache for ${logType} event — skipping`, 'debug');
             return;
         }
         for (const [timerId, cached] of this.cache.entries()) {
+            if (timerFilter && !timerFilter.has(timerId)) continue;
             const perUnit = cached[field];
             this.api.log(`EventBridge _applyFlat: timer=${timerId} ${field}=${perUnit} units=${units} source=${source}`, 'debug');
             if (perUnit === 0) continue;
@@ -189,16 +204,59 @@ class TimerEventBridge {
 
     async handleGiftEvent(data) {
         try {
-            const { giftName, coins, uniqueId, repeatCount } = data;
+            const { giftName, coins, uniqueId, repeatCount, giftId } = data;
             // coins is already diamondCount * repeatCount from the adapter, do NOT multiply by repeatCount again
             const totalCoins = (coins || 0);
 
-            // Fast flat path (per_coin)
-            this._applyFlat(
-                'per_coin', totalCoins,
-                `gift:${uniqueId}`, 'gift', uniqueId,
-                `Gift: ${giftName} (${coins} coins) x${repeatCount || 1} = ${totalCoins.toFixed(0)} coins`
-            );
+            // ── Gift override path ───────────────────────────────────────
+            // If a timer has a gift override for this specific giftId, use ONLY
+            // the override seconds — skip the flat per_coin path for that timer.
+            const overrideTimers = new Set();
+            if (giftId != null && this.giftOverrideCache.size > 0) {
+                for (const [timerId, overrideMap] of this.giftOverrideCache.entries()) {
+                    const overrideSeconds = overrideMap.get(giftId);
+                    if (overrideSeconds === undefined) continue;
+
+                    overrideTimers.add(timerId);
+                    const timer = this.plugin.engine.getTimer(timerId);
+                    if (!timer) continue;
+
+                    const mult = (this.cache.get(timerId)?.multiplier_enabled
+                        ? (this.cache.get(timerId)?.multiplier || 1.0)
+                        : 1.0);
+                    const delta = overrideSeconds * mult;
+
+                    if (delta > 0) {
+                        timer.addTime(delta, `gift:${uniqueId}`);
+                    } else if (delta < 0) {
+                        timer.removeTime(-delta, `gift:${uniqueId}`);
+                    } else {
+                        continue;
+                    }
+
+                    this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
+                    this.plugin.db.addTimerLog(
+                        timerId, 'gift', uniqueId, delta,
+                        `Gift override: ${giftName} (giftId: ${giftId}) = ${delta.toFixed(2)}s`
+                    );
+                }
+            }
+
+            // ── Flat per_coin path ───────────────────────────────────────
+            // Only apply to timers that do NOT have a gift override for this gift
+            const flatTimerIds = new Set();
+            for (const timerId of this.cache.keys()) {
+                if (!overrideTimers.has(timerId)) flatTimerIds.add(timerId);
+            }
+
+            if (flatTimerIds.size > 0) {
+                this._applyFlat(
+                    'per_coin', totalCoins,
+                    `gift:${uniqueId}`, 'gift', uniqueId,
+                    `Gift: ${giftName} (${coins} coins) x${repeatCount || 1} = ${totalCoins.toFixed(0)} coins`,
+                    flatTimerIds
+                );
+            }
 
             // Advanced rules fallback — only for pre-computed timers that have event rows
             const timers = this.plugin.engine.getAllTimers();
@@ -338,6 +396,7 @@ class TimerEventBridge {
         }
         this.likesPerSecondTracker.clear();
         this.cache.clear();
+        this.giftOverrideCache.clear();
         this.timersWithAdvancedRules.clear();
     }
 }

@@ -615,6 +615,58 @@ class TimerAPI {
             }
         });
 
+        // ── Gift Override routes ────────────────────────────────────────
+
+        // Get gift overrides for a timer
+        this.api.registerRoute('get', '/api/advanced-timer/timers/:id/gift-overrides', (req, res) => {
+            try {
+                const { id } = req.params;
+                const overrides = this.plugin.db.getGiftOverrides(id);
+                res.json({ success: true, overrides });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Save (create or update) a gift override
+        this.api.registerRoute('post', '/api/advanced-timer/timers/:id/gift-overrides', (req, res) => {
+            try {
+                const { id } = req.params;
+                const { gift_id, gift_name, seconds } = req.body;
+
+                if (gift_id === undefined || gift_id === null) {
+                    return res.status(400).json({ success: false, error: 'gift_id is required' });
+                }
+                if (seconds === undefined || seconds === null) {
+                    return res.status(400).json({ success: false, error: 'seconds is required' });
+                }
+
+                const saved = this.plugin.db.saveGiftOverride(id, gift_id, gift_name || 'Unknown', parseFloat(seconds) || 0);
+                if (!saved) {
+                    return res.status(500).json({ success: false, error: 'Failed to save gift override' });
+                }
+
+                // Rebuild cache so the event bridge picks up the change
+                this.plugin.eventBridge.rebuildCache();
+
+                res.json({ success: true });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Delete a gift override
+        this.api.registerRoute('delete', '/api/advanced-timer/gift-overrides/:overrideId', (req, res) => {
+            try {
+                const { overrideId } = req.params;
+                this.plugin.db.deleteGiftOverride(parseInt(overrideId));
+                this.plugin.eventBridge.rebuildCache();
+                res.json({ success: true });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
         // Profiles
         this.api.registerRoute('get', '/api/advanced-timer/profiles', (req, res) => {
             try {
