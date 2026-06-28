@@ -213,35 +213,37 @@ class TimerEventBridge {
             // the override seconds — skip the flat per_coin path for that timer.
             const overrideTimers = new Set();
             if (giftId != null && this.giftOverrideCache.size > 0) {
-                for (const [timerId, overrideMap] of this.giftOverrideCache.entries()) {
-                    const overrideSeconds = overrideMap.get(giftId);
-                    if (overrideSeconds === undefined) continue;
+                const numericGiftId = Number(giftId);
+                if (!isNaN(numericGiftId)) {
+                    for (const [timerId, overrideMap] of this.giftOverrideCache.entries()) {
+                        const overrideSeconds = overrideMap.get(numericGiftId);
+                        if (overrideSeconds === undefined) continue;
 
-                    overrideTimers.add(timerId);
-                    const timer = this.plugin.engine.getTimer(timerId);
-                    if (!timer) continue;
+                        overrideTimers.add(timerId);
+                        const timer = this.plugin.engine.getTimer(timerId);
+                        if (!timer) continue;
 
-                    const mult = (this.cache.get(timerId)?.multiplier_enabled
-                        ? (this.cache.get(timerId)?.multiplier || 1.0)
-                        : 1.0);
-                    const delta = overrideSeconds * mult;
+                        const mult = (this.cache.get(timerId)?.multiplier_enabled
+                            ? (this.cache.get(timerId)?.multiplier || 1.0)
+                            : 1.0);
+                        const delta = overrideSeconds * mult;
 
-                    if (delta > 0) {
-                        timer.addTime(delta, `gift:${uniqueId}`);
-                    } else if (delta < 0) {
-                        timer.removeTime(-delta, `gift:${uniqueId}`);
-                    } else {
-                        continue;
+                        if (delta > 0) {
+                            timer.addTime(delta, `gift:${uniqueId}`);
+                        } else if (delta < 0) {
+                            timer.removeTime(-delta, `gift:${uniqueId}`);
+                        } else {
+                            continue;
+                        }
+
+                        this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
+                        this.plugin.db.addTimerLog(
+                            timerId, 'gift', uniqueId, delta,
+                            `Gift override: ${giftName} (giftId: ${giftId}) = ${delta.toFixed(2)}s`
+                        );
                     }
-
-                    this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
-                    this.plugin.db.addTimerLog(
-                        timerId, 'gift', uniqueId, delta,
-                        `Gift override: ${giftName} (giftId: ${giftId}) = ${delta.toFixed(2)}s`
-                    );
                 }
             }
-
             // ── Flat per_coin path ───────────────────────────────────────
             // Only apply to timers that do NOT have a gift override for this gift
             const flatTimerIds = new Set();
