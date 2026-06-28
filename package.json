@@ -1,6 +1,6 @@
 {
   "name": "ltth-desktop2-snapshot",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "PupCid's Little TikTool Helper snapshot - backend app plus Windows launcher sources",
   "private": true,
   "license": "CC-BY-NC-4.0",

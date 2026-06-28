@@ -55,7 +55,17 @@ socket.on('lastevent.multihud.update', async (data) => {
     allEventData[data.type] = data.user;
 
     if (selectedEvents.includes(data.type)) {
-      startRotation(data.type);
+      const rotationEvents = getRotatableEvents();
+
+      if (rotationTimer === null && rotationEvents.length > 0) {
+        // Rotation not running yet — start it, showing the new event first
+        startRotation(data.type);
+      } else if (rotationEvents.length > 0 && rotationEvents[currentEventIndex] === data.type) {
+        // Currently showing this event type — refresh the display with latest data
+        showCurrentEvent();
+      }
+      // Otherwise: data is updated, let the existing rotation continue naturally
+      // without resetting the timer or jumping to this event
     }
   }
 });
