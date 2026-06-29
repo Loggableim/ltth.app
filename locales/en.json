@@ -41,6 +41,22 @@
         "slot_machine": {
             "title": "Slot Machine",
             "description": "3-reel slot machine with multi-machine support, custom sounds, superfan recognition and fully configurable design."
+        },
+        "sidekick": {
+            "name": "Sidekick",
+            "desc": "AI co-host with AnimazingPal Live-Host-Brain, Fish ASR, and Host-Mode-Decision-Controls."
+        },
+        "talkingHeads": {
+            "name": "Talking-Heads",
+            "desc": "Synchronised lip-sync avatars for TTS output with Sidekick gating and < 200ms latency."
+        },
+        "toptier": {
+            "name": "TopTier Leaderboard v2.0",
+            "desc": "Session-only viewer ranking with coins = score, combined live view, and Glassmorphism Overlay v3.0."
+        },
+        "oneLineInstaller": {
+            "name": "One-Line Installer",
+            "desc": "One command installs LTTH on Windows, macOS, or Linux with auto-detection of Git and Node.js."
         }
     },
     "common": {

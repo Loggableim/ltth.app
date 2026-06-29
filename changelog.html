@@ -42,13 +42,124 @@
         </div>
     </section>
 
-    <section>
+<section>
         <div class="container" style="max-width: 900px;">
-            <!-- Version 1.3.3 -->
+            <!-- Version 1.3.7 -->
             <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.3</h2>
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.7</h2>
                     <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 29. Juni 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Großes Release mit dem neuen <strong>Sidekick-Plugin</strong> (KI-Co-Host), <strong>Talking-Heads</strong>-Integration,
+                    <strong>TopTier Leaderboard v2.0</strong>, offizieller <strong>One-Line Installer</strong> für Windows / macOS / Linux und zwei kritischen Timer-Bugfixes.
+                </p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🤖 Sidekick Plugin (NEU)</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>AnimazingPal Live-Host-Brain</strong> — autonomer KI-Co-Host mit eigenem Speech-Pipeline</li>
+                    <li><strong>Fish ASR</strong> — Spracherkennung über Fish Audio, WAV-Streaming an AnimazingPal</li>
+                    <li><strong>Host-Mode-Decision-Controls</strong> — Sidekick reagiert nur, wenn du selbst gerade nicht sprichst</li>
+                    <li><strong>Sidekick-Name-Gating</strong> — Co-Host spricht nur, wenn er persönlich angesprochen wird</li>
+                    <li><strong>Preflight-Sync</strong> + <strong>ASR UI-Lifecycle-Hardening</strong></li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🗣️ Talking-Heads-Plugin (NEU)</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Dedizierte Host-Speech-Pipeline</strong> für Sidekick + AnimazingPal-Output</li>
+                    <li><strong>Lippensynchronisation</strong> zum TTS-Stream in Echtzeit</li>
+                    <li><strong>Avatar-Sync</strong> für VTuber-Modus</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🏆 TopTier Leaderboard v2.0</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Session-only-Modus</strong> — Leaderboard startet bei jedem Stream neu</li>
+                    <li><strong>Coins = Score</strong> — vereinheitlichte Punkte-Logik</li>
+                    <li><strong>Kombinierte Live-View</strong> + Portrait- &amp; Landscape-Layouts</li>
+                    <li><strong>Glassmorphism Overlay v3.0</strong></li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">⚡ One-Line Installer (NEU)</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Windows</strong> — <code>iwr -useb https://ltth.app/install.ps1 | iex</code></li>
+                    <li><strong>macOS / Linux</strong> — <code>curl -fsSL https://ltth.app/install.sh | bash</code></li>
+                    <li><strong>Universal</strong> — <code>curl -fsSL https://ltth.app/install.js | node</code></li>
+                    <li>Auto-Detect Git + Node.js (18–24), Updates per <code>git pull</code></li>
+                </ul>
+
+                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Timer-Karte</strong> klappt sich beim Scrollen nicht mehr zu (gift-catalog CSS-Konflikt behoben)</li>
+                    <li><strong>Gift-Override Type-Mismatch</strong> — String vs Number <code>giftId</code> im Advanced Timer</li>
+                    <li>Sidekick: ASR stoppt, wenn unsafe-mic-override widerrufen wird</li>
+                    <li>Sidekick: ASR-Upload-Route gehärtet (Trust Boundaries, Validierung)</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.3.6 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.6</h2>
+                    <span style="background: var(--color-text-secondary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Stable</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 21. Juni 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">⏱️ Advanced Timer Plugin v1.3.6</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li><strong>Gift-Katalog-Integration</strong> — Timer können direkt mit TikTok-Gift-IDs verknüpft werden</li>
+                    <li>Backend-API <code>/api/advanced-timer/gift-catalog</code> mit dynamischem Mapping</li>
+                    <li>Event-Bridge zwischen Gift-Katalog und Timer-Engine</li>
+                    <li>Database-Schema erweitert um Gift-Katalog-Refs</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">📦 Plugin-Loader</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Unterstützt jetzt 36+ Plugins mit Hot-Reload</li>
+                    <li>Verbesserte SQLite-Performance (WAL-Mode, größerer Cache)</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.3.5 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.5</h2>
+                    <span style="background: var(--color-text-secondary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Stable</span>
+                </div>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 7. Juni 2026</p>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🚀 Sidekick &amp; AnimazingPal-Integration</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Sidekick-Plugin als neues Top-Level-Plugin</li>
+                    <li>AnimazingPal Live-Host (WAV-Streaming, Host-Brain)</li>
+                    <li>Host-Mode-ASR-Decision-Controls</li>
+                    <li>TTS-Plugin &amp; Talking-Heads-Integration</li>
+                    <li>Dashboard-Update auf neues Sidekick-Modul</li>
+                </ul>
+
+                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🏆 TopTier Leaderboard v1</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Session-only Mode, Coins als Score</li>
+                    <li>Kombinierte View, Portrait/Landscape-Layouts</li>
+                    <li>Glassmorphism Overlay (Preview)</li>
+                </ul>
+
+                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🛠️ Release-Prep</h3>
+                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+                    <li>Update-Mechanismus verbessert</li>
+                    <li>Docker GHCR-Pipeline aktiv</li>
+                    <li>Root-Route-Handling gefixt</li>
+                    <li>Launcher-Build automatisiert</li>
+                </ul>
+            </div>
+
+            <!-- Version 1.3.3 -->
+            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.3</h2>
+                    <span style="background: var(--color-text-secondary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Stable</span>
                 </div>
                 <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 26. März 2026</p>
 

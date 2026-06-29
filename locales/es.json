@@ -41,6 +41,22 @@
         "slot_machine": {
             "title": "Tragamonedas",
             "description": "Tragamonedas de 3 carretes con soporte multi-máquina, sonidos personalizados, reconocimiento de superfan y diseño completamente configurable."
+        },
+        "sidekick": {
+            "name": "Sidekick",
+            "desc": "Co-anfitrión de IA con AnimazingPal Live-Host-Brain, Fish ASR y controles de decisión en modo anfitrión."
+        },
+        "talkingHeads": {
+            "name": "Talking-Heads",
+            "desc": "Avatares con sincronización labial para salida TTS, gating de Sidekick y latencia < 200ms."
+        },
+        "toptier": {
+            "name": "TopTier Leaderboard v2.0",
+            "desc": "Ranking de espectadores solo por sesión con monedas = puntos, vista combinada y overlay Glassmorphism v3.0."
+        },
+        "oneLineInstaller": {
+            "name": "One-Line Installer",
+            "desc": "Un comando instala LTTH en Windows, macOS o Linux con detección automática de Git y Node.js."
         }
     },
     "common": {

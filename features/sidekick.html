@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sidekick – Der autonome KI-Co-Host für PupCid's Little TikTool Helper v1.3.7. AnimazingPal Live-Host-Brain, Fish ASR, Host-Mode-Decision-Controls und Sidekick-Name-Gating.">
+    <title>Sidekick – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Sidekick – KI-Co-Host für TikTok LIVE">
+    <meta property="og:description" content="AnimazingPal Live-Host-Brain, Fish ASR, Host-Mode-Decision-Controls. Spricht nur, wenn er angesprochen wird.">
+    <meta property="og:url" content="https://ltth.app/features/sidekick.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/sidekick.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <style>
+        .feat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem; }
+        .feat-card { background: var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem; }
+        .feat-card h3 { color: var(--color-primary); margin-top:0; }
+        .feat-card p { color: var(--color-text-secondary); line-height:1.6; }
+        .badge-new { background: var(--color-primary); color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; vertical-align:middle; letter-spacing:0.5px; }
+        code.inline { background:#0d1117; color:#8de88e; padding:2px 6px; border-radius:4px; font-family:'Consolas',monospace; font-size:0.9em; }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+<main id="main-content">
+    <section style="padding: 2rem 0 0;">
+        <div class="container">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Home</a>
+                <span class="breadcrumb-sep">›</span>
+                <a href="/features/">Features</a>
+                <span class="breadcrumb-sep">›</span>
+                <span class="breadcrumb-current">Sidekick</span>
+            </nav>
+        </div>
+    </section>
+
+    <section class="feature-hero">
+        <div class="container">
+            <span class="feature-hero-icon">🤖</span>
+            <h1 class="feature-hero-title">Sidekick <span class="badge-new">NEU in v1.3.7</span></h1>
+            <p class="feature-hero-subtitle">
+                Dein autonomer KI-Co-Host. Während du streamst, im Gespräch mit Zuschauern bist oder dich auf das Gameplay konzentrierst,
+                übernimmt der Sidekick die einfachen Chat-Antworten — und schweigt, wenn du selbst sprichst.
+            </p>
+            <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                <a href="/changelog.html" class="btn btn-secondary btn-large">Changelog ansehen</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Was kann der Sidekick?</h2>
+
+            <div class="feat-grid">
+                <div class="feat-card">
+                    <h3>🧠 AnimazingPal Live-Host-Brain</h3>
+                    <p>Eigenes dediziertes Brain mit Live-Host-Modus: persistenter Kontext über deine aktuelle Session, Streamer-Persönlichkeit und dynamische Anpassung an die Stimmung im Chat.</p>
+                </div>
+
+                <div class="feat-card">
+                    <h3>🎤 Fish ASR</h3>
+                    <p>Spracherkennung über Fish Audio. Der Sidekick erkennt, wenn du redest, und schweigt sofort — so gibt es keine doppelten Antworten.</p>
+                </div>
+
+                <div class="feat-card">
+                    <h3>🎯 Host-Mode-Decision-Controls</h3>
+                    <p>Feinjustierbare Regeln: <code class="inline">react_only_when_mentioned</code>, <code class="inline">pause_on_host_speech</code>, <code class="inline">unsafe_mic_override</code>. Du behältst die volle Kontrolle.</p>
+                </div>
+
+                <div class="feat-card">
+                    <h3>🔒 Sidekick-Name-Gating</h3>
+                    <p>Der Sidekick antwortet nur, wenn sein Name im Chat fällt. So wirkt er wie ein echter Co-Host und nicht wie ein Spammer.</p>
+                </div>
+
+                <div class="feat-card">
+                    <h3>📡 WAV-Streaming</h3>
+                    <p>TTS-Output wird als WAV an AnimazingPal gestreamt — keine MP3-Artefakte, keine Latenz-Probleme. Spricht flüssig wie ein Mensch.</p>
+                </div>
+
+                <div class="feat-card">
+                    <h3>🛡️ ASR UI-Lifecycle-Hardening</h3>
+                    <p>Sicherheitsfeatures gegen unbeabsichtigte Mikrofon-Aktivierung: Upload-Trust-Boundaries, Routen-Validierung, automatisches Cleanup bei unsafe-Override-Revoke.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview" style="background: var(--color-surface);">
+        <div class="container">
+            <h2 class="section-title">Technische Details</h2>
+
+            <div style="max-width:760px; margin:0 auto;">
+                <h3 style="color: var(--color-primary);">Architektur</h3>
+                <p style="color: var(--color-text-secondary); line-height:1.8;">
+                    Der Sidekick ist als eigenständiges Plugin implementiert und nutzt eine dedizierte <strong>Host-Speech-Pipeline</strong>,
+                    die parallel zur normalen Chat-Pipeline läuft. Audio wird via Fish ASR erkannt → an die AnimazingPal-Brain übergeben →
+                    Antwort wird über die Talking-Heads-Pipeline ausgegeben.
+                </p>
+
+                <h3 style="color: var(--color-primary); margin-top: 2rem;">Sicherheit</h3>
+                <ul style="color: var(--color-text-secondary); line-height:1.8;">
+                    <li><strong>ASR-Upload-Validierung</strong> — Datei-Typen, Größen, Sprache werden vor dem Verarbeiten geprüft</li>
+                    <li><strong>Trust-Boundaries</strong> — ASR-Route akzeptiert nur authentifizierte Uploads aus dem lokalen Netzwerk</li>
+                    <li><strong>Redacted-Response-Log</strong> — Sprach-Antworten werden in Logs zensiert</li>
+                    <li><strong>Auto-Stop bei Override-Revoke</strong> — Sobald du Mikrofon-Freigabe zurückziehst, stoppt ASR sofort</li>
+                </ul>
+
+                <h3 style="color: var(--color-primary); margin-top: 2rem;">Konfiguration</h3>
+                <p style="color: var(--color-text-secondary); line-height:1.8;">
+                    Sidekick-Settings findest du im Dashboard unter <code class="inline">Plugins → Sidekick</code>. Dort aktivierst du Host-Mode,
+                    setzt Trigger-Namen, Justierst die Cooldown-Zeiten und verwaltest die AnimazingPal-Persönlichkeit.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-cta">
+                <h3 style="margin-bottom: var(--space-3);">Bereit für deinen ersten KI-Co-Host?</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Installiere LTTH v1.3.7 und aktiviere den Sidekick mit einem Klick.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/download.html" class="btn btn-primary">Jetzt Installieren</a>
+                    <a href="/plugins.html" class="btn btn-secondary">Alle Plugins Ansehen</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.LTTHLayout) await LTTHLayout.init();
+        if (window.I18n) I18n.init(window.__ltthLang || 'de');
+    });
+</script>
+</body>
+</html>

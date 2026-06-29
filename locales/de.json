@@ -41,6 +41,22 @@
         "slot_machine": {
             "title": "Slot Machine",
             "description": "3-Reel-Slot-Machine mit Multi-Machine-Support, Custom-Sounds, Superfan-Erkennung und vollständig konfigurierbarem Design."
+        },
+        "sidekick": {
+            "name": "Sidekick",
+            "desc": "KI-Co-Host mit AnimazingPal Live-Host-Brain, Fish ASR und Host-Mode-Decision-Controls."
+        },
+        "talkingHeads": {
+            "name": "Talking-Heads",
+            "desc": "Synchronisierte Lippensync-Avatare für TTS-Output mit Sidekick-Gating und < 200ms Latenz."
+        },
+        "toptier": {
+            "name": "TopTier Leaderboard v2.0",
+            "desc": "Session-only Viewer-Ranking mit Coins = Score, kombinierter Live-View und Glassmorphism Overlay v3.0."
+        },
+        "oneLineInstaller": {
+            "name": "One-Line Installer",
+            "desc": "Ein Befehl installiert LTTH auf Windows, macOS oder Linux mit Auto-Detect für Git und Node.js."
         }
     },
     "common": {

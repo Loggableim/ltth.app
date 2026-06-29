@@ -41,6 +41,22 @@
         "slot_machine": {
             "title": "Machine à Sous",
             "description": "Machine à sous 3 rouleaux avec support multi-machine, sons personnalisés, reconnaissance superfan et design entièrement configurable."
+        },
+        "sidekick": {
+            "name": "Sidekick",
+            "desc": "Co-hôte IA avec AnimazingPal Live-Host-Brain, Fish ASR et contrôles de décision en mode hôte."
+        },
+        "talkingHeads": {
+            "name": "Talking-Heads",
+            "desc": "Avatars à synchronisation labiale pour la sortie TTS, avec gating Sidekick et latence < 200ms."
+        },
+        "toptier": {
+            "name": "TopTier Leaderboard v2.0",
+            "desc": "Classement des viewers par session avec pièces = score, vue combinée et overlay Glassmorphism v3.0."
+        },
+        "oneLineInstaller": {
+            "name": "One-Line Installer",
+            "desc": "Une seule commande installe LTTH sur Windows, macOS ou Linux avec détection automatique de Git et Node.js."
         }
     },
     "common": {

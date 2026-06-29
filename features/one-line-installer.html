@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="One-Line Installer – PupCid's Little TikTool Helper v1.3.7 mit einem einzigen Befehl installieren. Funktioniert auf Windows, macOS und Linux.">
+    <title>One-Line Installer – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="One-Line Installer für LTTH — Windows, macOS, Linux">
+    <meta property="og:description" content="Ein einziger Befehl installiert die komplette LTTH-Suite. Auto-Detect für Git und Node.js.">
+    <meta property="og:url" content="https://ltth.app/features/one-line-installer.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/one-line-installer.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <style>
+        .cmd-block { background: #0d1117; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: var(--space-5); margin: var(--space-3) 0 var(--space-4); font-family: 'Consolas', 'Courier New', monospace; font-size: 1rem; color: #e6edf3; line-height: 1.5; position:relative; word-break: break-all; user-select: all; }
+        .cmd-block .prompt { color: #8de88e; user-select: none; margin-right: 0.5em; }
+        .copy-btn { position:absolute; top:8px; right:8px; background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#cfd8e3; padding:4px 10px; border-radius: var(--radius-sm); cursor:pointer; font-size:0.75rem; }
+        .copy-btn:hover { background: var(--color-primary); color:#fff; border-color: var(--color-primary); }
+        .copy-btn.copied { background:#238636; border-color:#238636; color:#fff; }
+        .feat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:1.5rem; }
+        .feat-card { background: var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem; }
+        .feat-card h3 { color: var(--color-primary); margin-top:0; }
+        .feat-card p { color: var(--color-text-secondary); line-height:1.6; }
+        .badge-new { background: var(--color-primary); color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; vertical-align:middle; letter-spacing:0.5px; }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+<main id="main-content">
+    <section style="padding: 2rem 0 0;">
+        <div class="container">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Home</a>
+                <span class="breadcrumb-sep">›</span>
+                <a href="/features/">Features</a>
+                <span class="breadcrumb-sep">›</span>
+                <span class="breadcrumb-current">One-Line Installer</span>
+            </nav>
+        </div>
+    </section>
+
+    <section class="feature-hero">
+        <div class="container">
+            <span class="feature-hero-icon">⚡</span>
+            <h1 class="feature-hero-title">One-Line Installer <span class="badge-new">NEU in v1.3.7</span></h1>
+            <p class="feature-hero-subtitle">
+                Ein einziger Befehl — und LTTH läuft. Funktioniert auf Windows, macOS und Linux.
+                Auto-Detect für Git und Node.js, automatisches Setup, fertig.
+            </p>
+            <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                <a href="/download.html" class="btn btn-primary btn-large">Zur Download-Seite</a>
+                <a href="https://github.com/Loggableim/ltth_desktop2" class="btn btn-secondary btn-large">GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview" style="background: linear-gradient(135deg, #0a1929 0%, #102a43 100%); padding: 4rem 0;">
+        <div class="container">
+            <h2 class="section-title" style="color:#fff;">Drei Befehle, drei Plattformen</h2>
+
+            <div style="max-width:800px; margin:0 auto;">
+                <!-- Windows -->
+                <h3 style="color:#8de88e; margin-top:2rem;">🪟 Windows (PowerShell)</h3>
+                <div class="cmd-block" id="cmd-win">
+                    <button class="copy-btn" data-copy-target="cmd-win">Kopieren</button>
+<span class="prompt">PS&gt;</span> iwr -useb https://ltth.app/install.ps1 | iex
+                </div>
+
+                <!-- macOS -->
+                <h3 style="color:#8de88e; margin-top:2rem;">🍎 macOS (Terminal)</h3>
+                <div class="cmd-block" id="cmd-mac">
+                    <button class="copy-btn" data-copy-target="cmd-mac">Kopieren</button>
+<span class="prompt">$</span> curl -fsSL https://ltth.app/install.sh | bash
+                </div>
+
+                <!-- Linux -->
+                <h3 style="color:#8de88e; margin-top:2rem;">🐧 Linux (Bash)</h3>
+                <div class="cmd-block" id="cmd-lin">
+                    <button class="copy-btn" data-copy-target="cmd-lin">Kopieren</button>
+<span class="prompt">$</span> curl -fsSL https://ltth.app/install.sh | bash
+                </div>
+
+                <!-- Universal -->
+                <h3 style="color:#8de88e; margin-top:2rem;">🌐 Universal (Node.js)</h3>
+                <div class="cmd-block" id="cmd-uni">
+                    <button class="copy-btn" data-copy-target="cmd-uni">Kopieren</button>
+<span class="prompt">$</span> curl -fsSL https://ltth.app/install.js | node
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Was die Installer tun</h2>
+            <div class="feat-grid">
+                <div class="feat-card">
+                    <h3>1. 🩺 Prüfen</h3>
+                    <p>Git und Node.js (>= 18, &lt; 25) werden erkannt. Fehlende Tools werden via Homebrew, winget, NodeSource oder apt automatisch installiert.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>2. 📥 Laden</h3>
+                    <p>Das LTTH-Repository wird von GitHub geklont (oder aktualisiert, falls schon installiert). Standard-Pfad: <code>~/.local/share/ltth</code> bzw. <code>%LOCALAPPDATA%\LTTH</code>.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>3. 🔨 Bauen</h3>
+                    <p><code>npm install</code> richtet alle 38+ Plugins und Module ein. Keine manuellen Schritte nötig.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>4. 🚀 Starten</h3>
+                    <p>Die App wird im Hintergrund gestartet. Das Dashboard öffnet sich automatisch unter <code>http://localhost:3000/dashboard.html</code>.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>5. 🔄 Updates</h3>
+                    <p><code>git pull &amp;&amp; npm install</code> reicht — keine separaten Update-Tools, keine EXE-Downloads.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>6. 🧹 Deinstallation</h3>
+                    <p>Einfach das Installations-Verzeichnis löschen. Keine Registry-Einträge, keine Systemdateien.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview" style="background: var(--color-surface);">
+        <div class="container">
+            <h2 class="section-title">Umgebungsvariablen</h2>
+            <div style="max-width:800px; margin:0 auto;">
+                <table style="width:100%; color: var(--color-text-secondary); border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--color-border);">
+                            <th style="text-align:left; padding:0.75rem 0.5rem;">Variable</th>
+                            <th style="text-align:left; padding:0.75rem 0.5rem;">Default</th>
+                            <th style="text-align:left; padding:0.75rem 0.5rem;">Bedeutung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--color-border);"><td style="padding:0.6rem 0.5rem;"><code>LTTH_VERSION</code></td><td style="padding:0.6rem 0.5rem;">latest</td><td style="padding:0.6rem 0.5rem;">Version (z.B. <code>v1.3.7</code>)</td></tr>
+                        <tr style="border-bottom: 1px solid var(--color-border);"><td style="padding:0.6rem 0.5rem;"><code>LTTH_DIR</code></td><td style="padding:0.6rem 0.5rem;">~/.local/share/ltth</td><td style="padding:0.6rem 0.5rem;">Installationspfad</td></tr>
+                        <tr style="border-bottom: 1px solid var(--color-border);"><td style="padding:0.6rem 0.5rem;"><code>LTTH_PORT</code></td><td style="padding:0.6rem 0.5rem;">3000</td><td style="padding:0.6rem 0.5rem;">HTTP-Port</td></tr>
+                        <tr style="border-bottom: 1px solid var(--color-border);"><td style="padding:0.6rem 0.5rem;"><code>LTTH_NO_BROWSER</code></td><td style="padding:0.6rem 0.5rem;">0</td><td style="padding:0.6rem 0.5rem;">Browser nicht öffnen (1 = aus)</td></tr>
+                        <tr><td style="padding:0.6rem 0.5rem;"><code>LTTH_QUIET</code></td><td style="padding:0.6rem 0.5rem;">0</td><td style="padding:0.6rem 0.5rem;">Reduzierte Ausgabe (1 = still)</td></tr>
+                    </tbody>
+                </table>
+                <p style="margin-top:1.5rem; color: var(--color-text-secondary);">
+                    Beispiel: <code>LTTH_PORT=8080 LTTH_VERSION=v1.3.5 curl -fsSL https://ltth.app/install.sh | bash</code>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-cta">
+                <h3 style="margin-bottom: var(--space-3);">Probier's aus</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Dreißig Sekunden, ein Befehl — und du hast die komplette LTTH-Suite laufen.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/download.html" class="btn btn-primary">Zur Download-Seite</a>
+                    <a href="https://github.com/Loggableim/ltth_desktop2" class="btn btn-secondary">Quellcode auf GitHub</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+    // Copy-Buttons
+    document.querySelectorAll('.copy-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const target = document.getElementById(btn.dataset.copyTarget);
+            if (!target) return;
+            const text = target.innerText.replace(/^(PS>|\$)\s*/, '').trim();
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.classList.add('copied');
+                btn.textContent = '✓ Kopiert!';
+                setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 1500);
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.LTTHLayout) await LTTHLayout.init();
+        if (window.I18n) I18n.init(window.__ltthLang || 'de');
+    });
+</script>
+</body>
+</html>

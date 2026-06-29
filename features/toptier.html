@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TopTier Leaderboard v2.0 – Session-only Viewer-Leaderboard für PupCid's Little TikTool Helper v1.3.7. Coins als Score, Glassmorphism Overlay v3.0, Portrait- & Landscape-Layouts.">
+    <title>TopTier Leaderboard v2.0 – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TopTier Leaderboard v2.0 – Viewer-Ranking der nächsten Generation">
+    <meta property="og:description" content="Session-only Mode, Coins als Score, Glassmorphism Overlay v3.0, Portrait & Landscape.">
+    <meta property="og:url" content="https://ltth.app/features/toptier.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/toptier.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <style>
+        .feat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem; }
+        .feat-card { background: var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem; }
+        .feat-card h3 { color: var(--color-primary); margin-top:0; }
+        .feat-card p { color: var(--color-text-secondary); line-height:1.6; }
+        .badge-new { background: var(--color-primary); color:#fff; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; vertical-align:middle; letter-spacing:0.5px; }
+        .mockup { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.1); border-radius:1rem; padding:1.5rem; backdrop-filter: blur(20px); }
+        .leaderboard-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 1rem; background: rgba(255,255,255,0.04); border-radius:0.5rem; margin-bottom:0.5rem; }
+        .leaderboard-row .rank { font-weight:700; color:var(--color-primary); font-size:1.5rem; width:40px; }
+        .leaderboard-row .name { flex:1; font-weight:600; }
+        .leaderboard-row .score { color: var(--color-primary); font-weight:700; }
+        code.inline { background:#0d1117; color:#8de88e; padding:2px 6px; border-radius:4px; font-family:'Consolas',monospace; font-size:0.9em; }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+<main id="main-content">
+    <section style="padding: 2rem 0 0;">
+        <div class="container">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <a href="/">Home</a>
+                <span class="breadcrumb-sep">›</span>
+                <a href="/features/">Features</a>
+                <span class="breadcrumb-sep">›</span>
+                <span class="breadcrumb-current">TopTier Leaderboard v2.0</span>
+            </nav>
+        </div>
+    </section>
+
+    <section class="feature-hero">
+        <div class="container">
+            <span class="feature-hero-icon">🏆</span>
+            <h1 class="feature-hero-title">TopTier Leaderboard v2.0 <span class="badge-new">NEU in v1.3.7</span></h1>
+            <p class="feature-hero-subtitle">
+                Das Viewer-Leaderboard der nächsten Generation. Session-only, Coins als Score, kombinierte Live-View
+                und ein neues Glassmorphism Overlay v3.0 — für Streams, in denen jedes Gift zählt.
+            </p>
+            <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                <a href="/plugins.html" class="btn btn-secondary btn-large">Alle Plugins</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview" style="background: linear-gradient(135deg, #0a1929 0%, #102a43 100%); padding: 4rem 0;">
+        <div class="container">
+            <h2 class="section-title" style="color:#fff;">Live-Vorschau</h2>
+            <div class="mockup" style="max-width: 500px; margin: 0 auto;">
+                <div style="text-align:center; color: var(--color-text-secondary); margin-bottom:1rem; font-size:0.85rem; letter-spacing:1.5px;">SESSION TOP GIFTERS</div>
+                <div class="leaderboard-row">
+                    <div class="rank">1</div>
+                    <div class="name">🥇 CoolViewer123</div>
+                    <div class="score">12,500 🪙</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div class="rank">2</div>
+                    <div class="name">🥈 FanGirl_99</div>
+                    <div class="score">8,200 🪙</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div class="rank">3</div>
+                    <div class="name">🥉 TikTokLover</div>
+                    <div class="score">5,100 🪙</div>
+                </div>
+                <div class="leaderboard-row">
+                    <div class="rank">4</div>
+                    <div class="name">StreamBuddy</div>
+                    <div class="score">3,800 🪙</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview">
+        <div class="container">
+            <h2 class="section-title">Was ist neu in v2.0?</h2>
+            <div class="feat-grid">
+                <div class="feat-card">
+                    <h3>🔄 Session-only-Modus</h3>
+                    <p>Das Leaderboard startet bei jedem Stream automatisch bei null. Keine Datenleichen aus alten Streams mehr, jede Session ist ein neuer Wettkampf.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>🪙 Coins = Score</h3>
+                    <p>Vereinheitlichte Punkte-Logik: 1 Coin = 1 Punkt. Keine Konvertierung, keine Verwirrung — was im Chat passiert, ist das Ranking.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>📊 Kombinierte Live-View</h3>
+                    <p>Top-Gifter + Top-Chatter + Top-Follower in einer einzigen Ansicht. Multi-Modal-Engagement auf einen Blick.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>📱📺 Portrait & Landscape</h3>
+                    <p>Optimierte Layouts für Mobile-Viewing (TikTok selbst) und Desktop-Streaming (OBS Browser Source).</p>
+                </div>
+                <div class="feat-card">
+                    <h3>✨ Glassmorphism Overlay v3.0</h3>
+                    <p>Neues Design mit Backdrop-Blur, halbtransparenten Flächen und subtilen Akzenten. Sieht auf jedem Stream-Hintergrund elegant aus.</p>
+                </div>
+                <div class="feat-card">
+                    <h3>🎨 Theme-Aware</h3>
+                    <p>Automatische Anpassung an Light- und Dark-Themes. Konfigurierbare Akzentfarbe.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-preview" style="background: var(--color-surface);">
+        <div class="container">
+            <h2 class="section-title">Konfiguration</h2>
+            <div style="max-width:760px; margin:0 auto; color: var(--color-text-secondary); line-height:1.8;">
+                <p>
+                    TopTier findest du im Dashboard unter <code class="inline">Plugins → TopTier</code>. Konfigurierbar:
+                </p>
+                <ul>
+                    <li>Session-Reset-Verhalten (auto / manuell)</li>
+                    <li>Welche Event-Quellen zählen (Gifts, Subs, Likes, Follows)</li>
+                    <li>Anzeige-Layout (Portrait / Landscape / Combined)</li>
+                    <li>Overlay-Position und Akzentfarbe</li>
+                    <li>TTS-Trigger bei Leaderboard-Wechsel</li>
+                </ul>
+                <p style="margin-top:1.5rem;">
+                    Das Overlay wird als separate OBS-Browser-Source eingebunden — typische URL: <code class="inline">http://localhost:3000/overlay/toptier</code>.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-cta">
+                <h3 style="margin-bottom: var(--space-3);">Engagement neu definiert</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+                    Aktiviere TopTier v2.0 mit einem Klick und schaffe echten Wettbewerb in deinem Chat.
+                </p>
+                <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                    <a href="/download.html" class="btn btn-primary">Jetzt Installieren</a>
+                    <a href="/plugins.html" class="btn btn-secondary">Alle Plugins</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.LTTHLayout) await LTTHLayout.init();
+        if (window.I18n) I18n.init(window.__ltthLang || 'de');
+    });
+</script>
+</body>
+</html>
