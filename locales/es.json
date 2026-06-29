@@ -458,5 +458,83 @@
                 "caption": "Integración de primer nivel con TikFinity para datos de eventos extendidos y soporte de webhooks"
             }
         }
+    },
+    "install": {
+        "tagline": "Un solo comando. Windows, macOS, Linux. Descarga la última versión, instala dependencias y abre el panel.",
+        "windows": {
+            "title": "Windows — PowerShell",
+            "desc": "Abre PowerShell (clic derecho → \"Ejecutar como administrador\" es opcional), copia el comando y pulsa Enter.",
+            "warn": "⚠ Si Windows SmartScreen avisa: \"Más información\" → \"Ejecutar de todas formas\". El script está firmado y es seguro."
+        },
+        "macos": {
+            "title": "macOS — Terminal",
+            "desc": "Abre Terminal (Spotlight → \"Terminal\"), copia el comando y pulsa Enter.",
+            "warn": "💡 Si falta Node.js, se te pedirá instalar Homebrew (https://brew.sh) — acción única."
+        },
+        "linux": {
+            "title": "Linux — Bash",
+            "desc": "Abre una terminal, copia el comando y pulsa Enter. Probado en Ubuntu, Debian, Fedora, Arch.",
+            "warn": "💡 El script sólo usa sudo si Node.js debe instalarse vía el gestor de paquetes."
+        },
+        "copy": "Copiar",
+        "copied": "¡Copiado!",
+        "whatHappens": "¿Qué ocurre?",
+        "step1": {
+            "title": "1. Verificar",
+            "desc": "Se detectan Git y Node.js — se instalan las herramientas faltantes."
+        },
+        "step2": {
+            "title": "2. Descargar",
+            "desc": "La última versión de LTTH se clona desde GitHub a ~/.local/share/ltth."
+        },
+        "step3": {
+            "title": "3. Construir",
+            "desc": "npm install configura los 36 plugins y módulos."
+        },
+        "step4": {
+            "title": "4. Iniciar",
+            "desc": "El panel se abre en http://localhost:3000/dashboard.html."
+        },
+        "altDownloads": "Descargas alternativas",
+        "alt1": {
+            "name": "🪟 LTTH Cloud Launcher (Windows)",
+            "meta": "~7 MB · GUI · Auto-actualizaciones · Rollback"
+        },
+        "alt2": {
+            "name": "📦 Código fuente como ZIP",
+            "meta": "Instalación manual · todas las plataformas"
+        },
+        "alt3": {
+            "name": "🏷️ Lanzamientos de GitHub",
+            "meta": "Paquetes versionados &amp; checksums"
+        },
+        "alt4": {
+            "name": "⭐ Repositorio",
+            "meta": "Estrellas &amp; issues en GitHub"
+        },
+        "req": {
+            "title": "Requisitos del sistema",
+            "os": "🖥️ Sistema operativo",
+            "runtime": "⚙️ Runtime",
+            "hw": "🧠 Hardware"
+        },
+        "trouble": {
+            "title": "🛠️ Problemas frecuentes",
+            "q1": "PowerShell: \"la ejecución de scripts está deshabilitada en este sistema\"",
+            "a1": "Establece la política de ejecución una vez: <code>Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned</code> y confirma con \"S\".",
+            "q2": "macOS: \"curl: (60) SSL certificate problem\"",
+            "a2": "Actualiza curl con Homebrew (<code>brew install curl</code>) o usa <code>curl -k</code>.",
+            "q3": "El puerto 3000 está ocupado",
+            "a3": "Usa otro puerto: <code>LTTH_PORT=8080 curl -fsSL https://ltth.app/install.sh | bash</code>",
+            "q4": "Instalar en otro directorio",
+            "a4": "<code>LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install.sh | bash</code>"
+        },
+        "cta": {
+            "title": "¿Necesitas ayuda?",
+            "desc": "Consulta la documentación o contacta con soporte.",
+            "docs": "Documentación",
+            "support": "Soporte",
+            "issues": "GitHub Issues"
+        }
     }
 }

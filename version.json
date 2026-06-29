@@ -1,11 +1,49 @@
 {
-  "version": "1.3.3",
-  "releaseDate": "2026-03-11",
+  "version": "1.3.7",
+  "releaseDate": "2026-06-29",
   "status": "stable",
-  "downloadVersion": "1.3.2",
-  "downloadNote": "Latest published GitHub release is 1.3.2. Version 1.3.3 is available via the Cloud Launcher auto-update system.",
-  "downloadUrl": "https://github.com/Loggableim/ltth_desktop2/releases/tag/1.3.2",
+  "downloadVersion": "1.3.7",
+  "downloadNote": "Latest stable release. One-line installer available for Windows (PowerShell), macOS, and Linux.",
+  "downloadUrl": "https://github.com/Loggableim/ltth_desktop2/releases/tag/v1.3.7",
+  "oneLineInstaller": {
+    "windows": "iwr -useb https://ltth.app/install.ps1 | iex",
+    "macos":   "curl -fsSL https://ltth.app/install.sh | bash",
+    "linux":   "curl -fsSL https://ltth.app/install.sh | bash",
+    "universal": "curl -fsSL https://ltth.app/install.js | node"
+  },
+  "supportedPlatforms": ["windows-amd64", "macos-arm64", "macos-amd64", "linux-amd64", "linux-arm64"],
   "changelog": {
+    "1.3.7": {
+      "date": "2026-06-29",
+      "changes": [
+        "FIX: Timer-Karte klappt sich beim Scrollen nicht mehr zu (gift-catalog CSS-Konflikt behoben)",
+        "FIX: Gift-Override Type-Mismatch (String vs Number giftId) im Advanced Timer Plugin",
+        "NEW: One-Line Installer für Windows / macOS / Linux (https://ltth.app/download.html)",
+        "NEW: TopTier Leaderboard v2.0 — Session-only, Coins=Score, kombinierte View, Portrait/Landscape, Glassmorphism Overlay v3.0",
+        "NEW: AnimazingPal Sidekick — Host-Brain, ASR (Fish), WAV-Streaming, Gating",
+        "NEW: Talking-Heads / Sidekick-Integration für autonomes Host-Speech-Pipeline",
+        "IMPROVED: Sidekick Host-Decision-Controls + Preflight + ASR UI-Lifecycle-Hardening",
+        "IMPROVED: Advanced Timer Plugin v1.3.6 — Gift-Katalog-Integration"
+      ]
+    },
+    "1.3.6": {
+      "date": "2026-06-21",
+      "changes": [
+        "NEW: Gift-Katalog-Integration ins Advanced Timer Plugin",
+        "IMPROVED: Plugin-Loader unterstützt jetzt 36+ Plugins",
+        "IMPROVED: Datenbank-Performance (WAL-Mode, größere Cache)"
+      ]
+    },
+    "1.3.5": {
+      "date": "2026-06-07",
+      "changes": [
+        "NEW: Sidekick-Plugin mit AnimazingPal-, TTS- und Talking-Heads-Integration",
+        "NEW: Dashboard-Refactoring — 186 KB JS-Monolith in 9 Module aufgeteilt",
+        "NEW: TopTier Viewer Leaderboard v2.0 — Session-only, Coins=Score",
+        "NEW: Host-Mode-ASR-Decision-Controls für Sidekick",
+        "IMPROVED: Release-Prep — Update-Mechanismus, Docker GHCR, Root-Route, Launcher-Build"
+      ]
+    },
     "1.3.3": {
       "date": "2026-03-11",
       "changes": [
