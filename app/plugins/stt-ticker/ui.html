@@ -333,30 +333,28 @@
       setTimeout(() => { t.remove(); }, 3000);
     }
 
-    // ===== CSP-kompatible Event-Listener (keine inline onclick/onchange/oninput) =====
-    document.addEventListener('DOMContentLoaded', () => {
-      // Overlay URL
-      document.getElementById('overlay-url').addEventListener('click', function() { this.select(); });
-      document.getElementById('design-select').addEventListener('change', updateOverlayUrl);
-      document.getElementById('position-select').addEventListener('change', updateOverlayUrl);
-      document.getElementById('maxLines-input').addEventListener('input', updateOverlayUrl);
-      document.getElementById('fontSize-input').addEventListener('input', updateOverlayUrl);
-      document.getElementById('btn-update-url').addEventListener('click', updateOverlayUrl);
+    // ===== CSP-kompatible Event-Listener (direkt, da Script am Ende des Body) =====
+    // Overlay URL
+    document.getElementById('overlay-url').addEventListener('click', function() { this.select(); });
+    document.getElementById('design-select').addEventListener('change', updateOverlayUrl);
+    document.getElementById('position-select').addEventListener('change', updateOverlayUrl);
+    document.getElementById('maxLines-input').addEventListener('input', updateOverlayUrl);
+    document.getElementById('fontSize-input').addEventListener('input', updateOverlayUrl);
+    document.getElementById('btn-update-url').addEventListener('click', updateOverlayUrl);
 
-      // Translation
-      document.getElementById('translation-toggle').addEventListener('click', () => toggleSection('translation-section'));
-      document.getElementById('translation-enabled').addEventListener('change', saveConfig);
-      document.getElementById('translation-model').addEventListener('change', saveConfig);
-      document.getElementById('translation-sourceLanguage').addEventListener('change', saveConfig);
-      document.getElementById('translation-targetLanguage').addEventListener('change', saveConfig);
-      document.getElementById('translation-color').addEventListener('change', saveConfig);
-      document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
-      document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
+    // Translation
+    document.getElementById('translation-toggle').addEventListener('click', () => toggleSection('translation-section'));
+    document.getElementById('translation-enabled').addEventListener('change', saveConfig);
+    document.getElementById('translation-model').addEventListener('change', saveConfig);
+    document.getElementById('translation-sourceLanguage').addEventListener('change', saveConfig);
+    document.getElementById('translation-targetLanguage').addEventListener('change', saveConfig);
+    document.getElementById('translation-color').addEventListener('change', saveConfig);
+    document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
+    document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
 
-      // Actions
-      document.getElementById('btn-clear-buffer').addEventListener('click', clearBuffer);
-      document.getElementById('btn-refresh-status').addEventListener('click', refreshStatus);
-    });
+    // Actions
+    document.getElementById('btn-clear-buffer').addEventListener('click', clearBuffer);
+    document.getElementById('btn-refresh-status').addEventListener('click', refreshStatus);
 
     async function init() {
       try {
