@@ -305,6 +305,43 @@
     }
 
     /* ============================================================
+       DESIGN: STAR WARS (Crawl / Fließtext)
+       ============================================================ */
+    #ticker-container.design-starwars {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      max-width: 60vw;
+      perspective: 400px;
+      overflow: hidden;
+    }
+    #ticker-container.design-starwars #ticker-text {
+      font-family: 'Times New Roman', 'Georgia', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #FFD700;
+      text-align: center;
+      line-height: 1.8;
+      letter-spacing: 1px;
+      text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+      transform: rotateX(20deg);
+      animation: starwars-crawl 30s linear infinite;
+    }
+    @keyframes starwars-crawl {
+      0% { transform: rotateX(20deg) translateY(100%); }
+      100% { transform: rotateX(20deg) translateY(-100%); }
+    }
+    #ticker-container.design-starwars .ticker-line {
+      display: block;
+      margin-bottom: 8px;
+    }
+    #ticker-container.design-starwars .translation-line {
+      color: #87CEEB !important;
+      font-style: italic;
+      font-size: 0.85em;
+    }
+
+    /* ============================================================
        DESIGN: KARAOKE (Wort-Highlight)
        ============================================================ */
     #ticker-container.design-karaoke {
@@ -662,24 +699,35 @@
         return;
       }
 
-      let html = '';
-      const now = Date.now();
+      // Alle Zeilen flach sammeln (Original + Übersetzung)
+      let allLines = [];
+      for (const seg of visibleSegments) {
+        allLines.push({ type: 'original', text: seg.text, opacity: 1, timestamp: seg.timestamp });
+        if (seg.translation && config.showTranslation) {
+          allLines.push({ type: 'translation', text: seg.translation.text, color: seg.translation.color || config.translationColor, opacity: 1, timestamp: seg.timestamp });
+        }
+      }
 
-      for (let i = 0; i < visibleSegments.length; i++) {
-        const seg = visibleSegments[i];
-        const age = now - seg.timestamp;
+      // Nur die letzten N Zeilen anzeigen (maxLines)
+      const maxLines = config.maxLines || 2;
+      if (allLines.length > maxLines) {
+        allLines = allLines.slice(-maxLines);
+      }
+
+      const now = Date.now();
+      let html = '';
+
+      for (const line of allLines) {
+        const age = now - line.timestamp;
         const opacity = Math.max(0.3, 1 - (age / SEGMENT_DISPLAY_MS));
 
-        // Original-Text
-        html += '<div class="ticker-line original-line" style="opacity:' + opacity + '">'
-          + escapeHtml(seg.text) + '</div>';
-
-        // Übersetzung — IMMER anzeigen, nicht nur beim neuesten
-        if (seg.translation && config.showTranslation) {
-          const transColor = seg.translation.color || config.translationColor;
-          html += '<div class="ticker-line translation-line" style="opacity:' + opacity + ';color:' + transColor + '">'
+        if (line.type === 'original') {
+          html += '<div class="ticker-line original-line" style="opacity:' + opacity + '">'
+            + escapeHtml(line.text) + '</div>';
+        } else {
+          html += '<div class="ticker-line translation-line" style="opacity:' + opacity + ';color:' + line.color + '">'
             + '<span class="translation-label">' + escapeHtml(config.translationLabel) + '</span>'
-            + escapeHtml(seg.translation.text) + '</div>';
+            + escapeHtml(line.text) + '</div>';
         }
       }
 
