@@ -43,7 +43,7 @@
     .btn-danger:hover { background: #d32f2f; }
     .btn-success { background: #2196F3; color: white; }
     .btn-success:hover { background: #1976D2; }
-    .btn-large { padding: 14px 28px; font-size: 16px; width: 100%; }
+    .btn-large { padding: 14px 24px; font-size: 16px; width: 100%; }
     .overlay-link {
       display: inline-block; margin-top: 10px; padding: 8px 16px;
       background: #64B5F6; color: #fff; border-radius: 6px; text-decoration: none;
@@ -60,6 +60,22 @@
     .section-toggle { cursor: pointer; user-select: none; }
     .section-toggle:hover { opacity: 0.8; }
     .help-text { color: #aaa; font-size: 13px; line-height: 1.6; margin-top: 10px; }
+    .help-text ol { padding-left: 20px; margin-top: 8px; }
+    .help-text li { margin-bottom: 4px; }
+    .external-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: #2196F3;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .external-link:hover { background: #1976D2; }
   </style>
 </head>
 <body>
@@ -78,20 +94,28 @@
       </div>
     </div>
 
-    <!-- Audio Capture (eigenes Fenster) -->
+    <!-- Audio Capture -->
     <div class="card">
       <h2>🎤 Audio-Capture</h2>
       <p class="help-text">
-        Das Audio-Capture läuft in einem <strong>eigenen Browser-Fenster</strong>.
-        So umgeht es die iframe-Restriktionen für Mikrofon-Zugriff.
+        Das Audio-Capture läuft in einem <strong>eigenen Browser-Tab</strong> (nicht im iframe).
+        So funktioniert der Mikrofon-Zugriff zuverlässig in allen Browsern.
       </p>
-      <button class="btn btn-success btn-large" onclick="openCaptureWindow()">
-        🎤 Capture-Fenster öffnen
-      </button>
+
+      <a id="capture-link" class="external-link" href="/stt-ticker/capture" target="_blank">
+        🎤 Capture-Tab öffnen
+      </a>
+
       <p class="help-text">
-        Klicke auf den Button — ein neues Fenster/Tab öffnet sich.<br>
-        Im neuen Fenster: <strong>"Capture starten"</strong> klicken → Browser fragt nach Mikrofon.<br>
-        Das Fenster kann minimiert im Hintergrund laufen, während OBS das Overlay zeigt.
+        <strong>Workflow:</strong>
+        <ol>
+          <li>Klicke auf "🎤 Capture-Tab öffnen" — neuer Tab geht auf</li>
+          <li>Im neuen Tab: "▶ Capture starten" klicken</li>
+          <li>Browser fragt nach Mikrofon-Erlaubnis → erlauben</li>
+          <li>Audio wird an Fish.audio ASR gesendet</li>
+          <li>Transkripte erscheinen automatisch im OBS-Overlay</li>
+          <li>Capture-Tab kann minimiert im Hintergrund laufen</li>
+        </ol>
       </p>
     </div>
 
@@ -169,37 +193,6 @@
   <script>
     const BASE = window.location.origin;
 
-    // ===== Capture-Fenster öffnen =====
-    let captureWindow = null;
-
-    function openCaptureWindow() {
-      if (captureWindow && !captureWindow.closed) {
-        captureWindow.focus();
-        return;
-      }
-      const w = 700, h = 550;
-      const left = (screen.width - w) / 2;
-      const top = (screen.height - h) / 2;
-      captureWindow = window.open(
-        BASE + '/stt-ticker/capture',
-        'stt-capture',
-        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`
-      );
-      if (!captureWindow) {
-        showToast('❌ Popup blockiert — bitte Popups erlauben', 'error');
-      }
-    }
-
-    // Auf Socket-Events lauschen für Live-Status
-    let socket = null;
-    let connected = false;
-
-    function connectSocket() {
-      socket = io(undefined, { transports: ['websocket', 'polling'] });
-      socket.on('connect', () => { connected = true; });
-      socket.on('disconnect', () => { connected = false; });
-    }
-
     // ===== Status =====
     async function refreshStatus() {
       try {
@@ -222,7 +215,6 @@
         const buf = s.buffer || {};
         document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
 
-        // Translation-Form befüllen (API-Key NICHT überschreiben)
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
@@ -235,13 +227,11 @@
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
         updateOverlayUrl();
-
       } catch (e) {
         console.error('Status fetch failed:', e);
       }
     }
 
-    // ===== Config speichern =====
     async function saveConfig() {
       const translation = {
         enabled: document.getElementById('translation-enabled').checked,
@@ -265,7 +255,6 @@
       }
     }
 
-    // ===== Overlay URL =====
     function updateOverlayUrl() {
       const design = (document.getElementById('design-select')?.value) || 'classic';
       const position = (document.getElementById('position-select')?.value) || 'bottom-center';
@@ -281,7 +270,6 @@
       if (link) link.href = url;
     }
 
-    // ===== Buffer =====
     async function clearBuffer() {
       await fetch('/api/stt-ticker/clear', { method: 'POST' });
       showToast('🧹 Buffer cleared', 'success');
@@ -347,9 +335,14 @@
       setTimeout(() => { t.remove(); }, 3000);
     }
 
-    // ===== Init =====
+    // Capture-Link bei jedem Klick auf einen Anker mit target=_blank nutzt kein sandbox-Problem,
+    // weil der iframe sandbox-Popup-Regeln umgeht wenn der User direkt klickt
+    document.getElementById('capture-link').addEventListener('click', (e) => {
+      // Standard target=_blank öffnet neuen Tab — Browser erlaubt das IMMER bei user-gestures
+      // (außer bei sehr restriktiven sandbox-Settings)
+    });
+
     async function init() {
-      connectSocket();
       try {
         await refreshStatus();
       } catch (e) {

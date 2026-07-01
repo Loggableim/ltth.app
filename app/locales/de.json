@@ -59,7 +59,8 @@
     "wiki": "Wiki",
     "settings": "Einstellungen",
     "toptier": "Top Tier",
-    "stt_ticker": "STT Ticker"
+    "stt_ticker": "STT Ticker",
+    "stt_capture": "STT Capture"
   },
   "chatango": {
     "loading": "Community-Chat wird geladen..."
