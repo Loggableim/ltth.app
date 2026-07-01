@@ -62,6 +62,8 @@ class TimerEventBridge {
             for (const { timer_id } of allEvents) {
                 this.timersWithAdvancedRules.add(timer_id);
             }
+            // Also refresh gift image cache for rotator enrichment
+            this.refreshGiftImageCache();
             this.api.log(`EventBridge cache rebuilt: ${this.cache.size} timer(s), ${this.timersWithAdvancedRules.size} with advanced rules`, 'debug');
         } catch (error) {
             this.api.log(`EventBridge rebuildCache error: ${error.message}`, 'error');
@@ -108,8 +110,9 @@ class TimerEventBridge {
      * @param {string} userId  - TikTok uniqueId
      * @param {string} logMsg  - human-readable description
      * @param {Set<string>} [timerFilter] - optional set of timer IDs to restrict to
+     * @param {object} [meta]  - optional enrichments forwarded to the engine
      */
-    _applyFlat(field, units, source, logType, userId, logMsg, timerFilter) {
+    _applyFlat(field, units, source, logType, userId, logMsg, timerFilter, meta) {
         if (this.cache.size === 0) {
             this.api.log(`EventBridge _applyFlat: no timers in cache for ${logType} event — skipping`, 'debug');
             return;
@@ -125,13 +128,14 @@ class TimerEventBridge {
 
             const mult = cached.multiplier_enabled ? cached.multiplier : 1.0;
             const delta = perUnit * units * mult;
+            if (delta === 0) continue;
+
+            const enrichedMeta = meta ? { ...meta, units, perUnit, multiplier: mult } : { sourceType: logType, units, perUnit, multiplier: mult };
 
             if (delta > 0) {
-                timer.addTime(delta, source);
-            } else if (delta < 0) {
-                timer.removeTime(-delta, source);
+                timer.addTime(delta, source, enrichedMeta);
             } else {
-                continue;
+                timer.removeTime(-delta, source, enrichedMeta);
             }
 
             this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
@@ -143,7 +147,7 @@ class TimerEventBridge {
      * Apply advanced timer_events rules (gift-name filter, minCoins, commands, etc.)
      * Only processes events that have conditions set.
      */
-    _applyAdvancedEvents(eventType, timerId, timer, data) {
+    _applyAdvancedEvents(eventType, timerId, timer, data, baseMeta) {
         const events = this.plugin.db.getTimerEvents(timerId);
 
         for (const ev of events) {
@@ -181,13 +185,23 @@ class TimerEventBridge {
             else if (eventType === 'like') units = data.likeCount || 1;
 
             const actualValue = actionValue * units;
+            if (actualValue === 0) continue;
+
+            const meta = {
+                ...(baseMeta || {}),
+                sourceType: eventType,
+                viaAdvancedRule: true,
+                ruleId: ev.id,
+                action: ev.action_type,
+                actionValue
+            };
 
             if (ev.action_type === 'add_time') {
-                timer.addTime(actualValue, `${eventType}:${data.uniqueId}`);
+                timer.addTime(actualValue, `${eventType}:${data.uniqueId}`, meta);
                 this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
                 this.plugin.db.addTimerLog(timerId, eventType, data.uniqueId, actualValue, `Advanced rule: +${actualValue.toFixed(2)}s`);
             } else if (ev.action_type === 'remove_time') {
-                timer.removeTime(actualValue, `${eventType}:${data.uniqueId}`);
+                timer.removeTime(actualValue, `${eventType}:${data.uniqueId}`, meta);
                 this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
                 this.plugin.db.addTimerLog(timerId, eventType, data.uniqueId, -actualValue, `Advanced rule: -${actualValue.toFixed(2)}s`);
             } else if (ev.action_type === 'set_value') {
@@ -204,9 +218,23 @@ class TimerEventBridge {
 
     async handleGiftEvent(data) {
         try {
-            const { giftName, coins, uniqueId, repeatCount, giftId } = data;
+            const { giftName, coins, uniqueId, nickname, repeatCount, giftId } = data;
             // coins is already diamondCount * repeatCount from the adapter, do NOT multiply by repeatCount again
             const totalCoins = (coins || 0);
+
+            // Build a meta object for the rotator to enrich the slide with gift info
+            const giftImage = this._lookupGiftImage(giftId);
+            const giftMeta = {
+                sourceType: 'gift',
+                giftId: giftId != null ? Number(giftId) : null,
+                giftName: giftName || 'Unknown Gift',
+                giftImage: giftImage || null,
+                coins: totalCoins,
+                diamondCount: data.diamondCount || 0,
+                repeatCount: repeatCount || 1,
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
 
             // ── Gift override path ───────────────────────────────────────
             // If a timer has a gift override for this specific giftId, use ONLY
@@ -227,13 +255,14 @@ class TimerEventBridge {
                             ? (this.cache.get(timerId)?.multiplier || 1.0)
                             : 1.0);
                         const delta = overrideSeconds * mult;
+                        if (delta === 0) continue;
+
+                        const overrideMeta = { ...giftMeta, sourceType: 'override', isOverride: true };
 
                         if (delta > 0) {
-                            timer.addTime(delta, `gift:${uniqueId}`);
-                        } else if (delta < 0) {
-                            timer.removeTime(-delta, `gift:${uniqueId}`);
+                            timer.addTime(delta, `gift:${uniqueId}`, overrideMeta);
                         } else {
-                            continue;
+                            timer.removeTime(-delta, `gift:${uniqueId}`, overrideMeta);
                         }
 
                         this.plugin.db.updateTimerState(timerId, timer.state, timer.currentValue);
@@ -256,7 +285,7 @@ class TimerEventBridge {
                     'per_coin', totalCoins,
                     `gift:${uniqueId}`, 'gift', uniqueId,
                     `Gift: ${giftName} (${coins} coins) x${repeatCount || 1} = ${totalCoins.toFixed(0)} coins`,
-                    flatTimerIds
+                    flatTimerIds, giftMeta
                 );
             }
 
@@ -264,7 +293,7 @@ class TimerEventBridge {
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('gift', timer.id, timer, data);
+                    this._applyAdvancedEvents('gift', timer.id, timer, data, giftMeta);
                 }
             }
         } catch (error) {
@@ -274,24 +303,31 @@ class TimerEventBridge {
 
     async handleLikeEvent(data) {
         try {
-            const { likeCount, uniqueId } = data;
+            const { likeCount, uniqueId, nickname } = data;
             const count = likeCount || 1;
 
             // Track likes for speed modifier
             this.likesPerSecondTracker.set(Date.now(), count);
 
             // Fast flat path (per_like)
+            const meta = {
+                sourceType: 'like',
+                likeCount: count,
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
             this._applyFlat(
                 'per_like', count,
                 `like:${uniqueId}`, 'like', uniqueId,
-                `Likes: ${count}`
+                `Likes: ${count}`,
+                null, meta
             );
 
             // Advanced rules fallback
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('like', timer.id, timer, data);
+                    this._applyAdvancedEvents('like', timer.id, timer, data, meta);
                 }
             }
         } catch (error) {
@@ -301,13 +337,18 @@ class TimerEventBridge {
 
     async handleFollowEvent(data) {
         try {
-            const { uniqueId } = data;
-            this._applyFlat('per_follow', 1, `follow:${uniqueId}`, 'follow', uniqueId, 'New follower');
+            const { uniqueId, nickname } = data;
+            const meta = {
+                sourceType: 'follow',
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
+            this._applyFlat('per_follow', 1, `follow:${uniqueId}`, 'follow', uniqueId, 'New follower', null, meta);
 
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('follow', timer.id, timer, data);
+                    this._applyAdvancedEvents('follow', timer.id, timer, data, meta);
                 }
             }
         } catch (error) {
@@ -317,13 +358,18 @@ class TimerEventBridge {
 
     async handleShareEvent(data) {
         try {
-            const { uniqueId } = data;
-            this._applyFlat('per_share', 1, `share:${uniqueId}`, 'share', uniqueId, 'Stream shared');
+            const { uniqueId, nickname } = data;
+            const meta = {
+                sourceType: 'share',
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
+            this._applyFlat('per_share', 1, `share:${uniqueId}`, 'share', uniqueId, 'Stream shared', null, meta);
 
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('share', timer.id, timer, data);
+                    this._applyAdvancedEvents('share', timer.id, timer, data, meta);
                 }
             }
         } catch (error) {
@@ -333,13 +379,18 @@ class TimerEventBridge {
 
     async handleSubscribeEvent(data) {
         try {
-            const { uniqueId } = data;
-            this._applyFlat('per_subscribe', 1, `subscribe:${uniqueId}`, 'subscribe', uniqueId, 'New subscriber');
+            const { uniqueId, nickname } = data;
+            const meta = {
+                sourceType: 'subscribe',
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
+            this._applyFlat('per_subscribe', 1, `subscribe:${uniqueId}`, 'subscribe', uniqueId, 'New subscriber', null, meta);
 
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('subscribe', timer.id, timer, data);
+                    this._applyAdvancedEvents('subscribe', timer.id, timer, data, meta);
                 }
             }
         } catch (error) {
@@ -349,17 +400,57 @@ class TimerEventBridge {
 
     async handleChatEvent(data) {
         try {
-            const { uniqueId, comment } = data;
-            this._applyFlat('per_chat', 1, `chat:${uniqueId}`, 'chat', uniqueId, `Chat: ${(comment || '').substring(0, 50)}`);
+            const { uniqueId, nickname, comment } = data;
+            const meta = {
+                sourceType: 'chat',
+                comment: (comment || '').substring(0, 60),
+                uniqueId: uniqueId || null,
+                nickname: nickname || uniqueId || null
+            };
+            this._applyFlat('per_chat', 1, `chat:${uniqueId}`, 'chat', uniqueId, `Chat: ${(comment || '').substring(0, 50)}`, null, meta);
 
             const timers = this.plugin.engine.getAllTimers();
             for (const timer of timers) {
                 if (this.timersWithAdvancedRules.has(timer.id)) {
-                    this._applyAdvancedEvents('chat', timer.id, timer, data);
+                    this._applyAdvancedEvents('chat', timer.id, timer, data, meta);
                 }
             }
         } catch (error) {
             this.api.log(`EventBridge chat error: ${error.message}`, 'error');
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Gift image cache (catalog) — built once and refreshed on demand
+    // ─────────────────────────────────────────────────────────────────────────
+
+    _lookupGiftImage(giftId) {
+        if (giftId == null) return null;
+        const numericId = Number(giftId);
+        if (isNaN(numericId)) return null;
+        if (!this.giftImageCache || this.giftImageCache.size === 0) {
+            this.refreshGiftImageCache();
+        }
+        return this.giftImageCache ? this.giftImageCache.get(numericId) || null : null;
+    }
+
+    refreshGiftImageCache() {
+        try {
+            const db = this.api.getDatabase && this.api.getDatabase();
+            const map = new Map();
+            if (db && typeof db.getGiftCatalog === 'function') {
+                const catalog = db.getGiftCatalog() || [];
+                for (const g of catalog) {
+                    if (g && g.id != null && g.image_url) {
+                        map.set(Number(g.id), g.image_url);
+                    }
+                }
+            }
+            this.giftImageCache = map;
+            this.api.log(`Refreshed gift image cache: ${map.size} entries`, 'debug');
+        } catch (error) {
+            // Catalog may not be populated yet — that's fine
+            this.giftImageCache = this.giftImageCache || new Map();
         }
     }
 
@@ -400,6 +491,8 @@ class TimerEventBridge {
         this.cache.clear();
         this.giftOverrideCache.clear();
         this.timersWithAdvancedRules.clear();
+        if (this.giftImageCache) this.giftImageCache.clear();
+        if (this.giftImageRefreshInterval) clearInterval(this.giftImageRefreshInterval);
     }
 }
 

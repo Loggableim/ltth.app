@@ -122,5 +122,46 @@
       "threshold_reached": "Threshold Reached",
       "flow": "Flow"
     }
+  },
+  "rotator": {
+    "sectionTitle": "Rotador (Control deslizante de delta)",
+    "sectionDesc": "Muestra el último cambio de tiempo alrededor del temporizador (arriba/abajo/izquierda/derecha). Los regalos personalizados muestran el GIF del catálogo.",
+    "enable": "Activar rotador",
+    "position": "Posición",
+    "positionTop": "Arriba",
+    "positionBottom": "Abajo",
+    "positionLeft": "Izquierda",
+    "positionRight": "Derecha",
+    "slots": "Slots",
+    "rotationMs": "Rotación (ms)",
+    "minSeconds": "Mín. segundos para mostrar",
+    "showGiftImage": "Mostrar imagen del regalo",
+    "showGiftName": "Mostrar nombre del regalo",
+    "showTimeDelta": "Mostrar Δ de tiempo",
+    "showSourceEmoji": "Mostrar emoji de origen",
+    "fontScale": "Tamaño de fuente",
+    "fadeAlpha": "Opacidad",
+    "sourcesShown": "Fuentes mostradas:",
+    "save": "Guardar rotador"
+  },
+  "thresholdEffects": {
+    "sectionTitle": "Efectos de gran cambio",
+    "sectionDesc": "Cuando un único cambio de tiempo supera el umbral, el temporizador se envuelve en un marco/animación. Estilo integrado, subido o ambos.",
+    "enable": "Activar efectos",
+    "thresholdSeconds": "Umbral (segundos)",
+    "direction": "Dirección",
+    "directionBoth": "Ambos (+/-)",
+    "directionPositive": "Sólo positivo",
+    "directionNegative": "Sólo negativo",
+    "durationMs": "Duración del efecto (ms)",
+    "builtin": "Animación integrada",
+    "intensity": "Intensidad (0.5..2.0)",
+    "frameSlotsTitle": "Slots de marco personalizados (sube hasta 6 PNG/WebP/GIF/SVG — se muestran en rotación):",
+    "frameSlotN": "Slot {n}",
+    "frameEmpty": "Sin marco",
+    "frameLabel": "Etiqueta (opcional)",
+    "frameUpload": "Subir",
+    "frameRemove": "Eliminar",
+    "save": "Guardar ajustes"
   }
 }

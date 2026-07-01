@@ -808,17 +808,66 @@ class WebGPUEmojiRainPlugin {
     return 1;
   }
 
-  getGiftBallMetrics(price, config = {}, seriesCount = 1) {
-    const minSize = Math.max(12, parseInt(config.gift_ball_min_size_px || 44, 10));
-    const maxSize = Math.max(minSize, parseInt(config.gift_ball_max_size_px || 128, 10));
-    const referencePrice = Math.max(1, parseFloat(config.gift_ball_price_reference_coins || 1000));
+  /**
+   * Resolve the size (px) for a gift price based on the configured price tiers.
+   *
+   * Tier thresholds (in coin price) — inclusive lower bound:
+   *   1   -    30   → tier 1 (smallest)
+   *   31  -   100   → tier 2
+   *   101 -   500   → tier 3
+   *   501 -  1000   → tier 4
+   *   1001-  5000   → tier 5
+   *   >5000         → tier 6 (largest, "max" size)
+   *
+   * Returns the configured size for the matching tier. If tiers are disabled
+   * (gift_ball_tier_thresholds_enabled !== true), falls back to a smooth
+   * logarithmic scale between gift_ball_min_size_px and gift_ball_max_size_px.
+   */
+  getGiftBallSizeByTier(price, config = {}) {
+    const tierEnabled = config.gift_ball_tier_thresholds_enabled === true;
     const safePrice = Math.max(1, Number(price) || 1);
+
+    if (!tierEnabled) {
+      const minSize = Math.max(12, parseInt(config.gift_ball_min_size_px || 44, 10));
+      const maxSize = Math.max(minSize, parseInt(config.gift_ball_max_size_px || 128, 10));
+      const referencePrice = Math.max(1, parseFloat(config.gift_ball_price_reference_coins || 1000));
+      const priceRatio = Math.min(1, Math.log10(safePrice + 1) / Math.log10(referencePrice + 1));
+      return Math.round(minSize + (maxSize - minSize) * priceRatio);
+    }
+
+    // Tier-based sizing: lookup the tier whose lower threshold is the highest value
+    // that is still <= price. Tiers are defined as [maxInclusiveThreshold, sizePx].
+    const tiers = [
+      { maxPrice: 30, size: parseInt(config.gift_ball_tier_size_1 || 44, 10) },
+      { maxPrice: 100, size: parseInt(config.gift_ball_tier_size_2 || 80, 10) },
+      { maxPrice: 500, size: parseInt(config.gift_ball_tier_size_3 || 150, 10) },
+      { maxPrice: 1000, size: parseInt(config.gift_ball_tier_size_4 || 300, 10) },
+      { maxPrice: 5000, size: parseInt(config.gift_ball_tier_size_5 || 700, 10) },
+      { maxPrice: Infinity, size: parseInt(config.gift_ball_tier_size_6 || 5000, 10) }
+    ];
+
+    let resolvedSize = tiers[0].size;
+    for (const tier of tiers) {
+      if (safePrice <= tier.maxPrice) {
+        resolvedSize = tier.size;
+        break;
+      }
+    }
+
+    return Math.max(12, resolvedSize);
+  }
+
+  getGiftBallMetrics(price, config = {}, seriesCount = 1) {
     const safeSeriesCount = Math.max(1, Math.floor(Number(seriesCount) || 1));
+    const safePrice = Math.max(1, Number(price) || 1);
     const totalPrice = safePrice * safeSeriesCount;
-    const priceRatio = Math.min(1, Math.log10(safePrice + 1) / Math.log10(referencePrice + 1));
-    const baseSize = minSize + (maxSize - minSize) * priceRatio;
+    const tierEnabled = config.gift_ball_tier_thresholds_enabled === true;
+
+    // Tier-based size OR smooth log scaling, then scale by series count (capped)
+    const tierSize = this.getGiftBallSizeByTier(safePrice, config);
     const seriesScale = Math.min(1.35, 1 + Math.log10(safeSeriesCount) * 0.12);
-    const size = Math.round(Math.max(minSize, Math.min(maxSize, baseSize * seriesScale)));
+    const rawSize = tierSize * seriesScale;
+    const size = Math.round(tierEnabled ? rawSize : Math.max(tierSize, rawSize));
 
     const configuredMinDespawn = Math.max(1000, parseInt(config.gift_ball_min_despawn_ms || 9000, 10));
     const emojiLifetime = parseInt(config.emoji_lifetime_ms || 7000, 10);

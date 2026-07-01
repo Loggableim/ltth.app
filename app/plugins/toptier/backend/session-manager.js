@@ -65,8 +65,8 @@ class SessionManager {
    * @returns {boolean} True if a new session was started, false if same stream
    */
   handleConnect(streamUsername) {
-    const currentStream = this.getCurrentStreamUsername();
-    const currentSession = this.getCurrentSessionId();
+    const currentStream = this._streamUsername || this.api.getConfig('currentStreamUsername');
+    const currentSession = this._sessionId || this.api.getConfig('currentSessionId');
 
     if (streamUsername && currentStream === streamUsername && currentSession) {
       // Same stream reconnecting — keep session alive
@@ -94,6 +94,9 @@ class SessionManager {
     }
     this._sessionId = null;
     this._streamUsername = null;
+    // Clear persisted config so the next connect starts fresh
+    this.api.setConfig('currentSessionId', null);
+    this.api.setConfig('currentStreamUsername', null);
   }
 }
 

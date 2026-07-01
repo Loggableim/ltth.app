@@ -252,9 +252,16 @@ class EventTTSHandler {
       return false;
     }
 
+    // Normalize userId: TikTok events deliver a numeric userId, but voice assignments
+    // in the database use the username (handle) as the key. Using the username here
+    // ensures getUserSettings() finds the assigned voice record.
+    const normalizedUserId = (username && /^\d+$/.test(String(userId)))
+      ? username
+      : (userId || 'event-system');
+
     const ttsRequest = {
       text: text,
-      userId: userId || 'event-system',
+      userId: normalizedUserId,
       username: username || 'Event',
       source: `event:${eventType}`,
       voiceId: voiceOverride || config.voice || undefined,

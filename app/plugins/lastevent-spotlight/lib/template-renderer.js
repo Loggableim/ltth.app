@@ -155,22 +155,45 @@ class TemplateRenderer {
   }
 
   /**
+   * Resolve the effective HUD alignment, migrating old alignCenter setting.
+   * @returns {'center'|'left'|'right'}
+   */
+  resolveAlignment() {
+    // New format takes priority
+    if (this.settings.hudAlignment === 'left' || this.settings.hudAlignment === 'right') {
+      return this.settings.hudAlignment;
+    }
+    // Migrate old alignCenter boolean: false → left, true/undefined → center
+    if (this.settings.alignCenter === false) {
+      return 'left';
+    }
+    return 'center';
+  }
+
+  /**
    * Apply global styles to container
    */
   applyStyles() {
     if (!this.container) return;
 
+    const alignment = this.resolveAlignment();
+
     // Apply alignment
-    if (this.settings.alignCenter) {
+    if (alignment === 'center') {
       this.container.style.display = 'flex';
       this.container.style.justifyContent = 'center';
       this.container.style.alignItems = 'center';
       this.container.style.textAlign = 'center';
-    } else {
-      this.container.style.display = '';
-      this.container.style.justifyContent = '';
-      this.container.style.alignItems = '';
+    } else if (alignment === 'left') {
+      this.container.style.display = 'flex';
+      this.container.style.justifyContent = 'flex-start';
+      this.container.style.alignItems = 'flex-start';
       this.container.style.textAlign = 'left';
+    } else if (alignment === 'right') {
+      this.container.style.display = 'flex';
+      this.container.style.justifyContent = 'flex-end';
+      this.container.style.alignItems = 'flex-end';
+      this.container.style.textAlign = 'right';
     }
 
     // Apply background
@@ -307,14 +330,25 @@ class TemplateRenderer {
     }
 
     // Layout direction based on variant and settings
-    const flexDirection = variant.compactLayout ? 'row' : (this.settings.alignCenter ? 'column' : 'row');
+    const alignment = this.resolveAlignment();
+    let flexDirection, justifyContent;
+    if (alignment === 'center') {
+      flexDirection = 'column';
+      justifyContent = 'center';
+    } else {
+      flexDirection = 'row';
+      justifyContent = alignment === 'left' ? 'flex-start' : 'flex-end';
+    }
+    if (variant.compactLayout) {
+      flexDirection = 'row';
+    }
 
     return `
       <div class="user-display" style="
         display: flex;
         flex-direction: ${flexDirection};
         align-items: center;
-        justify-content: center;
+        justify-content: ${justifyContent};
         ${containerStyles}
         ${cardStyles}
       ">
@@ -596,6 +630,7 @@ class TemplateRenderer {
    */
   buildTextContent(userData, fontSize, variant, isGiftEvent, hasGiftData) {
     const textParts = [];
+    const alignment = this.resolveAlignment();
     const fontColor = this.settings.fontColor || '#FFFFFF';
     const fontFamily = this.resolveFontFamily(this.settings.fontFamily, { retro: variant.retroFont });
     const actualFontSize = variant.retroFont ? this.calculateReducedSize(fontSize, 0.6) : fontSize;
@@ -673,7 +708,7 @@ class TemplateRenderer {
           display: flex;
           gap: ${variant.compactLayout ? '5px' : '10px'};
           flex-wrap: wrap;
-          justify-content: ${this.settings.alignCenter ? 'center' : 'flex-start'};
+          justify-content: ${alignment === 'center' ? 'center' : (alignment === 'left' ? 'flex-start' : 'flex-end')};
           font-family: ${fontFamily};
         `;
         

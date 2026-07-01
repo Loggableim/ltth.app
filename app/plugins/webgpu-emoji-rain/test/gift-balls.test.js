@@ -93,6 +93,68 @@ describe('WebGPU Emoji Rain - Geschenk-Kugeln', () => {
     expect(series.despawnMs).toBeGreaterThan(plugin.getGiftBallMetrics(20, api.config, 1).despawnMs);
   });
 
+  test('tier-based sizing maps price bands to configured pixel sizes', () => {
+    const api = new MockAPI({
+      gift_ball_tier_thresholds_enabled: true,
+      gift_ball_tier_size_1: 50,
+      gift_ball_tier_size_2: 100,
+      gift_ball_tier_size_3: 200,
+      gift_ball_tier_size_4: 400,
+      gift_ball_tier_size_5: 800,
+      gift_ball_tier_size_6: 5000
+    });
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    // Each tier has its own size when seriesCount == 1
+    expect(plugin.getGiftBallSizeByTier(1, api.config)).toBe(50);    // 1-30
+    expect(plugin.getGiftBallSizeByTier(30, api.config)).toBe(50);   // 1-30 (inclusive)
+    expect(plugin.getGiftBallSizeByTier(31, api.config)).toBe(100);  // 31-100
+    expect(plugin.getGiftBallSizeByTier(100, api.config)).toBe(100); // 31-100 (inclusive)
+    expect(plugin.getGiftBallSizeByTier(101, api.config)).toBe(200); // 101-500
+    expect(plugin.getGiftBallSizeByTier(500, api.config)).toBe(200); // 101-500 (inclusive)
+    expect(plugin.getGiftBallSizeByTier(501, api.config)).toBe(400); // 501-1000
+    expect(plugin.getGiftBallSizeByTier(1000, api.config)).toBe(400);
+    expect(plugin.getGiftBallSizeByTier(1001, api.config)).toBe(800); // 1001-5000
+    expect(plugin.getGiftBallSizeByTier(5000, api.config)).toBe(800);
+    expect(plugin.getGiftBallSizeByTier(5001, api.config)).toBe(5000); // >5000
+    expect(plugin.getGiftBallSizeByTier(99999, api.config)).toBe(5000);
+  });
+
+  test('tier-based gift balls ignore the legacy min/max clamp and grow up to 5000px', () => {
+    const api = new MockAPI({
+      gift_ball_tier_thresholds_enabled: true,
+      gift_ball_tier_size_6: 5000
+    });
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    plugin.spawnEmojiRain('gift', {
+      uniqueId: 'whale',
+      giftId: 9999,
+      giftName: 'Universe',
+      giftPictureUrl: 'https://example.test/universe.png',
+      diamondCount: 9999,
+      coins: 9999,
+      repeatCount: 1
+    });
+
+    expect(api.emissions[0].event).toBe('webgpu-emoji-rain:gift-balls');
+    expect(api.emissions[0].data.size).toBeGreaterThanOrEqual(4000);
+    expect(api.emissions[0].data.size).toBeLessThanOrEqual(5000);
+  });
+
+  test('tier threshold toggle falls back to smooth log scaling when disabled', () => {
+    const api = new MockAPI({ gift_ball_tier_thresholds_enabled: false });
+    const plugin = new WebGPUEmojiRainPlugin(api);
+
+    const cheap = plugin.getGiftBallSizeByTier(1, api.config);
+    const expensive = plugin.getGiftBallSizeByTier(5000, api.config);
+
+    // With tiers disabled we use min/max (44..128) and log-scaled price
+    expect(cheap).toBeGreaterThanOrEqual(44);
+    expect(expensive).toBeGreaterThan(cheap);
+    expect(expensive).toBeLessThanOrEqual(128);
+  });
+
   test('gift events emit gift balls with gift catalog image, scaled size, and despawn time', () => {
     const api = new MockAPI();
     const plugin = new WebGPUEmojiRainPlugin(api);

@@ -99,20 +99,20 @@ describe('Weather Plugin Critical Fixes', () => {
         });
 
         test('weather-engine.js has increased noise intensity (0.15 vs 0.05)', () => {
-            expect(weatherEngineContent).toContain('effect.intensity * 0.15');
+            expect(weatherEngineContent).toContain('intensity * 0.15');
         });
 
         test('overlay.html delegates increased noise intensity to weather-engine.js', () => {
-            expect(weatherEngineContent).toContain('effect.intensity * 0.15');
+            expect(weatherEngineContent).toContain('intensity * 0.15');
         });
 
         test('weather-engine.js has increased noise particles (150 vs 50)', () => {
-            const noiseSection = weatherEngineContent.match(/for\s*\(\s*let\s+i\s*=\s*0;\s*i\s*<\s*150/);
+            const noiseSection = weatherEngineContent.match(/noiseCount\s*=\s*Math\.floor\(150/);
             expect(noiseSection).toBeTruthy();
         });
 
         test('overlay.html delegates increased noise particles to weather-engine.js', () => {
-            const noiseSection = weatherEngineContent.match(/for\s*\(\s*let\s+i\s*=\s*0;\s*i\s*<\s*150/);
+            const noiseSection = weatherEngineContent.match(/noiseCount\s*=\s*Math\.floor\(150/);
             expect(noiseSection).toBeTruthy();
         });
 

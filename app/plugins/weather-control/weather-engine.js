@@ -473,7 +473,8 @@
               green:   { hue: 120, saturation: 25, lightness: 65 },
               red:     { hue: 0,   saturation: 30, lightness: 55 },
               blue:    { hue: 220, saturation: 30, lightness: 70 },
-              golden:  { hue: 45,  saturation: 40, lightness: 70 }
+              golden:  { hue: 45,  saturation: 40, lightness: 70 },
+              ice:     { hue: 200, saturation: 10, lightness: 85 }
             };
             const colorPreset = fogColors[config.fogColor || 'default'] || fogColors.default;
             this.hue = colorPreset.hue + Math.random() * 20 - 10;
@@ -496,6 +497,7 @@
           this.size = 2 + Math.random() * 3;
           this.alpha = 0;
           this.targetAlpha = (0.6 + Math.random() * 0.4) * this.effectOpacity;
+          this.baseAlpha = this.targetAlpha * 0.18; // Always-visible ambient glow
           this.glowPhase = Math.random() * Math.PI * 2;
           this.glowSpeed = 0.02 + Math.random() * 0.04;
           this.wanderAngle = Math.random() * Math.PI * 2;
@@ -668,12 +670,15 @@
           
           if (this.isPulsing) {
             this.glowPhase += this.glowSpeed * speed * 3;
-            this.alpha = this.targetAlpha * Math.sin(this.glowPhase);
+            this.alpha = this.baseAlpha + (this.targetAlpha - this.baseAlpha) * Math.sin(this.glowPhase);
             if (this.glowPhase > Math.PI) {
               this.isPulsing = false;
               this.glowPhase = 0;
-              this.alpha = 0;
+              this.alpha = this.baseAlpha;
             }
+          } else {
+            // Ambient glow between pulses
+            this.alpha = this.baseAlpha + Math.sin(currentTime * 0.003 + this.wanderAngle) * this.baseAlpha * 0.3;
           }
           
           if (this.x < -30) this.x = w + 30;
@@ -688,8 +693,8 @@
           this.flutter += this.flutterSpeed * speed;
           this.x += Math.sin(this.wobble) * this.wobbleAmplitude * speed + this.speedX * speed;
           this.rotation += this.rotationSpeed * speed * (1 + Math.sin(this.flutter) * 0.5);
-          // 3D tumbling effect via alpha modulation
-          this.alpha = (0.5 + Math.abs(Math.sin(this.flutter)) * 0.5) * (0.6 + Math.random() * 0.05);
+          // 3D tumbling effect via alpha modulation (deterministic, no per-frame noise)
+          this.alpha = (0.5 + Math.abs(Math.sin(this.flutter)) * 0.5) * (0.6 + Math.sin(this.flutter * 1.7 + this.wobble) * 0.025);
           
           if (this.y > h + 20) {
             this.reset({ startFromTop: true, width: w, height: h });
@@ -1379,6 +1384,15 @@
         effect.beams = this.createSunbeams(intensity, options);
       } else if (type === 'glitchclouds') {
         effect.glitchLines = [];
+        // Sub-effect toggles (all enabled by default)
+        effect.glitchRgbShift = options.glitchRgbShift !== false;
+        effect.glitchDisplacement = options.glitchDisplacement !== false;
+        effect.glitchScanlines = options.glitchScanlines !== false;
+        effect.glitchNoise = options.glitchNoise !== false;
+        effect.glitchBlocks = options.glitchBlocks !== false;
+        effect.glitchChromaticAberration = options.glitchChromaticAberration !== false;
+        // Glitch intensity multiplier
+        effect.glitchIntensity = Math.max(0.1, Math.min(3, parseFloat(options.glitchIntensity) || 1));
       } else if (type === 'aurora') {
         effect.auroraWaves = [];
         const waveCount = 3 + Math.floor(intensity * 4);
@@ -2296,6 +2310,8 @@
     drawGlitchClouds(effect) {
       const w = this.dimensions.width;
       const h = this.dimensions.height;
+      const gi = effect.glitchIntensity || 1;
+      const intensity = effect.intensity * gi;
 
       // Lazy-init off-screen glitch canvas
       if (!this.glitchCanvas) {
@@ -2309,137 +2325,152 @@
         this.glitchCanvas.height = h;
       }
 
-      // Copy current main canvas content onto the glitch canvas
+      // Generate base visual content so glitch has something to work with
+      // even when it's the only effect on an empty canvas
+      this.glitchCtx.clearRect(0, 0, w, h);
+
+      // Base: dark digital noise background
+      this.glitchCtx.fillStyle = 'rgba(8, 8, 16, 0.92)';
+      this.glitchCtx.fillRect(0, 0, w, h);
+
+      // Generate procedural "cloud" shapes as base content
+      const time = Date.now() * 0.001;
+      for (let i = 0; i < 8; i++) {
+        const cx = ((i * 137.5 + time * 15) % (w + 200)) - 100;
+        const cy = h * (0.15 + (i % 4) * 0.18);
+        const radius = 60 + (i * 47) % 120;
+        const grad = this.glitchCtx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        grad.addColorStop(0, `rgba(40, 30, 60, ${0.35 * intensity})`);
+        grad.addColorStop(0.5, `rgba(30, 20, 50, ${0.25 * intensity})`);
+        grad.addColorStop(1, 'rgba(10, 5, 20, 0)');
+        this.glitchCtx.fillStyle = grad;
+        this.glitchCtx.beginPath();
+        this.glitchCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+        this.glitchCtx.fill();
+      }
+
+      // Copy current main canvas content on top (so other effects show through)
+      this.glitchCtx.globalCompositeOperation = 'source-over';
       this.glitchCtx.drawImage(this.canvas, 0, 0, w, h);
 
       this.glitchCtx.save();
-      
+
       // === RGB Channel Shift (classic glitch effect) ===
-      if (Math.random() < GLITCH_LINE_FREQUENCY * 1.5) {
-        const shiftIntensity = effect.intensity * 8;
+      if (effect.glitchRgbShift !== false && Math.random() < GLITCH_LINE_FREQUENCY * 1.5 * gi) {
+        const shiftIntensity = intensity * 8;
         const shiftY = Math.floor(Math.random() * h);
         const shiftHeight = Math.floor(10 + Math.random() * 40);
-        
+
         try {
-          // Get image data for this strip from the glitch canvas
           const imageData = this.glitchCtx.getImageData(0, shiftY, w, Math.min(shiftHeight, h - shiftY));
           const data = imageData.data;
-          
-          // Shift RGB channels
+
           for (let i = 0; i < data.length; i += 4) {
             const offset = Math.floor((Math.random() - 0.5) * shiftIntensity) * 4;
             const newIndex = i + offset;
-            
+
             if (newIndex >= 0 && newIndex < data.length - 4) {
-              // Red channel shift
               data[i] = data[newIndex];
-              // Blue channel shift (opposite direction)
               const blueIndex = i - offset * 2;
               if (blueIndex >= 0 && blueIndex < data.length) {
                 data[i + 2] = data[blueIndex];
               }
             }
           }
-          
+
           this.glitchCtx.putImageData(imageData, 0, shiftY);
         } catch (e) {
           // Fail silently if out of bounds
         }
       }
-      
+
       // === Vertical Displacement Bars ===
-      if (Math.random() < GLITCH_LINE_FREQUENCY) {
-        const barCount = Math.floor(2 + Math.random() * 5);
+      if (effect.glitchDisplacement !== false && Math.random() < GLITCH_LINE_FREQUENCY * gi) {
+        const barCount = Math.floor(2 + Math.random() * 5 * gi);
         for (let i = 0; i < barCount; i++) {
           const barY = Math.random() * h;
           const barHeight = 5 + Math.random() * 30;
-          const displacement = (Math.random() - 0.5) * 50 * effect.intensity;
-          
-          // Copy and shift section on the glitch canvas
+          const displacement = (Math.random() - 0.5) * 50 * intensity;
+
           try {
             const imageData = this.glitchCtx.getImageData(0, barY, w, Math.min(barHeight, h - barY));
             this.glitchCtx.putImageData(imageData, displacement, barY);
           } catch (e) {
             // Fail silently if out of bounds
           }
-          
-          // Add colored overlay
+
           this.glitchCtx.globalAlpha = 0.2 + Math.random() * 0.3;
           const glitchColors = [
-            '#ff00ff', // Magenta
-            '#00ffff', // Cyan
-            '#ff0000', // Red
-            '#00ff00', // Green
-            '#ffff00', // Yellow
-            '#0000ff'  // Blue
+            '#ff00ff', '#00ffff', '#ff0000',
+            '#00ff00', '#ffff00', '#0000ff'
           ];
           this.glitchCtx.fillStyle = glitchColors[Math.floor(Math.random() * glitchColors.length)];
           this.glitchCtx.fillRect(0, barY, w, barHeight);
         }
       }
-      
+
       // === Scanline/VHS Effect ===
-      if (Math.random() < 0.3) {
-        this.glitchCtx.globalAlpha = 0.15 * effect.intensity;
+      if (effect.glitchScanlines !== false && Math.random() < 0.3 * gi) {
+        this.glitchCtx.globalAlpha = 0.15 * intensity;
         this.glitchCtx.fillStyle = '#000000';
         for (let y = 0; y < h; y += 4) {
           this.glitchCtx.fillRect(0, y, w, 2);
         }
       }
-      
+
       // === Digital Artifacts (blocks) ===
-      if (Math.random() < DIGITAL_NOISE_FREQUENCY * 2) {
-        const blockCount = Math.floor(20 + Math.random() * 40);
+      if (effect.glitchBlocks !== false && Math.random() < DIGITAL_NOISE_FREQUENCY * 2 * gi) {
+        const blockCount = Math.floor((20 + Math.random() * 40) * gi);
         for (let i = 0; i < blockCount; i++) {
           const blockX = Math.random() * w;
           const blockY = Math.random() * h;
           const blockW = 10 + Math.random() * 40;
           const blockH = 10 + Math.random() * 40;
-          
+
           this.glitchCtx.globalAlpha = 0.4 + Math.random() * 0.5;
           const brightness = Math.random() * 255;
           const colorStyle = Math.random();
-          
+
           if (colorStyle < 0.33) {
-            // Grayscale noise
             this.glitchCtx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
           } else if (colorStyle < 0.66) {
-            // Magenta/Cyan
             this.glitchCtx.fillStyle = Math.random() > 0.5 ? '#ff00ff' : '#00ffff';
           } else {
-            // Random RGB
             this.glitchCtx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
           }
-          
+
           this.glitchCtx.fillRect(blockX, blockY, blockW, blockH);
         }
       }
-      
+
       // === Chromatic Aberration (edges) ===
-      if (Math.random() < 0.2) {
-        this.glitchCtx.globalAlpha = 0.3 * effect.intensity;
+      if (effect.glitchChromaticAberration !== false && Math.random() < 0.2 * gi) {
+        this.glitchCtx.globalAlpha = 0.3 * intensity;
         this.glitchCtx.strokeStyle = '#ff00ff';
         this.glitchCtx.lineWidth = 2;
         this.glitchCtx.strokeRect(0, 0, w, h);
-        
+
         this.glitchCtx.strokeStyle = '#00ffff';
         this.glitchCtx.strokeRect(3, 3, w - 6, h - 6);
       }
-      
-      // === Static Noise (improved) ===
-      const noiseIntensity = effect.intensity * 0.15; // Increased from 0.05
-      this.glitchCtx.globalAlpha = noiseIntensity;
-      
-      for (let i = 0; i < 150; i++) { // Increased from 50
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        const size = 1 + Math.random() * 4;
-        const brightness = Math.random() * 255;
-        
-        this.glitchCtx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
-        this.glitchCtx.fillRect(x, y, size, size);
+
+      // === Static Noise ===
+      if (effect.glitchNoise !== false) {
+        const noiseIntensity = intensity * 0.15;
+        this.glitchCtx.globalAlpha = noiseIntensity;
+
+        const noiseCount = Math.floor(150 * gi);
+        for (let i = 0; i < noiseCount; i++) {
+          const x = Math.random() * w;
+          const y = Math.random() * h;
+          const size = 1 + Math.random() * 4;
+          const brightness = Math.random() * 255;
+
+          this.glitchCtx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+          this.glitchCtx.fillRect(x, y, size, size);
+        }
       }
-      
+
       this.glitchCtx.restore();
 
       // Composite glitch result back onto the main canvas

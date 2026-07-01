@@ -13,7 +13,7 @@ class MockAPI {
       max_intensity: 3.0,
       heart_balloons_enabled: true,
       heart_balloon_like_divisor: 1,
-      heart_balloon_min_hearts: 1,
+      heart_balloon_min_hearts: 5,
       heart_balloon_max_hearts: 24,
       heart_balloon_profile_every: 5,
       heart_balloon_pop_y: 0.5,

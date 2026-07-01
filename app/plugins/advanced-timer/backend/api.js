@@ -4,11 +4,49 @@
  */
 
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+
+const ALLOWED_FRAME_MIME = new Set(['image/png','image/jpeg','image/webp','image/gif','image/svg+xml']);
+const MAX_FRAME_BYTES = 8 * 1024 * 1024; // 8 MB per frame is plenty for transparent PNGs
 
 class TimerAPI {
     constructor(plugin) {
         this.plugin = plugin;
         this.api = plugin.api;
+        this.upload = null;
+        this.uploadDir = null;
+    }
+
+    _ensureFrameUpload() {
+        if (this.upload) return this.upload;
+        const dir = path.join(this.api.getPluginDataDir(), 'frames');
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        this.uploadDir = dir;
+        const storage = multer.diskStorage({
+            destination: (req, file, cb) => cb(null, dir),
+            filename: (req, file, cb) => {
+                const ext = path.extname(file.originalname || '').toLowerCase() || '.png';
+                const safeTimer = String(req.params.id || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const safeLabel = String(req.body.label || req.params.slot || Date.now())
+                    .replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+                const stamp = Date.now();
+                cb(null, `${safeTimer}_slot${req.params.slot || 1}_${safeLabel}_${stamp}${ext}`);
+            }
+        });
+        this.upload = multer({
+            storage,
+            limits: { fileSize: MAX_FRAME_BYTES },
+            fileFilter: (req, file, cb) => {
+                if (!ALLOWED_FRAME_MIME.has(file.mimetype)) {
+                    return cb(new Error(`Unsupported frame type ${file.mimetype}. Use PNG, JPG, WebP, GIF or SVG.`));
+                }
+                cb(null, true);
+            }
+        });
+        return this.upload;
     }
 
     registerRoutes() {
@@ -718,7 +756,7 @@ class TimerAPI {
             try {
                 const { id } = req.params;
                 const profile = this.plugin.db.getProfile(id);
-                
+
                 if (!profile) {
                     return res.status(404).json({ success: false, error: 'Profile not found' });
                 }
@@ -734,7 +772,7 @@ class TimerAPI {
                 const profileConfig = profile.config || {};
                 const timers = profileConfig.timers || [];
                 const createdTimers = [];
-                
+
                 for (const timerData of timers) {
                     const saved = this.plugin.db.saveTimer(timerData);
                     if (saved) {
@@ -747,6 +785,153 @@ class TimerAPI {
                 res.json({ success: true, timersCreated: createdTimers.length, timers: createdTimers });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // ────────────────────────────────────────────────────────────────
+        // Rotator + Threshold-Effects endpoints
+        // ────────────────────────────────────────────────────────────────
+
+        // Get rotator settings for a timer
+        this.api.registerRoute('get', '/api/advanced-timer/timers/:id/rotator', (req, res) => {
+            try {
+                const { id } = req.params;
+                const settings = this.plugin.db.getRotator(id);
+                res.json({ success: true, settings });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Save rotator settings for a timer
+        this.api.registerRoute('put', '/api/advanced-timer/timers/:id/rotator', (req, res) => {
+            try {
+                const { id } = req.params;
+                const body = req.body || {};
+                const settings = this.plugin.db.saveRotator(id, body);
+                if (this.plugin.rotator && settings) {
+                    this.plugin.rotator.onRotatorSaved(id, settings);
+                }
+                this.api.log(`Rotator settings saved for ${id}: ${JSON.stringify({enabled: settings && settings.enabled, position: settings && settings.position, slot_count: settings && settings.slot_count})}`, 'debug');
+                res.json({ success: true, settings });
+            } catch (error) {
+                this.api.log(`Error saving rotator for ${id}: ${error.message}`, 'error');
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Get threshold-effect settings + uploaded frames for a timer
+        this.api.registerRoute('get', '/api/advanced-timer/timers/:id/threshold-effects', (req, res) => {
+            try {
+                const { id } = req.params;
+                const settings = this.plugin.db.getThreshold(id);
+                res.json({ success: true, settings });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Save threshold-effect settings (excludes frame uploads — those go to the dedicated upload route)
+        this.api.registerRoute('put', '/api/advanced-timer/timers/:id/threshold-effects', (req, res) => {
+            try {
+                const { id } = req.params;
+                const body = req.body || {};
+                const settings = this.plugin.db.saveThreshold(id, body);
+                if (this.plugin.rotator && settings) {
+                    const frames = this.plugin.db.getThresholdFrames(id);
+                    this.plugin.rotator.onThresholdSaved(id, settings, frames);
+                }
+                this.api.log(`Threshold settings saved for ${id}: ${JSON.stringify({enabled: settings && settings.enabled, threshold_seconds: settings && settings.threshold_seconds, builtin: settings && settings.builtin_animation})}`, 'debug');
+                res.json({ success: true, settings });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Upload a custom frame for slot 1..6
+        this.api.registerRoute('post', '/api/advanced-timer/timers/:id/threshold-effects/frame/:slot', (req, res) => {
+            const { id, slot } = req.params;
+            const slotNum = parseInt(slot, 10);
+            if (isNaN(slotNum) || slotNum < 1 || slotNum > 6) {
+                return res.status(400).json({ success: false, error: 'Slot must be between 1 and 6' });
+            }
+            this._ensureFrameUpload().single('frame')(req, res, (err) => {
+                if (err) {
+                    this.api.log(`Frame upload error: ${err.message}`, 'error');
+                    return res.status(400).json({ success: false, error: err.message });
+                }
+                try {
+                    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded (field name must be "frame")' });
+                    const url = `/advanced-timer/frames/${req.file.filename}`;
+                    const label = (req.body && req.body.label) || '';
+                    const ok = this.plugin.db.saveThresholdFrame(id, slotNum, url, req.file.filename, label);
+                    if (!ok) {
+                        try { fs.unlinkSync(req.file.path); } catch (_) {}
+                        return res.status(500).json({ success: false, error: 'Failed to save frame metadata' });
+                    }
+                    // Refresh the in-memory rotator cache so a new frame is picked up immediately
+                    if (this.plugin.rotator) {
+                        const frames = this.plugin.db.getThresholdFrames(id);
+                        this.plugin.rotator.uploadedFrames.set(id, new Map(
+                            frames.map(f => [f.slot, { url: f.url, filename: f.filename, label: f.label }])
+                        ));
+                        const t = this.plugin.rotator.thresholdSettings.get(id);
+                        if (t) {
+                            t.frames = this.plugin.rotator.uploadedFrames.get(id);
+                        }
+                    }
+                    this.api.log(`📤 Advanced Timer frame uploaded for ${id} slot ${slotNum}: ${req.file.filename}`, 'info');
+                    res.json({
+                        success: true,
+                        slot: slotNum,
+                        url,
+                        filename: req.file.filename,
+                        size: req.file.size,
+                        label
+                    });
+                } catch (error) {
+                    this.api.log(`Error processing frame upload: ${error.message}`, 'error');
+                    res.status(500).json({ success: false, error: error.message });
+                }
+            });
+        });
+
+        // Delete a frame from a slot (and the disk file)
+        this.api.registerRoute('delete', '/api/advanced-timer/timers/:id/threshold-effects/frame/:slot', (req, res) => {
+            try {
+                const { id, slot } = req.params;
+                const slotNum = parseInt(slot, 10);
+                if (isNaN(slotNum) || slotNum < 1 || slotNum > 6) {
+                    return res.status(400).json({ success: false, error: 'Slot must be between 1 and 6' });
+                }
+                const existing = this.plugin.db.getThresholdFrame(id, slotNum);
+                if (existing && existing.filename) {
+                    const fPath = path.join(this.uploadDir || path.join(this.api.getPluginDataDir(), 'frames'), existing.filename);
+                    if (fs.existsSync(fPath)) {
+                        try { fs.unlinkSync(fPath); } catch (_) {}
+                    }
+                }
+                this.plugin.db.deleteThresholdFrame(id, slotNum);
+                if (this.plugin.rotator) this.plugin.rotator.onFrameDeleted(id, slotNum);
+                res.json({ success: true });
+            } catch (error) {
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Serve uploaded frame files
+        this.api.registerRoute('get', '/advanced-timer/frames/:filename', (req, res) => {
+            try {
+                const filename = req.params.filename || '';
+                const root = path.resolve(this.uploadDir || path.join(this.api.getPluginDataDir(), 'frames'));
+                const fPath = path.resolve(root, filename);
+                if (!filename || filename !== path.basename(filename) || !fPath.startsWith(root + path.sep)) {
+                    return res.status(400).send('Invalid filename');
+                }
+                if (!fs.existsSync(fPath)) return res.status(404).send('Not found');
+                res.sendFile(fPath);
+            } catch (error) {
+                res.status(500).send('Error: ' + error.message);
             }
         });
 

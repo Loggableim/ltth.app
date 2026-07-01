@@ -968,7 +968,7 @@ class MusicBotPlugin extends EventEmitter {
         if (command.force) {
           return this._skipCurrent(username);
         }
-        return this._handleSkipVote(username);
+        return this._handleSkipVote(username, chatData);
       case 'queue':
         this._emitChatResponse(`Queue length: ${this.queueManager.getQueue().length}`, username);
         return;
@@ -977,10 +977,11 @@ class MusicBotPlugin extends EventEmitter {
         return;
       case 'volume':
         if (command.value !== undefined) {
-          await this.playbackEngine.setVolume(command.value);
-          this._emitVolume(command.value);
+          this.config.audio.sourceVolume = Math.max(0, Math.min(100, Number(command.value) || 0));
+          await this._applyAudioVolume();
+          await this.api.setConfig('config', this.config);
         } else {
-          this._emitChatResponse(`Aktuelle Lautstärke: ${this.playbackEngine.getVolume()}`, username);
+          this._emitChatResponse(`Aktuelle Lautstärke: ${this._computeEffectiveVolume()}`, username);
         }
         return;
       case 'pause':
@@ -1211,13 +1212,14 @@ class MusicBotPlugin extends EventEmitter {
     }
   }
 
-  async _handleSkipVote(username) {
+  async _handleSkipVote(username, chatData = {}) {
     if (!this.config.voteSkip.enabled) {
       await this._skipCurrent(username);
       return;
     }
 
-    const voteResult = this.queueManager.addVoteSkip(username);
+    const viewerCount = Number(chatData?.viewerCount || chatData?.viewer_count || 0);
+    const voteResult = this.queueManager.addVoteSkip(username, viewerCount);
     if (voteResult.duplicateVote) {
       this._emitChatResponse('Du hast bereits für Skip gestimmt.', username);
       return;
@@ -1426,7 +1428,13 @@ class MusicBotPlugin extends EventEmitter {
     });
     proc.on('error', (error) => {
       this._precacheTasks.delete(song.id);
-      this.api.log(`[music-bot] Pre-cache process failed: ${error.message}`, 'warn');
+      if (error?.code === 'ENOENT') {
+        this._ytdlpAvailable = false;
+        this._emitSetupStatus();
+        this.api.log('[music-bot] Pre-cache: yt-dlp not found, disabling pre-cache', 'warn');
+      } else {
+        this.api.log(`[music-bot] Pre-cache process failed: ${error.message}`, 'warn');
+      }
     });
     proc.on('close', () => {
       this._precacheTasks.delete(song.id);
@@ -1654,6 +1662,7 @@ class MusicBotPlugin extends EventEmitter {
     this.api.emit('musicbot:vote-skip-update', {
       votes: result.votes,
       required: result.required,
+      skipped: result.skipped || false,
       voters: this.queueManager.getVoteVoters(),
       title: this.playbackEngine.getNowPlaying()?.title || null,
       immuneInfo: result.immuneInfo
@@ -1684,7 +1693,7 @@ class MusicBotPlugin extends EventEmitter {
       data?.username || data?.nickname || data?.user?.uniqueId || data?.user?.nickname;
     if (!username) return;
     const giftNameRaw = String(
-      data?.gift?.name || data?.giftName || data?.giftId || data?.id || ''
+      data?.gift?.name || data?.giftName || ''
     ).trim();
     const giftName = this._normalizeGiftKey(giftNameRaw);
     const coins = Math.max(0, Number(data?.coins || 0));

@@ -88,10 +88,11 @@
       <h2>Status</h2>
       <div class="grid" id="status-grid">
         <div class="stat"><div class="stat-value" id="stat-enabled">—</div><div class="stat-label">Enabled</div></div>
-        <div class="stat"><div class="stat-value" id="stat-asr">—</div><div class="stat-label">ASR Backend</div></div>
+        <div class="stat"><div class="stat-value" id="stat-provider">—</div><div class="stat-label">🎤 ASR Provider</div></div>
         <div class="stat"><div class="stat-value" id="stat-translation">—</div><div class="stat-label">Translation</div></div>
         <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
       </div>
+      <div id="provider-hint" style="margin-top:10px;padding:8px 12px;border-radius:6px;font-size:12px;"></div>
     </div>
 
     <!-- Audio Capture -->
@@ -125,6 +126,7 @@
       <div style="margin-top:10px;">
         <label>Design</label>
         <select id="design-select">
+          <option value="dual-language">Dual-Language (2 Zeilen EN/DE)</option>
           <option value="classic">Classic (TV-Untertitel)</option>
           <option value="modern">Modern (Clean, Blur)</option>
           <option value="minimal">Minimal (Nur Text)</option>
@@ -133,7 +135,9 @@
           <option value="compact">Compact (Klein)</option>
           <option value="cinematic">Cinematic (Film)</option>
           <option value="scrolling">Scrolling (Laufband)</option>
+          <option value="fliessend">Fließend (Liste, newest unten)</option>
           <option value="starwars">Star Wars (Crawl)</option>
+          <option value="ticker3">3-Zeilen Ticker (neuester unten)</option>
           <option value="karaoke">Karaoke (Wort-Highlight)</option>
         </select>
         <label>Position</label>
@@ -155,6 +159,133 @@
       <a id="open-overlay-btn" href="#" target="_blank" class="overlay-link">🔗 Overlay in Tab öffnen</a>
     </div>
 
+    <!-- ASR Settings (Sprache + VAD) -->
+    <div class="card">
+      <h2 id="asr-toggle" class="section-toggle">🎙️ ASR Sprache & VAD ▾</h2>
+      <div id="asr-section">
+        <label>
+          <input type="radio" name="languageMode" value="auto" id="language-mode-auto">
+          Auto-Erkennung (Fish.audio erkennt selbst)
+        </label>
+        <label>
+          <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed">
+          Feste Sprache (an Fish.audio senden)
+        </label>
+
+        <label>Default-Sprache (für Auto-Modus & Anzeige)</label>
+        <select id="asr-languageDefault">
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="ja">🇯🇵 日本語</option>
+        </select>
+
+        <label>Feste Sprache (nur wenn Modus = Fixed)</label>
+        <select id="asr-languageFixed">
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+        </select>
+
+        <hr style="border-color:#444;margin:20px 0;">
+
+        <label>ASR-Provider</label>
+        <select id="asr-provider">
+          <option value="auto">Auto (Deepgram wenn Key da, sonst Fish.audio)</option>
+          <option value="deepgram">Deepgram (empfohlen — ~95% Genauigkeit DE+EN, $0.26/h)</option>
+          <option value="fish.audio">Fish.audio (über TTS-Plugin)</option>
+        </select>
+        <p class="help-text" style="font-size:12px;color:#aaa;">
+          🛡️ <strong>Halluzinations-Schutz aktiv:</strong> Auto-Modus nutzt Deepgrams "multi"-Mode
+          (DE/EN/ES/FR/IT/PT/RU). Chinesisch, Japanisch, Koreanisch, Thai etc. werden automatisch
+          gefiltert — kommen nicht im Overlay an.
+        </p>
+
+        <div id="deepgram-config" style="margin-top:10px;padding:15px;background:rgba(100,181,246,0.08);border-radius:6px;border-left:3px solid #64B5F6;">
+          <label>
+            Deepgram API Key
+            <span id="deepgram-key-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
+          </label>
+          <input type="password" id="asr-deepgramApiKey" placeholder="dg-key-...">
+          <p class="help-text" style="font-size:12px;color:#aaa;">
+            🔒 Wird <strong>persistent in der Plugin-Config</strong> gespeichert — nie in Git committed.
+            Hole dir einen Key unter <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a>.
+          </p>
+
+          <label>Modell</label>
+          <select id="asr-deepgramModel">
+            <option value="nova-2">Nova-2 (empfohlen — beste Qualität für DE+EN)</option>
+            <option value="nova-3">Nova-3 (wenn in deinem Account verfügbar)</option>
+            <option value="whisper-large">Whisper Large (Deepgram-hosted, multilingual)</option>
+            <option value="whisper-medium">Whisper Medium (schneller, etwas schlechter)</option>
+          </select>
+
+          <button id="btn-test-deepgram" class="btn btn-secondary" style="margin-top:10px;">🔌 Deepgram-Key testen</button>
+          <span id="deepgram-test-status" style="margin-left:10px;font-size:13px;"></span>
+        </div>
+
+        <hr style="border-color:#444;margin:20px 0;">
+
+        <label>
+          <input type="checkbox" id="dual-language-enabled">
+          <strong>Dual-Language-Overlay</strong> (2 Zeilen, Segmente nach Sprache sortiert)
+        </label>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:10px;">
+          <div>
+            <label>Obere Zeile (Sprache)</label>
+            <select id="dual-topLanguage">
+              <option value="en">🇬🇧 English</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+            </select>
+            <label>Farbe (oben)</label>
+            <input type="color" id="dual-topColor" value="#FFD700">
+          </div>
+          <div>
+            <label>Untere Zeile (Sprache)</label>
+            <select id="dual-bottomLanguage">
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+            </select>
+            <label>Farbe (unten)</label>
+            <input type="color" id="dual-bottomColor" value="#FFFFFF">
+          </div>
+        </div>
+
+        <hr style="border-color:#444;margin:20px 0;">
+
+        <label>
+          <input type="checkbox" id="vad-enabled">
+          <strong>VAD (Stille-Erkennung)</strong> — spart Fish.audio-Tokens
+        </label>
+        <p class="help-text">
+          Audio-Chunks unterhalb der Lautstärke-Schwelle werden <strong>gar nicht erst hochgeladen</strong>.
+          Du siehst das im Capture-Tab als "⏸ Stille übersprungen".
+        </p>
+        <label>RMS-Schwelle (niedrig = empfindlicher)
+          <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
+          <span id="vad-rmsThreshold-value" style="color:#4CAF50;">0.012</span>
+        </label>
+
+        <button id="btn-save-asr" class="btn btn-primary">💾 ASR-Settings speichern</button>
+        <span id="asr-status" style="margin-left:10px;font-size:13px;"></span>
+      </div>
+    </div>
+
     <!-- Translation Settings -->
     <div class="card">
       <h2 id="translation-toggle" class="section-toggle">🌐 Übersetzung ▾</h2>
@@ -163,8 +294,14 @@
           <input type="checkbox" id="translation-enabled">
           Übersetzung aktivieren (Ollama Cloud)
         </label>
-        <label>API Key</label>
-        <input type="password" id="translation-apiKey" placeholder="***...">
+        <label>
+          Ollama API Key
+          <span id="translation-key-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
+        </label>
+        <input type="password" id="translation-apiKey" placeholder="ollama-key-...">
+        <p class="help-text" style="font-size:12px;color:#888;">
+          ✅ Wird <strong>persistent gespeichert</strong>. Leer lassen = aktueller Key bleibt unverändert.
+        </p>
         <label>Modell</label>
         <select id="translation-model">
           <option value="">— Modelle laden... —</option>
@@ -204,8 +341,36 @@
         document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
 
         const asr = s.asr || {};
-        document.getElementById('stat-asr').textContent = asr.ttsAvailable ? '✅ TTS Plugin' : '❌ TTS Plugin';
-        document.getElementById('stat-asr').style.color = asr.ttsAvailable ? '#4CAF50' : '#f44336';
+        // ASR Provider — zeigt welcher Provider aktuell aktiv ist
+        const providerEl = document.getElementById('stat-provider');
+        const providerHintEl = document.getElementById('provider-hint');
+        if (asr.provider === 'deepgram') {
+          providerEl.textContent = '✅ Deepgram';
+          providerEl.style.color = '#4CAF50';
+          if (providerHintEl) {
+            providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
+            providerHintEl.style.color = '#4CAF50';
+            providerHintEl.innerHTML = '🎉 <strong>Deepgram ist aktiv</strong> — günstig (~95% Genauigkeit DE+EN, $0.26/h). ' +
+              'Modell: ' + (asr.deepgramModel || 'nova-2') + '. Fish.audio-Tokens werden NICHT verbraucht.';
+          }
+        } else if (asr.provider === 'fish.audio') {
+          providerEl.textContent = '⚠️ Fish.audio';
+          providerEl.style.color = '#FFC107';
+          if (providerHintEl) {
+            providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
+            providerHintEl.style.color = '#FFC107';
+            if (asr.deepgramConfigured) {
+              providerHintEl.innerHTML = '⚠️ <strong>Fish.audio ist aktiv obwohl Deepgram konfiguriert ist.</strong> ' +
+                'Provider-Switch in der Config prüfen (sollte "deepgram" oder "auto" sein).';
+            } else {
+              providerHintEl.innerHTML = '⚠️ <strong>Fish.audio ist aktiv.</strong> Token-Verbrauch sichtbar. ' +
+                'Für Kostenersparnis: Deepgram-Key unter "🎙️ ASR Sprache & VAD" eintragen — dann automatisch Wechsel auf Deepgram (~5x günstiger, bessere DE+EN Genauigkeit).';
+            }
+          }
+        } else {
+          providerEl.textContent = '❌ ' + (asr.provider || 'unbekannt');
+          providerEl.style.color = '#f44336';
+        }
 
         const trans = s.translation || {};
         document.getElementById('stat-translation').textContent = trans.enabled ? '✅ ' + trans.model : '⏸️ Off';
@@ -217,13 +382,31 @@
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
+        // API-Key: persistent geladen, aber nur einmal in UI sichtbar machen
         const apiKeyField = document.getElementById('translation-apiKey');
-        if (!apiKeyField.value && tc.apiKey && tc.apiKey !== '••••••••') {
-          apiKeyField.value = tc.apiKey;
+        const keyStatus = document.getElementById('translation-key-status');
+        if (!apiKeyField.dataset.loaded) {
+          apiKeyField.value = tc.apiKey || '';
+          apiKeyField.dataset.loaded = '1';
+        }
+        // Status-Anzeige: zeigt ob Key gespeichert ist (Maskiertes Feedback)
+        if (tc.apiKey && tc.apiKey.length > 0) {
+          const masked = tc.apiKey.length > 8
+            ? tc.apiKey.slice(0, 4) + '***' + tc.apiKey.slice(-4)
+            : '***';
+          keyStatus.textContent = '(gespeichert: ' + masked + ')';
+          keyStatus.style.color = '#4CAF50';
+        } else {
+          keyStatus.textContent = '(nicht gesetzt)';
+          keyStatus.style.color = '#FFC107';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
         await loadModels(tc.model || 'nemotron-3-nano');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
+
+        // ASR Settings
+        populateAsrConfig(cfg);
+        populateOverlayDesign(cfg);
 
         updateOverlayUrl();
       } catch (e) {
@@ -231,10 +414,95 @@
       }
     }
 
+    function populateAsrConfig(cfg) {
+      const asr = cfg.asr || {};
+      const dual = cfg.dualLanguage || {};
+      const vad = cfg.vad || {};
+
+      // Modus
+      const mode = asr.languageMode || 'auto';
+      const modeAuto = document.getElementById('language-mode-auto');
+      const modeFixed = document.getElementById('language-mode-fixed');
+      if (modeAuto) modeAuto.checked = (mode === 'auto');
+      if (modeFixed) modeFixed.checked = (mode === 'fixed');
+
+      // Default
+      const defaultEl = document.getElementById('asr-languageDefault');
+      if (defaultEl && asr.languageDefault) defaultEl.value = asr.languageDefault;
+      const fixedEl = document.getElementById('asr-languageFixed');
+      if (fixedEl && asr.languageFixed) fixedEl.value = asr.languageFixed;
+
+      // Provider
+      const providerEl = document.getElementById('asr-provider');
+      if (providerEl) providerEl.value = asr.provider || 'auto';
+
+      // Deepgram-Modell
+      const modelEl = document.getElementById('asr-deepgramModel');
+      if (modelEl && asr.deepgramModel) modelEl.value = asr.deepgramModel;
+
+      // Deepgram-Key: persistent, maskierter Status, beim ersten Load gesetzt
+      const dgKeyField = document.getElementById('asr-deepgramApiKey');
+      const dgKeyStatus = document.getElementById('deepgram-key-status');
+      if (dgKeyField && !dgKeyField.dataset.loaded) {
+        dgKeyField.value = asr.deepgramApiKey || '';
+        dgKeyField.dataset.loaded = '1';
+      }
+      if (dgKeyStatus) {
+        if (asr.deepgramApiKey && asr.deepgramApiKey.length > 0) {
+          const k = asr.deepgramApiKey;
+          const masked = k.length > 8 ? k.slice(0, 4) + '***' + k.slice(-4) : '***';
+          dgKeyStatus.textContent = '(gespeichert: ' + masked + ')';
+          dgKeyStatus.style.color = '#4CAF50';
+        } else {
+          dgKeyStatus.textContent = '(nicht gesetzt)';
+          dgKeyStatus.style.color = '#FFC107';
+        }
+      }
+      updateDeepgramPanelVisibility();
+
+      // Dual
+      const dualEl = document.getElementById('dual-language-enabled');
+      if (dualEl) dualEl.checked = !!dual.enabled;
+      const topLang = document.getElementById('dual-topLanguage');
+      if (topLang && dual.topLanguage) topLang.value = dual.topLanguage;
+      const botLang = document.getElementById('dual-bottomLanguage');
+      if (botLang && dual.bottomLanguage) botLang.value = dual.bottomLanguage;
+      const topColor = document.getElementById('dual-topColor');
+      if (topColor && dual.topColor) topColor.value = dual.topColor;
+      const botColor = document.getElementById('dual-bottomColor');
+      if (botColor && dual.bottomColor) botColor.value = dual.bottomColor;
+
+      // VAD
+      const vadEnabled = document.getElementById('vad-enabled');
+      if (vadEnabled) vadEnabled.checked = vad.enabled !== false;
+      const rmsEl = document.getElementById('vad-rmsThreshold');
+      if (rmsEl && typeof vad.rmsThreshold === 'number') {
+        rmsEl.value = vad.rmsThreshold;
+        const valEl = document.getElementById('vad-rmsThreshold-value');
+        if (valEl) valEl.textContent = Number(vad.rmsThreshold).toFixed(3);
+      }
+    }
+
+    function populateOverlayDesign(cfg) {
+      const overlay = cfg.overlay || {};
+      const designSel = document.getElementById('design-select');
+      if (!designSel) return;
+      const design = overlay.design || 'dual-language';
+      // Wenn Option nicht existiert → hinzufügen
+      if (![...designSel.options].some(o => o.value === design)) {
+        const opt = document.createElement('option');
+        opt.value = 'dual-language';
+        opt.textContent = 'Dual-Language (2 Zeilen EN/DE)';
+        designSel.appendChild(opt);
+      }
+      designSel.value = design;
+    }
+
     async function saveConfig() {
       const translation = {
         enabled: document.getElementById('translation-enabled').checked,
-        apiKey: document.getElementById('translation-apiKey').value,
+        // API-Key nur mitsenden wenn Feld NICHT LEER (Schutz vor versehentlichem Überschreiben)
+        apiKey: document.getElementById('translation-apiKey').value || '__KEEP__',
         model: document.getElementById('translation-model').value,
         targetLanguage: document.getElementById('translation-targetLanguage').value,
         sourceLanguage: document.getElementById('translation-sourceLanguage').value,
@@ -248,9 +516,80 @@
         });
         const data = await res.json();
         showToast(data.success ? '✅ Config saved' : '❌ ' + (data.error || 'Error'), data.success ? 'success' : 'error');
+        // Nach Save: Key-Feld leeren (Server behält den Key, UI muss ihn nicht dauerhaft anzeigen)
+        if (data.success && translation.apiKey !== '__KEEP__') {
+          document.getElementById('translation-apiKey').value = '__KEEP__';
+          apiKeyFieldMarkDirty(); // verhindert dass das nächste Refresh das Feld überschreibt
+        }
         refreshStatus();
       } catch (e) {
         showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    function apiKeyFieldMarkDirty() {
+      document.getElementById('translation-apiKey').dataset.loaded = '1';
+      document.getElementById('translation-apiKey').dataset.dirty = '1';
+    }
+
+    async function saveAsrConfig() {
+      const asr = {
+        provider: document.getElementById('asr-provider')?.value || 'auto',
+        languageMode: document.getElementById('language-mode-auto')?.checked ? 'auto' : 'fixed',
+        languageDefault: document.getElementById('asr-languageDefault').value,
+        languageFixed: document.getElementById('asr-languageFixed').value,
+        fallbackLanguage: 'en',
+        deepgramModel: document.getElementById('asr-deepgramModel').value
+      };
+
+      // Deepgram-Key: persist-Logik wie Ollama-Key
+      // - Wenn Feld LEER: '__KEEP__' (Server behält den bestehenden Key)
+      // - Wenn Feld MIT Inhalt: neuen Key speichern
+      const dgKeyField = document.getElementById('asr-deepgramApiKey');
+      if (dgKeyField) {
+        const v = dgKeyField.value;
+        asr.deepgramApiKey = (v && v.trim() && v.trim() !== '__KEEP__') ? v.trim() : '__KEEP__';
+      }
+      const dualLanguage = {
+        enabled: document.getElementById('dual-language-enabled').checked,
+        topLanguage: document.getElementById('dual-topLanguage').value,
+        bottomLanguage: document.getElementById('dual-bottomLanguage').value,
+        topColor: document.getElementById('dual-topColor').value,
+        bottomColor: document.getElementById('dual-bottomColor').value,
+        showUnknownOnTop: true
+      };
+      const vad = {
+        enabled: document.getElementById('vad-enabled').checked,
+        rmsThreshold: Number(document.getElementById('vad-rmsThreshold').value),
+        minSpeechRatio: 0.04,
+        minChunkMs: 600,
+        sustainedSilenceMs: 1500
+      };
+      const design = document.getElementById('design-select')?.value;
+
+      const statusEl = document.getElementById('asr-status');
+      statusEl.textContent = '⏳ Speichere…';
+      statusEl.style.color = '#FFC107';
+
+      try {
+        const res = await fetch('/api/stt-ticker/asr/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ asr, dualLanguage, vad, overlay: { design } })
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusEl.textContent = '✅ ASR-Settings gespeichert';
+          statusEl.style.color = '#4CAF50';
+          setTimeout(() => { statusEl.textContent = ''; }, 3000);
+          refreshStatus();
+        } else {
+          statusEl.textContent = '❌ ' + (data.error || 'Fehler');
+          statusEl.style.color = '#f44336';
+        }
+      } catch (e) {
+        statusEl.textContent = '❌ ' + e.message;
+        statusEl.style.color = '#f44336';
       }
     }
 
@@ -343,6 +682,20 @@
     document.getElementById('fontSize-input').addEventListener('input', updateOverlayUrl);
     document.getElementById('btn-update-url').addEventListener('click', updateOverlayUrl);
 
+    // ASR Settings
+    const asrToggleEl = document.getElementById('asr-toggle');
+    if (asrToggleEl) {
+      asrToggleEl.addEventListener('click', () => toggleSection('asr-section'));
+    }
+    const vadRmsEl = document.getElementById('vad-rmsThreshold');
+    if (vadRmsEl) {
+      vadRmsEl.addEventListener('input', () => {
+        document.getElementById('vad-rmsThreshold-value').textContent = Number(vadRmsEl.value).toFixed(3);
+      });
+    }
+    const btnSaveAsr = document.getElementById('btn-save-asr');
+    if (btnSaveAsr) btnSaveAsr.addEventListener('click', saveAsrConfig);
+
     // Translation
     document.getElementById('translation-toggle').addEventListener('click', () => toggleSection('translation-section'));
     document.getElementById('translation-enabled').addEventListener('change', saveConfig);
@@ -352,6 +705,53 @@
     document.getElementById('translation-color').addEventListener('change', saveConfig);
     document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
     document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
+
+    // Deepgram: Test-Button + Provider-Change Visibility
+    function updateDeepgramPanelVisibility() {
+      const provider = document.getElementById('asr-provider')?.value;
+      const dgPanel = document.getElementById('deepgram-config');
+      if (dgPanel) {
+        // Panel sichtbar wenn provider deepgram ODER auto
+        dgPanel.style.display = (provider === 'deepgram' || provider === 'auto') ? 'block' : 'none';
+      }
+    }
+    const providerEl = document.getElementById('asr-provider');
+    if (providerEl) {
+      providerEl.addEventListener('change', updateDeepgramPanelVisibility);
+    }
+    const btnTestDg = document.getElementById('btn-test-deepgram');
+    if (btnTestDg) {
+      btnTestDg.addEventListener('click', async () => {
+        const statusEl = document.getElementById('deepgram-test-status');
+        const keyField = document.getElementById('asr-deepgramApiKey');
+        const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
+        if (!keyToTest) {
+          statusEl.textContent = '❌ Kein Key zum Testen';
+          statusEl.style.color = '#f44336';
+          return;
+        }
+        statusEl.textContent = '⏳ Teste...';
+        statusEl.style.color = '#FFC107';
+        try {
+          const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ apiKey: keyToTest })
+          });
+          const data = await res.json();
+          if (data.success) {
+            statusEl.textContent = '✅ Key gültig!';
+            statusEl.style.color = '#4CAF50';
+          } else {
+            statusEl.textContent = '❌ ' + (data.message || data.error || 'Ungültig');
+            statusEl.style.color = '#f44336';
+          }
+        } catch (e) {
+          statusEl.textContent = '❌ ' + e.message;
+          statusEl.style.color = '#f44336';
+        }
+      });
+    }
 
     // Actions
     document.getElementById('btn-clear-buffer').addEventListener('click', clearBuffer);

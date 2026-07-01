@@ -89,7 +89,6 @@
             pointer-events: none;
             user-select: none;
             transform-origin: center;
-            will-change: transform, opacity;
             /* Game-quality effects */
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4))
                     drop-shadow(0 0 12px rgba(255,255,255,0.3))
@@ -157,7 +156,6 @@
             background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
             pointer-events: none;
             animation: particleFade 0.6s ease-out forwards;
-            will-change: transform, opacity;
         }
 
         @keyframes particleFade {
@@ -278,8 +276,6 @@
             /* Disable transitions and animations */
             transition: none !important;
             animation: none !important;
-            /* Reduce will-change to minimize GPU memory */
-            will-change: transform;
         }
 
         body.toaster-mode .emoji-sprite.fading {

@@ -838,7 +838,8 @@
       <p class="title">🎵 ${track.title}</p>
       <p class="meta">${track.artist || ''} • Angefragt von <strong>${track.requestedBy || 'Viewer'}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
     `;
-    updateState('Playing');
+    const actualState = track.state || 'playing';
+    updateState(actualState === 'paused' ? 'Paused' : 'Playing');
 
     if (npProgressWrapper && track.duration) {
       npProgressWrapper.style.display = 'block';
@@ -847,7 +848,9 @@
         ? Math.max(0, Math.floor((Date.now() - track.startedAt) / 1000))
         : 0;
       if (npDuration) npDuration.textContent = formatDuration(track.duration);
-      startProgressTimer();
+      if (actualState !== 'paused') {
+        startProgressTimer();
+      }
     }
   }
 

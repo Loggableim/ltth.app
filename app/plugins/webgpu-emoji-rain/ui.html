@@ -1070,6 +1070,49 @@
                     <div class="help-text">Obergrenze fuer grosse Seriengeschenke</div>
                 </div>
             </div>
+
+            <!-- Gift ball price-tier sizing -->
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="gift_ball_tier_thresholds_enabled">
+                    Preis-Stufen aktivieren (Kugelgroesse wachst mit Geschenkpreis)
+                </label>
+                <div class="help-text">
+                    Stufen: 1-30 / 31-100 / 101-500 / 501-1000 / 1001-5000 / &gt;5000 Coins.
+                    Wenn aktiv, wird die Kugel pro Stufe in der vorgegebenen Pixelgroesse gespawnt
+                    (Standard-Skalierung wird ignoriert).
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_1">Stufe 1: 1-30 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_1" min="12" max="5000" step="1">
+                    <div class="help-text">z.B. Rosen, kleine Herzen</div>
+                </div>
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_2">Stufe 2: 31-100 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_2" min="12" max="5000" step="1">
+                    <div class="help-text">z.B. TikTok Standard-Geschenke</div>
+                </div>
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_3">Stufe 3: 101-500 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_3" min="12" max="5000" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_4">Stufe 4: 501-1000 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_4" min="12" max="5000" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_5">Stufe 5: 1001-5000 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_5" min="12" max="5000" step="1">
+                    <div class="help-text">Whale-Gifts</div>
+                </div>
+                <div class="form-group">
+                    <label for="gift_ball_tier_size_6">Stufe 6: &gt;5000 Coins (px)</label>
+                    <input type="number" id="gift_ball_tier_size_6" min="12" max="5000" step="1">
+                    <div class="help-text">Maximale Groesse (kann den ganzen Screen fuellen)</div>
+                </div>
+            </div>
         </div>
 
         <!-- Herzballons Configuration -->

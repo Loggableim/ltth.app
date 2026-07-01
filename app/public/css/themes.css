@@ -551,10 +551,10 @@
     --brand-primary-light: rgba(251, 191, 36, 0.25);
 
     --color-bg-primary: #000000;
-    --color-bg-secondary: #050505;
-    --color-bg-tertiary: #111111;
-    --color-bg-card: #0b0b0b;
-    --color-bg-hover: #1a1a1a;
+    --color-bg-secondary: #0d0d0d;
+    --color-bg-tertiary: #1a1a1a;
+    --color-bg-card: #111111;
+    --color-bg-hover: #222222;
 
     --color-accent-primary: #ffffff;
     --color-accent-secondary: #fbbf24;
@@ -563,8 +563,8 @@
     --color-accent-danger: #f87171;
 
     --color-text-primary: #ffffff;
-    --color-text-secondary: #ffffff;
-    --color-text-muted: #d4d4d4;
+    --color-text-secondary: #e8e8e8;
+    --color-text-muted: #b8b8b8;
 
     --color-border: #fbbf24;
     --color-divider: #1f1f1f;
@@ -681,7 +681,20 @@ html[data-theme="vision-impaired"] {
 [data-theme="vision-impaired"] .topbar-profile-btn:hover,
 [data-theme="vision-impaired"] .topbar-icon-btn:hover,
 [data-theme="vision-impaired"] .btn:hover {
-    transform: translateY(-1px) scale(1.01);
+    transform: none;
+    filter: brightness(1.15);
+}
+
+[data-theme="vision-impaired"] .sidebar-item:focus-visible,
+[data-theme="vision-impaired"] .topbar-profile-btn:focus-visible,
+[data-theme="vision-impaired"] .topbar-icon-btn:focus-visible,
+[data-theme="vision-impaired"] .btn:focus-visible,
+[data-theme="vision-impaired"] input:focus-visible,
+[data-theme="vision-impaired"] select:focus-visible,
+[data-theme="vision-impaired"] textarea:focus-visible,
+[data-theme="vision-impaired"] .theme-option:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 2px;
 }
 
 [data-theme="vision-impaired"] .dashboard-section h2,
@@ -695,6 +708,75 @@ html[data-theme="vision-impaired"] {
 [data-theme="vision-impaired"] .stat-card .stat-value {
     font-size: clamp(2rem, 3vw, 3rem);
     line-height: 1.05;
+}
+
+[data-theme="vision-impaired"] .stat-card:hover,
+[data-theme="vision-impaired"] .plugin-card:hover,
+[data-theme="vision-impaired"] .settings-card:hover,
+[data-theme="vision-impaired"] .dashboard-section:hover {
+    transform: none;
+}
+
+[data-theme="vision-impaired"] .sidebar-item.active {
+    background: #fbbf24 !important;
+    color: #000000 !important;
+    box-shadow: 0 0 0 3px #ffffff !important;
+}
+
+[data-theme="vision-impaired"] .sidebar-item.active svg,
+[data-theme="vision-impaired"] .sidebar-item.active .sidebar-item-text {
+    color: #000000 !important;
+}
+
+[data-theme="vision-impaired"] .btn-primary {
+    background: #fbbf24 !important;
+    border-color: #fbbf24 !important;
+    color: #000000 !important;
+}
+
+[data-theme="vision-impaired"] .btn-primary:hover {
+    background: #f59e0b !important;
+    border-color: #f59e0b !important;
+}
+
+[data-theme="vision-impaired"] .status-connected {
+    background: #86efac !important;
+    color: #000000 !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="vision-impaired"] .theme-dropdown {
+    background: #0d0d0d;
+    border-color: #fbbf24;
+    border-width: 2px;
+}
+
+[data-theme="vision-impaired"] .theme-option:hover {
+    background: rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="vision-impaired"] .modal-overlay,
+[data-theme="vision-impaired"] .modal-content {
+    border-width: 2px;
+}
+
+[data-theme="vision-impaired"] .plugin-compact-table {
+    background: #111111;
+    border: 2px solid #fbbf24;
+}
+
+[data-theme="vision-impaired"] .plugin-compact-table thead {
+    background: #1a1a1a;
+}
+
+[data-theme="vision-impaired"] .plugin-compact-table th,
+[data-theme="vision-impaired"] .plugin-compact-table td {
+    color: #ffffff;
+    border-bottom: 2px solid #333333;
+}
+
+[data-theme="vision-impaired"] .plugin-compact-table tbody tr:hover {
+    background: rgba(251, 191, 36, 0.15);
 }
 
 [data-theme="vision-impaired"] .theme-toggle-btn {
@@ -769,7 +851,7 @@ body {
         radial-gradient(circle at 18% 18%, rgba(34, 211, 238, 0.12), transparent 24%),
         radial-gradient(circle at 82% 12%, rgba(52, 211, 153, 0.10), transparent 22%),
         radial-gradient(circle at 60% 78%, rgba(139, 92, 246, 0.08), transparent 26%);
-    filter: blur(16px);
+    filter: blur(8px);
     opacity: 0.9;
 }
 

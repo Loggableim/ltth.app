@@ -319,9 +319,15 @@ function renderSettingsForm(type) {
         <input type="checkbox" id="showUsername" ${settings.showUsername !== false ? 'checked' : ''}>
         <label for="showUsername">Show Username</label>
       </div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="alignCenter" ${settings.alignCenter !== false ? 'checked' : ''}>
-        <label for="alignCenter">Center Alignment</label>
+      <div class="form-row">
+        <div class="form-group">
+          <label>HUD Alignment</label>
+          <select id="hudAlignment">
+            <option value="center" ${(settings.hudAlignment || 'center') === 'center' ? 'selected' : ''}>Center</option>
+            <option value="left" ${settings.hudAlignment === 'left' ? 'selected' : ''}>Left</option>
+            <option value="right" ${settings.hudAlignment === 'right' ? 'selected' : ''}>Right</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -502,7 +508,7 @@ async function saveSettings() {
 
     // Layout
     showUsername: document.getElementById('showUsername').checked,
-    alignCenter: document.getElementById('alignCenter').checked,
+    hudAlignment: document.getElementById('hudAlignment').value,
 
     // Animations
     inAnimationType: document.getElementById('inAnimationType').value,

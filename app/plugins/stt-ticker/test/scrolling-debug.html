@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>STT Ticker - Scrolling Debug Standalone</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: #2a2a3e; font-family: monospace; color: #eee; }
+    .controls { position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: rgba(0,0,0,0.9); padding: 10px; }
+    .controls button { padding: 8px 12px; margin-right: 6px; cursor: pointer; }
+    .info { font-size: 12px; padding: 6px; background: #111; }
+    #ticker-host {
+      margin-top: 60px;
+      width: 100vw;
+      position: relative;
+    }
+    /* === kopierte relevante CSS-Teile aus ticker.html === */
+    #ticker-container {
+      position: fixed;
+      z-index: 9999;
+      max-width: 90vw;
+      padding: 12px 20px;
+      border-radius: 8px;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+    #ticker-container.visible { opacity: 1; transform: translateY(0); }
+    #ticker-container.pos-bottom-center { bottom: 40px; left: 50%; transform: translateX(-50%); }
+
+    /* === SCROLLING === */
+    #ticker-container.design-scrolling {
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 0;
+      padding: 8px 0;
+      max-width: 100vw;
+      width: 100%;
+      left: 0 !important;
+      right: 0 !important;
+      overflow: hidden;
+      bottom: 0;
+    }
+    #ticker-container.design-scrolling #ticker-text {
+      position: relative;
+      overflow: hidden;
+      height: 1.4em;
+      white-space: nowrap;
+    }
+    #ticker-container.design-scrolling .ticker-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 40px;
+      white-space: nowrap;
+      will-change: transform;
+      animation: scroll-text var(--scroll-duration, 40s) linear infinite;
+    }
+    @keyframes scroll-text {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    #ticker-container.design-scrolling .ticker-line {
+      font-size: 28px;
+      font-weight: 500;
+      color: #FFD700;
+      display: inline-block;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    #ticker-container.design-scrolling .ticker-line.is-stale {
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #ticker-container.design-scrolling .ticker-line-sep {
+      opacity: 0.5;
+      font-size: 0.85em;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button id="btn-append-one">+ 1 Satz anhängen</button>
+    <button id="btn-append-five">+ 5 Sätze auf einmal</button>
+    <button id="btn-clear">Buffer leeren</button>
+    <button id="btn-prune">Force prune</button>
+    <span class="info" id="info">segments: 0 | DOM: 0 | trackW: 0</span>
+    <p class="info" style="color:#aaa;">
+      <b>Was hier getestet wird:</b><br>
+      1. Append → Animation läuft konstant weiter (kein Sprung)<br>
+      2. Stale-Logik → opacity fade statt removeChild<br>
+      3. trackLoopReady → beim 2. Element wird 1× dupliziert für seamless -50% loop<br>
+    </p>
+  </div>
+
+  <div id="ticker-host">
+    <div id="ticker-container" class="pos-bottom-center design-scrolling">
+      <div id="ticker-text">
+        <div id="ticker-track-init"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Mock Render (kopiert die Crawl-Logik 1:1) =====
+    const tickerContainer = document.getElementById('ticker-container');
+    const tickerText = document.getElementById('ticker-text');
+    const SEGMENT_DISPLAY_MS = 12000;
+    const CRAWL_SEPARATOR = '   ✦   ';
+    const appendedSegmentIds = new Set();
+    let tickerTrack = null;
+    let trackLoopReady = false;
+
+    function getOrCreateTrack() {
+      if (tickerTrack && tickerTrack.isConnected && document.body.contains(tickerTrack)) {
+        return tickerTrack;
+      }
+      if (tickerText.firstElementChild && tickerText.firstElementChild.classList && tickerText.firstElementChild.classList.contains('ticker-track')) {
+        tickerTrack = tickerText.firstElementChild;
+        return tickerTrack;
+      }
+      tickerTrack = document.createElement('div');
+      tickerTrack.className = 'ticker-track';
+      tickerText.appendChild(tickerTrack);
+      trackLoopReady = false;
+      return tickerTrack;
+    }
+
+    function renderCrawlAppend() {
+      const track = getOrCreateTrack();
+      let appended = false;
+      const visibleSegments = window.__visibleSegments || [];
+
+      for (const seg of visibleSegments) {
+        if (appendedSegmentIds.has(seg.id)) continue;
+        appendCrawlLine(track, { type: 'original', text: seg.text, id: seg.id, color: null, label: null, timestamp: seg.timestamp });
+        appended = true;
+        appendedSegmentIds.add(seg.id);
+      }
+
+      if (!trackLoopReady && track.children.length >= 2) {
+        duplicateTrackContent(track);
+        trackLoopReady = true;
+      }
+
+      const validIds = new Set(visibleSegments.map(s => s.id));
+      const now = Date.now();
+      const allNodes = track.querySelectorAll('[data-seg-id]');
+      for (const node of allNodes) {
+        if (node.classList.contains('is-stale')) continue;
+        const nodeIdAttr = node.getAttribute('data-seg-id');
+        if (!nodeIdAttr || nodeIdAttr.indexOf('loop-') === 0) continue;
+        const nodeId = parseInt(nodeIdAttr, 10);
+        const nodeTs = parseInt(node.getAttribute('data-seg-ts') || '0', 10);
+        const tooOld = (now - nodeTs) > SEGMENT_DISPLAY_MS * 3;
+        const droppedFromBuffer = !validIds.has(nodeId);
+        if (tooOld || droppedFromBuffer) {
+          node.classList.add('is-stale');
+        }
+      }
+
+      if (appended === false) {
+        tryPruneStaleNodes(track);
+      }
+
+      if (appended) tickerContainer.classList.add('visible');
+      updateInfo();
+    }
+
+    function duplicateTrackContent(track) {
+      const existing = Array.from(track.children);
+      if (existing.length === 0) return;
+      const clones = existing.map(child => child.cloneNode(true));
+      for (let i = 0; i < clones.length; i++) {
+        const c = clones[i];
+        if (c.hasAttribute && c.hasAttribute('data-seg-id')) {
+          c.setAttribute('data-seg-id', 'loop-' + i);
+          c.setAttribute('data-seg-ts', '0');
+        }
+      }
+      const gap = document.createElement('div');
+      gap.className = 'ticker-line-sep ticker-line-gap';
+      gap.setAttribute('aria-hidden', 'true');
+      gap.setAttribute('data-seg-id', 'loop-gap');
+      gap.textContent = CRAWL_SEPARATOR;
+      for (const c of clones) track.appendChild(c);
+      track.appendChild(gap);
+    }
+
+    function tryPruneStaleNodes(track) {
+      const nodes = track.querySelectorAll('.ticker-line.is-stale');
+      const now = Date.now();
+      let pruned = 0;
+      for (const node of nodes) {
+        const ts = parseInt(node.getAttribute('data-seg-ts') || '0', 10);
+        if (now - ts < 5000 + SEGMENT_DISPLAY_MS * 3) continue;
+        node.remove();
+        pruned++;
+        if (pruned >= 3) break;
+      }
+    }
+
+    function appendCrawlLine(track, line) {
+      const div = document.createElement('div');
+      div.className = 'ticker-line';
+      div.setAttribute('data-seg-id', String(line.id));
+      div.setAttribute('data-seg-ts', String(line.timestamp || Date.now()));
+      div.textContent = line.text;
+      track.appendChild(div);
+
+      const spacer = document.createElement('div');
+      spacer.className = 'ticker-line-sep';
+      spacer.setAttribute('data-seg-id', String(line.id));
+      spacer.setAttribute('data-seg-ts', String(line.timestamp || Date.now()));
+      spacer.textContent = CRAWL_SEPARATOR;
+      track.appendChild(spacer);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function updateInfo() {
+      const segs = window.__visibleSegments || [];
+      const track = tickerTrack;
+      const domCount = track ? track.querySelectorAll('[data-seg-id]').length : 0;
+      const trackW = track ? Math.round(track.scrollWidth) : 0;
+      document.getElementById('info').textContent =
+        'segments: ' + segs.length + ' | DOM: ' + domCount + ' | trackW: ' + trackW + ' | loop: ' + trackLoopReady;
+    }
+
+    // ===== Test-Steuerung =====
+    window.__nextId = 1;
+    window.__visibleSegments = [];
+
+    document.getElementById('btn-append-one').onclick = () => {
+      const id = window.__nextId++;
+      window.__visibleSegments.push({ id, text: 'Satz ' + id + ' — Hallo Welt das ist ein Test.', timestamp: Date.now() });
+      renderCrawlAppend();
+    };
+    document.getElementById('btn-append-five').onclick = () => {
+      for (let i = 0; i < 5; i++) {
+        const id = window.__nextId++;
+        window.__visibleSegments.push({ id, text: 'Batch-Satz ' + id + ' lorem ipsum dolor sit amet', timestamp: Date.now() });
+      }
+      renderCrawlAppend();
+    };
+    document.getElementById('btn-clear').onclick = () => {
+      window.__visibleSegments = [];
+      appendedSegmentIds.clear();
+      if (tickerTrack) tickerTrack.innerHTML = '';
+      tickerContainer.classList.remove('visible');
+      trackLoopReady = false;
+      window.__nextId = 1;
+      updateInfo();
+    };
+    document.getElementById('btn-prune').onclick = () => {
+      if (tickerTrack) tryPruneStaleNodes(tickerTrack);
+      updateInfo();
+    };
+
+    // init
+    getOrCreateTrack();
+    updateInfo();
+  </script>
+</body>
+</html>

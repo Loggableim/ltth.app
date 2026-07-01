@@ -316,6 +316,16 @@ function updateUI() {
         document.getElementById('gift_ball_series_count_divisor').value = config.gift_ball_series_count_divisor || 3;
         document.getElementById('gift_ball_max_count').value = config.gift_ball_max_count || 24;
 
+        // Gift ball price-tier sizing
+        console.log('🎨 [EMOJI RAIN UI] Setting gift ball tier sizing...');
+        document.getElementById('gift_ball_tier_thresholds_enabled').checked = config.gift_ball_tier_thresholds_enabled === true;
+        document.getElementById('gift_ball_tier_size_1').value = config.gift_ball_tier_size_1 ?? 44;
+        document.getElementById('gift_ball_tier_size_2').value = config.gift_ball_tier_size_2 ?? 80;
+        document.getElementById('gift_ball_tier_size_3').value = config.gift_ball_tier_size_3 ?? 150;
+        document.getElementById('gift_ball_tier_size_4').value = config.gift_ball_tier_size_4 ?? 300;
+        document.getElementById('gift_ball_tier_size_5').value = config.gift_ball_tier_size_5 ?? 700;
+        document.getElementById('gift_ball_tier_size_6').value = config.gift_ball_tier_size_6 ?? 5000;
+
         // Herzballons
         console.log('ðŸŽ¨ [EMOJI RAIN UI] Setting Herzballons configuration...');
         document.getElementById('heart_balloons_enabled').checked = config.heart_balloons_enabled !== false;
@@ -483,6 +493,13 @@ async function saveConfig() {
         gift_ball_base_count: parseInt(document.getElementById('gift_ball_base_count').value),
         gift_ball_series_count_divisor: parseInt(document.getElementById('gift_ball_series_count_divisor').value),
         gift_ball_max_count: parseInt(document.getElementById('gift_ball_max_count').value),
+        gift_ball_tier_thresholds_enabled: document.getElementById('gift_ball_tier_thresholds_enabled').checked,
+        gift_ball_tier_size_1: parseInt(document.getElementById('gift_ball_tier_size_1').value),
+        gift_ball_tier_size_2: parseInt(document.getElementById('gift_ball_tier_size_2').value),
+        gift_ball_tier_size_3: parseInt(document.getElementById('gift_ball_tier_size_3').value),
+        gift_ball_tier_size_4: parseInt(document.getElementById('gift_ball_tier_size_4').value),
+        gift_ball_tier_size_5: parseInt(document.getElementById('gift_ball_tier_size_5').value),
+        gift_ball_tier_size_6: parseInt(document.getElementById('gift_ball_tier_size_6').value),
         // Herzballons
         heart_balloons_enabled: document.getElementById('heart_balloons_enabled').checked,
         heart_balloon_like_divisor: parseInt(document.getElementById('heart_balloon_like_divisor').value),

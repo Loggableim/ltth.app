@@ -59,8 +59,8 @@
             gift_ball_despawn_multiplier: 1,
             // Herzballons
             heart_balloons_enabled: true,
-            heart_balloon_like_divisor: 2,
-            heart_balloon_min_hearts: 1,
+            heart_balloon_like_divisor: 1,
+            heart_balloon_min_hearts: 5,
             heart_balloon_max_hearts: 16,
             heart_balloon_profile_every: 5,
             heart_balloon_pop_y: 0.5,
@@ -261,6 +261,8 @@
         // Performance tracking
         let lastFrameTime = performance.now();
         let frameCount = 0;
+        let cleanupFrameCounter = 0;  // Periodic cleanup counter (every 60 frames)
+        const CLEANUP_INTERVAL = 60;  // Clean up removed emojis every 60 frames
         let fps = 60;
         let fpsUpdateTime = performance.now();
         // BUG 7 fix: TARGET_FRAME_TIME is no longer a const – calculated dynamically in updateLoop
@@ -1372,7 +1374,10 @@
                 }
             });
 
-            heartBalloons = heartBalloons.filter(balloon => !balloon.removed);
+            // Periodic cleanup: only filter every CLEANUP_INTERVAL frames to avoid per-frame array allocations
+            if (cleanupFrameCounter % CLEANUP_INTERVAL === 0) {
+                heartBalloons = heartBalloons.filter(balloon => !balloon.removed);
+            }
 
             while (heartBalloons.length > config.max_emojis_on_screen) {
                 removeHeartBalloon(heartBalloons[0]);
@@ -1593,8 +1598,11 @@
 
             updateHeartBalloons(currentTime, deltaTime);
 
-            // Remove faded emojis
-            emojis = emojis.filter(emoji => !emoji.removed);
+            // Periodic cleanup: only filter every CLEANUP_INTERVAL frames to avoid per-frame array allocations
+            cleanupFrameCounter++;
+            if (cleanupFrameCounter % CLEANUP_INTERVAL === 0) {
+                emojis = emojis.filter(emoji => !emoji.removed);
+            }
 
             // Limit max emojis (remove oldest first)
             while (emojis.length > config.max_emojis_on_screen) {

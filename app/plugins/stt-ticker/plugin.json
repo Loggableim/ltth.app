@@ -15,7 +15,31 @@
   ],
   "config": {
     "enabled": true,
-    "language": null,
+    "asr": {
+      "provider": "auto",
+      "languageMode": "auto",
+      "languageDefault": "de",
+      "languageFixed": "de",
+      "fallbackLanguage": "en",
+      "languageWhitelist": ["de", "en"],
+      "deepgramApiKey": "",
+      "deepgramModel": "nova-2"
+    },
+    "vad": {
+      "enabled": true,
+      "rmsThreshold": 0.012,
+      "minSpeechRatio": 0.04,
+      "minChunkMs": 600,
+      "sustainedSilenceMs": 1500
+    },
+    "dualLanguage": {
+      "enabled": true,
+      "topLanguage": "en",
+      "bottomLanguage": "de",
+      "topColor": "#FFD700",
+      "bottomColor": "#FFFFFF",
+      "showUnknownOnTop": true
+    },
     "maxAudioBytes": 4194304,
     "silenceTimeoutMs": 900,
     "maxSegmentMs": 12000,
@@ -29,7 +53,8 @@
       "apiKey": "",
       "model": "nemotron-3-nano",
       "targetLanguage": "en",
-      "sourceLanguage": "de",
+      "sourceLanguage": "auto",
+      "autoDetectDefault": "de",
       "color": "#FFD700",
       "maxTextLength": 500
     }

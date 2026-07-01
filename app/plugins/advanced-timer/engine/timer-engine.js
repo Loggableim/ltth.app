@@ -190,17 +190,23 @@ class Timer extends EventEmitter {
 
     /**
      * Add time to the timer
+     * @param {number} seconds
+     * @param {string|null} source  - opaque source string used for logging
+     * @param {object} [meta]       - optional enrichment for the rotator:
+     *   { sourceType:'gift'|'override'|'like'|'follow'|'subscribe'|'chat'|'manual'|'flow'|'rule',
+     *     giftId, giftName, giftImage, giftCoinValue, userNickname, userId }
      */
-    addTime(seconds, source = null) {
+    addTime(seconds, source = null, meta = null) {
         const oldValue = this.currentValue;
         this.currentValue += seconds;
 
-        this.emit('time-added', { 
-            id: this.id, 
-            amount: seconds, 
+        this.emit('time-added', {
+            id: this.id,
+            amount: seconds,
             currentValue: this.currentValue,
             oldValue: oldValue,
-            source: source 
+            source: source,
+            meta: meta || null
         });
 
         // Emit a tick so overlays and UI update immediately,
@@ -218,16 +224,17 @@ class Timer extends EventEmitter {
     /**
      * Remove time from the timer
      */
-    removeTime(seconds, source = null) {
+    removeTime(seconds, source = null, meta = null) {
         const oldValue = this.currentValue;
         this.currentValue = Math.max(0, this.currentValue - seconds);
 
-        this.emit('time-removed', { 
-            id: this.id, 
-            amount: seconds, 
+        this.emit('time-removed', {
+            id: this.id,
+            amount: -seconds, // emit negative so rotator knows this is a removal
             currentValue: this.currentValue,
             oldValue: oldValue,
-            source: source 
+            source: source,
+            meta: meta || null
         });
 
         // Emit a tick so overlays and UI update immediately,

@@ -16,6 +16,7 @@ const TimerDatabase = require('./backend/database');
 const TimerAPI = require('./backend/api');
 const TimerWebSocket = require('./backend/websocket');
 const TimerEventBridge = require('./backend/event-bridge');
+const RotatorService = require('./backend/rotator');
 const { TimerEngine } = require('./engine/timer-engine');
 
 class AdvancedTimerPlugin extends EventEmitter {
@@ -29,6 +30,7 @@ class AdvancedTimerPlugin extends EventEmitter {
         this.apiModule = new TimerAPI(this);
         this.websocket = new TimerWebSocket(this);
         this.eventBridge = new TimerEventBridge(this);
+        this.rotator = new RotatorService(this);
 
         // Auto-save interval
         this.autoSaveInterval = null;
@@ -54,6 +56,10 @@ class AdvancedTimerPlugin extends EventEmitter {
             this.eventBridge.registerHandlers();
             this.eventBridge.rebuildCache();
 
+            // Initialize the rotator + threshold-effect service
+            this.rotator.refreshSettings();
+            this.rotator.init();
+
             // Register Flow actions
             this.registerFlowActions();
 
@@ -66,6 +72,7 @@ class AdvancedTimerPlugin extends EventEmitter {
             this.api.log('   - Event automation active', 'info');
             this.api.log('   - Viewer interaction enabled', 'info');
             this.api.log('   - Customizable overlays ready', 'info');
+            this.api.log('   - Rotator + threshold-effects service ready', 'info');
 
         } catch (error) {
             this.api.log(`❌ Error initializing Advanced Timer Plugin: ${error.message}`, 'error');
@@ -639,6 +646,11 @@ class AdvancedTimerPlugin extends EventEmitter {
             // Cleanup event bridge
             if (this.eventBridge) {
                 this.eventBridge.destroy();
+            }
+
+            // Cleanup rotator service
+            if (this.rotator) {
+                this.rotator.destroy();
             }
 
             // Cleanup engine

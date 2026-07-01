@@ -257,6 +257,62 @@ class TimerDatabase {
                     UNIQUE(timer_id, gift_id)
                 )
             `).run();
+
+            // Rotator settings — per-timer config for the time-delta rotator
+            // One row per timer. JSON columns keep the schema forward-compatible.
+            this.db.prepare(`
+                CREATE TABLE IF NOT EXISTS advanced_timer_rotator_settings (
+                    timer_id TEXT PRIMARY KEY,
+                    enabled INTEGER DEFAULT 0,
+                    slot_count INTEGER DEFAULT 1,
+                    position TEXT DEFAULT 'top',          -- top | bottom | left | right
+                    rotation_interval_ms INTEGER DEFAULT 4500,
+                    show_gift_images INTEGER DEFAULT 1,
+                    show_gift_names INTEGER DEFAULT 1,
+                    show_time_delta INTEGER DEFAULT 1,
+                    show_source_emoji INTEGER DEFAULT 1,
+                    min_seconds_to_show REAL DEFAULT 0,    -- 0 = show every delta, >0 = threshold floor
+                    include_sources TEXT DEFAULT 'like,coin,follow,subscribe,gift,override,manual,flow,rule',
+                    slide_in_ms INTEGER DEFAULT 400,
+                    slide_out_ms INTEGER DEFAULT 600,
+                    fade_alpha REAL DEFAULT 0.92,
+                    font_scale REAL DEFAULT 1.0,
+                    FOREIGN KEY (timer_id) REFERENCES advanced_timers(id) ON DELETE CASCADE
+                )
+            `).run();
+
+            // Threshold effects — frame/animation played when |delta| >= threshold
+            this.db.prepare(`
+                CREATE TABLE IF NOT EXISTS advanced_timer_threshold_effects (
+                    timer_id TEXT PRIMARY KEY,
+                    enabled INTEGER DEFAULT 0,
+                    threshold_seconds REAL DEFAULT 60,
+                    direction TEXT DEFAULT 'both',         -- both | positive | negative
+                    duration_ms INTEGER DEFAULT 1500,
+                    builtin_animation TEXT DEFAULT 'flame', -- flame|lightning|sparks|pulse-glow|rainbow-shake|gold-flux
+                    -- Per-slot custom frames: array of {slot,url,name} JSON, up to 6 slots
+                    custom_frames TEXT DEFAULT '[]',
+                    intensity REAL DEFAULT 1.0,            -- 0.5..2.0 scale modifier
+                    sound TEXT DEFAULT '',                 -- optional sound trigger name
+                    FOREIGN KEY (timer_id) REFERENCES advanced_timers(id) ON DELETE CASCADE
+                )
+            `).run();
+
+            // Custom frame slots — separate table for fast CRUD on individual uploads
+            // (keeps the JSON column read-on-load fast)
+            this.db.prepare(`
+                CREATE TABLE IF NOT EXISTS advanced_timer_threshold_frames (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timer_id TEXT NOT NULL,
+                    slot INTEGER NOT NULL,                 -- 1..6
+                    url TEXT NOT NULL,
+                    filename TEXT,
+                    label TEXT DEFAULT '',
+                    uploaded_at INTEGER DEFAULT (strftime('%s','now')),
+                    UNIQUE(timer_id, slot),
+                    FOREIGN KEY (timer_id) REFERENCES advanced_timers(id) ON DELETE CASCADE
+                )
+            `).run();
         } catch (error) {
             this.api.log(`Error initializing timer database: ${error.message}`, 'error');
             throw error;
@@ -906,6 +962,245 @@ class TimerDatabase {
         } catch (error) {
             this.api.log(`Error clearing gift overrides: ${error.message}`, 'error');
             return false;
+        }
+    }
+
+    // ========== ROTATOR SETTINGS ==========
+
+    _ROTATOR_DEFAULT_SOURCES = ['like','coin','follow','subscribe','gift','override','manual','flow','rule','superfan'];
+
+    _normalizeRotator(raw) {
+        if (!raw) return null;
+        return {
+            timer_id: raw.timer_id,
+            enabled: raw.enabled ? 1 : 0,
+            slot_count: Math.max(1, Math.min(8, parseInt(raw.slot_count) || 1)),
+            position: ['top','bottom','left','right'].includes(raw.position) ? raw.position : 'top',
+            rotation_interval_ms: Math.max(500, parseInt(raw.rotation_interval_ms) || 4500),
+            show_gift_images: raw.show_gift_images ? 1 : 0,
+            show_gift_names: raw.show_gift_names ? 1 : 0,
+            show_time_delta: raw.show_time_delta ? 1 : 0,
+            show_source_emoji: raw.show_source_emoji ? 1 : 0,
+            min_seconds_to_show: Math.max(0, parseFloat(raw.min_seconds_to_show) || 0),
+            include_sources: typeof raw.include_sources === 'string'
+                ? raw.include_sources
+                : (Array.isArray(raw.include_sources)
+                    ? raw.include_sources.join(',')
+                    : this._ROTATOR_DEFAULT_SOURCES.join(',')),
+            slide_in_ms: Math.max(50, parseInt(raw.slide_in_ms) || 400),
+            slide_out_ms: Math.max(50, parseInt(raw.slide_out_ms) || 600),
+            fade_alpha: Math.max(0.3, Math.min(1.0, parseFloat(raw.fade_alpha) || 0.92)),
+            font_scale: Math.max(0.5, Math.min(2.0, parseFloat(raw.font_scale) || 1.0))
+        };
+    }
+
+    getRotator(timerId) {
+        try {
+            const row = this.db.prepare('SELECT * FROM advanced_timer_rotator_settings WHERE timer_id = ?').get(timerId);
+            if (row) return this._normalizeRotator(row);
+            // Return defaults
+            return this._normalizeRotator({
+                timer_id: timerId,
+                include_sources: this._ROTATOR_DEFAULT_SOURCES.join(',')
+            });
+        } catch (error) {
+            this.api.log(`Error reading rotator settings: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    saveRotator(timerId, settings) {
+        try {
+            const norm = this._normalizeRotator({ ...settings, timer_id: timerId });
+            this.db.prepare(`
+                INSERT INTO advanced_timer_rotator_settings
+                (timer_id, enabled, slot_count, position, rotation_interval_ms,
+                 show_gift_images, show_gift_names, show_time_delta, show_source_emoji,
+                 min_seconds_to_show, include_sources, slide_in_ms, slide_out_ms, fade_alpha, font_scale)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timer_id) DO UPDATE SET
+                    enabled = excluded.enabled,
+                    slot_count = excluded.slot_count,
+                    position = excluded.position,
+                    rotation_interval_ms = excluded.rotation_interval_ms,
+                    show_gift_images = excluded.show_gift_images,
+                    show_gift_names = excluded.show_gift_names,
+                    show_time_delta = excluded.show_time_delta,
+                    show_source_emoji = excluded.show_source_emoji,
+                    min_seconds_to_show = excluded.min_seconds_to_show,
+                    include_sources = excluded.include_sources,
+                    slide_in_ms = excluded.slide_in_ms,
+                    slide_out_ms = excluded.slide_out_ms,
+                    fade_alpha = excluded.fade_alpha,
+                    font_scale = excluded.font_scale
+            `).run(
+                timerId,
+                norm.enabled, norm.slot_count, norm.position, norm.rotation_interval_ms,
+                norm.show_gift_images, norm.show_gift_names, norm.show_time_delta, norm.show_source_emoji,
+                norm.min_seconds_to_show, norm.include_sources,
+                norm.slide_in_ms, norm.slide_out_ms, norm.fade_alpha, norm.font_scale
+            );
+            return this.getRotator(timerId);
+        } catch (error) {
+            this.api.log(`Error saving rotator settings: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    // ========== THRESHOLD EFFECTS ==========
+
+    _BUILTIN_ANIMATIONS = ['flame','lightning','sparks','pulse-glow','rainbow-shake','gold-flux'];
+
+    _normalizeThreshold(raw) {
+        if (!raw) return null;
+        const builtin = this._BUILTIN_ANIMATIONS.includes(raw.builtin_animation)
+            ? raw.builtin_animation : 'flame';
+        const direction = ['both','positive','negative'].includes(raw.direction)
+            ? raw.direction : 'both';
+        let frames = [];
+        if (typeof raw.custom_frames === 'string') {
+            try { frames = JSON.parse(raw.custom_frames); } catch (_) { frames = []; }
+        } else if (Array.isArray(raw.custom_frames)) {
+            frames = raw.custom_frames;
+        }
+        return {
+            timer_id: raw.timer_id,
+            enabled: raw.enabled ? 1 : 0,
+            threshold_seconds: Math.max(0.1, parseFloat(raw.threshold_seconds) || 60),
+            direction,
+            duration_ms: Math.max(100, Math.min(10000, parseInt(raw.duration_ms) || 1500)),
+            builtin_animation: builtin,
+            custom_frames: JSON.stringify(frames.slice(0, 6)),
+            intensity: Math.max(0.5, Math.min(2.0, parseFloat(raw.intensity) || 1.0)),
+            sound: typeof raw.sound === 'string' ? raw.sound.slice(0, 120) : ''
+        };
+    }
+
+    getThreshold(timerId) {
+        try {
+            const row = this.db.prepare('SELECT * FROM advanced_timer_threshold_effects WHERE timer_id = ?').get(timerId);
+            let settings;
+            if (row) {
+                settings = this._normalizeThreshold(row);
+            } else {
+                settings = this._normalizeThreshold({ timer_id: timerId });
+            }
+            // Attach uploaded frames from the per-slot table for freshness
+            try {
+                const frameRows = this.db.prepare(
+                    'SELECT slot, url, filename, label FROM advanced_timer_threshold_frames WHERE timer_id = ? ORDER BY slot ASC'
+                ).all(timerId);
+                settings.uploaded_frames = frameRows;
+            } catch (_) { settings.uploaded_frames = []; }
+            // Parse custom_frames for client convenience
+            try { settings.custom_frames_parsed = JSON.parse(settings.custom_frames || '[]'); }
+            catch (_) { settings.custom_frames_parsed = []; }
+            return settings;
+        } catch (error) {
+            this.api.log(`Error reading threshold effect settings: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    saveThreshold(timerId, settings) {
+        try {
+            const norm = this._normalizeThreshold({ ...settings, timer_id: timerId });
+            this.db.prepare(`
+                INSERT INTO advanced_timer_threshold_effects
+                (timer_id, enabled, threshold_seconds, direction, duration_ms,
+                 builtin_animation, custom_frames, intensity, sound)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(timer_id) DO UPDATE SET
+                    enabled = excluded.enabled,
+                    threshold_seconds = excluded.threshold_seconds,
+                    direction = excluded.direction,
+                    duration_ms = excluded.duration_ms,
+                    builtin_animation = excluded.builtin_animation,
+                    custom_frames = excluded.custom_frames,
+                    intensity = excluded.intensity,
+                    sound = excluded.sound
+            `).run(
+                timerId, norm.enabled, norm.threshold_seconds, norm.direction,
+                norm.duration_ms, norm.builtin_animation, norm.custom_frames,
+                norm.intensity, norm.sound
+            );
+            return this.getThreshold(timerId);
+        } catch (error) {
+            this.api.log(`Error saving threshold effect settings: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    saveThresholdFrame(timerId, slot, url, filename, label) {
+        try {
+            this.db.prepare(`
+                INSERT INTO advanced_timer_threshold_frames (timer_id, slot, url, filename, label)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(timer_id, slot) DO UPDATE SET
+                    url = excluded.url,
+                    filename = excluded.filename,
+                    label = excluded.label,
+                    uploaded_at = strftime('%s','now')
+            `).run(timerId, slot, url, filename || null, label || '');
+            return true;
+        } catch (error) {
+            this.api.log(`Error saving threshold frame: ${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    deleteThresholdFrame(timerId, slot) {
+        try {
+            this.db.prepare('DELETE FROM advanced_timer_threshold_frames WHERE timer_id = ? AND slot = ?').run(timerId, slot);
+            return true;
+        } catch (error) {
+            this.api.log(`Error deleting threshold frame: ${error.message}`, 'error');
+            return false;
+        }
+    }
+
+    getThresholdFrame(timerId, slot) {
+        try {
+            return this.db.prepare('SELECT * FROM advanced_timer_threshold_frames WHERE timer_id = ? AND slot = ?').get(timerId, slot);
+        } catch (error) {
+            this.api.log(`Error getting threshold frame: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    getThresholdFrames(timerId) {
+        try {
+            return this.db.prepare('SELECT * FROM advanced_timer_threshold_frames WHERE timer_id = ? ORDER BY slot ASC').all(timerId);
+        } catch (error) {
+            this.api.log(`Error getting threshold frames: ${error.message}`, 'error');
+            return [];
+        }
+    }
+
+    /** Bulk load all rotator + threshold settings — used at init() for the in-memory cache */
+    loadAllRotatorSettings() {
+        try {
+            return this.db.prepare('SELECT * FROM advanced_timer_rotator_settings').all().map(r => this._normalizeRotator(r));
+        } catch (error) {
+            this.api.log(`Error loading rotator settings: ${error.message}`, 'error');
+            return [];
+        }
+    }
+
+    loadAllThresholdSettings() {
+        try {
+            const list = this.db.prepare('SELECT * FROM advanced_timer_threshold_effects').all().map(r => this._normalizeThreshold(r));
+            // Attach frames
+            const allFrames = this.db.prepare('SELECT * FROM advanced_timer_threshold_frames').all();
+            const framesByTimer = new Map();
+            for (const f of allFrames) {
+                if (!framesByTimer.has(f.timer_id)) framesByTimer.set(f.timer_id, []);
+                framesByTimer.get(f.timer_id).push(f);
+            }
+            return list.map(s => ({ ...s, uploaded_frames: framesByTimer.get(s.timer_id) || [] }));
+        } catch (error) {
+            this.api.log(`Error loading threshold settings: ${error.message}`, 'error');
+            return [];
         }
     }
 }

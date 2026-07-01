@@ -106,8 +106,8 @@ let config = {
 
     // Herzballons
     heart_balloons_enabled: true,
-    heart_balloon_like_divisor: 2,
-    heart_balloon_min_hearts: 1,
+    heart_balloon_like_divisor: 1,
+    heart_balloon_min_hearts: 5,
     heart_balloon_max_hearts: 16,
     heart_balloon_profile_every: 5,
     heart_balloon_pop_y: 0.5,
@@ -230,6 +230,8 @@ function overlayAllowsEventCategory(category) {
 // FPS tracking
 let lastUpdateTime = performance.now();
 let frameCount = 0;
+let cleanupFrameCounter = 0;  // Periodic cleanup counter (every 60 frames)
+const CLEANUP_INTERVAL = 60;  // Clean up removed emojis every 60 frames
 let currentFPS = 60;
 let fpsUpdateTime = performance.now();
 let fpsHistory = [];
@@ -1231,8 +1233,16 @@ function spawnGiftBall(data) {
 
     const minSize = Math.max(12, parseInt(config.gift_ball_min_size_px || 44, 10));
     const maxSize = Math.max(minSize, parseInt(config.gift_ball_max_size_px || 128, 10));
+    const tierThresholdsEnabled = config.gift_ball_tier_thresholds_enabled === true;
     const requestedSize = parseFloat(data.size || minSize);
-    const size = clamp(Number.isFinite(requestedSize) ? requestedSize : minSize, minSize, maxSize);
+    const safeRequested = Number.isFinite(requestedSize) ? requestedSize : minSize;
+    // When tier thresholds are enabled, the server already chose the exact size
+    // for the matching price band — honour it instead of clamping it back down
+    // to the legacy min/max range. We still enforce a hard floor of 12 px to
+    // avoid 0/negative physics radii.
+    const size = tierThresholdsEnabled
+        ? Math.max(12, safeRequested)
+        : clamp(safeRequested, minSize, maxSize);
     const x = normalizeCanvasX(typeof data.x === 'number' ? data.x : Math.random(), size);
     const y = normalizeCanvasY(typeof data.y === 'number' ? data.y : -size, size);
     const radius = size / 2;
@@ -1330,7 +1340,10 @@ function updateHeartBalloons(currentTime, deltaTime) {
         }
     });
 
-    heartBalloons = heartBalloons.filter(balloon => !balloon.removed);
+    // Periodic cleanup: only filter every CLEANUP_INTERVAL frames to avoid per-frame array allocations
+    if (cleanupFrameCounter % CLEANUP_INTERVAL === 0) {
+        heartBalloons = heartBalloons.filter(balloon => !balloon.removed);
+    }
 
     while (heartBalloons.length > config.max_emojis_on_screen) {
         removeHeartBalloon(heartBalloons[0]);
@@ -1546,8 +1559,11 @@ function updateLoop(currentTime) {
 
     updateHeartBalloons(currentTime, deltaTime);
 
-    // Remove faded emojis
-    emojis = emojis.filter(emoji => !emoji.removed);
+    // Periodic cleanup: only filter every CLEANUP_INTERVAL frames to avoid per-frame array allocations
+    cleanupFrameCounter++;
+    if (cleanupFrameCounter % CLEANUP_INTERVAL === 0) {
+        emojis = emojis.filter(emoji => !emoji.removed);
+    }
 
     // Limit max emojis
     while (emojis.length > config.max_emojis_on_screen) {

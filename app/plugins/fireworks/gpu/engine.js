@@ -259,7 +259,9 @@ class Particle {
             hasBurst: false,       // Already triggered burst
             willSpiral: false,     // Will create spiral burst (for spiral shape)
             spiralDelay: 0,        // Delay before spiral burst
-            hasSpiraled: false     // Already triggered spiral
+            hasSpiraled: false,    // Already triggered spiral
+            // Texture Atlas: 0=circle(procedural), 1=heart, 2=paw, 3+=atlas slot
+            textureIndex: 0
         };
         
         Object.assign(this, defaults, args);
@@ -413,7 +415,9 @@ class Particle {
                 hasBurst: false,
                 willSpiral: false,
                 spiralDelay: 0,
-                hasSpiraled: false
+                hasSpiraled: false,
+                // Texture Atlas: 0=circle(procedural), 1=heart, 2=paw, 3+=atlas slot
+                textureIndex: 0
             };
             Object.assign(this, defaults, args);
             this.maxLifespan = this.lifespan;
@@ -487,7 +491,8 @@ class Firework {
             combo: 1,
             skipRocket: false, // Skip rocket animation for high combos
             instantExplode: false, // Explode immediately without delay
-            engineFps: 60 // Current engine FPS for performance-based decisions
+            engineFps: 60, // Current engine FPS for performance-based decisions
+            giftTextureIndex: 0 // Texture Atlas slot for gift/avatar image
         };
         
         Object.assign(this, defaults, args);
@@ -700,6 +705,11 @@ class Firework {
                 isSparkle: isSparkle,
                 type: particleType,
                 image: particleImage,
+                // Texture Atlas index: 0=circle, 1=heart, 2=paw, 3+=gift/avatar
+                textureIndex: particleType === 'heart' ? 1 :
+                             particleType === 'paw' ? 2 :
+                             (particleType === 'image' && particleImage) ? (this.giftTextureIndex || 3) :
+                             0,
                 mass: isSparkle ? 0.5 : 1,
                 drag: isSparkle ? 0.97 : 0.98,
                 gravity: isSparkle ? CONFIG.gravity * 0.8 : CONFIG.gravity,
@@ -725,6 +735,11 @@ class Firework {
                 isSparkle: isSparkle,
                 type: particleType,
                 image: particleImage,
+                // Texture Atlas index: 0=circle, 1=heart, 2=paw, 3+=gift/avatar
+                textureIndex: particleType === 'heart' ? 1 :
+                             particleType === 'paw' ? 2 :
+                             (particleType === 'image' && particleImage) ? (this.giftTextureIndex || 3) :
+                             0,
                 mass: isSparkle ? 0.5 : 1,
                 drag: isSparkle ? 0.97 : 0.98,
                 gravity: isSparkle ? CONFIG.gravity * 0.8 : CONFIG.gravity,
@@ -2111,8 +2126,34 @@ class FireworksEngine {
         // Load images if provided
         let giftImg = null;
         let avatarImg = null;
-        if (giftImage) giftImg = await this.loadImage(giftImage);
-        if (userAvatar) avatarImg = await this.loadImage(userAvatar);
+        let giftTextureIndex = 0;
+        if (giftImage) {
+            giftImg = await this.loadImage(giftImage);
+            // Upload gift image to texture atlas if WebGL is active
+            if (giftImg && this.useWebGL && this.webglEngine) {
+                const key = 'gift:' + giftImage;
+                const slot = this.webglEngine.allocateSlot(key);
+                if (slot >= 0) {
+                    this.webglEngine.uploadImageToSlot(slot, giftImg);
+                    giftTextureIndex = slot;
+                }
+            }
+        }
+        if (userAvatar) {
+            avatarImg = await this.loadImage(userAvatar);
+            // Upload avatar image to texture atlas if WebGL is active
+            if (avatarImg && this.useWebGL && this.webglEngine) {
+                const key = 'avatar:' + userAvatar;
+                const slot = this.webglEngine.allocateSlot(key);
+                if (slot >= 0) {
+                    this.webglEngine.uploadImageToSlot(slot, avatarImg);
+                    // Use avatar texture index if no gift image
+                    if (!giftTextureIndex) {
+                        giftTextureIndex = slot;
+                    }
+                }
+            }
+        }
 
         // Create firework
         const firework = new Firework({
@@ -2130,7 +2171,8 @@ class FireworksEngine {
             combo: combo,
             skipRocket: skipRockets, // Pass flag to Firework class
             instantExplode: instantExplode, // Explode immediately without any delay
-            engineFps: this.fps // Pass current FPS for performance-based decisions
+            engineFps: this.fps, // Pass current FPS for performance-based decisions
+            giftTextureIndex: giftTextureIndex // Texture Atlas slot for gift/avatar
         });
         
         // Calculate expected rocket flight time for audio synchronization
@@ -2646,7 +2688,9 @@ class FireworksEngine {
     }
     
     /**
-     * Render using WebGL instanced rendering
+     * Render using WebGL instanced rendering with texture atlas.
+     * All particle types (circle, heart, paw, image) are rendered in a single
+     * instanced draw call via the texture atlas. No Canvas 2D overlay needed.
      */
     renderWebGL() {
         // Update particle data in WebGL engine
@@ -2654,23 +2698,6 @@ class FireworksEngine {
         
         // Render all particles in a single draw call
         this.webglEngine.render();
-        
-        // Render non-circle particles (images, hearts, paws) using Canvas 2D overlay
-        // These are not supported by WebGL renderer yet
-        const ctx = this.ctx;
-        for (const firework of this.fireworks) {
-            // Render rocket if it's an image
-            if (!firework.exploded && firework.rocket && firework.rocket.type !== 'circle') {
-                this.renderNonCircleParticle(firework.rocket);
-            }
-            
-            // Render non-circle particles
-            for (const p of firework.particles) {
-                if (p.type !== 'circle' && this.isParticleVisible(p)) {
-                    this.renderNonCircleParticle(p);
-                }
-            }
-        }
     }
     
     /**

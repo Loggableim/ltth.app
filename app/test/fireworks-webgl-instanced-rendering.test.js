@@ -27,7 +27,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
             expect(webglCode).toContain('powerPreference: \'high-performance\'');
         });
 
-        test('should have vertex shader for instanced rendering', () => {
+        test('should have vertex shader for instanced rendering with texture atlas', () => {
             expect(webglCode).toContain('#version 300 es');
             expect(webglCode).toContain('in vec2 a_position');
             expect(webglCode).toContain('in vec2 a_particlePos');
@@ -35,6 +35,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
             expect(webglCode).toContain('in float a_alpha');
             expect(webglCode).toContain('in vec3 a_hsb');
             expect(webglCode).toContain('in float a_rotation');
+            expect(webglCode).toContain('in float a_textureIndex');
         });
 
         test('should have fragment shader with HSB to RGB conversion', () => {
@@ -65,8 +66,8 @@ describe('Fireworks WebGL Instanced Rendering', () => {
             expect(webglCode).toContain('destroy()');
         });
 
-        test('should store 8 floats per particle', () => {
-            expect(webglCode).toContain('8 floats per particle');
+        test('should store 9 floats per particle (textureIndex added)', () => {
+            expect(webglCode).toContain('9 floats per particle');
         });
     });
 

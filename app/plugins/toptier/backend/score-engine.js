@@ -25,6 +25,18 @@ class ScoreEngine {
   }
 
   /**
+   * Reset all in-memory state for a new session.
+   * Prevents stale rank/leader data from leaking between streams.
+   */
+  reset() {
+    this.previousLikesRanks.clear();
+    this.previousGiftsRanks.clear();
+    this.previousLikesLeader = null;
+    this.previousGiftsLeader = null;
+    this._lastEmitTs = { likes: 0, gifts: 0 };
+  }
+
+  /**
    * Get current plugin configuration or defaults.
    * @returns {object} Configuration object
    */

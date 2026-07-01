@@ -39,6 +39,7 @@
     }
     .status.idle { background: #3a3a4e; color: #999; }
     .status.listening { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+    .status.silence { background: rgba(255, 193, 7, 0.15); color: #FFC107; }
     .status.error { background: rgba(244, 67, 54, 0.2); color: #f44336; }
     .indicator {
       width: 14px; height: 14px;
@@ -47,10 +48,43 @@
       flex-shrink: 0;
     }
     .indicator.active { background: #4CAF50; animation: pulse 1.5s infinite; }
+    .indicator.silence { background: #FFC107; }
     .indicator.error { background: #f44336; }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
+    }
+    /* Live meter */
+    .meter-wrap {
+      margin-top: -10px;
+      margin-bottom: 16px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .meter {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4CAF50, #FFC107, #f44336);
+      transition: width 80ms linear;
+    }
+    .meter-threshold {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      width: 2px;
+      background: rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .meter-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      text-transform: uppercase;
     }
     .controls { display: flex; gap: 10px; margin-bottom: 20px; }
     .btn {
@@ -82,6 +116,34 @@
     .log-box div { margin-bottom: 2px; }
     .log-box .err { color: #f44336; }
     .log-box .warn { color: #FFC107; }
+    .log-box .silence { color: #888; font-style: italic; }
+    .log-box .transcript { color: #64B5F6; }
+    /* Stats card */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat {
+      background: #3a3a4e;
+      padding: 10px 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: #4CAF50;
+      line-height: 1.1;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .stat.savings .stat-value { color: #FFC107; }
     .info-box {
       background: rgba(100, 181, 246, 0.1);
       border-left: 3px solid #64B5F6;
@@ -92,16 +154,44 @@
       border-radius: 4px;
     }
     .info-box strong { color: #64B5F6; }
+    .info-box .accent-green { color: #4CAF50; }
+    .info-box .accent-yellow { color: #FFC107; }
   </style>
 </head>
 <body>
   <h1>🎤 STT Ticker — Audio Capture</h1>
-  <p class="subtitle">Dieses Fenster läuft eigenständig im Browser</p>
+  <p class="subtitle">Client-seitige Stille-Erkennung spart Fish.audio Tokens</p>
 
   <div class="container">
     <div id="status" class="status idle">
       <span class="indicator"></span>
       <span id="status-text">Bereit zum Start</span>
+    </div>
+
+    <!-- Live-Meter -->
+    <div class="meter-row">
+      <span>Live-Pegel (RMS)</span>
+      <span id="meter-value">0.000</span>
+    </div>
+    <div class="meter-wrap">
+      <div class="meter" id="meter"></div>
+      <div class="meter-threshold" id="meter-threshold" style="left: 30%"></div>
+    </div>
+
+    <!-- Token-Spar-Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="stat-sent">0</div>
+        <div class="stat-label">An Fish gesendet</div>
+      </div>
+      <div class="stat savings">
+        <div class="stat-value" id="stat-skipped">0</div>
+        <div class="stat-label">Stille übersprungen</div>
+      </div>
+      <div class="stat savings">
+        <div class="stat-value" id="stat-savings-pct">0%</div>
+        <div class="stat-label">Tokens gespart</div>
+      </div>
     </div>
 
     <div class="controls">
@@ -121,8 +211,8 @@
       <strong>So funktioniert's:</strong><br>
       1. Klicke auf <strong>▶ Capture starten</strong><br>
       2. Browser fragt nach Mikrofon-Erlaubnis<br>
-      3. Audio wird alle 5s an Fish.audio gesendet<br>
-      4. Transkripte erscheinen im OBS-Overlay<br>
+      3. <strong class="accent-yellow">Stille-Chunks werden gar nicht erst hochgeladen</strong> (VAD)<br>
+      4. Nur Audio mit erkannter Sprache geht an Fish.audio<br>
       <br>
       <strong>Dieses Fenster kann minimiert werden</strong> — Capture läuft im Hintergrund weiter.
     </div>
@@ -143,12 +233,30 @@
     let captureInterval = null;
     let sendingWav = false;
 
+    // VAD-Config (vom Server geladen)
+    let vad = {
+      enabled: true,
+      rmsThreshold: 0.012,
+      minSpeechRatio: 0.04,
+      minChunkMs: 600,
+      sustainedSilenceMs: 1500
+    };
+
+    // Stats
+    let stats = { sent: 0, skipped: 0 };
+
+    // Sustained-silence tracking für Status
+    let lastSpeechAt = 0;
+
     const statusEl = document.getElementById('status');
     const statusTextEl = document.getElementById('status-text');
     const indicatorEl = statusEl.querySelector('.indicator');
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
     const logEl = document.getElementById('log');
+    const meterEl = document.getElementById('meter');
+    const meterValueEl = document.getElementById('meter-value');
+    const meterThresholdEl = document.getElementById('meter-threshold');
 
     function log(msg, type = '') {
       const t = new Date().toLocaleTimeString();
@@ -159,7 +267,68 @@
     function setStatus(text, state) {
       statusTextEl.textContent = text;
       statusEl.className = 'status ' + (state || 'idle');
-      indicatorEl.className = 'indicator ' + (state === 'listening' ? 'active' : (state === 'error' ? 'error' : ''));
+      indicatorEl.className = 'indicator ' + (
+        state === 'listening' ? 'active' :
+        state === 'silence' ? 'silence' :
+        state === 'error' ? 'error' : '');
+    }
+
+    function updateStats() {
+      document.getElementById('stat-sent').textContent = stats.sent;
+      document.getElementById('stat-skipped').textContent = stats.skipped;
+      const total = stats.sent + stats.skipped;
+      const pct = total > 0 ? Math.round((stats.skipped / total) * 100) : 0;
+      document.getElementById('stat-savings-pct').textContent = pct + '%';
+    }
+
+    async function loadVadSettings() {
+      try {
+        const res = await fetch(API + '/api/stt-ticker/vad/settings');
+        const data = await res.json();
+        if (data.success && data.vad) {
+          vad = Object.assign(vad, data.vad);
+          // Schwelle visuell anzeigen (Threshold linear auf 0..1 mappen, *30 für sichtbar)
+          const thresholdPct = Math.min(95, Math.max(5, (vad.rmsThreshold || 0.012) * 1000));
+          meterThresholdEl.style.left = thresholdPct + '%';
+          log(`⚙ VAD geladen: threshold=${vad.rmsThreshold}, minRatio=${vad.minSpeechRatio}`);
+        }
+      } catch (e) {
+        log('⚠ Konnte VAD-Settings nicht laden, nutze Defaults', 'warn');
+      }
+    }
+
+    /**
+     * Voice Activity Detection: analysiert PCM-Samples auf Sprachaktivität.
+     *
+     * Returns:
+     *   { hasSpeech: bool, rms: number, speechRatio: number, chunkMs: number }
+     */
+    function detectVoiceActivity(samples) {
+      if (!samples || samples.length === 0) return { hasSpeech: false, rms: 0, speechRatio: 0, chunkMs: 0 };
+
+      const chunkMs = Math.round((samples.length / SAMPLE_RATE) * 1000);
+
+      // 1. Globale RMS
+      let sumSq = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const v = samples[i];
+        sumSq += v * v;
+      }
+      const rms = Math.sqrt(sumSq / samples.length);
+
+      // 2. Speech ratio: Anteil der Samples mit Abs-Amplitude über halber Threshold
+      const halfThreshold = (vad.rmsThreshold || 0.012) * 0.5;
+      let loudCount = 0;
+      for (let i = 0; i < samples.length; i++) {
+        if (Math.abs(samples[i]) > halfThreshold) loudCount++;
+      }
+      const speechRatio = loudCount / samples.length;
+
+      const hasSpeech =
+        rms >= (vad.rmsThreshold || 0.012) &&
+        speechRatio >= (vad.minSpeechRatio || 0.04);
+
+      return { hasSpeech, rms, speechRatio, chunkMs };
     }
 
     async function startCapture() {
@@ -194,6 +363,17 @@
           for (let i = 0; i < input.length; i++) {
             audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
           }
+          // Live-Meter (immer an, auch wenn VAD aus)
+          if (audioBuffer.length >= 1024) {
+            const tail = audioBuffer.slice(-1024);
+            let s = 0;
+            for (let i = 0; i < tail.length; i++) s += tail[i] * tail[i];
+            const tailRms = Math.sqrt(s / tail.length);
+            meterValueEl.textContent = tailRms.toFixed(4);
+            // Meter-Anzeige: RMS logarithmisch auf 0..1 mappen
+            const meterPct = Math.min(100, Math.max(0, (Math.log10(1 + tailRms * 50) + 1) * 50));
+            meterEl.style.width = meterPct + '%';
+          }
           if (audioBuffer.length >= CHUNK_SAMPLES) {
             sendWavChunk();
           }
@@ -204,10 +384,11 @@
         }, CHUNK_DURATION_MS + 1000);
 
         isCapturing = true;
-        setStatus('🎤 Höre zu — Transkribiere', 'listening');
+        lastSpeechAt = Date.now();
+        setStatus('🎤 Höre zu…', 'listening');
         btnStart.disabled = true;
         btnStop.disabled = false;
-        log(`✅ Capture aktiv — sende alle ${CHUNK_DURATION_MS / 1000}s`);
+        log(`✅ Capture aktiv — sende alle ${CHUNK_DURATION_MS / 1000}s, VAD ${vad.enabled ? 'AN' : 'AUS'}`);
 
       } catch (error) {
         log(`❌ Mikrofon-Zugriff fehlgeschlagen: ${error.message}`, 'err');
@@ -229,13 +410,48 @@
       btnStart.disabled = false;
       btnStop.disabled = true;
       log('■ Capture gestoppt');
+      updateStats();
     }
 
+    /**
+     * Analysiert den Chunk per VAD. Wenn VAD sagt "Silence" → lokal verwerfen.
+     * Wenn VAD sagt "Speech" → an Fish.audio senden.
+     */
     function sendWavChunk() {
       if (audioBuffer.length < 1600 || sendingWav) return;
       sendingWav = true;
+
       const samples = audioBuffer.splice(0);
+      const vadResult = detectVoiceActivity(samples);
+
+      if (vad.enabled && !vadResult.hasSpeech) {
+        // Stille → nicht hochladen, Token sparen
+        stats.skipped++;
+        updateStats();
+        log(`⏸ Stille übersprungen (chunk=${vadResult.chunkMs}ms, RMS=${vadResult.rms.toFixed(4)}, ratio=${(vadResult.speechRatio * 100).toFixed(1)}%)`, 'silence');
+        // Sustained-Silence-Status nach X ms anzeigen
+        if (Date.now() - lastSpeechAt > (vad.sustainedSilenceMs || 1500)) {
+          setStatus('🤫 Stille — keine Tokens verbrannt', 'silence');
+        }
+        sendingWav = false;
+        return;
+      }
+
+      // Mindest-Chunk-Länge: zu kurze Audio-Stücke (z. B. Knacken) verwerfen
+      if (vad.enabled && vadResult.chunkMs < (vad.minChunkMs || 600)) {
+        stats.skipped++;
+        updateStats();
+        log(`⏸ Zu kurz übersprungen (${vadResult.chunkMs}ms)`, 'silence');
+        sendingWav = false;
+        return;
+      }
+
+      lastSpeechAt = Date.now();
       const wavBlob = encodeWav(samples, SAMPLE_RATE);
+      stats.sent++;
+      updateStats();
+      setStatus('🎤 Höre zu — Transkribiere', 'listening');
+      log(`📤 Sende ${vadResult.chunkMs}ms (RMS=${vadResult.rms.toFixed(4)}, ratio=${(vadResult.speechRatio * 100).toFixed(1)}%)`);
       sendAudioToServer(wavBlob).finally(() => { sendingWav = false; });
     }
 
@@ -282,8 +498,10 @@
         });
         const data = await response.json();
         if (data.success && data.transcript) {
-          const txt = (data.transcript.text || '').slice(0, 60);
-          log(`✅ "${txt}${txt.length >= 60 ? '...' : ''}"`);
+          const tr = data.transcript;
+          const txt = (tr.text || '').slice(0, 60);
+          const lang = tr.language ? ` [${tr.language}${tr.languageSource === 'heuristic' ? '~' : ''}]` : '';
+          log(`✅ "${txt}${txt.length >= 60 ? '...' : ''}"${lang}`, 'transcript');
         } else {
           log(`❌ ${data.message || 'Unknown error'}`, 'err');
         }
@@ -302,7 +520,11 @@
       }
     });
 
-    log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
+    // Init
+    loadVadSettings().then(() => {
+      log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
+    });
+    updateStats();
 
     // Event-Listener (CSP-kompatibel — keine inline onclick)
     btnStart.addEventListener('click', startCapture);

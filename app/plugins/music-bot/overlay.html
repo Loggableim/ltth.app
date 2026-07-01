@@ -124,6 +124,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    #widget-compact .title.scrolling {
+      text-overflow: clip;
+      animation: title-marquee 12s linear infinite;
+    }
+    #widget-compact .title.scrolling::after {
+      content: '   •   ' attr(data-title);
+    }
     #widget-compact .artist,
     #widget-compact .requester {
       margin: 0;
@@ -206,6 +213,13 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    #widget-fullwidth .title.scrolling {
+      text-overflow: clip;
+      animation: title-marquee 12s linear infinite;
+    }
+    #widget-fullwidth .title.scrolling::after {
+      content: '   •   ' attr(data-title);
     }
     #widget-fullwidth .artist {
       margin: 0;
@@ -311,6 +325,12 @@
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
+    @keyframes title-marquee {
+      0%   { transform: translateX(0); }
+      20%  { transform: translateX(0); }
+      80%  { transform: translateX(calc(-100% + var(--marquee-width, 200px))); }
+      100% { transform: translateX(calc(-100% + var(--marquee-width, 200px))); }
+    }
 
     /* ===== CARD design ===== */
     #widget-card {
@@ -361,6 +381,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+    }
+    #widget-card .title.scrolling {
+      text-overflow: clip;
+      animation: title-marquee 12s linear infinite;
+    }
+    #widget-card .title.scrolling::after {
+      content: '   •   ' attr(data-title);
     }
     #widget-card .artist {
       margin: 0;
@@ -807,14 +834,28 @@
         const percent = Math.min((votes / required) * 100, 100);
 
         fill.style.width = `${percent}%`;
-        label.textContent = `Vote Skip: ${votes}/${required}`;
+        label.textContent = data.skipped
+          ? `⏭ Song wird übersprungen!`
+          : `Vote Skip: ${votes}/${required}`;
 
-        if (votes > 0 && !data.skipped) {
+        if (data.skipped) {
           bar.classList.add('active');
           label.classList.add('active');
+          fill.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+          // Auto-hide after 3 seconds
+          setTimeout(() => {
+            bar.classList.remove('active');
+            label.classList.remove('active');
+            fill.style.background = '';
+          }, 3000);
+        } else if (votes > 0) {
+          bar.classList.add('active');
+          label.classList.add('active');
+          fill.style.background = '';
         } else {
           bar.classList.remove('active');
           label.classList.remove('active');
+          fill.style.background = '';
         }
       }
 
@@ -867,6 +908,10 @@
           Number.isFinite(positionSeconds) && positionSeconds >= 0
             ? Date.now() - positionSeconds * 1000
             : payload.startedAt || Date.now();
+
+        const isNewTrack = !currentTrack || currentTrack.title !== payload.title;
+        const prevState = state;
+
         currentTrack = {
           title: payload.title || 'Unbekannter Titel',
           artist: payload.artist || '',
@@ -889,13 +934,41 @@
           if (idleHideTimer) { clearTimeout(idleHideTimer); idleHideTimer = null; }
         }
 
-        // Reset vote-skip bar when a new track starts
-        const voteBar = document.getElementById('vote-skip-bar');
-        const voteLabel = document.getElementById('vote-skip-label');
-        if (voteBar) voteBar.classList.remove('active');
-        if (voteLabel) voteLabel.classList.remove('active');
+        // Only reset vote-skip bar and re-render on new tracks, not on sync updates
+        if (isNewTrack) {
+          // Don't clear the vote-skip bar if it's showing a "skipped" state
+          const voteFill = document.getElementById('vote-skip-fill');
+          const isSkippedState = voteFill && voteFill.style.background.includes('10b981');
+          if (!isSkippedState) {
+            const voteBar = document.getElementById('vote-skip-bar');
+            const voteLabel = document.getElementById('vote-skip-label');
+            if (voteBar) voteBar.classList.remove('active');
+            if (voteLabel) voteLabel.classList.remove('active');
+          }
+          renderTrack();
+        } else {
+          // Sync update: refresh position/duration from server for accuracy
+          if (Number.isFinite(positionSeconds) && positionSeconds >= 0) {
+            currentTrack.startedAt = baseStarted;
+          }
+          if (duration > 0) {
+            currentTrack.duration = duration;
+          }
+          if (prevState !== state) {
+            // State changed (pause/resume) — update progress without full re-render
+            if (state === 'paused') {
+              pausedProgress = computeElapsed();
+              updateProgress(true);
+            } else if (state === 'playing' && currentTrack) {
+              if (pausedProgress && currentTrack.duration) {
+                currentTrack.startedAt = Date.now() - pausedProgress * 1000;
+              }
+              startProgressLoop();
+              pausedProgress = 0;
+            }
+          }
+        }
 
-        renderTrack();
         setVisualizerActive(state === 'playing');
       }
 
@@ -905,6 +978,7 @@
         if (design === 'compact' || design === 'fullwidth' || design === 'card') {
           r.widget.classList.add('visible');
           r.title.textContent = currentTrack.title;
+          r.title.setAttribute('data-title', currentTrack.title);
           if (r.artist) r.artist.textContent = currentTrack.artist || ' ';
           if (r.requester) {
             r.requester.textContent = currentTrack.requestedBy
@@ -925,6 +999,19 @@
               r.avatar.removeAttribute('src');
             }
           }
+          // Enable title marquee if text overflows
+          requestAnimationFrame(() => {
+            const titleEl = r.title;
+            if (!titleEl) return;
+            const parentWidth = titleEl.parentElement?.clientWidth || titleEl.clientWidth;
+            const textWidth = titleEl.scrollWidth;
+            if (textWidth > parentWidth) {
+              titleEl.style.setProperty('--marquee-width', `${parentWidth}px`);
+              titleEl.classList.add('scrolling');
+            } else {
+              titleEl.classList.remove('scrolling');
+            }
+          });
           renderQueueExtras();
           startProgressLoop();
         } else if (design === 'minimal') {
@@ -1005,6 +1092,10 @@
         currentTrack = null;
         document.body.classList.remove('overlay-paused');
         if (r.widget) r.widget.classList.remove('visible');
+        if (r.title) {
+          r.title.classList.remove('scrolling');
+          r.title.removeAttribute('data-title');
+        }
         stopProgressLoop();
         if (r.barFill) r.barFill.style.width = '0%';
         if (r.time) r.time.textContent = '--:-- / --:--';

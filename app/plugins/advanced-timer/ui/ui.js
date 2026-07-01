@@ -257,6 +257,93 @@ function buildTimerCard(t) {
             '<button class="btn btn-sm btn-primary" id="go-add-btn-' + t.id + '">➕ Add</button>' +
           '</div>' +
         '</div>' +
+        // Rotator section
+        '<button class="section-toggle" data-sec="rotator">🎡 Rotator (Delta Slider) <span class="chevron">▼</span></button>' +
+        '<div class="section-body" data-sec-body="rotator">' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.</p>' +
+          '<div class="rotator-grid" id="rotator-form-' + t.id + '">' +
+            '<label class="rotator-row"><span>Enable Rotator</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-rot="enabled" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Position</span>' +
+              '<select class="field-input" data-rot="position" style="width:140px;">' +
+                '<option value="top">Top</option>' +
+                '<option value="bottom">Bottom</option>' +
+                '<option value="left">Left</option>' +
+                '<option value="right">Right</option>' +
+              '</select></label>' +
+            '<label class="rotator-row"><span>Slots</span>' +
+              '<input class="field-input" type="number" data-rot="slot_count" min="1" max="8" value="1" style="width:80px;"></label>' +
+            '<label class="rotator-row"><span>Rotation (ms)</span>' +
+              '<input class="field-input" type="number" data-rot="rotation_interval_ms" min="800" max="30000" value="4500" style="width:90px;"></label>' +
+            '<label class="rotator-row"><span>Min seconds to show</span>' +
+              '<input class="field-input" type="number" data-rot="min_seconds_to_show" min="0" step="0.1" value="0" style="width:80px;"></label>' +
+            '<label class="rotator-row"><span>Show gift image</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-rot="show_gift_images" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Show gift name</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-rot="show_gift_names" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Show time delta</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-rot="show_time_delta" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Show source emoji</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-rot="show_source_emoji" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Font scale</span>' +
+              '<input class="field-input" type="number" data-rot="font_scale" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
+            '<label class="rotator-row"><span>Fade alpha</span>' +
+              '<input class="field-input" type="number" data-rot="fade_alpha" min="0.3" max="1.0" step="0.05" value="0.92" style="width:80px;"></label>' +
+          '</div>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:10px 0 4px;">Sources shown:</p>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;" id="rotator-sources-' + t.id + '">' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="like" checked> 👍 Like</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="coin" checked> 🪙 Coin/Gift</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="override" checked> 🎯 Custom Gift</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="follow" checked> ⭐ Follow</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="subscribe" checked> 🌟 Sub (Superfan)</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="share" checked> 🔄 Share</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="chat" checked> 💬 Chat</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="manual" checked> ✋ Manual</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="flow" checked> 🔗 Flow</label>' +
+            '<label class="source-chip"><input type="checkbox" data-rot-src="rule" checked> 🧠 Rule</label>' +
+          '</div>' +
+          '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;">' +
+            '<button class="btn btn-sm btn-primary save-rotator-btn" data-timer-id="' + t.id + '">💾 Save Rotator</button>' +
+            '<span class="save-indicator" id="rot-si-' + t.id + '">✓ Saved</span>' +
+          '</div>' +
+        '</div>' +
+        // Threshold Effects section
+        '<button class="section-toggle" data-sec="threshold">🔥 Big-Delta Effects <span class="chevron">▼</span></button>' +
+        '<div class="section-body" data-sec-body="threshold">' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin-bottom:10px;">When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.</p>' +
+          '<div class="rotator-grid" id="threshold-form-' + t.id + '">' +
+            '<label class="rotator-row"><span>Enable Effects</span>' +
+              '<label class="toggle-switch"><input type="checkbox" data-thr="enabled" checked><span class="toggle-slider"></span></label></label>' +
+            '<label class="rotator-row"><span>Threshold (seconds)</span>' +
+              '<input class="field-input" type="number" data-thr="threshold_seconds" min="0.1" step="1" value="60" style="width:90px;"></label>' +
+            '<label class="rotator-row"><span>Direction</span>' +
+              '<select class="field-input" data-thr="direction" style="width:120px;">' +
+                '<option value="both">Both (+/-)</option>' +
+                '<option value="positive">Positive only</option>' +
+                '<option value="negative">Negative only</option>' +
+              '</select></label>' +
+            '<label class="rotator-row"><span>Effect duration (ms)</span>' +
+              '<input class="field-input" type="number" data-thr="duration_ms" min="200" max="10000" step="100" value="1500" style="width:90px;"></label>' +
+            '<label class="rotator-row"><span>Built-in animation</span>' +
+              '<select class="field-input" data-thr="builtin_animation" style="width:160px;">' +
+                '<option value="flame">🔥 Flame</option>' +
+                '<option value="lightning">⚡ Lightning</option>' +
+                '<option value="sparks">✨ Sparks</option>' +
+                '<option value="pulse-glow">💚 Pulse Glow</option>' +
+                '<option value="rainbow-shake">🌈 Rainbow Shake</option>' +
+                '<option value="gold-flux">🥇 Gold Flux</option>' +
+              '</select></label>' +
+            '<label class="rotator-row"><span>Intensity (0.5..2.0)</span>' +
+              '<input class="field-input" type="number" data-thr="intensity" min="0.5" max="2.0" step="0.05" value="1.0" style="width:80px;"></label>' +
+          '</div>' +
+          '<p style="font-size:0.78rem;color:var(--color-text-secondary);margin:12px 0 4px;">Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG — shown round-robin):</p>' +
+          '<div id="threshold-frames-' + t.id + '" class="frame-slot-grid"></div>' +
+          '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+            '<button class="btn btn-sm btn-primary save-threshold-btn" data-timer-id="' + t.id + '">💾 Save Settings</button>' +
+            '<span class="save-indicator" id="thr-si-' + t.id + '">✓ Saved</span>' +
+          '</div>' +
+        '</div>' +
         // Delete
         '<div style="margin-top:12px;border-top:1px solid var(--color-border);padding-top:12px;display:flex;justify-content:flex-end;">' +
           '<button class="btn btn-sm btn-danger delete-timer-btn">🗑️ Delete Timer</button>' +
@@ -351,6 +438,26 @@ function buildTimerCard(t) {
 
     // Gift override: add button
     card.querySelector('#go-add-btn-' + tid)?.addEventListener('click', () => addGiftOverride(tid));
+
+    // Rotator: load settings on first open
+    let rotLoaded = false;
+    card.querySelector('[data-sec="rotator"]')?.addEventListener('click', () => {
+        if (!rotLoaded) {
+            rotLoaded = true;
+            loadRotatorSettings(tid, card);
+        }
+    });
+    card.querySelector('.save-rotator-btn[data-timer-id="' + tid + '"]')?.addEventListener('click', () => saveRotatorSettings(tid, card));
+
+    // Threshold Effects: load settings on first open
+    let thrLoaded = false;
+    card.querySelector('[data-sec="threshold"]')?.addEventListener('click', () => {
+        if (!thrLoaded) {
+            thrLoaded = true;
+            loadThresholdSettings(tid, card);
+        }
+    });
+    card.querySelector('.save-threshold-btn[data-timer-id="' + tid + '"]')?.addEventListener('click', () => saveThresholdSettings(tid, card));
 
     // Delete
     card.querySelector('.delete-timer-btn')?.addEventListener('click', () => deleteTimer(tid));
@@ -871,4 +978,205 @@ async function deleteGiftOverride(overrideId, timerId) {
         const data = await res.json();
         if (data.success) loadGiftOverrides(timerId);
     } catch (e) { console.error('deleteGiftOverride', e); }
+}
+
+// ---------------------------------------------------------------------------
+// Rotator + Threshold Effects
+// ---------------------------------------------------------------------------
+
+async function loadRotatorSettings(timerId, card) {
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/rotator');
+        const data = await res.json();
+        if (!data.success || !data.settings) return;
+        const s = data.settings;
+        // Populate the form fields
+        card.querySelectorAll('[data-rot]').forEach(input => {
+            const key = input.getAttribute('data-rot');
+            if (input.type === 'checkbox') {
+                input.checked = !!s[key];
+            } else if (s[key] != null) {
+                input.value = s[key];
+            }
+        });
+        // Sources checkboxes
+        const sources = (s.include_sources || '').split(',').map(x => x.trim()).filter(Boolean);
+        card.querySelectorAll('[data-rot-src]').forEach(cb => {
+            const src = cb.getAttribute('data-rot-src');
+            cb.checked = sources.includes(src);
+        });
+    } catch (e) { console.error('loadRotatorSettings', e); }
+}
+
+async function saveRotatorSettings(timerId, card) {
+    const payload = {};
+    card.querySelectorAll('[data-rot]').forEach(input => {
+        const key = input.getAttribute('data-rot');
+        if (input.type === 'checkbox') payload[key] = input.checked ? 1 : 0;
+        else if (input.type === 'number') payload[key] = parseFloat(input.value) || 0;
+        else payload[key] = input.value;
+    });
+    // Build include_sources array from checkboxes
+    const sources = [];
+    card.querySelectorAll('[data-rot-src]').forEach(cb => {
+        if (cb.checked) sources.push(cb.getAttribute('data-rot-src'));
+    });
+    payload.include_sources = sources.join(',');
+
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/rotator', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            const ind = document.getElementById('rot-si-' + timerId);
+            if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
+        } else {
+            alert(data.error || 'Failed to save rotator settings');
+        }
+    } catch (e) { console.error('saveRotatorSettings', e); }
+}
+
+async function loadThresholdSettings(timerId, card) {
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/threshold-effects');
+        const data = await res.json();
+        if (!data.success || !data.settings) return;
+        const s = data.settings;
+        card.querySelectorAll('[data-thr]').forEach(input => {
+            const key = input.getAttribute('data-thr');
+            if (input.type === 'checkbox') {
+                input.checked = !!s[key];
+            } else if (input.type === 'number') {
+                input.value = s[key] != null ? s[key] : '';
+            } else if (s[key] != null) {
+                input.value = s[key];
+            }
+        });
+        renderFrameSlots(timerId, s.uploaded_frames || []);
+    } catch (e) { console.error('loadThresholdSettings', e); }
+}
+
+async function saveThresholdSettings(timerId, card) {
+    const payload = {};
+    card.querySelectorAll('[data-thr]').forEach(input => {
+        const key = input.getAttribute('data-thr');
+        if (input.type === 'checkbox') payload[key] = input.checked ? 1 : 0;
+        else if (input.type === 'number') payload[key] = parseFloat(input.value) || 0;
+        else payload[key] = input.value;
+    });
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/threshold-effects', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            const ind = document.getElementById('thr-si-' + timerId);
+            if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
+        } else {
+            alert(data.error || 'Failed to save threshold settings');
+        }
+    } catch (e) { console.error('saveThresholdSettings', e); }
+}
+
+function renderFrameSlots(timerId, frames) {
+    const container = document.getElementById('threshold-frames-' + timerId);
+    if (!container) return;
+    const frameMap = new Map();
+    for (const f of frames) frameMap.set(f.slot, f);
+
+    const html = [];
+    for (let slot = 1; slot <= 6; slot++) {
+        const f = frameMap.get(slot);
+        html.push(
+            '<div class="frame-slot-card">' +
+                '<div class="frame-slot-header">Slot ' + slot + '</div>' +
+                (f
+                    ? '<div class="frame-slot-preview"><img src="' + escapeHtml(f.url) + '" alt="frame"></div>' +
+                      '<div class="frame-slot-name">' + escapeHtml(f.label || f.filename || 'frame') + '</div>' +
+                      '<button class="btn btn-xs btn-danger delete-frame-btn" data-frame-slot="' + slot + '">🗑️ Remove</button>'
+                    : '<div class="frame-slot-empty">No frame</div>') +
+                '<form class="frame-slot-upload" enctype="multipart/form-data">' +
+                  '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" data-frame-slot="' + slot + '">' +
+                  '<input type="text" placeholder="Label (optional)" data-frame-label="' + slot + '" style="margin-top:4px;">' +
+                  '<button type="button" class="btn btn-xs btn-primary upload-frame-btn" data-frame-slot="' + slot + '" style="margin-top:4px;">📤 Upload</button>' +
+                '</form>' +
+            '</div>'
+        );
+    }
+    container.innerHTML = html.join('');
+
+    // CSP-safe image error handler
+    container.querySelectorAll('img').forEach(img => {
+        img.addEventListener('error', () => { img.style.display = 'none'; });
+    });
+
+    // Attach handlers via delegation on the container
+    container.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.delete-frame-btn');
+        if (delBtn) {
+            const slot = parseInt(delBtn.getAttribute('data-frame-slot'), 10);
+            deleteFrame(timerId, slot);
+            return;
+        }
+        const upBtn = e.target.closest('.upload-frame-btn');
+        if (upBtn) {
+            const slot = parseInt(upBtn.getAttribute('data-frame-slot'), 10);
+            uploadFrame(timerId, slot, container);
+        }
+    });
+}
+
+async function uploadFrame(timerId, slot, container) {
+    const fileInput = container.querySelector('input[type="file"][data-frame-slot="' + slot + '"]');
+    const labelInput = container.querySelector('input[data-frame-label="' + slot + '"]');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert('Choose a file first.');
+        return;
+    }
+    const file = fileInput.files[0];
+    if (file.size > 8 * 1024 * 1024) {
+        alert('Frame must be under 8 MB.');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('frame', file);
+    if (labelInput && labelInput.value) fd.append('label', labelInput.value);
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/threshold-effects/frame/' + slot, {
+            method: 'POST',
+            body: fd
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Reload the threshold section
+            const card = container.closest('.timer-card');
+            if (card) loadThresholdSettings(timerId, card);
+        } else {
+            alert(data.error || 'Upload failed');
+        }
+    } catch (e) { console.error('uploadFrame', e); alert('Upload error'); }
+}
+
+async function deleteFrame(timerId, slot) {
+    if (!confirm('Remove frame in slot ' + slot + '?')) return;
+    try {
+        const res = await fetch('/api/advanced-timer/timers/' + timerId + '/threshold-effects/frame/' + slot, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+            const container = document.getElementById('threshold-frames-' + timerId);
+            if (container) {
+                const card = container.closest('.timer-card');
+                if (card) loadThresholdSettings(timerId, card);
+            }
+        } else {
+            alert(data.error || 'Delete failed');
+        }
+    } catch (e) { console.error('deleteFrame', e); }
 }

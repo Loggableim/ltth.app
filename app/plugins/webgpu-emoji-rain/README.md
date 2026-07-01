@@ -499,6 +499,83 @@ Set `merge: true` to merge with existing mappings, `false` to replace all.
 
 Im Debug-Modus werden detaillierte Logs geschrieben (rate-limited auf 100 logs/minute).
 
+## 🎁 Geschenk-Kugeln (Gift Ball System)
+
+### Übersicht
+Wenn ein Zuschauer ein Geschenk schickt, fällt zusätzlich zum Emoji-Regen eine
+bounceende Kugel mit dem **Bild des Geschenks aus dem Geschenkekatalog** vom
+oberen Rand herunter. Größe, Anzahl und Sichtbarkeitsdauer hängen vom
+Geschenkpreis und der Konfiguration ab.
+
+### Aktivierung
+Unter **Admin UI → 🎁 Geschenk-Kugeln → Geschenke als bounceende Kugeln anzeigen**
+den Haken setzen. Das Plugin verwendet dann automatisch das `image_url` aus dem
+Geschenkekatalog-Datensatz — wenn das Event keinen Bild-URL liefert, wird aus
+dem Katalog nachgeladen.
+
+### Standard-Skalierung (logarithmisch)
+```
+Größe = gift_ball_min_size_px + (gift_ball_max_size_px − min) × log10(price+1) / log10(reference+1)
+Größe = Größe × (1 + log10(seriesCount) × 0.12)   // gecappt auf ×1.35
+```
+
+### Preis-Stufen-System (Tier-basiert) — NEU
+Statt der logarithmischen Standard-Skalierung kann ein **6-stufiges Tier-System**
+aktiviert werden. Jede Stufe hat einen eigenen Preis-Bereich und eine eigene
+Pixel-Größe — teurere Geschenke werden automatisch riesig dargestellt.
+
+**Schwellen** (in Coins, inklusive Obergrenze):
+
+| Stufe | Preis-Bereich | Default-Größe | Beispiel-Geschenke |
+|-------|---------------|---------------|---------------------|
+| 1     | 1 – 30        | 44 px         | Rosen, kleine Herzen |
+| 2     | 31 – 100      | 80 px         | Standard-Gifts |
+| 3     | 101 – 500     | 150 px        | Mid-Tier Gifts |
+| 4     | 501 – 1000    | 300 px        | Premium Gifts |
+| 5     | 1001 – 5000   | 700 px        | Whale-Gifts |
+| 6     | > 5000        | 5000 px       | Mythische Top-Gifts |
+
+Die Stufen werden in der UI unter **Preis-Stufen aktivieren** freigeschaltet.
+Alle Pixel-Werte (12-5000) sind frei konfigurierbar, jede Stufe kann in der
+Admin-UI einzeln eingestellt werden.
+
+**Verhalten bei aktiven Tiers:**
+- Die Größe wird direkt aus der passenden Stufe übernommen (kein Clamp auf
+  `gift_ball_max_size_px` mehr).
+- Series-Skalierung (`× log10(seriesCount)` bis max 1.35) wird weiterhin
+  angewendet, damit Combo-Gifts (z.B. „100x Rose") etwas größer werden.
+- Despawn-Dauer und Anzahl-Drops bleiben von der Stufenwahl unberührt.
+
+**Beispiel-Spawn** für ein Universe-Geschenk (9999 Coins):
+```
+Stufe: 6 (>5000 Coins)
+Größe: 5000px  →  füllt den kompletten Overlay-Bereich
+Anzahl: 1 Ball
+Despawn: max. 20 Sekunden
+```
+
+### Konfigurations-Felder
+
+| Feld | Beschreibung | Default |
+|------|--------------|---------|
+| `gift_balls_enabled` | Gift-Balls aktivieren | `false` |
+| `gift_ball_min_size_px` | Min. Größe (Standard-Skalierung) | `44` |
+| `gift_ball_max_size_px` | Max. Größe (Standard-Skalierung) | `128` |
+| `gift_ball_price_reference_coins` | Preisreferenz für log-Skalierung | `1000` |
+| `gift_ball_tier_thresholds_enabled` | **NEU**: Tier-System aktivieren | `false` |
+| `gift_ball_tier_size_1` | **NEU**: Stufe 1 Größe (px) | `44` |
+| `gift_ball_tier_size_2` | **NEU**: Stufe 2 Größe (px) | `80` |
+| `gift_ball_tier_size_3` | **NEU**: Stufe 3 Größe (px) | `150` |
+| `gift_ball_tier_size_4` | **NEU**: Stufe 4 Größe (px) | `300` |
+| `gift_ball_tier_size_5` | **NEU**: Stufe 5 Größe (px) | `700` |
+| `gift_ball_tier_size_6` | **NEU**: Stufe 6 Größe (px) | `5000` |
+
+### Cooldown-Hinweis
+Gift-Balls teilen sich die globalen Anti-Spam-Limits (siehe unten) mit den
+normalen Emoji-Regen-Triggern. Für teure Stufe-5/6-Geschenke empfiehlt sich
+ein hoher `gift_ball_despawn_multiplier`, damit die Kugel lange genug sichtbar
+bleibt, um vom Publikum wahrgenommen zu werden.
+
 ## 🛡️ Anti-Spam & Sicherheit
 
 ### Globale Limits

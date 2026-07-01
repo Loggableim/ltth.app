@@ -89,7 +89,6 @@
             user-select: none;
             transform-origin: center;
             transition: opacity 0.24s ease, filter 0.24s ease;
-            will-change: transform, opacity;
             /* Hardware acceleration */
             transform: translate3d(0, 0, 0);
             backface-visibility: hidden;
@@ -162,8 +161,6 @@
             filter: none !important;
             /* Disable animations */
             animation: none !important;
-            /* Reduce will-change to minimize GPU memory */
-            will-change: transform;
         }
 
         body.toaster-mode .emoji-sprite.fading {

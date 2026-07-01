@@ -122,5 +122,46 @@
       "threshold_reached": "Schwellenwert erreicht",
       "flow": "Flow"
     }
+  },
+  "rotator": {
+    "sectionTitle": "Rotator (Delta-Anzeige)",
+    "sectionDesc": "Zeigt die letzte Zeit-Änderung um den Timer herum (oben/unten/links/rechts). Custom-Geschenke zeigen das Geschenk-GIF aus dem Katalog.",
+    "enable": "Rotator aktivieren",
+    "position": "Position",
+    "positionTop": "Oben",
+    "positionBottom": "Unten",
+    "positionLeft": "Links",
+    "positionRight": "Rechts",
+    "slots": "Slots",
+    "rotationMs": "Rotation (ms)",
+    "minSeconds": "Min. Sekunden zum Anzeigen",
+    "showGiftImage": "Geschenk-Bild zeigen",
+    "showGiftName": "Geschenk-Name zeigen",
+    "showTimeDelta": "Zeit-Δ zeigen",
+    "showSourceEmoji": "Quell-Emoji zeigen",
+    "fontScale": "Schriftgröße",
+    "fadeAlpha": "Deckkraft",
+    "sourcesShown": "Angezeigte Quellen:",
+    "save": "Rotator speichern"
+  },
+  "thresholdEffects": {
+    "sectionTitle": "Effekte für große Änderungen",
+    "sectionDesc": "Wenn eine einzelne Zeit-Änderung den Schwellenwert überschreitet, wird der Timer mit einer Animation/einem Rahmen überlagert. Eingebauter Stil, eigener Upload oder beides kombiniert.",
+    "enable": "Effekte aktivieren",
+    "thresholdSeconds": "Schwellenwert (Sekunden)",
+    "direction": "Richtung",
+    "directionBoth": "Beide (+/-)",
+    "directionPositive": "Nur positiv",
+    "directionNegative": "Nur negativ",
+    "durationMs": "Effekt-Dauer (ms)",
+    "builtin": "Eingebaute Animation",
+    "intensity": "Intensität (0.5..2.0)",
+    "frameSlotsTitle": "Eigene Rahmen (bis zu 6 PNG/WebP/GIF/SVG — abwechselnd gezeigt):",
+    "frameSlotN": "Slot {n}",
+    "frameEmpty": "Kein Rahmen",
+    "frameLabel": "Beschriftung (optional)",
+    "frameUpload": "Hochladen",
+    "frameRemove": "Entfernen",
+    "save": "Einstellungen speichern"
   }
 }

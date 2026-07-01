@@ -122,5 +122,46 @@
       "threshold_reached": "Threshold Reached",
       "flow": "Flow"
     }
+  },
+  "rotator": {
+    "sectionTitle": "Rotateur (Curseur de delta)",
+    "sectionDesc": "Affiche le dernier changement de temps autour du minuteur (haut/bas/gauche/droite). Les cadeaux personnalisés affichent le GIF du catalogue.",
+    "enable": "Activer le rotateur",
+    "position": "Position",
+    "positionTop": "Haut",
+    "positionBottom": "Bas",
+    "positionLeft": "Gauche",
+    "positionRight": "Droite",
+    "slots": "Slots",
+    "rotationMs": "Rotation (ms)",
+    "minSeconds": "Secondes min. à afficher",
+    "showGiftImage": "Afficher l'image du cadeau",
+    "showGiftName": "Afficher le nom du cadeau",
+    "showTimeDelta": "Afficher le Δ de temps",
+    "showSourceEmoji": "Afficher l'emoji source",
+    "fontScale": "Taille de police",
+    "fadeAlpha": "Opacité",
+    "sourcesShown": "Sources affichées :",
+    "save": "Enregistrer le rotateur"
+  },
+  "thresholdEffects": {
+    "sectionTitle": "Effets de grand changement",
+    "sectionDesc": "Lorsqu'un seul changement de temps dépasse le seuil, le minuteur est entouré d'un cadre/anim. Style intégré, uploadé, ou les deux combinés.",
+    "enable": "Activer les effets",
+    "thresholdSeconds": "Seuil (secondes)",
+    "direction": "Direction",
+    "directionBoth": "Les deux (+/-)",
+    "directionPositive": "Positif seulement",
+    "directionNegative": "Négatif seulement",
+    "durationMs": "Durée de l'effet (ms)",
+    "builtin": "Animation intégrée",
+    "intensity": "Intensité (0.5..2.0)",
+    "frameSlotsTitle": "Slots de cadre personnalisés (jusqu'à 6 PNG/WebP/GIF/SVG — affichés en rotation) :",
+    "frameSlotN": "Slot {n}",
+    "frameEmpty": "Aucun cadre",
+    "frameLabel": "Étiquette (optionnel)",
+    "frameUpload": "Téléverser",
+    "frameRemove": "Retirer",
+    "save": "Enregistrer les réglages"
   }
 }

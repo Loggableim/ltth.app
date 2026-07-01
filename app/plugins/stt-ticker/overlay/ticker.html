@@ -2,762 +2,160 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>STT Ticker Overlay</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>STT Ticker</title>
   <style>
-    /* ============================================================
-       BASE RESET & GLOBAL
-       ============================================================ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       width: 100%; height: 100%;
       overflow: hidden;
       background: transparent;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #fff;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      color: #FFFFFF;
     }
-
-    /* ============================================================
-       TICKER CONTAINER
-       ============================================================ */
-    #ticker-container {
+    /* Drei Zeilen, fix positioniert im unteren Drittel.
+       Neuester Text = Zeile 3 (unten).
+       Aelterer Text scrollt von 3 → 2 → 1 → weg. */
+    #lines {
       position: fixed;
-      z-index: 9999;
-      max-width: 90vw;
-      padding: 12px 20px;
-      border-radius: 8px;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      opacity: 0;
-      transform: translateY(10px);
-      pointer-events: none;
-    }
-    #ticker-container.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Positionen */
-    #ticker-container.pos-bottom-center {
-      bottom: 40px; left: 50%; transform: translateX(-50%);
-    }
-    #ticker-container.pos-bottom-left {
-      bottom: 40px; left: 20px;
-    }
-    #ticker-container.pos-bottom-right {
-      bottom: 40px; right: 20px;
-    }
-    #ticker-container.pos-top-center {
-      top: 40px; left: 50%; transform: translateX(-50%);
-    }
-    #ticker-container.pos-top-left {
-      top: 40px; left: 20px;
-    }
-    #ticker-container.pos-top-right {
-      top: 40px; right: 20px;
-    }
-    #ticker-container.pos-middle-center {
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-    }
-
-    /* ============================================================
-       TICKER TEXT
-       ============================================================ */
-    #ticker-text {
-      line-height: 1.4;
+      left: 0;
+      right: 0;
+      bottom: 60px;
       text-align: center;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
-    #ticker-text .speaker-label {
-      display: inline-block;
-      font-size: 0.6em;
-      opacity: 0.7;
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-    #ticker-text .timestamp {
-      display: block;
-      font-size: 0.5em;
-      opacity: 0.4;
-      margin-top: 4px;
-    }
-
-    /* ============================================================
-       SPEAKER INDICATOR
-       ============================================================ */
-    #speaker-indicator {
-      display: none;
-      font-size: 0.7em;
-      opacity: 0.6;
-      margin-bottom: 4px;
-      text-align: inherit;
-    }
-    #speaker-indicator.active {
-      display: block;
-    }
-    #speaker-indicator .dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 6px;
-      animation: pulse-dot 1.5s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* ============================================================
-       CONNECTION STATUS
-       ============================================================ */
-    #connection-status {
-      position: fixed;
-      top: 10px; right: 10px;
-      z-index: 10000;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: rgba(0,0,0,0.6);
-      color: #aaa;
-      display: none;
-    }
-    #connection-status.visible { display: block; }
-    #connection-status.connected { color: #4CAF50; }
-    #connection-status.disconnected { color: #f44336; }
-    #connection-status.listening { color: #FFC107; }
-
-    /* ============================================================
-       ANIMATIONS
-       ============================================================ */
-    /* Fade */
-    #ticker-container.anim-fade .ticker-line {
-      animation: fadeIn 0.4s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* Slide */
-    #ticker-container.anim-slide .ticker-line {
-      animation: slideIn 0.4s ease;
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Typing */
-    #ticker-container.anim-typing .ticker-line {
-      overflow: hidden;
-      white-space: nowrap;
-      animation: typing 0.5s steps(40, end);
-    }
-    @keyframes typing {
-      from { width: 0; }
-      to { width: 100%; }
-    }
-
-    /* ============================================================
-       DESIGN: CLASSIC (TV-Untertitel)
-       ============================================================ */
-    #ticker-container.design-classic {
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 0;
-      padding: 10px 16px;
-      font-family: 'Arial', 'Helvetica', sans-serif;
-    }
-    #ticker-container.design-classic #ticker-text {
-      font-size: 32px;
-      font-weight: bold;
-      color: #FFFFFF;
-      text-shadow: 2px 2px 0 #000;
-      letter-spacing: 0.5px;
-    }
-
-    /* ============================================================
-       DESIGN: MODERN (Clean, Blur)
-       ============================================================ */
-    #ticker-container.design-modern {
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-    #ticker-container.design-modern #ticker-text {
-      font-size: 34px;
-      font-weight: 400;
-      color: #FFFFFF;
-      letter-spacing: 0.3px;
-    }
-
-    /* ============================================================
-       DESIGN: MINIMAL (Nur Text)
-       ============================================================ */
-    #ticker-container.design-minimal {
-      background: transparent;
-      padding: 0;
-      border-radius: 0;
-    }
-    #ticker-container.design-minimal #ticker-text {
-      font-size: 36px;
-      font-weight: 500;
-      color: #FFFFFF;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-    }
-
-    /* ============================================================
-       DESIGN: NEON (Glow-Effekt)
-       ============================================================ */
-    #ticker-container.design-neon {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-    }
-    #ticker-container.design-neon #ticker-text {
-      font-size: 36px;
+      font-size: 72px;
       font-weight: 700;
-      color: #00FFFF;
-      text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 40px #00FFFF;
-      letter-spacing: 2px;
+      line-height: 1.1;
+      padding: 20px;
     }
-
-    /* ============================================================
-       DESIGN: GLASS (Glasmorphismus)
-       ============================================================ */
-    #ticker-container.design-glass {
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    }
-    #ticker-container.design-glass #ticker-text {
-      font-size: 32px;
-      font-weight: 300;
-      color: #FFFFFF;
-      letter-spacing: 0.5px;
-    }
-
-    /* ============================================================
-       DESIGN: COMPACT (Klein, viele Zeilen)
-       ============================================================ */
-    #ticker-container.design-compact {
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 4px;
-      padding: 6px 12px;
-      max-width: 60vw;
-    }
-    #ticker-container.design-compact #ticker-text {
-      font-size: 20px;
-      font-weight: 400;
-      color: #DDD;
-      line-height: 1.2;
-    }
-
-    /* ============================================================
-       DESIGN: CINEMATIC (Film-Untertitel)
-       ============================================================ */
-    #ticker-container.design-cinematic {
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 0;
-      padding: 8px 24px;
-      max-width: 80vw;
-    }
-    #ticker-container.design-cinematic #ticker-text {
-      font-size: 40px;
-      font-weight: 500;
-      color: #FFFFFF;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-      letter-spacing: 1px;
-      line-height: 1.3;
-    }
-
-    /* ============================================================
-       DESIGN: SCROLLING (Laufband)
-       ============================================================ */
-    #ticker-container.design-scrolling {
-      background: rgba(0, 0, 0, 0.7);
-      border-radius: 0;
-      padding: 8px 0;
-      max-width: 100vw;
-      width: 100%;
-      left: 0 !important;
-      right: 0 !important;
-      overflow: hidden;
-    }
-    #ticker-container.design-scrolling #ticker-text {
-      font-size: 28px;
-      font-weight: 500;
-      color: #FFD700;
-      white-space: nowrap;
-      display: inline-block;
-      animation: scroll-text 20s linear infinite;
-    }
-    @keyframes scroll-text {
-      0% { transform: translateX(100vw); }
-      100% { transform: translateX(-100%); }
-    }
-
-    /* ============================================================
-       DESIGN: STAR WARS (Crawl / Fließtext)
-       ============================================================ */
-    #ticker-container.design-starwars {
-      background: transparent;
-      border-radius: 0;
-      padding: 0;
-      max-width: 60vw;
-      perspective: 400px;
-      overflow: hidden;
-    }
-    #ticker-container.design-starwars #ticker-text {
-      font-family: 'Times New Roman', 'Georgia', serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: #FFD700;
-      text-align: center;
-      line-height: 1.8;
-      letter-spacing: 1px;
-      text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-      transform: rotateX(20deg);
-      animation: starwars-crawl 30s linear infinite;
-    }
-    @keyframes starwars-crawl {
-      0% { transform: rotateX(20deg) translateY(100%); }
-      100% { transform: rotateX(20deg) translateY(-100%); }
-    }
-    #ticker-container.design-starwars .ticker-line {
+    .line {
       display: block;
-      margin-bottom: 8px;
-    }
-    #ticker-container.design-starwars .translation-line {
-      color: #87CEEB !important;
-      font-style: italic;
-      font-size: 0.85em;
-    }
-
-    /* ============================================================
-       DESIGN: KARAOKE (Wort-Highlight)
-       ============================================================ */
-    #ticker-container.design-karaoke {
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 12px;
-      padding: 16px 24px;
-    }
-    #ticker-container.design-karaoke #ticker-text {
-      font-size: 36px;
-      font-weight: 600;
-      color: #888;
-    }
-    #ticker-container.design-karaoke #ticker-text .word {
-      transition: color 0.3s ease;
-    }
-    #ticker-container.design-karaoke #ticker-text .word.active {
-      color: #FFD700;
-    }
-    #ticker-container.design-karaoke #ticker-text .word.done {
+      margin: 8px 0;
       color: #FFFFFF;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
-
-    /* ============================================================
-       ACCESSIBILITY: HIGH CONTRAST
-       ============================================================ */
-    #ticker-container.a11y-high-contrast {
-      background: #000 !important;
-      border: 2px solid #FFF !important;
-    }
-    #ticker-container.a11y-high-contrast #ticker-text {
-      color: #FFF !important;
-      text-shadow: none !important;
-      font-weight: 900 !important;
-    }
-
-    /* ============================================================
-       ACCESSIBILITY: COLOR BLIND
-       ============================================================ */
-    #ticker-container.a11y-color-blind #ticker-text {
-      color: #FFFFFF !important;
-    }
-    #ticker-container.a11y-color-blind.design-neon #ticker-text {
-      color: #FFFFFF !important;
-      text-shadow: 0 0 10px #FFFFFF !important;
-    }
-
-    /* ============================================================
-       ACCESSIBILITY: LARGE TEXT
-       ============================================================ */
-    #ticker-container.a11y-large-text #ticker-text {
-      font-size: 48px !important;
-    }
-
-    /* ============================================================
-       ACCESSIBILITY: DYSLEXIC FONT
-       ============================================================ */
-    #ticker-container.a11y-dyslexic #ticker-text {
-      font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
-      letter-spacing: 0.35em !important;
-      line-height: 1.6 !important;
-    }
-
-    /* ============================================================
-       SLOW MODE (längere Anzeigedauer)
-       ============================================================ */
-    #ticker-container.a11y-slow-mode.design-scrolling #ticker-text {
-      animation-duration: 40s !important;
-    }
-
-    /* ============================================================
-       UPPERCASE
-       ============================================================ */
-    #ticker-container.uppercase #ticker-text {
-      text-transform: uppercase;
-    }
-
-    /* ============================================================
-       TRANSLATION DISPLAY
-       ============================================================ */
-    #ticker-text .translation-line {
-      margin-top: 4px;
-      font-style: italic;
-      opacity: 0.95;
-    }
-    #ticker-text .translation-line::before {
-      content: '▸ ';
-      font-size: 0.7em;
-      opacity: 0.6;
-    }
-    #ticker-text .original-line {
-      opacity: 0.85;
-    }
-    #ticker-text .translation-label {
-      display: inline-block;
-      font-size: 0.5em;
-      opacity: 0.5;
-      margin-right: 6px;
-      vertical-align: middle;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* ============================================================
-       STATUS BADGE (Debug)
-       ============================================================ */
-    #status-badge {
-      position: fixed;
-      bottom: 5px; right: 5px;
-      z-index: 10000;
-      font-size: 10px;
-      color: rgba(255,255,255,0.3);
-      background: rgba(0,0,0,0.3);
-      padding: 2px 6px;
-      border-radius: 3px;
-      display: none;
-    }
-    #status-badge.visible { display: block; }
+    .line.dim   { opacity: 0.5; }
+    .line.muted { opacity: 0.25; }
   </style>
 </head>
 <body>
-  <!-- Ticker Container -->
-  <div id="ticker-container" class="pos-bottom-center">
-    <div id="speaker-indicator">
-      <span class="dot" style="background:#4CAF50;"></span>
-      <span id="speaker-label">Host</span>
-    </div>
-    <div id="ticker-text"></div>
+  <div id="lines">
+    <div class="line muted" id="line-2"></div>
+    <div class="line dim"   id="line-1"></div>
+    <div class="line"       id="line-0"></div>
   </div>
-
-  <!-- Connection Status -->
-  <div id="connection-status">Connecting...</div>
-
-  <!-- Status Badge (Debug) -->
-  <div id="status-badge"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    // ============================================================
-    // URL PARAMETER PARSER
-    // ============================================================
-    const params = new URLSearchParams(window.location.search);
+  (function() {
+    'use strict';
 
-    function getParam(name, defaultValue) {
-      const val = params.get(name);
-      return val !== null ? val : defaultValue;
+    // Die drei Slots, in DOM-Reihenfolge: muted (aelteste sichtbar) → line-1 → line-0 (aktuellste)
+    const line0 = document.getElementById('line-0'); // aktuellster Text
+    const line1 = document.getElementById('line-1'); // davor
+    const line2 = document.getElementById('line-2'); // davor davor
+
+    // Ring-Buffer der letzten 3 Texte (FIFO)
+    const ring = ['', '', ''];
+    let ringFilled = 0; // wie viele slots belegt sind (0..3)
+
+    // ID des zuletzt vom Client gesehenen Segments.
+    // Server schickt mit jedem Event den GESAMTEN Buffer; wir nehmen
+    // nur die Segmente ab diesem Index, damit nicht jeder Text 100x
+    // wiederholt wird.
+    let lastSeenSegId = null;
+
+    // Wenn Server "data.text" oder "data.segments" mit Text schickt → neuen Satz anzeigen
+    // Beim Push: alle 3 Texte ruecken einen Slot hoch
+    //   line2 ← line1.text
+    //   line1 ← line0.text
+    //   line0 ← neuer text
+    function pushLine(text) {
+      text = String(text || '').trim();
+      if (!text) return;
+      // Ring-Update (nur behalten wenn neuer Text anders ist als aktuellster)
+      if (text === ring[2]) return; // dedupe gegen neueste Zeile
+      // Erst alles einen Slot hoch
+      ring[0] = ring[1];
+      ring[1] = ring[2];
+      ring[2] = text;
+      if (ringFilled < 3) ringFilled++;
+      render();
     }
 
-    function getBoolParam(name, defaultValue) {
-      const val = params.get(name);
-      if (val === null) return defaultValue;
-      return val === 'true' || val === '1' || val === 'yes';
+    function render() {
+      // ring[2] = aktuellster, ring[1] = davor, ring[0] = aelteste
+      line0.textContent = ring[2];
+      line1.textContent = ring[1];
+      line2.textContent = ring[0];
     }
 
-    function getNumParam(name, defaultValue) {
-      const val = params.get(name);
-      if (val === null) return defaultValue;
-      const num = parseFloat(val);
-      return isNaN(num) ? defaultValue : num;
+    function clearAll() {
+      ring[0] = ring[1] = ring[2] = '';
+      ringFilled = 0;
+      render();
     }
 
-    // ============================================================
-    // CONFIG FROM URL PARAMS
-    // ============================================================
-    const config = {
-      design: getParam('design', 'classic'),
-      position: getParam('position', 'bottom-center'),
-      maxLines: getNumParam('maxLines', 2),
-      fontSize: getParam('fontSize', ''),
-      fontFamily: getParam('fontFamily', ''),
-      textColor: getParam('textColor', ''),
-      bgColor: getParam('bgColor', ''),
-      bgBlur: getParam('bgBlur', ''),
-      borderRadius: getParam('borderRadius', ''),
-      padding: getParam('padding', ''),
-      textAlign: getParam('textAlign', ''),
-      opacity: getNumParam('opacity', 1.0),
-      animation: getParam('animation', 'fade'),
-      showSpeaker: getBoolParam('showSpeaker', false),
-      speakerLabel: getParam('speakerLabel', 'Host'),
-      showTimestamp: getBoolParam('showTimestamp', false),
-      letterSpacing: getParam('letterSpacing', ''),
-      lineHeight: getNumParam('lineHeight', 0),
-      scrollSpeed: getNumParam('scrollSpeed', 50),
-      glowColor: getParam('glowColor', ''),
-      glowIntensity: getParam('glowIntensity', ''),
-      uppercase: getBoolParam('uppercase', false),
-      showInterim: getBoolParam('showInterim', true),
-      highContrast: getBoolParam('highContrast', false),
-      colorBlind: getBoolParam('colorBlind', false),
-      slowMode: getBoolParam('slowMode', false),
-      largeText: getBoolParam('largeText', false),
-      dyslexic: getBoolParam('dyslexic', false),
-      debug: getBoolParam('debug', false),
-      // Translation display
-      showTranslation: getBoolParam('showTranslation', true),
-      translationColor: getParam('translationColor', '#FFD700'),
-      translationLabel: getParam('translationLabel', 'EN'),
-      // Audio capture
-      autoCapture: getBoolParam('autoCapture', true),
-      audioDeviceId: getParam('audioDeviceId', ''),
-      // Server
-      serverUrl: getParam('server', '')
-    };
+    // Socket.IO verbinden
+    const socket = io({ transports: ['websocket', 'polling'] });
+    socket.on('connect', () => console.log('[stt-ticker] connected'));
+    socket.on('disconnect', () => console.log('[stt-ticker] disconnected'));
 
-    // ============================================================
-    // DOM REFS
-    // ============================================================
-    const container = document.getElementById('ticker-container');
-    const tickerText = document.getElementById('ticker-text');
-    const speakerIndicator = document.getElementById('speaker-indicator');
-    const speakerLabel = document.getElementById('speaker-label');
-    const connectionStatus = document.getElementById('connection-status');
-    const statusBadge = document.getElementById('status-badge');
-
-    // ============================================================
-    // APPLY CONFIG TO DOM
-    // ============================================================
-    function applyConfig() {
-      // Design-Klasse auf den Container (nicht body — OBS-Kompatibilität)
-      container.className = [
-        'pos-' + config.position,
-        'design-' + config.design,
-        'anim-' + config.animation,
-        config.uppercase ? 'uppercase' : '',
-        config.highContrast ? 'a11y-high-contrast' : '',
-        config.colorBlind ? 'a11y-color-blind' : '',
-        config.slowMode ? 'a11y-slow-mode' : '',
-        config.largeText ? 'a11y-large-text' : '',
-        config.dyslexic ? 'a11y-dyslexic' : ''
-      ].filter(Boolean).join(' ');
-
-      // Override-Stile
-      const styleOverrides = {};
-      if (config.fontSize) styleOverrides.fontSize = config.fontSize;
-      if (config.fontFamily) styleOverrides.fontFamily = config.fontFamily;
-      if (config.textColor) styleOverrides.color = config.textColor;
-      if (config.bgColor) styleOverrides.background = config.bgColor;
-      if (config.bgBlur) {
-        styleOverrides.backdropFilter = 'blur(' + config.bgBlur + ')';
-        styleOverrides['-webkit-backdrop-filter'] = 'blur(' + config.bgBlur + ')';
-      }
-      if (config.borderRadius) styleOverrides.borderRadius = config.borderRadius;
-      if (config.padding) styleOverrides.padding = config.padding;
-      if (config.textAlign) styleOverrides.textAlign = config.textAlign;
-      if (config.opacity !== 1.0) styleOverrides.opacity = config.opacity;
-      if (config.letterSpacing) styleOverrides.letterSpacing = config.letterSpacing;
-      if (config.lineHeight > 0) styleOverrides.lineHeight = config.lineHeight;
-      if (config.glowColor && config.glowIntensity) {
-        styleOverrides.textShadow = '0 0 ' + config.glowIntensity + ' ' + config.glowColor;
-      }
-
-      Object.assign(container.style, styleOverrides);
-
-      // Speaker
-      if (config.showSpeaker) {
-        speakerIndicator.classList.add('active');
-        speakerLabel.textContent = config.speakerLabel;
-      } else {
-        speakerIndicator.classList.remove('active');
-      }
-
-      // Debug
-      if (config.debug) {
-        statusBadge.classList.add('visible');
-      } else {
-        statusBadge.classList.remove('visible');
-      }
-    }
-    applyConfig();
-
-    // ============================================================
-    // SOCKET.IO — NUR Anzeige, kein Audio-Capture
-    // ============================================================
-    let socket = null;
-    let connected = false;
-
-    function connectSocket() {
-      socket = io(undefined, { transports: ['websocket', 'polling'] });
-
-      socket.on('connect', () => {
-        connected = true;
-        connectionStatus.textContent = 'Connected';
-        connectionStatus.className = 'visible connected';
-        setTimeout(() => { connectionStatus.classList.remove('visible'); }, 3000);
-        socket.emit('stt-ticker:get-transcript');
-      });
-
-      socket.on('disconnect', () => {
-        connected = false;
-        connectionStatus.textContent = 'Disconnected';
-        connectionStatus.className = 'visible disconnected';
-      });
-
-      socket.on('stt-ticker:transcript', (data) => {
-        handleTranscript(data);
-      });
-
-      socket.on('stt-ticker:status', (data) => {
-        if (config.debug) {
-          statusBadge.textContent = 'Segments: ' + (data.buffer?.segmentCount || 0);
-        }
-      });
-    }
-
-    // ============================================================
-    // TRANSCRIPT HANDLING — Alle Segmente, beide Sprachen gleichzeitig
-    // ============================================================
-    let visibleSegments = [];  // { id, text, translation, timestamp }
-    let segmentCounter = 0;
-    const SEGMENT_DISPLAY_MS = 12000;  // 12s pro Segment (hinterherhinken ist okay)
-    const MAX_VISIBLE_SEGMENTS = 5;    // mehr Segmente gleichzeitig sichtbar
-
-    function handleTranscript(data) {
+    socket.on('stt-ticker:transcript', (data) => {
       if (!data) return;
 
-      const incomingSegments = data.segments || [];
-      const now = Date.now();
-
-      if (incomingSegments.length > 0) {
-        for (const seg of incomingSegments) {
-          if (!seg.text) continue;
-
-          segmentCounter++;
-          visibleSegments.push({
-            id: segmentCounter,
-            text: seg.text,
-            translation: seg.translation && seg.translation.translated ? seg.translation : null,
-            timestamp: seg.timestamp || now
-          });
+      // WICHTIG: Server schickt NICHT nur den neuen Satz, sondern den
+      // GESAMTEN bisherigen Buffer (alle bisherigen Segmente). Damit wir
+      // nicht jedes Mal den gleichen Satz doppelt rendern, merken wir
+      // uns die ID des zuletzt gesehenen Segments und nehmen nur die,
+      // die neuer sind.
+      if (Array.isArray(data.segments) && data.segments.length > 0) {
+        const segs = data.segments;
+        // Finde den Index des letzten gesehenen Segments in segs
+        let startIdx = 0;
+        for (let i = segs.length - 1; i >= 0; i--) {
+          if (segs[i].id !== undefined && segs[i].id === lastSeenSegId) {
+            startIdx = i + 1;
+            break;
+          }
         }
-      } else if (data.text) {
-        segmentCounter++;
-        visibleSegments.push({
-          id: segmentCounter,
-          text: data.text,
-          translation: data.translation && data.translation.translated ? data.translation : null,
-          timestamp: now
-        });
-      }
-
-      // Alte Segmente entfernen
-      visibleSegments = visibleSegments.filter(s => (now - s.timestamp) < SEGMENT_DISPLAY_MS);
-
-      // Max Segmente begrenzen (älteste zuerst raus)
-      while (visibleSegments.length > MAX_VISIBLE_SEGMENTS) {
-        visibleSegments.shift();
-      }
-
-      renderSegments();
-    }
-
-    function renderSegments() {
-      if (visibleSegments.length === 0) {
-        container.classList.remove('visible');
+        // Pushe alle Segmente ab startIdx
+        for (let i = startIdx; i < segs.length; i++) {
+          if (segs[i] && segs[i].text) {
+            pushLine(segs[i].text);
+            if (segs[i].id !== undefined) lastSeenSegId = segs[i].id;
+          }
+        }
         return;
       }
 
-      // Alle Zeilen flach sammeln (Original + Übersetzung)
-      let allLines = [];
-      for (const seg of visibleSegments) {
-        allLines.push({ type: 'original', text: seg.text, opacity: 1, timestamp: seg.timestamp });
-        if (seg.translation && config.showTranslation) {
-          allLines.push({ type: 'translation', text: seg.translation.text, color: seg.translation.color || config.translationColor, opacity: 1, timestamp: seg.timestamp });
-        }
+      // Fallback 1: data.text
+      if (typeof data.text === 'string' && data.text.trim()) {
+        pushLine(data.text);
+        return;
       }
 
-      // Nur die letzten N Zeilen anzeigen (maxLines)
-      const maxLines = config.maxLines || 2;
-      if (allLines.length > maxLines) {
-        allLines = allLines.slice(-maxLines);
+      // Fallback 2: data.dual
+      if (data.dual && (data.dual.bottomText || data.dual.topText)) {
+        const t = (data.dual.bottomText || data.dual.topText || '').trim();
+        if (t) pushLine(t);
+        return;
       }
+    });
 
-      const now = Date.now();
-      let html = '';
+    // Optional: Buffer-Clear-Event
+    socket.on('stt-ticker:clear', () => clearAll());
 
-      for (const line of allLines) {
-        const age = now - line.timestamp;
-        const opacity = Math.max(0.3, 1 - (age / SEGMENT_DISPLAY_MS));
-
-        if (line.type === 'original') {
-          html += '<div class="ticker-line original-line" style="opacity:' + opacity + '">'
-            + escapeHtml(line.text) + '</div>';
-        } else {
-          html += '<div class="ticker-line translation-line" style="opacity:' + opacity + ';color:' + line.color + '">'
-            + '<span class="translation-label">' + escapeHtml(config.translationLabel) + '</span>'
-            + escapeHtml(line.text) + '</div>';
-        }
+    // Tastatur-Shortcut für lokales Testen: 'T' = fake transcript
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 't' || e.key === 'T') {
+        const fake = 'Test Satz ' + Date.now();
+        console.log('[stt-ticker] injecting fake line:', fake);
+        pushLine(fake);
       }
-
-      if (config.showTimestamp) {
-        html += '<div class="timestamp">' + new Date().toLocaleTimeString() + '</div>';
-      }
-
-      tickerText.innerHTML = html;
-      container.classList.add('visible');
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // ============================================================
-    // INIT — NUR Anzeige
-    // ============================================================
-    function init() {
-      connectSocket();
-    }
-
-    // Start when DOM ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
+    });
+  })();
   </script>
 </body>
 </html>

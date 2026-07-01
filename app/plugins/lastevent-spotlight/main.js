@@ -97,7 +97,7 @@ class LastEventSpotlightPlugin {
 
       // Layout
       showUsername: true,
-      alignCenter: true,
+      hudAlignment: 'center',
 
       // Animations
       inAnimationType: 'fade', // fade, slide, pop, zoom, glow, bounce
@@ -357,6 +357,14 @@ class LastEventSpotlightPlugin {
       };
     }
 
+    // Migrate old alignCenter boolean to new hudAlignment string
+    if (raw.hudAlignment === undefined || raw.hudAlignment === null) {
+      if (raw.alignCenter === false) {
+        raw.hudAlignment = 'left';
+      }
+      // alignCenter === true or undefined → keep default 'center'
+    }
+
     const settings = {
       designVariant: this.sanitizeChoice(raw.designVariant, ['default', 'minimal', 'compact', 'neon', 'glassmorphism', 'retro'], defaults.designVariant),
       fontFamily: this.sanitizeString(raw.fontFamily, defaults.fontFamily, /^[\w\s"',-]+$/),
@@ -378,7 +386,7 @@ class LastEventSpotlightPlugin {
       showProfilePicture: this.sanitizeBoolean(raw.showProfilePicture, defaults.showProfilePicture),
       profilePictureSize: this.isCssLength(raw.profilePictureSize) ? raw.profilePictureSize.trim() : defaults.profilePictureSize,
       showUsername: this.sanitizeBoolean(raw.showUsername, defaults.showUsername),
-      alignCenter: this.sanitizeBoolean(raw.alignCenter, defaults.alignCenter),
+      hudAlignment: this.sanitizeChoice(raw.hudAlignment, ['center', 'left', 'right'], defaults.hudAlignment),
       inAnimationType: this.sanitizeChoice(raw.inAnimationType, ['fade', 'slide', 'pop', 'zoom', 'glow', 'bounce', 'none'], defaults.inAnimationType),
       outAnimationType: this.sanitizeChoice(raw.outAnimationType, ['fade', 'slide', 'pop', 'zoom', 'glow', 'bounce', 'none'], defaults.outAnimationType),
       animationSpeed: this.sanitizeChoice(raw.animationSpeed, ['slow', 'medium', 'fast'], defaults.animationSpeed),

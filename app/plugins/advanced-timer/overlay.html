@@ -22,6 +22,7 @@
         #timer-container {
             width: 100vw;
             height: 100vh;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -146,7 +147,8 @@
             letter-spacing: 0.05em;
         }
 
-        /* Animations */
+        /* ── Animations ───────────────────────────────────────────────── */
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -169,10 +171,288 @@
         .state-running { color: #10b981; }
         .state-paused { color: #f59e0b; }
         .state-completed { color: #ef4444; }
+
+        /* ── Rotator container ───────────────────────────────────────── */
+
+        #rotator-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .rotator-slot {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            min-width: 220px;
+            max-width: 360px;
+            opacity: 0;
+            transition: opacity 400ms ease, transform 400ms cubic-bezier(.2,.7,.2,1.1);
+            will-change: opacity, transform;
+        }
+
+        .rotator-slot.is-visible {
+            opacity: var(--rotator-alpha, 0.92);
+        }
+
+        .rotator-slot.is-exiting {
+            opacity: 0;
+        }
+
+        .rotator-slot .slot-emoji {
+            font-size: 26px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .rotator-slot .slot-gift-image {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            flex-shrink: 0;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .rotator-slot .slot-body {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 2px;
+        }
+
+        .rotator-slot .slot-delta {
+            font-size: 20px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+        .rotator-slot .slot-delta.positive { color: #4ade80; }
+        .rotator-slot .slot-delta.negative { color: #f87171; }
+
+        .rotator-slot .slot-name {
+            font-size: 13px;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .rotator-slot .slot-user {
+            font-size: 11px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Position variants — top / bottom / left / right */
+        .rotator-position-top    { left: 50%; top: 4%;  transform: translate(-50%, -20px); }
+        .rotator-position-top.is-visible    { transform: translate(-50%, 0); }
+        .rotator-position-top.is-exiting    { transform: translate(-50%, -20px); }
+
+        .rotator-position-bottom { left: 50%; bottom: 4%; transform: translate(-50%, 20px); }
+        .rotator-position-bottom.is-visible { transform: translate(-50%, 0); }
+        .rotator-position-bottom.is-exiting { transform: translate(-50%, 20px); }
+
+        .rotator-position-left   { left: 2%; top: 50%; transform: translate(-20px, -50%); }
+        .rotator-position-left.is-visible   { transform: translate(0, -50%); }
+        .rotator-position-left.is-exiting   { transform: translate(-20px, -50%); }
+
+        .rotator-position-right  { right: 2%; top: 50%; transform: translate(20px, -50%); }
+        .rotator-position-right.is-visible  { transform: translate(0, -50%); }
+        .rotator-position-right.is-exiting  { transform: translate(20px, -50%); }
+
+        /* Multi-slot stacking — only used when slot_count > 1 */
+        .rotator-stack-top    { top: 4%; }
+        .rotator-stack-bottom { bottom: 4%; }
+        .rotator-stack-left   { left: 2%; }
+        .rotator-stack-right  { right: 2%; }
+
+        .rotator-stack {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .rotator-stack.vertical {
+            flex-direction: column;
+        }
+        .rotator-stack.horizontal {
+            flex-direction: row;
+        }
+
+        /* ── Threshold-effect overlay ───────────────────────────────── */
+
+        #threshold-effect-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .threshold-frame {
+            position: absolute;
+            inset: 0;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .threshold-frame.is-active {
+            animation: threshold-frame-fade 1500ms ease-out forwards;
+        }
+        @keyframes threshold-frame-fade {
+            0%   { opacity: 0; }
+            20%  { opacity: 1; }
+            80%  { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ── Built-in CSS animations (no image) ────────────────────── */
+
+        .threshold-anim {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .threshold-anim.is-active {
+            opacity: 1;
+        }
+
+        /* 1) flame — warm flicker around the timer */
+        .anim-flame {
+            background: radial-gradient(ellipse at center, rgba(255,120,40,0) 30%, rgba(255,80,30,0.55) 65%, rgba(255,30,0,0.85) 100%);
+            mix-blend-mode: screen;
+        }
+        .anim-flame.is-active {
+            animation: flame-flicker 1500ms ease-out forwards;
+        }
+        @keyframes flame-flicker {
+            0%   { opacity: 0; transform: scale(0.9); filter: blur(0px); }
+            25%  { opacity: 1; transform: scale(1.05); filter: blur(2px); }
+            50%  { opacity: 0.85; transform: scale(1.0); filter: blur(1px); }
+            75%  { opacity: 1; transform: scale(1.08); filter: blur(3px); }
+            100% { opacity: 0; transform: scale(1.15); filter: blur(4px); }
+        }
+
+        /* 2) lightning — electric flash + slight screen-shake on the whole scene */
+        .anim-lightning {
+            background: linear-gradient(120deg, rgba(180, 220, 255, 0) 30%, rgba(255, 255, 255, 0.95) 50%, rgba(180, 220, 255, 0) 70%);
+            mix-blend-mode: screen;
+        }
+        .anim-lightning.is-active {
+            animation: lightning-strike 1500ms steps(1) forwards;
+        }
+        .anim-lightning.is-active + * { animation: lightning-shake 200ms linear; }
+        @keyframes lightning-strike {
+            0%   { opacity: 0; transform: translateX(-100%); }
+            20%  { opacity: 1; transform: translateX(0%); }
+            35%  { opacity: 0.2; transform: translateX(0%); }
+            45%  { opacity: 1; transform: translateX(0%); }
+            100% { opacity: 0; transform: translateX(100%); }
+        }
+        @keyframes lightning-shake {
+            0%,100% { transform: translate(0,0); }
+            25% { transform: translate(-2px, 1px); }
+            50% { transform: translate(2px, -1px); }
+            75% { transform: translate(-1px, 2px); }
+        }
+
+        /* 3) sparks — orange/yellow dots that radiate outward */
+        .anim-sparks {
+            background:
+                radial-gradient(circle at 20% 30%, rgba(255,200,80,0.95) 0 6px, transparent 8px),
+                radial-gradient(circle at 80% 25%, rgba(255,160,40,0.95) 0 5px, transparent 7px),
+                radial-gradient(circle at 30% 75%, rgba(255,220,100,0.95) 0 7px, transparent 9px),
+                radial-gradient(circle at 70% 80%, rgba(255,140,30,0.95) 0 5px, transparent 7px),
+                radial-gradient(circle at 50% 50%, rgba(255,240,180,0.85) 0 10px, transparent 12px);
+            mix-blend-mode: screen;
+        }
+        .anim-sparks.is-active {
+            animation: sparks-burst 1500ms ease-out forwards;
+        }
+        @keyframes sparks-burst {
+            0%   { opacity: 0; transform: scale(0.3); }
+            30%  { opacity: 1; transform: scale(1.0); }
+            100% { opacity: 0; transform: scale(1.6); }
+        }
+
+        /* 4) pulse-glow — soft green-cyan halo breathing */
+        .anim-pulse-glow {
+            background: radial-gradient(ellipse at center, rgba(34,211,238,0.75) 0%, rgba(16,185,129,0.4) 45%, rgba(0,0,0,0) 70%);
+            mix-blend-mode: screen;
+        }
+        .anim-pulse-glow.is-active {
+            animation: pulse-glow-breath 1500ms ease-in-out forwards;
+        }
+        @keyframes pulse-glow-breath {
+            0%   { opacity: 0; transform: scale(0.95); }
+            40%  { opacity: 1; transform: scale(1.02); }
+            70%  { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 0; transform: scale(1.10); }
+        }
+
+        /* 5) rainbow-shake — full color cycle with light rotation */
+        .anim-rainbow-shake {
+            background: conic-gradient(from 0deg,
+                rgba(239,68,68,0.4),
+                rgba(245,158,11,0.4),
+                rgba(34,197,94,0.4),
+                rgba(59,130,246,0.4),
+                rgba(168,85,247,0.4),
+                rgba(236,72,153,0.4),
+                rgba(239,68,68,0.4));
+            mix-blend-mode: screen;
+        }
+        .anim-rainbow-shake.is-active {
+            animation: rainbow-shake-cycle 1500ms linear forwards;
+        }
+        @keyframes rainbow-shake-cycle {
+            0%   { opacity: 0; transform: rotate(0deg) scale(1.05); }
+            20%  { opacity: 1; transform: rotate(8deg) scale(1.10); }
+            50%  { opacity: 0.9; transform: rotate(-6deg) scale(1.05); }
+            80%  { opacity: 1; transform: rotate(4deg) scale(1.12); }
+            100% { opacity: 0; transform: rotate(0deg) scale(1.18); }
+        }
+
+        /* 6) gold-flux — gold halo with depth */
+        .anim-gold-flux {
+            background:
+                radial-gradient(circle at 50% 50%, rgba(255,215,0,0.85) 0%, rgba(255,170,0,0.5) 25%, rgba(184,134,11,0.25) 55%, rgba(0,0,0,0) 80%),
+                conic-gradient(from 45deg, rgba(255,223,128,0.4) 0deg, rgba(0,0,0,0) 60deg, rgba(255,223,128,0.4) 120deg, rgba(0,0,0,0) 180deg, rgba(255,223,128,0.4) 240deg, rgba(0,0,0,0) 300deg, rgba(255,223,128,0.4) 360deg);
+            mix-blend-mode: screen;
+        }
+        .anim-gold-flux.is-active {
+            animation: gold-flux-spin 1500ms ease-in-out forwards;
+        }
+        @keyframes gold-flux-spin {
+            0%   { opacity: 0; transform: rotate(0deg) scale(0.85); }
+            30%  { opacity: 1; transform: rotate(60deg) scale(1.0); }
+            70%  { opacity: 0.9; transform: rotate(160deg) scale(1.1); }
+            100% { opacity: 0; transform: rotate(220deg) scale(1.18); }
+        }
     </style>
 </head>
 <body>
-    <div id="timer-container"></div>
+    <div id="timer-container">
+        <div id="threshold-effect-layer" aria-hidden="true"></div>
+        <div id="rotator-container" aria-hidden="true"></div>
+        <div id="timer-template-host"></div>
+    </div>
 
     <script src="/advanced-timer/overlay.js"></script>
 </body>

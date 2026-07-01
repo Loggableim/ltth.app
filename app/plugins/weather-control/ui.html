@@ -1389,6 +1389,37 @@
                             </label>
                             <small class="form-text" data-i18n-key="effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
+                        <!-- Glitch Sub-Effect Toggles -->
+                        <div class="form-group" style="border-top: 1px solid var(--color-border); padding-top: 0.75rem; margin-top: 0.5rem;">
+                            <label class="form-label" style="font-weight: 600; margin-bottom: 0.5rem;">Glitch Sub-Effects</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-rgbshift" checked> RGB Shift
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-displacement" checked> Displacement
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-scanlines" checked> Scanlines
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-noise" checked> Static Noise
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-blocks" checked> Digital Blocks
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+                                    <input type="checkbox" id="effect-glitchclouds-chromatic" checked> Chromatic Aberration
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span>Glitch Intensity Multiplier</span>
+                                <span class="range-value" id="effect-glitchclouds-glitchintensity-val">1.0</span>
+                            </label>
+                            <input type="range" class="range-slider" id="effect-glitchclouds-glitchintensity" min="0.1" max="3" step="0.1" value="1">
+                        </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="glitchclouds">
                             <span>▶️</span>
                             <span data-i18n-key="effects.test_button">Test Effect</span>
@@ -2697,6 +2728,20 @@
                         document.getElementById('effect-sunbeam-colortemp').value = config.effects.sunbeam.colorTemperature;
                     }
 
+                    // Glitch sub-effect toggles
+                    const glitchConfig = config.effects?.glitchclouds || {};
+                    document.getElementById('effect-glitchclouds-rgbshift').checked = glitchConfig.glitchRgbShift !== false;
+                    document.getElementById('effect-glitchclouds-displacement').checked = glitchConfig.glitchDisplacement !== false;
+                    document.getElementById('effect-glitchclouds-scanlines').checked = glitchConfig.glitchScanlines !== false;
+                    document.getElementById('effect-glitchclouds-noise').checked = glitchConfig.glitchNoise !== false;
+                    document.getElementById('effect-glitchclouds-blocks').checked = glitchConfig.glitchBlocks !== false;
+                    document.getElementById('effect-glitchclouds-chromatic').checked = glitchConfig.glitchChromaticAberration !== false;
+                    const giSlider = document.getElementById('effect-glitchclouds-glitchintensity');
+                    if (giSlider) {
+                        giSlider.value = glitchConfig.glitchIntensity || 1;
+                        document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = (glitchConfig.glitchIntensity || 1).toFixed(1);
+                    }
+
                     // Quality preset
                     if (config.qualityPreset) {
                         document.getElementById('qualityPreset').value = config.qualityPreset;
@@ -2774,6 +2819,17 @@
                 // Sunbeam color temperature
                 if (config.effects.sunbeam) {
                     config.effects.sunbeam.colorTemperature = document.getElementById('effect-sunbeam-colortemp').value;
+                }
+
+                // Glitch sub-effect toggles
+                if (config.effects.glitchclouds) {
+                    config.effects.glitchclouds.glitchRgbShift = document.getElementById('effect-glitchclouds-rgbshift').checked;
+                    config.effects.glitchclouds.glitchDisplacement = document.getElementById('effect-glitchclouds-displacement').checked;
+                    config.effects.glitchclouds.glitchScanlines = document.getElementById('effect-glitchclouds-scanlines').checked;
+                    config.effects.glitchclouds.glitchNoise = document.getElementById('effect-glitchclouds-noise').checked;
+                    config.effects.glitchclouds.glitchBlocks = document.getElementById('effect-glitchclouds-blocks').checked;
+                    config.effects.glitchclouds.glitchChromaticAberration = document.getElementById('effect-glitchclouds-chromatic').checked;
+                    config.effects.glitchclouds.glitchIntensity = parseFloat(document.getElementById('effect-glitchclouds-glitchintensity').value) || 1;
                 }
 
                 // Quality preset
@@ -2970,6 +3026,14 @@
                 });
             }
         });
+
+        // Glitch intensity multiplier slider
+        const giSlider = document.getElementById('effect-glitchclouds-glitchintensity');
+        if (giSlider) {
+            giSlider.addEventListener('input', (e) => {
+                document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = parseFloat(e.target.value).toFixed(1);
+            });
+        }
 
         document.addEventListener('input', (event) => {
             const target = event.target;

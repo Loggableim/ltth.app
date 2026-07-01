@@ -130,10 +130,20 @@ class SttTickerPlugin {
       });
     });
 
-    // Config aktualisieren
+    // Config aktualisieren — schützt gespeicherte Secrets (ollama apiKey)
     this.api.registerRoute('post', '/api/stt-ticker/config', (req, res) => {
       try {
-        this.config = this.configManager.update(req.body);
+        const body = req.body || {};
+        // Wenn apiKey nicht im body → bestehenden beibehalten
+        // (UI sendet Key nur beim ersten Mal oder bei explizitem Ändern)
+        if (body.translation && Object.prototype.hasOwnProperty.call(body.translation, 'apiKey')) {
+          const newKey = String(body.translation.apiKey || '').trim();
+          if (newKey === '' || newKey === '__KEEP__') {
+            // Explizit "behalten" oder leer (in Update) → alten Wert nicht überschreiben
+            delete body.translation.apiKey;
+          }
+        }
+        this.config = this.configManager.update(body);
         if (this.textBuffer) {
           this.textBuffer.updateConfig(this.config);
         }
@@ -148,6 +158,93 @@ class SttTickerPlugin {
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
       }
+    });
+
+    // ASR-spezifische Settings (Sprache, VAD) — gekapselter Endpoint
+    this.api.registerRoute('post', '/api/stt-ticker/asr/settings', (req, res) => {
+      try {
+        const body = req.body || {};
+        const update = {};
+
+        // WICHTIG: 'asr.deepgramApiKey === "__KEEP__"' bedeutet "unverändert lassen".
+        // Sonst würde _deepMerge den String literal in die Config schreiben
+        // und der User wäre ausgesperrt.
+        if (body.asr) {
+          const asrUpdate = Object.assign({}, body.asr);
+          if (asrUpdate.deepgramApiKey === '__KEEP__' || asrUpdate.deepgramApiKey === '') {
+            delete asrUpdate.deepgramApiKey;
+          }
+          update.asr = asrUpdate;
+        }
+        if (body.vad) update.vad = body.vad;
+        if (body.dualLanguage) update.dualLanguage = body.dualLanguage;
+        if (body.langDetect) update.langDetect = body.langDetect;
+        if (body.overlay && body.overlay.design) update.overlay = { design: body.overlay.design };
+
+        this.config = this.configManager.update(update);
+        if (this.textBuffer) this.textBuffer.updateConfig(this.config);
+        if (this.asrPipeline) this.asrPipeline.updateConfig(this.config);
+
+        this._emitStatus();
+        // Status mit Provider-Info zurückgeben
+        const provider = this.asrPipeline ? this.asrPipeline.getStatus() : {};
+        res.json({
+          success: true,
+          asr: this.config.asr,
+          vad: this.config.vad,
+          dualLanguage: this.config.dualLanguage,
+          langDetect: this.config.langDetect,
+          provider: provider
+        });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    // Liefert nur die VAD-Einstellungen (für capture.html, das keinen vollen Config-Zugriff braucht)
+    this.api.registerRoute('get', '/api/stt-ticker/vad/settings', (req, res) => {
+      res.json({
+        success: true,
+        vad: this.config.vad || {},
+        asr: {
+          provider: this.config.asr?.provider,
+          languageMode: this.config.asr?.languageMode,
+          languageDefault: this.config.asr?.languageDefault,
+          languageFixed: this.config.asr?.languageFixed
+        }
+      });
+    });
+
+    // Testet ob der konfigurierte Deepgram-Key gültig ist
+    this.api.registerRoute('post', '/api/stt-ticker/asr/test-deepgram', async (req, res) => {
+      try {
+        const body = req.body || {};
+        // Key kann aus dem Body kommen (Test vor dem Speichern) oder aus der Config
+        const key = (body.apiKey && body.apiKey.trim()) || (this.config.asr && this.config.asr.deepgramApiKey) || '';
+        if (!key.trim()) {
+          return res.json({ success: false, error: 'Kein Deepgram-Key konfiguriert' });
+        }
+        const DeepgramAsrClient = require('./backend/asr/deepgram-client');
+        const client = new DeepgramAsrClient(key, this.logger, { timeout: 10000 });
+        const result = await client.testConnection();
+        if (result.ok) {
+          this.logger.info('STT Ticker: Deepgram test-connection successful');
+        } else {
+          this.logger.warn('STT Ticker: Deepgram test-connection failed: ' + (result.message || result.status));
+        }
+        res.json({ success: result.ok, ...result });
+      } catch (error) {
+        res.json({ success: false, error: error.message });
+      }
+    });
+
+    // Liste der verfügbaren Deepgram-Modelle
+    this.api.registerRoute('get', '/api/stt-ticker/asr/deepgram/models', (req, res) => {
+      const DeepgramAsrClient = require('./backend/asr/deepgram-client');
+      res.json({
+        success: true,
+        models: Object.entries(DeepgramAsrClient.MODELS).map(([id, info]) => ({ id, ...info }))
+      });
     });
 
     // Status abrufen
@@ -297,11 +394,11 @@ class SttTickerPlugin {
     let transcript;
 
     try {
-      // ASR-Pipeline transkribieren (mit Sidekick-Fallback-Strategie)
+      // ASR-Pipeline transkribieren
+      // Sprache wird intern aus config.asr.languageMode/languageFixed aufgelöst
       transcript = await this.asrPipeline.transcribe(file.buffer, {
         mimeType: file.mimetype,
-        filename: file.originalname,
-        language: this.config.language || undefined
+        filename: file.originalname
       });
     } catch (error) {
       this.logger.warn(`STT Ticker transcription failed: ${error.message}`);
@@ -314,7 +411,12 @@ class SttTickerPlugin {
     if (text.length < (this.config.minTranscriptChars || 2)) {
       return res.json({
         success: true,
-        transcript: { text, segments: transcript.segments || [] },
+        transcript: {
+          text,
+          segments: transcript.segments || [],
+          language: transcript.language || 'unknown',
+          languageSource: transcript.languageSource || 'fallback'
+        },
         accepted: false,
         reason: 'transcript-too-short',
         latencyMs
@@ -325,14 +427,19 @@ class SttTickerPlugin {
     let translation = null;
     if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
       try {
-        translation = await this.translator.translate(text);
+        // Translator bekommt nun auch detected language, damit auto-mode besser funktioniert
+        translation = await this.translator.translate(text, {
+          sourceLanguage: transcript.language,
+          // für sourceLanguage='auto' im Translator muss language weitergegeben werden
+          _detectedLanguage: transcript.language
+        });
       } catch (error) {
         this.logger.warn(`STT Ticker translation failed: ${error.message}`);
         // Non-fatal — wir senden trotzdem den Originaltext
       }
     }
 
-    // Text in den Buffer einfügen
+    // Text in den Buffer einfügen (inkl. erkannter Sprache)
     if (this.textBuffer) {
       this.textBuffer.push({
         text,
@@ -340,6 +447,8 @@ class SttTickerPlugin {
         provider: transcript.provider || 'fish.audio',
         timestamp: Date.now(),
         latencyMs,
+        language: transcript.language || 'unknown',
+        languageSource: transcript.languageSource || 'fallback',
         translation  // Übersetzung anhängen
       });
     }
@@ -348,7 +457,8 @@ class SttTickerPlugin {
     const output = this.textBuffer ? this.textBuffer.getCurrent() : {
       text,
       segments: transcript.segments || [],
-      translation
+      translation,
+      dual: null
     };
     this._emitTranscript(output);
 
@@ -356,7 +466,9 @@ class SttTickerPlugin {
       success: true,
       transcript: output,
       accepted: true,
-      latencyMs
+      latencyMs,
+      language: transcript.language,
+      languageSource: transcript.languageSource
     });
   }
 
@@ -384,6 +496,10 @@ class SttTickerPlugin {
       asr: {
         ttsAvailable: asrStatus.ttsAvailable,
         ttsHasAsr: asrStatus.ttsHasAsr,
+        provider: asrStatus.provider,         // effective: 'fish.audio' | 'deepgram'
+        providerConfig: asrStatus.providerConfig,
+        deepgramConfigured: asrStatus.deepgramConfigured,
+        deepgramModel: asrStatus.deepgramModel,
         diagnostics: asrStatus.diagnostics
       },
       buffer: bufferStats,
@@ -395,11 +511,7 @@ class SttTickerPlugin {
   _getSafeConfig() {
     if (!this.config) return {};
     const safe = JSON.parse(JSON.stringify(this.config));
-    // Sensitive Felder entfernen
-    if (safe.translation) {
-      safe.translation = { ...safe.translation };
-      safe.translation.apiKey = safe.translation.apiKey ? '••••••••' : '';
-    }
+    // API-Key NICHT maskieren — die UI ist nur für den Admin sichtbar
     return safe;
   }
 

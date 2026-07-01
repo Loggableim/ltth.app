@@ -38,6 +38,7 @@ app/user_configs/
 app/data/
 
 # Logs and runtime files
+logs/
 app/logs/
 app/jest-results.json
 app/jest-run.txt
@@ -60,10 +61,25 @@ app/test_user_configs/
 tmp/
 temp/
 *.tmp
+*~
+tmp_*
+1390
 
 # NSIS Installer Build
 build-src/assets/node/
 build-src/installer/*.exe
 LTTH-Setup-*.exe
+launcher.exe~
 test-quiz-timing.js
 test-new-voices.js
+
+# Local plugin secrets (NEVER commit real API keys)
+# Deepgram STT-Ticker
+app/plugins/stt-ticker/data/
+# TTS-Plugin Fish.audio key (wenn separat gespeichert)
+app/plugins/tts/data/
+# Local config overrides
+*.local.json
+
+# Local dev scripts
+app/start-server.sh

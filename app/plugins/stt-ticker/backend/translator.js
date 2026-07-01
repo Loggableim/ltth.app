@@ -63,6 +63,10 @@ class Translator {
    * Übersetzt einen Text, wenn Translation aktiviert ist.
    * Gibt { translated, text, model, color } zurück.
    * Wenn deaktiviert oder Fehler: { translated: false, text: original }
+   *
+   * Optionen:
+   *   sourceLanguage    — explizite Quellsprache (überschreibt cfg.sourceLanguage)
+   *   _detectedLanguage — vom ASR-Pipeline erkannte Sprache (für auto-mode)
    */
   async translate(text, options = {}) {
     const cfg = this.config.translation || {};
@@ -116,9 +120,17 @@ class Translator {
     const inputText = trimmed.length > maxLen ? trimmed.slice(0, maxLen) + '…' : trimmed;
 
     // Prompt bauen
-    const sourceLang = cfg.sourceLanguage || 'auto';
+    // sourceLanguage kann sein: explizit aus Optionen > cfg.sourceLanguage > detected > autoDefault
+    let sourceLang = options.sourceLanguage || cfg.sourceLanguage || 'auto';
+    if (sourceLang === 'auto') {
+      sourceLang = options._detectedLanguage || cfg.autoDetectDefault || 'de';
+    }
     const targetLang = cfg.targetLanguage || 'en';
-    const systemPrompt = `You are a real-time caption translator. Translate the following ${sourceLang === 'auto' ? '' : sourceLang + ' '}text to ${targetLang}. Return ONLY the translation, no explanations, no quotes, no formatting. Keep the tone and style. If the text is already in ${targetLang}, return it unchanged.`;
+    if (sourceLang === targetLang) {
+      // Bereits in Zielsprache → keine Übersetzung nötig, Token sparen
+      return { translated: false, text: trimmed, sameAsTarget: true };
+    }
+    const systemPrompt = `You are a real-time caption translator. Translate the following ${sourceLang} text to ${targetLang}. Return ONLY the translation, no explanations, no quotes, no formatting. Keep the tone and style. If the text is already in ${targetLang}, return it unchanged.`;
 
     // Request starten
     const promise = this._callOllama(systemPrompt, inputText, cfg);

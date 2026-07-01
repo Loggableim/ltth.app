@@ -263,7 +263,8 @@ class TopTierPlugin {
       const isNewStream = this.sessionManager.handleConnect(streamUsername);
 
       if (isNewStream) {
-        // New stream — restart decay scheduler with fresh session
+        // New stream — reset score engine state, restart decay scheduler
+        this.scoreEngine.reset();
         if (config.decay && config.decay.enabled) {
           this.decayScheduler.stop();
           this.decayScheduler.start(config);
@@ -277,8 +278,10 @@ class TopTierPlugin {
       if (config.decay && config.decay.decayOnlyWhenConnected) {
         this.decayScheduler.stop();
       }
-      // Do NOT end session on disconnect — only on new stream connect
-      // This allows temporary disconnects/reconnects to keep the leaderboard
+      // End session on disconnect so a new stream always starts with a fresh leaderboard.
+      // Temporary reconnects within the same stream will get a new session — this is the
+      // expected behavior: every stream start = clean slate.
+      this.sessionManager.endSession();
     });
   }
 

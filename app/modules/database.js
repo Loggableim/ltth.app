@@ -1647,11 +1647,20 @@ class DatabaseManager {
             gift_ball_base_count: 1,
             gift_ball_series_count_divisor: 3,
             gift_ball_max_count: 24,
+            // Gift ball price-tier sizing (cheaper gift = smaller ball).
+            // The first matching tier (largest upper-bound >= price) wins.
+            gift_ball_tier_thresholds_enabled: false,
+            gift_ball_tier_size_1: 44,    // price 1-30      (cheap roses, hearts, etc.)
+            gift_ball_tier_size_2: 80,    // price 31-100    (small gifts)
+            gift_ball_tier_size_3: 150,   // price 101-500   (mid gifts)
+            gift_ball_tier_size_4: 300,   // price 501-1000  (premium gifts)
+            gift_ball_tier_size_5: 700,   // price 1001-5000 (whales)
+            gift_ball_tier_size_6: 5000,  // price >5000     (mythical — fills the screen)
 
             // Herzballons for like events
             heart_balloons_enabled: true,
-            heart_balloon_like_divisor: 2,
-            heart_balloon_min_hearts: 1,
+            heart_balloon_like_divisor: 1,
+            heart_balloon_min_hearts: 5,
             heart_balloon_max_hearts: 16,
             heart_balloon_profile_every: 5,
             heart_balloon_pop_y: 0.5,

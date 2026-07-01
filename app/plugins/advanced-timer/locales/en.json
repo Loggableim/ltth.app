@@ -122,5 +122,46 @@
       "threshold_reached": "Threshold Reached",
       "flow": "Flow"
     }
+  },
+  "rotator": {
+    "sectionTitle": "Rotator (Delta Slider)",
+    "sectionDesc": "Shows the most recent time-delta around the timer (top/bottom/left/right). Custom gifts display the gift GIF from the catalog.",
+    "enable": "Enable Rotator",
+    "position": "Position",
+    "positionTop": "Top",
+    "positionBottom": "Bottom",
+    "positionLeft": "Left",
+    "positionRight": "Right",
+    "slots": "Slots",
+    "rotationMs": "Rotation (ms)",
+    "minSeconds": "Min seconds to show",
+    "showGiftImage": "Show gift image",
+    "showGiftName": "Show gift name",
+    "showTimeDelta": "Show time delta",
+    "showSourceEmoji": "Show source emoji",
+    "fontScale": "Font scale",
+    "fadeAlpha": "Fade alpha",
+    "sourcesShown": "Sources shown:",
+    "save": "Save Rotator"
+  },
+  "thresholdEffects": {
+    "sectionTitle": "Big-Delta Effects",
+    "sectionDesc": "When a single time-delta exceeds the threshold, the timer is wrapped in a frame/animation. Use a built-in style, upload your own, or both.",
+    "enable": "Enable Effects",
+    "thresholdSeconds": "Threshold (seconds)",
+    "direction": "Direction",
+    "directionBoth": "Both (+/-)",
+    "directionPositive": "Positive only",
+    "directionNegative": "Negative only",
+    "durationMs": "Effect duration (ms)",
+    "builtin": "Built-in animation",
+    "intensity": "Intensity (0.5..2.0)",
+    "frameSlotsTitle": "Custom frame slots (upload up to 6 PNG/WebP/GIF/SVG — shown round-robin):",
+    "frameSlotN": "Slot {n}",
+    "frameEmpty": "No frame",
+    "frameLabel": "Label (optional)",
+    "frameUpload": "Upload",
+    "frameRemove": "Remove",
+    "save": "Save Settings"
   }
 }
