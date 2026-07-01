@@ -576,20 +576,13 @@
     applyConfig();
 
     // ============================================================
-    // SOCKET.IO CONNECTION
+    // SOCKET.IO — NUR Anzeige, kein Audio-Capture
     // ============================================================
     let socket = null;
     let connected = false;
 
     function connectSocket() {
-      const opts = {};
-      if (config.serverUrl) {
-        opts.server = config.serverUrl;
-      }
-
-      socket = io(opts.server || undefined, {
-        transports: ['websocket', 'polling']
-      });
+      socket = io(undefined, { transports: ['websocket', 'polling'] });
 
       socket.on('connect', () => {
         connected = true;
@@ -611,8 +604,7 @@
 
       socket.on('stt-ticker:status', (data) => {
         if (config.debug) {
-          statusBadge.textContent = 'ASR: ' + (data.asr?.sidekickAvailable ? 'Sidekick' : 'Direct') +
-            ' | Segments: ' + (data.buffer?.segmentCount || 0);
+          statusBadge.textContent = 'Segments: ' + (data.buffer?.segmentCount || 0);
         }
       });
     }
@@ -721,211 +713,10 @@
     }
 
     // ============================================================
-    // AUDIO CAPTURE (AudioContext → PCM → WAV → Server)
-    // ============================================================
-    let audioContext = null;
-    let scriptProcessor = null;
-    let audioStream = null;
-    let audioSource = null;
-    let isCapturing = false;
-    let audioBuffer = [];
-    let captureInterval = null;
-    let sendingWav = false;
-    const SAMPLE_RATE = 16000;
-    const CHUNK_DURATION_MS = 5000;
-    const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
-
-    async function startAudioCapture() {
-      if (isCapturing) return;
-      if (!connected) {
-        connectionStatus.textContent = 'Waiting for connection...';
-        connectionStatus.className = 'visible disconnected';
-        setTimeout(startAudioCapture, 1000);
-        return;
-      }
-
-      try {
-        const constraints = { audio: true };
-        if (config.audioDeviceId) {
-          constraints.audio = { deviceId: { exact: config.audioDeviceId } };
-        }
-
-        audioStream = await navigator.mediaDevices.getUserMedia(constraints);
-        isCapturing = true;
-
-        connectionStatus.textContent = '🎤 Listening...';
-        connectionStatus.className = 'visible listening';
-
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({
-          sampleRate: SAMPLE_RATE
-        });
-        audioSource = audioContext.createMediaStreamSource(audioStream);
-
-        // ScriptProcessorNode für PCM-Daten (deprecated aber universell)
-        scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-        audioSource.connect(scriptProcessor);
-        scriptProcessor.connect(audioContext.destination);
-
-        scriptProcessor.onaudioprocess = (event) => {
-          const input = event.inputBuffer.getChannelData(0);
-          // Float32 → Int16 konvertieren und sammeln
-          for (let i = 0; i < input.length; i++) {
-            audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
-          }
-
-          // Senden wenn genug Samples gesammelt
-          if (audioBuffer.length >= CHUNK_SAMPLES) {
-            sendWavChunk();
-          }
-        };
-
-        // Fallback: regelmäßig senden auch wenn wenig Audio
-        captureInterval = setInterval(() => {
-          if (audioBuffer.length > 0) {
-            sendWavChunk();
-          }
-        }, CHUNK_DURATION_MS + 1000);
-
-      } catch (error) {
-        console.error('Microphone access denied:', error);
-        connectionStatus.textContent = '🎤 Mic denied - ' + error.message;
-        connectionStatus.className = 'visible disconnected';
-        setTimeout(startAudioCapture, 5000);
-      }
-    }
-
-    function stopAudioCapture() {
-      isCapturing = false;
-      if (captureInterval) {
-        clearInterval(captureInterval);
-        captureInterval = null;
-      }
-      if (scriptProcessor) {
-        scriptProcessor.disconnect();
-        scriptProcessor = null;
-      }
-      if (audioSource) {
-        audioSource.disconnect();
-        audioSource = null;
-      }
-      if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-      }
-      if (audioStream) {
-        audioStream.getTracks().forEach(track => track.stop());
-        audioStream = null;
-      }
-      audioBuffer = [];
-      connectionStatus.textContent = 'Stopped';
-      connectionStatus.className = 'visible';
-      setTimeout(() => { connectionStatus.classList.remove('visible'); }, 2000);
-    }
-
-    function sendWavChunk() {
-      if (!connected || audioBuffer.length < 1600 || sendingWav) return;
-      sendingWav = true;
-
-      const samples = audioBuffer.splice(0);
-      const wavBlob = encodeWav(samples, SAMPLE_RATE);
-      sendAudioChunk(wavBlob, 'audio/wav').finally(() => {
-        sendingWav = false;
-      });
-    }
-
-    function encodeWav(samples, sampleRate) {
-      // Float32 → Int16
-      const numChannels = 1;
-      const bitsPerSample = 16;
-      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
-      const blockAlign = numChannels * bitsPerSample / 8;
-      const dataSize = samples.length * blockAlign;
-      const bufferSize = 44 + dataSize;
-      const buffer = new ArrayBuffer(bufferSize);
-      const view = new DataView(buffer);
-
-      // WAV Header
-      writeString(view, 0, 'RIFF');
-      view.setUint32(4, bufferSize - 8, true);
-      writeString(view, 8, 'WAVE');
-      writeString(view, 12, 'fmt ');
-      view.setUint32(16, 16, true); // chunk size
-      view.setUint16(20, 1, true); // PCM
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, byteRate, true);
-      view.setUint16(32, blockAlign, true);
-      view.setUint16(34, bitsPerSample, true);
-      writeString(view, 36, 'data');
-      view.setUint32(40, dataSize, true);
-
-      // Samples
-      let offset = 44;
-      for (let i = 0; i < samples.length; i++) {
-        const s = Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767)));
-        view.setInt16(offset, s, true);
-        offset += 2;
-      }
-
-      return new Blob([buffer], { type: 'audio/wav' });
-    }
-
-    function writeString(view, offset, string) {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    }
-
-    async function sendAudioChunk(blob, mimeType) {
-      if (!connected) return;
-
-      const formData = new FormData();
-      formData.append('audio', blob, 'audio.wav');
-
-      try {
-        const baseUrl = config.serverUrl || '';
-        const response = await fetch(baseUrl + '/api/stt-ticker/transcribe', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await response.json();
-        if (!data.success && config.debug) {
-          console.warn('Transcribe error:', data.message);
-        }
-      } catch (error) {
-        if (config.debug) {
-          console.error('Send audio failed:', error);
-        }
-      }
-    }
-
-    // ============================================================
-    // INIT
+    // INIT — NUR Anzeige
     // ============================================================
     function init() {
       connectSocket();
-
-      // Auto-Capture starten
-      if (config.autoCapture) {
-        // Warte kurz, bis Socket verbunden ist
-        setTimeout(startAudioCapture, 1500);
-      }
-
-      // Keyboard-Shortcuts (für OBS-Integration)
-      document.addEventListener('keydown', (e) => {
-        if (e.key === ' ' && e.ctrlKey) {
-          e.preventDefault();
-          if (isCapturing) {
-            stopAudioCapture();
-          } else {
-            startAudioCapture();
-          }
-        }
-        if (e.key === 'c' && e.ctrlKey) {
-          e.preventDefault();
-          fetch((config.serverUrl || '') + '/api/stt-ticker/clear', { method: 'POST' });
-        }
-      });
     }
 
     // Start when DOM ready

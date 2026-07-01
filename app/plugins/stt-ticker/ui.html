@@ -24,13 +24,6 @@
     .stat { background: #3a3a4e; padding: 15px; border-radius: 8px; text-align: center; }
     .stat-value { font-size: 28px; font-weight: bold; color: #4CAF50; }
     .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
-    .status-dot {
-      display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;
-    }
-    .status-dot.ok { background: #4CAF50; }
-    .status-dot.warn { background: #FFC107; }
-    .status-dot.error { background: #f44336; }
-    .status-dot.off { background: #666; }
     label { display: block; margin-top: 12px; color: #ccc; font-size: 13px; }
     input, select {
       width: 100%; padding: 10px; margin-top: 4px;
@@ -48,9 +41,10 @@
     .btn-secondary:hover { background: #666; }
     .btn-danger { background: #f44336; color: white; }
     .btn-danger:hover { background: #d32f2f; }
-    .success { color: #4CAF50; }
-    .error { color: #f44336; }
-    .info { color: #64B5F6; }
+    .btn-success { background: #2196F3; color: white; }
+    .btn-success:hover { background: #1976D2; }
+    .btn-success.active { background: #f44336; }
+    .btn-success.active:hover { background: #d32f2f; }
     .overlay-link {
       display: inline-block; margin-top: 10px; padding: 8px 16px;
       background: #64B5F6; color: #fff; border-radius: 6px; text-decoration: none;
@@ -66,6 +60,13 @@
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .section-toggle { cursor: pointer; user-select: none; }
     .section-toggle:hover { opacity: 0.8; }
+    .mic-select { margin-top: 4px; }
+    .capture-status {
+      display: inline-block; margin-left: 10px; font-size: 13px;
+    }
+    .capture-status.listening { color: #4CAF50; }
+    .capture-status.stopped { color: #999; }
+    .capture-status.error { color: #f44336; }
   </style>
 </head>
 <body>
@@ -84,14 +85,26 @@
       </div>
     </div>
 
+    <!-- Audio Capture (im Dashboard-Browser) -->
+    <div class="card">
+      <h2>🎤 Audio-Capture</h2>
+      <p style="color:#aaa;margin-bottom:10px;">Das Mikrofon wird in DIESEM Browser captured. OBS zeigt nur das Overlay an.</p>
+      <label>Mikrofon</label>
+      <select id="mic-select" class="mic-select"></select>
+      <div style="margin-top:15px;">
+        <button id="capture-btn" class="btn btn-success" onclick="toggleCapture()">🎤 Capture starten</button>
+        <span id="capture-status" class="capture-status stopped">⏹️ Gestoppt</span>
+      </div>
+    </div>
+
     <!-- Overlay -->
     <div class="card">
-      <h2>Overlay</h2>
+      <h2>Overlay (OBS Browser Source)</h2>
       <p style="color:#aaa;margin-bottom:10px;">Füge diese URL als Browser Source in OBS hinzu:</p>
-      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;">
+      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;" onclick="this.select()">
       <div style="margin-top:10px;">
         <label>Design</label>
-        <select id="design-select">
+        <select id="design-select" onchange="updateOverlayUrl()">
           <option value="classic">Classic (TV-Untertitel)</option>
           <option value="modern">Modern (Clean, Blur)</option>
           <option value="minimal">Minimal (Nur Text)</option>
@@ -103,7 +116,7 @@
           <option value="karaoke">Karaoke (Wort-Highlight)</option>
         </select>
         <label>Position</label>
-        <select id="position-select">
+        <select id="position-select" onchange="updateOverlayUrl()">
           <option value="bottom-center">Unten Mitte</option>
           <option value="bottom-left">Unten Links</option>
           <option value="bottom-right">Unten Rechts</option>
@@ -113,9 +126,9 @@
           <option value="middle-center">Mitte</option>
         </select>
         <label>Max Lines</label>
-        <input type="number" id="maxLines-input" min="1" max="10" value="2">
+        <input type="number" id="maxLines-input" min="1" max="10" value="2" onchange="updateOverlayUrl()" oninput="updateOverlayUrl()">
         <label>Font Size</label>
-        <input type="text" id="fontSize-input" value="36px">
+        <input type="text" id="fontSize-input" value="36px" onchange="updateOverlayUrl()" oninput="updateOverlayUrl()">
       </div>
       <button class="btn btn-primary" onclick="updateOverlayUrl()">URL aktualisieren</button>
       <a id="open-overlay-btn" href="#" target="_blank" class="overlay-link">🔗 Overlay in Tab öffnen</a>
@@ -157,6 +170,165 @@
   <script>
     const BASE = window.location.origin;
 
+    // ===== Audio Capture (im Dashboard-Browser) =====
+    let audioContext = null;
+    let scriptProcessor = null;
+    let audioStream = null;
+    let audioSource = null;
+    let isCapturing = false;
+    let audioBuffer = [];
+    let captureInterval = null;
+    let sendingWav = false;
+    const SAMPLE_RATE = 16000;
+    const CHUNK_DURATION_MS = 5000;
+    const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
+
+    async function loadMicrophones() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter(d => d.kind === 'audioinput');
+        const select = document.getElementById('mic-select');
+        select.innerHTML = '';
+        for (const mic of mics) {
+          const opt = document.createElement('option');
+          opt.value = mic.deviceId;
+          opt.textContent = mic.label || 'Mikrofon ' + (select.options.length + 1);
+          select.appendChild(opt);
+        }
+      } catch (e) {
+        console.error('Failed to enumerate mics:', e);
+      }
+    }
+
+    async function toggleCapture() {
+      const btn = document.getElementById('capture-btn');
+      const status = document.getElementById('capture-status');
+
+      if (isCapturing) {
+        stopCapture();
+        btn.textContent = '🎤 Capture starten';
+        btn.classList.remove('active');
+        status.textContent = '⏹️ Gestoppt';
+        status.className = 'capture-status stopped';
+        return;
+      }
+
+      try {
+        const deviceId = document.getElementById('mic-select').value;
+        const constraints = deviceId
+          ? { audio: { deviceId: { exact: deviceId } } }
+          : { audio: true };
+
+        audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+        isCapturing = true;
+
+        btn.textContent = '⏹️ Capture stoppen';
+        btn.classList.add('active');
+        status.textContent = '🎤 Höre zu...';
+        status.className = 'capture-status listening';
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        audioSource = audioContext.createMediaStreamSource(audioStream);
+        scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+        audioSource.connect(scriptProcessor);
+        scriptProcessor.connect(audioContext.destination);
+
+        scriptProcessor.onaudioprocess = (event) => {
+          const input = event.inputBuffer.getChannelData(0);
+          for (let i = 0; i < input.length; i++) {
+            audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
+          }
+          if (audioBuffer.length >= CHUNK_SAMPLES) {
+            sendWavChunk();
+          }
+        };
+
+        captureInterval = setInterval(() => {
+          if (audioBuffer.length > 0) sendWavChunk();
+        }, CHUNK_DURATION_MS + 1000);
+
+      } catch (error) {
+        status.textContent = '❌ ' + error.message;
+        status.className = 'capture-status error';
+        showToast('❌ Mikrofon-Zugriff verweigert: ' + error.message, 'error');
+      }
+    }
+
+    function stopCapture() {
+      isCapturing = false;
+      if (captureInterval) { clearInterval(captureInterval); captureInterval = null; }
+      if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+      if (audioSource) { audioSource.disconnect(); audioSource = null; }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+      audioBuffer = [];
+    }
+
+    function sendWavChunk() {
+      if (!connected || audioBuffer.length < 1600 || sendingWav) return;
+      sendingWav = true;
+      const samples = audioBuffer.splice(0);
+      const wavBlob = encodeWav(samples, SAMPLE_RATE);
+      sendAudioToServer(wavBlob).finally(() => { sendingWav = false; });
+    }
+
+    function encodeWav(samples, sampleRate) {
+      const numChannels = 1, bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+      const blockAlign = numChannels * bitsPerSample / 8;
+      const dataSize = samples.length * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, buffer.byteLength - 8, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitsPerSample, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, dataSize, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767)));
+        view.setInt16(offset, s, true);
+        offset += 2;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+
+    let connected = false;
+    let socket = null;
+
+    function connectSocket() {
+      socket = io(undefined, { transports: ['websocket', 'polling'] });
+      socket.on('connect', () => { connected = true; });
+      socket.on('disconnect', () => { connected = false; });
+    }
+
+    async function sendAudioToServer(blob) {
+      if (!connected) return;
+      const formData = new FormData();
+      formData.append('audio', blob, 'audio.wav');
+      try {
+        const response = await fetch('/api/stt-ticker/transcribe', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (!data.success) {
+          console.warn('Transcribe error:', data.message);
+        }
+      } catch (error) {
+        console.error('Send audio failed:', error);
+      }
+    }
+
     // ===== Status =====
     async function refreshStatus() {
       try {
@@ -183,14 +355,12 @@
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
-
-        // Sprache-Dropdowns befüllen
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
-
-        // Modell-Dropdown befüllen
         await loadModels(tc.model || 'deepseek-v4-flash');
-
         if (tc.color) document.getElementById('translation-color').value = tc.color;
+
+        // Overlay-URL nach Status-Update neu berechnen
+        updateOverlayUrl();
 
       } catch (e) {
         console.error('Status fetch failed:', e);
@@ -207,7 +377,6 @@
         sourceLanguage: document.getElementById('translation-sourceLanguage').value,
         color: document.getElementById('translation-color').value
       };
-
       try {
         const res = await fetch('/api/stt-ticker/config', {
           method: 'POST',
@@ -228,7 +397,10 @@
       const position = document.getElementById('position-select').value;
       const maxLines = document.getElementById('maxLines-input').value;
       const fontSize = document.getElementById('fontSize-input').value;
-      const url = BASE + '/overlay/stt-ticker?design=' + design + '&position=' + position + '&maxLines=' + maxLines + '&fontSize=' + encodeURIComponent(fontSize);
+      const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
+        + '&position=' + encodeURIComponent(position)
+        + '&maxLines=' + encodeURIComponent(maxLines)
+        + '&fontSize=' + encodeURIComponent(fontSize);
       document.getElementById('overlay-url').value = url;
       document.getElementById('open-overlay-btn').href = url;
     }
@@ -253,29 +425,21 @@
         const res = await fetch('/api/stt-ticker/translator/languages');
         const data = await res.json();
         if (!data.success || !data.languages) return;
-
         const sourceSelect = document.getElementById('translation-sourceLanguage');
         const targetSelect = document.getElementById('translation-targetLanguage');
-
         sourceSelect.innerHTML = '';
         targetSelect.innerHTML = '';
-
         for (const lang of data.languages) {
           const opt1 = document.createElement('option');
-          opt1.value = lang.code;
-          opt1.textContent = lang.label;
+          opt1.value = lang.code; opt1.textContent = lang.label;
           if (lang.code === selectedSource) opt1.selected = true;
           sourceSelect.appendChild(opt1);
-
           const opt2 = document.createElement('option');
-          opt2.value = lang.code;
-          opt2.textContent = lang.label;
+          opt2.value = lang.code; opt2.textContent = lang.label;
           if (lang.code === selectedTarget) opt2.selected = true;
           targetSelect.appendChild(opt2);
         }
-      } catch (e) {
-        console.error('Failed to load languages:', e);
-      }
+      } catch (e) { console.error('Failed to load languages:', e); }
     }
 
     // ===== Modell-Dropdown laden =====
@@ -286,45 +450,15 @@
         const res = await fetch(url);
         const data = await res.json();
         if (!data.success || !data.models) return;
-
         const select = document.getElementById('translation-model');
         select.innerHTML = '';
-
         for (const model of data.models) {
           const opt = document.createElement('option');
-          opt.value = model.id;
-          opt.textContent = model.name;
+          opt.value = model.id; opt.textContent = model.name;
           if (model.id === selectedModel) opt.selected = true;
           select.appendChild(opt);
         }
-      } catch (e) {
-        console.error('Failed to load models:', e);
-      }
-    }
-
-    // ===== Config speichern =====
-    async function saveConfig() {
-      const translation = {
-        enabled: document.getElementById('translation-enabled').checked,
-        apiKey: document.getElementById('translation-apiKey').value,
-        model: document.getElementById('translation-model').value,
-        targetLanguage: document.getElementById('translation-targetLanguage').value,
-        sourceLanguage: document.getElementById('translation-sourceLanguage').value,
-        color: document.getElementById('translation-color').value
-      };
-
-      try {
-        const res = await fetch('/api/stt-ticker/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ translation })
-        });
-        const data = await res.json();
-        showToast(data.success ? '✅ Config saved' : '❌ ' + (data.error || 'Error'), data.success ? 'success' : 'error');
-        refreshStatus();
-      } catch (e) {
-        showToast('❌ ' + e.message, 'error');
-      }
+      } catch (e) { console.error('Failed to load models:', e); }
     }
 
     // ===== Section Toggle =====
@@ -343,6 +477,8 @@
     }
 
     // ===== Init =====
+    connectSocket();
+    loadMicrophones();
     refreshStatus();
     updateOverlayUrl();
   </script>
