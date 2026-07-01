@@ -185,11 +185,29 @@
     const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
 
     async function loadMicrophones() {
+      const select = document.getElementById('mic-select');
+      select.innerHTML = '<option value="">— Mikrofonliste wird geladen... —</option>';
       try {
+        // Einmalig Erlaubnis anfordern, damit enumerateDevices Labels liefert
+        let tempStream = null;
+        try {
+          tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (permError) {
+          // Keine Erlaubnis — Devices ohne Labels anzeigen
+        }
+
         const devices = await navigator.mediaDevices.enumerateDevices();
         const mics = devices.filter(d => d.kind === 'audioinput');
-        const select = document.getElementById('mic-select');
+
+        if (tempStream) {
+          tempStream.getTracks().forEach(t => t.stop());
+        }
+
         select.innerHTML = '';
+        if (mics.length === 0) {
+          select.innerHTML = '<option value="">— Keine Mikrofone gefunden —</option>';
+          return;
+        }
         for (const mic of mics) {
           const opt = document.createElement('option');
           opt.value = mic.deviceId;
@@ -198,6 +216,7 @@
         }
       } catch (e) {
         console.error('Failed to enumerate mics:', e);
+        select.innerHTML = '<option value="">— Mikrofonliste fehlgeschlagen —</option>';
       }
     }
 
@@ -483,10 +502,17 @@
     }
 
     // ===== Init =====
-    connectSocket();
-    loadMicrophones();
-    refreshStatus();
-    updateOverlayUrl();
+    async function init() {
+      connectSocket();
+      await loadMicrophones();
+      try {
+        await refreshStatus();
+      } catch (e) {
+        console.error('Init failed:', e);
+      }
+      updateOverlayUrl();
+    }
+    init();
   </script>
 </body>
 </html>
