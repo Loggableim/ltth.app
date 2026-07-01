@@ -211,6 +211,7 @@ class Translator {
 
   _defaultModels() {
     return [
+      { id: 'nemotron-3-nano', name: 'Nemotron 3 Nano' },
       { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash' },
       { id: 'deepseek-v4', name: 'DeepSeek V4' },
       { id: 'qwen2.5-14b-instruct', name: 'Qwen 2.5 14B' },

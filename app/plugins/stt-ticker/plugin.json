@@ -27,7 +27,7 @@
     "translation": {
       "enabled": false,
       "apiKey": "",
-      "model": "deepseek-v4-flash",
+      "model": "nemotron-3-nano",
       "targetLanguage": "en",
       "sourceLanguage": "de",
       "color": "#FFD700",

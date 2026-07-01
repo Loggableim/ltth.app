@@ -221,7 +221,7 @@
           apiKeyField.value = tc.apiKey;
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
-        await loadModels(tc.model || 'deepseek-v4-flash');
+        await loadModels(tc.model || 'nemotron-3-nano');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
         updateOverlayUrl();

@@ -27,7 +27,7 @@ const DEFAULT_CONFIG = {
   translation: {
     enabled: false,
     apiKey: '',
-    model: 'deepseek-v4-flash',  // default model for translation
+    model: 'nemotron-3-nano',  // default model for translation
     targetLanguage: 'en',
     sourceLanguage: 'de',
     color: '#FFD700',            // gold — Farbe für übersetzten Text
