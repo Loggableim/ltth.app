@@ -610,86 +610,50 @@
     }
 
     // ============================================================
-    // TRANSCRIPT HANDLING — Fließender Ticker mit Dual-Language
+    // TRANSCRIPT HANDLING — Alle Segmente, beide Sprachen gleichzeitig
     // ============================================================
     let visibleSegments = [];  // { id, text, translation, timestamp }
     let segmentCounter = 0;
-    const SEGMENT_DISPLAY_MS = 8000;
-    const MAX_VISIBLE_SEGMENTS = 3;
+    const SEGMENT_DISPLAY_MS = 12000;  // 12s pro Segment (hinterherhinken ist okay)
+    const MAX_VISIBLE_SEGMENTS = 5;    // mehr Segmente gleichzeitig sichtbar
 
     function handleTranscript(data) {
       if (!data) return;
 
-      // Neues Format: data.segments = Array von { text, lines, translation, timestamp }
-      // Altes Format: data.text + data.translation (Fallback)
       const incomingSegments = data.segments || [];
       const now = Date.now();
 
       if (incomingSegments.length > 0) {
-        // Jedes eingehende Segment verarbeiten
         for (const seg of incomingSegments) {
           if (!seg.text) continue;
 
           segmentCounter++;
-          const newSeg = {
+          visibleSegments.push({
             id: segmentCounter,
             text: seg.text,
             translation: seg.translation && seg.translation.translated ? seg.translation : null,
             timestamp: seg.timestamp || now
-          };
-
-          // Ähnliches Segment ersetzen (Fortsetzung)
-          const last = visibleSegments[visibleSegments.length - 1];
-          if (last && textSimilarity(last.text, seg.text) > 0.6) {
-            last.text = seg.text;
-            if (newSeg.translation) last.translation = newSeg.translation;
-            last.timestamp = now;
-          } else {
-            visibleSegments.push(newSeg);
-          }
+          });
         }
       } else if (data.text) {
-        // Fallback: altes Format
         segmentCounter++;
-        const newSeg = {
+        visibleSegments.push({
           id: segmentCounter,
           text: data.text,
           translation: data.translation && data.translation.translated ? data.translation : null,
           timestamp: now
-        };
-
-        const last = visibleSegments[visibleSegments.length - 1];
-        if (last && textSimilarity(last.text, data.text) > 0.6) {
-          last.text = data.text;
-          if (newSeg.translation) last.translation = newSeg.translation;
-          last.timestamp = now;
-        } else {
-          visibleSegments.push(newSeg);
-        }
+        });
       }
 
       // Alte Segmente entfernen
       visibleSegments = visibleSegments.filter(s => (now - s.timestamp) < SEGMENT_DISPLAY_MS);
 
-      // Max Segmente begrenzen
+      // Max Segmente begrenzen (älteste zuerst raus)
       while (visibleSegments.length > MAX_VISIBLE_SEGMENTS) {
         visibleSegments.shift();
       }
 
       renderSegments();
-    }
-
-    function textSimilarity(a, b) {
-      if (!a || !b) return 0;
-      if (a === b) return 1;
-      const wordsA = a.toLowerCase().split(/\s+/).filter(Boolean);
-      const wordsB = b.toLowerCase().split(/\s+/).filter(Boolean);
-      if (wordsA.length === 0 || wordsB.length === 0) return 0;
-      const setA = new Set(wordsA);
-      const setB = new Set(wordsB);
-      const intersection = new Set([...setA].filter(w => setB.has(w)));
-      const union = new Set([...setA, ...setB]);
-      return intersection.size / (union.size || 1);
     }
 
     function renderSegments() {
@@ -705,14 +669,13 @@
         const seg = visibleSegments[i];
         const age = now - seg.timestamp;
         const opacity = Math.max(0.3, 1 - (age / SEGMENT_DISPLAY_MS));
-        const isNewest = (i === visibleSegments.length - 1);
 
         // Original-Text
         html += '<div class="ticker-line original-line" style="opacity:' + opacity + '">'
           + escapeHtml(seg.text) + '</div>';
 
-        // Übersetzung (nur beim neuesten Segment, darunter)
-        if (seg.translation && config.showTranslation && isNewest) {
+        // Übersetzung — IMMER anzeigen, nicht nur beim neuesten
+        if (seg.translation && config.showTranslation) {
           const transColor = seg.translation.color || config.translationColor;
           html += '<div class="ticker-line translation-line" style="opacity:' + opacity + ';color:' + transColor + '">'
             + '<span class="translation-label">' + escapeHtml(config.translationLabel) + '</span>'

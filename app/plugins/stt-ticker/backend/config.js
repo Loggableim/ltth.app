@@ -18,8 +18,8 @@ const DEFAULT_CONFIG = {
   rateLimitWindowMs: 60000,    // rate limit window
 
   // Text buffer settings
-  bufferSize: 10,              // number of segments to keep in ring buffer
-  maxTextAge: 30,              // seconds before a segment expires
+  bufferSize: 20,              // number of segments to keep in ring buffer
+  maxTextAge: 60,              // seconds before a segment expires
   maxLines: 2,                 // default max lines in overlay
   maxCharsPerLine: 80,         // max chars per line before wrap
 
