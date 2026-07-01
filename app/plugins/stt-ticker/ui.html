@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STT Ticker - Admin</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #4CAF50; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+    h2 { color: #64B5F6; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #64B5F6; padding-bottom: 5px; }
+    .card {
+      background: #2a2a3e; padding: 20px; border-radius: 10px;
+      margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+    .stat { background: #3a3a4e; padding: 15px; border-radius: 8px; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: bold; color: #4CAF50; }
+    .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
+    .status-dot {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;
+    }
+    .status-dot.ok { background: #4CAF50; }
+    .status-dot.warn { background: #FFC107; }
+    .status-dot.error { background: #f44336; }
+    .status-dot.off { background: #666; }
+    label { display: block; margin-top: 12px; color: #ccc; font-size: 13px; }
+    input, select {
+      width: 100%; padding: 10px; margin-top: 4px;
+      background: #3a3a4e; border: 1px solid #555; border-radius: 6px;
+      color: #eee; font-size: 14px;
+    }
+    input:focus, select:focus { border-color: #4CAF50; outline: none; }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 14px; margin-top: 15px; transition: all 0.3s;
+    }
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-primary:hover { background: #45a049; }
+    .btn-secondary { background: #555; color: #eee; }
+    .btn-secondary:hover { background: #666; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-danger:hover { background: #d32f2f; }
+    .success { color: #4CAF50; }
+    .error { color: #f44336; }
+    .info { color: #64B5F6; }
+    .overlay-link {
+      display: inline-block; margin-top: 10px; padding: 8px 16px;
+      background: #64B5F6; color: #fff; border-radius: 6px; text-decoration: none;
+    }
+    .overlay-link:hover { background: #42A5F5; }
+    .toast {
+      position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+      border-radius: 8px; color: white; z-index: 9999;
+      animation: slideIn 0.3s ease;
+    }
+    .toast.success { background: #4CAF50; }
+    .toast.error { background: #f44336; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .section-toggle { cursor: pointer; user-select: none; }
+    .section-toggle:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 STT Ticker</h1>
+    <p style="color:#aaa;margin-bottom:20px;">Live-Untertitel-Overlay für Hearing-Impaired Zuschauer</p>
+
+    <!-- Status -->
+    <div class="card">
+      <h2>Status</h2>
+      <div class="grid" id="status-grid">
+        <div class="stat"><div class="stat-value" id="stat-enabled">—</div><div class="stat-label">Enabled</div></div>
+        <div class="stat"><div class="stat-value" id="stat-asr">—</div><div class="stat-label">ASR Backend</div></div>
+        <div class="stat"><div class="stat-value" id="stat-translation">—</div><div class="stat-label">Translation</div></div>
+        <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div class="card">
+      <h2>Overlay</h2>
+      <p style="color:#aaa;margin-bottom:10px;">Füge diese URL als Browser Source in OBS hinzu:</p>
+      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;">
+      <div style="margin-top:10px;">
+        <label>Design</label>
+        <select id="design-select">
+          <option value="classic">Classic (TV-Untertitel)</option>
+          <option value="modern">Modern (Clean, Blur)</option>
+          <option value="minimal">Minimal (Nur Text)</option>
+          <option value="neon">Neon (Glow-Effekt)</option>
+          <option value="glass">Glass (Glasmorphismus)</option>
+          <option value="compact">Compact (Klein)</option>
+          <option value="cinematic">Cinematic (Film)</option>
+          <option value="scrolling">Scrolling (Laufband)</option>
+          <option value="karaoke">Karaoke (Wort-Highlight)</option>
+        </select>
+        <label>Position</label>
+        <select id="position-select">
+          <option value="bottom-center">Unten Mitte</option>
+          <option value="bottom-left">Unten Links</option>
+          <option value="bottom-right">Unten Rechts</option>
+          <option value="top-center">Oben Mitte</option>
+          <option value="top-left">Oben Links</option>
+          <option value="top-right">Oben Rechts</option>
+          <option value="middle-center">Mitte</option>
+        </select>
+        <label>Max Lines</label>
+        <input type="number" id="maxLines-input" min="1" max="10" value="2">
+        <label>Font Size</label>
+        <input type="text" id="fontSize-input" value="36px">
+      </div>
+      <button class="btn btn-primary" onclick="updateOverlayUrl()">URL aktualisieren</button>
+      <a id="open-overlay-btn" href="#" target="_blank" class="overlay-link">🔗 Overlay in Tab öffnen</a>
+    </div>
+
+    <!-- Translation Settings -->
+    <div class="card">
+      <h2 class="section-toggle" onclick="toggleSection('translation-section')">🌐 Übersetzung ▾</h2>
+      <div id="translation-section">
+        <label>
+          <input type="checkbox" id="translation-enabled" onchange="saveConfig()">
+          Übersetzung aktivieren (Ollama Cloud)
+        </label>
+        <label>API Key</label>
+        <input type="password" id="translation-apiKey" placeholder="sk-ollama-cloud-..." onchange="saveConfig()">
+        <label>Modell</label>
+        <select id="translation-model" onchange="saveConfig()">
+          <option value="">— Modelle laden... —</option>
+        </select>
+        <label>Quellsprache (was wird gesprochen)</label>
+        <select id="translation-sourceLanguage" onchange="saveConfig()"></select>
+        <label>Zielsprache (Übersetzung)</label>
+        <select id="translation-targetLanguage" onchange="saveConfig()"></select>
+        <label>Übersetzungs-Farbe</label>
+        <input type="color" id="translation-color" value="#ffd700" onchange="saveConfig()">
+        <button class="btn btn-secondary" onclick="clearTranslationCache()">Cache leeren</button>
+        <span id="translation-status" style="margin-left:10px;font-size:13px;"></span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <h2>Aktionen</h2>
+      <button class="btn btn-danger" onclick="clearBuffer()">🧹 Buffer leeren</button>
+      <button class="btn btn-secondary" onclick="refreshStatus()">🔄 Status aktualisieren</button>
+    </div>
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    // ===== Status =====
+    async function refreshStatus() {
+      try {
+        const res = await fetch('/api/stt-ticker/status');
+        const data = await res.json();
+        if (!data.success) return;
+        const s = data.status;
+
+        document.getElementById('stat-enabled').textContent = s.enabled ? '✅ Active' : '⏸️ Disabled';
+        document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
+
+        const asr = s.asr || {};
+        document.getElementById('stat-asr').textContent = asr.ttsAvailable ? '✅ TTS Plugin' : '❌ TTS Plugin';
+        document.getElementById('stat-asr').style.color = asr.ttsAvailable ? '#4CAF50' : '#f44336';
+
+        const trans = s.translation || {};
+        document.getElementById('stat-translation').textContent = trans.enabled ? '✅ ' + trans.model : '⏸️ Off';
+        document.getElementById('stat-translation').style.color = trans.enabled ? '#4CAF50' : '#666';
+
+        const buf = s.buffer || {};
+        document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
+
+        // Translation-Form befüllen
+        const cfg = s.config || {};
+        const tc = cfg.translation || {};
+        document.getElementById('translation-enabled').checked = tc.enabled || false;
+
+        // Sprache-Dropdowns befüllen
+        await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
+
+        // Modell-Dropdown befüllen
+        await loadModels(tc.model || 'deepseek-v4-flash');
+
+        if (tc.color) document.getElementById('translation-color').value = tc.color;
+
+      } catch (e) {
+        console.error('Status fetch failed:', e);
+      }
+    }
+
+    // ===== Config speichern =====
+    async function saveConfig() {
+      const translation = {
+        enabled: document.getElementById('translation-enabled').checked,
+        apiKey: document.getElementById('translation-apiKey').value,
+        model: document.getElementById('translation-model').value,
+        targetLanguage: document.getElementById('translation-targetLanguage').value,
+        sourceLanguage: document.getElementById('translation-sourceLanguage').value,
+        color: document.getElementById('translation-color').value
+      };
+
+      try {
+        const res = await fetch('/api/stt-ticker/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ translation })
+        });
+        const data = await res.json();
+        showToast(data.success ? '✅ Config saved' : '❌ ' + (data.error || 'Error'), data.success ? 'success' : 'error');
+        refreshStatus();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // ===== Overlay URL =====
+    function updateOverlayUrl() {
+      const design = document.getElementById('design-select').value;
+      const position = document.getElementById('position-select').value;
+      const maxLines = document.getElementById('maxLines-input').value;
+      const fontSize = document.getElementById('fontSize-input').value;
+      const url = BASE + '/overlay/stt-ticker?design=' + design + '&position=' + position + '&maxLines=' + maxLines + '&fontSize=' + encodeURIComponent(fontSize);
+      document.getElementById('overlay-url').value = url;
+      document.getElementById('open-overlay-btn').href = url;
+    }
+
+    // ===== Buffer =====
+    async function clearBuffer() {
+      await fetch('/api/stt-ticker/clear', { method: 'POST' });
+      showToast('🧹 Buffer cleared', 'success');
+      refreshStatus();
+    }
+
+    // ===== Translation Cache =====
+    async function clearTranslationCache() {
+      await fetch('/api/stt-ticker/translator/clear-cache', { method: 'POST' });
+      document.getElementById('translation-status').textContent = '✅ Cache cleared';
+      setTimeout(() => { document.getElementById('translation-status').textContent = ''; }, 3000);
+    }
+
+    // ===== Sprachen-Dropdowns laden =====
+    async function loadLanguages(selectedSource, selectedTarget) {
+      try {
+        const res = await fetch('/api/stt-ticker/translator/languages');
+        const data = await res.json();
+        if (!data.success || !data.languages) return;
+
+        const sourceSelect = document.getElementById('translation-sourceLanguage');
+        const targetSelect = document.getElementById('translation-targetLanguage');
+
+        sourceSelect.innerHTML = '';
+        targetSelect.innerHTML = '';
+
+        for (const lang of data.languages) {
+          const opt1 = document.createElement('option');
+          opt1.value = lang.code;
+          opt1.textContent = lang.label;
+          if (lang.code === selectedSource) opt1.selected = true;
+          sourceSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = lang.code;
+          opt2.textContent = lang.label;
+          if (lang.code === selectedTarget) opt2.selected = true;
+          targetSelect.appendChild(opt2);
+        }
+      } catch (e) {
+        console.error('Failed to load languages:', e);
+      }
+    }
+
+    // ===== Modell-Dropdown laden =====
+    async function loadModels(selectedModel) {
+      try {
+        const apiKey = document.getElementById('translation-apiKey').value;
+        const url = '/api/stt-ticker/translator/models' + (apiKey ? '?apiKey=' + encodeURIComponent(apiKey) : '');
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.success || !data.models) return;
+
+        const select = document.getElementById('translation-model');
+        select.innerHTML = '';
+
+        for (const model of data.models) {
+          const opt = document.createElement('option');
+          opt.value = model.id;
+          opt.textContent = model.name;
+          if (model.id === selectedModel) opt.selected = true;
+          select.appendChild(opt);
+        }
+      } catch (e) {
+        console.error('Failed to load models:', e);
+      }
+    }
+
+    // ===== Config speichern =====
+    async function saveConfig() {
+      const translation = {
+        enabled: document.getElementById('translation-enabled').checked,
+        apiKey: document.getElementById('translation-apiKey').value,
+        model: document.getElementById('translation-model').value,
+        targetLanguage: document.getElementById('translation-targetLanguage').value,
+        sourceLanguage: document.getElementById('translation-sourceLanguage').value,
+        color: document.getElementById('translation-color').value
+      };
+
+      try {
+        const res = await fetch('/api/stt-ticker/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ translation })
+        });
+        const data = await res.json();
+        showToast(data.success ? '✅ Config saved' : '❌ ' + (data.error || 'Error'), data.success ? 'success' : 'error');
+        refreshStatus();
+      } catch (e) {
+        showToast('❌ ' + e.message, 'error');
+      }
+    }
+
+    // ===== Section Toggle =====
+    function toggleSection(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ===== Toast =====
+    function showToast(msg, type) {
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => { t.remove(); }, 3000);
+    }
+
+    // ===== Init =====
+    refreshStatus();
+    updateOverlayUrl();
+  </script>
+</body>
+</html>

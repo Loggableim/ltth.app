@@ -57,7 +57,9 @@
     "plugin_manager": "Plugin Manager",
     "plugins": "Plugin Manager",
     "wiki": "Wiki",
-    "settings": "Settings"
+    "settings": "Settings",
+    "toptier": "Top Tier",
+    "stt_ticker": "STT Ticker"
   },
   "chatango": {
     "loading": "Loading Community Chat..."

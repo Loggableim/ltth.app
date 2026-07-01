@@ -1,0 +1,41 @@
+{
+  "id": "stt-ticker",
+  "name": "STT Ticker",
+  "version": "1.0.0",
+  "description": "Live-Untertitel-Overlay für Hearing-Impaired Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "tool",
+  "devStatus": "working-beta",
+  "dependencies": ["axios", "form-data"],
+  "permissions": [
+    "socket.io",
+    "routes"
+  ],
+  "config": {
+    "enabled": true,
+    "language": null,
+    "maxAudioBytes": 4194304,
+    "silenceTimeoutMs": 900,
+    "maxSegmentMs": 12000,
+    "minTranscriptChars": 2,
+    "rateLimitMax": 30,
+    "rateLimitWindowMs": 60000,
+    "bufferSize": 10,
+    "maxTextAge": 30,
+    "translation": {
+      "enabled": false,
+      "apiKey": "",
+      "model": "deepseek-v4-flash",
+      "targetLanguage": "en",
+      "sourceLanguage": "de",
+      "color": "#FFD700",
+      "maxTextLength": 500
+    }
+  },
+  "descriptions": {
+    "en": "Live caption overlay for hearing-impaired viewers. Transcribes host speech via Fish.audio ASR and displays it as a configurable ticker in OBS.",
+    "de": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
+  }
+}

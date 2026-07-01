@@ -132,14 +132,14 @@
         /* Compact Mode Styles */
         .plugin-compact-table {
             width: 100%;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--color-bg-card);
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--color-border);
         }
 
         .plugin-compact-table thead {
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--color-bg-tertiary);
         }
 
         .plugin-compact-table th {
@@ -147,15 +147,15 @@
             text-align: left;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #9ca3af;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--color-text-muted);
+            border-bottom: 1px solid var(--color-border);
         }
 
         .plugin-compact-table td {
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--color-divider);
             font-size: 0.875rem;
-            color: #d1d5db;
+            color: var(--color-text-secondary);
         }
 
         .plugin-compact-table tbody tr {
@@ -163,7 +163,7 @@
         }
 
         .plugin-compact-table tbody tr:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: var(--color-active-bg);
         }
 
         .plugin-compact-table tbody tr:last-child td {
@@ -196,9 +196,9 @@
         }
 
         #compact-mode-toggle.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
+            background: var(--color-active-bg);
+            border-color: var(--color-active-border);
+            color: var(--color-accent-primary);
         }
 
         /* Topbar Language Switcher - Theme-Aware */
@@ -251,8 +251,8 @@
 
         /* Plugin Notice Styles */
         .plugin-notice {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, var(--color-active-bg) 0%, var(--color-active-bg) 100%);
+            border: 1px solid var(--color-active-border);
             border-radius: 12px;
             padding: 1rem;
             margin-bottom: 1.5rem;
@@ -273,9 +273,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(59, 130, 246, 0.2);
+            background: var(--color-active-bg);
             border-radius: 8px;
-            color: #60a5fa;
+            color: var(--color-accent-primary);
         }
 
         .plugin-notice-icon i {
@@ -290,7 +290,7 @@
         .plugin-notice-title {
             font-size: 1rem;
             font-weight: 600;
-            color: #60a5fa;
+            color: var(--color-accent-primary);
             margin: 0 0 0.5rem 0;
         }
 
@@ -303,7 +303,7 @@
 
         .plugin-notice-dismiss {
             flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--color-bg-hover);
             border: none;
             border-radius: 6px;
             width: 32px;
@@ -317,7 +317,7 @@
         }
 
         .plugin-notice-dismiss:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--color-bg-tertiary);
             color: var(--color-text-primary);
             transform: scale(1.1);
         }
@@ -421,7 +421,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: var(--color-modal-backdrop);
             display: none;
             align-items: center;
             justify-content: center;
@@ -434,7 +434,7 @@
         }
         
         .modal-content {
-            background: var(--color-bg-primary);
+            background: var(--color-modal-bg);
             border: 2px solid var(--color-accent-primary);
             border-radius: 12px;
             max-width: 800px;
@@ -442,7 +442,7 @@
             max-height: 80vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: var(--shadow-lg);
         }
         
         .modal-header {
@@ -497,7 +497,7 @@
 
         .plugin-status-dot.status-active {
             background-color: var(--color-accent-success);
-            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+            box-shadow: 0 0 6px var(--glow-success);
         }
 
         .plugin-status-dot.status-inactive {
@@ -507,7 +507,7 @@
 
         .plugin-status-dot.status-error {
             background-color: var(--color-accent-danger);
-            box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+            box-shadow: 0 0 6px var(--glow-primary);
         }
 
         /* Shutdown Button */
@@ -517,12 +517,12 @@
         }
 
         .topbar-shutdown-btn:hover {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-accent-danger);
+            background: var(--color-active-bg);
         }
 
         .topbar-shutdown-btn.shutdown-pending {
-            color: #ef4444;
+            color: var(--color-accent-danger);
             animation: pulse 1s infinite;
         }
 
@@ -531,7 +531,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.75);
+            background: var(--color-modal-backdrop);
             backdrop-filter: blur(4px);
             z-index: 100000;
             align-items: center;
@@ -541,14 +541,14 @@
             display: flex;
         }
         .shutdown-modal-box {
-            background: var(--color-bg-card, #1e293b);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: var(--color-modal-bg);
+            border: 1px solid var(--color-accent-danger);
             border-radius: 16px;
             padding: 2rem 2.5rem;
             max-width: 420px;
             width: 90%;
             text-align: center;
-            box-shadow: 0 0 40px rgba(239, 68, 68, 0.2);
+            box-shadow: var(--shadow-lg);
             animation: shutdown-modal-in 0.2s ease;
         }
         @keyframes shutdown-modal-in {
@@ -599,24 +599,27 @@
             padding: 0.6rem 1.4rem;
             border-radius: 8px;
             border: none;
-            background: #dc2626;
-            color: #fff;
+            background: var(--color-accent-danger);
+            color: var(--color-text-primary);
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            transition: background 0.2s, transform 0.1s, filter 0.2s;
         }
         .shutdown-btn-confirm:hover {
-            background: #b91c1c;
+            background: var(--color-accent-danger);
+            filter: brightness(1.15);
             transform: scale(1.03);
         }
         .shutdown-btn-confirm:active {
             transform: scale(0.97);
         }
         .shutdown-btn-confirm:disabled {
-            background: #7f1d1d;
+            background: var(--color-disabled-bg);
+            color: var(--color-disabled-text);
             cursor: not-allowed;
             transform: none;
+            filter: none;
         }
 
         /* ===== GOODBYE SPLASHSCREEN ===== */
@@ -647,7 +650,7 @@
             object-fit: contain;
             margin-bottom: 1.5rem;
             animation: goodbye-logo-pulse 2s ease-in-out infinite;
-            filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.4));
+            filter: drop-shadow(0 0 20px var(--color-active-bg));
         }
         @keyframes goodbye-logo-pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
@@ -660,15 +663,15 @@
             margin-bottom: 0.5rem;
         }
         .shutdown-goodbye-subtitle {
-            color: #ef4444;
+            color: var(--color-accent-danger);
             font-size: 1rem;
             margin-bottom: 2rem;
         }
         .shutdown-goodbye-spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(239, 68, 68, 0.2);
-            border-top-color: #ef4444;
+            border: 3px solid var(--color-active-bg);
+            border-top-color: var(--color-accent-danger);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin: 0 auto 1.5rem;
@@ -686,7 +689,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/frontend-logger.js"></script>
 </head>
-<body class="bg-gray-900 text-white">
+<body>
 
     <!-- Main Layout Container -->
     <div class="flex h-screen">
@@ -795,6 +798,10 @@
                         <a href="#" class="sidebar-item" data-view="talking-heads" data-plugin="talking-heads" data-tooltip="Talking Heads">
                             <i data-lucide="user-circle-2"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.talking_heads">Talking Heads</span>
+                        </a>
+                        <a href="#" class="sidebar-item" data-view="stt-ticker" data-plugin="stt-ticker" data-tooltip="STT Ticker">
+                            <i data-lucide="subtitles"></i>
+                            <span class="sidebar-item-text" data-i18n="navigation.stt_ticker">STT Ticker</span>
                         </a>
                     </div>
                 </div>
@@ -1023,7 +1030,7 @@
                                     <span data-i18n="dashboard.plugin_notice.message">All enabled plugins should work without bugs. You are welcome to test inactive plugins, but please expect bugs.</span>
                                     <br>
                                     <span data-i18n="dashboard.plugin_notice.report_issues">Found a bug or have a feature request?</span>
-                                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: underline; font-weight: 600;" data-i18n="dashboard.plugin_notice.report_link">Report it on GitHub</a>
+                                    <a href="https://github.com/Loggableim/pupcidslittletiktokhelper/issues" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent-primary); text-decoration: underline; font-weight: 600;" data-i18n="dashboard.plugin_notice.report_link">Report it on GitHub</a>
                                 </p>
                             </div>
                             <button id="dismiss-plugin-notice" class="plugin-notice-dismiss" aria-label="Dismiss notice">
@@ -1077,7 +1084,7 @@
                                     </p>
                                     <div style="margin-bottom: 1rem;">
                                         <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-primary); font-weight: 600;">
-                                            SessionID: <span style="color: #ef4444;">*</span>
+                                            SessionID: <span style="color: var(--color-accent-danger);">*</span>
                                         </label>
                                         <input type="text" id="import-sessionid-input" placeholder="Beispiel: 1234567890abcdef1234567890abcdef" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); font-family: monospace; font-size: 0.9rem;">
                                     </div>
@@ -1102,15 +1109,15 @@
                             </summary>
 
                         <!-- SessionID Status Panel -->
-                        <div id="session-status-panel" style="margin-top: 1rem; padding: 0.75rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; display: none;">
+                        <div id="session-status-panel" style="margin-top: 1rem; padding: 0.75rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; display: none;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <i data-lucide="shield-check" style="width: 16px; height: 16px; color: #3b82f6;"></i>
-                                <span style="font-weight: 600; color: #60a5fa;" data-i18n="dashboard.session_status">TikTok SessionID Status</span>
+                                <i data-lucide="shield-check" style="width: 16px; height: 16px; color: var(--color-accent-primary);"></i>
+                                <span style="font-weight: 600; color: var(--color-accent-primary);" data-i18n="dashboard.session_status">TikTok SessionID Status</span>
                             </div>
                             <div style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.6;">
                                 <div><strong data-i18n="dashboard.session_method">Extraction Method:</strong> <span id="session-method">--</span></div>
                                 <div><strong data-i18n="dashboard.session_extracted">Extracted At:</strong> <span id="session-extracted-at">--</span></div>
-                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--color-border);">
                                     <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted);" data-i18n="dashboard.extract_session_help">
                                         Nutzen Sie "Extract SessionID" für automatische Extraktion, oder "Import SessionID" um die SessionID direkt aus Ihrem Browser zu kopieren (empfohlen bei Login-Problemen).
                                     </p>
@@ -1119,16 +1126,16 @@
                         </div>
                         
                         <!-- Stream Time Debug Panel -->
-                        <div id="stream-time-debug" style="margin-top: 1rem; padding: 0.75rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; display: none;">
+                        <div id="stream-time-debug" style="margin-top: 1rem; padding: 0.75rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; display: none;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <i data-lucide="clock" style="width: 16px; height: 16px; color: #3b82f6;"></i>
-                                <span style="font-weight: 600; color: #60a5fa;" data-i18n="dashboard.stream_time_debug_info">Stream Time Debug Info</span>
+                                <i data-lucide="clock" style="width: 16px; height: 16px; color: var(--color-accent-primary);"></i>
+                                <span style="font-weight: 600; color: var(--color-accent-primary);" data-i18n="dashboard.stream_time_debug_info">Stream Time Debug Info</span>
                             </div>
                             <div style="font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.6;">
                                 <div><strong data-i18n="dashboard.stream_start_time">Stream Start Time:</strong> <span id="debug-stream-start">--</span></div>
                                 <div><strong data-i18n="dashboard.current_duration">Current Duration:</strong> <span id="debug-stream-duration">--</span></div>
                                 <div><strong data-i18n="dashboard.detection_method">Detection Method:</strong> <span id="debug-detection-method">--</span></div>
-                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--color-border);">
                                     <em>This panel shows how the stream start time was detected. If it shows "Connection Time" instead of a roomInfo field, the API may not be providing stream start time.</em>
                                 </div>
                             </div>
@@ -1556,10 +1563,10 @@
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <i data-lucide="zap" style="color: #3b82f6; width: 24px; height: 24px;"></i>
+                                <i data-lucide="zap" style="color: var(--color-accent-primary); width: 24px; height: 24px;"></i>
                                 <div>
-                                    <strong style="color: #60a5fa;">New: Visual IFTTT Flow Editor</strong>
-                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: #cbd5e1;">
+                                    <strong style="color: var(--color-accent-primary);">New: Visual IFTTT Flow Editor</strong>
+                                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--color-text-secondary);">
                                         Create powerful automation flows with drag-and-drop interface. Supports triggers, conditions, actions, and real-time monitoring.
                                     </p>
                                 </div>
@@ -1622,6 +1629,25 @@
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/plugins/talking-heads/ui.html" title="Talking Heads Configuration"></iframe>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- View: STT Ticker -->
+                <div id="view-stt-ticker" class="content-view" data-plugin="stt-ticker">
+                    <section class="view-section">
+                        <div class="view-header">
+                            <h2 class="view-title">
+                                <i data-lucide="subtitles"></i>
+                                STT Ticker
+                            </h2>
+                            <a href="/stt-ticker/ui" target="_blank" class="btn btn-sm btn-ghost">
+                                <i data-lucide="external-link"></i>
+                                Open in New Tab
+                            </a>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe data-src="/stt-ticker/ui" title="STT Ticker Configuration"></iframe>
                         </div>
                     </section>
                 </div>
@@ -2229,7 +2255,7 @@
                         <!-- Plugin Stats Overview -->
                         <div id="plugin-stats" class="stats-grid" style="margin-bottom: 1.5rem;">
                             <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--color-accent-success) 0%, var(--color-accent-success) 100%);">
                                     <i data-lucide="check-circle"></i>
                                 </div>
                                 <div class="stat-content">
@@ -2238,7 +2264,7 @@
                                 </div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--color-text-muted) 0%, var(--color-text-muted) 100%);">
                                     <i data-lucide="pause-circle"></i>
                                 </div>
                                 <div class="stat-content">
@@ -2247,7 +2273,7 @@
                                 </div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-primary) 100%);">
                                     <i data-lucide="package"></i>
                                 </div>
                                 <div class="stat-content">
@@ -2258,59 +2284,59 @@
                         </div>
 
                         <!-- Filters and Search -->
-                        <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
                             <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
                                 <div style="flex: 1; min-width: 250px;">
                                     <div style="position: relative;">
-                                        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: #9ca3af;"></i>
+                                        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--color-text-muted);"></i>
                                         <input type="text" id="plugin-search" placeholder="Search plugins..." 
-                                               style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; font-size: 0.95rem;">
+                                               style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.95rem;">
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <button class="plugin-filter-btn active" data-filter="all" style="padding: 0.75rem 1.25rem; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: #60a5fa; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn active" data-filter="all" style="padding: 0.75rem 1.25rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
                                         <i data-lucide="grid-3x3" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         All
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="active" style="padding: 0.75rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #9ca3af; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="active" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
                                         <i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Active
                                     </button>
-                                    <button class="plugin-filter-btn" data-filter="inactive" style="padding: 0.75rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #9ca3af; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                                    <button class="plugin-filter-btn" data-filter="inactive" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
                                         <i data-lucide="pause-circle" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
                                         Inactive
                                     </button>
                                 </div>
-                                <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-left: 1px solid rgba(255, 255, 255, 0.1); padding-left: 0.75rem;">
-                                    <span style="font-size: 0.85rem; color: #9ca3af; font-weight: 500;">Dev Status:</span>
-                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: #60a5fa;">
-                                        <input type="checkbox" class="dev-status-filter" data-status="stable" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6;">
+                                <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-left: 1px solid var(--color-border); padding-left: 0.75rem;">
+                                    <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 500;">Dev Status:</span>
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-primary);">
+                                        <input type="checkbox" class="dev-status-filter" data-status="stable" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-primary);">
                                         <span>Stable</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: #22c55e;">
-                                        <input type="checkbox" class="dev-status-filter" data-status="working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #22c55e;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-success);">
+                                        <input type="checkbox" class="dev-status-filter" data-status="working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-success);">
                                         <span>Working Beta</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: #fbbf24;">
-                                        <input type="checkbox" class="dev-status-filter" data-status="development-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #fbbf24;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-warning);">
+                                        <input type="checkbox" class="dev-status-filter" data-status="development-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-warning);">
                                         <span>Development Beta</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: #ef4444;">
-                                        <input type="checkbox" class="dev-status-filter" data-status="early-version" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #ef4444;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-accent-danger);">
+                                        <input type="checkbox" class="dev-status-filter" data-status="early-version" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-accent-danger);">
                                         <span>Early Version</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: #9ca3af;">
-                                        <input type="checkbox" class="dev-status-filter" data-status="non-working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #6b7280;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; color: var(--color-text-muted);">
+                                        <input type="checkbox" class="dev-status-filter" data-status="non-working-beta" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-text-muted);">
                                         <span>Non-working Beta</span>
                                     </label>
                                 </div>
-                                <select id="plugin-sort" style="padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: white; font-size: 0.9rem; cursor: pointer;">
+                                <select id="plugin-sort" style="padding: 0.75rem 1rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text); font-size: 0.9rem; cursor: pointer;">
                                     <option value="name">Sort by Name</option>
                                     <option value="status">Sort by Status</option>
                                     <option value="type">Sort by Type</option>
                                     <option value="author">Sort by Author</option>
                                 </select>
-                                <button id="compact-mode-toggle" style="padding: 0.75rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #9ca3af; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                                <button id="compact-mode-toggle" style="padding: 0.75rem 1.25rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
                                     <i data-lucide="layout-list" style="width: 16px; height: 16px;"></i>
                                     <span>Compact</span>
                                 </button>

@@ -57,7 +57,9 @@
     "animazingpal": "AnimazingPal",
     "plugins": "Plugin-Manager",
     "wiki": "Wiki",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "toptier": "Top Tier",
+    "stt_ticker": "STT Ticker"
   },
   "chatango": {
     "loading": "Community-Chat wird geladen..."
