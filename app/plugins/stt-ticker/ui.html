@@ -101,11 +101,9 @@
         Das Audio-Capture läuft in einem <strong>eigenen Browser-Tab</strong> (nicht im iframe).
         So funktioniert der Mikrofon-Zugriff zuverlässig in allen Browsern.
       </p>
-
       <a id="capture-link" class="external-link" href="/stt-ticker/capture" target="_blank">
         🎤 Capture-Tab öffnen
       </a>
-
       <p class="help-text">
         <strong>Workflow:</strong>
         <ol>
@@ -123,10 +121,10 @@
     <div class="card">
       <h2>Overlay (OBS Browser Source)</h2>
       <p style="color:#aaa;margin-bottom:10px;">Füge diese URL als Browser Source in OBS hinzu:</p>
-      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;" onclick="this.select()">
+      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;">
       <div style="margin-top:10px;">
         <label>Design</label>
-        <select id="design-select" onchange="updateOverlayUrl()">
+        <select id="design-select">
           <option value="classic">Classic (TV-Untertitel)</option>
           <option value="modern">Modern (Clean, Blur)</option>
           <option value="minimal">Minimal (Nur Text)</option>
@@ -138,7 +136,7 @@
           <option value="karaoke">Karaoke (Wort-Highlight)</option>
         </select>
         <label>Position</label>
-        <select id="position-select" onchange="updateOverlayUrl()">
+        <select id="position-select">
           <option value="bottom-center">Unten Mitte</option>
           <option value="bottom-left">Unten Links</option>
           <option value="bottom-right">Unten Rechts</option>
@@ -148,36 +146,36 @@
           <option value="middle-center">Mitte</option>
         </select>
         <label>Max Lines</label>
-        <input type="number" id="maxLines-input" min="1" max="10" value="2" onchange="updateOverlayUrl()" oninput="updateOverlayUrl()">
+        <input type="number" id="maxLines-input" min="1" max="10" value="2">
         <label>Font Size</label>
-        <input type="text" id="fontSize-input" value="36px" onchange="updateOverlayUrl()" oninput="updateOverlayUrl()">
+        <input type="text" id="fontSize-input" value="36px">
       </div>
-      <button class="btn btn-primary" onclick="updateOverlayUrl()">URL aktualisieren</button>
+      <button id="btn-update-url" class="btn btn-primary">URL aktualisieren</button>
       <a id="open-overlay-btn" href="#" target="_blank" class="overlay-link">🔗 Overlay in Tab öffnen</a>
     </div>
 
     <!-- Translation Settings -->
     <div class="card">
-      <h2 class="section-toggle" onclick="toggleSection('translation-section')">🌐 Übersetzung ▾</h2>
+      <h2 id="translation-toggle" class="section-toggle">🌐 Übersetzung ▾</h2>
       <div id="translation-section">
         <label>
-          <input type="checkbox" id="translation-enabled" onchange="saveConfig()">
+          <input type="checkbox" id="translation-enabled">
           Übersetzung aktivieren (Ollama Cloud)
         </label>
         <label>API Key</label>
         <input type="password" id="translation-apiKey" placeholder="***...">
         <label>Modell</label>
-        <select id="translation-model" onchange="saveConfig()">
+        <select id="translation-model">
           <option value="">— Modelle laden... —</option>
         </select>
         <label>Quellsprache (was wird gesprochen)</label>
-        <select id="translation-sourceLanguage" onchange="saveConfig()"></select>
+        <select id="translation-sourceLanguage"></select>
         <label>Zielsprache (Übersetzung)</label>
-        <select id="translation-targetLanguage" onchange="saveConfig()"></select>
+        <select id="translation-targetLanguage"></select>
         <label>Übersetzungs-Farbe</label>
-        <input type="color" id="translation-color" value="#ffd700" onchange="saveConfig()">
-        <button class="btn btn-primary" onclick="saveConfig()" style="margin-top:20px;">💾 Übersetzung speichern</button>
-        <button class="btn btn-secondary" onclick="clearTranslationCache()">Cache leeren</button>
+        <input type="color" id="translation-color" value="#ffd700">
+        <button id="btn-save-translation" class="btn btn-primary" style="margin-top:20px;">💾 Übersetzung speichern</button>
+        <button id="btn-clear-cache" class="btn btn-secondary">Cache leeren</button>
         <span id="translation-status" style="margin-left:10px;font-size:13px;"></span>
       </div>
     </div>
@@ -185,8 +183,8 @@
     <!-- Actions -->
     <div class="card">
       <h2>Aktionen</h2>
-      <button class="btn btn-danger" onclick="clearBuffer()">🧹 Buffer leeren</button>
-      <button class="btn btn-secondary" onclick="refreshStatus()">🔄 Status aktualisieren</button>
+      <button id="btn-clear-buffer" class="btn btn-danger">🧹 Buffer leeren</button>
+      <button id="btn-refresh-status" class="btn btn-secondary">🔄 Status aktualisieren</button>
     </div>
   </div>
 
@@ -335,11 +333,29 @@
       setTimeout(() => { t.remove(); }, 3000);
     }
 
-    // Capture-Link bei jedem Klick auf einen Anker mit target=_blank nutzt kein sandbox-Problem,
-    // weil der iframe sandbox-Popup-Regeln umgeht wenn der User direkt klickt
-    document.getElementById('capture-link').addEventListener('click', (e) => {
-      // Standard target=_blank öffnet neuen Tab — Browser erlaubt das IMMER bei user-gestures
-      // (außer bei sehr restriktiven sandbox-Settings)
+    // ===== CSP-kompatible Event-Listener (keine inline onclick/onchange/oninput) =====
+    document.addEventListener('DOMContentLoaded', () => {
+      // Overlay URL
+      document.getElementById('overlay-url').addEventListener('click', function() { this.select(); });
+      document.getElementById('design-select').addEventListener('change', updateOverlayUrl);
+      document.getElementById('position-select').addEventListener('change', updateOverlayUrl);
+      document.getElementById('maxLines-input').addEventListener('input', updateOverlayUrl);
+      document.getElementById('fontSize-input').addEventListener('input', updateOverlayUrl);
+      document.getElementById('btn-update-url').addEventListener('click', updateOverlayUrl);
+
+      // Translation
+      document.getElementById('translation-toggle').addEventListener('click', () => toggleSection('translation-section'));
+      document.getElementById('translation-enabled').addEventListener('change', saveConfig);
+      document.getElementById('translation-model').addEventListener('change', saveConfig);
+      document.getElementById('translation-sourceLanguage').addEventListener('change', saveConfig);
+      document.getElementById('translation-targetLanguage').addEventListener('change', saveConfig);
+      document.getElementById('translation-color').addEventListener('change', saveConfig);
+      document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
+      document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
+
+      // Actions
+      document.getElementById('btn-clear-buffer').addEventListener('click', clearBuffer);
+      document.getElementById('btn-refresh-status').addEventListener('click', refreshStatus);
     });
 
     async function init() {

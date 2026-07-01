@@ -105,10 +105,10 @@
     </div>
 
     <div class="controls">
-      <button id="btn-start" class="btn btn-primary" onclick="startCapture()">
+      <button id="btn-start" class="btn btn-primary">
         ▶ Capture starten
       </button>
-      <button id="btn-stop" class="btn btn-danger" onclick="stopCapture()" disabled>
+      <button id="btn-stop" class="btn btn-danger" disabled>
         ■ Stop
       </button>
     </div>
@@ -303,6 +303,10 @@
     });
 
     log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
+
+    // Event-Listener (CSP-kompatibel — keine inline onclick)
+    btnStart.addEventListener('click', startCapture);
+    btnStop.addEventListener('click', stopCapture);
   </script>
 </body>
 </html>
