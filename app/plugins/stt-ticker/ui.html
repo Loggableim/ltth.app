@@ -143,7 +143,7 @@
           Übersetzung aktivieren (Ollama Cloud)
         </label>
         <label>API Key</label>
-        <input type="password" id="translation-apiKey" placeholder="sk-ollama-cloud-..." onchange="saveConfig()">
+        <input type="password" id="translation-apiKey" placeholder="sk-ollama-cloud-...">
         <label>Modell</label>
         <select id="translation-model" onchange="saveConfig()">
           <option value="">— Modelle laden... —</option>
@@ -154,6 +154,7 @@
         <select id="translation-targetLanguage" onchange="saveConfig()"></select>
         <label>Übersetzungs-Farbe</label>
         <input type="color" id="translation-color" value="#ffd700" onchange="saveConfig()">
+        <button class="btn btn-primary" onclick="saveConfig()" style="margin-top:20px;">💾 Übersetzung speichern</button>
         <button class="btn btn-secondary" onclick="clearTranslationCache()">Cache leeren</button>
         <span id="translation-status" style="margin-left:10px;font-size:13px;"></span>
       </div>
@@ -351,10 +352,15 @@
         const buf = s.buffer || {};
         document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
 
-        // Translation-Form befüllen
+        // Translation-Form befüllen (API-Key NICHT überschreiben — Sicherheit)
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
+        // API-Key nur setzen wenn das Feld leer ist (erster Besuch)
+        const apiKeyField = document.getElementById('translation-apiKey');
+        if (!apiKeyField.value) {
+          apiKeyField.value = tc.apiKey && tc.apiKey !== '••••••••' ? tc.apiKey : '';
+        }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
         await loadModels(tc.model || 'deepseek-v4-flash');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
