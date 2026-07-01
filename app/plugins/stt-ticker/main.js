@@ -117,6 +117,11 @@ class SttTickerPlugin {
       res.sendFile(path.join(__dirname, 'ui.html'));
     });
 
+    // Standalone Audio-Capture (eigenes Fenster, kein iframe)
+    this.api.registerRoute('get', '/stt-ticker/capture', (req, res) => {
+      res.sendFile(path.join(__dirname, 'capture.html'));
+    });
+
     // Config abrufen
     this.api.registerRoute('get', '/api/stt-ticker/config', (req, res) => {
       res.json({

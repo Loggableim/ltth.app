@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>STT Ticker - Audio Capture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+    h1 { color: #4CAF50; margin-bottom: 20px; font-size: 24px; }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: #2a2a3e;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .status {
+      text-align: center;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .status.idle { background: #3a3a4e; color: #999; }
+    .status.listening { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+    .status.error { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+    .mic-select {
+      width: 100%;
+      padding: 12px;
+      background: #3a3a4e;
+      border: 1px solid #555;
+      border-radius: 6px;
+      color: #eee;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 8px;
+      transition: all 0.2s;
+      font-weight: 600;
+    }
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-primary:hover { background: #45a049; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-danger:hover { background: #d32f2f; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-large { width: 100%; padding: 18px; font-size: 18px; }
+    .controls { text-align: center; margin-top: 20px; }
+    .indicator {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #999;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .indicator.active { background: #4CAF50; animation: pulse 1.5s infinite; }
+    .indicator.error { background: #f44336; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .help { color: #888; font-size: 13px; text-align: center; margin-top: 20px; line-height: 1.5; }
+    .help code { background: #1a1a2e; padding: 2px 6px; border-radius: 3px; color: #4CAF50; }
+  </style>
+</head>
+<body>
+  <h1>🎤 STT Ticker - Audio Capture</h1>
+
+  <div class="container">
+    <div id="status" class="status idle">
+      <span class="indicator"></span>
+      <span id="status-text">⏹️ Gestoppt — Mikrofon auswählen und Capture starten</span>
+    </div>
+
+    <label style="display:block; margin-top:15px; color:#ccc; font-size:13px;">
+      Mikrofon
+    </label>
+    <select id="mic-select" class="mic-select">
+      <option value="">— Erst Capture starten, Browser fragt nach Mikrofon —</option>
+    </select>
+
+    <div class="controls">
+      <button id="btn-start" class="btn btn-primary btn-large" onclick="startCapture()">
+        🎤 Capture starten
+      </button>
+      <button id="btn-stop" class="btn btn-danger btn-large" onclick="stopCapture()" disabled style="display:none;">
+        ⏹️ Capture stoppen
+      </button>
+    </div>
+
+    <div class="help">
+      <strong>So funktioniert's:</strong><br>
+      1. Klicke auf <strong>🎤 Capture starten</strong><br>
+      2. Browser fragt nach Mikrofon-Erlaubnis<br>
+      3. Wähle dein Mikrofon aus<br>
+      4. Audio wird an den STT Ticker Server gesendet<br>
+      5. Transkripte erscheinen im OBS-Overlay<br>
+      6. Dieses Fenster kann minimiert im Hintergrund laufen
+    </div>
+
+    <div id="debug" style="margin-top:20px; padding:10px; background:#1a1a2e; border-radius:6px; font-size:11px; color:#666; max-height:100px; overflow-y:auto; font-family:monospace;"></div>
+  </div>
+
+  <script>
+    // ===== Audio Capture State =====
+    let audioContext = null;
+    let scriptProcessor = null;
+    let audioStream = null;
+    let audioSource = null;
+    let isCapturing = false;
+    let audioBuffer = [];
+    let captureInterval = null;
+    let sendingWav = false;
+
+    const SAMPLE_RATE = 16000;
+    const CHUNK_DURATION_MS = 5000;
+    const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
+    const API_BASE = window.location.origin;
+
+    const statusEl = document.getElementById('status');
+    const statusTextEl = document.getElementById('status-text');
+    const indicatorEl = statusEl.querySelector('.indicator');
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const micSelect = document.getElementById('mic-select');
+    const debugEl = document.getElementById('debug');
+
+    function log(msg) {
+      const t = new Date().toLocaleTimeString();
+      debugEl.innerHTML = `[${t}] ${msg}<br>` + debugEl.innerHTML;
+      console.log(`[STT Capture] ${msg}`);
+    }
+
+    function setStatus(text, state) {
+      statusTextEl.textContent = text;
+      statusEl.className = 'status ' + (state || 'idle');
+      indicatorEl.className = 'indicator ' + (state === 'listening' ? 'active' : (state === 'error' ? 'error' : ''));
+    }
+
+    async function startCapture() {
+      log('Capture wird gestartet...');
+      btnStart.disabled = true;
+
+      try {
+        // 1. Mikrofon-Erlaubnis anfordern
+        const deviceId = micSelect.value || undefined;
+        const constraints = deviceId
+          ? { audio: { deviceId: { exact: deviceId } } }
+          : { audio: true };
+
+        log('Frage Mikrofon-Erlaubnis an...');
+        audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+        log('✅ Mikrofon-Erlaubnis erteilt');
+
+        // 2. Geräte-Liste aktualisieren (mit echten Labels)
+        await refreshMicrophones();
+
+        // 3. AudioContext + ScriptProcessor einrichten
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        audioSource = audioContext.createMediaStreamSource(audioStream);
+        scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+        audioSource.connect(scriptProcessor);
+        scriptProcessor.connect(audioContext.destination);
+
+        scriptProcessor.onaudioprocess = (event) => {
+          const input = event.inputBuffer.getChannelData(0);
+          for (let i = 0; i < input.length; i++) {
+            audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
+          }
+          if (audioBuffer.length >= CHUNK_SAMPLES) {
+            sendWavChunk();
+          }
+        };
+
+        // 4. Fallback-Timer (falls wenig Audio)
+        captureInterval = setInterval(() => {
+          if (audioBuffer.length > 0) sendWavChunk();
+        }, CHUNK_DURATION_MS + 1000);
+
+        isCapturing = true;
+        setStatus('🎤 Höre zu — Audio wird transkribiert', 'listening');
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+        btnStop.disabled = false;
+        log('✅ Capture läuft — sende WAV-Chunks alle ' + (CHUNK_DURATION_MS / 1000) + 's');
+
+      } catch (error) {
+        log('❌ Fehler: ' + error.message);
+        setStatus('❌ ' + error.message, 'error');
+        btnStart.disabled = false;
+      }
+    }
+
+    async function refreshMicrophones() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter(d => d.kind === 'audioinput');
+
+        const currentValue = micSelect.value;
+        micSelect.innerHTML = '';
+
+        if (mics.length === 0) {
+          micSelect.innerHTML = '<option value="">— Keine Mikrofone gefunden —</option>';
+          return;
+        }
+
+        for (const mic of mics) {
+          const opt = document.createElement('option');
+          opt.value = mic.deviceId;
+          opt.textContent = mic.label || 'Mikrofon ' + (micSelect.options.length + 1);
+          micSelect.appendChild(opt);
+        }
+
+        // Vorherige Auswahl wiederherstellen
+        if (currentValue && Array.from(micSelect.options).some(o => o.value === currentValue)) {
+          micSelect.value = currentValue;
+        }
+
+        log('✅ ' + mics.length + ' Mikrofon(e) geladen');
+      } catch (e) {
+        log('⚠️ Mikrofon-Liste fehlgeschlagen: ' + e.message);
+      }
+    }
+
+    function stopCapture() {
+      isCapturing = false;
+      if (captureInterval) { clearInterval(captureInterval); captureInterval = null; }
+      if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+      if (audioSource) { audioSource.disconnect(); audioSource = null; }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+      audioBuffer = [];
+
+      setStatus('⏹️ Gestoppt', 'idle');
+      btnStart.style.display = 'inline-block';
+      btnStart.disabled = false;
+      btnStop.style.display = 'none';
+      log('⏹️ Capture gestoppt');
+    }
+
+    function sendWavChunk() {
+      if (audioBuffer.length < 1600 || sendingWav) return;
+      sendingWav = true;
+      const samples = audioBuffer.splice(0);
+      const wavBlob = encodeWav(samples, SAMPLE_RATE);
+      sendAudioToServer(wavBlob).finally(() => { sendingWav = false; });
+    }
+
+    function encodeWav(samples, sampleRate) {
+      const numChannels = 1, bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+      const blockAlign = numChannels * bitsPerSample / 8;
+      const dataSize = samples.length * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, buffer.byteLength - 8, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitsPerSample, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, dataSize, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767)));
+        view.setInt16(offset, s, true);
+        offset += 2;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+
+    async function sendAudioToServer(blob) {
+      const formData = new FormData();
+      formData.append('audio', blob, 'audio.wav');
+      try {
+        const response = await fetch(API_BASE + '/api/stt-ticker/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+          log('✅ Transkribiert: "' + (data.transcript?.text || '').slice(0, 50) + '..."');
+        } else {
+          log('❌ Server: ' + data.message);
+        }
+      } catch (error) {
+        log('❌ Netzwerk: ' + error.message);
+      }
+    }
+
+    // Status-Polling (optional, damit das Fenster weiß, ob Plugin läuft)
+    setInterval(async () => {
+      try {
+        const res = await fetch(API_BASE + '/api/stt-ticker/status');
+        const data = await res.json();
+        if (data.success && !data.status.enabled && isCapturing) {
+          log('⚠️ Plugin wurde deaktiviert — Capture wird gestoppt');
+          stopCapture();
+        }
+      } catch (e) {
+        // Ignorieren
+      }
+    }, 30000);
+
+    // Initial
+    log('Bereit. Klicke "🎤 Capture starten" um loszulegen.');
+  </script>
+</body>
+</html>

@@ -43,8 +43,7 @@
     .btn-danger:hover { background: #d32f2f; }
     .btn-success { background: #2196F3; color: white; }
     .btn-success:hover { background: #1976D2; }
-    .btn-success.active { background: #f44336; }
-    .btn-success.active:hover { background: #d32f2f; }
+    .btn-large { padding: 14px 28px; font-size: 16px; width: 100%; }
     .overlay-link {
       display: inline-block; margin-top: 10px; padding: 8px 16px;
       background: #64B5F6; color: #fff; border-radius: 6px; text-decoration: none;
@@ -60,13 +59,7 @@
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .section-toggle { cursor: pointer; user-select: none; }
     .section-toggle:hover { opacity: 0.8; }
-    .mic-select { margin-top: 4px; }
-    .capture-status {
-      display: inline-block; margin-left: 10px; font-size: 13px;
-    }
-    .capture-status.listening { color: #4CAF50; }
-    .capture-status.stopped { color: #999; }
-    .capture-status.error { color: #f44336; }
+    .help-text { color: #aaa; font-size: 13px; line-height: 1.6; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -85,18 +78,21 @@
       </div>
     </div>
 
-    <!-- Audio Capture (im Dashboard-Browser) -->
+    <!-- Audio Capture (eigenes Fenster) -->
     <div class="card">
       <h2>🎤 Audio-Capture</h2>
-      <p style="color:#aaa;margin-bottom:10px;">Das Mikrofon wird in DIESEM Browser captured. OBS zeigt nur das Overlay an.</p>
-      <label>Mikrofon</label>
-      <select id="mic-select" class="mic-select">
-        <option value="">— Standard-Mikrofon —</option>
-      </select>
-      <div style="margin-top:15px;">
-        <button id="capture-btn" class="btn btn-success" onclick="toggleCapture()">🎤 Capture starten</button>
-        <span id="capture-status" class="capture-status stopped">⏹️ Gestoppt</span>
-      </div>
+      <p class="help-text">
+        Das Audio-Capture läuft in einem <strong>eigenen Browser-Fenster</strong>.
+        So umgeht es die iframe-Restriktionen für Mikrofon-Zugriff.
+      </p>
+      <button class="btn btn-success btn-large" onclick="openCaptureWindow()">
+        🎤 Capture-Fenster öffnen
+      </button>
+      <p class="help-text">
+        Klicke auf den Button — ein neues Fenster/Tab öffnet sich.<br>
+        Im neuen Fenster: <strong>"Capture starten"</strong> klicken → Browser fragt nach Mikrofon.<br>
+        Das Fenster kann minimiert im Hintergrund laufen, während OBS das Overlay zeigt.
+      </p>
     </div>
 
     <!-- Overlay -->
@@ -145,7 +141,7 @@
           Übersetzung aktivieren (Ollama Cloud)
         </label>
         <label>API Key</label>
-        <input type="password" id="translation-apiKey" placeholder="sk-ollama-cloud-...">
+        <input type="password" id="translation-apiKey" placeholder="***...">
         <label>Modell</label>
         <select id="translation-model" onchange="saveConfig()">
           <option value="">— Modelle laden... —</option>
@@ -173,196 +169,35 @@
   <script>
     const BASE = window.location.origin;
 
-    // ===== Audio Capture (im Dashboard-Browser) =====
-    let audioContext = null;
-    let scriptProcessor = null;
-    let audioStream = null;
-    let audioSource = null;
-    let isCapturing = false;
-    let audioBuffer = [];
-    let captureInterval = null;
-    let sendingWav = false;
-    const SAMPLE_RATE = 16000;
-    const CHUNK_DURATION_MS = 5000;
-    const CHUNK_SAMPLES = Math.floor(SAMPLE_RATE * CHUNK_DURATION_MS / 1000);
+    // ===== Capture-Fenster öffnen =====
+    let captureWindow = null;
 
-    async function requestMicPermission() {
-      const status = document.getElementById('mic-permission-status');
-      const select = document.getElementById('mic-select');
-      const btn = document.getElementById('capture-btn');
-      const permBtn = document.getElementById('btn-mic-permission');
-
-      status.textContent = '⏳ Frage Mikrofon-Erlaubnis an...';
-      status.style.color = '#FFC107';
-
-      try {
-        // getUserMedia anfordern — das ist der einzige Weg, echte Device-Labels zu bekommen
-        const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-        // Stream sofort wieder stoppen
-        tempStream.getTracks().forEach(t => t.stop());
-
-        // Jetzt enumerateDevices aufrufen — liefert jetzt echte Labels
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const mics = devices.filter(d => d.kind === 'audioinput');
-
-        select.innerHTML = '';
-        select.disabled = false;
-
-        if (mics.length === 0) {
-          select.innerHTML = '<option value="">— Keine Mikrofone gefunden —</option>';
-          status.textContent = '⚠️ Keine Mikrofone gefunden';
-          status.style.color = '#f44336';
-          return;
-        }
-
-        for (const mic of mics) {
-          const opt = document.createElement('option');
-          opt.value = mic.deviceId;
-          opt.textContent = mic.label || 'Mikrofon ' + (select.options.length + 1);
-          select.appendChild(opt);
-        }
-
-        btn.disabled = false;
-        status.textContent = '✅ ' + mics.length + ' Mikrofon(e) gefunden';
-        status.style.color = '#4CAF50';
-        permBtn.textContent = '🔄 Geräte neu laden';
-
-      } catch (error) {
-        console.error('Mic permission denied:', error);
-        status.textContent = '❌ Zugriff verweigert: ' + error.message;
-        status.style.color = '#f44336';
-        select.innerHTML = '<option value="">— Mikrofon-Zugriff verweigert —</option>';
-      }
-    }
-
-    async function toggleCapture() {
-      const btn = document.getElementById('capture-btn');
-      const status = document.getElementById('capture-status');
-
-      if (isCapturing) {
-        stopCapture();
-        btn.textContent = '🎤 Capture starten';
-        btn.classList.remove('active');
-        status.textContent = '⏹️ Gestoppt';
-        status.className = 'capture-status stopped';
+    function openCaptureWindow() {
+      if (captureWindow && !captureWindow.closed) {
+        captureWindow.focus();
         return;
       }
-
-      try {
-        const deviceId = document.getElementById('mic-select').value;
-        const constraints = deviceId
-          ? { audio: { deviceId: { exact: deviceId } } }
-          : { audio: true };
-
-        audioStream = await navigator.mediaDevices.getUserMedia(constraints);
-        isCapturing = true;
-
-        btn.textContent = '⏹️ Capture stoppen';
-        btn.classList.add('active');
-        status.textContent = '🎤 Höre zu...';
-        status.className = 'capture-status listening';
-
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
-        audioSource = audioContext.createMediaStreamSource(audioStream);
-        scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-        audioSource.connect(scriptProcessor);
-        scriptProcessor.connect(audioContext.destination);
-
-        scriptProcessor.onaudioprocess = (event) => {
-          const input = event.inputBuffer.getChannelData(0);
-          for (let i = 0; i < input.length; i++) {
-            audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
-          }
-          if (audioBuffer.length >= CHUNK_SAMPLES) {
-            sendWavChunk();
-          }
-        };
-
-        captureInterval = setInterval(() => {
-          if (audioBuffer.length > 0) sendWavChunk();
-        }, CHUNK_DURATION_MS + 1000);
-
-      } catch (error) {
-        status.textContent = '❌ ' + error.message;
-        status.className = 'capture-status error';
-        showToast('❌ Mikrofon-Zugriff verweigert: ' + error.message, 'error');
+      const w = 700, h = 550;
+      const left = (screen.width - w) / 2;
+      const top = (screen.height - h) / 2;
+      captureWindow = window.open(
+        BASE + '/stt-ticker/capture',
+        'stt-capture',
+        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`
+      );
+      if (!captureWindow) {
+        showToast('❌ Popup blockiert — bitte Popups erlauben', 'error');
       }
     }
 
-    function stopCapture() {
-      isCapturing = false;
-      if (captureInterval) { clearInterval(captureInterval); captureInterval = null; }
-      if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
-      if (audioSource) { audioSource.disconnect(); audioSource = null; }
-      if (audioContext) { audioContext.close(); audioContext = null; }
-      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
-      audioBuffer = [];
-    }
-
-    function sendWavChunk() {
-      if (!connected || audioBuffer.length < 1600 || sendingWav) return;
-      sendingWav = true;
-      const samples = audioBuffer.splice(0);
-      const wavBlob = encodeWav(samples, SAMPLE_RATE);
-      sendAudioToServer(wavBlob).finally(() => { sendingWav = false; });
-    }
-
-    function encodeWav(samples, sampleRate) {
-      const numChannels = 1, bitsPerSample = 16;
-      const byteRate = sampleRate * numChannels * bitsPerSample / 8;
-      const blockAlign = numChannels * bitsPerSample / 8;
-      const dataSize = samples.length * blockAlign;
-      const buffer = new ArrayBuffer(44 + dataSize);
-      const view = new DataView(buffer);
-      writeString(view, 0, 'RIFF');
-      view.setUint32(4, buffer.byteLength - 8, true);
-      writeString(view, 8, 'WAVE');
-      writeString(view, 12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numChannels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, byteRate, true);
-      view.setUint16(32, blockAlign, true);
-      view.setUint16(34, bitsPerSample, true);
-      writeString(view, 36, 'data');
-      view.setUint32(40, dataSize, true);
-      let offset = 44;
-      for (let i = 0; i < samples.length; i++) {
-        const s = Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767)));
-        view.setInt16(offset, s, true);
-        offset += 2;
-      }
-      return new Blob([buffer], { type: 'audio/wav' });
-    }
-
-    function writeString(view, offset, str) {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    }
-
-    let connected = false;
+    // Auf Socket-Events lauschen für Live-Status
     let socket = null;
+    let connected = false;
 
     function connectSocket() {
       socket = io(undefined, { transports: ['websocket', 'polling'] });
       socket.on('connect', () => { connected = true; });
       socket.on('disconnect', () => { connected = false; });
-    }
-
-    async function sendAudioToServer(blob) {
-      if (!connected) return;
-      const formData = new FormData();
-      formData.append('audio', blob, 'audio.wav');
-      try {
-        const response = await fetch('/api/stt-ticker/transcribe', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (!data.success) {
-          console.warn('Transcribe error:', data.message);
-        }
-      } catch (error) {
-        console.error('Send audio failed:', error);
-      }
     }
 
     // ===== Status =====
@@ -387,20 +222,18 @@
         const buf = s.buffer || {};
         document.getElementById('stat-segments').textContent = buf.segmentCount || 0;
 
-        // Translation-Form befüllen (API-Key NICHT überschreiben — Sicherheit)
+        // Translation-Form befüllen (API-Key NICHT überschreiben)
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
-        // API-Key nur setzen wenn das Feld leer ist (erster Besuch)
         const apiKeyField = document.getElementById('translation-apiKey');
-        if (!apiKeyField.value) {
-          apiKeyField.value = tc.apiKey && tc.apiKey !== '••••••••' ? tc.apiKey : '';
+        if (!apiKeyField.value && tc.apiKey && tc.apiKey !== '••••••••') {
+          apiKeyField.value = tc.apiKey;
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
         await loadModels(tc.model || 'deepseek-v4-flash');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
-        // Overlay-URL nach Status-Update neu berechnen
         updateOverlayUrl();
 
       } catch (e) {
@@ -434,16 +267,18 @@
 
     // ===== Overlay URL =====
     function updateOverlayUrl() {
-      const design = document.getElementById('design-select').value || 'classic';
-      const position = document.getElementById('position-select').value || 'bottom-center';
-      const maxLines = document.getElementById('maxLines-input').value || '2';
-      const fontSize = document.getElementById('fontSize-input').value || '36px';
+      const design = (document.getElementById('design-select')?.value) || 'classic';
+      const position = (document.getElementById('position-select')?.value) || 'bottom-center';
+      const maxLines = (document.getElementById('maxLines-input')?.value) || '2';
+      const fontSize = (document.getElementById('fontSize-input')?.value) || '36px';
       const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
         + '&position=' + encodeURIComponent(position)
         + '&maxLines=' + encodeURIComponent(maxLines)
         + '&fontSize=' + encodeURIComponent(fontSize);
-      document.getElementById('overlay-url').value = url;
-      document.getElementById('open-overlay-btn').href = url;
+      const input = document.getElementById('overlay-url');
+      const link = document.getElementById('open-overlay-btn');
+      if (input) input.value = url;
+      if (link) link.href = url;
     }
 
     // ===== Buffer =====
@@ -453,14 +288,12 @@
       refreshStatus();
     }
 
-    // ===== Translation Cache =====
     async function clearTranslationCache() {
       await fetch('/api/stt-ticker/translator/clear-cache', { method: 'POST' });
       document.getElementById('translation-status').textContent = '✅ Cache cleared';
       setTimeout(() => { document.getElementById('translation-status').textContent = ''; }, 3000);
     }
 
-    // ===== Sprachen-Dropdowns laden =====
     async function loadLanguages(selectedSource, selectedTarget) {
       try {
         const res = await fetch('/api/stt-ticker/translator/languages');
@@ -483,7 +316,6 @@
       } catch (e) { console.error('Failed to load languages:', e); }
     }
 
-    // ===== Modell-Dropdown laden =====
     async function loadModels(selectedModel) {
       try {
         const apiKey = document.getElementById('translation-apiKey').value;
@@ -502,13 +334,11 @@
       } catch (e) { console.error('Failed to load models:', e); }
     }
 
-    // ===== Section Toggle =====
     function toggleSection(id) {
       const el = document.getElementById(id);
       el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
-    // ===== Toast =====
     function showToast(msg, type) {
       const t = document.createElement('div');
       t.className = 'toast ' + type;
