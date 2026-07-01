@@ -89,16 +89,12 @@
     <div class="card">
       <h2>🎤 Audio-Capture</h2>
       <p style="color:#aaa;margin-bottom:10px;">Das Mikrofon wird in DIESEM Browser captured. OBS zeigt nur das Overlay an.</p>
-      <div style="margin-bottom:15px;">
-        <button id="btn-mic-permission" class="btn btn-success" onclick="requestMicPermission()">🎤 Mikrofon erlauben / Geräte laden</button>
-        <span id="mic-permission-status" style="margin-left:10px;font-size:13px;color:#999;">⏸️ Nicht bereit</span>
-      </div>
       <label>Mikrofon</label>
-      <select id="mic-select" class="mic-select" disabled>
-        <option value="">— Erst Mikrofon erlauben —</option>
+      <select id="mic-select" class="mic-select">
+        <option value="">— Standard-Mikrofon —</option>
       </select>
       <div style="margin-top:15px;">
-        <button id="capture-btn" class="btn btn-success" onclick="toggleCapture()" disabled>🎤 Capture starten</button>
+        <button id="capture-btn" class="btn btn-success" onclick="toggleCapture()">🎤 Capture starten</button>
         <span id="capture-status" class="capture-status stopped">⏹️ Gestoppt</span>
       </div>
     </div>
