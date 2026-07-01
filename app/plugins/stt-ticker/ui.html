@@ -160,82 +160,52 @@
     </div>
 
     <!-- ASR Settings (Sprache + VAD) -->
-    <div class="card">
-      <h2 id="asr-toggle" class="section-toggle">🎙️ ASR Sprache & VAD ▾</h2>
+    <div class="card" style="border:2px solid rgba(255,215,0,0.4);">
+      <h2 id="asr-toggle" class="section-toggle" style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">🎙️</span>
+        <span>ASR-Provider, Sprache & VAD</span>
+        <span id="asr-section-badge" style="margin-left:auto;font-size:12px;padding:3px 10px;border-radius:12px;background:#444;color:#aaa;">⚪ Status unbekannt</span>
+      </h2>
       <div id="asr-section">
-        <label>
-          <input type="radio" name="languageMode" value="auto" id="language-mode-auto">
-          Auto-Erkennung (Fish.audio erkennt selbst)
-        </label>
-        <label>
-          <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed">
-          Feste Sprache (an Fish.audio senden)
-        </label>
 
-        <label>Default-Sprache (für Auto-Modus & Anzeige)</label>
-        <select id="asr-languageDefault">
-          <option value="de">🇩🇪 Deutsch</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="es">🇪🇸 Español</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="pt">🇵🇹 Português</option>
-          <option value="nl">🇳🇱 Nederlands</option>
-          <option value="pl">🇵🇱 Polski</option>
-          <option value="ru">🇷🇺 Русский</option>
-          <option value="ja">🇯🇵 日本語</option>
-        </select>
+        <!-- =====================================================
+             DEEPGRAM API-KEY SETZEN
+             ===================================================== -->
+        <div style="margin: 10px 0 20px 0; padding: 16px; background: rgba(100, 181, 246, 0.12); border-radius: 8px; border-left: 4px solid #64B5F6;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="font-size:20px;">🔑</span>
+            <strong style="color:#64B5F6;font-size:15px;">Deepgram API-Key</strong>
+            <span id="deepgram-key-status-badge" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;background:#444;color:#aaa;">nicht gesetzt</span>
+          </div>
+          <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="font-family:monospace;">
+          <p style="font-size:12px;color:#aaa;margin:6px 0 4px 0;">
+            🔒 Wird persistent in der Plugin-Config gespeichert — <strong>nie</strong> in Git committed.
+            Hole dir einen Key unter <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a>
+            (Free-Tier: $200 Guthaben).
+          </p>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <button id="btn-test-deepgram" class="btn btn-secondary" style="margin:0;">🔌 Key testen</button>
+            <span id="deepgram-test-status" style="font-size:13px;"></span>
+          </div>
+        </div>
 
-        <label>Feste Sprache (nur wenn Modus = Fixed)</label>
-        <select id="asr-languageFixed">
-          <option value="de">🇩🇪 Deutsch</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="es">🇪🇸 Español</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="pt">🇵🇹 Português</option>
-          <option value="nl">🇳🇱 Nederlands</option>
-        </select>
-
-        <hr style="border-color:#444;margin:20px 0;">
-
-        <label>ASR-Provider</label>
+        <!-- =====================================================
+             PROVIDER-AUSWAHL
+             ===================================================== -->
+        <label>ASR-Provider (welcher Dienst transkribiert)</label>
         <select id="asr-provider">
-          <option value="auto">Auto (Deepgram wenn Key da, sonst Fish.audio)</option>
-          <option value="deepgram">Deepgram (empfohlen — ~95% Genauigkeit DE+EN, $0.26/h)</option>
-          <option value="fish.audio">Fish.audio (über TTS-Plugin)</option>
+          <option value="auto">🟢 Auto — Deepgram wenn Key da, sonst Fish.audio (empfohlen)</option>
+          <option value="deepgram">Deepgram erzwingen (~$0.26/h, ~95% DE+EN)</option>
+          <option value="fish.audio">Fish.audio erzwingen (~$1.50/h, schlechtere DE+EN)</option>
         </select>
         <p class="help-text" style="font-size:12px;color:#aaa;">
           🛡️ <strong>Halluzinations-Schutz aktiv:</strong> Auto-Modus nutzt Deepgrams "multi"-Mode
-          (DE/EN/ES/FR/IT/PT/RU). Chinesisch, Japanisch, Koreanisch, Thai etc. werden automatisch
-          gefiltert — kommen nicht im Overlay an.
+          (DE/EN/ES/FR/IT/PT/RU). Chinesisch, Japanisch, Koreanisch, Thai werden automatisch gefiltert.
         </p>
-
-        <div id="deepgram-config" style="margin-top:10px;padding:15px;background:rgba(100,181,246,0.08);border-radius:6px;border-left:3px solid #64B5F6;">
-          <label>
-            Deepgram API Key
-            <span id="deepgram-key-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
-          </label>
-          <input type="password" id="asr-deepgramApiKey" placeholder="dg-key-...">
-          <p class="help-text" style="font-size:12px;color:#aaa;">
-            🔒 Wird <strong>persistent in der Plugin-Config</strong> gespeichert — nie in Git committed.
-            Hole dir einen Key unter <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a>.
-          </p>
-
-          <label>Modell</label>
-          <select id="asr-deepgramModel">
-            <option value="nova-2">Nova-2 (empfohlen — beste Qualität für DE+EN)</option>
-            <option value="nova-3">Nova-3 (wenn in deinem Account verfügbar)</option>
-            <option value="whisper-large">Whisper Large (Deepgram-hosted, multilingual)</option>
-            <option value="whisper-medium">Whisper Medium (schneller, etwas schlechter)</option>
-          </select>
-
-          <button id="btn-test-deepgram" class="btn btn-secondary" style="margin-top:10px;">🔌 Deepgram-Key testen</button>
-          <span id="deepgram-test-status" style="margin-left:10px;font-size:13px;"></span>
-        </div>
 
         <hr style="border-color:#444;margin:20px 0;">
 
+        <!-- Dual-Language Overlay -->
         <label>
           <input type="checkbox" id="dual-language-enabled">
           <strong>Dual-Language-Overlay</strong> (2 Zeilen, Segmente nach Sprache sortiert)
@@ -265,6 +235,74 @@
             <input type="color" id="dual-bottomColor" value="#FFFFFF">
           </div>
         </div>
+
+        <label style="margin-top:12px;">Modell (für Deepgram)</label>
+        <select id="asr-deepgramModel">
+          <option value="nova-2">Nova-2 (empfohlen — beste Qualität für DE+EN)</option>
+          <option value="nova-3">Nova-3 (wenn in deinem Account verfügbar)</option>
+          <option value="whisper-large">Whisper Large (Deepgram-hosted, multilingual)</option>
+          <option value="whisper-medium">Whisper Medium (schneller, etwas schlechter)</option>
+        </select>
+
+        <hr style="border-color:#444;margin:20px 0;">
+
+        <!-- =====================================================
+             SPRACHE
+             ===================================================== -->
+        <label>
+          <input type="radio" name="languageMode" value="auto" id="language-mode-auto">
+          Auto-Erkennung (Sprache wird erkannt)
+        </label>
+        <label>
+          <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed">
+          Feste Sprache (an Provider senden)
+        </label>
+
+        <label>Default-Sprache (für Auto-Modus & Anzeige)</label>
+        <select id="asr-languageDefault">
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="ja">🇯🇵 日本語</option>
+        </select>
+
+        <label>Feste Sprache (nur wenn Modus = Fixed)</label>
+        <select id="asr-languageFixed">
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="pt">🇵🇹 Português</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+        </select>
+
+        <hr style="border-color:#444;margin:20px 0;">
+
+        <!-- VAD Section -->
+        <label>
+          <input type="checkbox" id="vad-enabled">
+          <strong>VAD (Stille-Erkennung)</strong> — spart Fish.audio-Tokens
+        </label>
+        <p class="help-text">
+          Audio-Chunks unterhalb der Lautstärke-Schwelle werden <strong>gar nicht erst hochgeladen</strong>.
+          Du siehst das im Capture-Tab als "⏸ Stille übersprungen".
+        </p>
+        <label>RMS-Schwelle (niedrig = empfindlicher)
+          <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
+          <span id="vad-rmsThreshold-value" style="color:#4CAF50;">0.012</span>
+        </label>
+
+        <button id="btn-save-asr" class="btn btn-primary" style="margin-top:20px;">💾 ASR-Settings speichern</button>
+        <span id="asr-status" style="margin-left:10px;font-size:13px;"></span>
+      </div>
+    </div>
 
         <hr style="border-color:#444;margin:20px 0;">
 
@@ -344,9 +382,16 @@
         // ASR Provider — zeigt welcher Provider aktuell aktiv ist
         const providerEl = document.getElementById('stat-provider');
         const providerHintEl = document.getElementById('provider-hint');
+        const sectionBadgeEl = document.getElementById('asr-section-badge');
+        const keyBadgeEl = document.getElementById('deepgram-key-status-badge');
         if (asr.provider === 'deepgram') {
           providerEl.textContent = '✅ Deepgram';
           providerEl.style.color = '#4CAF50';
+          if (sectionBadgeEl) {
+            sectionBadgeEl.textContent = '✅ Deepgram aktiv';
+            sectionBadgeEl.style.background = 'rgba(76,175,80,0.2)';
+            sectionBadgeEl.style.color = '#4CAF50';
+          }
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
@@ -356,6 +401,11 @@
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = '⚠️ Fish.audio';
           providerEl.style.color = '#FFC107';
+          if (sectionBadgeEl) {
+            sectionBadgeEl.textContent = '⚠️ Fish.audio (teuer)';
+            sectionBadgeEl.style.background = 'rgba(255,193,7,0.2)';
+            sectionBadgeEl.style.color = '#FFC107';
+          }
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
             providerHintEl.style.color = '#FFC107';
@@ -364,12 +414,24 @@
                 'Provider-Switch in der Config prüfen (sollte "deepgram" oder "auto" sein).';
             } else {
               providerHintEl.innerHTML = '⚠️ <strong>Fish.audio ist aktiv.</strong> Token-Verbrauch sichtbar. ' +
-                'Für Kostenersparnis: Deepgram-Key unter "🎙️ ASR Sprache & VAD" eintragen — dann automatisch Wechsel auf Deepgram (~5x günstiger, bessere DE+EN Genauigkeit).';
+                'Für Kostenersparnis: Deepgram-Key oben eintragen — dann automatisch Wechsel auf Deepgram (~5x günstiger).';
             }
           }
         } else {
           providerEl.textContent = '❌ ' + (asr.provider || 'unbekannt');
           providerEl.style.color = '#f44336';
+        }
+        // Key-Badge: zeigt ob Deepgram-Key gesetzt ist
+        if (keyBadgeEl) {
+          if (asr.deepgramConfigured) {
+            keyBadgeEl.textContent = '✓ gesetzt';
+            keyBadgeEl.style.background = 'rgba(76,175,80,0.2)';
+            keyBadgeEl.style.color = '#4CAF50';
+          } else {
+            keyBadgeEl.textContent = 'nicht gesetzt';
+            keyBadgeEl.style.background = 'rgba(244,67,54,0.2)';
+            keyBadgeEl.style.color = '#f44336';
+          }
         }
 
         const trans = s.translation || {};
@@ -440,24 +502,13 @@
       const modelEl = document.getElementById('asr-deepgramModel');
       if (modelEl && asr.deepgramModel) modelEl.value = asr.deepgramModel;
 
-      // Deepgram-Key: persistent, maskierter Status, beim ersten Load gesetzt
+      // Deepgram-Key: persistent, beim ersten Load gesetzt
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
-      const dgKeyStatus = document.getElementById('deepgram-key-status');
       if (dgKeyField && !dgKeyField.dataset.loaded) {
         dgKeyField.value = asr.deepgramApiKey || '';
         dgKeyField.dataset.loaded = '1';
       }
-      if (dgKeyStatus) {
-        if (asr.deepgramApiKey && asr.deepgramApiKey.length > 0) {
-          const k = asr.deepgramApiKey;
-          const masked = k.length > 8 ? k.slice(0, 4) + '***' + k.slice(-4) : '***';
-          dgKeyStatus.textContent = '(gespeichert: ' + masked + ')';
-          dgKeyStatus.style.color = '#4CAF50';
-        } else {
-          dgKeyStatus.textContent = '(nicht gesetzt)';
-          dgKeyStatus.style.color = '#FFC107';
-        }
-      }
+      // Hinweis-Status (alt) wird durch das neue Badge in der Status-Bar ersetzt
       updateDeepgramPanelVisibility();
 
       // Dual
@@ -706,14 +757,9 @@
     document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
     document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
 
-    // Deepgram: Test-Button + Provider-Change Visibility
+    // Deepgram-Panel ist immer sichtbar (User kann jederzeit Key ändern, auch wenn provider=fish.audio)
     function updateDeepgramPanelVisibility() {
-      const provider = document.getElementById('asr-provider')?.value;
-      const dgPanel = document.getElementById('deepgram-config');
-      if (dgPanel) {
-        // Panel sichtbar wenn provider deepgram ODER auto
-        dgPanel.style.display = (provider === 'deepgram' || provider === 'auto') ? 'block' : 'none';
-      }
+      // no-op: Deepgram-Block bleibt immer sichtbar
     }
     const providerEl = document.getElementById('asr-provider');
     if (providerEl) {
