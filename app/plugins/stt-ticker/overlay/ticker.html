@@ -390,7 +390,7 @@
       opacity: 0.95;
     }
     #ticker-text .translation-line::before {
-      content: '🌐 ';
+      content: '▸ ';
       font-size: 0.7em;
       opacity: 0.6;
     }
@@ -610,48 +610,69 @@
     }
 
     // ============================================================
-    // TRANSCRIPT HANDLING — Flüssiger Ticker
+    // TRANSCRIPT HANDLING — Fließender Ticker mit Dual-Language
     // ============================================================
     let visibleSegments = [];  // { id, text, translation, timestamp }
     let segmentCounter = 0;
-    const SEGMENT_DISPLAY_MS = 8000; // 8 Sekunden pro Segment anzeigen
-    const FADE_DURATION_MS = 500;
+    const SEGMENT_DISPLAY_MS = 8000;
+    const MAX_VISIBLE_SEGMENTS = 3;
 
     function handleTranscript(data) {
-      if (!data || !data.text) return;
+      if (!data) return;
 
-      const text = data.text;
-      const translation = data.translation;
+      // Neues Format: data.segments = Array von { text, lines, translation, timestamp }
+      // Altes Format: data.text + data.translation (Fallback)
+      const incomingSegments = data.segments || [];
+      const now = Date.now();
 
-      // Neues Segment mit ID erzeugen
-      segmentCounter++;
-      const segment = {
-        id: segmentCounter,
-        text: text,
-        translation: translation && translation.translated ? translation : null,
-        timestamp: Date.now()
-      };
+      if (incomingSegments.length > 0) {
+        // Jedes eingehende Segment verarbeiten
+        for (const seg of incomingSegments) {
+          if (!seg.text) continue;
 
-      // Vorhandenes Segment mit ähnlichem Text ersetzen (gleicher Satz, fortgesetzt)
-      const last = visibleSegments[visibleSegments.length - 1];
-      if (last && textSimilarity(last.text, text) > 0.6) {
-        // Fortsetzung: letztes Segment aktualisieren
-        last.text = text;
-        if (translation && translation.translated) {
-          last.translation = translation;
+          segmentCounter++;
+          const newSeg = {
+            id: segmentCounter,
+            text: seg.text,
+            translation: seg.translation && seg.translation.translated ? seg.translation : null,
+            timestamp: seg.timestamp || now
+          };
+
+          // Ähnliches Segment ersetzen (Fortsetzung)
+          const last = visibleSegments[visibleSegments.length - 1];
+          if (last && textSimilarity(last.text, seg.text) > 0.6) {
+            last.text = seg.text;
+            if (newSeg.translation) last.translation = newSeg.translation;
+            last.timestamp = now;
+          } else {
+            visibleSegments.push(newSeg);
+          }
         }
-        last.timestamp = Date.now();
-      } else {
-        // Neues Segment hinzufügen
-        visibleSegments.push(segment);
+      } else if (data.text) {
+        // Fallback: altes Format
+        segmentCounter++;
+        const newSeg = {
+          id: segmentCounter,
+          text: data.text,
+          translation: data.translation && data.translation.translated ? data.translation : null,
+          timestamp: now
+        };
+
+        const last = visibleSegments[visibleSegments.length - 1];
+        if (last && textSimilarity(last.text, data.text) > 0.6) {
+          last.text = data.text;
+          if (newSeg.translation) last.translation = newSeg.translation;
+          last.timestamp = now;
+        } else {
+          visibleSegments.push(newSeg);
+        }
       }
 
       // Alte Segmente entfernen
-      const now = Date.now();
       visibleSegments = visibleSegments.filter(s => (now - s.timestamp) < SEGMENT_DISPLAY_MS);
 
-      // Max 3 Segmente gleichzeitig
-      while (visibleSegments.length > 3) {
+      // Max Segmente begrenzen
+      while (visibleSegments.length > MAX_VISIBLE_SEGMENTS) {
         visibleSegments.shift();
       }
 
@@ -661,8 +682,9 @@
     function textSimilarity(a, b) {
       if (!a || !b) return 0;
       if (a === b) return 1;
-      const wordsA = a.toLowerCase().split(/\s+/);
-      const wordsB = b.toLowerCase().split(/\s+/);
+      const wordsA = a.toLowerCase().split(/\s+/).filter(Boolean);
+      const wordsB = b.toLowerCase().split(/\s+/).filter(Boolean);
+      if (wordsA.length === 0 || wordsB.length === 0) return 0;
       const setA = new Set(wordsA);
       const setB = new Set(wordsB);
       const intersection = new Set([...setA].filter(w => setB.has(w)));
@@ -677,10 +699,11 @@
       }
 
       let html = '';
+      const now = Date.now();
 
       for (let i = 0; i < visibleSegments.length; i++) {
         const seg = visibleSegments[i];
-        const age = Date.now() - seg.timestamp;
+        const age = now - seg.timestamp;
         const opacity = Math.max(0.3, 1 - (age / SEGMENT_DISPLAY_MS));
         const isNewest = (i === visibleSegments.length - 1);
 
@@ -698,8 +721,7 @@
       }
 
       if (config.showTimestamp) {
-        const now = new Date();
-        html += '<div class="timestamp">' + now.toLocaleTimeString() + '</div>';
+        html += '<div class="timestamp">' + new Date().toLocaleTimeString() + '</div>';
       }
 
       tickerText.innerHTML = html;

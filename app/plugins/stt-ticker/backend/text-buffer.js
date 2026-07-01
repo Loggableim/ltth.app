@@ -5,7 +5,7 @@
  * - Glättung (Stotter-Korrektur, Duplikat-Entfernung)
  * - Zeilenumbrüche bei maxCharsPerLine
  * - Automatisches Verwerfen alter Segmente (maxTextAge)
- * - Stabile Ausgabe (Text flackert nicht bei Korrekturen)
+ * - Fließende Ausgabe: ALLE aktiven Segmente werden gesendet
  */
 
 class TextBuffer {
@@ -26,7 +26,7 @@ class TextBuffer {
     // Cleanup-Intervall
     this.cleanupInterval = setInterval(() => {
       this._expireOldSegments();
-    }, 5000); // Alle 5 Sekunden aufräumen
+    }, 5000);
   }
 
   /**
@@ -50,6 +50,7 @@ class TextBuffer {
         lastSegment.timestamp = segment.timestamp || Date.now();
         lastSegment.latencyMs = segment.latencyMs || 0;
         lastSegment.provider = segment.provider || lastSegment.provider;
+        if (segment.translation) lastSegment.translation = segment.translation;
         this._rebuildOutput();
         return;
       }
@@ -76,14 +77,12 @@ class TextBuffer {
 
   /**
    * Aktuelle geglättete Ausgabe abrufen.
+   * Gibt ALLE aktiven Segmente zurück (nicht nur das neueste).
    */
   getCurrent() {
     return this.lastOutput;
   }
 
-  /**
-   * Buffer leeren.
-   */
   clear() {
     this.segments = [];
     this.lastOutput = {
@@ -94,9 +93,6 @@ class TextBuffer {
     };
   }
 
-  /**
-   * Stats abrufen.
-   */
   getStats() {
     return {
       segmentCount: this.segments.length,
@@ -108,17 +104,11 @@ class TextBuffer {
     };
   }
 
-  /**
-   * Config aktualisieren.
-   */
   updateConfig(config) {
     this.config = config;
     this._rebuildOutput();
   }
 
-  /**
-   * Cleanup.
-   */
   destroy() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
@@ -130,7 +120,8 @@ class TextBuffer {
   // ==================== Private Methods ====================
 
   /**
-   * Ausgabe aus allen Segmenten neu aufbauen.
+   * Ausgabe aus ALLEN Segmenten neu aufbauen.
+   * Sendet jedes Segment einzeln mit eigener Übersetzung.
    */
   _rebuildOutput() {
     this._expireOldSegments();
@@ -145,72 +136,56 @@ class TextBuffer {
       return;
     }
 
-    // NUR das NEUESTE Segment als Haupttext senden
-    const latest = this.segments[this.segments.length - 1];
-    const latestText = latest.cleaned;
-
-    // Letzte Übersetzung nehmen (vom neuesten Segment)
-    const lastTranslation = latest.translation || null;
-
-    // Zeilenumbrüche für den aktuellen Text
     const maxChars = this.config.maxCharsPerLine || 80;
-    const lines = this._wrapText(latestText, maxChars);
 
-    // Übersetzung auch in Zeilen umbrechen
-    let translationOutput = null;
-    if (lastTranslation && lastTranslation.translated) {
-      const transLines = this._wrapText(lastTranslation.text, maxChars);
-      translationOutput = {
-        text: lastTranslation.text,
-        lines: transLines,
-        translated: true,
-        color: lastTranslation.color,
-        model: lastTranslation.model
-      };
-    }
-
-    this.lastOutput = {
-      text: latestText,
-      lines: lines,
-      segments: this.segments.map(s => ({
+    // Jedes Segment als eigenes Objekt mit Text + Übersetzung
+    const segmentOutputs = this.segments.map(s => {
+      const lines = this._wrapText(s.cleaned, maxChars);
+      let translation = null;
+      if (s.translation && s.translation.translated) {
+        const transLines = this._wrapText(s.translation.text, maxChars);
+        translation = {
+          text: s.translation.text,
+          lines: transLines,
+          translated: true,
+          color: s.translation.color,
+          model: s.translation.model
+        };
+      }
+      return {
         text: s.cleaned,
+        lines,
+        translation,
         timestamp: s.timestamp,
         provider: s.provider
-      })),
-      translation: translationOutput,
+      };
+    });
+
+    // Haupttext = alle Segmente konkateniert (für Abwärtskompatibilität)
+    const fullText = segmentOutputs.map(s => s.text).join(' ');
+
+    this.lastOutput = {
+      text: fullText,
+      lines: segmentOutputs.flatMap(s => s.lines),
+      segments: segmentOutputs,
       timestamp: Date.now()
     };
   }
 
   /**
    * Stotter-Korrektur: Entfernt wiederholte Wörter.
-   * "ich ich ich meine" → "ich meine"
-   * "das das ist" → "das ist"
    */
   _cleanStutter(text) {
-    // 1. Wiederholte Wörter entfernen (2+ Mal hintereinander)
-    // "ich ich ich meine" → "ich meine"
     let cleaned = text.replace(/\b(\w+)\s+(?=\1\b)/gi, '');
-
-    // 2. Wiederholte Wortgruppen (2 Wörter) entfernen
-    // "ich habe ich habe" → "ich habe"
     cleaned = cleaned.replace(/\b((\w+\s+\w+)\s+)\2\b/gi, '$2');
-
-    // 3. Einzelbuchstaben-Wiederholungen: "a a a" → "a"
     cleaned = cleaned.replace(/\b(\w)\s+(?=\1\b)/gi, '');
-
-    // 4. Nochmal Runde 1 für Fälle die durch Runde 3 neu entstanden sind
     cleaned = cleaned.replace(/\b(\w+)\s+(?=\1\b)/gi, '');
-
-    // 5. Mehrfache Leerzeichen entfernen
     cleaned = cleaned.replace(/\s+/g, ' ').trim();
-
     return cleaned;
   }
 
   /**
-   * Text-Ähnlichkeit zwischen zwei Strings berechnen (0.0 - 1.0).
-   * Nutzt einfache Wort-Überlappung.
+   * Text-Ähnlichkeit zwischen zwei Strings (0.0 - 1.0).
    */
   _textSimilarity(a, b) {
     if (!a || !b) return 0;
@@ -219,12 +194,10 @@ class TextBuffer {
     const wordsA = a.toLowerCase().split(/\s+/).filter(Boolean);
     const wordsB = b.toLowerCase().split(/\s+/).filter(Boolean);
 
-    // Wenn einer der Texte sehr kurz ist, exakten Match prüfen
     if (wordsA.length <= 2 || wordsB.length <= 2) {
       return a.toLowerCase() === b.toLowerCase() ? 1.0 : 0.0;
     }
 
-    // Jaccard-Ähnlichkeit auf Wortebene
     const setA = new Set(wordsA);
     const setB = new Set(wordsB);
     const intersection = new Set([...setA].filter(w => setB.has(w)));
@@ -233,9 +206,6 @@ class TextBuffer {
     return intersection.size / union.size;
   }
 
-  /**
-   * Text in Zeilen umbrechen (an Wortgrenzen).
-   */
   _wrapText(text, maxChars) {
     if (!text) return [];
     if (text.length <= maxChars) return [text];
@@ -257,9 +227,6 @@ class TextBuffer {
     return lines;
   }
 
-  /**
-   * Alte Segmente entfernen (älter als maxTextAge).
-   */
   _expireOldSegments() {
     const maxAge = (this.config.maxTextAge || 30) * 1000;
     const now = Date.now();
@@ -267,7 +234,6 @@ class TextBuffer {
 
     this.segments = this.segments.filter(s => (now - s.timestamp) < maxAge);
 
-    // Wenn sich was geändert hat, Ausgabe neu aufbauen
     if (this.segments.length !== before) {
       this._rebuildOutput();
     }
