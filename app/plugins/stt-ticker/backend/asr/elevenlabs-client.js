@@ -59,12 +59,10 @@ class ElevenLabsAsrClient {
       contentType: options.mimeType || 'application/octet-stream',
       knownLength: audioBuffer.length
     });
-
-    // Query-Parameter für Modell
-    const url = this.apiUrl + '?model_id=' + encodeURIComponent(model);
+    form.append('model_id', model);
 
     try {
-      const response = await axios.post(url, form, {
+      const response = await axios.post(this.apiUrl, form, {
         headers: {
           'xi-api-key': this.apiKey,
           ...form.getHeaders()
