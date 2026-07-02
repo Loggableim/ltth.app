@@ -676,8 +676,15 @@
       const select = document.getElementById('asr-model-select');
       select.innerHTML = '';
       let models = [];
-      if (provider === 'deepgram') models = window._dgModels || [];
-      else if (provider === 'elevenlabs') models = window._elModels || [];
+      // Bei 'auto': effektiven Provider aus den Keys ableiten
+      let effectiveProvider = provider;
+      if (effectiveProvider === 'auto') {
+        if (window._dgModels && window._dgModels.length > 0) effectiveProvider = 'deepgram';
+        else if (window._elModels && window._elModels.length > 0) effectiveProvider = 'elevenlabs';
+        else effectiveProvider = 'fish.audio';
+      }
+      if (effectiveProvider === 'deepgram') models = window._dgModels || [];
+      else if (effectiveProvider === 'elevenlabs') models = window._elModels || [];
       if (models.length > 0) {
         for (const m of models) {
           const opt = document.createElement('option');

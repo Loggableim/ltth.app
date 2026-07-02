@@ -612,19 +612,26 @@
       } catch (e) { /* ignore */ }
       window._dgModels = dgModels;
       window._elModels = elModels;
-      // ASR-Provider aus Config ermitteln
+      // Effektiven ASR-Provider aus Status nehmen (nicht Config — der sagt nur 'auto')
       const statusRes = await fetch(API + '/api/stt-ticker/status');
       const statusData = await statusRes.json();
-      const provider = (statusData.status?.config?.asr?.provider) || 'auto';
-      updateAsrModelDropdown(provider);
+      const effectiveProvider = statusData.status?.asr?.provider || 'fish.audio';
+      updateAsrModelDropdown(effectiveProvider);
     }
 
     function updateAsrModelDropdown(provider) {
       if (!provider) provider = 'auto';
       mlAsrModelEl.innerHTML = '';
       let models = [];
-      if (provider === 'deepgram') models = window._dgModels || [];
-      else if (provider === 'elevenlabs') models = window._elModels || [];
+      // Bei 'auto': effektiven Provider aus den geladenen Modellen ableiten
+      let effectiveProvider = provider;
+      if (effectiveProvider === 'auto') {
+        if (window._dgModels && window._dgModels.length > 0) effectiveProvider = 'deepgram';
+        else if (window._elModels && window._elModels.length > 0) effectiveProvider = 'elevenlabs';
+        else effectiveProvider = 'fish.audio';
+      }
+      if (effectiveProvider === 'deepgram') models = window._dgModels || [];
+      else if (effectiveProvider === 'elevenlabs') models = window._elModels || [];
       if (models.length > 0) {
         for (const m of models) {
           const opt = document.createElement('option');
