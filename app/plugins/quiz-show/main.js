@@ -1240,6 +1240,25 @@ class QuizShowPlugin {
         };
     }
 
+    _broadcastQuestionsUpdate() {
+        if (!this.db) return;
+        try {
+            const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
+                id: q.id,
+                question: q.question,
+                answers: JSON.parse(q.answers),
+                correct: q.correct,
+                category: q.category,
+                difficulty: q.difficulty,
+                info: q.info,
+                package_id: q.package_id
+            }));
+            this.api.emit('quiz-show:questions-updated', allQuestions);
+        } catch (error) {
+            this.api.log('Error broadcasting questions update: ' + error.message, 'warn');
+        }
+    }
+
     getActiveShowConfig() {
         if (!this.db || !this.config.activeShowId) {
             return null;
@@ -1573,16 +1592,7 @@ class QuizShowPlugin {
                 };
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({ success: true, question: newQuestion });
             } catch (error) {
@@ -1632,16 +1642,7 @@ class QuizShowPlugin {
                 };
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({ success: true, question: updatedQuestion });
             } catch (error) {
@@ -1661,16 +1662,7 @@ class QuizShowPlugin {
                 }
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({ success: true });
             } catch (error) {
@@ -1731,16 +1723,7 @@ class QuizShowPlugin {
                 const total = this.db.prepare('SELECT COUNT(*) as count FROM questions').get().count;
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({
                     success: true,
@@ -2507,7 +2490,7 @@ class QuizShowPlugin {
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 `);
 
-                const insertMany = this.mainDb.transaction((questions) => {
+                const insertMany = this.db.transaction((questions) => {
                     for (const q of questions) {
                         insertQuestion.run(
                             q.question,
@@ -2527,17 +2510,7 @@ class QuizShowPlugin {
                 this.db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)').run(category);
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info,
-                    package_id: q.package_id
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({ 
                     success: true, 
@@ -2626,17 +2599,7 @@ class QuizShowPlugin {
                 }
 
                 // Broadcast update
-                const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-                    id: q.id,
-                    question: q.question,
-                    answers: JSON.parse(q.answers),
-                    correct: q.correct,
-                    category: q.category,
-                    difficulty: q.difficulty,
-                    info: q.info,
-                    package_id: q.package_id
-                }));
-                this.api.emit('quiz-show:questions-updated', allQuestions);
+                this._broadcastQuestionsUpdate();
 
                 res.json({ success: true });
             } catch (error) {
@@ -5308,7 +5271,7 @@ class QuizShowPlugin {
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 `);
 
-                const insertMany = this.mainDb.transaction((questions) => {
+                const insertMany = this.db.transaction((questions) => {
                     for (const q of questions) {
                         insertQuestion.run(
                             q.question,
@@ -5366,17 +5329,7 @@ class QuizShowPlugin {
         });
 
         // Broadcast questions updated
-        const allQuestions = this.db.prepare('SELECT * FROM questions').all().map(q => ({
-            id: q.id,
-            question: q.question,
-            answers: JSON.parse(q.answers),
-            correct: q.correct,
-            category: q.category,
-            difficulty: q.difficulty,
-            info: q.info,
-            package_id: q.package_id
-        }));
-        this.api.emit('quiz-show:questions-updated', allQuestions);
+        this._broadcastQuestionsUpdate();
         
         this.api.log(`Batch generation complete: ${successCount}/${categories.length} successful`, 'info');
     }

@@ -188,6 +188,18 @@
     --glow-gold: 0 0 30px rgba(251, 191, 36, 0.8), 0 0 60px rgba(251, 191, 36, 0.4);
 }
 
+/* Theme: Branded — Custom Brand Kit colors (applied dynamically via JS) */
+[data-theme="branded"] {
+    /* --color-primary and --color-secondary are set inline by applyBrandKit() */
+    --theme-name: 'branded';
+    /* Keep dark as base; brand colors overlay on top */
+    --bg-card: rgba(20, 20, 30, 0.88);
+    --bg-glass: rgba(20, 20, 30, 0.75);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.82);
+    --border-color: rgba(255, 255, 255, 0.2);
+}
+
 /* ============================================
    BASE STYLES
    ============================================ */
@@ -1890,6 +1902,7 @@ body {
     height: var(--question-height, auto);
     margin: 0;
     position: fixed;
+    display: var(--question-display, block);
 }
 
 .overlay-container[data-custom-layout="true"] .answers-section {
@@ -1899,6 +1912,7 @@ body {
     height: var(--answers-height, auto);
     margin: 0;
     position: fixed;
+    display: var(--answers-display, block);
 }
 
 .overlay-container[data-custom-layout="true"] .timer-section {
@@ -1908,6 +1922,7 @@ body {
     height: var(--timer-height, auto);
     position: fixed;
     transform: none;
+    display: var(--timer-display, block);
 }
 
 .overlay-container[data-custom-layout="true"] .leaderboard-overlay {

@@ -29,11 +29,13 @@ class I18nClient {
     }
 
     /**
-     * Initialize i18n with locale from localStorage or default
+     * Initialize i18n with locale from URL (?lang=), localStorage, or default
      */
     async init() {
-        // Get saved locale from localStorage or use default
-        const savedLocale = localStorage.getItem('app_locale') || this.defaultLocale;
+        // Check URL parameter first (?lang=) — overrides localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLocale = urlParams.get('lang');
+        const savedLocale = urlLocale || localStorage.getItem('app_locale') || this.defaultLocale;
         
         // Load the default locale first so missing keys can fall back to stable
         // English strings instead of rendering raw i18n keys.

@@ -158,8 +158,16 @@
             'contrast': 'contrast'
         };
         
-        // Read the application theme from localStorage (set by ThemeManager)
-        const appTheme = localStorage.getItem('dashboard-theme') || 'night';
+        // Try to read from localStorage (works in dashboard, not in OBS sandbox)
+        let appTheme = 'night';
+        try {
+            const stored = localStorage.getItem('dashboard-theme');
+            if (stored) appTheme = stored;
+        } catch (e) {
+            // localStorage not available (OBS Browser Source sandbox) — use default
+            appTheme = 'night';
+        }
+        
         const overlay = document.getElementById('overlay-container');
         
         if (overlay) {
@@ -172,15 +180,19 @@
         }
         
         // Listen for theme changes from localStorage (when changed in parent window)
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'dashboard-theme' && e.newValue) {
-                const newTheme = themeMapping[e.newValue] || 'dark';
-                if (overlay) {
-                    overlay.setAttribute('data-theme', newTheme);
-                    console.log('Theme updated from storage:', e.newValue, '->', newTheme);
+        try {
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'dashboard-theme' && e.newValue) {
+                    const newTheme = themeMapping[e.newValue] || 'dark';
+                    if (overlay) {
+                        overlay.setAttribute('data-theme', newTheme);
+                        console.log('Theme updated from storage:', e.newValue, '->', newTheme);
+                    }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            // storage event listener not available in OBS sandbox
+        }
     }
 
     // ============================================
@@ -227,11 +239,28 @@
         // Apply Theme - Only apply HUD-specific themes (neon, gold)
         // For standard themes (dark, day, contrast), let the application theme take precedence
         const hudSpecificThemes = ['neon', 'gold'];
-        const appTheme = localStorage.getItem('dashboard-theme') || 'night';
+        const hudPresetThemes = ['minimal', 'retro', 'casino', 'highContrast'];
+        let appTheme = 'night';
+        try {
+            const stored = localStorage.getItem('dashboard-theme');
+            if (stored) appTheme = stored;
+        } catch (e) {
+            // localStorage not available (OBS Browser Source sandbox)
+            appTheme = 'night';
+        }
         
         if (hudSpecificThemes.includes(hudConfig.theme)) {
             // Apply HUD-specific custom theme
             overlay.setAttribute('data-theme', hudConfig.theme);
+            overlay.removeAttribute('data-theme-preset');
+        } else if (hudPresetThemes.includes(hudConfig.theme)) {
+            // Apply theme-preset (minimal, retro, casino, highContrast)
+            overlay.setAttribute('data-theme-preset', hudConfig.theme);
+            if (hudConfig.theme === 'highContrast') {
+                overlay.setAttribute('data-high-contrast', 'true');
+            }
+            // Keep base theme as dark for preset styling
+            overlay.setAttribute('data-theme', 'dark');
         } else {
             // Use application theme
             const themeMapping = {
@@ -240,6 +269,7 @@
                 'contrast': 'contrast'
             };
             overlay.setAttribute('data-theme', themeMapping[appTheme] || 'dark');
+            overlay.removeAttribute('data-theme-preset');
         }
 
         applyExpansionOverlaySettings({
@@ -294,6 +324,12 @@
     }
 
     function applyElementPositions() {
+        // If a custom layout is active, skip Drag&Drop positions — the layout CSS variables take precedence
+        const overlay = document.getElementById('overlay-container');
+        if (overlay && overlay.hasAttribute('data-custom-layout')) {
+            return;
+        }
+
         if (!hudConfig.positions) return;
 
         // Question

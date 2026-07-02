@@ -1309,6 +1309,7 @@
             if (valueElement) {
                 valueElement.textContent = parseFloat(e.target.value).toFixed(1);
             }
+            debouncedPreview();
         });
     }
 
@@ -1318,7 +1319,49 @@
             if (valueElement) {
                 valueElement.textContent = parseFloat(e.target.value).toFixed(1);
             }
+            debouncedPreview();
         });
+    }
+
+    // Live preview for theme, timer variant, and answers layout changes
+    ['hudTheme', 'timerVariant', 'answersLayout', 'questionAnimation', 'correctAnimation', 'wrongAnimation'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', debouncedPreview);
+        }
+    });
+
+    // Live preview for color inputs
+    ['colorPrimary', 'colorSecondary', 'colorSuccess', 'colorWarning', 'colorDanger'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', debouncedPreview);
+        }
+    });
+
+    // Debounced preview refresh (avoids spamming iframe reloads during rapid changes)
+    let previewTimer = null;
+    function debouncedPreview() {
+        if (previewTimer) clearTimeout(previewTimer);
+        previewTimer = setTimeout(() => {
+            previewTimer = null;
+            // Auto-save HUD config silently then refresh preview
+            saveHUDConfigSilent();
+        }, 600);
+    }
+
+    async function saveHUDConfigSilent() {
+        try {
+            const config = getHUDConfigFromForm();
+            await fetch('/api/quiz-show/hud-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            refreshPreview();
+        } catch (e) {
+            // Silent — user sees error on explicit save
+        }
     }
 
     // Load HUD config and layouts when overlay-config tab is opened
