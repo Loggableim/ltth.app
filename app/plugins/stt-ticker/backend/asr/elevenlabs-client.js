@@ -55,7 +55,7 @@ class ElevenLabsAsrClient {
     const model = options.model || 'eleven_turbo_v2_5';
 
     const form = new FormData();
-    form.append('audio', audioBuffer, {
+    form.append('file', audioBuffer, {
       filename: options.filename || 'audio.webm',
       contentType: options.mimeType || 'application/octet-stream',
       knownLength: audioBuffer.length

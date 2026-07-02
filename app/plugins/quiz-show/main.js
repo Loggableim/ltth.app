@@ -707,7 +707,7 @@ class QuizShowPlugin {
                 this.api.log('Migrating old questions to SQLite...', 'info');
                 
                 const insert = this.db.prepare('INSERT INTO questions (question, answers, correct, category, difficulty, info) VALUES (?, ?, ?, ?, ?, ?)');
-                const insertMany = this.mainDb.transaction((questions) => {
+                const insertMany = this.db.transaction((questions) => {
                     for (const q of questions) {
                         insert.run(
                             q.question,
@@ -1704,7 +1704,7 @@ class QuizShowPlugin {
                     VALUES (?, ?, ?, ?, ?, ?)
                 `);
 
-                const insertMany = this.mainDb.transaction((questions) => {
+                const insertMany = this.db.transaction((questions) => {
                     let added = 0;
                     for (const q of questions) {
                         if (q.question && q.answers && q.answers.length === 4 && q.correct !== undefined) {
@@ -5382,14 +5382,47 @@ class QuizShowPlugin {
     }
 
     async destroy() {
-        // Cleanup
+        // Clear all timers and timeouts
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
+            this.timerInterval = null;
         }
+        if (this.autoModeTimeout) {
+            clearTimeout(this.autoModeTimeout);
+            this.autoModeTimeout = null;
+        }
+        if (this.endGameTimeout) {
+            clearTimeout(this.endGameTimeout);
+            this.endGameTimeout = null;
+        }
+        if (this.endGameAutoRestartTimeout) {
+            clearTimeout(this.endGameAutoRestartTimeout);
+            this.endGameAutoRestartTimeout = null;
+        }
+        if (this.matchLeaderboardTimeout) {
+            clearTimeout(this.matchLeaderboardTimeout);
+            this.matchLeaderboardTimeout = null;
+        }
+        if (this.seasonLeaderboardTimeout) {
+            clearTimeout(this.seasonLeaderboardTimeout);
+            this.seasonLeaderboardTimeout = null;
+        }
+        if (this.gameState && this.gameState.categoryVoteTimeout) {
+            clearTimeout(this.gameState.categoryVoteTimeout);
+            this.gameState.categoryVoteTimeout = null;
+        }
+        if (this.gameState && this.gameState.slotMachineTimeout) {
+            clearTimeout(this.gameState.slotMachineTimeout);
+            this.gameState.slotMachineTimeout = null;
+        }
+
+        // Clear TTS cache
+        this.ttsCache = { nextQuestionId: null, audioUrl: null, text: null };
 
         // Close database connection
         if (this.db) {
             this.db.close();
+            this.db = null;
         }
 
         await this.saveConfig();
