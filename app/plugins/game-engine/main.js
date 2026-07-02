@@ -451,6 +451,10 @@ class GameEnginePlugin {
         config.giftTiers.medium.weaponTypes = [...this.defaultConfigs.arena.giftTiers.medium.weaponTypes];
       }
     }
+    // giftWeaponMappings: stored values must win over defaults to allow deletion
+    if (stored && stored.giftWeaponMappings && typeof stored.giftWeaponMappings === 'object') {
+      config.giftWeaponMappings = { ...stored.giftWeaponMappings };
+    }
     config.personalityProfiles = this._normalizeArenaPersonalityProfiles(config.personalityProfiles);
     config.weaponPickupTypes = this._normalizeArenaWeaponPickupTypes(
       config.weaponPickupTypes,

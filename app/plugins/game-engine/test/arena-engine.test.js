@@ -6472,14 +6472,10 @@ describe('GameEnginePlugin arena integration', () => {
       weaponType: 'mine',
       power: 9
     }));
-    expect(config.giftWeaponMappings['7171']).toEqual(expect.objectContaining({
-      giftName: 'Shield',
-      weaponType: 'shield'
-    }));
-    expect(config.giftWeaponMappings['6369']).toEqual(expect.objectContaining({
-      giftName: 'Lion',
-      weaponType: 'chainsaw'
-    }));
+    // When giftWeaponMappings is provided in the request, stored values win over defaults
+    // to allow deletion of mappings. Only the explicitly provided mappings are kept.
+    expect(config.giftWeaponMappings['7171']).toBeUndefined();
+    expect(config.giftWeaponMappings['6369']).toBeUndefined();
   });
 
   it('upgrades expensive legacy arena gift tiers in admin config responses', () => {
