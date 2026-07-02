@@ -283,12 +283,9 @@
             </select>
           </div>
           <div>
-            <label>Deepgram Modell</label>
-            <select id="asr-deepgramModel">
-              <option value="nova-2">Nova-2 (empfohlen)</option>
-              <option value="nova-3">Nova-3</option>
-              <option value="whisper-large">Whisper Large</option>
-              <option value="whisper-medium">Whisper Medium</option>
+            <label>STT-Modell</label>
+            <select id="asr-model-select">
+              <option value="">— Modell wählen —</option>
             </select>
           </div>
         </div>
@@ -619,8 +616,20 @@
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      const modelEl = document.getElementById('asr-deepgramModel');
-      if (modelEl && asr.deepgramModel) modelEl.value = asr.deepgramModel;
+      // STT-Modell-Dropdown befüllen (wird von loadAsrModels() gemacht)
+      // Gespeichertes Modell aus Config setzen
+      const modelSelect = document.getElementById('asr-model-select');
+      if (modelSelect) {
+        const savedModel = asr.provider === 'elevenlabs' ? asr.elevenlabsModel : asr.deepgramModel;
+        if (savedModel) {
+          // Option existiert bereits oder wird gleich geladen
+          setTimeout(function() {
+            if (modelSelect.querySelector('option[value="' + savedModel + '"]')) {
+              modelSelect.value = savedModel;
+            }
+          }, 500);
+        }
+      }
 
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField && !dgKeyField.dataset.loaded) {
@@ -641,6 +650,43 @@
         rmsEl.value = vad.rmsThreshold;
         const valEl = document.getElementById('vad-rmsThreshold-value');
         if (valEl) valEl.textContent = Number(vad.rmsThreshold).toFixed(3);
+      }
+    }
+
+    // Lädt Deepgram + ElevenLabs Modelle und befüllt das STT-Modell-Dropdown
+    async function loadAsrModels() {
+      const dgModels = [], elModels = [];
+      try {
+        const dgRes = await fetch('/api/stt-ticker/asr/deepgram/models');
+        const dgData = await dgRes.json();
+        if (dgData.success && dgData.models) dgModels.push.apply(dgModels, dgData.models);
+      } catch (e) { /* ignore */ }
+      try {
+        const elRes = await fetch('/api/stt-ticker/asr/elevenlabs/models');
+        const elData = await elRes.json();
+        if (elData.success && elData.models) elModels.push.apply(elModels, elData.models);
+      } catch (e) { /* ignore */ }
+      window._dgModels = dgModels;
+      window._elModels = elModels;
+      updateAsrModelDropdown();
+    }
+
+    function updateAsrModelDropdown() {
+      const provider = document.getElementById('asr-provider').value;
+      const select = document.getElementById('asr-model-select');
+      select.innerHTML = '';
+      let models = [];
+      if (provider === 'deepgram') models = window._dgModels || [];
+      else if (provider === 'elevenlabs') models = window._elModels || [];
+      if (models.length > 0) {
+        for (const m of models) {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.name;
+          select.appendChild(opt);
+        }
+      } else {
+        select.innerHTML = '<option value="">— ' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + ' —</option>';
       }
     }
 
@@ -734,9 +780,16 @@
         languageMode: document.getElementById('language-mode-auto')?.checked ? 'auto' : 'fixed',
         languageDefault: document.getElementById('asr-languageDefault').value,
         languageFixed: document.getElementById('asr-languageFixed').value,
-        fallbackLanguage: 'en',
-        deepgramModel: document.getElementById('asr-deepgramModel').value
+        fallbackLanguage: 'en'
       };
+      // STT-Modell aus dynamischem Dropdown
+      const modelSelect = document.getElementById('asr-model-select');
+      const selectedModel = modelSelect ? modelSelect.value : '';
+      if (asr.provider === 'elevenlabs') {
+        asr.elevenlabsModel = selectedModel || 'eleven_turbo_v2_5';
+      } else {
+        asr.deepgramModel = selectedModel || 'nova-2';
+      }
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField) {
         const v = dgKeyField.value;
@@ -1003,6 +1056,9 @@
     async function init() {
       try {
         await refreshStatus();
+        await loadAsrModels();
+        // Provider-Wechsel = STT-Modell-Dropdown aktualisieren
+        document.getElementById('asr-provider').addEventListener('change', updateAsrModelDropdown);
       } catch (e) {
         console.error('Init failed:', e);
       }

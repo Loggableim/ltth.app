@@ -299,6 +299,12 @@
       <h3 id="settings-toggle">⚙️ Multi-Language Einstellungen ▾</h3>
       <div id="settings-body">
         <div class="settings-row">
+          <label>STT-Modell</label>
+          <select id="ml-asr-model" style="flex:1;">
+            <option value="">— Modell wählen —</option>
+          </select>
+        </div>
+        <div class="settings-row">
           <label>Übersetzungs-Modell</label>
           <select id="ml-model" style="flex:1;">
             <option value="">— Modelle laden... —</option>
@@ -334,6 +340,12 @@
             <option value="th">🇹🇭 ไทย</option>
             <option value="vi">🇻🇳 Tiếng Việt</option>
           </select>
+        </div>
+        <div class="settings-row">
+          <label style="min-width:auto;">
+            <input type="checkbox" id="ml-show-default" checked>
+            Default-Sprache anzeigen (Zeile 1)
+          </label>
         </div>
         <div class="settings-row">
           <label>Sprache hinzufügen</label>
@@ -466,6 +478,8 @@
     const mlDefaultLangEl = document.getElementById('ml-default-lang');
     const mlAddLangEl = document.getElementById('ml-add-lang');
     const mlModelEl = document.getElementById('ml-model');
+    const mlAsrModelEl = document.getElementById('ml-asr-model');
+    const mlShowDefaultEl = document.getElementById('ml-show-default');
 
     // Socket.IO
     const socket = io({ transports: ['websocket', 'polling'] });
@@ -539,12 +553,15 @@
 
     function updatePreviewFromConfig() {
       const lines = [];
-      lines.push({
-        language: mlDefaultLangEl.value,
-        text: '',
-        color: multiLang.colors[mlDefaultLangEl.value] || '#FFFFFF',
-        type: 'original'
-      });
+      // Default-Sprache nur anzeigen wenn Checkbox aktiv
+      if (mlShowDefaultEl.checked) {
+        lines.push({
+          language: mlDefaultLangEl.value,
+          text: '',
+          color: multiLang.colors[mlDefaultLangEl.value] || '#FFFFFF',
+          type: 'original'
+        });
+      }
       for (const lang of currentOutputLangs) {
         if (lang === mlDefaultLangEl.value) continue;
         lines.push({
@@ -578,6 +595,45 @@
         }
       } catch (e) {
         log('⚠ Konnte Modelle nicht laden', 'warn');
+      }
+    }
+
+    async function loadAsrModels() {
+      const dgModels = [], elModels = [];
+      try {
+        const dgRes = await fetch(API + '/api/stt-ticker/asr/deepgram/models');
+        const dgData = await dgRes.json();
+        if (dgData.success && dgData.models) dgModels.push.apply(dgModels, dgData.models);
+      } catch (e) { /* ignore */ }
+      try {
+        const elRes = await fetch(API + '/api/stt-ticker/asr/elevenlabs/models');
+        const elData = await elRes.json();
+        if (elData.success && elData.models) elModels.push.apply(elModels, elData.models);
+      } catch (e) { /* ignore */ }
+      window._dgModels = dgModels;
+      window._elModels = elModels;
+      // ASR-Provider aus Config ermitteln
+      const statusRes = await fetch(API + '/api/stt-ticker/status');
+      const statusData = await statusRes.json();
+      const provider = (statusData.status?.config?.asr?.provider) || 'auto';
+      updateAsrModelDropdown(provider);
+    }
+
+    function updateAsrModelDropdown(provider) {
+      if (!provider) provider = 'auto';
+      mlAsrModelEl.innerHTML = '';
+      let models = [];
+      if (provider === 'deepgram') models = window._dgModels || [];
+      else if (provider === 'elevenlabs') models = window._elModels || [];
+      if (models.length > 0) {
+        for (const m of models) {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.name;
+          mlAsrModelEl.appendChild(opt);
+        }
+      } else {
+        mlAsrModelEl.innerHTML = '<option value="">— ' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + ' —</option>';
       }
     }
 
@@ -877,10 +933,15 @@
       body.style.display = body.style.display === 'none' ? 'block' : 'none';
     });
 
+    mlShowDefaultEl.addEventListener('change', function() {
+      updatePreviewFromConfig();
+    });
+
     // Init
     loadSettings().then(function() {
       log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
     });
+    loadAsrModels();
     updateStats();
   </script>
 </body>
