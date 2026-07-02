@@ -177,6 +177,9 @@ class SttTickerPlugin {
           if (asrUpdate.elevenlabsApiKey === '__KEEP__' || asrUpdate.elevenlabsApiKey === '') {
             delete asrUpdate.elevenlabsApiKey;
           }
+          if (asrUpdate.fishaudioApiKey === '__KEEP__' || asrUpdate.fishaudioApiKey === '') {
+            delete asrUpdate.fishaudioApiKey;
+          }
           update.asr = asrUpdate;
         }
         if (body.vad) update.vad = body.vad;
@@ -587,6 +590,7 @@ class SttTickerPlugin {
         deepgramModel: asrStatus.deepgramModel,
         elevenlabsConfigured: asrStatus.elevenlabsConfigured,
         elevenlabsModel: asrStatus.elevenlabsModel,
+        fishaudioConfigured: asrStatus.fishaudioConfigured,
         diagnostics: asrStatus.diagnostics
       },
       buffer: bufferStats,

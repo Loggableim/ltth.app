@@ -288,6 +288,19 @@
       <button id="btn-stop" class="btn btn-danger" disabled>■ Stop</button>
     </div>
 
+    <!-- OBS Overlay URL -->
+    <div class="settings-section" style="margin-bottom:12px;padding:10px 14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:14px;">🖥️</span>
+        <strong style="color:#64B5F6;font-size:13px;">OBS Overlay URL</strong>
+      </div>
+      <div class="inline-flex" style="gap:6px;">
+        <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="—">
+        <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">📋 Kopieren</button>
+      </div>
+      <p class="help-text" style="margin-top:4px;">Als Browser Source in OBS einfügen</p>
+    </div>
+
     <!-- Multi-Language Live Preview -->
     <div class="preview-section" id="preview-section">
       <h3>🌐 Live-Output <span id="preview-lang-count" style="font-size:11px;color:#888;"></span></h3>
@@ -480,6 +493,7 @@
     const mlModelEl = document.getElementById('ml-model');
     const mlAsrModelEl = document.getElementById('ml-asr-model');
     const mlShowDefaultEl = document.getElementById('ml-show-default');
+    const mlOverlayUrlEl = document.getElementById('ml-overlay-url');
 
     // Socket.IO
     const socket = io({ transports: ['websocket', 'polling'] });
@@ -699,6 +713,8 @@
       } catch (e) {
         log('⚠ Konnte Settings nicht laden, nutze Defaults', 'warn');
       }
+      // Overlay-URL setzen
+      mlOverlayUrlEl.value = API + '/overlay/stt-ticker?design=dual-language&position=bottom-center&maxLines=2&fontSize=36px';
     }
 
     async function saveMultiLangSettings() {
@@ -942,6 +958,14 @@
 
     mlShowDefaultEl.addEventListener('change', function() {
       updatePreviewFromConfig();
+    });
+
+    document.getElementById('btn-copy-overlay-url').addEventListener('click', function() {
+      mlOverlayUrlEl.select();
+      try {
+        navigator.clipboard.writeText(mlOverlayUrlEl.value);
+        log('📋 Overlay-URL kopiert');
+      } catch (e) { /* fallback */ }
     });
 
     // Init

@@ -267,6 +267,18 @@
           </div>
           <p class="help-text">🔒 <a href="https://elevenlabs.io/docs/quickstart" target="_blank" style="color:#64B5F6;">elevenlabs.io</a> — Lokale ASR-Nutzung</p>
         </div>
+        <div class="key-section">
+          <div class="key-header">
+            <span>🐟</span>
+            <strong>Fish.audio API-Key (ASR)</strong>
+            <span id="fishaudio-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
+          </div>
+          <div class="inline-flex">
+            <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
+            <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
+          </div>
+          <p class="help-text">🔒 Überschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+        </div>
       </div>
 
       <!-- ASR Provider + Sprache -->
@@ -513,6 +525,7 @@
         const providerHintEl = document.getElementById('provider-hint');
         const keyBadgeEl = document.getElementById('deepgram-key-status-badge');
         const elKeyBadgeEl = document.getElementById('elevenlabs-key-status-badge');
+        const fishKeyBadgeEl = document.getElementById('fishaudio-key-status-badge');
         if (asr.provider === 'deepgram') {
           providerEl.textContent = '✅ Deepgram';
           providerEl.style.color = '#4CAF50';
@@ -557,6 +570,15 @@
           } else {
             elKeyBadgeEl.textContent = 'nicht gesetzt';
             elKeyBadgeEl.className = 'badge badge-gray';
+          }
+        }
+        if (fishKeyBadgeEl) {
+          if (asr.fishaudioConfigured) {
+            fishKeyBadgeEl.textContent = '✓ gesetzt';
+            fishKeyBadgeEl.className = 'badge badge-green';
+          } else {
+            fishKeyBadgeEl.textContent = 'nicht gesetzt';
+            fishKeyBadgeEl.className = 'badge badge-gray';
           }
         }
 
@@ -641,6 +663,12 @@
       if (elKeyField && !elKeyField.dataset.loaded) {
         elKeyField.value = asr.elevenlabsApiKey || '';
         elKeyField.dataset.loaded = '1';
+      }
+
+      const fishKeyField = document.getElementById('asr-fishaudioApiKey');
+      if (fishKeyField && !fishKeyField.dataset.loaded) {
+        fishKeyField.value = asr.fishaudioApiKey || '';
+        fishKeyField.dataset.loaded = '1';
       }
 
       const vadEnabled = document.getElementById('vad-enabled');
@@ -806,6 +834,11 @@
       if (elKeyField) {
         const v = elKeyField.value;
         asr.elevenlabsApiKey = (v && v.trim() && v.trim() !== '__KEEP__') ? v.trim() : '__KEEP__';
+      }
+      const fishKeyField = document.getElementById('asr-fishaudioApiKey');
+      if (fishKeyField) {
+        const v = fishKeyField.value;
+        asr.fishaudioApiKey = (v && v.trim() && v.trim() !== '__KEEP__') ? v.trim() : '__KEEP__';
       }
       const dualLanguage = {
         enabled: document.getElementById('dual-language-enabled')?.checked || false,

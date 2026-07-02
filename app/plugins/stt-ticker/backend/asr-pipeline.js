@@ -193,6 +193,29 @@ class AsrPipeline {
     return null;
   }
 
+  _getFishKey() {
+    // 1. In-Config (aus UI gespeichert)
+    const fromConfig = (this.config.asr && this.config.asr.fishaudioApiKey) || '';
+    if (fromConfig.trim()) return fromConfig.trim();
+    // 2. Lokale Datei
+    try {
+      const localPath = path.join(__dirname, '..', 'data', 'fishaudio.key');
+      if (fs.existsSync(localPath)) {
+        const content = fs.readFileSync(localPath, 'utf8').trim();
+        if (content) return content;
+      }
+    } catch (e) { /* ignore */ }
+    // 3. ENV-Variable
+    if (process.env.FISHAUDIO_API_KEY) return process.env.FISHAUDIO_API_KEY.trim();
+    // 4. Fallback: TTS-Plugin (bestehende Logik)
+    const tts = this._getTtsPlugin();
+    if (tts && typeof tts.getFishAudioApiKey === 'function') {
+      const ttsKey = tts.getFishAudioApiKey();
+      if (ttsKey && ttsKey.trim()) return ttsKey.trim();
+    }
+    return null;
+  }
+
   async _transcribeFish(audioBuffer, options, apiLanguage) {
     const tts = this._getTtsPlugin();
     if (!tts) {
@@ -458,12 +481,14 @@ class AsrPipeline {
     const tts = this._getTtsPlugin();
     const deepgramKey = this._getDeepgramKey();
     const elevenlabsKey = this._getElevenLabsKey();
+    const fishKey = this._getFishKey();
     const asr = this.config.asr || {};
     return {
       ttsAvailable: !!tts,
       ttsHasAsr: tts && typeof tts.transcribeFishAudio === 'function',
       deepgramConfigured: !!deepgramKey,
       elevenlabsConfigured: !!elevenlabsKey,
+      fishaudioConfigured: !!fishKey,
       provider: this._resolveProvider(),
       providerConfig: (asr.provider || 'auto'),
       deepgramModel: asr.deepgramModel || 'nova-2',
