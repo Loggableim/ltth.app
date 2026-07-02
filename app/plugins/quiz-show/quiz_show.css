@@ -572,6 +572,24 @@ code {
     transform: scale(1.1);
 }
 
+/* Layout action icons — using Unicode symbols for visibility */
+.btn-edit-layout::before {
+    content: "✏️";
+    font-size: 1.1rem;
+}
+.btn-delete-layout::before {
+    content: "🗑️";
+    font-size: 1.1rem;
+}
+.btn-activate-layout::before {
+    content: "▶️";
+    font-size: 1.1rem;
+}
+.btn-deactivate-layout::before {
+    content: "⏹️";
+    font-size: 1.1rem;
+}
+
 /* Buttons */
 .btn {
     padding: 10px 20px;
