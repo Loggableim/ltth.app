@@ -13,6 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Active documentation was refreshed for the local snapshot workflow and future agent work.
 - Stale Electron and obsolete plugin-specific CI workflows were removed from the active workflow set.
 
+## [1.3.7] - 2026-03-07
+### Added
+- Deepgram Nova‑3 Provider – 3‑stufige Fallback‑Logik (Deepgram → Fish.audio → Ollama)
+- Multi‑Language Mode – 7 Sprachen, 0 Halluzinationen in CJK/Thai/Arabic
+- Confidence‑Threshold 0.3 – Low‑Quality‑Resultate verworfen
+- Auto/Deepgram/Fish.audio Provider‑Switch in Admin‑UI
+- Persistent Key‑Storage – Deepgram‑Key in Plugin‑Config gespeichert, nie in Git
+
+### Fixed
+- UI‑Bug – Overlay‑Container bei schneller Scroll‑Geschwindigkeit nicht korrekt gerendert
+- Key‑Rotation – Deepgram‑Key bei fehlender Konfiguration nicht zurückgesetzt
+
+## [1.3.6] - 2026-03-06
+### Fixed & Performance
+- Deepgram‑Key‑Validation – Fehlende Keys führen jetzt zu klarem Fehler‑Dialog
+- VAD‑Cache‑Optimierung – 20 % weniger CPU‑Last bei langen Sessions
+- 3‑Zeilen Ticker – Neue FIFO‑Ring‑Buffer‑Logik, keine DOM‑Recycling‑Fehler
+
+## [1.3.5] - 2026-03-05
+### Added
+- Persistent Ollama‑Key mit __KEEP__‑Pattern (UI‑Save behält bestehenden Key)
+- Auto‑Detect der Quellsprache aus der Heuristik
+- Skip‑Optimization – Kein Call wenn Original bereits Zielsprache
+
+## [1.3.4] - 2026-03-04
+### Fixed
+- UI‑Bug – Overlay‑Container bei schneller Scroll‑Geschwindigkeit nicht korrekt gerendert
+- Key‑Rotation – Deepgram‑Key bei fehlender Konfiguration nicht zurückgesetzt
+
 ## [1.3.3] - 2026-03-26
 
 ### Added
