@@ -110,6 +110,8 @@ class ElevenLabsAsrClient {
     if (error?.response) {
       const status = error.response.status || 'unknown';
       const msg = this._extractErrorMessage(error.response.data);
+      // Logge den vollen Response für Debugging
+      this.logger.error(`ElevenLabs ASR full response: status=${status}, data=${JSON.stringify(error.response.data).slice(0, 500)}`);
       const err = new Error(`ElevenLabs ASR API error (${status}): ${msg}`);
       err.elevenlabsStatus = Number(status);
       err.elevenlabsApiError = true;
@@ -135,7 +137,15 @@ class ElevenLabsAsrClient {
         return s;
       }
     }
-    return data.detail?.message || data.detail || data.message || data.error || JSON.stringify(data);
+    // data ist ein Objekt — versuche detail oder message zu extrahieren
+    if (typeof data === 'object') {
+      const detail = data.detail;
+      if (typeof detail === 'object') {
+        return detail.message || detail.msg || JSON.stringify(detail);
+      }
+      return data.detail?.message || data.detail || data.message || data.error || JSON.stringify(data);
+    }
+    return String(data);
   }
 
   _resolveTimeout(value, fallback) {
