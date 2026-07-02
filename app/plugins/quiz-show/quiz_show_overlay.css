@@ -2088,6 +2088,37 @@ body {
     text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
 }
 
+.leaderboard-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-entry:nth-child(1) .leaderboard-avatar {
+    background: linear-gradient(135deg, #ffd700, #ffec8b);
+    color: #333;
+}
+
+.leaderboard-entry:nth-child(2) .leaderboard-avatar {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    color: #333;
+}
+
+.leaderboard-entry:nth-child(3) .leaderboard-avatar {
+    background: linear-gradient(135deg, #cd7f32, #deb887);
+    color: #fff;
+}
+
 .leaderboard-username {
     flex: 1;
     font-size: 1.4rem;

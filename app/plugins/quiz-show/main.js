@@ -106,6 +106,13 @@ class QuizShowPlugin {
             slotMachineSpinDuration: 3, // Duration of slot machine spin animation in seconds
             slotMachineSpinSpeed: 100, // Speed of category changes in milliseconds
             slotMachineAutoStart: false, // Automatically trigger slot machine when starting quiz
+            // NEW: Last Man Standing Mode
+            lastManStandingEnabled: false, // Enable Last Man Standing game mode
+            lastManStandingJoinTime: 60, // Seconds for join phase before round 1
+            lastManStandingInitialTime: 30, // Initial round time in seconds
+            lastManStandingMinTime: 10, // Minimum round time after decrements
+            lastManStandingDecrement: 2, // Time decrement per round after round 10 (seconds)
+            lastManStandingDecrementFromRound: 10, // Round number to start time decrements
             // Expansion defaults
             achievementPopupsEnabled: true,
             achievementsEnabled: true,
@@ -175,7 +182,16 @@ class QuizShowPlugin {
             },
             userStreaks: {},
             categoryCorrectCounts: {},
-            pointsAwardedForRound: false
+            pointsAwardedForRound: false,
+            // NEW: Last Man Standing state
+            lastManStanding: {
+                active: false,
+                survivors: new Set(), // userIds still in the game
+                eliminated: new Set(), // userIds eliminated
+                joinPhase: false,
+                joinEndTime: null,
+                currentRoundTime: null
+            }
         };
 
         // Timer interval

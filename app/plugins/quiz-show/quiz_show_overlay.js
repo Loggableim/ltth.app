@@ -1660,9 +1660,14 @@
 
                 const rank = document.createElement('div');
                 rank.className = `leaderboard-rank rank-${index + 1}`;
-                // Add medal emoji for top 3
                 const medal = index === 0 ? '' : index === 1 ? '' : index === 2 ? '' : `#${index + 1}`;
                 rank.textContent = medal;
+
+                // Avatar initials
+                const avatar = document.createElement('div');
+                avatar.className = 'leaderboard-avatar';
+                const initials = (entry.username || 'U').substring(0, 2).toUpperCase();
+                avatar.textContent = initials;
 
                 const username = document.createElement('div');
                 username.className = 'leaderboard-username';
@@ -1673,6 +1678,7 @@
                 points.textContent = `${entry.points || 0} Pkt`;
 
                 li.appendChild(rank);
+                li.appendChild(avatar);
                 li.appendChild(username);
                 li.appendChild(points);
                 leaderboardList.appendChild(li);
