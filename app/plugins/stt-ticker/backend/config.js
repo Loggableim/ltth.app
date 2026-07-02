@@ -17,7 +17,9 @@ const DEFAULT_CONFIG = {
     fallbackLanguage: 'en',     // Fallback wenn Heuristik nichts findet
     languageWhitelist: ['de', 'en'],  // nur diese Sprachen erlauben (filtert Halluzinationen)
     deepgramApiKey: '',         // Deepgram API-Key (NIE im Git, persistent in Plugin-Config)
-    deepgramModel: 'nova-2'     // 'nova-2' | 'whisper-large' | 'whisper-medium'
+    deepgramModel: 'nova-2',     // 'nova-2' | 'whisper-large' | 'whisper-medium'
+    elevenlabsApiKey: '',        // ElevenLabs API-Key für ASR
+    elevenlabsModel: 'eleven_turbo_v2_5'  // ElevenLabs ASR Modell
   },
 
   // ASR settings — Performance / Kosten
@@ -47,6 +49,42 @@ const DEFAULT_CONFIG = {
     topColor: '#FFD700',        // gold für Englisch
     bottomColor: '#FFFFFF',     // weiß für Deutsch
     showUnknownOnTop: true      // unerkannte Sprache → obere Zeile (Default)
+  },
+
+  // Multi-Language Output (N Zeilen, je Zeile eine Sprache)
+  // Erweitert das Capture- und Overlay-Display auf N Sprachen
+  multiLanguage: {
+    enabled: false,             // true = N Zeilen Output aktivieren
+    defaultLanguage: 'de',      // Sprache des Originals (Zeile 1)
+    outputLanguages: ['en'],    // Array der Zielsprachen (Zeile 2..N)
+    colors: {
+      'de': '#FFFFFF',
+      'en': '#FFD700',
+      'es': '#FF6B6B',
+      'fr': '#6BCBFF',
+      'it': '#98FB98',
+      'pt': '#FFA07A',
+      'nl': '#DDA0DD',
+      'pl': '#87CEEB',
+      'ru': '#FF6347',
+      'ja': '#FFB6C1',
+      'ko': '#B0E0E6',
+      'zh': '#F0E68C',
+      'ar': '#DEB887',
+      'tr': '#E6E6FA',
+      'sv': '#AFEEEE',
+      'da': '#98D8C8',
+      'fi': '#F5DEB3',
+      'no': '#E0FFFF',
+      'cs': '#D3D3D3',
+      'hu': '#FFDAB9',
+      'ro': '#C0C0C0',
+      'uk': '#B0C4DE',
+      'el': '#FFFACD',
+      'he': '#E6E6FA',
+      'th': '#FFE4B5',
+      'vi': '#F0FFF0'
+    }
   },
 
   // Text buffer settings

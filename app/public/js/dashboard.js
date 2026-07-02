@@ -359,7 +359,8 @@ function initializeButtons() {
         { btnId: 'toggle-tts-elevenlabs-key', inputId: 'tts-elevenlabs-api-key' },
         { btnId: 'toggle-tts-openai-key', inputId: 'tts-openai-api-key' },
         { btnId: 'toggle-tts-fishaudio-key', inputId: 'tts-fishaudio-api-key' },
-        { btnId: 'toggle-tts-fishspeech-key', inputId: 'tts-fishspeech-api-key' }
+        { btnId: 'toggle-tts-fishspeech-key', inputId: 'tts-fishspeech-api-key' },
+        { btnId: 'toggle-tts-ollama-key', inputId: 'tts-ollama-api-key' }
     ];
 
     toggleButtons.forEach(({ btnId, inputId }) => {
@@ -1694,6 +1695,12 @@ async function loadSettings() {
             ttsFishspeechKeyInput.placeholder = 'API key configured (hidden)';
         }
 
+        const ttsOllamaKeyInput = document.getElementById('tts-ollama-api-key');
+        if (ttsOllamaKeyInput && settings.tts_ollama_api_key) {
+            ttsOllamaKeyInput.value = '***REDACTED***';
+            ttsOllamaKeyInput.placeholder = 'API key configured (hidden)';
+        }
+
         // Load username aliases for active profile
         await loadUsernameAliases();
 
@@ -1965,8 +1972,9 @@ async function saveTTSAPIKeys() {
     const openaiKeyInput = document.getElementById('tts-openai-api-key');
     const fishaudioKeyInput = document.getElementById('tts-fishaudio-api-key');
     const fishspeechKeyInput = document.getElementById('tts-fishspeech-api-key');
+    const ollamaKeyInput = document.getElementById('tts-ollama-api-key');
     
-    if (!googleKeyInput || !speechifyKeyInput || !elevenlabsKeyInput || !openaiKeyInput || !fishaudioKeyInput || !fishspeechKeyInput) return;
+    if (!googleKeyInput || !speechifyKeyInput || !elevenlabsKeyInput || !openaiKeyInput || !fishaudioKeyInput || !fishspeechKeyInput || !ollamaKeyInput) return;
 
     const googleKey = googleKeyInput.value.trim();
     const speechifyKey = speechifyKeyInput.value.trim();
@@ -1974,6 +1982,7 @@ async function saveTTSAPIKeys() {
     const openaiKey = openaiKeyInput.value.trim();
     const fishaudioKey = fishaudioKeyInput.value.trim();
     const fishspeechKey = fishspeechKeyInput.value.trim();
+    const ollamaKey = ollamaKeyInput.value.trim();
     
     // Check if there are any actual new keys to save (not placeholders or empty)
     const hasNewKeys = (googleKey && googleKey !== '***REDACTED***') ||
@@ -1981,10 +1990,11 @@ async function saveTTSAPIKeys() {
                        (elevenlabsKey && elevenlabsKey !== '***REDACTED***') ||
                        (openaiKey && openaiKey !== '***REDACTED***') ||
                        (fishaudioKey && fishaudioKey !== '***REDACTED***') ||
-                       (fishspeechKey && fishspeechKey !== '***REDACTED***');
+                       (fishspeechKey && fishspeechKey !== '***REDACTED***') ||
+                       (ollamaKey && ollamaKey !== '***REDACTED***');
     
     // Check if at least one key exists (either new or placeholder indicating existing)
-    const hasAnyKeys = googleKey || speechifyKey || elevenlabsKey || openaiKey || fishaudioKey || fishspeechKey;
+    const hasAnyKeys = googleKey || speechifyKey || elevenlabsKey || openaiKey || fishaudioKey || fishspeechKey || ollamaKey;
     
     if (!hasAnyKeys) {
         alert('âŒ Please enter at least one TTS API key');
@@ -2022,6 +2032,9 @@ async function saveTTSAPIKeys() {
             // Also save to legacy key for backwards compatibility
             updateData.tts_fishspeech_api_key = fishspeechKey;
         }
+        if (ollamaKey && ollamaKey !== '***REDACTED***') {
+            updateData.tts_ollama_api_key = ollamaKey;
+        }
 
         const response = await fetch('/api/settings', {
             method: 'POST',
@@ -2045,6 +2058,9 @@ async function saveTTSAPIKeys() {
             if (fishspeechKey && fishspeechKey !== '***REDACTED***') {
                 settings.tts_fishspeech_api_key = fishspeechKey;
                 settings.siliconflow_api_key = fishspeechKey; // Update centralized key too
+            }
+            if (ollamaKey && ollamaKey !== '***REDACTED***') {
+                settings.tts_ollama_api_key = ollamaKey;
             }
             
             // Reload the settings to show the masked keys

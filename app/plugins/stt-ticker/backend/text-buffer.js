@@ -95,7 +95,8 @@ class TextBuffer {
       lines: [],
       segments: [],
       timestamp: 0,
-      dual: null
+      dual: null,
+      multi: null
     };
   }
 
@@ -122,11 +123,17 @@ class TextBuffer {
           model: s.translation.model
         };
       }
+      // Multi-Translation: carry through for N-language output
+      let translations = null;
+      if (s.translation && s.translation.translations) {
+        translations = s.translation.translations;
+      }
       return {
         id: s.id,                  // wichtig: durchschleifen für Client-Diff
         text: s.cleaned,
         lines,
         translation,
+        translations,              // multi-language translations
         timestamp: s.timestamp,
         provider: s.provider,
         language: s.language,
@@ -147,6 +154,14 @@ class TextBuffer {
       output.dual = this._buildDualOutput(segmentOutputs, dual, maxChars);
     } else {
       output.dual = null;
+    }
+
+    // Multi-Language Output (N Zeilen)
+    const multiCfg = this.config.multiLanguage || {};
+    if (multiCfg.enabled && Array.isArray(multiCfg.outputLanguages) && multiCfg.outputLanguages.length > 0) {
+      output.multi = this._buildMultiOutput(segmentOutputs, multiCfg, maxChars);
+    } else {
+      output.multi = null;
     }
 
     this.lastOutput = output;
@@ -218,6 +233,63 @@ class TextBuffer {
       botTranslation,
       topSegmentCount: topSegs.length,
       botSegmentCount: botSegs.length
+    };
+  }
+
+  /**
+   * Baut N Zeilen Output für Multi-Language-Modus.
+   * Zeile 0 = Original (defaultLanguage), Zeile 1..N = Übersetzungen.
+   * Jede Zeile hat: { language, text, color, lines }
+   */
+  _buildMultiOutput(segmentOutputs, multiCfg, maxChars) {
+    const defaultLang = multiCfg.defaultLanguage || 'de';
+    const outputLangs = multiCfg.outputLanguages || [];
+    const colors = multiCfg.colors || {};
+    const maxLines = this.config.maxLines || 2;
+
+    // Original-Text (defaultLanguage) sammeln
+    const defaultSegs = segmentOutputs
+      .filter(s => s.language === defaultLang || s.language === 'unknown' || !s.language)
+      .slice(-maxLines);
+    const defaultText = defaultSegs.map(s => s.cleaned || s.text).join(' ');
+
+    // Zeilen bauen: Zeile 0 = Original, Zeile 1..N = Übersetzungen
+    const lines = [];
+
+    // Zeile 0: Original
+    lines.push({
+      language: defaultLang,
+      text: defaultText,
+      color: colors[defaultLang] || '#FFFFFF',
+      type: 'original'
+    });
+
+    // Zeilen 1..N: Übersetzungen
+    for (const lang of outputLangs) {
+      if (lang === defaultLang) continue; // nicht doppelt
+
+      // Übersetzung aus den Segmenten holen
+      let transText = '';
+      for (const seg of segmentOutputs) {
+        if (seg.translations && seg.translations[lang]) {
+          transText = seg.translations[lang].text;
+        }
+      }
+
+      lines.push({
+        language: lang,
+        text: transText || '',
+        color: colors[lang] || '#FFD700',
+        type: 'translation'
+      });
+    }
+
+    return {
+      enabled: true,
+      defaultLanguage: defaultLang,
+      outputLanguages: outputLangs,
+      lines,
+      colors
     };
   }
 

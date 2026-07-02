@@ -14,27 +14,26 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 20px;
     }
-    h1 { color: #4CAF50; margin-bottom: 8px; font-size: 28px; }
-    .subtitle { color: #aaa; margin-bottom: 30px; font-size: 14px; }
+    h1 { color: #4CAF50; margin-bottom: 4px; font-size: 26px; }
+    .subtitle { color: #aaa; margin-bottom: 20px; font-size: 13px; }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       width: 100%;
       background: #2a2a3e;
       border-radius: 12px;
-      padding: 30px;
+      padding: 24px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     .status {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
       border-radius: 8px;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 600;
     }
     .status.idle { background: #3a3a4e; color: #999; }
@@ -54,10 +53,9 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
-    /* Live meter */
     .meter-wrap {
-      margin-top: -10px;
-      margin-bottom: 16px;
+      margin-top: -6px;
+      margin-bottom: 12px;
       background: rgba(0,0,0,0.4);
       border-radius: 6px;
       height: 8px;
@@ -86,14 +84,14 @@
       margin-bottom: 4px;
       text-transform: uppercase;
     }
-    .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    .controls { display: flex; gap: 10px; margin-bottom: 16px; }
     .btn {
       flex: 1;
-      padding: 14px;
+      padding: 12px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       transition: all 0.2s;
     }
@@ -102,6 +100,7 @@
     .btn-primary:hover:not(:disabled) { background: #45a049; }
     .btn-danger { background: #f44336; color: white; }
     .btn-danger:hover:not(:disabled) { background: #d32f2f; }
+    .btn-small { padding: 6px 12px; font-size: 12px; flex: 0; }
     .log-box {
       background: #1a1a2e;
       border-radius: 6px;
@@ -109,7 +108,7 @@
       font-family: 'Consolas', 'Monaco', monospace;
       font-size: 12px;
       color: #4CAF50;
-      max-height: 200px;
+      max-height: 150px;
       overflow-y: auto;
       line-height: 1.4;
     }
@@ -118,21 +117,20 @@
     .log-box .warn { color: #FFC107; }
     .log-box .silence { color: #888; font-style: italic; }
     .log-box .transcript { color: #64B5F6; }
-    /* Stats card */
     .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
     .stat {
       background: #3a3a4e;
-      padding: 10px 8px;
+      padding: 8px 6px;
       border-radius: 6px;
       text-align: center;
     }
     .stat-value {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
       color: #4CAF50;
       line-height: 1.1;
@@ -144,12 +142,105 @@
       margin-top: 2px;
     }
     .stat.savings .stat-value { color: #FFC107; }
+    .preview-section {
+      margin-top: 16px;
+      margin-bottom: 16px;
+    }
+    .preview-section h3 {
+      color: #64B5F6;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-line {
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.3);
+      font-size: 14px;
+      line-height: 1.3;
+      min-height: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-line .lang-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    .preview-line .line-text { flex: 1; }
+    .preview-line.empty { color: #555; font-style: italic; }
+    .settings-section {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(100, 181, 246, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(100, 181, 246, 0.2);
+    }
+    .settings-section h3 {
+      color: #64B5F6;
+      font-size: 14px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .settings-section h3:hover { opacity: 0.8; }
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .settings-row label {
+      font-size: 12px;
+      color: #aaa;
+      min-width: 100px;
+    }
+    .settings-row select, .settings-row input {
+      padding: 6px 10px;
+      background: #3a3a4e;
+      border: 1px solid #555;
+      border-radius: 6px;
+      color: #eee;
+      font-size: 13px;
+    }
+    .settings-row select:focus, .settings-row input:focus {
+      border-color: #4CAF50;
+      outline: none;
+    }
+    .lang-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: rgba(100, 181, 246, 0.2);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-tag:hover { background: rgba(244, 67, 54, 0.3); }
+    .lang-tag .remove { color: #f44336; font-weight: bold; margin-left: 2px; }
+    .lang-tag-list {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
     .info-box {
       background: rgba(100, 181, 246, 0.1);
       border-left: 3px solid #64B5F6;
-      padding: 12px;
-      margin-top: 20px;
-      font-size: 13px;
+      padding: 10px;
+      margin-top: 16px;
+      font-size: 12px;
       color: #bbb;
       border-radius: 4px;
     }
@@ -160,7 +251,7 @@
 </head>
 <body>
   <h1>🎤 STT Ticker — Audio Capture</h1>
-  <p class="subtitle">Client-seitige Stille-Erkennung spart Fish.audio Tokens</p>
+  <p class="subtitle">Client-seitige Stille-Erkennung + Multi-Language Output</p>
 
   <div class="container">
     <div id="status" class="status idle">
@@ -168,7 +259,6 @@
       <span id="status-text">Bereit zum Start</span>
     </div>
 
-    <!-- Live-Meter -->
     <div class="meter-row">
       <span>Live-Pegel (RMS)</span>
       <span id="meter-value">0.000</span>
@@ -178,11 +268,10 @@
       <div class="meter-threshold" id="meter-threshold" style="left: 30%"></div>
     </div>
 
-    <!-- Token-Spar-Stats -->
     <div class="stats">
       <div class="stat">
         <div class="stat-value" id="stat-sent">0</div>
-        <div class="stat-label">An Fish gesendet</div>
+        <div class="stat-label">An Server gesendet</div>
       </div>
       <div class="stat savings">
         <div class="stat-value" id="stat-skipped">0</div>
@@ -195,12 +284,99 @@
     </div>
 
     <div class="controls">
-      <button id="btn-start" class="btn btn-primary">
-        ▶ Capture starten
-      </button>
-      <button id="btn-stop" class="btn btn-danger" disabled>
-        ■ Stop
-      </button>
+      <button id="btn-start" class="btn btn-primary">▶ Capture starten</button>
+      <button id="btn-stop" class="btn btn-danger" disabled>■ Stop</button>
+    </div>
+
+    <!-- Multi-Language Live Preview -->
+    <div class="preview-section" id="preview-section">
+      <h3>🌐 Live-Output <span id="preview-lang-count" style="font-size:11px;color:#888;"></span></h3>
+      <div id="preview-lines"></div>
+    </div>
+
+    <!-- Multi-Language Settings -->
+    <div class="settings-section" id="settings-section">
+      <h3 id="settings-toggle">⚙️ Multi-Language Einstellungen ▾</h3>
+      <div id="settings-body">
+        <div class="settings-row">
+          <label>Übersetzungs-Modell</label>
+          <select id="ml-model" style="flex:1;">
+            <option value="">— Modelle laden... —</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label>Default-Sprache (Original)</label>
+          <select id="ml-default-lang" style="flex:1;">
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="pt">🇵🇹 Português</option>
+            <option value="nl">🇳🇱 Nederlands</option>
+            <option value="pl">🇵🇱 Polski</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="zh">🇨🇳 中文</option>
+            <option value="ar">🇸🇦 العربية</option>
+            <option value="tr">🇹🇷 Türkçe</option>
+            <option value="sv">🇸🇪 Svenska</option>
+            <option value="da">🇩🇰 Dansk</option>
+            <option value="fi">🇫🇮 Suomi</option>
+            <option value="no">🇳🇴 Norsk</option>
+            <option value="cs">🇨🇿 Čeština</option>
+            <option value="hu">🇭🇺 Magyar</option>
+            <option value="ro">🇷🇴 Română</option>
+            <option value="uk">🇺🇦 Українська</option>
+            <option value="el">🇬🇷 Ελληνικά</option>
+            <option value="he">🇮🇱 עברית</option>
+            <option value="th">🇹🇭 ไทย</option>
+            <option value="vi">🇻🇳 Tiếng Việt</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label>Sprache hinzufügen</label>
+          <select id="ml-add-lang" style="flex:1;">
+            <option value="">— Sprache wählen —</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="pt">🇵🇹 Português</option>
+            <option value="nl">🇳🇱 Nederlands</option>
+            <option value="pl">🇵🇱 Polski</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="zh">🇨🇳 中文</option>
+            <option value="ar">🇸🇦 العربية</option>
+            <option value="tr">🇹🇷 Türkçe</option>
+            <option value="sv">🇸🇪 Svenska</option>
+            <option value="da">🇩🇰 Dansk</option>
+            <option value="fi">🇫🇮 Suomi</option>
+            <option value="no">🇳🇴 Norsk</option>
+            <option value="cs">🇨🇿 Čeština</option>
+            <option value="hu">🇭🇺 Magyar</option>
+            <option value="ro">🇷🇴 Română</option>
+            <option value="uk">🇺🇦 Українська</option>
+            <option value="el">🇬🇷 Ελληνικά</option>
+            <option value="he">🇮🇱 עברית</option>
+            <option value="th">🇹🇭 ไทย</option>
+            <option value="vi">🇻🇳 Tiếng Việt</option>
+          </select>
+          <button id="btn-add-lang" class="btn btn-small btn-primary">+</button>
+        </div>
+        <div class="settings-row">
+          <label>Aktive Sprachen</label>
+          <div id="lang-tags" class="lang-tag-list"></div>
+        </div>
+        <div style="margin-top:8px;">
+          <button id="btn-save-ml" class="btn btn-small btn-primary">💾 Speichern</button>
+          <span id="ml-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
+        </div>
+      </div>
     </div>
 
     <div id="log" class="log-box">
@@ -208,16 +384,17 @@
     </div>
 
     <div class="info-box">
-      <strong>So funktioniert's:</strong><br>
-      1. Klicke auf <strong>▶ Capture starten</strong><br>
-      2. Browser fragt nach Mikrofon-Erlaubnis<br>
-      3. <strong class="accent-yellow">Stille-Chunks werden gar nicht erst hochgeladen</strong> (VAD)<br>
-      4. Nur Audio mit erkannter Sprache geht an Fish.audio<br>
+      <strong>Multi-Language Output:</strong><br>
+      1. Wähle <strong>Default-Sprache</strong> (was gesprochen wird)<br>
+      2. Füge <strong>Zielsprachen</strong> hinzu (je eine Zeile im Output)<br>
+      3. Wähle <strong>Übersetzungs-Modell</strong> (wird automatisch geladen wenn API-Key vorhanden)<br>
+      4. Starte Capture — jede Zeile zeigt eine Sprache<br>
       <br>
-      <strong>Dieses Fenster kann minimiert werden</strong> — Capture läuft im Hintergrund weiter.
+      <strong class="accent-yellow">Übersetzung via Ollama Cloud</strong> — muss in den Admin-Settings aktiviert sein.
     </div>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const SAMPLE_RATE = 16000;
     const CHUNK_DURATION_MS = 5000;
@@ -233,7 +410,7 @@
     let captureInterval = null;
     let sendingWav = false;
 
-    // VAD-Config (vom Server geladen)
+    // VAD-Config
     let vad = {
       enabled: true,
       rmsThreshold: 0.012,
@@ -242,11 +419,37 @@
       sustainedSilenceMs: 1500
     };
 
+    // Eigene lokale Liste — NICHT an multiLang.outputLanguages gebunden
+    let currentOutputLangs = [];
+
+    // Multi-Language Config (vom Server)
+    let multiLang = {
+      enabled: true,
+      defaultLanguage: 'de',
+      outputLanguages: ['en'],
+      colors: {}
+    };
+
+    // Translation Config (vom Server)
+    let translationConfig = {
+      enabled: false,
+      apiKey: '',
+      model: 'nemotron-3-nano'
+    };
+
     // Stats
     let stats = { sent: 0, skipped: 0 };
-
-    // Sustained-silence tracking für Status
     let lastSpeechAt = 0;
+
+    const LANG_NAMES = {
+      'de': '🇩🇪 DE', 'en': '🇬🇧 EN', 'es': '🇪🇸 ES', 'fr': '🇫🇷 FR',
+      'it': '🇮🇹 IT', 'pt': '🇵🇹 PT', 'nl': '🇳🇱 NL', 'pl': '🇵🇱 PL',
+      'ru': '🇷🇺 RU', 'ja': '🇯🇵 JA', 'ko': '🇰🇷 KO', 'zh': '🇨🇳 ZH',
+      'ar': '🇸🇦 AR', 'tr': '🇹🇷 TR', 'sv': '🇸🇪 SV', 'da': '🇩🇰 DA',
+      'fi': '🇫🇮 FI', 'no': '🇳🇴 NO', 'cs': '🇨🇿 CS', 'hu': '🇭🇺 HU',
+      'ro': '🇷🇴 RO', 'uk': '🇺🇦 UK', 'el': '🇬🇷 EL', 'he': '🇮🇱 HE',
+      'th': '🇹🇭 TH', 'vi': '🇻🇳 VI'
+    };
 
     const statusEl = document.getElementById('status');
     const statusTextEl = document.getElementById('status-text');
@@ -257,11 +460,26 @@
     const meterEl = document.getElementById('meter');
     const meterValueEl = document.getElementById('meter-value');
     const meterThresholdEl = document.getElementById('meter-threshold');
+    const previewLinesEl = document.getElementById('preview-lines');
+    const previewLangCountEl = document.getElementById('preview-lang-count');
+    const langTagsEl = document.getElementById('lang-tags');
+    const mlDefaultLangEl = document.getElementById('ml-default-lang');
+    const mlAddLangEl = document.getElementById('ml-add-lang');
+    const mlModelEl = document.getElementById('ml-model');
 
-    function log(msg, type = '') {
+    // Socket.IO
+    const socket = io({ transports: ['websocket', 'polling'] });
+    socket.on('stt-ticker:transcript', (data) => {
+      if (!data) return;
+      if (data.multi && data.multi.lines) {
+        renderPreview(data.multi.lines);
+      }
+    });
+
+    function log(msg, type) {
       const t = new Date().toLocaleTimeString();
-      const cls = type ? ` class="${type}"` : '';
-      logEl.innerHTML = `<div${cls}>[${t}] ${msg}</div>` + logEl.innerHTML;
+      const cls = type ? ' class="' + type + '"' : '';
+      logEl.innerHTML = '<div' + cls + '>[' + t + '] ' + msg + '</div>' + logEl.innerHTML;
     }
 
     function setStatus(text, state) {
@@ -281,117 +499,221 @@
       document.getElementById('stat-savings-pct').textContent = pct + '%';
     }
 
-    async function loadVadSettings() {
+    function renderPreview(lines) {
+      if (!lines || !Array.isArray(lines)) return;
+      previewLinesEl.innerHTML = '';
+      let count = 0;
+      for (const line of lines) {
+        const div = document.createElement('div');
+        div.className = 'preview-line' + (line.text ? '' : ' empty');
+        const badge = document.createElement('span');
+        badge.className = 'lang-badge';
+        badge.textContent = LANG_NAMES[line.language] || line.language.toUpperCase();
+        badge.style.color = line.color || '#fff';
+        const textSpan = document.createElement('span');
+        textSpan.className = 'line-text';
+        textSpan.textContent = line.text || '⏳ wartet auf Übersetzung...';
+        textSpan.style.color = line.color || '#fff';
+        div.appendChild(badge);
+        div.appendChild(textSpan);
+        previewLinesEl.appendChild(div);
+        count++;
+      }
+      previewLangCountEl.textContent = '(' + count + ' Zeilen)';
+    }
+
+    function renderLangTags() {
+      langTagsEl.innerHTML = '';
+      for (const lang of currentOutputLangs) {
+        const tag = document.createElement('span');
+        tag.className = 'lang-tag';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
+        tag.addEventListener('click', function() {
+          currentOutputLangs = currentOutputLangs.filter(function(l) { return l !== lang; });
+          renderLangTags();
+          updatePreviewFromConfig();
+        });
+        langTagsEl.appendChild(tag);
+      }
+    }
+
+    function updatePreviewFromConfig() {
+      const lines = [];
+      lines.push({
+        language: mlDefaultLangEl.value,
+        text: '',
+        color: multiLang.colors[mlDefaultLangEl.value] || '#FFFFFF',
+        type: 'original'
+      });
+      for (const lang of currentOutputLangs) {
+        if (lang === mlDefaultLangEl.value) continue;
+        lines.push({
+          language: lang,
+          text: '',
+          color: multiLang.colors[lang] || '#FFD700',
+          type: 'translation'
+        });
+      }
+      renderPreview(lines);
+    }
+
+    async function loadModels() {
+      try {
+        const res = await fetch(API + '/api/stt-ticker/translator/models');
+        const data = await res.json();
+        if (!data.success || !data.models) return;
+        mlModelEl.innerHTML = '';
+        for (const model of data.models) {
+          const opt = document.createElement('option');
+          opt.value = model.id;
+          opt.textContent = model.name;
+          if (model.id === translationConfig.model) opt.selected = true;
+          mlModelEl.appendChild(opt);
+        }
+        if (data.models.length > 0) {
+          log('🧠 ' + data.models.length + ' Modelle geladen');
+        }
+      } catch (e) {
+        log('⚠ Konnte Modelle nicht laden', 'warn');
+      }
+    }
+
+    async function loadSettings() {
       try {
         const res = await fetch(API + '/api/stt-ticker/vad/settings');
         const data = await res.json();
         if (data.success && data.vad) {
           vad = Object.assign(vad, data.vad);
-          // Schwelle visuell anzeigen (Threshold linear auf 0..1 mappen, *30 für sichtbar)
           const thresholdPct = Math.min(95, Math.max(5, (vad.rmsThreshold || 0.012) * 1000));
           meterThresholdEl.style.left = thresholdPct + '%';
-          log(`⚙ VAD geladen: threshold=${vad.rmsThreshold}, minRatio=${vad.minSpeechRatio}`);
+          log('⚙ VAD geladen: threshold=' + vad.rmsThreshold);
+        }
+        // Multi-Language Settings laden
+        if (data.multiLanguage) {
+          multiLang = Object.assign({}, multiLang, data.multiLanguage);
+          mlDefaultLangEl.value = multiLang.defaultLanguage || 'de';
+          // Kopiere in lokale Liste
+          currentOutputLangs = (multiLang.outputLanguages || []).slice();
+          renderLangTags();
+          updatePreviewFromConfig();
+          log('🌐 Multi-Language: ' + currentOutputLangs.length + ' Zielsprachen');
+        }
+        // Translation Config laden (für Modell)
+        const statusRes = await fetch(API + '/api/stt-ticker/status');
+        const statusData = await statusRes.json();
+        if (statusData.success && statusData.status) {
+          const cfg = statusData.status.config || {};
+          const tc = cfg.translation || {};
+          translationConfig.enabled = tc.enabled || false;
+          translationConfig.apiKey = tc.apiKey || '';
+          translationConfig.model = tc.model || 'nemotron-3-nano';
+          if (tc.apiKey) {
+            log('🔑 Ollama Key vorhanden — lade Modelle...');
+            await loadModels();
+          } else {
+            log('⚠ Kein Ollama Key — Übersetzung deaktiviert', 'warn');
+            mlModelEl.innerHTML = '<option value="">— Kein API-Key —</option>';
+          }
         }
       } catch (e) {
-        log('⚠ Konnte VAD-Settings nicht laden, nutze Defaults', 'warn');
+        log('⚠ Konnte Settings nicht laden, nutze Defaults', 'warn');
       }
     }
 
-    /**
-     * Voice Activity Detection: analysiert PCM-Samples auf Sprachaktivität.
-     *
-     * Returns:
-     *   { hasSpeech: bool, rms: number, speechRatio: number, chunkMs: number }
-     */
+    async function saveMultiLangSettings() {
+      const defaultLang = mlDefaultLangEl.value;
+      const outputLangs = currentOutputLangs.filter(function(l) { return l !== defaultLang; });
+      const model = mlModelEl.value;
+      const body = {
+        multiLanguage: {
+          enabled: true,
+          defaultLanguage: defaultLang,
+          outputLanguages: outputLangs,
+          colors: multiLang.colors
+        }
+      };
+      // Modell mitspeichern wenn ausgewählt
+      if (model) {
+        body.translation = { model: model };
+      }
+      try {
+        const res = await fetch(API + '/api/stt-ticker/multilang/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+          multiLang = data.multiLanguage;
+          if (data.translation && data.translation.model) {
+            translationConfig.model = data.translation.model;
+          }
+          document.getElementById('ml-status').textContent = '✅ Gespeichert';
+          setTimeout(function() { document.getElementById('ml-status').textContent = ''; }, 2000);
+          log('🌐 Multi-Language gespeichert: ' + outputLangs.length + ' Sprachen');
+        } else {
+          document.getElementById('ml-status').textContent = '❌ ' + (data.error || 'Fehler');
+        }
+      } catch (e) {
+        document.getElementById('ml-status').textContent = '❌ ' + e.message;
+      }
+    }
+
     function detectVoiceActivity(samples) {
       if (!samples || samples.length === 0) return { hasSpeech: false, rms: 0, speechRatio: 0, chunkMs: 0 };
-
       const chunkMs = Math.round((samples.length / SAMPLE_RATE) * 1000);
-
-      // 1. Globale RMS
       let sumSq = 0;
-      for (let i = 0; i < samples.length; i++) {
-        const v = samples[i];
-        sumSq += v * v;
-      }
+      for (let i = 0; i < samples.length; i++) { sumSq += samples[i] * samples[i]; }
       const rms = Math.sqrt(sumSq / samples.length);
-
-      // 2. Speech ratio: Anteil der Samples mit Abs-Amplitude über halber Threshold
       const halfThreshold = (vad.rmsThreshold || 0.012) * 0.5;
       let loudCount = 0;
-      for (let i = 0; i < samples.length; i++) {
-        if (Math.abs(samples[i]) > halfThreshold) loudCount++;
-      }
+      for (let i = 0; i < samples.length; i++) { if (Math.abs(samples[i]) > halfThreshold) loudCount++; }
       const speechRatio = loudCount / samples.length;
-
-      const hasSpeech =
-        rms >= (vad.rmsThreshold || 0.012) &&
-        speechRatio >= (vad.minSpeechRatio || 0.04);
-
+      const hasSpeech = rms >= (vad.rmsThreshold || 0.012) && speechRatio >= (vad.minSpeechRatio || 0.04);
       return { hasSpeech, rms, speechRatio, chunkMs };
     }
 
     async function startCapture() {
       log('Frage Mikrofon-Erlaubnis an...');
       btnStart.disabled = true;
-
       try {
         audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true
-          }
+          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
         });
-        log('✅ Mikrofon-Erlaubnis erteilt', '');
-
-        audioContext = new (window.AudioContext || window.webkitAudioContext)({
-          sampleRate: SAMPLE_RATE
-        });
-
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-
+        log('✅ Mikrofon-Erlaubnis erteilt');
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        if (audioContext.state === 'suspended') await audioContext.resume();
         audioSource = audioContext.createMediaStreamSource(audioStream);
         scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
         audioSource.connect(scriptProcessor);
         scriptProcessor.connect(audioContext.destination);
-
-        scriptProcessor.onaudioprocess = (event) => {
+        scriptProcessor.onaudioprocess = function(event) {
           const input = event.inputBuffer.getChannelData(0);
           for (let i = 0; i < input.length; i++) {
             audioBuffer.push(Math.max(-1, Math.min(1, input[i])));
           }
-          // Live-Meter (immer an, auch wenn VAD aus)
           if (audioBuffer.length >= 1024) {
             const tail = audioBuffer.slice(-1024);
             let s = 0;
             for (let i = 0; i < tail.length; i++) s += tail[i] * tail[i];
             const tailRms = Math.sqrt(s / tail.length);
             meterValueEl.textContent = tailRms.toFixed(4);
-            // Meter-Anzeige: RMS logarithmisch auf 0..1 mappen
             const meterPct = Math.min(100, Math.max(0, (Math.log10(1 + tailRms * 50) + 1) * 50));
             meterEl.style.width = meterPct + '%';
           }
-          if (audioBuffer.length >= CHUNK_SAMPLES) {
-            sendWavChunk();
-          }
+          if (audioBuffer.length >= CHUNK_SAMPLES) sendWavChunk();
         };
-
-        captureInterval = setInterval(() => {
+        captureInterval = setInterval(function() {
           if (audioBuffer.length > 0) sendWavChunk();
         }, CHUNK_DURATION_MS + 1000);
-
         isCapturing = true;
         lastSpeechAt = Date.now();
         setStatus('🎤 Höre zu…', 'listening');
         btnStart.disabled = true;
         btnStop.disabled = false;
-        log(`✅ Capture aktiv — sende alle ${CHUNK_DURATION_MS / 1000}s, VAD ${vad.enabled ? 'AN' : 'AUS'}`);
-
+        log('✅ Capture aktiv — sende alle ' + (CHUNK_DURATION_MS / 1000) + 's, VAD ' + (vad.enabled ? 'AN' : 'AUS'));
       } catch (error) {
-        log(`❌ Mikrofon-Zugriff fehlgeschlagen: ${error.message}`, 'err');
+        log('❌ Mikrofon-Zugriff fehlgeschlagen: ' + error.message, 'err');
         setStatus('❌ Mikrofon-Zugriff fehlgeschlagen', 'error');
         btnStart.disabled = false;
       }
@@ -403,9 +725,8 @@
       if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
       if (audioSource) { audioSource.disconnect(); audioSource = null; }
       if (audioContext) { audioContext.close(); audioContext = null; }
-      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+      if (audioStream) { audioStream.getTracks().forEach(function(t) { t.stop(); }); audioStream = null; }
       audioBuffer = [];
-
       setStatus('■ Gestoppt', 'idle');
       btnStart.disabled = false;
       btnStop.disabled = true;
@@ -413,46 +734,35 @@
       updateStats();
     }
 
-    /**
-     * Analysiert den Chunk per VAD. Wenn VAD sagt "Silence" → lokal verwerfen.
-     * Wenn VAD sagt "Speech" → an Fish.audio senden.
-     */
     function sendWavChunk() {
       if (audioBuffer.length < 1600 || sendingWav) return;
       sendingWav = true;
-
       const samples = audioBuffer.splice(0);
       const vadResult = detectVoiceActivity(samples);
-
       if (vad.enabled && !vadResult.hasSpeech) {
-        // Stille → nicht hochladen, Token sparen
         stats.skipped++;
         updateStats();
-        log(`⏸ Stille übersprungen (chunk=${vadResult.chunkMs}ms, RMS=${vadResult.rms.toFixed(4)}, ratio=${(vadResult.speechRatio * 100).toFixed(1)}%)`, 'silence');
-        // Sustained-Silence-Status nach X ms anzeigen
+        log('⏸ Stille übersprungen (chunk=' + vadResult.chunkMs + 'ms, RMS=' + vadResult.rms.toFixed(4) + ')', 'silence');
         if (Date.now() - lastSpeechAt > (vad.sustainedSilenceMs || 1500)) {
           setStatus('🤫 Stille — keine Tokens verbrannt', 'silence');
         }
         sendingWav = false;
         return;
       }
-
-      // Mindest-Chunk-Länge: zu kurze Audio-Stücke (z. B. Knacken) verwerfen
       if (vad.enabled && vadResult.chunkMs < (vad.minChunkMs || 600)) {
         stats.skipped++;
         updateStats();
-        log(`⏸ Zu kurz übersprungen (${vadResult.chunkMs}ms)`, 'silence');
+        log('⏸ Zu kurz übersprungen (' + vadResult.chunkMs + 'ms)', 'silence');
         sendingWav = false;
         return;
       }
-
       lastSpeechAt = Date.now();
       const wavBlob = encodeWav(samples, SAMPLE_RATE);
       stats.sent++;
       updateStats();
       setStatus('🎤 Höre zu — Transkribiere', 'listening');
-      log(`📤 Sende ${vadResult.chunkMs}ms (RMS=${vadResult.rms.toFixed(4)}, ratio=${(vadResult.speechRatio * 100).toFixed(1)}%)`);
-      sendAudioToServer(wavBlob).finally(() => { sendingWav = false; });
+      log('📤 Sende ' + vadResult.chunkMs + 'ms (RMS=' + vadResult.rms.toFixed(4) + ')');
+      sendAudioToServer(wavBlob).finally(function() { sendingWav = false; });
     }
 
     function encodeWav(samples, sampleRate) {
@@ -492,26 +802,23 @@
       const formData = new FormData();
       formData.append('audio', blob, 'audio.wav');
       try {
-        const response = await fetch(API + '/api/stt-ticker/transcribe', {
-          method: 'POST',
-          body: formData
-        });
+        const response = await fetch(API + '/api/stt-ticker/transcribe', { method: 'POST', body: formData });
         const data = await response.json();
         if (data.success && data.transcript) {
           const tr = data.transcript;
           const txt = (tr.text || '').slice(0, 60);
-          const lang = tr.language ? ` [${tr.language}${tr.languageSource === 'heuristic' ? '~' : ''}]` : '';
-          log(`✅ "${txt}${txt.length >= 60 ? '...' : ''}"${lang}`, 'transcript');
+          const lang = tr.language ? ' [' + tr.language + ']' : '';
+          log('✅ "' + txt + (txt.length >= 60 ? '...' : '') + '"' + lang, 'transcript');
         } else {
-          log(`❌ ${data.message || 'Unknown error'}`, 'err');
+          log('❌ ' + (data.message || 'Unknown error'), 'err');
         }
       } catch (error) {
-        log(`❌ Netzwerk: ${error.message}`, 'err');
+        log('❌ Netzwerk: ' + error.message, 'err');
       }
     }
 
     // Window-Close-Schutz
-    window.addEventListener('beforeunload', (e) => {
+    window.addEventListener('beforeunload', function(e) {
       if (isCapturing) {
         stopCapture();
         e.preventDefault();
@@ -520,15 +827,43 @@
       }
     });
 
+    // ===== Event-Listener =====
+    btnStart.addEventListener('click', startCapture);
+    btnStop.addEventListener('click', stopCapture);
+
+    document.getElementById('btn-add-lang').addEventListener('click', function() {
+      var lang = mlAddLangEl.value;
+      if (!lang) {
+        document.getElementById('ml-status').textContent = '⚠️ Bitte Sprache wählen';
+        return;
+      }
+      if (currentOutputLangs.indexOf(lang) !== -1) {
+        document.getElementById('ml-status').textContent = '⚠️ Bereits vorhanden';
+        return;
+      }
+      currentOutputLangs.push(lang);
+      renderLangTags();
+      updatePreviewFromConfig();
+      mlAddLangEl.value = '';
+      document.getElementById('ml-status').textContent = '';
+    });
+
+    document.getElementById('btn-save-ml').addEventListener('click', saveMultiLangSettings);
+
+    mlDefaultLangEl.addEventListener('change', function() {
+      updatePreviewFromConfig();
+    });
+
+    document.getElementById('settings-toggle').addEventListener('click', function() {
+      var body = document.getElementById('settings-body');
+      body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    });
+
     // Init
-    loadVadSettings().then(() => {
+    loadSettings().then(function() {
       log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
     });
     updateStats();
-
-    // Event-Listener (CSP-kompatibel — keine inline onclick)
-    btnStart.addEventListener('click', startCapture);
-    btnStop.addEventListener('click', stopCapture);
   </script>
 </body>
 </html>

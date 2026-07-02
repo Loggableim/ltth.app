@@ -161,6 +161,86 @@ class Translator {
   }
 
   /**
+   * Übersetzt einen Text in mehrere Zielsprachen parallel.
+   * @param {string} text - Der zu übersetzende Text
+   * @param {Object} options - { sourceLanguage, outputLanguages: ['en', 'fr', ...] }
+   * @returns {Object} { translated: bool, translations: { lang: { text, color }, ... } }
+   */
+  async translateMulti(text, options = {}) {
+    const cfg = this.config.translation || {};
+    if (!cfg.enabled || !cfg.apiKey) {
+      return { translated: false, translations: {} };
+    }
+
+    const trimmed = String(text || '').trim();
+    if (!trimmed || trimmed.length < 2) {
+      return { translated: false, translations: {} };
+    }
+
+    const sourceLang = options.sourceLanguage || cfg.sourceLanguage || 'auto';
+    const outputLangs = Array.isArray(options.outputLanguages) ? options.outputLanguages : [];
+    if (outputLangs.length === 0) {
+      return { translated: false, translations: {} };
+    }
+
+    // Filtere Quellsprache raus (keine Übersetzung nötig)
+    const targets = outputLangs.filter(l => l !== sourceLang);
+    if (targets.length === 0) {
+      return { translated: false, translations: {} };
+    }
+
+    // Rate-Limit
+    if (!this._checkRateLimit()) {
+      this.logger.warn('STT Ticker: Multi-translation rate limited');
+      return { translated: false, translations: {} };
+    }
+
+    // Batch-Prompt: alle Zielsprachen in einem Request
+    const systemPrompt = `You are a real-time caption translator. Translate the following ${sourceLang} text to ALL of these languages: ${targets.join(', ')}. Return a JSON object where keys are language codes and values are the translations. Example: {"en": "Hello world", "fr": "Bonjour le monde"}. Return ONLY the JSON object, no explanations, no markdown. Keep the tone and style.`;
+
+    try {
+      const result = await this._callOllama(systemPrompt, trimmed, cfg);
+      let parsed;
+      try {
+        parsed = JSON.parse(result);
+      } catch (e) {
+        // Fallback: Versuche JSON aus dem Text zu extrahieren
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try { parsed = JSON.parse(jsonMatch[0]); } catch (e2) { parsed = null; }
+        } else {
+          parsed = null;
+        }
+      }
+
+      if (!parsed || typeof parsed !== 'object') {
+        this.logger.warn('STT Ticker: Multi-translation returned unparseable result');
+        return { translated: false, translations: {} };
+      }
+
+      const colors = (this.config.multiLanguage && this.config.multiLanguage.colors) || {};
+      const translations = {};
+      for (const lang of targets) {
+        const tText = parsed[lang];
+        if (tText && typeof tText === 'string' && tText.trim()) {
+          translations[lang] = {
+            text: tText.trim(),
+            color: colors[lang] || cfg.color || '#FFD700'
+          };
+        }
+      }
+
+      return {
+        translated: Object.keys(translations).length > 0,
+        translations
+      };
+    } catch (error) {
+      this.logger.warn(`STT Ticker: Multi-translation failed: ${error.message}`);
+      return { translated: false, translations: {} };
+    }
+  }
+
+  /**
    * Ruft die Ollama Cloud API auf (OpenAI-kompatibel).
    */
   async _callOllama(systemPrompt, text, cfg) {

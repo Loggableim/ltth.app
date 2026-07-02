@@ -11,29 +11,81 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #1a1a2e;
       color: #eee;
-      padding: 20px;
+      padding: 16px;
     }
-    .container { max-width: 900px; margin: 0 auto; }
-    h1 { color: #4CAF50; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-    h2 { color: #64B5F6; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #64B5F6; padding-bottom: 5px; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { color: #4CAF50; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; font-size: 22px; }
+    .subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 16px;
+      background: #222;
+      border-radius: 10px;
+      padding: 3px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 8px 14px;
+      border: none;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.05); }
+    .tab-btn.active { background: #4CAF50; color: #fff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     .card {
-      background: #2a2a3e; padding: 20px; border-radius: 10px;
-      margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      background: #2a2a3e;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-    .stat { background: #3a3a4e; padding: 15px; border-radius: 8px; text-align: center; }
-    .stat-value { font-size: 28px; font-weight: bold; color: #4CAF50; }
-    .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
-    label { display: block; margin-top: 12px; color: #ccc; font-size: 13px; }
+    .card-title {
+      color: #64B5F6;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #3a3a4e;
+      padding-bottom: 8px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .stat {
+      background: #3a3a4e;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-value { font-size: 22px; font-weight: bold; color: #4CAF50; line-height: 1.1; }
+    .stat-label { font-size: 10px; color: #aaa; text-transform: uppercase; margin-top: 3px; }
+    label { display: block; margin-top: 8px; color: #bbb; font-size: 12px; font-weight: 600; }
     input, select {
-      width: 100%; padding: 10px; margin-top: 4px;
+      width: 100%; padding: 8px 10px; margin-top: 3px;
       background: #3a3a4e; border: 1px solid #555; border-radius: 6px;
-      color: #eee; font-size: 14px;
+      color: #eee; font-size: 13px;
     }
     input:focus, select:focus { border-color: #4CAF50; outline: none; }
+    input[type="checkbox"] { width: auto; margin-right: 6px; }
+    input[type="color"] { height: 36px; padding: 2px; cursor: pointer; }
+    input[type="range"] { padding: 0; height: 6px; }
     .btn {
-      padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
-      font-size: 14px; margin-top: 15px; transition: all 0.3s;
+      padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 13px; font-weight: 600; transition: all 0.2s;
     }
     .btn-primary { background: #4CAF50; color: white; }
     .btn-primary:hover { background: #45a049; }
@@ -41,331 +93,412 @@
     .btn-secondary:hover { background: #666; }
     .btn-danger { background: #f44336; color: white; }
     .btn-danger:hover { background: #d32f2f; }
-    .btn-success { background: #2196F3; color: white; }
-    .btn-success:hover { background: #1976D2; }
-    .btn-large { padding: 14px 24px; font-size: 16px; width: 100%; }
-    .overlay-link {
-      display: inline-block; margin-top: 10px; padding: 8px 16px;
-      background: #64B5F6; color: #fff; border-radius: 6px; text-decoration: none;
-    }
-    .overlay-link:hover { background: #42A5F5; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
     .toast {
-      position: fixed; top: 20px; right: 20px; padding: 12px 20px;
-      border-radius: 8px; color: white; z-index: 9999;
+      position: fixed; top: 16px; right: 16px; padding: 10px 16px;
+      border-radius: 8px; color: white; z-index: 9999; font-size: 13px;
       animation: slideIn 0.3s ease;
     }
     .toast.success { background: #4CAF50; }
     .toast.error { background: #f44336; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .section-toggle { cursor: pointer; user-select: none; }
-    .section-toggle:hover { opacity: 0.8; }
-    .help-text { color: #aaa; font-size: 13px; line-height: 1.6; margin-top: 10px; }
-    .help-text ol { padding-left: 20px; margin-top: 8px; }
-    .help-text li { margin-bottom: 4px; }
+    .help-text { color: #888; font-size: 11px; line-height: 1.5; margin-top: 4px; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700; margin-left: auto;
+    }
+    .badge-green { background: rgba(76,175,80,0.2); color: #4CAF50; }
+    .badge-yellow { background: rgba(255,193,7,0.2); color: #FFC107; }
+    .badge-gray { background: #444; color: #aaa; }
     .external-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      background: #2196F3;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 16px;
-      margin-top: 10px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; background: #2196F3; color: white;
+      text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
     }
     .external-link:hover { background: #1976D2; }
+    .inline-flex { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mt-0 { margin-top: 0; }
+    .mb-0 { margin-bottom: 0; }
+    .w-full { width: 100%; }
+    .flex-1 { flex: 1; }
+    .section-divider { border: none; border-top: 1px solid #3a3a4e; margin: 12px 0; }
+    .lang-tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 3px 7px; background: rgba(100, 181, 246, 0.2);
+      border-radius: 4px; font-size: 11px; cursor: pointer;
+    }
+    .lang-tag:hover { background: rgba(244, 67, 54, 0.3); }
+    .lang-tag .remove { color: #f44336; font-weight: bold; margin-left: 2px; }
+    .lang-tag-list { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
+    .key-section {
+      padding: 10px 12px; background: rgba(100, 181, 246, 0.08);
+      border-radius: 6px; border-left: 3px solid #64B5F6; margin-bottom: 8px;
+    }
+    .key-section .key-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .key-section .key-header strong { color: #64B5F6; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>📝 STT Ticker</h1>
-    <p style="color:#aaa;margin-bottom:20px;">Live-Untertitel-Overlay für Hearing-Impaired Zuschauer</p>
+    <p class="subtitle">Live-Untertitel-Overlay für Hearing-Impaired Zuschauer</p>
 
-    <!-- Status -->
-    <div class="card">
-      <h2>Status</h2>
-      <div class="grid" id="status-grid">
-        <div class="stat"><div class="stat-value" id="stat-enabled">—</div><div class="stat-label">Enabled</div></div>
-        <div class="stat"><div class="stat-value" id="stat-provider">—</div><div class="stat-label">🎤 ASR Provider</div></div>
-        <div class="stat"><div class="stat-value" id="stat-translation">—</div><div class="stat-label">Translation</div></div>
-        <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
-      </div>
-      <div id="provider-hint" style="margin-top:10px;padding:8px 12px;border-radius:6px;font-size:12px;"></div>
+    <!-- Tabs -->
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="tab-status">📊 Status & Capture</button>
+      <button class="tab-btn" data-tab="tab-overlay">🖥️ Overlay</button>
+      <button class="tab-btn" data-tab="tab-asr">🎙️ ASR & Sprache</button>
+      <button class="tab-btn" data-tab="tab-translation">🌐 Übersetzung</button>
+      <button class="tab-btn" data-tab="tab-multilang">🌍 Multi-Language</button>
     </div>
 
-    <!-- Audio Capture -->
-    <div class="card">
-      <h2>🎤 Audio-Capture</h2>
-      <p class="help-text">
-        Das Audio-Capture läuft in einem <strong>eigenen Browser-Tab</strong> (nicht im iframe).
-        So funktioniert der Mikrofon-Zugriff zuverlässig in allen Browsern.
-      </p>
-      <a id="capture-link" class="external-link" href="/stt-ticker/capture" target="_blank">
-        🎤 Capture-Tab öffnen
-      </a>
-      <p class="help-text">
-        <strong>Workflow:</strong>
-        <ol>
-          <li>Klicke auf "🎤 Capture-Tab öffnen" — neuer Tab geht auf</li>
-          <li>Im neuen Tab: "▶ Capture starten" klicken</li>
-          <li>Browser fragt nach Mikrofon-Erlaubnis → erlauben</li>
-          <li>Audio wird an Fish.audio ASR gesendet</li>
-          <li>Transkripte erscheinen automatisch im OBS-Overlay</li>
-          <li>Capture-Tab kann minimiert im Hintergrund laufen</li>
+    <!-- ==================== TAB 1: Status & Capture ==================== -->
+    <div id="tab-status" class="tab-content active">
+      <div class="card">
+        <div class="card-title">📊 Status</div>
+        <div class="grid-4">
+          <div class="stat"><div class="stat-value" id="stat-enabled">—</div><div class="stat-label">Enabled</div></div>
+          <div class="stat"><div class="stat-value" id="stat-provider">—</div><div class="stat-label">🎤 ASR Provider</div></div>
+          <div class="stat"><div class="stat-value" id="stat-translation">—</div><div class="stat-label">Translation</div></div>
+          <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
+        </div>
+        <div id="provider-hint" style="margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;"></div>
+        <div class="btn-row">
+          <button id="btn-clear-buffer" class="btn btn-danger btn-sm">🧹 Buffer leeren</button>
+          <button id="btn-refresh-status" class="btn btn-secondary btn-sm">🔄 Status aktualisieren</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎤 Audio-Capture</div>
+        <p class="help-text">Läuft in <strong>eigenem Tab</strong> (zuverlässiger Mikrofon-Zugriff). Kann minimiert werden.</p>
+        <div class="btn-row">
+          <a id="capture-link" class="external-link" href="/stt-ticker/capture" target="_blank">🎤 Capture-Tab öffnen</a>
+        </div>
+        <ol class="help-text" style="padding-left:16px;margin-top:6px;">
+          <li>Capture-Tab öffnen → <strong>▶ Capture starten</strong> klicken</li>
+          <li>Mikrofon erlauben → Audio geht an ASR → Transkripte im Overlay</li>
         </ol>
-      </p>
-    </div>
-
-    <!-- Overlay -->
-    <div class="card">
-      <h2>Overlay (OBS Browser Source)</h2>
-      <p style="color:#aaa;margin-bottom:10px;">Füge diese URL als Browser Source in OBS hinzu:</p>
-      <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:13px;cursor:text;">
-      <div style="margin-top:10px;">
-        <label>Design</label>
-        <select id="design-select">
-          <option value="dual-language">Dual-Language (2 Zeilen EN/DE)</option>
-          <option value="classic">Classic (TV-Untertitel)</option>
-          <option value="modern">Modern (Clean, Blur)</option>
-          <option value="minimal">Minimal (Nur Text)</option>
-          <option value="neon">Neon (Glow-Effekt)</option>
-          <option value="glass">Glass (Glasmorphismus)</option>
-          <option value="compact">Compact (Klein)</option>
-          <option value="cinematic">Cinematic (Film)</option>
-          <option value="scrolling">Scrolling (Laufband)</option>
-          <option value="fliessend">Fließend (Liste, newest unten)</option>
-          <option value="starwars">Star Wars (Crawl)</option>
-          <option value="ticker3">3-Zeilen Ticker (neuester unten)</option>
-          <option value="karaoke">Karaoke (Wort-Highlight)</option>
-        </select>
-        <label>Position</label>
-        <select id="position-select">
-          <option value="bottom-center">Unten Mitte</option>
-          <option value="bottom-left">Unten Links</option>
-          <option value="bottom-right">Unten Rechts</option>
-          <option value="top-center">Oben Mitte</option>
-          <option value="top-left">Oben Links</option>
-          <option value="top-right">Oben Rechts</option>
-          <option value="middle-center">Mitte</option>
-        </select>
-        <label>Max Lines</label>
-        <input type="number" id="maxLines-input" min="1" max="10" value="2">
-        <label>Font Size</label>
-        <input type="text" id="fontSize-input" value="36px">
       </div>
-      <button id="btn-update-url" class="btn btn-primary">URL aktualisieren</button>
-      <a id="open-overlay-btn" href="#" target="_blank" class="overlay-link">🔗 Overlay in Tab öffnen</a>
     </div>
 
-    <!-- ASR Settings (Sprache + VAD) -->
-    <div class="card" style="border:2px solid rgba(255,215,0,0.4);">
-      <h2 id="asr-toggle" class="section-toggle" style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:18px;">🎙️</span>
-        <span>ASR-Provider, Sprache & VAD</span>
-        <span id="asr-section-badge" style="margin-left:auto;font-size:12px;padding:3px 10px;border-radius:12px;background:#444;color:#aaa;">⚪ Status unbekannt</span>
-      </h2>
-      <div id="asr-section">
-
-        <!-- =====================================================
-             DEEPGRAM API-KEY SETZEN
-             ===================================================== -->
-        <div style="margin: 10px 0 20px 0; padding: 16px; background: rgba(100, 181, 246, 0.12); border-radius: 8px; border-left: 4px solid #64B5F6;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <span style="font-size:20px;">🔑</span>
-            <strong style="color:#64B5F6;font-size:15px;">Deepgram API-Key</strong>
-            <span id="deepgram-key-status-badge" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;background:#444;color:#aaa;">nicht gesetzt</span>
-          </div>
-          <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="font-family:monospace;">
-          <p style="font-size:12px;color:#aaa;margin:6px 0 4px 0;">
-            🔒 Wird persistent in der Plugin-Config gespeichert — <strong>nie</strong> in Git committed.
-            Hole dir einen Key unter <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a>
-            (Free-Tier: $200 Guthaben).
-          </p>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-            <button id="btn-test-deepgram" class="btn btn-secondary" style="margin:0;">🔌 Key testen</button>
-            <span id="deepgram-test-status" style="font-size:13px;"></span>
-          </div>
-        </div>
-
-        <!-- =====================================================
-             PROVIDER-AUSWAHL
-             ===================================================== -->
-        <label>ASR-Provider (welcher Dienst transkribiert)</label>
-        <select id="asr-provider">
-          <option value="auto">🟢 Auto — Deepgram wenn Key da, sonst Fish.audio (empfohlen)</option>
-          <option value="deepgram">Deepgram erzwingen (~$0.26/h, ~95% DE+EN)</option>
-          <option value="fish.audio">Fish.audio erzwingen (~$1.50/h, schlechtere DE+EN)</option>
-        </select>
-        <p class="help-text" style="font-size:12px;color:#aaa;">
-          🛡️ <strong>Halluzinations-Schutz aktiv:</strong> Auto-Modus nutzt Deepgrams "multi"-Mode
-          (DE/EN/ES/FR/IT/PT/RU). Chinesisch, Japanisch, Koreanisch, Thai werden automatisch gefiltert.
-        </p>
-
-        <hr style="border-color:#444;margin:20px 0;">
-
-        <!-- Dual-Language Overlay -->
-        <label>
-          <input type="checkbox" id="dual-language-enabled">
-          <strong>Dual-Language-Overlay</strong> (2 Zeilen, Segmente nach Sprache sortiert)
-        </label>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:10px;">
+    <!-- ==================== TAB 2: Overlay ==================== -->
+    <div id="tab-overlay" class="tab-content">
+      <div class="card">
+        <div class="card-title">🖥️ Overlay (OBS Browser Source)</div>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufügen:</p>
+        <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
+        <div class="grid-2" style="margin-top:10px;">
           <div>
-            <label>Obere Zeile (Sprache)</label>
-            <select id="dual-topLanguage">
-              <option value="en">🇬🇧 English</option>
-              <option value="de">🇩🇪 Deutsch</option>
-              <option value="es">🇪🇸 Español</option>
-              <option value="fr">🇫🇷 Français</option>
+            <label>Design</label>
+            <select id="design-select">
+              <option value="dual-language">Dual-Language (2 Zeilen)</option>
+              <option value="classic">Classic (TV-Untertitel)</option>
+              <option value="modern">Modern (Clean, Blur)</option>
+              <option value="minimal">Minimal (Nur Text)</option>
+              <option value="neon">Neon (Glow-Effekt)</option>
+              <option value="glass">Glass (Glasmorphismus)</option>
+              <option value="compact">Compact (Klein)</option>
+              <option value="cinematic">Cinematic (Film)</option>
+              <option value="scrolling">Scrolling (Laufband)</option>
+              <option value="fliessend">Fließend (Liste)</option>
+              <option value="starwars">Star Wars (Crawl)</option>
+              <option value="ticker3">3-Zeilen Ticker</option>
+              <option value="karaoke">Karaoke (Wort-Highlight)</option>
             </select>
-            <label>Farbe (oben)</label>
-            <input type="color" id="dual-topColor" value="#FFD700">
           </div>
           <div>
-            <label>Untere Zeile (Sprache)</label>
-            <select id="dual-bottomLanguage">
+            <label>Position</label>
+            <select id="position-select">
+              <option value="bottom-center">Unten Mitte</option>
+              <option value="bottom-left">Unten Links</option>
+              <option value="bottom-right">Unten Rechts</option>
+              <option value="top-center">Oben Mitte</option>
+              <option value="top-left">Oben Links</option>
+              <option value="top-right">Oben Rechts</option>
+              <option value="middle-center">Mitte</option>
+            </select>
+          </div>
+          <div>
+            <label>Max Lines</label>
+            <input type="number" id="maxLines-input" min="1" max="10" value="2">
+          </div>
+          <div>
+            <label>Font Size</label>
+            <input type="text" id="fontSize-input" value="36px">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🔗 Overlay öffnen</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: ASR & Sprache ==================== -->
+    <div id="tab-asr" class="tab-content">
+      <!-- API Keys (kompakt) -->
+      <div class="card">
+        <div class="card-title">🔑 API Keys</div>
+        <div class="key-section">
+          <div class="key-header">
+            <span>🔊</span>
+            <strong>Deepgram API-Key</strong>
+            <span id="deepgram-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
+          </div>
+          <div class="inline-flex">
+            <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="flex:1;min-width:200px;font-family:monospace;">
+            <button id="btn-test-deepgram" class="btn btn-secondary btn-sm">🔌 Test</button>
+            <span id="deepgram-test-status" style="font-size:11px;"></span>
+          </div>
+          <p class="help-text">🔒 <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a> (Free-Tier: $200)</p>
+        </div>
+        <div class="key-section">
+          <div class="key-header">
+            <span>🗣️</span>
+            <strong>ElevenLabs API-Key (Speech-to-Text)</strong>
+            <span id="elevenlabs-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
+          </div>
+          <div class="inline-flex">
+            <input type="password" id="asr-elevenlabsApiKey" placeholder="sk_..." style="flex:1;min-width:200px;font-family:monospace;">
+            <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm">🔌 Test</button>
+            <span id="elevenlabs-test-status" style="font-size:11px;"></span>
+          </div>
+          <p class="help-text">🔒 <a href="https://elevenlabs.io/docs/quickstart" target="_blank" style="color:#64B5F6;">elevenlabs.io</a> — Lokale ASR-Nutzung</p>
+        </div>
+      </div>
+
+      <!-- ASR Provider + Sprache -->
+      <div class="card">
+        <div class="card-title">🎙️ ASR-Provider & Sprache</div>
+        <div class="grid-2">
+          <div>
+            <label>ASR-Provider</label>
+            <select id="asr-provider">
+              <option value="auto">🟢 Auto — Deepgram/ElevenLabs wenn Key da, sonst Fish.audio</option>
+              <option value="deepgram">Deepgram (~$0.26/h)</option>
+              <option value="elevenlabs">ElevenLabs (Speech-to-Text)</option>
+              <option value="fish.audio">Fish.audio (~$1.50/h)</option>
+            </select>
+          </div>
+          <div>
+            <label>Deepgram Modell</label>
+            <select id="asr-deepgramModel">
+              <option value="nova-2">Nova-2 (empfohlen)</option>
+              <option value="nova-3">Nova-3</option>
+              <option value="whisper-large">Whisper Large</option>
+              <option value="whisper-medium">Whisper Medium</option>
+            </select>
+          </div>
+        </div>
+        <hr class="section-divider">
+        <div class="inline-flex" style="margin-bottom:8px;">
+          <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
+            <input type="radio" name="languageMode" value="auto" id="language-mode-auto"> Auto-Erkennung
+          </label>
+          <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
+            <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed"> Feste Sprache
+          </label>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label>Default-Sprache (Auto-Modus)</label>
+            <select id="asr-languageDefault">
               <option value="de">🇩🇪 Deutsch</option>
               <option value="en">🇬🇧 English</option>
               <option value="es">🇪🇸 Español</option>
               <option value="fr">🇫🇷 Français</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+              <option value="pl">🇵🇱 Polski</option>
+              <option value="ru">🇷🇺 Русский</option>
+              <option value="ja">🇯🇵 日本語</option>
             </select>
-            <label>Farbe (unten)</label>
-            <input type="color" id="dual-bottomColor" value="#FFFFFF">
+          </div>
+          <div>
+            <label>Feste Sprache (Fixed-Modus)</label>
+            <select id="asr-languageFixed">
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+            </select>
           </div>
         </div>
+        <p class="help-text">🛡️ Halluzinations-Schutz aktiv: Auto-Modus filtert CJK/Thai automatisch.</p>
+      </div>
 
-        <label style="margin-top:12px;">Modell (für Deepgram)</label>
-        <select id="asr-deepgramModel">
-          <option value="nova-2">Nova-2 (empfohlen — beste Qualität für DE+EN)</option>
-          <option value="nova-3">Nova-3 (wenn in deinem Account verfügbar)</option>
-          <option value="whisper-large">Whisper Large (Deepgram-hosted, multilingual)</option>
-          <option value="whisper-medium">Whisper Medium (schneller, etwas schlechter)</option>
-        </select>
-
-        <hr style="border-color:#444;margin:20px 0;">
-
-        <!-- =====================================================
-             SPRACHE
-             ===================================================== -->
-        <label>
-          <input type="radio" name="languageMode" value="auto" id="language-mode-auto">
-          Auto-Erkennung (Sprache wird erkannt)
-        </label>
-        <label>
-          <input type="radio" name="languageMode" value="fixed" id="language-mode-fixed">
-          Feste Sprache (an Provider senden)
-        </label>
-
-        <label>Default-Sprache (für Auto-Modus & Anzeige)</label>
-        <select id="asr-languageDefault">
-          <option value="de">🇩🇪 Deutsch</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="es">🇪🇸 Español</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="pt">🇵🇹 Português</option>
-          <option value="nl">🇳🇱 Nederlands</option>
-          <option value="pl">🇵🇱 Polski</option>
-          <option value="ru">🇷🇺 Русский</option>
-          <option value="ja">🇯🇵 日本語</option>
-        </select>
-
-        <label>Feste Sprache (nur wenn Modus = Fixed)</label>
-        <select id="asr-languageFixed">
-          <option value="de">🇩🇪 Deutsch</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="es">🇪🇸 Español</option>
-          <option value="fr">🇫🇷 Français</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="pt">🇵🇹 Português</option>
-          <option value="nl">🇳🇱 Nederlands</option>
-        </select>
-
-        <hr style="border-color:#444;margin:20px 0;">
-
-        <!-- VAD Section -->
-        <label>
-          <input type="checkbox" id="vad-enabled">
-          <strong>VAD (Stille-Erkennung)</strong> — spart Fish.audio-Tokens
-        </label>
-        <p class="help-text">
-          Audio-Chunks unterhalb der Lautstärke-Schwelle werden <strong>gar nicht erst hochgeladen</strong>.
-          Du siehst das im Capture-Tab als "⏸ Stille übersprungen".
-        </p>
-        <label>RMS-Schwelle (niedrig = empfindlicher)
-          <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
-          <span id="vad-rmsThreshold-value" style="color:#4CAF50;">0.012</span>
-        </label>
-
-        <button id="btn-save-asr" class="btn btn-primary" style="margin-top:20px;">💾 ASR-Settings speichern</button>
-        <span id="asr-status" style="margin-left:10px;font-size:13px;"></span>
+      <!-- VAD -->
+      <div class="card">
+        <div class="card-title">🔇 VAD (Stille-Erkennung)</div>
+        <p class="help-text">Audio unterhalb der Schwelle wird <strong>gar nicht erst hochgeladen</strong> — spart Tokens.</p>
+        <div class="inline-flex" style="margin-bottom:6px;">
+          <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="vad-enabled"> VAD aktiv
+          </label>
+        </div>
+        <div class="inline-flex" style="gap:12px;">
+          <label class="mt-0" style="flex:1;">
+            RMS-Schwelle
+            <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
+          </label>
+          <span id="vad-rmsThreshold-value" style="color:#4CAF50;font-size:14px;font-weight:700;min-width:40px;">0.012</span>
+        </div>
+        <div class="btn-row">
+          <button id="btn-save-asr" class="btn btn-primary btn-sm">💾 ASR-Settings speichern</button>
+          <span id="asr-status" style="font-size:12px;"></span>
+        </div>
       </div>
     </div>
 
-        <hr style="border-color:#444;margin:20px 0;">
-
-        <label>
-          <input type="checkbox" id="vad-enabled">
-          <strong>VAD (Stille-Erkennung)</strong> — spart Fish.audio-Tokens
-        </label>
-        <p class="help-text">
-          Audio-Chunks unterhalb der Lautstärke-Schwelle werden <strong>gar nicht erst hochgeladen</strong>.
-          Du siehst das im Capture-Tab als "⏸ Stille übersprungen".
-        </p>
-        <label>RMS-Schwelle (niedrig = empfindlicher)
-          <input type="range" id="vad-rmsThreshold" min="0.005" max="0.05" step="0.001" value="0.012">
-          <span id="vad-rmsThreshold-value" style="color:#4CAF50;">0.012</span>
-        </label>
-
-        <button id="btn-save-asr" class="btn btn-primary">💾 ASR-Settings speichern</button>
-        <span id="asr-status" style="margin-left:10px;font-size:13px;"></span>
+    <!-- ==================== TAB 4: Übersetzung ==================== -->
+    <div id="tab-translation" class="tab-content">
+      <div class="card">
+        <div class="card-title">🌐 Übersetzung (Ollama Cloud)</div>
+        <div class="inline-flex" style="margin-bottom:8px;">
+          <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="translation-enabled"> Übersetzung aktivieren
+          </label>
+          <span id="translation-key-status" style="font-size:11px;color:#4CAF50;"></span>
+        </div>
+        <div class="key-section">
+          <div class="key-header">
+            <span>🔑</span>
+            <strong>Ollama Cloud API Key</strong>
+          </div>
+          <input type="password" id="translation-apiKey" placeholder="ollama-key-..." style="font-family:monospace;">
+          <p class="help-text">✅ Wird persistent gespeichert. Leer lassen = aktueller Key bleibt.</p>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label>Modell</label>
+            <select id="translation-model"><option value="">— Modelle laden... —</option></select>
+          </div>
+          <div>
+            <label>Übersetzungs-Farbe</label>
+            <input type="color" id="translation-color" value="#ffd700">
+          </div>
+          <div>
+            <label>Quellsprache (was wird gesprochen)</label>
+            <select id="translation-sourceLanguage"></select>
+          </div>
+          <div>
+            <label>Zielsprache (Übersetzung)</label>
+            <select id="translation-targetLanguage"></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-save-translation" class="btn btn-primary btn-sm">💾 Übersetzung speichern</button>
+          <button id="btn-clear-cache" class="btn btn-secondary btn-sm">Cache leeren</button>
+          <span id="translation-status" style="font-size:12px;"></span>
+        </div>
       </div>
     </div>
 
-    <!-- Translation Settings -->
-    <div class="card">
-      <h2 id="translation-toggle" class="section-toggle">🌐 Übersetzung ▾</h2>
-      <div id="translation-section">
-        <label>
-          <input type="checkbox" id="translation-enabled">
-          Übersetzung aktivieren (Ollama Cloud)
-        </label>
-        <label>
-          Ollama API Key
-          <span id="translation-key-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
-        </label>
-        <input type="password" id="translation-apiKey" placeholder="ollama-key-...">
-        <p class="help-text" style="font-size:12px;color:#888;">
-          ✅ Wird <strong>persistent gespeichert</strong>. Leer lassen = aktueller Key bleibt unverändert.
-        </p>
-        <label>Modell</label>
-        <select id="translation-model">
-          <option value="">— Modelle laden... —</option>
-        </select>
-        <label>Quellsprache (was wird gesprochen)</label>
-        <select id="translation-sourceLanguage"></select>
-        <label>Zielsprache (Übersetzung)</label>
-        <select id="translation-targetLanguage"></select>
-        <label>Übersetzungs-Farbe</label>
-        <input type="color" id="translation-color" value="#ffd700">
-        <button id="btn-save-translation" class="btn btn-primary" style="margin-top:20px;">💾 Übersetzung speichern</button>
-        <button id="btn-clear-cache" class="btn btn-secondary">Cache leeren</button>
-        <span id="translation-status" style="margin-left:10px;font-size:13px;"></span>
-      </div>
-    </div>
+    <!-- ==================== TAB 5: Multi-Language ==================== -->
+    <div id="tab-multilang" class="tab-content">
+      <div class="card">
+        <div class="card-title">🌍 Multi-Language Output (N Zeilen)</div>
+        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Übersetzungen.<br>
+        <strong>Voraussetzung:</strong> Übersetzung muss im Tab "🌐 Übersetzung" aktiviert sein.</p>
 
-    <!-- Actions -->
-    <div class="card">
-      <h2>Aktionen</h2>
-      <button id="btn-clear-buffer" class="btn btn-danger">🧹 Buffer leeren</button>
-      <button id="btn-refresh-status" class="btn btn-secondary">🔄 Status aktualisieren</button>
+        <div class="grid-2" style="margin-top:10px;">
+          <div>
+            <label>Default-Sprache (Original, Zeile 1)</label>
+            <select id="ml-default-lang">
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+              <option value="pl">🇵🇱 Polski</option>
+              <option value="ru">🇷🇺 Русский</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="tr">🇹🇷 Türkçe</option>
+              <option value="sv">🇸🇪 Svenska</option>
+              <option value="da">🇩🇰 Dansk</option>
+              <option value="fi">🇫🇮 Suomi</option>
+              <option value="no">🇳🇴 Norsk</option>
+              <option value="cs">🇨🇿 Čeština</option>
+              <option value="hu">🇭🇺 Magyar</option>
+              <option value="ro">🇷🇴 Română</option>
+              <option value="uk">🇺🇦 Українська</option>
+              <option value="el">🇬🇷 Ελληνικά</option>
+              <option value="he">🇮🇱 עברית</option>
+              <option value="th">🇹🇭 ไทย</option>
+              <option value="vi">🇻🇳 Tiếng Việt</option>
+            </select>
+          </div>
+          <div>
+            <label>Sprache hinzufügen</label>
+            <div class="inline-flex">
+              <select id="ml-add-lang" style="flex:1;">
+                <option value="">— Sprache wählen —</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="it">🇮🇹 Italiano</option>
+                <option value="pt">🇵🇹 Português</option>
+                <option value="nl">🇳🇱 Nederlands</option>
+                <option value="pl">🇵🇱 Polski</option>
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ko">🇰🇷 한국어</option>
+                <option value="zh">🇨🇳 中文</option>
+                <option value="ar">🇸🇦 العربية</option>
+                <option value="tr">🇹🇷 Türkçe</option>
+                <option value="sv">🇸🇪 Svenska</option>
+                <option value="da">🇩🇰 Dansk</option>
+                <option value="fi">🇫🇮 Suomi</option>
+                <option value="no">🇳🇴 Norsk</option>
+                <option value="cs">🇨🇿 Čeština</option>
+                <option value="hu">🇭🇺 Magyar</option>
+                <option value="ro">🇷🇴 Română</option>
+                <option value="uk">🇺🇦 Українська</option>
+                <option value="el">🇬🇷 Ελληνικά</option>
+                <option value="he">🇮🇱 עברית</option>
+                <option value="th">🇹🇭 ไทย</option>
+                <option value="vi">🇻🇳 Tiếng Việt</option>
+              </select>
+              <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label>Aktive Zielsprachen (klickbar zum Entfernen)</label>
+          <div id="lang-tags" class="lang-tag-list"></div>
+        </div>
+        <div class="btn-row">
+          <button id="btn-save-ml" class="btn btn-primary btn-sm">💾 Multi-Language speichern</button>
+          <span id="ml-status" style="font-size:12px;"></span>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const BASE = window.location.origin;
+
+    // ===== Tabs =====
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
 
     // ===== Status =====
     async function refreshStatus() {
@@ -379,58 +512,54 @@
         document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
 
         const asr = s.asr || {};
-        // ASR Provider — zeigt welcher Provider aktuell aktiv ist
         const providerEl = document.getElementById('stat-provider');
         const providerHintEl = document.getElementById('provider-hint');
-        const sectionBadgeEl = document.getElementById('asr-section-badge');
         const keyBadgeEl = document.getElementById('deepgram-key-status-badge');
+        const elKeyBadgeEl = document.getElementById('elevenlabs-key-status-badge');
         if (asr.provider === 'deepgram') {
           providerEl.textContent = '✅ Deepgram';
           providerEl.style.color = '#4CAF50';
-          if (sectionBadgeEl) {
-            sectionBadgeEl.textContent = '✅ Deepgram aktiv';
-            sectionBadgeEl.style.background = 'rgba(76,175,80,0.2)';
-            sectionBadgeEl.style.color = '#4CAF50';
-          }
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '🎉 <strong>Deepgram ist aktiv</strong> — günstig (~95% Genauigkeit DE+EN, $0.26/h). ' +
-              'Modell: ' + (asr.deepgramModel || 'nova-2') + '. Fish.audio-Tokens werden NICHT verbraucht.';
+            providerHintEl.innerHTML = '🎉 <strong>Deepgram aktiv</strong> — ~$0.26/h, Modell: ' + (asr.deepgramModel || 'nova-2');
+          }
+        } else if (asr.provider === 'elevenlabs') {
+          providerEl.textContent = '✅ ElevenLabs';
+          providerEl.style.color = '#4CAF50';
+          if (providerHintEl) {
+            providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
+            providerHintEl.style.color = '#4CAF50';
+            providerHintEl.innerHTML = '🎉 <strong>ElevenLabs aktiv</strong> — Modell: ' + (asr.elevenlabsModel || 'eleven_turbo_v2_5');
           }
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = '⚠️ Fish.audio';
           providerEl.style.color = '#FFC107';
-          if (sectionBadgeEl) {
-            sectionBadgeEl.textContent = '⚠️ Fish.audio (teuer)';
-            sectionBadgeEl.style.background = 'rgba(255,193,7,0.2)';
-            sectionBadgeEl.style.color = '#FFC107';
-          }
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
             providerHintEl.style.color = '#FFC107';
-            if (asr.deepgramConfigured) {
-              providerHintEl.innerHTML = '⚠️ <strong>Fish.audio ist aktiv obwohl Deepgram konfiguriert ist.</strong> ' +
-                'Provider-Switch in der Config prüfen (sollte "deepgram" oder "auto" sein).';
-            } else {
-              providerHintEl.innerHTML = '⚠️ <strong>Fish.audio ist aktiv.</strong> Token-Verbrauch sichtbar. ' +
-                'Für Kostenersparnis: Deepgram-Key oben eintragen — dann automatisch Wechsel auf Deepgram (~5x günstiger).';
-            }
+            providerHintEl.innerHTML = '⚠️ <strong>Fish.audio aktiv</strong> — Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
           }
         } else {
           providerEl.textContent = '❌ ' + (asr.provider || 'unbekannt');
           providerEl.style.color = '#f44336';
         }
-        // Key-Badge: zeigt ob Deepgram-Key gesetzt ist
         if (keyBadgeEl) {
           if (asr.deepgramConfigured) {
             keyBadgeEl.textContent = '✓ gesetzt';
-            keyBadgeEl.style.background = 'rgba(76,175,80,0.2)';
-            keyBadgeEl.style.color = '#4CAF50';
+            keyBadgeEl.className = 'badge badge-green';
           } else {
             keyBadgeEl.textContent = 'nicht gesetzt';
-            keyBadgeEl.style.background = 'rgba(244,67,54,0.2)';
-            keyBadgeEl.style.color = '#f44336';
+            keyBadgeEl.className = 'badge badge-gray';
+          }
+        }
+        if (elKeyBadgeEl) {
+          if (asr.elevenlabsConfigured) {
+            elKeyBadgeEl.textContent = '✓ gesetzt';
+            elKeyBadgeEl.className = 'badge badge-green';
+          } else {
+            elKeyBadgeEl.textContent = 'nicht gesetzt';
+            elKeyBadgeEl.className = 'badge badge-gray';
           }
         }
 
@@ -444,18 +573,14 @@
         const cfg = s.config || {};
         const tc = cfg.translation || {};
         document.getElementById('translation-enabled').checked = tc.enabled || false;
-        // API-Key: persistent geladen, aber nur einmal in UI sichtbar machen
         const apiKeyField = document.getElementById('translation-apiKey');
         const keyStatus = document.getElementById('translation-key-status');
         if (!apiKeyField.dataset.loaded) {
           apiKeyField.value = tc.apiKey || '';
           apiKeyField.dataset.loaded = '1';
         }
-        // Status-Anzeige: zeigt ob Key gespeichert ist (Maskiertes Feedback)
         if (tc.apiKey && tc.apiKey.length > 0) {
-          const masked = tc.apiKey.length > 8
-            ? tc.apiKey.slice(0, 4) + '***' + tc.apiKey.slice(-4)
-            : '***';
+          const masked = tc.apiKey.length > 8 ? tc.apiKey.slice(0,4) + '***' + tc.apiKey.slice(-4) : '***';
           keyStatus.textContent = '(gespeichert: ' + masked + ')';
           keyStatus.style.color = '#4CAF50';
         } else {
@@ -466,10 +591,9 @@
         await loadModels(tc.model || 'nemotron-3-nano');
         if (tc.color) document.getElementById('translation-color').value = tc.color;
 
-        // ASR Settings
         populateAsrConfig(cfg);
         populateOverlayDesign(cfg);
-
+        populateMultiLang(cfg);
         updateOverlayUrl();
       } catch (e) {
         console.error('Status fetch failed:', e);
@@ -481,49 +605,35 @@
       const dual = cfg.dualLanguage || {};
       const vad = cfg.vad || {};
 
-      // Modus
       const mode = asr.languageMode || 'auto';
       const modeAuto = document.getElementById('language-mode-auto');
       const modeFixed = document.getElementById('language-mode-fixed');
       if (modeAuto) modeAuto.checked = (mode === 'auto');
       if (modeFixed) modeFixed.checked = (mode === 'fixed');
 
-      // Default
       const defaultEl = document.getElementById('asr-languageDefault');
       if (defaultEl && asr.languageDefault) defaultEl.value = asr.languageDefault;
       const fixedEl = document.getElementById('asr-languageFixed');
       if (fixedEl && asr.languageFixed) fixedEl.value = asr.languageFixed;
 
-      // Provider
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // Deepgram-Modell
       const modelEl = document.getElementById('asr-deepgramModel');
       if (modelEl && asr.deepgramModel) modelEl.value = asr.deepgramModel;
 
-      // Deepgram-Key: persistent, beim ersten Load gesetzt
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField && !dgKeyField.dataset.loaded) {
         dgKeyField.value = asr.deepgramApiKey || '';
         dgKeyField.dataset.loaded = '1';
       }
-      // Hinweis-Status (alt) wird durch das neue Badge in der Status-Bar ersetzt
-      updateDeepgramPanelVisibility();
 
-      // Dual
-      const dualEl = document.getElementById('dual-language-enabled');
-      if (dualEl) dualEl.checked = !!dual.enabled;
-      const topLang = document.getElementById('dual-topLanguage');
-      if (topLang && dual.topLanguage) topLang.value = dual.topLanguage;
-      const botLang = document.getElementById('dual-bottomLanguage');
-      if (botLang && dual.bottomLanguage) botLang.value = dual.bottomLanguage;
-      const topColor = document.getElementById('dual-topColor');
-      if (topColor && dual.topColor) topColor.value = dual.topColor;
-      const botColor = document.getElementById('dual-bottomColor');
-      if (botColor && dual.bottomColor) botColor.value = dual.bottomColor;
+      const elKeyField = document.getElementById('asr-elevenlabsApiKey');
+      if (elKeyField && !elKeyField.dataset.loaded) {
+        elKeyField.value = asr.elevenlabsApiKey || '';
+        elKeyField.dataset.loaded = '1';
+      }
 
-      // VAD
       const vadEnabled = document.getElementById('vad-enabled');
       if (vadEnabled) vadEnabled.checked = vad.enabled !== false;
       const rmsEl = document.getElementById('vad-rmsThreshold');
@@ -539,7 +649,6 @@
       const designSel = document.getElementById('design-select');
       if (!designSel) return;
       const design = overlay.design || 'dual-language';
-      // Wenn Option nicht existiert → hinzufügen
       if (![...designSel.options].some(o => o.value === design)) {
         const opt = document.createElement('option');
         opt.value = 'dual-language';
@@ -549,10 +658,47 @@
       designSel.value = design;
     }
 
+    function populateMultiLang(cfg) {
+      const ml = cfg.multiLanguage || {};
+      const defaultEl = document.getElementById('ml-default-lang');
+      if (defaultEl && ml.defaultLanguage) defaultEl.value = ml.defaultLanguage;
+      if (ml.outputLanguages) {
+        renderLangTags(ml.outputLanguages);
+      }
+    }
+
+    // ===== Multi-Language Tags =====
+    const LANG_NAMES = {
+      'de':'🇩🇪 DE','en':'🇬🇧 EN','es':'🇪🇸 ES','fr':'🇫🇷 FR',
+      'it':'🇮🇹 IT','pt':'🇵🇹 PT','nl':'🇳🇱 NL','pl':'🇵🇱 PL',
+      'ru':'🇷🇺 RU','ja':'🇯🇵 JA','ko':'🇰🇷 KO','zh':'🇨🇳 ZH',
+      'ar':'🇸🇦 AR','tr':'🇹🇷 TR','sv':'🇸🇪 SV','da':'🇩🇰 DA',
+      'fi':'🇫🇮 FI','no':'🇳🇴 NO','cs':'🇨🇿 CS','hu':'🇭🇺 HU',
+      'ro':'🇷🇴 RO','uk':'🇺🇦 UK','el':'🇬🇷 EL','he':'🇮🇱 HE',
+      'th':'🇹🇭 TH','vi':'🇻🇳 VI'
+    };
+    let currentOutputLangs = ['en'];
+
+    function renderLangTags(langs) {
+      currentOutputLangs = langs || [];
+      const el = document.getElementById('lang-tags');
+      el.innerHTML = '';
+      for (const lang of currentOutputLangs) {
+        const tag = document.createElement('span');
+        tag.className = 'lang-tag';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
+        tag.addEventListener('click', () => {
+          currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
+          renderLangTags(currentOutputLangs);
+        });
+        el.appendChild(tag);
+      }
+    }
+
+    // ===== Save Functions =====
     async function saveConfig() {
       const translation = {
         enabled: document.getElementById('translation-enabled').checked,
-        // API-Key nur mitsenden wenn Feld NICHT LEER (Schutz vor versehentlichem Überschreiben)
         apiKey: document.getElementById('translation-apiKey').value || '__KEEP__',
         model: document.getElementById('translation-model').value,
         targetLanguage: document.getElementById('translation-targetLanguage').value,
@@ -567,10 +713,9 @@
         });
         const data = await res.json();
         showToast(data.success ? '✅ Config saved' : '❌ ' + (data.error || 'Error'), data.success ? 'success' : 'error');
-        // Nach Save: Key-Feld leeren (Server behält den Key, UI muss ihn nicht dauerhaft anzeigen)
         if (data.success && translation.apiKey !== '__KEEP__') {
           document.getElementById('translation-apiKey').value = '__KEEP__';
-          apiKeyFieldMarkDirty(); // verhindert dass das nächste Refresh das Feld überschreibt
+          apiKeyFieldMarkDirty();
         }
         refreshStatus();
       } catch (e) {
@@ -592,21 +737,22 @@
         fallbackLanguage: 'en',
         deepgramModel: document.getElementById('asr-deepgramModel').value
       };
-
-      // Deepgram-Key: persist-Logik wie Ollama-Key
-      // - Wenn Feld LEER: '__KEEP__' (Server behält den bestehenden Key)
-      // - Wenn Feld MIT Inhalt: neuen Key speichern
       const dgKeyField = document.getElementById('asr-deepgramApiKey');
       if (dgKeyField) {
         const v = dgKeyField.value;
         asr.deepgramApiKey = (v && v.trim() && v.trim() !== '__KEEP__') ? v.trim() : '__KEEP__';
       }
+      const elKeyField = document.getElementById('asr-elevenlabsApiKey');
+      if (elKeyField) {
+        const v = elKeyField.value;
+        asr.elevenlabsApiKey = (v && v.trim() && v.trim() !== '__KEEP__') ? v.trim() : '__KEEP__';
+      }
       const dualLanguage = {
-        enabled: document.getElementById('dual-language-enabled').checked,
-        topLanguage: document.getElementById('dual-topLanguage').value,
-        bottomLanguage: document.getElementById('dual-bottomLanguage').value,
-        topColor: document.getElementById('dual-topColor').value,
-        bottomColor: document.getElementById('dual-bottomColor').value,
+        enabled: document.getElementById('dual-language-enabled')?.checked || false,
+        topLanguage: document.getElementById('dual-topLanguage')?.value || 'en',
+        bottomLanguage: document.getElementById('dual-bottomLanguage')?.value || 'de',
+        topColor: document.getElementById('dual-topColor')?.value || '#FFD700',
+        bottomColor: document.getElementById('dual-bottomColor')?.value || '#FFFFFF',
         showUnknownOnTop: true
       };
       const vad = {
@@ -711,11 +857,6 @@
       } catch (e) { console.error('Failed to load models:', e); }
     }
 
-    function toggleSection(id) {
-      const el = document.getElementById(id);
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
     function showToast(msg, type) {
       const t = document.createElement('div');
       t.className = 'toast ' + type;
@@ -724,8 +865,37 @@
       setTimeout(() => { t.remove(); }, 3000);
     }
 
-    // ===== CSP-kompatible Event-Listener (direkt, da Script am Ende des Body) =====
-    // Overlay URL
+    // ===== Multi-Language Save =====
+    async function saveMultiLangSettings() {
+      const defaultLang = document.getElementById('ml-default-lang').value;
+      const outputLangs = currentOutputLangs.filter(l => l !== defaultLang);
+      const body = {
+        multiLanguage: {
+          enabled: true,
+          defaultLanguage: defaultLang,
+          outputLanguages: outputLangs,
+          colors: {}
+        }
+      };
+      try {
+        const res = await fetch('/api/stt-ticker/multilang/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('ml-status').textContent = '✅ Gespeichert';
+          setTimeout(() => { document.getElementById('ml-status').textContent = ''; }, 2000);
+        } else {
+          document.getElementById('ml-status').textContent = '❌ ' + (data.error || 'Fehler');
+        }
+      } catch (e) {
+        document.getElementById('ml-status').textContent = '❌ ' + e.message;
+      }
+    }
+
+    // ===== Event-Listener =====
     document.getElementById('overlay-url').addEventListener('click', function() { this.select(); });
     document.getElementById('design-select').addEventListener('change', updateOverlayUrl);
     document.getElementById('position-select').addEventListener('change', updateOverlayUrl);
@@ -733,22 +903,14 @@
     document.getElementById('fontSize-input').addEventListener('input', updateOverlayUrl);
     document.getElementById('btn-update-url').addEventListener('click', updateOverlayUrl);
 
-    // ASR Settings
-    const asrToggleEl = document.getElementById('asr-toggle');
-    if (asrToggleEl) {
-      asrToggleEl.addEventListener('click', () => toggleSection('asr-section'));
-    }
     const vadRmsEl = document.getElementById('vad-rmsThreshold');
     if (vadRmsEl) {
       vadRmsEl.addEventListener('input', () => {
         document.getElementById('vad-rmsThreshold-value').textContent = Number(vadRmsEl.value).toFixed(3);
       });
     }
-    const btnSaveAsr = document.getElementById('btn-save-asr');
-    if (btnSaveAsr) btnSaveAsr.addEventListener('click', saveAsrConfig);
+    document.getElementById('btn-save-asr').addEventListener('click', saveAsrConfig);
 
-    // Translation
-    document.getElementById('translation-toggle').addEventListener('click', () => toggleSection('translation-section'));
     document.getElementById('translation-enabled').addEventListener('change', saveConfig);
     document.getElementById('translation-model').addEventListener('change', saveConfig);
     document.getElementById('translation-sourceLanguage').addEventListener('change', saveConfig);
@@ -757,52 +919,87 @@
     document.getElementById('btn-save-translation').addEventListener('click', saveConfig);
     document.getElementById('btn-clear-cache').addEventListener('click', clearTranslationCache);
 
-    // Deepgram-Panel ist immer sichtbar (User kann jederzeit Key ändern, auch wenn provider=fish.audio)
-    function updateDeepgramPanelVisibility() {
-      // no-op: Deepgram-Block bleibt immer sichtbar
-    }
-    const providerEl = document.getElementById('asr-provider');
-    if (providerEl) {
-      providerEl.addEventListener('change', updateDeepgramPanelVisibility);
-    }
-    const btnTestDg = document.getElementById('btn-test-deepgram');
-    if (btnTestDg) {
-      btnTestDg.addEventListener('click', async () => {
-        const statusEl = document.getElementById('deepgram-test-status');
-        const keyField = document.getElementById('asr-deepgramApiKey');
-        const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
-        if (!keyToTest) {
-          statusEl.textContent = '❌ Kein Key zum Testen';
-          statusEl.style.color = '#f44336';
-          return;
-        }
-        statusEl.textContent = '⏳ Teste...';
-        statusEl.style.color = '#FFC107';
-        try {
-          const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey: keyToTest })
-          });
-          const data = await res.json();
-          if (data.success) {
-            statusEl.textContent = '✅ Key gültig!';
-            statusEl.style.color = '#4CAF50';
-          } else {
-            statusEl.textContent = '❌ ' + (data.message || data.error || 'Ungültig');
-            statusEl.style.color = '#f44336';
-          }
-        } catch (e) {
-          statusEl.textContent = '❌ ' + e.message;
+    document.getElementById('btn-test-deepgram').addEventListener('click', async () => {
+      const statusEl = document.getElementById('deepgram-test-status');
+      const keyField = document.getElementById('asr-deepgramApiKey');
+      const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
+      if (!keyToTest) {
+        statusEl.textContent = '❌ Kein Key zum Testen';
+        statusEl.style.color = '#f44336';
+        return;
+      }
+      statusEl.textContent = '⏳ Teste...';
+      statusEl.style.color = '#FFC107';
+      try {
+        const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: keyToTest })
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusEl.textContent = '✅ Key gültig!';
+          statusEl.style.color = '#4CAF50';
+        } else {
+          statusEl.textContent = '❌ ' + (data.message || data.error || 'Ungültig');
           statusEl.style.color = '#f44336';
         }
-      });
-    }
+      } catch (e) {
+        statusEl.textContent = '❌ ' + e.message;
+        statusEl.style.color = '#f44336';
+      }
+    });
 
-    // Actions
+    document.getElementById('btn-test-elevenlabs').addEventListener('click', async () => {
+      const statusEl = document.getElementById('elevenlabs-test-status');
+      const keyField = document.getElementById('asr-elevenlabsApiKey');
+      const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
+      if (!keyToTest) {
+        statusEl.textContent = '❌ Kein Key zum Testen';
+        statusEl.style.color = '#f44336';
+        return;
+      }
+      statusEl.textContent = '⏳ Teste...';
+      statusEl.style.color = '#FFC107';
+      try {
+        const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: keyToTest })
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusEl.textContent = '✅ Key gültig!';
+          statusEl.style.color = '#4CAF50';
+        } else {
+          statusEl.textContent = '❌ ' + (data.message || data.error || 'Ungültig');
+          statusEl.style.color = '#f44336';
+        }
+      } catch (e) {
+        statusEl.textContent = '❌ ' + e.message;
+        statusEl.style.color = '#f44336';
+      }
+    });
+
     document.getElementById('btn-clear-buffer').addEventListener('click', clearBuffer);
     document.getElementById('btn-refresh-status').addEventListener('click', refreshStatus);
 
+    // Multi-Language
+    document.getElementById('btn-add-lang').addEventListener('click', () => {
+      const lang = document.getElementById('ml-add-lang').value;
+      if (!lang) return;
+      if (currentOutputLangs.includes(lang)) {
+        document.getElementById('ml-status').textContent = '⚠️ Bereits vorhanden';
+        return;
+      }
+      currentOutputLangs.push(lang);
+      renderLangTags(currentOutputLangs);
+      document.getElementById('ml-add-lang').value = '';
+      document.getElementById('ml-status').textContent = '';
+    });
+    document.getElementById('btn-save-ml').addEventListener('click', saveMultiLangSettings);
+
+    // Init
     async function init() {
       try {
         await refreshStatus();

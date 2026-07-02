@@ -15,9 +15,7 @@
       font-family: 'Segoe UI', Tahoma, sans-serif;
       color: #FFFFFF;
     }
-    /* Drei Zeilen, fix positioniert im unteren Drittel.
-       Neuester Text = Zeile 3 (unten).
-       Aelterer Text scrollt von 3 → 2 → 1 → weg. */
+    /* Container für beide Modi */
     #lines {
       position: fixed;
       left: 0;
@@ -37,55 +35,84 @@
     }
     .line.dim   { opacity: 0.5; }
     .line.muted { opacity: 0.25; }
+
+    /* Multi-Language Modus: jede Zeile hat eigenes Label + Farbe */
+    #multi-lines {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 60px;
+      text-align: center;
+      font-size: 48px;
+      font-weight: 600;
+      line-height: 1.2;
+      padding: 20px;
+      display: none;
+    }
+    .multi-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 6px 0;
+      padding: 4px 0;
+    }
+    .multi-line .lang-label {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      opacity: 0.7;
+      flex-shrink: 0;
+      min-width: 50px;
+      text-align: right;
+    }
+    .multi-line .lang-text {
+      flex: 1;
+      text-align: left;
+      max-width: 80%;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
   </style>
 </head>
 <body>
+  <!-- Classic 3-Zeilen Ring-Puffer (für dual-language / classic Modus) -->
   <div id="lines">
     <div class="line muted" id="line-2"></div>
     <div class="line dim"   id="line-1"></div>
     <div class="line"       id="line-0"></div>
   </div>
 
+  <!-- Multi-Language N-Zeilen Modus -->
+  <div id="multi-lines"></div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
   (function() {
     'use strict';
 
-    // Die drei Slots, in DOM-Reihenfolge: muted (aelteste sichtbar) → line-1 → line-0 (aktuellste)
-    const line0 = document.getElementById('line-0'); // aktuellster Text
-    const line1 = document.getElementById('line-1'); // davor
-    const line2 = document.getElementById('line-2'); // davor davor
+    // ===== Classic 3-Zeilen Ring-Puffer =====
+    const line0 = document.getElementById('line-0');
+    const line1 = document.getElementById('line-1');
+    const line2 = document.getElementById('line-2');
+    const linesContainer = document.getElementById('lines');
+    const multiContainer = document.getElementById('multi-lines');
 
-    // Ring-Buffer der letzten 3 Texte (FIFO)
     const ring = ['', '', ''];
-    let ringFilled = 0; // wie viele slots belegt sind (0..3)
-
-    // ID des zuletzt vom Client gesehenen Segments.
-    // Server schickt mit jedem Event den GESAMTEN Buffer; wir nehmen
-    // nur die Segmente ab diesem Index, damit nicht jeder Text 100x
-    // wiederholt wird.
+    let ringFilled = 0;
     let lastSeenSegId = null;
 
-    // Wenn Server "data.text" oder "data.segments" mit Text schickt → neuen Satz anzeigen
-    // Beim Push: alle 3 Texte ruecken einen Slot hoch
-    //   line2 ← line1.text
-    //   line1 ← line0.text
-    //   line0 ← neuer text
     function pushLine(text) {
       text = String(text || '').trim();
       if (!text) return;
-      // Ring-Update (nur behalten wenn neuer Text anders ist als aktuellster)
-      if (text === ring[2]) return; // dedupe gegen neueste Zeile
-      // Erst alles einen Slot hoch
+      if (text === ring[2]) return;
       ring[0] = ring[1];
       ring[1] = ring[2];
       ring[2] = text;
       if (ringFilled < 3) ringFilled++;
-      render();
+      renderClassic();
     }
 
-    function render() {
-      // ring[2] = aktuellster, ring[1] = davor, ring[0] = aelteste
+    function renderClassic() {
       line0.textContent = ring[2];
       line1.textContent = ring[1];
       line2.textContent = ring[0];
@@ -94,10 +121,48 @@
     function clearAll() {
       ring[0] = ring[1] = ring[2] = '';
       ringFilled = 0;
-      render();
+      renderClassic();
+      multiContainer.innerHTML = '';
     }
 
-    // Socket.IO verbinden
+    // ===== Multi-Language N-Zeilen Modus =====
+    function renderMulti(lines) {
+      if (!lines || !Array.isArray(lines) || lines.length === 0) {
+        multiContainer.style.display = 'none';
+        linesContainer.style.display = 'block';
+        return;
+      }
+
+      linesContainer.style.display = 'none';
+      multiContainer.style.display = 'block';
+
+      // Prüfe ob sich der Inhalt geändert hat (vermeide DOM-Flutter)
+      const currentHTML = multiContainer.innerHTML;
+      let newHTML = '';
+      for (const line of lines) {
+        const langLabel = (line.language || '').toUpperCase();
+        const text = line.text || '';
+        const color = line.color || '#FFFFFF';
+        newHTML += `<div class="multi-line">
+          <span class="lang-label" style="color:${color}">${langLabel}</span>
+          <span class="lang-text" style="color:${color}">${escapeHtml(text)}</span>
+        </div>`;
+      }
+      if (newHTML !== currentHTML) {
+        multiContainer.innerHTML = newHTML;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ===== Socket.IO =====
     const socket = io({ transports: ['websocket', 'polling'] });
     socket.on('connect', () => console.log('[stt-ticker] connected'));
     socket.on('disconnect', () => console.log('[stt-ticker] disconnected'));
@@ -105,14 +170,19 @@
     socket.on('stt-ticker:transcript', (data) => {
       if (!data) return;
 
-      // WICHTIG: Server schickt NICHT nur den neuen Satz, sondern den
-      // GESAMTEN bisherigen Buffer (alle bisherigen Segmente). Damit wir
-      // nicht jedes Mal den gleichen Satz doppelt rendern, merken wir
-      // uns die ID des zuletzt gesehenen Segments und nehmen nur die,
-      // die neuer sind.
+      // PRIO 1: Multi-Language Output (N Zeilen)
+      if (data.multi && data.multi.lines && data.multi.lines.length > 0) {
+        renderMulti(data.multi.lines);
+        return;
+      }
+
+      // Fallback: Classic Modus (segments / text / dual)
+      // Zeige wieder den Classic-Container
+      multiContainer.style.display = 'none';
+      linesContainer.style.display = 'block';
+
       if (Array.isArray(data.segments) && data.segments.length > 0) {
         const segs = data.segments;
-        // Finde den Index des letzten gesehenen Segments in segs
         let startIdx = 0;
         for (let i = segs.length - 1; i >= 0; i--) {
           if (segs[i].id !== undefined && segs[i].id === lastSeenSegId) {
@@ -120,7 +190,6 @@
             break;
           }
         }
-        // Pushe alle Segmente ab startIdx
         for (let i = startIdx; i < segs.length; i++) {
           if (segs[i] && segs[i].text) {
             pushLine(segs[i].text);
@@ -130,13 +199,11 @@
         return;
       }
 
-      // Fallback 1: data.text
       if (typeof data.text === 'string' && data.text.trim()) {
         pushLine(data.text);
         return;
       }
 
-      // Fallback 2: data.dual
       if (data.dual && (data.dual.bottomText || data.dual.topText)) {
         const t = (data.dual.bottomText || data.dual.topText || '').trim();
         if (t) pushLine(t);
@@ -144,14 +211,12 @@
       }
     });
 
-    // Optional: Buffer-Clear-Event
     socket.on('stt-ticker:clear', () => clearAll());
 
-    // Tastatur-Shortcut für lokales Testen: 'T' = fake transcript
+    // Tastatur-Shortcut für Testen
     document.addEventListener('keydown', (e) => {
       if (e.key === 't' || e.key === 'T') {
         const fake = 'Test Satz ' + Date.now();
-        console.log('[stt-ticker] injecting fake line:', fake);
         pushLine(fake);
       }
     });

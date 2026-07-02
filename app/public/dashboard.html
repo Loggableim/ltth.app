@@ -2591,14 +2591,14 @@
                                 </button>
                             </div>
 
-                            <!-- TTS API Keys Configuration -->
+                            <!-- API Keys Configuration -->
                             <div class="settings-card">
                                 <h3 class="card-title">
-                                    <i data-lucide="volume-2"></i>
-                                    TTS Engine API Keys
+                                    <i data-lucide="key-round"></i>
+                                    API Keys
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">
-                                    Configure API keys for Text-to-Speech engines. Only engines with valid API keys can be used.
+                                    Zentrale Verwaltung aller API-Schlüssel. Nur Dienste mit gültigem Key können genutzt werden.
                                 </p>
                                 
                                 <!-- Storage Location Info Banner -->
@@ -2607,10 +2607,10 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                Alle TTS API-Schlüssel werden persistent gespeichert
+                                                Alle API-Schlüssel werden persistent gespeichert
                                             </p>
                                             <p class="text-gray-400 text-xs">
-                                                Ihre TTS API-Schlüssel überleben Updates und werden sicher außerhalb des Anwendungsverzeichnisses gespeichert.
+                                                Ihre API-Schlüssel überleben Updates und werden sicher außerhalb des Anwendungsverzeichnisses gespeichert.
                                             </p>
                                         </div>
                                     </div>
@@ -2701,11 +2701,25 @@
                                             Get from <a href="https://siliconflow.cn" target="_blank" class="text-blue-400 hover:text-blue-300">SiliconFlow</a>. Used for Fish Speech 1.5 TTS and StreamAlchemy FLUX.1-schnell image generation.
                                         </p>
                                     </div>
+
+                                    <!-- Ollama Cloud API (STT Ticker Translation) -->
+                                    <div class="form-group">
+                                        <label>Ollama Cloud API Key (STT Ticker Übersetzung)</label>
+                                        <div style="display: flex; gap: 8px;">
+                                            <input type="password" id="tts-ollama-api-key" class="form-input" placeholder="Enter Ollama Cloud API key...">
+                                            <button type="button" id="toggle-tts-ollama-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
+                                                <i data-lucide="eye"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            Wird vom <strong>STT Ticker Plugin</strong> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at <a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <button id="save-tts-api-keys" class="btn btn-primary mt-4">
                                     <i data-lucide="save"></i>
-                                    Save TTS API Keys
+                                    Save API Keys
                                 </button>
                             </div>
 

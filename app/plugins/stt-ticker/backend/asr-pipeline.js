@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { detectLanguage } = require('./lang-detect');
 const DeepgramAsrClient = require('./asr/deepgram-client');
+const ElevenLabsAsrClient = require('./asr/elevenlabs-client');
 
 class AsrPipeline {
   constructor(api, config, logger) {
@@ -55,6 +56,8 @@ class AsrPipeline {
       let result;
       if (provider === 'deepgram') {
         result = await this._transcribeDeepgram(audioBuffer, options, apiLanguage, asrCfg);
+      } else if (provider === 'elevenlabs') {
+        result = await this._transcribeElevenLabs(audioBuffer, options, asrCfg);
       } else {
         result = await this._transcribeFish(audioBuffer, options, apiLanguage);
       }
@@ -118,26 +121,41 @@ class AsrPipeline {
 
   /**
    * Liefert den aktiven Provider.
-   * Logik: asr.provider config > "auto" → falls deepgramKey vorhanden → deepgram, sonst fish.audio
+   * Logik: asr.provider config > "auto" → falls deepgramKey vorhanden → deepgram,
+   *         sonst falls elevenlabsKey vorhanden → elevenlabs, sonst fish.audio
    */
   _resolveProvider() {
     const asr = this.config.asr || {};
     const explicit = (asr.provider || 'auto').toLowerCase();
 
     if (explicit === 'deepgram') {
-      // Deepgram requested — prüfen ob key da ist
       const key = this._getDeepgramKey();
       if (!key) {
-        this.logger.warn('STT Ticker: provider=deepgram requested but no key configured, falling back to fish.audio');
-        return 'fish.audio';
+        this.logger.warn('STT Ticker: provider=deepgram requested but no key configured, falling back');
+        return this._resolveFallbackProvider();
       }
       return 'deepgram';
+    }
+    if (explicit === 'elevenlabs') {
+      const key = this._getElevenLabsKey();
+      if (!key) {
+        this.logger.warn('STT Ticker: provider=elevenlabs requested but no key configured, falling back');
+        return this._resolveFallbackProvider();
+      }
+      return 'elevenlabs';
     }
     if (explicit === 'fish.audio' || explicit === 'fish') {
       return 'fish.audio';
     }
     // 'auto'
     if (this._getDeepgramKey()) return 'deepgram';
+    if (this._getElevenLabsKey()) return 'elevenlabs';
+    return 'fish.audio';
+  }
+
+  _resolveFallbackProvider() {
+    if (this._getDeepgramKey()) return 'deepgram';
+    if (this._getElevenLabsKey()) return 'elevenlabs';
     return 'fish.audio';
   }
 
@@ -155,6 +173,23 @@ class AsrPipeline {
     } catch (e) { /* ignore */ }
     // 3. ENV-Variable
     if (process.env.DEEPGRAM_API_KEY) return process.env.DEEPGRAM_API_KEY.trim();
+    return null;
+  }
+
+  _getElevenLabsKey() {
+    // 1. In-Config (aus UI gespeichert)
+    const fromConfig = (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
+    if (fromConfig.trim()) return fromConfig.trim();
+    // 2. Lokale Datei
+    try {
+      const localPath = path.join(__dirname, '..', 'data', 'elevenlabs.key');
+      if (fs.existsSync(localPath)) {
+        const content = fs.readFileSync(localPath, 'utf8').trim();
+        if (content) return content;
+      }
+    } catch (e) { /* ignore */ }
+    // 3. ENV-Variable
+    if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
     return null;
   }
 
@@ -217,6 +252,23 @@ class AsrPipeline {
       language: dgLanguage,
       model: (asrCfg.deepgramModel || 'nova-2'),
       threshold: '0.3'  // Confidence-Floor — unter 0.3 ist's Müll
+    });
+  }
+
+  async _transcribeElevenLabs(audioBuffer, options, asrCfg) {
+    const key = this._getElevenLabsKey();
+    if (!key) {
+      throw new Error('ElevenLabs API key not configured');
+    }
+    const client = new ElevenLabsAsrClient(key, this.logger, {
+      timeout: 30000,
+      maxAudioBytes: 25 * 1024 * 1024
+    });
+
+    return await client.transcribe(audioBuffer, {
+      mimeType: options.mimeType,
+      filename: options.filename,
+      model: (asrCfg.elevenlabsModel || 'eleven_turbo_v2_5')
     });
   }
 
@@ -405,14 +457,17 @@ class AsrPipeline {
   getStatus() {
     const tts = this._getTtsPlugin();
     const deepgramKey = this._getDeepgramKey();
+    const elevenlabsKey = this._getElevenLabsKey();
     const asr = this.config.asr || {};
     return {
       ttsAvailable: !!tts,
       ttsHasAsr: tts && typeof tts.transcribeFishAudio === 'function',
       deepgramConfigured: !!deepgramKey,
+      elevenlabsConfigured: !!elevenlabsKey,
       provider: this._resolveProvider(),
       providerConfig: (asr.provider || 'auto'),
       deepgramModel: asr.deepgramModel || 'nova-2',
+      elevenlabsModel: asr.elevenlabsModel || 'eleven_turbo_v2_5',
       diagnostics: {
         ...this.diagnostics,
         counters: { ...this.diagnostics.counters }

@@ -174,10 +174,14 @@ class SttTickerPlugin {
           if (asrUpdate.deepgramApiKey === '__KEEP__' || asrUpdate.deepgramApiKey === '') {
             delete asrUpdate.deepgramApiKey;
           }
+          if (asrUpdate.elevenlabsApiKey === '__KEEP__' || asrUpdate.elevenlabsApiKey === '') {
+            delete asrUpdate.elevenlabsApiKey;
+          }
           update.asr = asrUpdate;
         }
         if (body.vad) update.vad = body.vad;
         if (body.dualLanguage) update.dualLanguage = body.dualLanguage;
+        if (body.multiLanguage) update.multiLanguage = body.multiLanguage;
         if (body.langDetect) update.langDetect = body.langDetect;
         if (body.overlay && body.overlay.design) update.overlay = { design: body.overlay.design };
 
@@ -211,15 +215,48 @@ class SttTickerPlugin {
           languageMode: this.config.asr?.languageMode,
           languageDefault: this.config.asr?.languageDefault,
           languageFixed: this.config.asr?.languageFixed
-        }
+        },
+        multiLanguage: this.config.multiLanguage || {}
       });
+    });
+
+    // Liefert die Multi-Language-Einstellungen (für capture.html)
+    this.api.registerRoute('get', '/api/stt-ticker/multilang/settings', (req, res) => {
+      res.json({
+        success: true,
+        multiLanguage: this.config.multiLanguage || {}
+      });
+    });
+
+    // Multi-Language Settings speichern
+    this.api.registerRoute('post', '/api/stt-ticker/multilang/settings', (req, res) => {
+      try {
+        const body = req.body || {};
+        const update = {};
+        if (body.multiLanguage) {
+          update.multiLanguage = body.multiLanguage;
+        }
+        // Auch Translation-Modell aus der capture.html akzeptieren
+        if (body.translation && body.translation.model) {
+          update.translation = Object.assign({}, this.config.translation || {}, { model: body.translation.model });
+        }
+        if (Object.keys(update).length > 0) {
+          this.config = this.configManager.update(update);
+          if (this.textBuffer) this.textBuffer.updateConfig(this.config);
+          if (this.asrPipeline) this.asrPipeline.updateConfig(this.config);
+          if (this.translator) this.translator.updateConfig(this.config);
+          this._emitStatus();
+        }
+        res.json({ success: true, multiLanguage: this.config.multiLanguage, translation: this.config.translation });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+      }
     });
 
     // Testet ob der konfigurierte Deepgram-Key gültig ist
     this.api.registerRoute('post', '/api/stt-ticker/asr/test-deepgram', async (req, res) => {
       try {
         const body = req.body || {};
-        // Key kann aus dem Body kommen (Test vor dem Speichern) oder aus der Config
         const key = (body.apiKey && body.apiKey.trim()) || (this.config.asr && this.config.asr.deepgramApiKey) || '';
         if (!key.trim()) {
           return res.json({ success: false, error: 'Kein Deepgram-Key konfiguriert' });
@@ -236,6 +273,37 @@ class SttTickerPlugin {
       } catch (error) {
         res.json({ success: false, error: error.message });
       }
+    });
+
+    // Testet ob der konfigurierte ElevenLabs-Key gültig ist
+    this.api.registerRoute('post', '/api/stt-ticker/asr/test-elevenlabs', async (req, res) => {
+      try {
+        const body = req.body || {};
+        const key = (body.apiKey && body.apiKey.trim()) || (this.config.asr && this.config.asr.elevenlabsApiKey) || '';
+        if (!key.trim()) {
+          return res.json({ success: false, error: 'Kein ElevenLabs-Key konfiguriert' });
+        }
+        const ElevenLabsAsrClient = require('./backend/asr/elevenlabs-client');
+        const client = new ElevenLabsAsrClient(key, this.logger, { timeout: 10000 });
+        const result = await client.testConnection();
+        if (result.ok) {
+          this.logger.info('STT Ticker: ElevenLabs test-connection successful');
+        } else {
+          this.logger.warn('STT Ticker: ElevenLabs test-connection failed: ' + (result.message || result.status));
+        }
+        res.json({ success: result.ok, ...result });
+      } catch (error) {
+        res.json({ success: false, error: error.message });
+      }
+    });
+
+    // Liste der verfügbaren ElevenLabs-Modelle
+    this.api.registerRoute('get', '/api/stt-ticker/asr/elevenlabs/models', (req, res) => {
+      const ElevenLabsAsrClient = require('./backend/asr/elevenlabs-client');
+      res.json({
+        success: true,
+        models: Object.entries(ElevenLabsAsrClient.MODELS).map(([id, info]) => ({ id, ...info }))
+      });
     });
 
     // Liste der verfügbaren Deepgram-Modelle
@@ -427,12 +495,21 @@ class SttTickerPlugin {
     let translation = null;
     if (this.translator && this.config.translation?.enabled && this.config.translation?.apiKey) {
       try {
-        // Translator bekommt nun auch detected language, damit auto-mode besser funktioniert
-        translation = await this.translator.translate(text, {
-          sourceLanguage: transcript.language,
-          // für sourceLanguage='auto' im Translator muss language weitergegeben werden
-          _detectedLanguage: transcript.language
-        });
+        // Prüfe ob Multi-Language-Modus aktiv ist
+        const multiCfg = this.config.multiLanguage || {};
+        if (multiCfg.enabled && Array.isArray(multiCfg.outputLanguages) && multiCfg.outputLanguages.length > 0) {
+          // Multi-Language: übersetze in alle Zielsprachen auf einmal
+          translation = await this.translator.translateMulti(text, {
+            sourceLanguage: transcript.language,
+            outputLanguages: multiCfg.outputLanguages
+          });
+        } else {
+          // Legacy: einzelne Zielsprache
+          translation = await this.translator.translate(text, {
+            sourceLanguage: transcript.language,
+            _detectedLanguage: transcript.language
+          });
+        }
       } catch (error) {
         this.logger.warn(`STT Ticker translation failed: ${error.message}`);
         // Non-fatal — wir senden trotzdem den Originaltext
@@ -496,10 +573,12 @@ class SttTickerPlugin {
       asr: {
         ttsAvailable: asrStatus.ttsAvailable,
         ttsHasAsr: asrStatus.ttsHasAsr,
-        provider: asrStatus.provider,         // effective: 'fish.audio' | 'deepgram'
+        provider: asrStatus.provider,         // effective: 'fish.audio' | 'deepgram' | 'elevenlabs'
         providerConfig: asrStatus.providerConfig,
         deepgramConfigured: asrStatus.deepgramConfigured,
         deepgramModel: asrStatus.deepgramModel,
+        elevenlabsConfigured: asrStatus.elevenlabsConfigured,
+        elevenlabsModel: asrStatus.elevenlabsModel,
         diagnostics: asrStatus.diagnostics
       },
       buffer: bufferStats,
