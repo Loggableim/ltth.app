@@ -540,7 +540,7 @@
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '🎉 <strong>ElevenLabs aktiv</strong> — Modell: ' + (asr.elevenlabsModel || 'eleven_turbo_v2_5');
+            providerHintEl.innerHTML = '🎉 <strong>ElevenLabs aktiv</strong> — Modell: ' + (asr.elevenlabsModel || 'scribe_v2');
           }
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = '⚠️ Fish.audio';
@@ -821,7 +821,7 @@
       const modelSelect = document.getElementById('asr-model-select');
       const selectedModel = modelSelect ? modelSelect.value : '';
       if (asr.provider === 'elevenlabs') {
-        asr.elevenlabsModel = selectedModel || 'eleven_turbo_v2_5';
+        asr.elevenlabsModel = selectedModel || 'scribe_v2';
       } else {
         asr.deepgramModel = selectedModel || 'nova-2';
       }

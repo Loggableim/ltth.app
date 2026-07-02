@@ -18,6 +18,7 @@ class ElevenLabsAsrClient {
   static DEFAULT_MAX_AUDIO_BYTES = 25 * 1024 * 1024;  // 25 MB
 
   static MODELS = {
+    'scribe_v2': { name: 'Scribe Realtime v2', multilingual: true },
     'eleven_turbo_v2_5': { name: 'Eleven Turbo v2.5', multilingual: true },
     'eleven_turbo_v2': { name: 'Eleven Turbo v2', multilingual: true },
     'eleven_multilingual_v2': { name: 'Eleven Multilingual v2', multilingual: true },

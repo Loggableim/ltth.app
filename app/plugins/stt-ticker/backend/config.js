@@ -19,7 +19,7 @@ const DEFAULT_CONFIG = {
     deepgramApiKey: '',         // Deepgram API-Key (NIE im Git, persistent in Plugin-Config)
     deepgramModel: 'nova-2',     // 'nova-2' | 'whisper-large' | 'whisper-medium'
     elevenlabsApiKey: '',        // ElevenLabs API-Key für ASR
-    elevenlabsModel: 'eleven_turbo_v2_5',  // ElevenLabs ASR Modell
+    elevenlabsModel: 'scribe_v2',  // ElevenLabs ASR Modell (Scribe Realtime v2)
     fishaudioApiKey: ''          // Fish.audio API-Key (für ASR, Fallback zum TTS-Plugin)
   },
 

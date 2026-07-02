@@ -291,7 +291,7 @@ class AsrPipeline {
     return await client.transcribe(audioBuffer, {
       mimeType: options.mimeType,
       filename: options.filename,
-      model: (asrCfg.elevenlabsModel || 'eleven_turbo_v2_5')
+      model: (asrCfg.elevenlabsModel || 'scribe_v2')
     });
   }
 
@@ -492,7 +492,7 @@ class AsrPipeline {
       provider: this._resolveProvider(),
       providerConfig: (asr.provider || 'auto'),
       deepgramModel: asr.deepgramModel || 'nova-2',
-      elevenlabsModel: asr.elevenlabsModel || 'eleven_turbo_v2_5',
+      elevenlabsModel: asr.elevenlabsModel || 'scribe_v2',
       diagnostics: {
         ...this.diagnostics,
         counters: { ...this.diagnostics.counters }
