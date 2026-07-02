@@ -299,21 +299,6 @@
       <h3 id="settings-toggle">⚙️ Multi-Language Einstellungen ▾</h3>
       <div id="settings-body">
         <div class="settings-row">
-          <label>STT-Provider</label>
-          <select id="ml-asr-provider" style="flex:1;">
-            <option value="auto">🟢 Auto (Deepgram > ElevenLabs > Fish.audio)</option>
-            <option value="deepgram">Deepgram (~$0.26/h)</option>
-            <option value="elevenlabs">ElevenLabs (Speech-to-Text)</option>
-            <option value="fish.audio">Fish.audio (~$1.50/h)</option>
-          </select>
-        </div>
-        <div class="settings-row">
-          <label>STT-Modell</label>
-          <select id="ml-asr-model" style="flex:1;">
-            <option value="">— Modell wählen —</option>
-          </select>
-        </div>
-        <div class="settings-row">
           <label>Übersetzungs-Modell</label>
           <select id="ml-model" style="flex:1;">
             <option value="">— Modelle laden... —</option>
@@ -481,8 +466,6 @@
     const mlDefaultLangEl = document.getElementById('ml-default-lang');
     const mlAddLangEl = document.getElementById('ml-add-lang');
     const mlModelEl = document.getElementById('ml-model');
-    const mlAsrProviderEl = document.getElementById('ml-asr-provider');
-    const mlAsrModelEl = document.getElementById('ml-asr-model');
 
     // Socket.IO
     const socket = io({ transports: ['websocket', 'polling'] });
@@ -598,48 +581,6 @@
       }
     }
 
-    async function loadAsrModels() {
-      // Deepgram Modelle
-      try {
-        const dgRes = await fetch(API + '/api/stt-ticker/asr/deepgram/models');
-        const dgData = await dgRes.json();
-        if (dgData.success && dgData.models) {
-          window._dgModels = dgData.models;
-        }
-      } catch (e) { /* ignore */ }
-      // ElevenLabs Modelle
-      try {
-        const elRes = await fetch(API + '/api/stt-ticker/asr/elevenlabs/models');
-        const elData = await elRes.json();
-        if (elData.success && elData.models) {
-          window._elModels = elData.models;
-        }
-      } catch (e) { /* ignore */ }
-      // Initial befüllen basierend auf aktuellem Provider
-      updateAsrModelDropdown();
-    }
-
-    function updateAsrModelDropdown() {
-      const provider = mlAsrProviderEl.value;
-      mlAsrModelEl.innerHTML = '';
-      let models = [];
-      if (provider === 'deepgram') {
-        models = window._dgModels || [];
-      } else if (provider === 'elevenlabs') {
-        models = window._elModels || [];
-      }
-      if (models.length > 0) {
-        for (const m of models) {
-          const opt = document.createElement('option');
-          opt.value = m.id;
-          opt.textContent = m.name;
-          mlAsrModelEl.appendChild(opt);
-        }
-      } else {
-        mlAsrModelEl.innerHTML = '<option value="">— ' + (provider === 'fish.audio' ? 'Keine Auswahl nötig' : 'Keine Modelle geladen') + ' —</option>';
-      }
-    }
-
     async function loadSettings() {
       try {
         const res = await fetch(API + '/api/stt-ticker/vad/settings');
@@ -665,25 +606,33 @@
         const statusData = await statusRes.json();
         if (statusData.success && statusData.status) {
           const cfg = statusData.status.config || {};
-          const asr = cfg.asr || {};
           const tc = cfg.translation || {};
-
-          // ASR Provider + Modell aus Config laden
-          if (asr.provider) mlAsrProviderEl.value = asr.provider;
 
           translationConfig.enabled = tc.enabled || false;
           translationConfig.apiKey = tc.apiKey || '';
           translationConfig.model = tc.model || 'nemotron-3-nano';
-          if (tc.apiKey) {
+
+          // Fallback: Ollama-Key aus globalen Dashboard-Settings holen
+          // (tts_ollama_api_key wird im Dashboard unter "API Keys" gespeichert)
+          if (!translationConfig.apiKey) {
+            try {
+              const globalRes = await fetch(API + '/api/settings');
+              const globalData = await globalRes.json();
+              if (globalData && globalData.tts_ollama_api_key) {
+                translationConfig.apiKey = globalData.tts_ollama_api_key;
+                log('🔑 Ollama Key aus globalen Settings geladen');
+              }
+            } catch (e) { /* ignore */ }
+          }
+
+          if (translationConfig.apiKey) {
             log('🔑 Ollama Key vorhanden — lade Modelle...');
-            await loadModels(tc.apiKey);
+            await loadModels(translationConfig.apiKey);
           } else {
             log('⚠ Kein Ollama Key — Übersetzung deaktiviert', 'warn');
             mlModelEl.innerHTML = '<option value="">— Kein API-Key —</option>';
           }
         }
-        // ASR Modelle laden (Deepgram + ElevenLabs)
-        await loadAsrModels();
       } catch (e) {
         log('⚠ Konnte Settings nicht laden, nutze Defaults', 'warn');
       }
@@ -921,10 +870,6 @@
 
     mlDefaultLangEl.addEventListener('change', function() {
       updatePreviewFromConfig();
-    });
-
-    mlAsrProviderEl.addEventListener('change', function() {
-      updateAsrModelDropdown();
     });
 
     document.getElementById('settings-toggle').addEventListener('click', function() {

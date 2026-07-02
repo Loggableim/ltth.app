@@ -240,6 +240,14 @@ class SttTickerPlugin {
         if (body.translation && body.translation.model) {
           update.translation = Object.assign({}, this.config.translation || {}, { model: body.translation.model });
         }
+        // Auch ASR-Provider/Modell aus der capture.html akzeptieren
+        if (body.asr) {
+          const asrUpdate = Object.assign({}, this.config.asr || {});
+          if (body.asr.provider) asrUpdate.provider = body.asr.provider;
+          if (body.asr.deepgramModel) asrUpdate.deepgramModel = body.asr.deepgramModel;
+          if (body.asr.elevenlabsModel) asrUpdate.elevenlabsModel = body.asr.elevenlabsModel;
+          update.asr = asrUpdate;
+        }
         if (Object.keys(update).length > 0) {
           this.config = this.configManager.update(update);
           if (this.textBuffer) this.textBuffer.updateConfig(this.config);
@@ -247,7 +255,7 @@ class SttTickerPlugin {
           if (this.translator) this.translator.updateConfig(this.config);
           this._emitStatus();
         }
-        res.json({ success: true, multiLanguage: this.config.multiLanguage, translation: this.config.translation });
+        res.json({ success: true, multiLanguage: this.config.multiLanguage, translation: this.config.translation, asr: this.config.asr });
       } catch (error) {
         res.status(500).json({ success: false, error: error.message });
       }
