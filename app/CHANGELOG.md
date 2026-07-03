@@ -7,96 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
 
-- Snapshot documentation and setup metadata were refreshed for backend-first development.
-- Active docs now point future agents to `AGENTS.md`, `docs/SNAPSHOT_STATUS.md`, and `infos/`.
-- Removed active Electron setup guidance because the Electron main-process source is not present in this snapshot.
-
-### Added
-
-#### 🎵 **Music Bot Overlay: Theme-Engine & Visualizer**
-- OBS-Overlay unterstützt nun URL-Themes `default`, `cyberpunk`, `minimal`, `neon` (inkl. Legacy-Mapping alter Theme-Namen).
-- Neues Canvas-basiertes Echtzeit-Visualizer-Rendering mit Web Audio API (`AnalyserNode`, `requestAnimationFrame`) und Theme-gebundener Farbpalette.
-- Konfigurierbares Songlängen-Limit (Default 360s) inkl. Dashboard-Feld und hartem Queue-Check vor dem Hinzufügen von Requests.
-#### 🎵 **Music Bot – Monetization/UI/Overlay Ausbau** (Feature 21, 22, 29, 31, 33, 34, 36, 38, 39)
-- **Pay-to-Play** mit Geschenkekatalog + Coin-Schwelle: `!sr`-Requests benötigen (konfigurierbar) passendes Gift oder ausreichende Coins; Credits werden über Gift-Events vergeben.
-- **Pay-to-Skip** mit Geschenkekatalog: definierte Gifts überspringen den aktuell laufenden Song sofort.
-- **Like-Gated Requests** mit Mindestlikes pro User: `!sr` wird abgelehnt, bis die konfigurierbare Like-Schwelle erreicht ist.
-- Dashboard-Konfiguration um **Monetization-Settings** (Pay-to-Play/Skip, Giftlisten, Mindestlikes) inkl. Persistenz erweitert.
-- Dashboard um **Master-/Source-Volume-Slider** erweitert, live angewendet und in Plugin-Config persistent gespeichert.
-- Dashboard-Queue unterstützt **Drag & Drop Reorder** plus UI-Aktionen für Pause/Resume und Löschen.
-- Dashboard-**Status-Toasts** für Request-Erfolg/-Ablehnung, API-Fehler und Netzwerk-/Socket-Probleme ergänzt.
-- Overlay zeigt **Requester-Avatar** beim aktuellen Song (Avatar-URL wird beim Queue-Add gespeichert).
-- Overlay ergänzt um **dynamisch animierte Album-Artworks** (rotierend, pausiert bei Playback-Pause).
-- Overlay ergänzt um **Up-Next Widget** (nächste 2-3 Queue-Songs, live via Socket-Queue-Updates).
-
-#### 🎵 **Music Bot – Core Feature Erweiterung (Audio/Queue/Chat)**
-- **Audio-Ducking:** Automatisches Ducking der Musik bei `tts:playback:started` sowie systemweiten `alert:show` Events mit konfigurierbaren Fade-In/Fade-Out Zeiten.
-- **Lautstärke-Normalisierung:** MPV-Audiofilter `loudnorm` für konsistentere Track-Lautheit (konfigurierbar über `playback.normalization`).
-- **Fallback-Playlist:** Automatischer Fallback auf vordefinierte lokale/URL-basierte Tracks bei leerer Request-Queue.
-- **Pre-Caching:** Asynchrones Vorladen der nächsten Tracks (Lookahead) in den persistenten `pluginDataDir/cache` Bereich.
-- **Request-Limits robuster:** User-Limit und Cooldown werden jetzt case-insensitive ausgewertet, um Umgehung via Groß-/Kleinschreibung zu verhindern.
-- **Tests ergänzt:** Neue Jest-Tests für Ducking-/Normalisierungslogik und case-insensitive Request-Limits.
-
-#### 🔌 **Adapter Architecture for TikTok Data Sources** (`app/modules/adapters/`)
-- `BaseAdapter.js`: Abstract base class for all data source adapters. Extends `EventEmitter`. Provides shared state (`isConnected`, `currentUsername`, `streamStartTime`, `stats`), broadcast helpers (`broadcastStats`, `broadcastStatus`), event routing (`handleEvent`), and duration interval management.
-- `EulerstreamAdapter.js`: Eulerstream WebSocket logic extracted from `tiktok.js` with zero behaviour change. All original event handling, deduplication, gift catalog, room info fetching, diagnostics, and heartbeat logic are fully preserved.
-- `TikFinityAdapter.js`: New adapter for TikFinity Desktop App local WebSocket API (`ws://localhost:21213`). Supports gift, chat, follow, like, share, subscribe, join, viewer-count, room-stats events. Configurable port via `tikfinity_ws_port` DB setting. Includes auto-reconnect with exponential back-off, ping keep-alive, and stats persistence.
-
-#### 🏆 **Top Tier Plugin** (`toptier`): Live-Leaderboard für TikTok LIVE Likes & Geschenke
-- Zwei unabhängige Boards: Likes-Board und Gifts-Board
-- 5 Decay-Modi: none, linear, percentage, idle, step
-- 7 OBS-Overlay-Varianten: Classic List, Animated Race, Spotlight, Podium, Ticker, Holographic, Scoreboard
-- Echtzeit Rang-Wechsel- und New-Leader-Animationen
-- All-Time Hall of Fame über alle Sessions
-- Geschenk-Multiplikator-Regeln pro Geschenk-Name/ID
-- Chat-Command `!rank` für Zuschauer-Rang-Abfrage
-- Session-Management mit Auto-Reset bei Reconnect
-- Vollständige Admin-UI mit Live-Preview und OBS-URL-Generator
+## [1.3.8] - 2026-07-03
 
 ### Fixed
 
-#### 🚀 Launcher/Port-Stabilität (Go + Node.js)
-- `build-src/dev-launcher.go` und `build-src/launcher-gui.go`: `checkServerHealth()` nutzt jetzt dynamisch `alternativePort`, wenn ein Fallback-Port gewählt wurde (statt hartcodiert 3000), wodurch Health-Check-Timeouts auf Alternativports verhindert werden.
-- `build-src/dev-launcher.go` und `build-src/launcher-gui.go`: `autoFixPort()` wartet bei blockiertem Port 3000 nur noch kurz (max. 3s statt 15s) und überlässt erweitertes Recovery dem Node.js-Port-Management.
-- `app/modules/tiktok.js` und `app/server.js`: EventEmitter-Listener-Limits für TikTokConnector und Socket.IO Namespace auf 50 erhöht, um `MaxListenersExceededWarning` in legitimen Multi-Listener-Szenarien zu vermeiden.
-- `app/modules/port-manager.js` + `app/server.js`: EADDRINUSE-Retry kann jetzt fehlgeschlagene Ports explizit ausschließen (`excludePorts`), sodass ein gerade fehlgeschlagener Fallback-Port nicht sofort erneut ausgewählt wird.
-- `app/server.js` + `app/modules/port-manager.js` + `build-src/dev-launcher.go` + `build-src/launcher-gui.go`: Port-Strategie auf „Force Port 3000“ umgestellt. Kein Ausweichen auf 3001+ mehr; stattdessen aggressives Rebind (`exclusive: false`), EADDRINUSE-Warteschleife sowie Kill/Wait-Only Port-Resolution auf 3000.
-- `app/server.js` + `app/modules/port-manager.js`: Port-Start jetzt robust und flexibel: Bind startet mit `exclusive: true` auf 3000 und wechselt bei `EADDRINUSE` schrittweise bis 3050; erfolgreiche Runtime-Portnummer wird in `.ltth_port` gespeichert.
-- `app/server.js`: Beim erfolgreichen Start wird `obs-overlay-wrapper.html` im Projekt-Root neu erzeugt (lokale OBS-Dateiquelle mit dynamischem Port inkl. Query/Hash-Passthrough).
-- `build-src/dev-launcher.go` + `build-src/launcher-gui.go`: Launcher lesen den aktiven Node-Port über `getCurrentNodePort()` aus `.ltth_port` (Fallback 3000) und nutzen ihn für Health-Checks und Dashboard-Weiterleitung.
+- **ClarityHUD XSS Security**: Added `escapeAttr()` helper function; all template literal values in input fields are now properly escaped to prevent XSS injection attacks.
+- **ClarityHUD UI**: `.source-badge` text color changed from `color-text-inverse` to `color-text-primary` for better contrast across themes.
 
-#### 🔌 OSC-Bridge + CoinBattle Stabilitätsfixes
-- `app/plugins/osc-bridge/main.js` und `app/plugins/osc-bridge/modules/OSCQueryClient.js`: OSCQuery-Fehlerlogs (Auto-Discovery/Subscribe/WebSocket) loggen jetzt nur noch `error.message` plus optionalen `error.stack`, statt komplette (potenziell zirkuläre) Error-Objekte.
-- `app/plugins/coinbattle/backend/database.js`: `coinbattle_archived_matches` wird jetzt bereits in `initializeTables()` via `CREATE TABLE IF NOT EXISTS` angelegt (inkl. Index), damit Cleanup/Archivierung nicht mehr an fehlender Tabelle scheitert.
+### Added
 
-#### 🔥 **Flame Overlay WebGL rendering + bloom framebuffer state**
-- `app/plugins/flame-overlay/renderer/post-processor.js`: `renderToFramebuffer()` now validates target framebuffer, applies matching viewport size for scene vs bloom buffers, clears color/depth before rendering, and restores default framebuffer viewport afterward.
-- `app/plugins/flame-overlay/renderer/effects-engine.js`: `render()` now explicitly restores canvas framebuffer/viewport before final composite and direct rendering fallback; smoke rendering logic is encapsulated in `renderSmoke(time)` and invoked safely from `renderScene()`.
-- Added regression test coverage in `app/test/flame-overlay-renderer-webgl-state.test.js` to guard viewport/framebuffer and render-scene delegation behavior.
-
-#### 🔌 **EulerstreamAdapter – Token-Drain & ~60s-Disconnect-Loop**
-- EulerstreamAdapter: 4404 (Not Live) retry now uses a dedicated retry budget and no longer drains the general auto-reconnect counter.
-- EulerstreamAdapter: 4429 (Too Many Connections) retry now uses a dedicated retry budget and no longer drains the general auto-reconnect counter.
-- EulerstreamAdapter: Heartbeat timeout no longer causes ~60s reconnect loop – ws.removeAllListeners() is called before terminate() to prevent the close handler from triggering an uncontrolled reconnect chain
-
-#### 🏆 **Leaderboard + Eulerstream stability hardening**
-- `app/modules/leaderboard.js`: `updateStats()` now rejects missing/invalid usernames before DB writes, preventing `NOT NULL` crashes for anonymous/aggregated events.
-- `app/server.js`: all `leaderboard.track*()` calls now guard `data.username` and skip tracking with debug logging when missing.
-- `app/modules/adapters/EulerstreamAdapter.js`: raised general reconnect budget (`maxAutoReconnects` 5→50), added dedicated 4404/4429 retry counters/limits, added delayed self-heal reconnect reset after max-reached states, and made heartbeat tolerant to 2 consecutive missed pongs with message-based liveness reset.
-
-#### 🎰 **Plinko – Board-aware gift trigger flow** (PR #222)
-- Fixed root cause: gifts configured on non-default Plinko boards were never recognized because `handlePlinkoGiftTrigger()` always loaded the first/default board config via `getConfig()` without a board ID, ignoring the board already identified by `findBoardByGiftTrigger()`.
-- `handleGiftTrigger()` now passes `matchingPlinkoBoard.id` into `handlePlinkoGiftTrigger()` so the correct board's config is used directly.
-- `handlePlinkoGiftTrigger()` accepts a new optional `boardId` parameter; when provided, `getConfig(boardId)` targets that specific board instead of the default.
-- Trigger-Tab-only fallback (`useDefaults=true`) and disabled-board handling are fully preserved.
-- Improved log output: logs now show which board was targeted, which mapping key matched, whether defaults were applied, and the reason when spawning is skipped.
-- Added 4 regression tests: non-default board path, fall-through-to-all-boards warning, `handleGiftTrigger` boardId propagation, Trigger-Tab null-boardId contract.
+- **ClarityHUD Form Collection**: New `collectCurrentFormValues()` function for centralized form state management across all dock types (chat, full, multi, stream).
+- **ClarityHUD CSS**: Added `.preview-message.style-badge` CSS class for badge-style message previews.
 
 ### Changed
 
-- **`app/modules/tiktok.js`**: Refactored to Facade/Router class. Public API 100% unchanged. Delegates to the active adapter based on the `tiktok_data_source` DB setting (`'eulerstream'` default, `'tikfinity'` optional). The setting is re-evaluated on every `connect()` call so no server restart is needed after changing it.
+- **Launcher Settings**: Default theme changed from `night` to `highcontrast` for improved accessibility out of the box.
 
 ## [1.3.3] - 2026-03-26
 

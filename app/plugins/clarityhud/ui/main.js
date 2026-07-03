@@ -277,7 +277,7 @@ function renderTabContent(dock, tabId) {
           <div class="form-row">
             <div class="form-group">
               <label>Font Family</label>
-              <input type="text" id="fontFamily" value="${s.fontFamily || 'Arial, sans-serif'}">
+              <input type="text" id="fontFamily" value="${escapeAttr(s.fontFamily || 'Arial, sans-serif')}">
               <span class="help-text">Any web-safe font or Google Font</span>
             </div>
             <div class="form-group">
@@ -296,14 +296,14 @@ function renderTabContent(dock, tabId) {
               <label>Font Color</label>
               <div class="color-input-wrapper">
                 <input type="color" id="fontColor-picker" value="${s.fontColor || '#FFFFFF'}">
-                <input type="text" id="fontColor" value="${s.fontColor || '#FFFFFF'}">
+                <input type="text" id="fontColor" value="${escapeAttr(s.fontColor || '#FFFFFF')}">
               </div>
             </div>
             <div class="form-group">
               <label>Background Color</label>
               <div class="color-input-wrapper">
                 <input type="color" id="backgroundColor-picker" value="${s.backgroundColor || '#000000'}">
-                <input type="text" id="backgroundColor" value="${s.backgroundColor || '#000000'}">
+                <input type="text" id="backgroundColor" value="${escapeAttr(s.backgroundColor || '#000000')}">
               </div>
               <span class="help-text">Use rgba() for transparency</span>
             </div>
@@ -691,7 +691,7 @@ function renderTabContent(dock, tabId) {
               <label>Outline Color</label>
               <div class="color-input-wrapper">
                 <input type="color" id="outlineColor-picker" value="${s.outlineColor || '#000000'}">
-                <input type="text" id="outlineColor" value="${s.outlineColor || '#000000'}">
+                <input type="text" id="outlineColor" value="${escapeAttr(s.outlineColor || '#000000')}">
               </div>
             </div>
           </div>
@@ -775,12 +775,12 @@ function renderTabContent(dock, tabId) {
               <div class="form-row">
                 <div class="form-group">
                   <label>TikTok Username</label>
-                  <input type="text" id="stream${i}-username" value="${stream.username || ''}" placeholder="@username">
+                  <input type="text" id="stream${i}-username" value="${escapeAttr(stream.username || '')}" placeholder="@username">
                   <span class="help-text">Without the @ symbol</span>
                 </div>
                 <div class="form-group">
                   <label>Display Name (Optional)</label>
-                  <input type="text" id="stream${i}-displayName" value="${stream.displayName || ''}" placeholder="Stream ${i + 1}">
+                  <input type="text" id="stream${i}-displayName" value="${escapeAttr(stream.displayName || '')}" placeholder="Stream ${i + 1}">
                   <span class="help-text">Custom label for this stream</span>
                 </div>
               </div>
@@ -789,21 +789,21 @@ function renderTabContent(dock, tabId) {
                   <label>Text Color</label>
                   <div class="color-input-wrapper">
                     <input type="color" id="stream${i}-textColor-picker" value="${stream.textColor || '#00D4FF'}">
-                    <input type="text" id="stream${i}-textColor" value="${stream.textColor || '#00D4FF'}">
+                    <input type="text" id="stream${i}-textColor" value="${escapeAttr(stream.textColor || '#00D4FF')}">
                   </div>
                 </div>
                 <div class="form-group">
                   <label>Background Color</label>
                   <div class="color-input-wrapper">
                     <input type="color" id="stream${i}-bgColor-picker" value="${stream.bgColor || '#1E3A8A'}">
-                    <input type="text" id="stream${i}-bgColor" value="${stream.bgColor || '#1E3A8A'}">
+                    <input type="text" id="stream${i}-bgColor" value="${escapeAttr(stream.bgColor || '#1E3A8A')}">
                   </div>
                 </div>
                 <div class="form-group">
                   <label>Accent Color</label>
                   <div class="color-input-wrapper">
                     <input type="color" id="stream${i}-accentColor-picker" value="${stream.accentColor || '#60A5FA'}">
-                    <input type="text" id="stream${i}-accentColor" value="${stream.accentColor || '#60A5FA'}">
+                    <input type="text" id="stream${i}-accentColor" value="${escapeAttr(stream.accentColor || '#60A5FA')}">
                   </div>
                 </div>
               </div>
@@ -963,13 +963,134 @@ function applyPreset(preset) {
 // Helper to set field value
 function setFieldValue(fieldId, value) {
   const field = document.getElementById(fieldId);
-  if (field) {
-    if (field.type === 'checkbox') {
-      field.checked = value;
-    } else {
-      field.value = value;
+  if (!field) return;
+  if (field.type === 'checkbox') {
+    field.checked = value;
+  } else {
+    field.value = value;
+  }
+}
+// Escape HTML attribute values to prevent XSS
+function escapeAttr(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Collect the current form values from the DOM for the active dock.
+ * Mirrors the logic in `saveSettings()` but does NOT perform an API call.
+ * @param {string} dock - The active dock type (chat, full, multi, stream)
+ * @returns {Object} The current settings object.
+ */
+function collectCurrentFormValues(dock) {
+  if (!dock) return {};
+  // Stream uses dedicated module
+  if (dock === 'stream' && window.StreamSettingsTab) {
+    return window.StreamSettingsTab.collectStreamSettings();
+  }
+
+  let values = {};
+  if (dock === 'multi') {
+    const streams = [];
+    for (let i = 0; i < 3; i++) {
+      streams.push({
+        enabled: getFieldValue(`stream${i}-enabled`, 'checkbox'),
+        username: getFieldValue(`stream${i}-username`),
+        displayName: getFieldValue(`stream${i}-displayName`),
+        textColor: getFieldValue(`stream${i}-textColor`),
+        bgColor: getFieldValue(`stream${i}-bgColor`),
+        accentColor: getFieldValue(`stream${i}-accentColor`)
+      });
+    }
+    values = {
+      enabled: getFieldValue('enabled', 'checkbox'),
+      streams,
+      layout: getFieldValue('layout'),
+      columns: getFieldValue('columns'),
+      primarySpan2: getFieldValue('primarySpan2', 'checkbox'),
+      messageStyle: getFieldValue('messageStyle'),
+      density: getFieldValue('density'),
+      showAvatars: getFieldValue('showAvatars', 'checkbox'),
+      showTimestamps: getFieldValue('showTimestamps', 'checkbox'),
+      highlightPrimary: getFieldValue('highlightPrimary', 'checkbox'),
+      maxMessages: parseInt(getFieldValue('maxMessages')) || 300,
+      autoContrast: getFieldValue('autoContrast', 'checkbox'),
+      pulseOnNew: getFieldValue('pulseOnNew', 'checkbox'),
+      reconnectMaxAttempts: parseInt(getFieldValue('reconnectMaxAttempts'), 10) || 3,
+      reconnectBaseDelayMs: parseInt(getFieldValue('reconnectBaseDelayMs'), 10) || 2000
+    };
+  } else {
+    // Chat and Full HUD settings
+    values = {
+      // Appearance
+      fontFamily: getFieldValue('fontFamily'),
+      fontSize: `${parseInt(getFieldValue('fontSize'), 10) || 48}px`,
+      fontColor: getFieldValue('fontColor'),
+      backgroundColor: getFieldValue('backgroundColor'),
+      lineHeight: parseFloat(getFieldValue('lineHeight')),
+      letterSpacing: `${parseFloat(getFieldValue('letterSpacing')) || 0}px`,
+      // Layout
+      align: getFieldValue('alignment') || 'left',
+      showTimestamps: getFieldValue('showTimestamps', 'checkbox'),
+      maxLines: parseInt(getFieldValue('maxLines')),
+      // Styling
+      outlineThickness: `${parseFloat(getFieldValue('outlineThickness')) || 0}px`,
+      outlineColor: getFieldValue('outlineColor'),
+      wrapLongWords: getFieldValue('wrapLongWords', 'checkbox'),
+      // Accessibility
+      mode: getFieldValue('mode'),
+      highContrastMode: getFieldValue('highContrastMode', 'checkbox'),
+      colorblindSafeMode: getFieldValue('colorblindSafeMode', 'checkbox'),
+      reduceMotion: getFieldValue('reduceMotion', 'checkbox'),
+      dyslexiaFont: getFieldValue('dyslexiaFont', 'checkbox'),
+      // Window settings
+      transparency: parseFloat(getFieldValue('transparency')), // 0-100
+      keepOnTop: getFieldValue('keepOnTop', 'checkbox'),
+      useVirtualScrolling: getFieldValue('useVirtualScrolling', 'checkbox'),
+      // Badge settings
+      badgeSize: getFieldValue('badgeSize'),
+      teamLevelStyle: getFieldValue('teamLevelStyle'),
+      showTeamLevel: getFieldValue('showTeamLevel', 'checkbox'),
+      showModerator: getFieldValue('showModerator', 'checkbox'),
+      showSubscriber: getFieldValue('showSubscriber', 'checkbox'),
+      showGifter: getFieldValue('showGifter', 'checkbox'),
+      showFanClub: getFieldValue('showFanClub', 'checkbox'),
+      // Emoji and color settings
+      emojiRenderMode: getFieldValue('emojiRenderMode'),
+      usernameColorByTeamLevel: getFieldValue('usernameColorByTeamLevel', 'checkbox')
+    };
+    if (dock === 'full') {
+      values = {
+        ...values,
+        showChat: getFieldValue('showChat', 'checkbox'),
+        showFollows: getFieldValue('showFollows', 'checkbox'),
+        showShares: getFieldValue('showShares', 'checkbox'),
+        showLikes: getFieldValue('showLikes', 'checkbox'),
+        showGifts: getFieldValue('showGifts', 'checkbox'),
+        showSubs: getFieldValue('showSubs', 'checkbox'),
+        showTreasureChests: getFieldValue('showTreasureChests', 'checkbox'),
+        showJoins: getFieldValue('showJoins', 'checkbox'),
+        layoutMode: getFieldValue('layoutMode'),
+        feedDirection: getFieldValue('feedDirection'),
+        animationIn: getFieldValue('animationIn'),
+        animationOut: getFieldValue('animationOut'),
+        animationSpeed: getFieldValue('animationSpeed'),
+        showGiftImages: getFieldValue('showGiftImages', 'checkbox'),
+        giftImageSize: getFieldValue('giftImageSize'),
+        giftStreakMode: getFieldValue('giftStreakMode') || 'immediate',
+        likeAggregationWindowMs: parseInt(getFieldValue('likeAggregationWindowMs'), 10) || 5000,
+        likeAggregationMinCount: parseInt(getFieldValue('likeAggregationMinCount'), 10) || 1,
+        // Store opacity as a 0-1 value derived from the transparency slider (0-100)
+        opacity: parseFloat(getFieldValue('transparency')) / 100
+      };
     }
   }
+  return values;
 }
 
 // Save settings
@@ -1064,6 +1185,7 @@ async function saveSettings() {
 
       // Window settings
       transparency: parseFloat(getFieldValue('transparency')), // 0-100
+      opacity: parseFloat(getFieldValue('transparency')) / 100, // 0-1 scale
       keepOnTop: getFieldValue('keepOnTop', 'checkbox'),
       useVirtualScrolling: getFieldValue('useVirtualScrolling', 'checkbox'),
 
@@ -1102,7 +1224,9 @@ async function saveSettings() {
       giftImageSize: getFieldValue('giftImageSize'),
       giftStreakMode: getFieldValue('giftStreakMode') || 'immediate',
       likeAggregationWindowMs: parseInt(getFieldValue('likeAggregationWindowMs'), 10) || 5000,
-      likeAggregationMinCount: parseInt(getFieldValue('likeAggregationMinCount'), 10) || 1
+      likeAggregationMinCount: parseInt(getFieldValue('likeAggregationMinCount'), 10) || 1,
+      // Store opacity as a 0-1 value derived from the transparency slider (0-100)
+      opacity: parseFloat(getFieldValue('transparency')) / 100
     });
   }
 
@@ -1425,10 +1549,16 @@ document.addEventListener('click', function(event) {
   if (!wizardButton) return;
   applyPresetFromApi(wizardButton.dataset.wizardPreset);
 });
-
-document.getElementById('tab-contents').addEventListener('input', function() {
+// Listener for live preview updates
+document.getElementById('tab-contents').addEventListener('input', function(event) {
   if (!currentDock) return;
-  sendLivePreviewSettings(currentDock, currentSettings);
+  // Only react to form controls
+  const target = event.target;
+  if (!target || !target.matches('input, select, textarea, [type=range], [type=checkbox], [type=radio], .color-picker')) {
+    return;
+  }
+  const values = collectCurrentFormValues(currentDock);
+  sendLivePreviewSettings(currentDock, values);
 });
 
 // Initialize on page load

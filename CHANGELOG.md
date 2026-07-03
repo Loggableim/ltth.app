@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.3.8] - 2026-07-03
+
+### Fixed
+
+- **ClarityHUD XSS Security**: Added `escapeAttr()` helper function; all template literal values in input fields are now properly escaped to prevent XSS injection attacks.
+- **ClarityHUD UI**: `.source-badge` text color changed from `color-text-inverse` to `color-text-primary` for better contrast across themes.
+
+### Added
+
+- **ClarityHUD Form Collection**: New `collectCurrentFormValues()` function for centralized form state management across all dock types (chat, full, multi, stream).
+- **ClarityHUD CSS**: Added `.preview-message.style-badge` CSS class for badge-style message previews.
+
 ### Changed
 
-- Snapshot cleanup: root package metadata now targets the maintained backend app and Go launcher sources instead of missing Electron files.
-- Active documentation was refreshed for the local snapshot workflow and future agent work.
-- Stale Electron and obsolete plugin-specific CI workflows were removed from the active workflow set.
+- **Launcher Settings**: Default theme changed from `night` to `highcontrast` for improved accessibility out of the box.
 
 ## [1.3.7] - 2026-03-07
 ### Added
