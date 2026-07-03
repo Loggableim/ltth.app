@@ -1,1077 +1,985 @@
 <!DOCTYPE html>
-<html lang="de" data-lang="de">
+
+<html data-lang="de" lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Changelog für PupCid's Little TikTool Helper. Alle Updates, Verbesserungen und Bug-Fixes im Überblick.">
-    <title>Changelog - PupCid's Little TikTool Helper</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#12a116">
-    
-    <!-- Hreflang Tags for Language Alternates -->
-    <link rel="alternate" hreflang="de" href="https://ltth.app/changelog.html">
-    <link rel="alternate" hreflang="en" href="https://ltth.app/changelog.html?lang=en">
-    <link rel="alternate" hreflang="fr" href="https://ltth.app/changelog.html?lang=fr">
-    <link rel="alternate" hreflang="es" href="https://ltth.app/changelog.html?lang=es">
-    <link rel="alternate" hreflang="x-default" href="https://ltth.app/changelog.html">
-    <link rel="canonical" href="https://ltth.app/changelog.html">
-    
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/layout.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Changelog für PupCid's Little TikTool Helper. Alle Updates, Verbesserungen und Bug-Fixes im Überblick." name="description"/>
+<title>Changelog - PupCid's Little TikTool Helper</title>
+<link href="/assets/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/assets/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/assets/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/manifest.json" rel="manifest"/>
+<meta content="#12a116" name="theme-color"/>
+<!-- Hreflang Tags for Language Alternates -->
+<link href="https://ltth.app/changelog.html" hreflang="de" rel="alternate"/>
+<link href="https://ltth.app/changelog.html?lang=en" hreflang="en" rel="alternate"/>
+<link href="https://ltth.app/changelog.html?lang=fr" hreflang="fr" rel="alternate"/>
+<link href="https://ltth.app/changelog.html?lang=es" hreflang="es" rel="alternate"/>
+<link href="https://ltth.app/changelog.html" hreflang="x-default" rel="alternate"/>
+<link href="https://ltth.app/changelog.html" rel="canonical"/>
+<link href="/css/main.css" rel="stylesheet"/>
+<link href="/css/layout.css" rel="stylesheet"/>
 </head>
 <body>
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
-
-    <section class="hero" id="main-content">
-        <div class="container">
-            <h1 class="hero-title text-center"><span class="hero-highlight">Changelog</span></h1>
-            <p class="hero-description text-center" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+<a class="skip-to-content" data-i18n="changelog.a.1" href="#main-content">Skip to main content</a>
+<section class="hero" id="main-content">
+<div class="container">
+<h1 class="hero-title text-center" data-i18n="changelog.hero.title"><span class="hero-highlight" data-i18n="changelog.span.3">Changelog</span></h1>
+<p class="hero-description text-center" data-i18n="changelog.hero.description" style="max-width: 700px; margin-left: auto; margin-right: auto;">
                 Alle Updates, Verbesserungen und Bug-Fixes im Überblick
             </p>
-            <div style="text-align: center; margin-top: var(--space-6);">
-                <a href="https://github.com/Loggableim/ltth.app/blob/main/app/CHANGELOG.md" target="_blank" rel="noopener" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: var(--space-2);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-                    </svg>
+<div style="text-align: center; margin-top: var(--space-6);">
+<a class="btn btn-secondary" data-i18n="changelog.a.5" href="https://github.com/Loggableim/ltth.app/blob/main/app/CHANGELOG.md" rel="noopener" style="display: inline-flex; align-items: center; gap: var(--space-2);" target="_blank">
+<svg fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;" viewbox="0 0 24 24">
+<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
                     Vollständiger Changelog auf GitHub
                 </a>
-            </div>
-        </div>
-    </section>
-
-    <section>
-        <div class="container" style="max-width: 900px;">
-            <!-- Version 1.3.8 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.8</h2>
-                    <span style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 02. Juli 2026</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎤 STT-Ticker — Deepgram ASR-Integration</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Deepgram Nova-2 Provider</strong> — ~95% Genauigkeit DE+EN, ~5x günstiger als Fish.audio ($0.26/h vs $1.50/h)</li>
-                    <li><strong>Multi-Language Mode</strong> — Deepgram filtert aus 7 Sprachen (DE/EN/ES/FR/IT/PT/RU), keine Halluzinationen in CJK/Thai/Arabic</li>
-                    <li><strong>Confidence-Threshold 0.3</strong> — Low-Quality-Resultate werden verworfen</li>
-                    <li><strong>Auto/Deepgram/Fish.audio Provider-Switch</strong> in der Admin-UI</li>
-                    <li><strong>Persistent Key-Storage</strong> — Deepgram-Key in Plugin-Config gespeichert, nie in Git</li>
-                    <li><strong>3-stufige Key-Resolution</strong> (Config → lokale Datei → ENV-Variable)</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🛡️ Halluzinations-Filter</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Server-Side Whitelist</strong> — Standard ['de', 'en'] filtert alle anderen Sprachen raus</li>
-                    <li><strong>Unicode-Scrubber</strong> — 18+ exotische Unicode-Ranges (CJK, Thai, Arabic, Cyrillic etc.) werden aus dem Text gefiltert</li>
-                    <li><strong>40%-Threshold</strong> — Bei mehr als 40% exotischen Zeichen wird der ganze Text verworfen</li>
-                    <li><strong>Logging</strong> — Jeder discard/scrub wird im Sidekick-Log mit Sample sichtbar</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">📺 3-Zeilen Ticker</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Newest unten</strong> — Drei fixe Zeilen, FIFO Ring-Buffer, kein DOM-Recycling</li>
-                    <li><strong>Server-seitige Segment-IDs</strong> — Client diff'd anhand der ID statt Text-Inhalt</li>
-                    <li><strong>Auto-Scroll</strong> im fliessend-Modus, Perspective-Crawl im starwars-Modus</li>
-                    <li><strong>Cache-Busting Meta-Tags</strong> für OBS Browser Source</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🌐 Übersetzung (Ollama Cloud)</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Persistent Ollama-Key</strong> mit `__KEEP__`-Pattern (UI-Save behält bestehenden Key)</li>
-                    <li><strong>Auto-Detect</strong> der Quellsprache aus der Heuristik</li>
-                    <li><strong>Skip-Optimization</strong> — Kein Call wenn Original bereits Zielsprache</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎛️ VAD & Admin-UI</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Client-seitige VAD</strong> (capture.html) — spart Tokens durch Stille-Skip</li>
-                    <li><strong>Provider-Status-Badges</strong> im Admin-Panel: "✅ Deepgram aktiv" / "⚠️ Fish.audio (teuer)"</li>
-                    <li><strong>Deepgram-Key-Test-Button</strong> — testet sofort ob Key gültig</li>
-                    <li><strong>Dual-Language-Overlay</strong> (EN oben / DE unten)</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>__KEEP__-Bug</strong> — Server-Route `/asr/settings` filtert jetzt `__KEEP__` korrekt vor `_deepMerge`, sonst wurde leerer Key als String `"__KEEP__"` in der Config gespeichert</li>
-                    <li><strong>Status-Endpoint</strong> zeigt aktiven Provider + `deepgramConfigured`</li>
-                    <li><strong>Container-Visibility</strong> — `opacity: 0` Default wurde durch `add('visible')` Bug behoben</li>
-                    <li><strong>fadeIn-Animation-Flash</strong> — Animation-Override auf `.ticker-line` in Crawl-Modi entfernt</li>
-                </ul>
-            </div>
-
+</div>
+</div>
+</section>
+<section>
+<div class="container" style="max-width: 900px;">
+<!-- Version 1.3.8 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 2px solid var(--color-primary);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.6" style="color: var(--color-primary); margin: 0;">Version 1.3.8</h2>
+<span data-i18n="changelog.span.7" style="background: var(--color-primary); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600;">Latest</span>
+</div>
+<p data-i18n="changelog.p.8" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 02. Juli 2026</p>
+<h3 data-i18n="changelog.h3.9" style="color: var(--color-success); margin-bottom: var(--space-3);">🎤 STT-Ticker — Deepgram ASR-Integration</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Deepgram Nova-2 Provider</strong> — ~95% Genauigkeit DE+EN, ~5x günstiger als Fish.audio ($0.26/h vs $1.50/h)</li>
+<li><strong>Multi-Language Mode</strong> — Deepgram filtert aus 7 Sprachen (DE/EN/ES/FR/IT/PT/RU), keine Halluzinationen in CJK/Thai/Arabic</li>
+<li><strong>Confidence-Threshold 0.3</strong> — Low-Quality-Resultate werden verworfen</li>
+<li><strong>Auto/Deepgram/Fish.audio Provider-Switch</strong> in der Admin-UI</li>
+<li><strong>Persistent Key-Storage</strong> — Deepgram-Key in Plugin-Config gespeichert, nie in Git</li>
+<li><strong>3-stufige Key-Resolution</strong> (Config → lokale Datei → ENV-Variable)</li>
+</ul>
+<h3 data-i18n="changelog.h3.10" style="color: var(--color-success); margin-bottom: var(--space-3);">🛡️ Halluzinations-Filter</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Server-Side Whitelist</strong> — Standard ['de', 'en'] filtert alle anderen Sprachen raus</li>
+<li><strong>Unicode-Scrubber</strong> — 18+ exotische Unicode-Ranges (CJK, Thai, Arabic, Cyrillic etc.) werden aus dem Text gefiltert</li>
+<li><strong>40%-Threshold</strong> — Bei mehr als 40% exotischen Zeichen wird der ganze Text verworfen</li>
+<li><strong>Logging</strong> — Jeder discard/scrub wird im Sidekick-Log mit Sample sichtbar</li>
+</ul>
+<h3 data-i18n="changelog.h3.11" style="color: var(--color-success); margin-bottom: var(--space-3);">📺 3-Zeilen Ticker</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Newest unten</strong> — Drei fixe Zeilen, FIFO Ring-Buffer, kein DOM-Recycling</li>
+<li><strong>Server-seitige Segment-IDs</strong> — Client diff'd anhand der ID statt Text-Inhalt</li>
+<li><strong>Auto-Scroll</strong> im fliessend-Modus, Perspective-Crawl im starwars-Modus</li>
+<li><strong>Cache-Busting Meta-Tags</strong> für OBS Browser Source</li>
+</ul>
+<h3 data-i18n="changelog.h3.12" style="color: var(--color-success); margin-bottom: var(--space-3);">🌐 Übersetzung (Ollama Cloud)</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Persistent Ollama-Key</strong> mit `__KEEP__`-Pattern (UI-Save behält bestehenden Key)</li>
+<li><strong>Auto-Detect</strong> der Quellsprache aus der Heuristik</li>
+<li><strong>Skip-Optimization</strong> — Kein Call wenn Original bereits Zielsprache</li>
+</ul>
+<h3 data-i18n="changelog.h3.13" style="color: var(--color-success); margin-bottom: var(--space-3);">🎛️ VAD &amp; Admin-UI</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Client-seitige VAD</strong> (capture.html) — spart Tokens durch Stille-Skip</li>
+<li><strong>Provider-Status-Badges</strong> im Admin-Panel: "✅ Deepgram aktiv" / "⚠️ Fish.audio (teuer)"</li>
+<li><strong>Deepgram-Key-Test-Button</strong> — testet sofort ob Key gültig</li>
+<li><strong>Dual-Language-Overlay</strong> (EN oben / DE unten)</li>
+</ul>
+<h3 data-i18n="changelog.h3.14" style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>__KEEP__-Bug</strong> — Server-Route `/asr/settings` filtert jetzt `__KEEP__` korrekt vor `_deepMerge`, sonst wurde leerer Key als String `"__KEEP__"` in der Config gespeichert</li>
+<li><strong>Status-Endpoint</strong> zeigt aktiven Provider + `deepgramConfigured`</li>
+<li><strong>Container-Visibility</strong> — `opacity: 0` Default wurde durch `add('visible')` Bug behoben</li>
+<li><strong>fadeIn-Animation-Flash</strong> — Animation-Override auf `.ticker-line` in Crawl-Modi entfernt</li>
+</ul>
+</div>
 <!-- Version 1.3.3 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.3</h2>
-                </div>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Großes Feature-Release: Music Bot, Weather Engine (13 Effekte), PiShock-Support, Fireworks-Updates, kritische Bugfixes und Repository-Cleanup.</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎵 Music Bot Plugin (v1.2.0)</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>YouTube-Suche via yt-dlp</strong> – Gebündelt via npm (kein Python), Auto-Install, Player UI</li>
-                    <li><strong>3 OBS-Overlay-Designs</strong>, Smart Query Normalization, Superfan-only Song Requests</li>
-                    <li><strong>Queue-Persistenz</strong>, Chat-Commands (!skip, !queue, !nowplaying, !remove)</li>
-                    <li><strong>Spotify/SoundCloud oEmbed</strong>, Vote-Skip-Bar, Idle State</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🌦️ Weather Engine (7 → 13 Effekte)</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>6 neue Effekte</strong> – Aurora, Fireflies, Meteors, Sakura, Embers, Heatwave</li>
-                    <li>Rain Puddle Ripples, Snow Accumulation, Perlin Wind, Storm Screen Shake, Thunder Lens Flare</li>
-                    <li>9 Performance-Fixes, adaptive FPS, Weather Control UI für alle Effekte</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎰 Slot Machine (Game Engine)</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>3-Walzen-Engine, 12 Standard-Symbole, Per-Symbol Gewichtungen, 6 Ergebnis-Kategorien</li>
-                    <li>Odds-Profile pro Trigger (Chat/Gift), Chat-Command !spin mit Cooldowns</li>
-                    <li>Reward Dispatcher (Audio, Overlay, OpenShock, XP, Chat, Free Spin)</li>
-                    <li>Multi-Machine, Token-System, Superfan-Erkennung, 7 Sounds, 6 Design-Presets</li>
-                    <li>Symbol Image Upload (PNG/JPEG/GIF/WebP/SVG), Jackpot-Konfetti-Overlay</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Weitere neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>PiShock Provider</strong> – PiShock als auswählbarer OpenShock-Provider</li>
-                    <li><strong>Fireworks</strong> – Random Timer, Rainbow Mode, Config Reset API, Path Traversal Fix</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>TikTok Connector</strong> – 3 Gift-Recognition-Fixes (Eulerstream-Schema, Dedup-Scoping, Null-Packet)</li>
-                    <li><strong>Viewer Profiles</strong> – 8 Bugs in Validatoren, Session Tracking, WebSocket, UI</li>
-                    <li><strong>Viewer XP</strong> – Watch-Time XP stoppt bei Offline-Stream</li>
-                    <li><strong>Goals HUD</strong> – Gespeicherte Styles bleiben nach Browser-Refresh erhalten</li>
-                    <li><strong>Gift Milestone</strong> – File Deletion, Celebration Queue, Race Condition</li>
-                    <li><strong>Soundboard &amp; Game Engine</strong> – repeatCount bei Gift Streaks (Cap @50)</li>
-                    <li><strong>Slot Overlay</strong> – Dynamic Reel Symbol Height + RAF Race Condition</li>
-                    <li><strong>Unified Game Engine Overlay</strong> – 5 kritische Bugs behoben</li>
-                    <li><strong>Weather / Talking Heads / Wheel Queue</strong> – Diverse Crash-Fixes</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🔧 Build &amp; Repository</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>yt-dlp via youtube-dl-exec gebündelt (kein Python), YOUTUBE_DL_SKIP_PYTHON_CHECK=1</li>
-                    <li>npm audit Fixes (eslint ^9, uuid Override), i18n Skip für disabled Plugins</li>
-                    <li>Repository Cleanup: Dokumentations-Organisation, *_SUMMARY.md nach docs_archive/</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.3.2 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.2</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 07. Februar 2026</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Wartungsrelease: Alle Versionsnummern über alle Package-Dateien synchronisiert.</p>
-            </div>
-
-            <!-- Version 1.3.0 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.3.0</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 03. Februar 2026</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Major Feature Release: AnimazingPal Brain Engine – KI-gestütztes Gedächtnis- und Persönlichkeitssystem für VTuber-Avatare.</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>AnimazingPal Brain Engine</strong> – KI-gestütztes Gedächtnis- und Persönlichkeitssystem für VTuber-Avatare
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.15" style="color: var(--color-primary); margin: 0;">Version 1.3.3</h2>
+</div>
+<h3 data-i18n="changelog.h3.16" style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.17" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Großes Feature-Release: Music Bot, Weather Engine (13 Effekte), PiShock-Support, Fireworks-Updates, kritische Bugfixes und Repository-Cleanup.</p>
+<h3 data-i18n="changelog.h3.18" style="color: var(--color-success); margin-bottom: var(--space-3);">🎵 Music Bot Plugin (v1.2.0)</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>YouTube-Suche via yt-dlp</strong> – Gebündelt via npm (kein Python), Auto-Install, Player UI</li>
+<li><strong>3 OBS-Overlay-Designs</strong>, Smart Query Normalization, Superfan-only Song Requests</li>
+<li><strong>Queue-Persistenz</strong>, Chat-Commands (!skip, !queue, !nowplaying, !remove)</li>
+<li><strong>Spotify/SoundCloud oEmbed</strong>, Vote-Skip-Bar, Idle State</li>
+</ul>
+<h3 data-i18n="changelog.h3.19" style="color: var(--color-success); margin-bottom: var(--space-3);">🌦️ Weather Engine (7 → 13 Effekte)</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>6 neue Effekte</strong> – Aurora, Fireflies, Meteors, Sakura, Embers, Heatwave</li>
+<li>Rain Puddle Ripples, Snow Accumulation, Perlin Wind, Storm Screen Shake, Thunder Lens Flare</li>
+<li>9 Performance-Fixes, adaptive FPS, Weather Control UI für alle Effekte</li>
+</ul>
+<h3 data-i18n="changelog.h3.20" style="color: var(--color-success); margin-bottom: var(--space-3);">🎰 Slot Machine (Game Engine)</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>3-Walzen-Engine, 12 Standard-Symbole, Per-Symbol Gewichtungen, 6 Ergebnis-Kategorien</li>
+<li>Odds-Profile pro Trigger (Chat/Gift), Chat-Command !spin mit Cooldowns</li>
+<li>Reward Dispatcher (Audio, Overlay, OpenShock, XP, Chat, Free Spin)</li>
+<li>Multi-Machine, Token-System, Superfan-Erkennung, 7 Sounds, 6 Design-Presets</li>
+<li>Symbol Image Upload (PNG/JPEG/GIF/WebP/SVG), Jackpot-Konfetti-Overlay</li>
+</ul>
+<h3 data-i18n="changelog.h3.21" style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Weitere neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>PiShock Provider</strong> – PiShock als auswählbarer OpenShock-Provider</li>
+<li><strong>Fireworks</strong> – Random Timer, Rainbow Mode, Config Reset API, Path Traversal Fix</li>
+</ul>
+<h3 data-i18n="changelog.h3.22" style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>TikTok Connector</strong> – 3 Gift-Recognition-Fixes (Eulerstream-Schema, Dedup-Scoping, Null-Packet)</li>
+<li><strong>Viewer Profiles</strong> – 8 Bugs in Validatoren, Session Tracking, WebSocket, UI</li>
+<li><strong>Viewer XP</strong> – Watch-Time XP stoppt bei Offline-Stream</li>
+<li><strong>Goals HUD</strong> – Gespeicherte Styles bleiben nach Browser-Refresh erhalten</li>
+<li><strong>Gift Milestone</strong> – File Deletion, Celebration Queue, Race Condition</li>
+<li><strong>Soundboard &amp; Game Engine</strong> – repeatCount bei Gift Streaks (Cap @50)</li>
+<li><strong>Slot Overlay</strong> – Dynamic Reel Symbol Height + RAF Race Condition</li>
+<li><strong>Unified Game Engine Overlay</strong> – 5 kritische Bugs behoben</li>
+<li><strong>Weather / Talking Heads / Wheel Queue</strong> – Diverse Crash-Fixes</li>
+</ul>
+<h3 data-i18n="changelog.h3.23" style="color: var(--color-info); margin-bottom: var(--space-3);">🔧 Build &amp; Repository</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>yt-dlp via youtube-dl-exec gebündelt (kein Python), YOUTUBE_DL_SKIP_PYTHON_CHECK=1</li>
+<li>npm audit Fixes (eslint ^9, uuid Override), i18n Skip für disabled Plugins</li>
+<li>Repository Cleanup: Dokumentations-Organisation, *_SUMMARY.md nach docs_archive/</li>
+</ul>
+</div>
+<!-- Version 1.3.2 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.24" style="color: var(--color-primary); margin: 0;">Version 1.3.2</h2>
+</div>
+<p data-i18n="changelog.p.25" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 07. Februar 2026</p>
+<h3 data-i18n="changelog.h3.26" style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.27" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Wartungsrelease: Alle Versionsnummern über alle Package-Dateien synchronisiert.</p>
+</div>
+<!-- Version 1.3.0 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.28" style="color: var(--color-primary); margin: 0;">Version 1.3.0</h2>
+</div>
+<p data-i18n="changelog.p.29" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 03. Februar 2026</p>
+<h3 data-i18n="changelog.h3.30" style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.31" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Major Feature Release: AnimazingPal Brain Engine – KI-gestütztes Gedächtnis- und Persönlichkeitssystem für VTuber-Avatare.</p>
+<h3 data-i18n="changelog.h3.32" style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>AnimazingPal Brain Engine</strong> – KI-gestütztes Gedächtnis- und Persönlichkeitssystem für VTuber-Avatare
                         <ul>
-                            <li>Persistentes Langzeitgedächtnis mit semantischer Vektorsuche</li>
-                            <li>User-Profil-Tracking mit Beziehungsverlauf</li>
-                            <li>5 vordefinierte Streamer-Persönlichkeiten + Custom Personality Creator</li>
-                            <li>GPT-gestützte kontextuelle Antworten (GPT-4o-mini, GPT-5 Nano)</li>
-                            <li>Memory Decay und Archival System (7 Tage Archiv, 90 Tage Decay, 30 Tage Pruning)</li>
-                            <li>Auto-Response-Konfiguration für Chat, Gifts, Follows, Shares</li>
-                            <li>Rate Limiting und Response-Wahrscheinlichkeitssteuerung</li>
-                            <li>15+ API-Endpunkte für Brain-Management</li>
-                        </ul>
-                    </li>
-                    <li><strong>AnimazingPal Batch Processing (Outbox System)</strong> – Natürlicher Sprachfluss für kombinierte Events
+<li>Persistentes Langzeitgedächtnis mit semantischer Vektorsuche</li>
+<li>User-Profil-Tracking mit Beziehungsverlauf</li>
+<li>5 vordefinierte Streamer-Persönlichkeiten + Custom Personality Creator</li>
+<li>GPT-gestützte kontextuelle Antworten (GPT-4o-mini, GPT-5 Nano)</li>
+<li>Memory Decay und Archival System (7 Tage Archiv, 90 Tage Decay, 30 Tage Pruning)</li>
+<li>Auto-Response-Konfiguration für Chat, Gifts, Follows, Shares</li>
+<li>Rate Limiting und Response-Wahrscheinlichkeitssteuerung</li>
+<li>15+ API-Endpunkte für Brain-Management</li>
+</ul>
+</li>
+<li><strong>AnimazingPal Batch Processing (Outbox System)</strong> – Natürlicher Sprachfluss für kombinierte Events
                         <ul>
-                            <li>8-Sekunden-Batch-Fenster (konfigurierbar)</li>
-                            <li>Max 8 Items pro Batch, max 320 Zeichen</li>
-                            <li>Automatische Pause während Speech/Mikrofon-Aktivität</li>
-                            <li>TTL-basierte Event-Deduplizierung (600s)</li>
-                        </ul>
-                    </li>
-                    <li><strong>AnimazingPal Relevance Detection</strong> – Intelligente Chat-Nachrichtenfilterung
+<li>8-Sekunden-Batch-Fenster (konfigurierbar)</li>
+<li>Max 8 Items pro Batch, max 320 Zeichen</li>
+<li>Automatische Pause während Speech/Mikrofon-Aktivität</li>
+<li>TTL-basierte Event-Deduplizierung (600s)</li>
+</ul>
+</li>
+<li><strong>AnimazingPal Relevance Detection</strong> – Intelligente Chat-Nachrichtenfilterung
                         <ul>
-                            <li>Frageerkennung mit Keyword-Matching</li>
-                            <li>Begrüßungs-/Danke-Erkennung mit Cooldowns</li>
-                            <li>Spam-Filterung (Commands, URLs, Emoji-only, wiederholte Zeichen)</li>
-                            <li>Score-basierte Relevanz (0-1) mit konfigurierbarem Threshold (0.6)</li>
-                        </ul>
-                    </li>
-                    <li><strong>AnimazingPal Response Engine</strong> – GPT-gestützte Antwortgenerierung
+<li>Frageerkennung mit Keyword-Matching</li>
+<li>Begrüßungs-/Danke-Erkennung mit Cooldowns</li>
+<li>Spam-Filterung (Commands, URLs, Emoji-only, wiederholte Zeichen)</li>
+<li>Score-basierte Relevanz (0-1) mit konfigurierbarem Threshold (0.6)</li>
+</ul>
+</li>
+<li><strong>AnimazingPal Response Engine</strong> – GPT-gestützte Antwortgenerierung
                         <ul>
-                            <li>Kontextuelle Antworten mit User-History und Erinnerungen</li>
-                            <li>Schnelle Acknowledgments für Grüße/Danke/Gifts</li>
-                            <li>5-Minuten Response-Caching zur API-Call-Reduktion</li>
-                            <li>Max 18 Wörter pro Antwort für natürliches TTS-Pacing</li>
-                        </ul>
-                    </li>
-                    <li><strong>AnimazingPal Enhanced API</strong> – 15 neue Endpunkte
+<li>Kontextuelle Antworten mit User-History und Erinnerungen</li>
+<li>Schnelle Acknowledgments für Grüße/Danke/Gifts</li>
+<li>5-Minuten Response-Caching zur API-Call-Reduktion</li>
+<li>Max 18 Wörter pro Antwort für natürliches TTS-Pacing</li>
+</ul>
+</li>
+<li><strong>AnimazingPal Enhanced API</strong> – 15 neue Endpunkte
                         <ul>
-                            <li>Activity Status, Batch Flushing, Relevance Testing</li>
-                            <li>Memory Decay Triggers, Extended Statistics</li>
-                            <li>Brain Status, Config, Personality Management</li>
-                            <li>Memory Search, User Profiles, Chat Responses</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Gift Duplicate Detection</strong> – TikTok sendet Gift-Events doppelt; jetzt wird der Original-createTime-Timestamp verwendet</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🏗️ Architektur</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>Modulares Event-Driven System mit separaten Engines für Batching, Relevance und Responses</li>
-                    <li>Dokumentation auf 443 Zeilen erweitert</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.2.3 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.3</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 06. Januar 2026</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Maintenance Release: Goals Plugin Coins Double-Counting behoben.</p>
-
-                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Goals Plugin: Coins Double-Counting behoben</strong> – TikTok Event-Listener wurden beim Plugin-Reload nicht korrekt entfernt; jetzt ordnungsgemäße Cleanup in PluginAPI.unregisterAll()</li>
-                    <li>Betrifft alle Plugins mit TikTok Event Handlern (Goals, CoinBattle, Viewer-Leaderboard etc.)</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>Version-Konsistenz über alle Package-Dateien synchronisiert</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.2.2 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.2</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 15. Dezember 2025</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Performance &amp; Stability Release: Electron Performance Diagnostics, Launch Mode Selection und zahlreiche Fixes.</p>
-
-                <h3 style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li><strong>Electron Performance Diagnostics Guide &amp; Tool</strong> – GPU-Diagnose, Build-Config-Validierung, Thread-Blocking-Analyse, IO/DB-Diagnostik, 13-Schritte-Checkliste</li>
-                    <li><strong>Performance Diagnostics Tool</strong> – DOM-Node-Monitoring, Memory-Tracking, CSS Property Scan, Long Task Observer (&gt;50ms), Scroll FPS Tracking</li>
-                    <li><strong>Diagnostics Panel in Settings</strong> – GPU-Erkennung, Error-Logs, startet vor allen anderen Plugins</li>
-                    <li><strong>Launch Mode Selection auf Splash Screen</strong> – Wahl zwischen Electron App oder Browser-Modus beim Start</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>SQLite: WAL mode, 64MB Cache, Memory Temp Storage, 256MB mmap</li>
-                    <li>Electron Flags: QUIC Protokoll, sRGB Farbprofil, CalculateNativeWinOcclusion deaktiviert</li>
-                    <li>IPC Batch Operations: settings:getMultiple und settings:setMultiple</li>
-                    <li>Virtual Scroller: requestAnimationFrame Throttling, GPU Layer Promotion, Passive Event Listeners</li>
-                    <li>CSS Performance: will-change, contain, overscroll-behavior</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
-                    <li>Quick Actions Menu aktualisiert sich jetzt ohne Page Refresh nach Plugin-Aktivierung</li>
-                    <li>Goals Modal in Electron klickbar (CSS Stacking + Focus in iframe behoben)</li>
-                    <li>TTS Admin Panel in Electron klickbar (user-select, cursor fixes)</li>
-                    <li>Plugin Disabled Detection verbessert</li>
-                    <li>Chatango Integration funktioniert in gepackter Electron App</li>
-                    <li>Language Selector Flags werden korrekt angezeigt</li>
-                    <li><strong>TikTok TTS Engine 500 Errors</strong> – Komplett-Rewrite mit hybridem Endpoint-Ansatz</li>
-                    <li><strong>TikTok Connection 504 Timeout</strong> – fetchRoomInfoOnConnect Optimierung</li>
-                    <li><strong>TikTok Connection Invalid Option</strong> – enableWebsocketUpgrade entfernt</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.2.1 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 15. Dezember 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>Activity Status, Batch Flushing, Relevance Testing</li>
+<li>Memory Decay Triggers, Extended Statistics</li>
+<li>Brain Status, Config, Personality Management</li>
+<li>Memory Search, User Profiles, Chat Responses</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.33" style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Gift Duplicate Detection</strong> – TikTok sendet Gift-Events doppelt; jetzt wird der Original-createTime-Timestamp verwendet</li>
+</ul>
+<h3 data-i18n="changelog.h3.34" style="color: var(--color-info); margin-bottom: var(--space-3);">🏗️ Architektur</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>Modulares Event-Driven System mit separaten Engines für Batching, Relevance und Responses</li>
+<li>Dokumentation auf 443 Zeilen erweitert</li>
+</ul>
+</div>
+<!-- Version 1.2.3 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.35" style="color: var(--color-primary); margin: 0;">Version 1.2.3</h2>
+</div>
+<p data-i18n="changelog.p.36" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 06. Januar 2026</p>
+<h3 data-i18n="changelog.h3.37" style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.38" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Maintenance Release: Goals Plugin Coins Double-Counting behoben.</p>
+<h3 data-i18n="changelog.h3.39" style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Goals Plugin: Coins Double-Counting behoben</strong> – TikTok Event-Listener wurden beim Plugin-Reload nicht korrekt entfernt; jetzt ordnungsgemäße Cleanup in PluginAPI.unregisterAll()</li>
+<li>Betrifft alle Plugins mit TikTok Event Handlern (Goals, CoinBattle, Viewer-Leaderboard etc.)</li>
+</ul>
+<h3 data-i18n="changelog.h3.40" style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>Version-Konsistenz über alle Package-Dateien synchronisiert</li>
+</ul>
+</div>
+<!-- Version 1.2.2 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.41" style="color: var(--color-primary); margin: 0;">Version 1.2.2</h2>
+</div>
+<p data-i18n="changelog.p.42" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 15. Dezember 2025</p>
+<h3 data-i18n="changelog.h3.43" style="color: var(--color-success); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.44" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Performance &amp; Stability Release: Electron Performance Diagnostics, Launch Mode Selection und zahlreiche Fixes.</p>
+<h3 data-i18n="changelog.h3.45" style="color: var(--color-success); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li><strong>Electron Performance Diagnostics Guide &amp; Tool</strong> – GPU-Diagnose, Build-Config-Validierung, Thread-Blocking-Analyse, IO/DB-Diagnostik, 13-Schritte-Checkliste</li>
+<li><strong>Performance Diagnostics Tool</strong> – DOM-Node-Monitoring, Memory-Tracking, CSS Property Scan, Long Task Observer (&gt;50ms), Scroll FPS Tracking</li>
+<li><strong>Diagnostics Panel in Settings</strong> – GPU-Erkennung, Error-Logs, startet vor allen anderen Plugins</li>
+<li><strong>Launch Mode Selection auf Splash Screen</strong> – Wahl zwischen Electron App oder Browser-Modus beim Start</li>
+</ul>
+<h3 data-i18n="changelog.h3.46" style="color: var(--color-info); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>SQLite: WAL mode, 64MB Cache, Memory Temp Storage, 256MB mmap</li>
+<li>Electron Flags: QUIC Protokoll, sRGB Farbprofil, CalculateNativeWinOcclusion deaktiviert</li>
+<li>IPC Batch Operations: settings:getMultiple und settings:setMultiple</li>
+<li>Virtual Scroller: requestAnimationFrame Throttling, GPU Layer Promotion, Passive Event Listeners</li>
+<li>CSS Performance: will-change, contain, overscroll-behavior</li>
+</ul>
+<h3 data-i18n="changelog.h3.47" style="color: var(--color-warning); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4); padding-left: var(--space-6);">
+<li>Quick Actions Menu aktualisiert sich jetzt ohne Page Refresh nach Plugin-Aktivierung</li>
+<li>Goals Modal in Electron klickbar (CSS Stacking + Focus in iframe behoben)</li>
+<li>TTS Admin Panel in Electron klickbar (user-select, cursor fixes)</li>
+<li>Plugin Disabled Detection verbessert</li>
+<li>Chatango Integration funktioniert in gepackter Electron App</li>
+<li>Language Selector Flags werden korrekt angezeigt</li>
+<li><strong>TikTok TTS Engine 500 Errors</strong> – Komplett-Rewrite mit hybridem Endpoint-Ansatz</li>
+<li><strong>TikTok Connection 504 Timeout</strong> – fetchRoomInfoOnConnect Optimierung</li>
+<li><strong>TikTok Connection Invalid Option</strong> – enableWebsocketUpgrade entfernt</li>
+</ul>
+</div>
+<!-- Version 1.2.1 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.48" style="color: var(--color-primary); margin: 0;">Version 1.2.1</h2>
+</div>
+<p data-i18n="changelog.p.49" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 15. Dezember 2025</p>
+<h3 data-i18n="changelog.h3.50" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.51" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
                     Dieses Release bringt mehrsprachige Plugin-Beschreibungen für alle 30 Plugins, verbesserte API-Key-Persistenz-Anzeigen und wichtige Bugfixes für den Advanced Timer Plugin.
                 </p>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Mehrsprachige Plugin-Beschreibungen (Phase 4)</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Mehrsprachige Beschreibungen zu allen 30 plugin.json Dateien hinzugefügt</li>
-                            <li>Unterstützung für 4 Sprachen: Englisch (en), Deutsch (de), Spanisch (es), Französisch (fr)</li>
-                            <li>Neues `descriptions` Objekt in plugin.json mit sprachspezifischen Beschreibungen</li>
-                            <li>Rückwärtskompatibilität mit existierendem `description` Feld erhalten</li>
-                            <li>API-Unterstützung für lokalisierte Beschreibungen via `locale` Query-Parameter</li>
-                            <li>Plugin-Loader aktualisiert mit `getLocalizedDescription()` Helper-Funktion</li>
-                            <li>Aktualisierte `/api/plugins` und `/api/plugins/:id` Routes für Locale-Auswahl</li>
-                        </ul>
-                    </li>
-                    <li><strong>Visuelle Indikatoren für API-Key-Speicherung</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Visuelle Indikatoren zeigen an, dass API-Keys persistent über Updates gespeichert werden</li>
-                            <li>Verbessertes Benutzer-Feedback für API-Key-Konfiguration</li>
-                            <li>Bessere Dokumentation der API-Key-Speicherorte</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Repository-Aufräumung</strong> - 107 Implementierungs-Zusammenfassungen und Dokumentationsdateien in `docs_archive/` verschoben</li>
-                    <li><strong>Plugin-Loader Erweiterung</strong> - `getAllPlugins()` akzeptiert jetzt optionalen `locale` Parameter</li>
-                    <li><strong>Plugin-API-Antworten</strong> - Enthalten jetzt sowohl `description` (lokalisiert) als auch `descriptions` (alle Sprachen)</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Versionsnummer-Korrektur</strong> - Fehlerhafte Version 2.2.1 auf 1.2.1 korrigiert</li>
-                    <li><strong>Advanced Timer Plugin</strong> - Overlay-Routen und Speicher-Migration repariert</li>
-                    <li><strong>Timer-Overlay</strong> - Timer-Overlay lädt jetzt korrekt in Browser-Quellen</li>
-                    <li><strong>Timer-State-Management</strong> - Verbesserte Timer-Zustandsverwaltung und Wiederherstellung</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.2.0 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 8. Dezember 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<h3 data-i18n="changelog.h3.52" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Mehrsprachige Plugin-Beschreibungen (Phase 4)</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Mehrsprachige Beschreibungen zu allen 30 plugin.json Dateien hinzugefügt</li>
+<li>Unterstützung für 4 Sprachen: Englisch (en), Deutsch (de), Spanisch (es), Französisch (fr)</li>
+<li>Neues `descriptions` Objekt in plugin.json mit sprachspezifischen Beschreibungen</li>
+<li>Rückwärtskompatibilität mit existierendem `description` Feld erhalten</li>
+<li>API-Unterstützung für lokalisierte Beschreibungen via `locale` Query-Parameter</li>
+<li>Plugin-Loader aktualisiert mit `getLocalizedDescription()` Helper-Funktion</li>
+<li>Aktualisierte `/api/plugins` und `/api/plugins/:id` Routes für Locale-Auswahl</li>
+</ul>
+</li>
+<li><strong>Visuelle Indikatoren für API-Key-Speicherung</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Visuelle Indikatoren zeigen an, dass API-Keys persistent über Updates gespeichert werden</li>
+<li>Verbessertes Benutzer-Feedback für API-Key-Konfiguration</li>
+<li>Bessere Dokumentation der API-Key-Speicherorte</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.53" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Repository-Aufräumung</strong> - 107 Implementierungs-Zusammenfassungen und Dokumentationsdateien in `docs_archive/` verschoben</li>
+<li><strong>Plugin-Loader Erweiterung</strong> - `getAllPlugins()` akzeptiert jetzt optionalen `locale` Parameter</li>
+<li><strong>Plugin-API-Antworten</strong> - Enthalten jetzt sowohl `description` (lokalisiert) als auch `descriptions` (alle Sprachen)</li>
+</ul>
+<h3 data-i18n="changelog.h3.54" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Versionsnummer-Korrektur</strong> - Fehlerhafte Version 2.2.1 auf 1.2.1 korrigiert</li>
+<li><strong>Advanced Timer Plugin</strong> - Overlay-Routen und Speicher-Migration repariert</li>
+<li><strong>Timer-Overlay</strong> - Timer-Overlay lädt jetzt korrekt in Browser-Quellen</li>
+<li><strong>Timer-State-Management</strong> - Verbesserte Timer-Zustandsverwaltung und Wiederherstellung</li>
+</ul>
+</div>
+<!-- Version 1.2.0 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.55" style="color: var(--color-primary); margin: 0;">Version 1.2.0</h2>
+</div>
+<p data-i18n="changelog.p.56" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 8. Dezember 2025</p>
+<h3 data-i18n="changelog.h3.57" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.58" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
                     Dieses Major-Release bringt ein vollständiges Plugin-System mit Hot-Reloading, plattformübergreifenden Launcher-Verbesserungen, einen neuen Multi-Cam Switcher und umfassende Performance-Optimierungen für Datenbank und Module.
                 </p>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Plugin-System mit Hot-Reloading</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Plugins hochladen, aktivieren, deaktivieren und löschen ohne Server-Neustart</li>
-                            <li>Plugin-State-Persistierung in plugins_state.json</li>
-                            <li>Beispiel-Plugin "Topboard" für Top Gifters und Streaks</li>
-                            <li>UI-Integration im Dashboard für Plugin-Verwaltung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Multi-Cam Switcher Plugin</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>OBS-Szenen wechseln via TikTok Gifts oder Chat-Commands</li>
-                            <li>OBS-WebSocket v5 Integration mit Auto-Reconnect</li>
-                            <li>Chat-Commands: !cam 1-5, !cam next/prev, !scene &lt;name&gt;, !angle next</li>
-                            <li>Gift-Mapping mit konfigurierbaren Coins-Schwellen</li>
-                            <li>Macro-System für Multi-Step-Aktionen mit Delays</li>
-                            <li>Permissions: modsOnly, broadcasterOnly, allowedUsers, minAccountAgeDays</li>
-                            <li>Cooldowns: Per-User (15s), Global (5s), Macro-Max-Duration (10s)</li>
-                            <li>Safety-Limits mit Auto-Lock bei Rapid Switching</li>
-                        </ul>
-                    </li>
-                    <li><strong>Plattformunabhängiger Launcher</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Cross-platform Unterstützung (Windows, Linux, macOS)</li>
-                            <li>TTY-sicheres Logging ohne "stdout is not a tty" Fehler</li>
-                            <li>Robuste Node.js/npm Version-Checks in JavaScript</li>
-                            <li>Automatische Dependency-Prüfung und Installation</li>
-                            <li>Browser-Auto-Start nach Launch</li>
-                        </ul>
-                    </li>
-                    <li><strong>TTY-Logger Modul</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Automatische TTY-Erkennung</li>
-                            <li>ANSI-Farben nur bei TTY-Unterstützung</li>
-                            <li>UTF-8/Emoji-Unterstützung-Detection</li>
-                            <li>Fallback auf Plain-Text für non-TTY (OBS, Redirects)</li>
-                            <li>Platform-spezifische Symbole</li>
-                        </ul>
-                    </li>
-                    <li><strong>Git-basiertes Update-System</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Git-basiertes Update wenn .git vorhanden</li>
-                            <li>GitHub Release ZIP Download ohne Git</li>
-                            <li>Automatisches Backup vor Update (user_data/, user_configs/)</li>
-                            <li>Rollback bei fehlgeschlagenen Updates</li>
-                            <li>Platform-unabhängige Update-Strategie</li>
-                        </ul>
-                    </li>
-                    <li><strong>Launch Mode Selection auf Splash Screen</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Wahl zwischen Electron App oder Browser Modus beim Start</li>
-                            <li>Launch-Buttons aktiviert nach Backend-Bereitschaft</li>
-                            <li>Browser-Modus öffnet Dashboard im Standard-Browser und minimiert zu Tray</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Datenbank Performance-Optimierungen</strong> - SQLite mit WAL Mode, 64MB Cache, Memory Temp Store</li>
-                    <li><strong>Plugin-Loader erweitert</strong> - Von 827 auf 1043 Zeilen für besseres State-Management</li>
-                    <li><strong>Leaderboard Modul</strong> - Von 362 auf 480 Zeilen mit erweiterten Tracking-Features</li>
-                    <li><strong>Rate-Limiter</strong> - Fast verdoppelt (80 auf 150 Zeilen) mit verbessertem Request-Handling</li>
-                    <li><strong>TikTok Modul</strong> - Erweitert von 83KB auf 85KB mit besserer Event-Verarbeitung</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>TTS Migration zu Plugin</strong> - TTS-Engine jetzt vollständig als Plugin mit 75+ Stimmen integriert</li>
-                    <li><strong>VDO.Ninja Plugin Migration</strong> - Multi-Guest-Streaming vollständig plugin-basiert mit 20+ API Routes</li>
-                    <li><strong>Dynamische UI-Sichtbarkeit</strong> - Dashboard-Tabs zeigen/verstecken sich basierend auf aktiven Plugins ohne Page-Reload</li>
-                    <li><strong>Update-Checker</strong> - Graceful 404-Handling wenn GitHub Releases nicht verfügbar sind</li>
-                    <li><strong>Keine "echo -e" Probleme</strong> - Unter Windows/Powershell behoben</li>
-                    <li><strong>Keine "integer expression expected" Fehler</strong> - Bei Version-Checks behoben</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.1.1 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 3. Dezember 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<h3 data-i18n="changelog.h3.59" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Plugin-System mit Hot-Reloading</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Plugins hochladen, aktivieren, deaktivieren und löschen ohne Server-Neustart</li>
+<li>Plugin-State-Persistierung in plugins_state.json</li>
+<li>Beispiel-Plugin "Topboard" für Top Gifters und Streaks</li>
+<li>UI-Integration im Dashboard für Plugin-Verwaltung</li>
+</ul>
+</li>
+<li><strong>Multi-Cam Switcher Plugin</strong>
+<ul style="margin-top: 0.5rem;">
+<li>OBS-Szenen wechseln via TikTok Gifts oder Chat-Commands</li>
+<li>OBS-WebSocket v5 Integration mit Auto-Reconnect</li>
+<li>Chat-Commands: !cam 1-5, !cam next/prev, !scene &lt;name&gt;, !angle next</li>
+<li>Gift-Mapping mit konfigurierbaren Coins-Schwellen</li>
+<li>Macro-System für Multi-Step-Aktionen mit Delays</li>
+<li>Permissions: modsOnly, broadcasterOnly, allowedUsers, minAccountAgeDays</li>
+<li>Cooldowns: Per-User (15s), Global (5s), Macro-Max-Duration (10s)</li>
+<li>Safety-Limits mit Auto-Lock bei Rapid Switching</li>
+</ul>
+</li>
+<li><strong>Plattformunabhängiger Launcher</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Cross-platform Unterstützung (Windows, Linux, macOS)</li>
+<li>TTY-sicheres Logging ohne "stdout is not a tty" Fehler</li>
+<li>Robuste Node.js/npm Version-Checks in JavaScript</li>
+<li>Automatische Dependency-Prüfung und Installation</li>
+<li>Browser-Auto-Start nach Launch</li>
+</ul>
+</li>
+<li><strong>TTY-Logger Modul</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Automatische TTY-Erkennung</li>
+<li>ANSI-Farben nur bei TTY-Unterstützung</li>
+<li>UTF-8/Emoji-Unterstützung-Detection</li>
+<li>Fallback auf Plain-Text für non-TTY (OBS, Redirects)</li>
+<li>Platform-spezifische Symbole</li>
+</ul>
+</li>
+<li><strong>Git-basiertes Update-System</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Git-basiertes Update wenn .git vorhanden</li>
+<li>GitHub Release ZIP Download ohne Git</li>
+<li>Automatisches Backup vor Update (user_data/, user_configs/)</li>
+<li>Rollback bei fehlgeschlagenen Updates</li>
+<li>Platform-unabhängige Update-Strategie</li>
+</ul>
+</li>
+<li><strong>Launch Mode Selection auf Splash Screen</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Wahl zwischen Electron App oder Browser Modus beim Start</li>
+<li>Launch-Buttons aktiviert nach Backend-Bereitschaft</li>
+<li>Browser-Modus öffnet Dashboard im Standard-Browser und minimiert zu Tray</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.60" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Datenbank Performance-Optimierungen</strong> - SQLite mit WAL Mode, 64MB Cache, Memory Temp Store</li>
+<li><strong>Plugin-Loader erweitert</strong> - Von 827 auf 1043 Zeilen für besseres State-Management</li>
+<li><strong>Leaderboard Modul</strong> - Von 362 auf 480 Zeilen mit erweiterten Tracking-Features</li>
+<li><strong>Rate-Limiter</strong> - Fast verdoppelt (80 auf 150 Zeilen) mit verbessertem Request-Handling</li>
+<li><strong>TikTok Modul</strong> - Erweitert von 83KB auf 85KB mit besserer Event-Verarbeitung</li>
+</ul>
+<h3 data-i18n="changelog.h3.61" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>TTS Migration zu Plugin</strong> - TTS-Engine jetzt vollständig als Plugin mit 75+ Stimmen integriert</li>
+<li><strong>VDO.Ninja Plugin Migration</strong> - Multi-Guest-Streaming vollständig plugin-basiert mit 20+ API Routes</li>
+<li><strong>Dynamische UI-Sichtbarkeit</strong> - Dashboard-Tabs zeigen/verstecken sich basierend auf aktiven Plugins ohne Page-Reload</li>
+<li><strong>Update-Checker</strong> - Graceful 404-Handling wenn GitHub Releases nicht verfügbar sind</li>
+<li><strong>Keine "echo -e" Probleme</strong> - Unter Windows/Powershell behoben</li>
+<li><strong>Keine "integer expression expected" Fehler</strong> - Bei Version-Checks behoben</li>
+</ul>
+</div>
+<!-- Version 1.1.1 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.62" style="color: var(--color-primary); margin: 0;">Version 1.1.1</h2>
+</div>
+<p data-i18n="changelog.p.63" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Veröffentlicht: 3. Dezember 2025</p>
+<h3 data-i18n="changelog.h3.64" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.65" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
                     Dieses Release bringt große Verbesserungen für das Leaderboard Plugin mit neuen OBS Overlay-Layouts, ein umfassendes OpenShock Gift Event Debugging-System und zahlreiche kritische Bugfixes.
                 </p>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Leaderboard Plugin v1.2.0 - OBS Overlay System Extension</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Bar Layout - Horizontale Leiste für oben/unten im Stream (1920x80)</li>
-                            <li>Sidebar Layout - Vertikale Sidebar für rechte Seite (400x1080)</li>
-                            <li>Popup Layout - Temporäres Popup für Highlights (600x700)</li>
-                            <li>Umfangreiche Query-Parameter-Anpassung (Theme, maxEntries, showAvatars, etc.)</li>
-                            <li>Fortschrittsbalken-Visualisierung relativ zum #1 Gifter</li>
-                        </ul>
-                    </li>
-                    <li><strong>Hype Mode System</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Neue WebSocket-Events: leaderboard:hypeStart und leaderboard:hypeEnd</li>
-                            <li>Visuelle Effekte während Hype-Phasen in allen Overlay-Layouts</li>
-                            <li>Konfigurierbares Popup-Verhalten während Hype-Events</li>
-                        </ul>
-                    </li>
-                    <li><strong>Auto-Hide Popup Funktionalität</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Popup erscheint automatisch bei Rangänderungen</li>
-                            <li>Konfigurierbare Auto-Hide Verzögerung (Standard: 10 Sekunden)</li>
-                            <li>Intelligente Erkennung signifikanter Leaderboard-Änderungen</li>
-                        </ul>
-                    </li>
-                    <li><strong>OpenShock Plugin: Gift Event Pipeline Debugging</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Erweitertes Logging entlang der kompletten Event-Pipeline (TikTok → Mapping → OpenShock)</li>
-                            <li>Debug-Endpoint GET /api/openshock/debug/mappings für Mapping-Inspektion</li>
-                            <li>Test-Endpoint POST /api/openshock/test/simulate-gift für Gift-Event Simulation</li>
-                            <li>Vollständige Dokumentation in DEBUGGING_GIFT_EVENTS.md</li>
-                        </ul>
-                    </li>
-                    <li><strong>OpenShock Plugin: Wildcard Gift Matching</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Leerer String oder "*" als giftName matched JEDES Gift</li>
-                            <li>Perfekt für Catch-All Mappings die auf alle Geschenke reagieren</li>
-                            <li>Spezifische Geschenk-Namen haben automatisch Vorrang</li>
-                        </ul>
-                    </li>
-                    <li><strong>OpenShock Plugin: Coin Range Mappings</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Von-Bis Coin-Bereiche für präzise Event-Mappings</li>
-                            <li>Beispiel: 1-99 Coins → 20% Schock, 100-199 Coins → 50% Schock</li>
-                            <li>Verhindert Überlappungen zwischen verschiedenen Coin-Stufen</li>
-                        </ul>
-                    </li>
-                    <li><strong>OpenShock Plugin: Configurable Like Threshold</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Like-Events werden akkumuliert über konfigurierbares Zeitfenster</li>
-                            <li>Minimale Anzahl Likes einstellbar (Standard: 10)</li>
-                            <li>Zeitfenster einstellbar in Sekunden (Standard: 5s)</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Console Errors behoben</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Cloud Sync: Unnötige Warnung entfernt wenn UI-Elemente nicht existieren</li>
-                            <li>Audio System: Korruptes MP3 durch valides WAV Format ersetzt</li>
-                            <li>GPU Detection: Auf moderne gl.RENDERER API aktualisiert</li>
-                            <li>Initialization: Socket.IO Ready State Timing korrigiert</li>
-                            <li>System initialisiert jetzt in weniger als 400ms statt 30s Timeout</li>
-                        </ul>
-                    </li>
-                    <li><strong>Profile Pictures</strong> - Extraktions-Helper für TikTok API Objektstruktur hinzugefügt</li>
-                    <li><strong>OpenShock Gift Event Pipeline komplett repariert</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Gift Events werden jetzt korrekt von TikTok → OpenShock weitergeleitet</li>
-                            <li>Mapping-Engine evaluiert Events korrekt</li>
-                            <li>Actions werden ausgeführt wenn Mappings matchen</li>
-                        </ul>
-                    </li>
-                    <li><strong>TikTok Diamond Count Extraction Priority Fixed</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Wiederherstellung der Original-Priorität: gift.diamond_count ZUERST</li>
-                            <li>Behebt "🪙 0" Anzeige-Problem nach vorherigen Updates</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>OpenShock Pattern UI vereinfacht</strong> - Nur noch Custom Patterns, kein komplexer Curve Editor</li>
-                    <li><strong>OpenShock Case-Insensitive Gift Name Matching</strong> - "Rose" matched auch "rose", "ROSE"</li>
-                    <li><strong>OpenShock Debug Log System</strong> - Real-time Event Logging im UI mit Socket.IO Broadcasting</li>
-                    <li><strong>OpenShock Edit Pattern Steps</strong> - Schritte können nachträglich bearbeitet werden</li>
-                    <li><strong>TikTok Gift Event Logging</strong> - Verbesserte Transparenz für Gift-Events während Streaks</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.1.0 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.1.0</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 1, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<h3 data-i18n="changelog.h3.66" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Leaderboard Plugin v1.2.0 - OBS Overlay System Extension</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Bar Layout - Horizontale Leiste für oben/unten im Stream (1920x80)</li>
+<li>Sidebar Layout - Vertikale Sidebar für rechte Seite (400x1080)</li>
+<li>Popup Layout - Temporäres Popup für Highlights (600x700)</li>
+<li>Umfangreiche Query-Parameter-Anpassung (Theme, maxEntries, showAvatars, etc.)</li>
+<li>Fortschrittsbalken-Visualisierung relativ zum #1 Gifter</li>
+</ul>
+</li>
+<li><strong>Hype Mode System</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Neue WebSocket-Events: leaderboard:hypeStart und leaderboard:hypeEnd</li>
+<li>Visuelle Effekte während Hype-Phasen in allen Overlay-Layouts</li>
+<li>Konfigurierbares Popup-Verhalten während Hype-Events</li>
+</ul>
+</li>
+<li><strong>Auto-Hide Popup Funktionalität</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Popup erscheint automatisch bei Rangänderungen</li>
+<li>Konfigurierbare Auto-Hide Verzögerung (Standard: 10 Sekunden)</li>
+<li>Intelligente Erkennung signifikanter Leaderboard-Änderungen</li>
+</ul>
+</li>
+<li><strong>OpenShock Plugin: Gift Event Pipeline Debugging</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Erweitertes Logging entlang der kompletten Event-Pipeline (TikTok → Mapping → OpenShock)</li>
+<li>Debug-Endpoint GET /api/openshock/debug/mappings für Mapping-Inspektion</li>
+<li>Test-Endpoint POST /api/openshock/test/simulate-gift für Gift-Event Simulation</li>
+<li>Vollständige Dokumentation in DEBUGGING_GIFT_EVENTS.md</li>
+</ul>
+</li>
+<li><strong>OpenShock Plugin: Wildcard Gift Matching</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Leerer String oder "*" als giftName matched JEDES Gift</li>
+<li>Perfekt für Catch-All Mappings die auf alle Geschenke reagieren</li>
+<li>Spezifische Geschenk-Namen haben automatisch Vorrang</li>
+</ul>
+</li>
+<li><strong>OpenShock Plugin: Coin Range Mappings</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Von-Bis Coin-Bereiche für präzise Event-Mappings</li>
+<li>Beispiel: 1-99 Coins → 20% Schock, 100-199 Coins → 50% Schock</li>
+<li>Verhindert Überlappungen zwischen verschiedenen Coin-Stufen</li>
+</ul>
+</li>
+<li><strong>OpenShock Plugin: Configurable Like Threshold</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Like-Events werden akkumuliert über konfigurierbares Zeitfenster</li>
+<li>Minimale Anzahl Likes einstellbar (Standard: 10)</li>
+<li>Zeitfenster einstellbar in Sekunden (Standard: 5s)</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.67" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Console Errors behoben</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Cloud Sync: Unnötige Warnung entfernt wenn UI-Elemente nicht existieren</li>
+<li>Audio System: Korruptes MP3 durch valides WAV Format ersetzt</li>
+<li>GPU Detection: Auf moderne gl.RENDERER API aktualisiert</li>
+<li>Initialization: Socket.IO Ready State Timing korrigiert</li>
+<li>System initialisiert jetzt in weniger als 400ms statt 30s Timeout</li>
+</ul>
+</li>
+<li><strong>Profile Pictures</strong> - Extraktions-Helper für TikTok API Objektstruktur hinzugefügt</li>
+<li><strong>OpenShock Gift Event Pipeline komplett repariert</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Gift Events werden jetzt korrekt von TikTok → OpenShock weitergeleitet</li>
+<li>Mapping-Engine evaluiert Events korrekt</li>
+<li>Actions werden ausgeführt wenn Mappings matchen</li>
+</ul>
+</li>
+<li><strong>TikTok Diamond Count Extraction Priority Fixed</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Wiederherstellung der Original-Priorität: gift.diamond_count ZUERST</li>
+<li>Behebt "🪙 0" Anzeige-Problem nach vorherigen Updates</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.68" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>OpenShock Pattern UI vereinfacht</strong> - Nur noch Custom Patterns, kein komplexer Curve Editor</li>
+<li><strong>OpenShock Case-Insensitive Gift Name Matching</strong> - "Rose" matched auch "rose", "ROSE"</li>
+<li><strong>OpenShock Debug Log System</strong> - Real-time Event Logging im UI mit Socket.IO Broadcasting</li>
+<li><strong>OpenShock Edit Pattern Steps</strong> - Schritte können nachträglich bearbeitet werden</li>
+<li><strong>TikTok Gift Event Logging</strong> - Verbesserte Transparenz für Gift-Events während Streaks</li>
+</ul>
+</div>
+<!-- Version 1.1.0 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.69" style="color: var(--color-primary); margin: 0;">Version 1.1.0</h2>
+</div>
+<p data-i18n="changelog.p.70" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: December 1, 2025</p>
+<h3 data-i18n="changelog.h3.71" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎉 Highlights</h3>
+<p data-i18n="changelog.p.72" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
                     Das offizielle Release Version 1.1 von Pup Cid's Little TikTool Helper! Dieses Release enthält große Verbesserungen bei der TikTok-Konnektivität, neue Plugins und bedeutende Stabilitätsverbesserungen.
                 </p>
-
-                <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Migration zu Eulerstream WebSocket SDK</strong>
+<h3 data-i18n="changelog.h3.73" style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Migration zu Eulerstream WebSocket SDK</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Vollständiger Ersatz von tiktok-live-connector durch Eulerstream SDK</li>
+<li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
+<li>Eulerstream API-Schlüssel jetzt ERFORDERLICH (via EULER_API_KEY oder SIGN_API_KEY)</li>
+<li>Rückwärtskompatibilität mit bestehenden Event-Handlern und Plugins erhalten</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.74" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>TikTok TTS Engine 500 Fehler behoben</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Komplette Neuimplementierung mit hybridem Endpoint-Ansatz</li>
+<li>Automatische Endpoint-Rotation bei Fehlern</li>
+<li>Unterstützung für mehrere Response-Formate</li>
+<li>Moderner User-Agent (Android 13)</li>
+</ul>
+</li>
+<li><strong>TikTok Connection 504 Timeout behoben</strong>
+<ul style="margin-top: 0.5rem;">
+<li>fetchRoomInfoOnConnect auf false gesetzt</li>
+<li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
+<li>Verbesserte Error-Meldungen für Timeouts</li>
+</ul>
+</li>
+<li><strong>Quick Actions Menü nicht aktualisiert</strong> - Menü blieb ausgegraut nach Plugin-Aktivierung</li>
+<li><strong>Goals Modal Focus-Problem in Electron</strong> - Modal-Inputs nicht anklickbar behoben</li>
+<li><strong>TTS Admin Panel nicht anklickbar in Electron</strong> - Tabs und Buttons reagieren jetzt</li>
+<li><strong>Chatango Integration in Electron</strong> - Weißes Fenster-Problem behoben</li>
+<li><strong>Sprach-Selector Flaggen</strong> - Flaggen-Icons werden jetzt korrekt angezeigt</li>
+</ul>
+<h3 data-i18n="changelog.h3.75" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Weather Control Plugin</strong>
+<ul style="margin-top: 0.5rem;">
+<li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
+<li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
+<li>Permission-basierte Zugriffskontrolle</li>
+<li>Flow-Action-Support für IFTTT-Automatisierung</li>
+<li>Gift-basierte automatische Trigger</li>
+</ul>
+</li>
+<li><strong>Auto-Update System</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Launcher prüft beim Start auf Updates</li>
+<li>Zeigt aktuelle Version im Splash Screen</li>
+<li>Benachrichtigt bei verfügbaren Updates</li>
+</ul>
+</li>
+<li><strong>Direkter Download</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Download jetzt direkt über ltth.app/app/ltth_1.1.0.zip</li>
+<li>Keine GitHub-Abhängigkeit mehr für Downloads</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.76" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance-Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>CSS Performance</strong> - will-change, contain, overscroll-behavior Optimierungen</li>
+<li><strong>Scroll Performance</strong> - Passive event listeners für besseres Scrollen</li>
+<li><strong>Rendering</strong> - Isolierte Rendering mit contain: layout style paint</li>
+</ul>
+</div>
+<!-- Version 1.0.9 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.77" style="color: var(--color-primary); margin: 0;">Version 1.0.9</h2>
+</div>
+<p data-i18n="changelog.p.78" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
+<h3 data-i18n="changelog.h3.79" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>OpenAI-Integration für Quiz Show</strong>
+<ul style="margin-top: 0.5rem;">
+<li>GPT-5.1-gestützte Fragenpakete-Generierung (Nano, Mini, Standard Modelle)</li>
+<li>Automatische Erstellung thematischer Quizfragen mit KI</li>
+<li>Mehrsprachige Unterstützung (Deutsch und Englisch)</li>
+</ul>
+</li>
+<li><strong>Inline Pattern-Editor</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Direkte Bearbeitung von OpenShock-Patterns im Event-Mapping-Modal</li>
+<li>Pattern-Details in der Mapping-Listenansicht sichtbar</li>
+<li>Verbesserte Benutzererfahrung bei der Pattern-Zuweisung</li>
+</ul>
+</li>
+<li><strong>Launcher.exe mit GUI</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Grafischer Launcher mit Hintergrundbild und Fortschrittsbalken</li>
+<li>Automatische Weiterleitung zum Dashboard nach Start</li>
+<li>Browser-basierte UI ohne externe GUI-Bibliotheken</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.80" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>OSC-Bridge (VRChat)</strong> - Gift-Katalog-Integration für einfachere Gift-Mapping-Einrichtung</li>
+<li><strong>VDO.Ninja Multi-Guest</strong> - Director URL Control Room Iframe-Tab im Raum-Management</li>
+<li><strong>Event-Mapping UI</strong> - Pattern-Auswahl mit updateMappingPatternList-Funktion</li>
+<li><strong>OpenShock</strong> - Pattern-Details jetzt in Event-Mapping-Liste sichtbar</li>
+</ul>
+<h3 data-i18n="changelog.h3.81" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Emoji Rain v2.0</strong> - Bounce/Bubble-Animations-Trigger, Pixel-Modus-Rendering, defensive Positionierung</li>
+<li><strong>VDO.Ninja</strong> - Content Security Policy Verletzungen behoben (Inline-onclick-Handler entfernt)</li>
+<li><strong>OpenShock</strong> - Null-Checks behandeln Pattern-ID 0 nun korrekt als gültigen Wert</li>
+</ul>
+<h3 data-i18n="changelog.h3.82" style="color: var(--color-text-secondary); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>JSDoc-Dokumentation für Inline-Pattern-Editor-Funktionen hinzugefügt</li>
+<li>Technische Dokumentation für launcher.exe im infos/-Verzeichnis</li>
+</ul>
+</div>
+<!-- Version 1.0.8 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+<h2 data-i18n="changelog.h2.83" style="color: var(--color-primary); margin: 0;">Version 1.0.8</h2>
+</div>
+<p data-i18n="changelog.p.84" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
+<!-- Dashboard Screenshot -->
+<div style="margin: var(--space-6) 0;">
+<img alt="Dashboard - Hauptansicht mit allen neuen Features" src="/assets/screenshots/dashboard-main.png" style="max-width: 100%; border-radius: var(--radius-lg); box-shadow: 0 4px 20px rgba(0,0,0,0.2);"/>
+</div>
+<h3 data-i18n="changelog.h3.85" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Konfigurierbares XP-System</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Level-Up-Animationen mit erweiterten Admin-Funktionen</li>
+<li>Viewer-Engagement-System für bessere Zuschauerbindung</li>
+<li>Umfassende Konfigurationsmöglichkeiten für XP-Vergabe</li>
+</ul>
+</li>
+<li><strong>Grafischer Pattern-Kurven-Generator (OpenShock)</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Visuelle Benutzeroberfläche für Pattern-Erstellung</li>
+<li>Interaktive Kurven-Gestaltung mit Echtzeit-Vorschau</li>
+<li>Vereinfachte Pattern-Konfiguration ohne manuelle Eingabe</li>
+</ul>
+</li>
+<li><strong>OBS HUD für Command-Overlays</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Echtzeit-Anzeige von Chat-Commands im OBS-Overlay</li>
+<li>Vollständig konfigurierbare Overlay-Darstellung</li>
+<li>Integration mit GCCE Command-System</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.86" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Plugin-Manager</strong> - Kompakt-Modus-Schalter für besseres Platzmanagement</li>
+<li><strong>Resource Monitor</strong> - 2x2-Grid-Layout korrigiert (CPU/GPU, RAM/Netzwerk)</li>
+<li><strong>Leaderboard</strong> - Mehrere Overlay-Themes (Classic, Neon, Gradient) mit Vorschaumodus</li>
+<li><strong>Quiz Show</strong> - Integration mit Anwendungs-Theme-System für bessere Lesbarkeit</li>
+<li><strong>Thermal Printer</strong> - Vollständige Theme-Integration mit CSS-Variablen</li>
+<li><strong>VDO.Ninja Multi-Guest</strong> - Umfassendes UI-Refactoring mit Methoden-Aliases</li>
+<li><strong>OSC-Bridge (VRChat)</strong> - Gift-Katalog-Mappings und Avatar-Wechsel-Unterstützung</li>
+</ul>
+<h3 data-i18n="changelog.h3.87" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Windows-Pfad-Validierung</strong> im Config-Import-Plugin behoben</li>
+<li><strong>OpenShock Pattern-Engine</strong> - Doppeltes Wait entfernt, das Dauer-Bugs verursachte</li>
+<li><strong>OpenShock Custom Pattern Editor</strong> - Verbesserter Step-Konfigurations-Workflow</li>
+<li><strong>OpenShock Emergency Stop</strong> - Button prominent im Haupt-UI-Header hinzugefügt</li>
+<li><strong>Plugin-Update-Prüfung</strong> - Changelog-Fallback-Mechanismus hinzugefügt</li>
+</ul>
+<h3 data-i18n="changelog.h3.88" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>Erweiterte Input-Validierung in allen Plugins</li>
+<li>Verbesserte Fehlerbehandlung und Sanitization</li>
+</ul>
+</div>
+<!-- Version 1.0.7 -->
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.89" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.7</h2>
+<p data-i18n="changelog.p.90" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+<h3 data-i18n="changelog.h3.91" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Unabhängige Lautstärkeregelung für Gift-Animationen</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Separate Lautstärkeregelung für Gift-Animation-Audio im Soundboard</li>
+<li>Neue Animation Volume Control in der Soundboard-Konfiguration</li>
+<li>Standalone Soundboard UI mit Animation-Lautstärkeregelung</li>
+</ul>
+</li>
+<li><strong>Stream Alchemy - Erweiterte Einstellungen</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Anpassbare KI-Prompts für Item-Generierung</li>
+<li>Item-Management mit Bearbeitungs- und Löschfunktionen</li>
+<li>Umfassende Settings-UI mit Custom-Prompt-Unterstützung</li>
+</ul>
+</li>
+<li><strong>Multicam - OBS Passwort-Authentifizierung</strong>
+<ul style="margin-top: 0.5rem;">
+<li>OBS-Passwort-Support für sichere WebSocket-Verbindung</li>
+<li>Gift-to-Scene-Mapping UI mit vollständigem Gift-Katalog</li>
+<li>Deutsche und englische Lokalisierung</li>
+</ul>
+</li>
+<li><strong>Plugin-UI-Integration</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Leaderboard Admin-Panel mit Session- und All-Time-Tracking</li>
+<li>Stream Alchemy, GCCE und Thermal Printer UI-Integration</li>
+<li>VDO.Ninja Multi-Guest und Emoji Rain v2.0 standardmäßig aktiviert</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.92" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Emoji Rain komplett überarbeitet</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Bubble-Blop-Animation korrigiert</li>
+<li>Pixel-Modus-Rendering behoben</li>
+<li>Farbfilter für Emojis hinzugefügt</li>
+<li>Edge-Spawning für bessere Verteilung</li>
+</ul>
+</li>
+<li><strong>Follow-Sounds spielen jetzt zuverlässig</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Verbesserte Event-Erkennung mit mehreren displayType-Mustern</li>
+<li>Fallback-Check für Follow-Events</li>
+<li>Debug-Logging für unerkannte Social-Events</li>
+</ul>
+</li>
+<li><strong>OpenShock Pattern-Einstellungen</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Pattern-Settings-Funktionalität im Mapping-Modal implementiert</li>
+</ul>
+</li>
+<li><strong>Sidebar-Layout-Fixes</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Doppelte Text-Spans in VDO.Ninja entfernt</li>
+<li>Plugin-Manager-Layout korrigiert</li>
+</ul>
+</li>
+<li><strong>Gift Milestone Celebration</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Tier-spezifische Media-Zuweisung behoben</li>
+<li>Verbesserte Error-Behandlung</li>
+</ul>
+</li>
+<li><strong>Weather Control Overlay</strong>
+<ul style="margin-top: 0.5rem;">
+<li>GSAP-Bibliothek-Ladeproblem in OBS Browser Source behoben</li>
+<li>Animationen funktionieren jetzt korrekt</li>
+</ul>
+</li>
+<li><strong>Resource Monitor</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Kompakt-Modus zeigt nun alle Inhalte auf einer Seite</li>
+</ul>
+</li>
+<li><strong>Plugin-Initialisierung</strong>
+<ul style="margin-top: 0.5rem;">
+<li>Alle 23 Plugins laden jetzt erfolgreich</li>
+<li>Logger-API-Probleme für GCCE und StreamAlchemy behoben</li>
+<li>Minecraft-Connect, OpenShock, OSC-Bridge, Resource-Monitor aktiviert</li>
+<li>API-Bridge, HybridShock, Multicam, Viewer-XP aktiviert</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.93" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>XSS-Schutz und Input-Validierung für Stream Alchemy</li>
+<li>Validation-Helper refactored für bessere Wartbarkeit</li>
+<li>Accessibility-Verbesserungen hinzugefügt</li>
+</ul>
+<h3 data-i18n="changelog.h3.94" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>Dokumentationsdateien in infos/-Unterverzeichnis reorganisiert</li>
+<li>Dateipfad-Referenzen aktualisiert</li>
+</ul>
+</div>
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.95" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.6</h2>
+<p data-i18n="changelog.p.96" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+<h3 data-i18n="changelog.h3.97" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Plugins</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>StreamAlchemy Plugin</strong> - RPG-Crafting-System mit KI
                         <ul style="margin-top: 0.5rem;">
-                            <li>Vollständiger Ersatz von tiktok-live-connector durch Eulerstream SDK</li>
-                            <li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
-                            <li>Eulerstream API-Schlüssel jetzt ERFORDERLICH (via EULER_API_KEY oder SIGN_API_KEY)</li>
-                            <li>Rückwärtskompatibilität mit bestehenden Event-Handlern und Plugins erhalten</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>TikTok TTS Engine 500 Fehler behoben</strong>
+<li>TikTok Gifts werden zu virtuellen RPG-Items transformiert</li>
+<li>KI-generierte isometrische Item-Icons mit DALL-E 3</li>
+<li>Echtzeit-Crafting: 2 Gifts innerhalb von 6 Sekunden kombinieren</li>
+<li>4 Seltenheitsstufen basierend auf Coin-Werten (Bronze, Silber, Gold, Lila)</li>
+<li>Persistente Inventarverwaltung pro User</li>
+<li>Chat-Commands: /inventory, /inspect, /merge, /alchemy</li>
+</ul>
+</li>
+<li><strong>Leaderboard Plugin</strong> - Top-Gifter Tracking
                         <ul style="margin-top: 0.5rem;">
-                            <li>Komplette Neuimplementierung mit hybridem Endpoint-Ansatz</li>
-                            <li>Automatische Endpoint-Rotation bei Fehlern</li>
-                            <li>Unterstützung für mehrere Response-Formate</li>
-                            <li>Moderner User-Agent (Android 13)</li>
-                        </ul>
-                    </li>
-                    <li><strong>TikTok Connection 504 Timeout behoben</strong>
+<li>Session-Leaderboard für aktuelle Stream-Session</li>
+<li>All-Time Champions für historische Top-Contributor</li>
+<li>WebSocket-basierte Live-Updates im Overlay</li>
+<li>Automatische Aktualisierung von Nicknamen und Profilbildern</li>
+<li>Moderne Neon/Dark-Theme UI mit CSS-Animationen</li>
+<li>Performance-optimiert mit debounced Database Writes</li>
+</ul>
+</li>
+<li><strong>Thermal Printer Plugin</strong> - Physische Event-Ausdrucke
                         <ul style="margin-top: 0.5rem;">
-                            <li>fetchRoomInfoOnConnect auf false gesetzt</li>
-                            <li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
-                            <li>Verbesserte Error-Meldungen für Timeouts</li>
-                        </ul>
-                    </li>
-                    <li><strong>Quick Actions Menü nicht aktualisiert</strong> - Menü blieb ausgegraut nach Plugin-Aktivierung</li>
-                    <li><strong>Goals Modal Focus-Problem in Electron</strong> - Modal-Inputs nicht anklickbar behoben</li>
-                    <li><strong>TTS Admin Panel nicht anklickbar in Electron</strong> - Tabs und Buttons reagieren jetzt</li>
-                    <li><strong>Chatango Integration in Electron</strong> - Weißes Fenster-Problem behoben</li>
-                    <li><strong>Sprach-Selector Flaggen</strong> - Flaggen-Icons werden jetzt korrekt angezeigt</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Weather Control Plugin</strong>
+<li>ESC/POS Thermodrucker-Support (USB &amp; Netzwerk)</li>
+<li>Druckt Chat-Nachrichten, Gifts, Follows und Shares</li>
+<li>Intelligente Filterung: Min. Coins, Bot-Command-Ignorierung</li>
+<li>Asynchrone Print-Queue verhindert Event-Loop-Blocking</li>
+<li>Auto-Reconnect bei Verbindungsverlust</li>
+<li>Konfigurierbare ESC/POS-Formatierung mit ASCII-Icons</li>
+</ul>
+</li>
+<li><strong>GCCE (Global Chat Command Engine)</strong> - Universelles Command-System
                         <ul style="margin-top: 0.5rem;">
-                            <li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
-                            <li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
-                            <li>Permission-basierte Zugriffskontrolle</li>
-                            <li>Flow-Action-Support für IFTTT-Automatisierung</li>
-                            <li>Gift-basierte automatische Trigger</li>
-                        </ul>
-                    </li>
-                    <li><strong>Auto-Update System</strong>
+<li>Zentrales Command-Registry für alle Plugins</li>
+<li>Hierarchisches Permission-System (broadcaster → all)</li>
+<li>Automatische Syntax-Validierung und Error-Messaging</li>
+<li>Rate-Limiting (10 Commands/User/Minute, 100 Global/Minute)</li>
+<li>Unified Overlay-System für Command-Feedback</li>
+<li>Built-in Commands: /help, /commands, /inventory, /inspect, /merge</li>
+</ul>
+</li>
+</ul>
+</div>
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.98" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.5</h2>
+<p data-i18n="changelog.p.99" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+<h3 data-i18n="changelog.h3.100" style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Migration zu Eulerstream WebSocket SDK</strong> - Vollständiger Ersatz von tiktok-live-connector
                         <ul style="margin-top: 0.5rem;">
-                            <li>Launcher prüft beim Start auf Updates</li>
-                            <li>Zeigt aktuelle Version im Splash Screen</li>
-                            <li>Benachrichtigt bei verfügbaren Updates</li>
-                        </ul>
-                    </li>
-                    <li><strong>Direkter Download</strong>
+<li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
+<li>Eulerstream API-Schlüssel ist jetzt ERFORDERLICH</li>
+<li>Rückwärtskompatibilität mit bestehenden Event-Handlern erhalten</li>
+<li>Siehe <a data-i18n="changelog.a.101" href="https://www.eulerstream.com" rel="noopener" target="_blank">eulerstream.com</a> für API-Schlüssel-Registrierung</li>
+</ul>
+</li>
+</ul>
+<h3 data-i18n="changelog.h3.102" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>TikTok TTS Engine 500 Fehler behoben</strong> - Komplette Neuimplementierung
                         <ul style="margin-top: 0.5rem;">
-                            <li>Download jetzt direkt über ltth.app/app/ltth_1.1.0.zip</li>
-                            <li>Keine GitHub-Abhängigkeit mehr für Downloads</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance-Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>CSS Performance</strong> - will-change, contain, overscroll-behavior Optimierungen</li>
-                    <li><strong>Scroll Performance</strong> - Passive event listeners für besseres Scrollen</li>
-                    <li><strong>Rendering</strong> - Isolierte Rendering mit contain: layout style paint</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.0.9 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.9</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>OpenAI-Integration für Quiz Show</strong>
+<li>Hybrides Endpoint-System mit mehreren Fallback-Optionen</li>
+<li>Automatische Endpoint-Rotation bei Fehlern</li>
+<li>Unterstützung für mehrere Response-Formate</li>
+<li>Moderne User-Agent (Android 13)</li>
+<li>Text-Chunking für lange Nachrichten (&gt;300 Zeichen)</li>
+</ul>
+</li>
+<li><strong>TikTok Connection 504 Timeout behoben</strong> - Euler Stream Optimierungen
                         <ul style="margin-top: 0.5rem;">
-                            <li>GPT-5.1-gestützte Fragenpakete-Generierung (Nano, Mini, Standard Modelle)</li>
-                            <li>Automatische Erstellung thematischer Quizfragen mit KI</li>
-                            <li>Mehrsprachige Unterstützung (Deutsch und Englisch)</li>
-                        </ul>
-                    </li>
-                    <li><strong>Inline Pattern-Editor</strong>
+<li>fetchRoomInfoOnConnect auf false gesetzt zur Reduzierung von API-Calls</li>
+<li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
+<li>Verbesserte Error-Meldungen für Euler Stream Timeouts</li>
+<li>Hardcodierter Euler API-Schlüssel als Base64-Fallback integriert</li>
+</ul>
+</li>
+<li><strong>Invalid Option Error behoben</strong> - Nicht existierende enableWebsocketUpgrade Option entfernt</li>
+</ul>
+<h3 data-i18n="changelog.h3.103" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
+<ul style="color: var(--color-text-secondary);">
+<li><strong>Weather Control Plugin</strong> - Professionelles Wetter-Effekt-System
                         <ul style="margin-top: 0.5rem;">
-                            <li>Direkte Bearbeitung von OpenShock-Patterns im Event-Mapping-Modal</li>
-                            <li>Pattern-Details in der Mapping-Listenansicht sichtbar</li>
-                            <li>Verbesserte Benutzererfahrung bei der Pattern-Zuweisung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Launcher.exe mit GUI</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Grafischer Launcher mit Hintergrundbild und Fortschrittsbalken</li>
-                            <li>Automatische Weiterleitung zum Dashboard nach Start</li>
-                            <li>Browser-basierte UI ohne externe GUI-Bibliotheken</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>OSC-Bridge (VRChat)</strong> - Gift-Katalog-Integration für einfachere Gift-Mapping-Einrichtung</li>
-                    <li><strong>VDO.Ninja Multi-Guest</strong> - Director URL Control Room Iframe-Tab im Raum-Management</li>
-                    <li><strong>Event-Mapping UI</strong> - Pattern-Auswahl mit updateMappingPatternList-Funktion</li>
-                    <li><strong>OpenShock</strong> - Pattern-Details jetzt in Event-Mapping-Liste sichtbar</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Emoji Rain v2.0</strong> - Bounce/Bubble-Animations-Trigger, Pixel-Modus-Rendering, defensive Positionierung</li>
-                    <li><strong>VDO.Ninja</strong> - Content Security Policy Verletzungen behoben (Inline-onclick-Handler entfernt)</li>
-                    <li><strong>OpenShock</strong> - Null-Checks behandeln Pattern-ID 0 nun korrekt als gültigen Wert</li>
-                </ul>
-
-                <h3 style="color: var(--color-text-secondary); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>JSDoc-Dokumentation für Inline-Pattern-Editor-Funktionen hinzugefügt</li>
-                    <li>Technische Dokumentation für launcher.exe im infos/-Verzeichnis</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.0.8 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
-                    <h2 style="color: var(--color-primary); margin: 0;">Version 1.0.8</h2>
-                </div>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 24, 2025</p>
-                
-                <!-- Dashboard Screenshot -->
-                <div style="margin: var(--space-6) 0;">
-                    <img src="/assets/screenshots/dashboard-main.png" alt="Dashboard - Hauptansicht mit allen neuen Features" 
-                         style="max-width: 100%; border-radius: var(--radius-lg); box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
-                </div>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Konfigurierbares XP-System</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Level-Up-Animationen mit erweiterten Admin-Funktionen</li>
-                            <li>Viewer-Engagement-System für bessere Zuschauerbindung</li>
-                            <li>Umfassende Konfigurationsmöglichkeiten für XP-Vergabe</li>
-                        </ul>
-                    </li>
-                    <li><strong>Grafischer Pattern-Kurven-Generator (OpenShock)</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Visuelle Benutzeroberfläche für Pattern-Erstellung</li>
-                            <li>Interaktive Kurven-Gestaltung mit Echtzeit-Vorschau</li>
-                            <li>Vereinfachte Pattern-Konfiguration ohne manuelle Eingabe</li>
-                        </ul>
-                    </li>
-                    <li><strong>OBS HUD für Command-Overlays</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Echtzeit-Anzeige von Chat-Commands im OBS-Overlay</li>
-                            <li>Vollständig konfigurierbare Overlay-Darstellung</li>
-                            <li>Integration mit GCCE Command-System</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔧 Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Plugin-Manager</strong> - Kompakt-Modus-Schalter für besseres Platzmanagement</li>
-                    <li><strong>Resource Monitor</strong> - 2x2-Grid-Layout korrigiert (CPU/GPU, RAM/Netzwerk)</li>
-                    <li><strong>Leaderboard</strong> - Mehrere Overlay-Themes (Classic, Neon, Gradient) mit Vorschaumodus</li>
-                    <li><strong>Quiz Show</strong> - Integration mit Anwendungs-Theme-System für bessere Lesbarkeit</li>
-                    <li><strong>Thermal Printer</strong> - Vollständige Theme-Integration mit CSS-Variablen</li>
-                    <li><strong>VDO.Ninja Multi-Guest</strong> - Umfassendes UI-Refactoring mit Methoden-Aliases</li>
-                    <li><strong>OSC-Bridge (VRChat)</strong> - Gift-Katalog-Mappings und Avatar-Wechsel-Unterstützung</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Windows-Pfad-Validierung</strong> im Config-Import-Plugin behoben</li>
-                    <li><strong>OpenShock Pattern-Engine</strong> - Doppeltes Wait entfernt, das Dauer-Bugs verursachte</li>
-                    <li><strong>OpenShock Custom Pattern Editor</strong> - Verbesserter Step-Konfigurations-Workflow</li>
-                    <li><strong>OpenShock Emergency Stop</strong> - Button prominent im Haupt-UI-Header hinzugefügt</li>
-                    <li><strong>Plugin-Update-Prüfung</strong> - Changelog-Fallback-Mechanismus hinzugefügt</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>Erweiterte Input-Validierung in allen Plugins</li>
-                    <li>Verbesserte Fehlerbehandlung und Sanitization</li>
-                </ul>
-            </div>
-
-            <!-- Version 1.0.7 -->
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.7</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Unabhängige Lautstärkeregelung für Gift-Animationen</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Separate Lautstärkeregelung für Gift-Animation-Audio im Soundboard</li>
-                            <li>Neue Animation Volume Control in der Soundboard-Konfiguration</li>
-                            <li>Standalone Soundboard UI mit Animation-Lautstärkeregelung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Stream Alchemy - Erweiterte Einstellungen</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Anpassbare KI-Prompts für Item-Generierung</li>
-                            <li>Item-Management mit Bearbeitungs- und Löschfunktionen</li>
-                            <li>Umfassende Settings-UI mit Custom-Prompt-Unterstützung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Multicam - OBS Passwort-Authentifizierung</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>OBS-Passwort-Support für sichere WebSocket-Verbindung</li>
-                            <li>Gift-to-Scene-Mapping UI mit vollständigem Gift-Katalog</li>
-                            <li>Deutsche und englische Lokalisierung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Plugin-UI-Integration</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Leaderboard Admin-Panel mit Session- und All-Time-Tracking</li>
-                            <li>Stream Alchemy, GCCE und Thermal Printer UI-Integration</li>
-                            <li>VDO.Ninja Multi-Guest und Emoji Rain v2.0 standardmäßig aktiviert</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Emoji Rain komplett überarbeitet</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Bubble-Blop-Animation korrigiert</li>
-                            <li>Pixel-Modus-Rendering behoben</li>
-                            <li>Farbfilter für Emojis hinzugefügt</li>
-                            <li>Edge-Spawning für bessere Verteilung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Follow-Sounds spielen jetzt zuverlässig</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Verbesserte Event-Erkennung mit mehreren displayType-Mustern</li>
-                            <li>Fallback-Check für Follow-Events</li>
-                            <li>Debug-Logging für unerkannte Social-Events</li>
-                        </ul>
-                    </li>
-                    <li><strong>OpenShock Pattern-Einstellungen</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Pattern-Settings-Funktionalität im Mapping-Modal implementiert</li>
-                        </ul>
-                    </li>
-                    <li><strong>Sidebar-Layout-Fixes</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Doppelte Text-Spans in VDO.Ninja entfernt</li>
-                            <li>Plugin-Manager-Layout korrigiert</li>
-                        </ul>
-                    </li>
-                    <li><strong>Gift Milestone Celebration</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Tier-spezifische Media-Zuweisung behoben</li>
-                            <li>Verbesserte Error-Behandlung</li>
-                        </ul>
-                    </li>
-                    <li><strong>Weather Control Overlay</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>GSAP-Bibliothek-Ladeproblem in OBS Browser Source behoben</li>
-                            <li>Animationen funktionieren jetzt korrekt</li>
-                        </ul>
-                    </li>
-                    <li><strong>Resource Monitor</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Kompakt-Modus zeigt nun alle Inhalte auf einer Seite</li>
-                        </ul>
-                    </li>
-                    <li><strong>Plugin-Initialisierung</strong>
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Alle 23 Plugins laden jetzt erfolgreich</li>
-                            <li>Logger-API-Probleme für GCCE und StreamAlchemy behoben</li>
-                            <li>Minecraft-Connect, OpenShock, OSC-Bridge, Resource-Monitor aktiviert</li>
-                            <li>API-Bridge, HybridShock, Multicam, Viewer-XP aktiviert</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>XSS-Schutz und Input-Validierung für Stream Alchemy</li>
-                    <li>Validation-Helper refactored für bessere Wartbarkeit</li>
-                    <li>Accessibility-Verbesserungen hinzugefügt</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>Dokumentationsdateien in infos/-Unterverzeichnis reorganisiert</li>
-                    <li>Dateipfad-Referenzen aktualisiert</li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.6</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Plugins</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>StreamAlchemy Plugin</strong> - RPG-Crafting-System mit KI
-                        <ul style="margin-top: 0.5rem;">
-                            <li>TikTok Gifts werden zu virtuellen RPG-Items transformiert</li>
-                            <li>KI-generierte isometrische Item-Icons mit DALL-E 3</li>
-                            <li>Echtzeit-Crafting: 2 Gifts innerhalb von 6 Sekunden kombinieren</li>
-                            <li>4 Seltenheitsstufen basierend auf Coin-Werten (Bronze, Silber, Gold, Lila)</li>
-                            <li>Persistente Inventarverwaltung pro User</li>
-                            <li>Chat-Commands: /inventory, /inspect, /merge, /alchemy</li>
-                        </ul>
-                    </li>
-                    <li><strong>Leaderboard Plugin</strong> - Top-Gifter Tracking
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Session-Leaderboard für aktuelle Stream-Session</li>
-                            <li>All-Time Champions für historische Top-Contributor</li>
-                            <li>WebSocket-basierte Live-Updates im Overlay</li>
-                            <li>Automatische Aktualisierung von Nicknamen und Profilbildern</li>
-                            <li>Moderne Neon/Dark-Theme UI mit CSS-Animationen</li>
-                            <li>Performance-optimiert mit debounced Database Writes</li>
-                        </ul>
-                    </li>
-                    <li><strong>Thermal Printer Plugin</strong> - Physische Event-Ausdrucke
-                        <ul style="margin-top: 0.5rem;">
-                            <li>ESC/POS Thermodrucker-Support (USB & Netzwerk)</li>
-                            <li>Druckt Chat-Nachrichten, Gifts, Follows und Shares</li>
-                            <li>Intelligente Filterung: Min. Coins, Bot-Command-Ignorierung</li>
-                            <li>Asynchrone Print-Queue verhindert Event-Loop-Blocking</li>
-                            <li>Auto-Reconnect bei Verbindungsverlust</li>
-                            <li>Konfigurierbare ESC/POS-Formatierung mit ASCII-Icons</li>
-                        </ul>
-                    </li>
-                    <li><strong>GCCE (Global Chat Command Engine)</strong> - Universelles Command-System
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Zentrales Command-Registry für alle Plugins</li>
-                            <li>Hierarchisches Permission-System (broadcaster → all)</li>
-                            <li>Automatische Syntax-Validierung und Error-Messaging</li>
-                            <li>Rate-Limiting (10 Commands/User/Minute, 100 Global/Minute)</li>
-                            <li>Unified Overlay-System für Command-Feedback</li>
-                            <li>Built-in Commands: /help, /commands, /inventory, /inspect, /merge</li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.5</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
-                
-                <h3 style="color: var(--color-error); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔴 BREAKING CHANGES</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Migration zu Eulerstream WebSocket SDK</strong> - Vollständiger Ersatz von tiktok-live-connector
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Direkte WebSocket-Verbindung zur Eulerstream API</li>
-                            <li>Eulerstream API-Schlüssel ist jetzt ERFORDERLICH</li>
-                            <li>Rückwärtskompatibilität mit bestehenden Event-Handlern erhalten</li>
-                            <li>Siehe <a href="https://www.eulerstream.com" target="_blank" rel="noopener">eulerstream.com</a> für API-Schlüssel-Registrierung</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Kritische Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>TikTok TTS Engine 500 Fehler behoben</strong> - Komplette Neuimplementierung
-                        <ul style="margin-top: 0.5rem;">
-                            <li>Hybrides Endpoint-System mit mehreren Fallback-Optionen</li>
-                            <li>Automatische Endpoint-Rotation bei Fehlern</li>
-                            <li>Unterstützung für mehrere Response-Formate</li>
-                            <li>Moderne User-Agent (Android 13)</li>
-                            <li>Text-Chunking für lange Nachrichten (>300 Zeichen)</li>
-                        </ul>
-                    </li>
-                    <li><strong>TikTok Connection 504 Timeout behoben</strong> - Euler Stream Optimierungen
-                        <ul style="margin-top: 0.5rem;">
-                            <li>fetchRoomInfoOnConnect auf false gesetzt zur Reduzierung von API-Calls</li>
-                            <li>HTTP Timeout auf minimum 30 Sekunden erhöht</li>
-                            <li>Verbesserte Error-Meldungen für Euler Stream Timeouts</li>
-                            <li>Hardcodierter Euler API-Schlüssel als Base64-Fallback integriert</li>
-                        </ul>
-                    </li>
-                    <li><strong>Invalid Option Error behoben</strong> - Nicht existierende enableWebsocketUpgrade Option entfernt</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neue Features</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li><strong>Weather Control Plugin</strong> - Professionelles Wetter-Effekt-System
-                        <ul style="margin-top: 0.5rem;">
-                            <li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
-                            <li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
-                            <li>Permission-basierte Zugriffskontrolle</li>
-                            <li>Konfigurierbare Rate-Limiting (10 Anfragen/Minute pro User)</li>
-                            <li>WebSocket Echtzeit-Event-Streaming zu Overlays</li>
-                            <li>Flow-Action-Support für IFTTT-Automatisierung</li>
-                            <li>Gift-basierte automatische Trigger (Coin-Schwellenwerte)</li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.4</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Website-Verbesserungen</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Navbar-Logo Fix</strong> - Text-Überlappung mit Menü-Items behoben</li>
-                    <li><strong>Größeres Logo</strong> - Logo-Icon von 32px auf 48px vergrößert für bessere Sichtbarkeit</li>
-                    <li><strong>Plugins-Seite überarbeitet</strong> - Bessere Struktur und Organisation</li>
-                    <li><strong>Dokumentation erweitert</strong> - Umfassende Plugin-Anleitungen hinzugefügt</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Detaillierte Plugin-API-Dokumentation</li>
-                    <li>Plugin-Entwicklungsguides mit Beispielen</li>
-                    <li>Screenshots für Plugin-Konfiguration</li>
-                    <li>Verbesserte Navigation für Plugin-Inhalte</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎨 Design</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>Verbesserte visuelle Trennung in Plugin-Kategorien</li>
-                    <li>Bessere mobile Responsivität auf allen Seiten</li>
-                    <li>Optimierte Lesbarkeit und Benutzerfreundlichkeit</li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.3</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neu</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li><strong>Validators Module</strong> - Umfassende Input-Validierung für alle API-Endpoints</li>
-                    <li><strong>Template Engine</strong> - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)</li>
-                    <li><strong>Error Handler Module</strong> - Standardisierte Fehlerbehandlung im gesamten System</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>CORS-Policy verschärft - Whitelist-basiert statt Wildcard</li>
-                    <li>CSP mit Nonces gegen XSS-Angriffe implementiert</li>
-                    <li>DNS-basierte Webhook-Validierung gegen SSRF</li>
-                    <li>IP-Blacklist für private Netzwerke</li>
-                    <li>Sicherheit verbessert: 5/10 → 9/10 (+80%)</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)</li>
-                    <li>Template-Rendering mit RegExp-Cache (90% Verbesserung)</li>
-                    <li>Memory Leaks behoben - Plugin-Reload ohne Server-Neustart</li>
-                    <li>Performance: ~500 → ~800 Events/s (+60%)</li>
-                </ul>
-
-                <h3 style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>Socket Event Cleanup implementiert - keine Memory Leaks mehr</li>
-                    <li>Logging standardisiert - console.* durch strukturiertes Logging ersetzt</li>
-                    <li>Code-Duplikation eliminiert (~200 Zeilen reduziert)</li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
-                <h2 style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.2</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 9, 2025</p>
-                
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎮 OSC-Bridge Plugin</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>VRChat-Integration via OSC-Protokoll</li>
-                    <li>Bidirektionale Kommunikation (Senden & Empfangen)</li>
-                    <li>VRChat Helper-Methoden: wave(), celebrate(), dance(), hearts(), confetti()</li>
-                    <li>Flow-System-Integration mit 8 neuen Actions</li>
-                    <li>Latenz < 50ms</li>
-                </ul>
-
-                <h3 style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Launcher & Update-System</h3>
-                <ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-                    <li>Platform-agnostischer Launcher (Windows, Linux, macOS)</li>
-                    <li>TTY-sicheres Logging (keine "stdout is not a tty" Fehler)</li>
-                    <li>Git-basiertes Update mit automatischem Backup</li>
-                    <li>Rollback bei fehlgeschlagenen Updates</li>
-                </ul>
-
-                <h3 style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔌 Plugin-System</h3>
-                <ul style="color: var(--color-text-secondary);">
-                    <li>Plugin-Loader mit Lifecycle-Management</li>
-                    <li>Plugin-Manager UI (Upload, Enable, Disable, Delete, Reload)</li>
-                    <li>Hot-Loading ohne Server-Neustart</li>
-                    <li>Multi-Cam Switcher Plugin - OBS-Szenen via Gifts/Chat steuern</li>
-                </ul>
-            </div>
-
-            <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
-                <h3 style="margin-bottom: var(--space-4); color: white;">⚠️ Beta-Hinweis</h3>
-                <p style="margin-bottom: var(--space-6); opacity: 0.9;">
+<li>7 moderne Wetter-Effekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitch Clouds</li>
+<li>GPU-beschleunigte Canvas 2D Rendering mit 60 FPS</li>
+<li>Permission-basierte Zugriffskontrolle</li>
+<li>Konfigurierbare Rate-Limiting (10 Anfragen/Minute pro User)</li>
+<li>WebSocket Echtzeit-Event-Streaming zu Overlays</li>
+<li>Flow-Action-Support für IFTTT-Automatisierung</li>
+<li>Gift-basierte automatische Trigger (Coin-Schwellenwerte)</li>
+</ul>
+</li>
+</ul>
+</div>
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.104" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.4</h2>
+<p data-i18n="changelog.p.105" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 23, 2025</p>
+<h3 data-i18n="changelog.h3.106" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Website-Verbesserungen</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Navbar-Logo Fix</strong> - Text-Überlappung mit Menü-Items behoben</li>
+<li><strong>Größeres Logo</strong> - Logo-Icon von 32px auf 48px vergrößert für bessere Sichtbarkeit</li>
+<li><strong>Plugins-Seite überarbeitet</strong> - Bessere Struktur und Organisation</li>
+<li><strong>Dokumentation erweitert</strong> - Umfassende Plugin-Anleitungen hinzugefügt</li>
+</ul>
+<h3 data-i18n="changelog.h3.107" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">📚 Dokumentation</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>Detaillierte Plugin-API-Dokumentation</li>
+<li>Plugin-Entwicklungsguides mit Beispielen</li>
+<li>Screenshots für Plugin-Konfiguration</li>
+<li>Verbesserte Navigation für Plugin-Inhalte</li>
+</ul>
+<h3 data-i18n="changelog.h3.108" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎨 Design</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>Verbesserte visuelle Trennung in Plugin-Kategorien</li>
+<li>Bessere mobile Responsivität auf allen Seiten</li>
+<li>Optimierte Lesbarkeit und Benutzerfreundlichkeit</li>
+</ul>
+</div>
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.109" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.3</h2>
+<p data-i18n="changelog.p.110" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 10, 2025</p>
+<h3 data-i18n="changelog.h3.111" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">✨ Neu</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li><strong>Validators Module</strong> - Umfassende Input-Validierung für alle API-Endpoints</li>
+<li><strong>Template Engine</strong> - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)</li>
+<li><strong>Error Handler Module</strong> - Standardisierte Fehlerbehandlung im gesamten System</li>
+</ul>
+<h3 data-i18n="changelog.h3.112" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔐 Sicherheit</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>CORS-Policy verschärft - Whitelist-basiert statt Wildcard</li>
+<li>CSP mit Nonces gegen XSS-Angriffe implementiert</li>
+<li>DNS-basierte Webhook-Validierung gegen SSRF</li>
+<li>IP-Blacklist für private Netzwerke</li>
+<li>Sicherheit verbessert: 5/10 → 9/10 (+80%)</li>
+</ul>
+<h3 data-i18n="changelog.h3.113" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">⚡ Performance</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)</li>
+<li>Template-Rendering mit RegExp-Cache (90% Verbesserung)</li>
+<li>Memory Leaks behoben - Plugin-Reload ohne Server-Neustart</li>
+<li>Performance: ~500 → ~800 Events/s (+60%)</li>
+</ul>
+<h3 data-i18n="changelog.h3.114" style="color: var(--color-warning); margin-top: var(--space-6); margin-bottom: var(--space-3);">🐛 Bugfixes</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>Socket Event Cleanup implementiert - keine Memory Leaks mehr</li>
+<li>Logging standardisiert - console.* durch strukturiertes Logging ersetzt</li>
+<li>Code-Duplikation eliminiert (~200 Zeilen reduziert)</li>
+</ul>
+</div>
+<div style="background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-xl); margin-bottom: var(--space-6); border: 1px solid var(--color-border);">
+<h2 data-i18n="changelog.h2.115" style="color: var(--color-text); margin-bottom: var(--space-4);">Version 1.0.2</h2>
+<p data-i18n="changelog.p.116" style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">Released: November 9, 2025</p>
+<h3 data-i18n="changelog.h3.117" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🎮 OSC-Bridge Plugin</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>VRChat-Integration via OSC-Protokoll</li>
+<li>Bidirektionale Kommunikation (Senden &amp; Empfangen)</li>
+<li>VRChat Helper-Methoden: wave(), celebrate(), dance(), hearts(), confetti()</li>
+<li>Flow-System-Integration mit 8 neuen Actions</li>
+<li>Latenz &lt; 50ms</li>
+</ul>
+<h3 data-i18n="changelog.h3.118" style="color: var(--color-info); margin-top: var(--space-6); margin-bottom: var(--space-3);">🚀 Launcher &amp; Update-System</h3>
+<ul style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+<li>Platform-agnostischer Launcher (Windows, Linux, macOS)</li>
+<li>TTY-sicheres Logging (keine "stdout is not a tty" Fehler)</li>
+<li>Git-basiertes Update mit automatischem Backup</li>
+<li>Rollback bei fehlgeschlagenen Updates</li>
+</ul>
+<h3 data-i18n="changelog.h3.119" style="color: var(--color-success); margin-top: var(--space-6); margin-bottom: var(--space-3);">🔌 Plugin-System</h3>
+<ul style="color: var(--color-text-secondary);">
+<li>Plugin-Loader mit Lifecycle-Management</li>
+<li>Plugin-Manager UI (Upload, Enable, Disable, Delete, Reload)</li>
+<li>Hot-Loading ohne Server-Neustart</li>
+<li>Multi-Cam Switcher Plugin - OBS-Szenen via Gifts/Chat steuern</li>
+</ul>
+</div>
+<div style="background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); padding: var(--space-8); border-radius: var(--radius-xl); text-align: center; color: white;">
+<h3 data-i18n="changelog.h3.120" style="margin-bottom: var(--space-4); color: white;">⚠️ Beta-Hinweis</h3>
+<p data-i18n="changelog.p.121" style="margin-bottom: var(--space-6); opacity: 0.9;">
                     Dieses Tool befindet sich in aktiver Entwicklung. Features können sich ändern. 
                     Bitte melde Bugs und Feature-Requests auf GitHub.
                 </p>
-                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" 
-                   style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+<a data-i18n="changelog.a.122" href="https://github.com/Loggableim/ltth.app/issues" rel="noopener" style="display: inline-block; background: white; color: var(--color-primary); padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;" target="_blank">
                     GitHub Issues
                 </a>
-            </div>
-        </div>
-    </section>
-    <script src="/js/main.js"></script>
-    <script src="/js/i18n.js"></script>
-    <script src="/js/layout.js"></script>
-    <script>
+</div>
+</div>
+</section>
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
         document.addEventListener('DOMContentLoaded', async () => {
             if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');

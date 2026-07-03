@@ -1,130 +1,120 @@
 <!DOCTYPE html>
-<html lang="de" data-lang="de">
+
+<html data-lang="de" lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Complete documentation for PupCid's Little TikTool Helper - guides, API reference, and tutorials.">
-    <title>Documentation - PupCid's Little TikTool Helper</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#12a116">
-    
-    <!-- Hreflang Tags for Language Alternates -->
-    <link rel="alternate" hreflang="de" href="https://ltth.app/docs.html">
-    <link rel="alternate" hreflang="en" href="https://ltth.app/docs-en.html">
-    <link rel="alternate" hreflang="fr" href="https://ltth.app/docs-fr.html">
-    <link rel="alternate" hreflang="es" href="https://ltth.app/docs-es.html">
-    <link rel="alternate" hreflang="x-default" href="https://ltth.app/docs.html">
-    <link rel="canonical" href="https://ltth.app/docs.html">
-    
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/layout.css">
-    <link rel="stylesheet" href="/css/docs.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Complete documentation for PupCid's Little TikTool Helper - guides, API reference, and tutorials." name="description"/>
+<title>Documentation - PupCid's Little TikTool Helper</title>
+<link href="/assets/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/manifest.json" rel="manifest"/>
+<meta content="#12a116" name="theme-color"/>
+<!-- Hreflang Tags for Language Alternates -->
+<link href="https://ltth.app/docs.html" hreflang="de" rel="alternate"/>
+<link href="https://ltth.app/docs-en.html" hreflang="en" rel="alternate"/>
+<link href="https://ltth.app/docs-fr.html" hreflang="fr" rel="alternate"/>
+<link href="https://ltth.app/docs-es.html" hreflang="es" rel="alternate"/>
+<link href="https://ltth.app/docs.html" hreflang="x-default" rel="alternate"/>
+<link href="https://ltth.app/docs.html" rel="canonical"/>
+<link href="/css/main.css" rel="stylesheet"/>
+<link href="/css/layout.css" rel="stylesheet"/>
+<link href="/css/docs.css" rel="stylesheet"/>
 </head>
 <body>
-    <a href="#main-content" class="skip-to-content">Skip to main content</a>
-
-    <div class="docs-layout" id="main-content">
-        <aside class="docs-sidebar">
-            <div class="docs-search">
-                <input type="text" placeholder="Dokumentation durchsuchen..." class="search-input">
-            </div>
-            <nav class="docs-nav">
-                <div class="docs-nav-section">
-                    <h3>Erste Schritte</h3>
-                    <ul>
-                        <li><a href="#introduction" class="active">Einführung</a></li>
-                        <li><a href="#installation">Installation & Setup</a></li>
-                        <li><a href="#cloud-launcher">Cloud Launcher</a></li>
-                        <li><a href="#quick-start">Quick Start</a></li>
-                        <li><a href="#configuration">Konfiguration</a></li>
-                    </ul>
-                </div>
-                <div class="docs-nav-section">
-                    <h3>Features</h3>
-                    <ul>
-                        <li><a href="#tiktok-connection">TikTok LIVE Verbindung</a></li>
-                        <li><a href="#tts">Text-to-Speech</a></li>
-                        <li><a href="#alerts">Alert-System</a></li>
-                        <li><a href="#soundboard">Soundboard</a></li>
-                        <li><a href="#flows">Event-Automation (Flows)</a></li>
-                        <li><a href="#goals">Goals & Overlays</a></li>
-                    </ul>
-                </div>
-                <div class="docs-nav-section">
-                    <h3>Integrationen</h3>
-                    <ul>
-                        <li><a href="#obs">OBS Studio</a></li>
-                        <li><a href="#vrchat">VRChat OSC</a></li>
-                        <li><a href="#vdoninja">VDO.Ninja</a></li>
-                    </ul>
-                </div>
-                <div class="docs-nav-section">
-                    <h3>Entwickler</h3>
-                    <ul>
-                        <li><a href="#architecture">Architektur</a></li>
-                        <li><a href="#plugin-api">Plugin-API</a></li>
-                        <li><a href="#api-reference">REST-API</a></li>
-                        <li><a href="#troubleshooting">Troubleshooting</a></li>
-                    </ul>
-                </div>
-            </nav>
-        </aside>
-
-        <main class="docs-content">
-            <article id="introduction">
-                <h1>Willkommen bei PupCid's Little TikTool Helper</h1>
-                <p>Diese Dokumentation hilft dir, das Tool optimal zu nutzen und alle Features kennenzulernen.</p>
-                
-                <h2>Was ist ltth.app?</h2>
-                <p><strong>PupCid's Little TikTool Helper</strong> ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.</p>
-                
-                <h2>Hauptfunktionen</h2>
-                <ul>
-                    <li><strong>Echtzeit-TikTok LIVE Integration:</strong> Empfange Gifts, Comments, Follows, Shares und Likes in Echtzeit</li>
-                    <li><strong>Text-to-Speech:</strong> 75+ TikTok-Stimmen & 30+ Google Cloud-Stimmen</li>
-                    <li><strong>Alert-System:</strong> Anpassbare Alerts für alle Event-Typen</li>
-                    <li><strong>Soundboard:</strong> 100.000+ Sounds via MyInstants-Integration</li>
-                    <li><strong>Event-Automation (Flows):</strong> Wenn-Dann-Automatisierungen ohne Code</li>
-                    <li><strong>OBS-Integration:</strong> Transparentes Full-HD-Overlay für Streams</li>
-                    <li><strong>Plugin-System:</strong> 30+ vorinstallierte Plugins, erweiterbar</li>
-                    <li><strong>100% Lokal & Open Source:</strong> Keine Cloud, keine Login-Daten erforderlich</li>
-                </ul>
-
-                <h2>Für wen ist das Tool?</h2>
-                <ul>
-                    <li>TikTok LIVE Streamer - Professionelle Overlays und Alerts</li>
-                    <li>Content Creator - Event-Automatisierung und Interaktivität</li>
-                    <li>VRChat Streamer - OSC-Integration für Avatar-Steuerung</li>
-                    <li>Multi-Guest Streamer - VDO.Ninja Integration für Interviews</li>
-                    <li>Entwickler - Modulares Plugin-System zum Erweitern</li>
-                </ul>
-            </article>
-
-            <article id="installation">
-                <h1>Installation & Setup</h1>
-                <p>Die Installation von PupCid's Little TikTool Helper ist einfach und schnell.</p>
-                
-                <h2>Systemanforderungen</h2>
-                <ul>
-                    <li><strong>Betriebssystem:</strong> Windows 10/11 (64-bit)</li>
-                    <li><strong>Node.js:</strong> 18.0.0 - 23.x (wird automatisch installiert)</li>
-                    <li><strong>RAM:</strong> Mindestens 4 GB empfohlen</li>
-                    <li><strong>Festplatte:</strong> 500 MB freier Speicherplatz</li>
-                </ul>
-                
-                <h2>Installation mit Cloud Launcher (empfohlen)</h2>
-                <p>Der <strong>Cloud Launcher</strong> ist die einfachste und empfohlene Installationsmethode für Windows:</p>
-                <ol>
-                    <li><strong>Download:</strong> Lade <code>launcher.exe</code> von <a href="/downloads/launcher.exe">ltth.app/downloads/launcher.exe</a> herunter (~7 MB)</li>
-                    <li><strong>Launcher starten:</strong> Doppelklick auf launcher.exe</li>
-                    <li><strong>Automatische Installation:</strong> Der Launcher lädt automatisch die neueste LTTH-Version herunter und installiert sie</li>
-                    <li><strong>Fertig:</strong> LTTH startet automatisch und öffnet das Dashboard</li>
-                </ol>
-                <p><strong>Vorteile:</strong> Auto-Updates, Version-Management, Rollback-Funktion, keine manuellen Node.js-Installationen nötig.</p>
-
-                <h2>Manuelle Installation (für Entwickler)</h2>
-                <pre><code># Repository klonen
+<a class="skip-to-content" data-i18n="docs.a.1" href="#main-content">Skip to main content</a>
+<div class="docs-layout" id="main-content">
+<aside class="docs-sidebar">
+<div class="docs-search">
+<input class="search-input" placeholder="Dokumentation durchsuchen..." type="text"/>
+</div>
+<nav class="docs-nav">
+<div class="docs-nav-section">
+<h3 data-i18n="docs.h3.2">Erste Schritte</h3>
+<ul>
+<li><a class="active" data-i18n="docs.a.3" href="#introduction">Einführung</a></li>
+<li><a data-i18n="docs.a.4" href="#installation">Installation &amp; Setup</a></li>
+<li><a data-i18n="docs.a.5" href="#cloud-launcher">Cloud Launcher</a></li>
+<li><a data-i18n="docs.a.6" href="#quick-start">Quick Start</a></li>
+<li><a data-i18n="docs.a.7" href="#configuration">Konfiguration</a></li>
+</ul>
+</div>
+<div class="docs-nav-section">
+<h3 data-i18n="docs.h3.8">Features</h3>
+<ul>
+<li><a data-i18n="docs.a.9" href="#tiktok-connection">TikTok LIVE Verbindung</a></li>
+<li><a data-i18n="docs.a.10" href="#tts">Text-to-Speech</a></li>
+<li><a data-i18n="docs.a.11" href="#alerts">Alert-System</a></li>
+<li><a data-i18n="docs.a.12" href="#soundboard">Soundboard</a></li>
+<li><a data-i18n="docs.a.13" href="#flows">Event-Automation (Flows)</a></li>
+<li><a data-i18n="docs.a.14" href="#goals">Goals &amp; Overlays</a></li>
+</ul>
+</div>
+<div class="docs-nav-section">
+<h3 data-i18n="docs.h3.15">Integrationen</h3>
+<ul>
+<li><a data-i18n="docs.a.16" href="#obs">OBS Studio</a></li>
+<li><a data-i18n="docs.a.17" href="#vrchat">VRChat OSC</a></li>
+<li><a data-i18n="docs.a.18" href="#vdoninja">VDO.Ninja</a></li>
+</ul>
+</div>
+<div class="docs-nav-section">
+<h3 data-i18n="docs.h3.19">Entwickler</h3>
+<ul>
+<li><a data-i18n="docs.a.20" href="#architecture">Architektur</a></li>
+<li><a data-i18n="docs.a.21" href="#plugin-api">Plugin-API</a></li>
+<li><a data-i18n="docs.a.22" href="#api-reference">REST-API</a></li>
+<li><a data-i18n="docs.a.23" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</div>
+</nav>
+</aside>
+<main class="docs-content">
+<article id="introduction">
+<h1 data-i18n="docs.h1.24">Willkommen bei PupCid's Little TikTool Helper</h1>
+<p data-i18n="docs.p.25">Diese Dokumentation hilft dir, das Tool optimal zu nutzen und alle Features kennenzulernen.</p>
+<h2 data-i18n="docs.h2.26">Was ist ltth.app?</h2>
+<p data-i18n="docs.p.27"><strong>PupCid's Little TikTool Helper</strong> ist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.</p>
+<h2 data-i18n="docs.h2.28">Hauptfunktionen</h2>
+<ul>
+<li><strong>Echtzeit-TikTok LIVE Integration:</strong> Empfange Gifts, Comments, Follows, Shares und Likes in Echtzeit</li>
+<li><strong>Text-to-Speech:</strong> 75+ TikTok-Stimmen &amp; 30+ Google Cloud-Stimmen</li>
+<li><strong>Alert-System:</strong> Anpassbare Alerts für alle Event-Typen</li>
+<li><strong>Soundboard:</strong> 100.000+ Sounds via MyInstants-Integration</li>
+<li><strong>Event-Automation (Flows):</strong> Wenn-Dann-Automatisierungen ohne Code</li>
+<li><strong>OBS-Integration:</strong> Transparentes Full-HD-Overlay für Streams</li>
+<li><strong>Plugin-System:</strong> 30+ vorinstallierte Plugins, erweiterbar</li>
+<li><strong>100% Lokal &amp; Open Source:</strong> Keine Cloud, keine Login-Daten erforderlich</li>
+</ul>
+<h2 data-i18n="docs.h2.29">Für wen ist das Tool?</h2>
+<ul>
+<li>TikTok LIVE Streamer - Professionelle Overlays und Alerts</li>
+<li>Content Creator - Event-Automatisierung und Interaktivität</li>
+<li>VRChat Streamer - OSC-Integration für Avatar-Steuerung</li>
+<li>Multi-Guest Streamer - VDO.Ninja Integration für Interviews</li>
+<li>Entwickler - Modulares Plugin-System zum Erweitern</li>
+</ul>
+</article>
+<article id="installation">
+<h1 data-i18n="docs.h1.30">Installation &amp; Setup</h1>
+<p data-i18n="docs.p.31">Die Installation von PupCid's Little TikTool Helper ist einfach und schnell.</p>
+<h2 data-i18n="docs.h2.32">Systemanforderungen</h2>
+<ul>
+<li><strong>Betriebssystem:</strong> Windows 10/11 (64-bit)</li>
+<li><strong>Node.js:</strong> 18.0.0 - 23.x (wird automatisch installiert)</li>
+<li><strong>RAM:</strong> Mindestens 4 GB empfohlen</li>
+<li><strong>Festplatte:</strong> 500 MB freier Speicherplatz</li>
+</ul>
+<h2 data-i18n="docs.h2.33">Installation mit Cloud Launcher (empfohlen)</h2>
+<p data-i18n="docs.p.34">Der <strong>Cloud Launcher</strong> ist die einfachste und empfohlene Installationsmethode für Windows:</p>
+<ol>
+<li><strong>Download:</strong> Lade <code>launcher.exe</code> von <a data-i18n="docs.a.35" href="/downloads/launcher.exe">ltth.app/downloads/launcher.exe</a> herunter (~7 MB)</li>
+<li><strong>Launcher starten:</strong> Doppelklick auf launcher.exe</li>
+<li><strong>Automatische Installation:</strong> Der Launcher lädt automatisch die neueste LTTH-Version herunter und installiert sie</li>
+<li><strong>Fertig:</strong> LTTH startet automatisch und öffnet das Dashboard</li>
+</ol>
+<p data-i18n="docs.p.36"><strong>Vorteile:</strong> Auto-Updates, Version-Management, Rollback-Funktion, keine manuellen Node.js-Installationen nötig.</p>
+<h2 data-i18n="docs.h2.37">Manuelle Installation (für Entwickler)</h2>
+<pre><code># Repository klonen
 git clone https://github.com/Loggableim/ltth.app.git
 cd ltth.app
 
@@ -133,667 +123,579 @@ npm install
 
 # Server starten
 node launch.js</code></pre>
-            </article>
-
-            <article id="cloud-launcher">
-                <h1>Cloud Launcher</h1>
-                <p>Der LTTH Cloud Launcher ist die empfohlene Installationsmethode für Windows.</p>
-                
-                <h2>Features</h2>
-                <ul>
-                    <li><strong>Automatischer Download und Installation:</strong> Lädt die neueste Version automatisch herunter</li>
-                    <li><strong>Auto-Update:</strong> Prüft bei jedem Start version.json auf neue Versionen</li>
-                    <li><strong>Rollback:</strong> Wechsel zu vorherigen Versionen über Einstellungen → Versionen</li>
-                    <li><strong>Version-Management:</strong> Alle Versionen sichtbar und verwaltbar</li>
-                    <li><strong>Saubere Trennung:</strong> App-Daten in %LOCALAPPDATA%\LTTH\, Konfiguration bleibt erhalten</li>
-                </ul>
-
-                <h2>Technische Details</h2>
-                <ul>
-                    <li><strong>Download:</strong> <a href="/downloads/launcher.exe">https://ltth.app/downloads/launcher.exe</a> (~7 MB)</li>
-                    <li><strong>Plattform:</strong> Windows 10+</li>
-                    <li><strong>Installationsort:</strong> <code>%LOCALAPPDATA%\LTTH\versions\&lt;version&gt;\</code></li>
-                    <li><strong>Konfiguration:</strong> <code>%APPDATA%\ltth-launcher\config.json</code></li>
-                    <li><strong>Logs:</strong> <code>%LOCALAPPDATA%\LTTH\launcher.log</code></li>
-                    <li><strong>Version-Check:</strong> <code>https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json</code></li>
-                    <li><strong>App-Download (intern):</strong> <code>https://ltth.app/app/ltth_latest.zip</code></li>
-                    <li><strong>Voraussetzung:</strong> WebView2 Runtime (standardmäßig in Windows 10/11)</li>
-                </ul>
-
-                <h2>Rollback</h2>
-                <p>Um zu einer vorherigen Version zurückzukehren:</p>
-                <ol>
-                    <li>Öffne die Einstellungen im Launcher</li>
-                    <li>Gehe zu "Versionen"</li>
-                    <li>Wähle die gewünschte vorherige Version aus</li>
-                    <li>Klicke auf "Rollback"</li>
-                </ol>
-                <p>Der Launcher wechselt sofort zur ausgewählten Version, ohne deine Konfiguration zu verlieren.</p>
-            </article>
-
-            <article id="quick-start">
-                <h1>Quick Start</h1>
-                <p>In 3 Schritten zum professionellen TikTok LIVE Stream!</p>
-                
-                <h2>Schritt 1: Mit TikTok LIVE verbinden</h2>
-                <ol>
-                    <li>Öffne das Dashboard auf <code>http://localhost:3000</code></li>
-                    <li>Gib deinen TikTok-Username ein (ohne @)</li>
-                    <li>Klicke auf "Connect to TikTok LIVE"</li>
-                    <li>Warte auf grünen Status "Connected"</li>
-                </ol>
-                <p><strong>Wichtig:</strong> Du musst bereits LIVE sein auf TikTok, damit die Verbindung funktioniert.</p>
-
-                <h2>Schritt 2: OBS einrichten</h2>
-                <ol>
-                    <li>Öffne OBS Studio</li>
-                    <li>Füge eine neue Browser-Source hinzu</li>
-                    <li>URL: <code>http://localhost:3000/overlay</code></li>
-                    <li>Breite: 1920, Höhe: 1080</li>
-                    <li>Aktiviere "Shutdown source when not visible" für Performance</li>
-                </ol>
-
-                <h2>Schritt 3: Features konfigurieren</h2>
-                <ul>
-                    <li><strong>TTS:</strong> Dashboard → TTS → Stimme auswählen → "Auto-TTS für Chat" aktivieren</li>
-                    <li><strong>Alerts:</strong> Dashboard → Alerts → Event-Typ auswählen → Sound und Text konfigurieren</li>
-                    <li><strong>Goals:</strong> Dashboard → Goals → Ziel setzen → Style anpassen</li>
-                    <li><strong>Flows:</strong> Dashboard → Flows → "New Flow" → Trigger und Actions definieren</li>
-                </ul>
-
-                <p><strong>Fertig!</strong> 🎉 Dein Stream ist jetzt professionell aufgesetzt.</p>
-            </article>
-
-            <article id="configuration">
-                <h1>Konfiguration</h1>
-                <p>Passe ltth.app an deine Bedürfnisse an mit umfangreichen Konfigurationsoptionen.</p>
-                
-                <h2>Dashboard-Zugriff</h2>
-                <p>Nach dem Start öffnet sich das Dashboard automatisch unter:</p>
-                <pre><code>http://localhost:3000</code></pre>
-                
-                <h2>Grundeinstellungen</h2>
-                <ul>
-                    <li><strong>TikTok Username:</strong> Dein TikTok-Benutzername (ohne @)</li>
-                    <li><strong>Sprache:</strong> Deutsch oder Englisch</li>
-                    <li><strong>Theme:</strong> Hell, Dunkel oder System</li>
-                    <li><strong>Server Port:</strong> Standard 3000 (änderbar)</li>
-                </ul>
-
-                <h2>Profile</h2>
-                <p>Erstelle mehrere Profile für verschiedene Streaming-Setups:</p>
-                <ul>
-                    <li>Verschiedene TikTok-Accounts</li>
-                    <li>Unterschiedliche Alert-Konfigurationen</li>
-                    <li>Separate Soundboards</li>
-                    <li>Individuelle Flow-Automationen</li>
-                </ul>
-
-                <h2>Backup & Restore</h2>
-                <p>Sichere deine Konfiguration regelmäßig:</p>
-                <ol>
-                    <li>Dashboard → Settings → Backup</li>
-                    <li>Klick auf "Create Backup"</li>
-                    <li>ZIP-Datei wird heruntergeladen</li>
-                    <li>Zum Wiederherstellen: "Restore from Backup"</li>
-                </ol>
-            </article>
-
-            <article id="tiktok-connection">
-                <h1>TikTok LIVE Verbindung</h1>
-                <p>Echtzeit-Verbindung zu deinem TikTok LIVE-Stream ohne Login-Daten.</p>
-                
-                <h2>Verbindung herstellen</h2>
-                <ol>
-                    <li>Öffne Dashboard auf <code>http://localhost:3000</code></li>
-                    <li>Gib deinen TikTok-Username ein (ohne @)</li>
-                    <li>Klicke "Connect to TikTok LIVE"</li>
-                    <li>Du musst bereits LIVE sein auf TikTok</li>
-                    <li>Warte auf grünen Status "Connected"</li>
-                </ol>
-                
-                <h2>Empfangene Events</h2>
-                <ul>
-                    <li><strong>Gifts:</strong> Geschenke mit Coins, Combo-Tracking, Gift-Katalog</li>
-                    <li><strong>Chat:</strong> Nachrichten mit Profilbildern und Badges</li>
-                    <li><strong>Follows:</strong> Neue Follower mit Follow-Role-Tracking</li>
-                    <li><strong>Shares:</strong> Stream-Shares mit Nutzerinformationen</li>
-                    <li><strong>Likes:</strong> Like-Events mit Like-Counts</li>
-                    <li><strong>Subscriptions:</strong> Subscriber mit Tier-Levels</li>
-                </ul>
-
-                <h2>Event-Anzeige</h2>
-                <p>Alle Events werden in Echtzeit angezeigt:</p>
-                <ul>
-                    <li><strong>Event Log:</strong> Chronologische Liste aller Events</li>
-                    <li><strong>Statistics:</strong> Live-Statistiken (Total Coins, Followers, etc.)</li>
-                    <li><strong>Top Gifters:</strong> Leaderboard der Top-Spender</li>
-                </ul>
-
-                <h2>Auto-Reconnect</h2>
-                <p>Bei Verbindungsabbruch erfolgt automatischer Reconnect:</p>
-                <ul>
-                    <li>Maximale Reconnect-Versuche: 10</li>
-                    <li>Wartezeit zwischen Versuchen: 5 Sekunden</li>
-                    <li>Konfigurierbar in Settings</li>
-                </ul>
-
-                <h2>Troubleshooting</h2>
-                <p><strong>Verbindung schlägt fehl:</strong></p>
-                <ul>
-                    <li>Stelle sicher, dass du bereits LIVE bist</li>
-                    <li>Username muss korrekt sein (ohne @)</li>
-                    <li>Prüfe Firewall/Antivirus-Einstellungen</li>
-                    <li>Versuche es nach 30 Sekunden erneut</li>
-                </ul>
-            </article>
-
-            <article id="tts">
-                <h1>Text-to-Speech (TTS)</h1>
-                <p>Professionelles TTS-System mit über 100 Stimmen für Chat-Nachrichten und Alerts.</p>
-                
-                <h2>Verfügbare Stimmen</h2>
-                <h3>TikTok Voices (Kostenlos)</h3>
-                <p>75+ TikTok-Stimmen ohne API-Key:</p>
-                <ul>
-                    <li><strong>Englisch:</strong> US Female, US Male, UK Female, Australian, etc.</li>
-                    <li><strong>Deutsch:</strong> Männlich und Weiblich</li>
-                    <li><strong>Character Voices:</strong> Ghostface, C-3PO, Stitch, Chewbacca</li>
-                    <li><strong>Singing Voices:</strong> Singing Female, Singing Male</li>
-                </ul>
-
-                <h3>Google Cloud Voices (Premium)</h3>
-                <p>30+ Google Cloud-Stimmen mit höchster Qualität (API-Key erforderlich)</p>
-
-                <h2>Auto-TTS für Chat</h2>
-                <p>Automatisches Vorlesen von Chat-Nachrichten:</p>
-                <ol>
-                    <li>Dashboard → TTS → "Auto-TTS für Chat" aktivieren</li>
-                    <li>Standard-Stimme auswählen</li>
-                    <li>Optional: Blacklist für Wörter/User einrichten</li>
-                    <li>Lautstärke und Geschwindigkeit anpassen</li>
-                </ol>
-
-                <h2>User Voice Mapping</h2>
-                <p>Weise bestimmten Usern eigene Stimmen zu:</p>
-                <pre><code>UserA → Ghostface (Horror-Stimme)
+</article>
+<article id="cloud-launcher">
+<h1 data-i18n="docs.h1.38">Cloud Launcher</h1>
+<p data-i18n="docs.p.39">Der LTTH Cloud Launcher ist die empfohlene Installationsmethode für Windows.</p>
+<h2 data-i18n="docs.h2.40">Features</h2>
+<ul>
+<li><strong>Automatischer Download und Installation:</strong> Lädt die neueste Version automatisch herunter</li>
+<li><strong>Auto-Update:</strong> Prüft bei jedem Start version.json auf neue Versionen</li>
+<li><strong>Rollback:</strong> Wechsel zu vorherigen Versionen über Einstellungen → Versionen</li>
+<li><strong>Version-Management:</strong> Alle Versionen sichtbar und verwaltbar</li>
+<li><strong>Saubere Trennung:</strong> App-Daten in %LOCALAPPDATA%\LTTH\, Konfiguration bleibt erhalten</li>
+</ul>
+<h2 data-i18n="docs.h2.41">Technische Details</h2>
+<ul>
+<li><strong>Download:</strong> <a data-i18n="docs.a.42" href="/downloads/launcher.exe">https://ltth.app/downloads/launcher.exe</a> (~7 MB)</li>
+<li><strong>Plattform:</strong> Windows 10+</li>
+<li><strong>Installationsort:</strong> <code>%LOCALAPPDATA%\LTTH\versions\&lt;version&gt;\</code></li>
+<li><strong>Konfiguration:</strong> <code>%APPDATA%\ltth-launcher\config.json</code></li>
+<li><strong>Logs:</strong> <code>%LOCALAPPDATA%\LTTH\launcher.log</code></li>
+<li><strong>Version-Check:</strong> <code>https://raw.githubusercontent.com/Loggableim/ltth.app/main/version.json</code></li>
+<li><strong>App-Download (intern):</strong> <code>https://ltth.app/app/ltth_latest.zip</code></li>
+<li><strong>Voraussetzung:</strong> WebView2 Runtime (standardmäßig in Windows 10/11)</li>
+</ul>
+<h2 data-i18n="docs.h2.43">Rollback</h2>
+<p data-i18n="docs.p.44">Um zu einer vorherigen Version zurückzukehren:</p>
+<ol>
+<li>Öffne die Einstellungen im Launcher</li>
+<li>Gehe zu "Versionen"</li>
+<li>Wähle die gewünschte vorherige Version aus</li>
+<li>Klicke auf "Rollback"</li>
+</ol>
+<p data-i18n="docs.p.45">Der Launcher wechselt sofort zur ausgewählten Version, ohne deine Konfiguration zu verlieren.</p>
+</article>
+<article id="quick-start">
+<h1 data-i18n="docs.h1.46">Quick Start</h1>
+<p data-i18n="docs.p.47">In 3 Schritten zum professionellen TikTok LIVE Stream!</p>
+<h2 data-i18n="docs.h2.48">Schritt 1: Mit TikTok LIVE verbinden</h2>
+<ol>
+<li>Öffne das Dashboard auf <code>http://localhost:3000</code></li>
+<li>Gib deinen TikTok-Username ein (ohne @)</li>
+<li>Klicke auf "Connect to TikTok LIVE"</li>
+<li>Warte auf grünen Status "Connected"</li>
+</ol>
+<p data-i18n="docs.p.49"><strong>Wichtig:</strong> Du musst bereits LIVE sein auf TikTok, damit die Verbindung funktioniert.</p>
+<h2 data-i18n="docs.h2.50">Schritt 2: OBS einrichten</h2>
+<ol>
+<li>Öffne OBS Studio</li>
+<li>Füge eine neue Browser-Source hinzu</li>
+<li>URL: <code>http://localhost:3000/overlay</code></li>
+<li>Breite: 1920, Höhe: 1080</li>
+<li>Aktiviere "Shutdown source when not visible" für Performance</li>
+</ol>
+<h2 data-i18n="docs.h2.51">Schritt 3: Features konfigurieren</h2>
+<ul>
+<li><strong>TTS:</strong> Dashboard → TTS → Stimme auswählen → "Auto-TTS für Chat" aktivieren</li>
+<li><strong>Alerts:</strong> Dashboard → Alerts → Event-Typ auswählen → Sound und Text konfigurieren</li>
+<li><strong>Goals:</strong> Dashboard → Goals → Ziel setzen → Style anpassen</li>
+<li><strong>Flows:</strong> Dashboard → Flows → "New Flow" → Trigger und Actions definieren</li>
+</ul>
+<p data-i18n="docs.p.52"><strong>Fertig!</strong> 🎉 Dein Stream ist jetzt professionell aufgesetzt.</p>
+</article>
+<article id="configuration">
+<h1 data-i18n="docs.h1.53">Konfiguration</h1>
+<p data-i18n="docs.p.54">Passe ltth.app an deine Bedürfnisse an mit umfangreichen Konfigurationsoptionen.</p>
+<h2 data-i18n="docs.h2.55">Dashboard-Zugriff</h2>
+<p data-i18n="docs.p.56">Nach dem Start öffnet sich das Dashboard automatisch unter:</p>
+<pre><code>http://localhost:3000</code></pre>
+<h2 data-i18n="docs.h2.57">Grundeinstellungen</h2>
+<ul>
+<li><strong>TikTok Username:</strong> Dein TikTok-Benutzername (ohne @)</li>
+<li><strong>Sprache:</strong> Deutsch oder Englisch</li>
+<li><strong>Theme:</strong> Hell, Dunkel oder System</li>
+<li><strong>Server Port:</strong> Standard 3000 (änderbar)</li>
+</ul>
+<h2 data-i18n="docs.h2.58">Profile</h2>
+<p data-i18n="docs.p.59">Erstelle mehrere Profile für verschiedene Streaming-Setups:</p>
+<ul>
+<li>Verschiedene TikTok-Accounts</li>
+<li>Unterschiedliche Alert-Konfigurationen</li>
+<li>Separate Soundboards</li>
+<li>Individuelle Flow-Automationen</li>
+</ul>
+<h2 data-i18n="docs.h2.60">Backup &amp; Restore</h2>
+<p data-i18n="docs.p.61">Sichere deine Konfiguration regelmäßig:</p>
+<ol>
+<li>Dashboard → Settings → Backup</li>
+<li>Klick auf "Create Backup"</li>
+<li>ZIP-Datei wird heruntergeladen</li>
+<li>Zum Wiederherstellen: "Restore from Backup"</li>
+</ol>
+</article>
+<article id="tiktok-connection">
+<h1 data-i18n="docs.h1.62">TikTok LIVE Verbindung</h1>
+<p data-i18n="docs.p.63">Echtzeit-Verbindung zu deinem TikTok LIVE-Stream ohne Login-Daten.</p>
+<h2 data-i18n="docs.h2.64">Verbindung herstellen</h2>
+<ol>
+<li>Öffne Dashboard auf <code>http://localhost:3000</code></li>
+<li>Gib deinen TikTok-Username ein (ohne @)</li>
+<li>Klicke "Connect to TikTok LIVE"</li>
+<li>Du musst bereits LIVE sein auf TikTok</li>
+<li>Warte auf grünen Status "Connected"</li>
+</ol>
+<h2 data-i18n="docs.h2.65">Empfangene Events</h2>
+<ul>
+<li><strong>Gifts:</strong> Geschenke mit Coins, Combo-Tracking, Gift-Katalog</li>
+<li><strong>Chat:</strong> Nachrichten mit Profilbildern und Badges</li>
+<li><strong>Follows:</strong> Neue Follower mit Follow-Role-Tracking</li>
+<li><strong>Shares:</strong> Stream-Shares mit Nutzerinformationen</li>
+<li><strong>Likes:</strong> Like-Events mit Like-Counts</li>
+<li><strong>Subscriptions:</strong> Subscriber mit Tier-Levels</li>
+</ul>
+<h2 data-i18n="docs.h2.66">Event-Anzeige</h2>
+<p data-i18n="docs.p.67">Alle Events werden in Echtzeit angezeigt:</p>
+<ul>
+<li><strong>Event Log:</strong> Chronologische Liste aller Events</li>
+<li><strong>Statistics:</strong> Live-Statistiken (Total Coins, Followers, etc.)</li>
+<li><strong>Top Gifters:</strong> Leaderboard der Top-Spender</li>
+</ul>
+<h2 data-i18n="docs.h2.68">Auto-Reconnect</h2>
+<p data-i18n="docs.p.69">Bei Verbindungsabbruch erfolgt automatischer Reconnect:</p>
+<ul>
+<li>Maximale Reconnect-Versuche: 10</li>
+<li>Wartezeit zwischen Versuchen: 5 Sekunden</li>
+<li>Konfigurierbar in Settings</li>
+</ul>
+<h2 data-i18n="docs.h2.70">Troubleshooting</h2>
+<p data-i18n="docs.p.71"><strong>Verbindung schlägt fehl:</strong></p>
+<ul>
+<li>Stelle sicher, dass du bereits LIVE bist</li>
+<li>Username muss korrekt sein (ohne @)</li>
+<li>Prüfe Firewall/Antivirus-Einstellungen</li>
+<li>Versuche es nach 30 Sekunden erneut</li>
+</ul>
+</article>
+<article id="tts">
+<h1 data-i18n="docs.h1.72">Text-to-Speech (TTS)</h1>
+<p data-i18n="docs.p.73">Professionelles TTS-System mit über 100 Stimmen für Chat-Nachrichten und Alerts.</p>
+<h2 data-i18n="docs.h2.74">Verfügbare Stimmen</h2>
+<h3 data-i18n="docs.h3.75">TikTok Voices (Kostenlos)</h3>
+<p data-i18n="docs.p.76">75+ TikTok-Stimmen ohne API-Key:</p>
+<ul>
+<li><strong>Englisch:</strong> US Female, US Male, UK Female, Australian, etc.</li>
+<li><strong>Deutsch:</strong> Männlich und Weiblich</li>
+<li><strong>Character Voices:</strong> Ghostface, C-3PO, Stitch, Chewbacca</li>
+<li><strong>Singing Voices:</strong> Singing Female, Singing Male</li>
+</ul>
+<h3 data-i18n="docs.h3.77">Google Cloud Voices (Premium)</h3>
+<p data-i18n="docs.p.78">30+ Google Cloud-Stimmen mit höchster Qualität (API-Key erforderlich)</p>
+<h2 data-i18n="docs.h2.79">Auto-TTS für Chat</h2>
+<p data-i18n="docs.p.80">Automatisches Vorlesen von Chat-Nachrichten:</p>
+<ol>
+<li>Dashboard → TTS → "Auto-TTS für Chat" aktivieren</li>
+<li>Standard-Stimme auswählen</li>
+<li>Optional: Blacklist für Wörter/User einrichten</li>
+<li>Lautstärke und Geschwindigkeit anpassen</li>
+</ol>
+<h2 data-i18n="docs.h2.81">User Voice Mapping</h2>
+<p data-i18n="docs.p.82">Weise bestimmten Usern eigene Stimmen zu:</p>
+<pre><code>UserA → Ghostface (Horror-Stimme)
 UserB → German Female
 UserC → Singing Voice</code></pre>
-
-                <h2>Einstellungen</h2>
-                <ul>
-                    <li><strong>Lautstärke:</strong> 0% - 200% (Standard: 100%)</li>
-                    <li><strong>Geschwindigkeit:</strong> 0.5x - 2.0x (Standard: 1.0x)</li>
-                    <li><strong>Max. Länge:</strong> Überspringe Nachrichten über X Zeichen</li>
-                    <li><strong>Verzögerung:</strong> Pause zwischen TTS-Nachrichten</li>
-                </ul>
-
-                <h2>Blacklist</h2>
-                <p>Blockiere Wörter oder User:</p>
-                <ul>
-                    <li><strong>Wort-Blacklist:</strong> Nachrichten mit bestimmten Wörtern überspringen</li>
-                    <li><strong>User-Blacklist:</strong> Bestimmte User komplett ignorieren</li>
-                </ul>
-
-                <h2>TTS in Flows</h2>
-                <p>Verwende TTS in Event-Automationen:</p>
-                <pre><code>Trigger: Gift (Rose)
+<h2 data-i18n="docs.h2.83">Einstellungen</h2>
+<ul>
+<li><strong>Lautstärke:</strong> 0% - 200% (Standard: 100%)</li>
+<li><strong>Geschwindigkeit:</strong> 0.5x - 2.0x (Standard: 1.0x)</li>
+<li><strong>Max. Länge:</strong> Überspringe Nachrichten über X Zeichen</li>
+<li><strong>Verzögerung:</strong> Pause zwischen TTS-Nachrichten</li>
+</ul>
+<h2 data-i18n="docs.h2.84">Blacklist</h2>
+<p data-i18n="docs.p.85">Blockiere Wörter oder User:</p>
+<ul>
+<li><strong>Wort-Blacklist:</strong> Nachrichten mit bestimmten Wörtern überspringen</li>
+<li><strong>User-Blacklist:</strong> Bestimmte User komplett ignorieren</li>
+</ul>
+<h2 data-i18n="docs.h2.86">TTS in Flows</h2>
+<p data-i18n="docs.p.87">Verwende TTS in Event-Automationen:</p>
+<pre><code>Trigger: Gift (Rose)
 Action: TTS "Danke {username} für die Rose!"</code></pre>
-            </article>
-
-            <article id="alerts">
-                <h1>Alert-System</h1>
-                <p>Visuelle und Audio-Benachrichtigungen für TikTok LIVE-Events in deinem OBS-Overlay.</p>
-                
-                <h2>Alert-Typen</h2>
-                <ul>
-                    <li><strong>Gift Alerts:</strong> Geschenk-Benachrichtigungen</li>
-                    <li><strong>Follow Alerts:</strong> Neue Follower</li>
-                    <li><strong>Share Alerts:</strong> Stream-Shares</li>
-                    <li><strong>Subscription Alerts:</strong> Neue Subscriber</li>
-                    <li><strong>Like Alerts:</strong> Like-Meilensteine (z.B. jede 100 Likes)</li>
-                </ul>
-
-                <h2>Alert-Konfiguration</h2>
-                <p>Jeder Alert kann individuell angepasst werden:</p>
-                <ul>
-                    <li><strong>Text:</strong> Nachricht mit Variablen wie {username}, {giftName}, {coins}</li>
-                    <li><strong>Sound:</strong> MP3/WAV-Datei oder MyInstants-Sound</li>
-                    <li><strong>Dauer:</strong> Anzeigedauer in Sekunden</li>
-                    <li><strong>Animation:</strong> Slide, Fade, Bounce, etc.</li>
-                    <li><strong>Bild/GIF:</strong> Optional Custom Graphics</li>
-                </ul>
-
-                <h2>Template-Variablen</h2>
-                <p>Verwende Platzhalter in Alert-Texten:</p>
-                <pre><code>{username} - Benutzername
+</article>
+<article id="alerts">
+<h1 data-i18n="docs.h1.88">Alert-System</h1>
+<p data-i18n="docs.p.89">Visuelle und Audio-Benachrichtigungen für TikTok LIVE-Events in deinem OBS-Overlay.</p>
+<h2 data-i18n="docs.h2.90">Alert-Typen</h2>
+<ul>
+<li><strong>Gift Alerts:</strong> Geschenk-Benachrichtigungen</li>
+<li><strong>Follow Alerts:</strong> Neue Follower</li>
+<li><strong>Share Alerts:</strong> Stream-Shares</li>
+<li><strong>Subscription Alerts:</strong> Neue Subscriber</li>
+<li><strong>Like Alerts:</strong> Like-Meilensteine (z.B. jede 100 Likes)</li>
+</ul>
+<h2 data-i18n="docs.h2.91">Alert-Konfiguration</h2>
+<p data-i18n="docs.p.92">Jeder Alert kann individuell angepasst werden:</p>
+<ul>
+<li><strong>Text:</strong> Nachricht mit Variablen wie {username}, {giftName}, {coins}</li>
+<li><strong>Sound:</strong> MP3/WAV-Datei oder MyInstants-Sound</li>
+<li><strong>Dauer:</strong> Anzeigedauer in Sekunden</li>
+<li><strong>Animation:</strong> Slide, Fade, Bounce, etc.</li>
+<li><strong>Bild/GIF:</strong> Optional Custom Graphics</li>
+</ul>
+<h2 data-i18n="docs.h2.93">Template-Variablen</h2>
+<p data-i18n="docs.p.94">Verwende Platzhalter in Alert-Texten:</p>
+<pre><code>{username} - Benutzername
 {giftName} - Name des Geschenks
 {coins} - Coin-Wert
 {count} - Combo-Anzahl
 {total} - Gesamt-Coins vom User
 {likeCount} - Aktuelle Like-Anzahl</code></pre>
-
-                <h2>Beispiel-Konfigurationen</h2>
-                <p><strong>Gift Alert:</strong></p>
-                <pre><code>Text: "Danke {username} für {giftName}!"
+<h2 data-i18n="docs.h2.95">Beispiel-Konfigurationen</h2>
+<p data-i18n="docs.p.96"><strong>Gift Alert:</strong></p>
+<pre><code>Text: "Danke {username} für {giftName}!"
 Sound: celebration.mp3
 Dauer: 5 Sekunden
 Animation: Slide from bottom</code></pre>
-
-                <p><strong>Follow Alert:</strong></p>
-                <pre><code>Text: "Willkommen {username}! 🎉"
+<p data-i18n="docs.p.97"><strong>Follow Alert:</strong></p>
+<pre><code>Text: "Willkommen {username}! 🎉"
 Sound: welcome.mp3
 Dauer: 4 Sekunden
 Animation: Fade in</code></pre>
-
-                <h2>Alert-Queue</h2>
-                <p>Mehrere Alerts werden nacheinander angezeigt:</p>
-                <ul>
-                    <li>Queue-Größe: 50 Alerts (Standard)</li>
-                    <li>Priorität: Subs > Gifts > Follows > Shares > Likes</li>
-                    <li>Ältere Alerts werden verworfen bei Overflow</li>
-                </ul>
-
-                <h2>Test-Funktion</h2>
-                <p>Teste Alerts vor dem Stream:</p>
-                <ol>
-                    <li>Dashboard → Alerts</li>
-                    <li>Event-Typ auswählen</li>
-                    <li>"Test Alert" klicken</li>
-                    <li>Alert erscheint im OBS-Overlay</li>
-                </ol>
-            </article>
-
-            <article id="soundboard">
-                <h1>Soundboard</h1>
-                <p>100.000+ Sounds via MyInstants-Integration plus eigene Upload-Möglichkeit.</p>
-                
-                <h2>MyInstants-Integration</h2>
-                <p>Zugriff auf riesige Sound-Library:</p>
-                <ol>
-                    <li>Dashboard → Soundboard → MyInstants</li>
-                    <li>Suchbegriff eingeben (z.B. "applause", "laugh")</li>
-                    <li>Sound-Vorschau mit Play-Button</li>
-                    <li>"Add to Soundboard" zum Importieren</li>
-                </ol>
-
-                <h2>Custom Upload</h2>
-                <p>Eigene Sounds hochladen:</p>
-                <ul>
-                    <li><strong>Formate:</strong> MP3, WAV, OGG</li>
-                    <li><strong>Max. Größe:</strong> 10 MB pro Datei</li>
-                    <li><strong>Empfohlen:</strong> 1-30 Sekunden Dauer</li>
-                    <li><strong>Qualität:</strong> 128-320 kbps (MP3)</li>
-                </ul>
-
-                <h2>Gift-to-Sound Mapping</h2>
-                <p>Sounds automatisch bei Gifts abspielen:</p>
-                <pre><code>Rose → romantic-music.mp3
+<h2 data-i18n="docs.h2.98">Alert-Queue</h2>
+<p data-i18n="docs.p.99">Mehrere Alerts werden nacheinander angezeigt:</p>
+<ul>
+<li>Queue-Größe: 50 Alerts (Standard)</li>
+<li>Priorität: Subs &gt; Gifts &gt; Follows &gt; Shares &gt; Likes</li>
+<li>Ältere Alerts werden verworfen bei Overflow</li>
+</ul>
+<h2 data-i18n="docs.h2.100">Test-Funktion</h2>
+<p data-i18n="docs.p.101">Teste Alerts vor dem Stream:</p>
+<ol>
+<li>Dashboard → Alerts</li>
+<li>Event-Typ auswählen</li>
+<li>"Test Alert" klicken</li>
+<li>Alert erscheint im OBS-Overlay</li>
+</ol>
+</article>
+<article id="soundboard">
+<h1 data-i18n="docs.h1.102">Soundboard</h1>
+<p data-i18n="docs.p.103">100.000+ Sounds via MyInstants-Integration plus eigene Upload-Möglichkeit.</p>
+<h2 data-i18n="docs.h2.104">MyInstants-Integration</h2>
+<p data-i18n="docs.p.105">Zugriff auf riesige Sound-Library:</p>
+<ol>
+<li>Dashboard → Soundboard → MyInstants</li>
+<li>Suchbegriff eingeben (z.B. "applause", "laugh")</li>
+<li>Sound-Vorschau mit Play-Button</li>
+<li>"Add to Soundboard" zum Importieren</li>
+</ol>
+<h2 data-i18n="docs.h2.106">Custom Upload</h2>
+<p data-i18n="docs.p.107">Eigene Sounds hochladen:</p>
+<ul>
+<li><strong>Formate:</strong> MP3, WAV, OGG</li>
+<li><strong>Max. Größe:</strong> 10 MB pro Datei</li>
+<li><strong>Empfohlen:</strong> 1-30 Sekunden Dauer</li>
+<li><strong>Qualität:</strong> 128-320 kbps (MP3)</li>
+</ul>
+<h2 data-i18n="docs.h2.108">Gift-to-Sound Mapping</h2>
+<p data-i18n="docs.p.109">Sounds automatisch bei Gifts abspielen:</p>
+<pre><code>Rose → romantic-music.mp3
 Lion → lion-roar.mp3
 Galaxy → space-sound.mp3</code></pre>
-
-                <h2>Event-Sounds</h2>
-                <p>Sounds für verschiedene Events:</p>
-                <ul>
-                    <li><strong>Follow Sound:</strong> Bei neuem Follower</li>
-                    <li><strong>Subscribe Sound:</strong> Bei Subscriber</li>
-                    <li><strong>Share Sound:</strong> Bei Stream-Share</li>
-                    <li><strong>Like Milestone:</strong> Bei Like-Schwellenwert (z.B. jede 100)</li>
-                </ul>
-
-                <h2>Sound-Kategorien</h2>
-                <p>Organisiere Sounds in Kategorien:</p>
-                <ul>
-                    <li>Alerts - Benachrichtigungen</li>
-                    <li>Reactions - Reaktionen</li>
-                    <li>Memes - Lustige Sounds</li>
-                    <li>Music - Musikclips</li>
-                    <li>Effects - Soundeffekte</li>
-                    <li>Custom - Eigene Uploads</li>
-                </ul>
-
-                <h2>Favoriten</h2>
-                <p>Markiere häufig genutzte Sounds als Favoriten für schnellen Zugriff.</p>
-
-                <h2>Lautstärke-Kontrolle</h2>
-                <ul>
-                    <li><strong>Master-Volume:</strong> 0% - 200% für alle Sounds</li>
-                    <li><strong>Per-Sound-Volume:</strong> Individuelle Lautstärke</li>
-                    <li><strong>Volume Ducking:</strong> Reduziere Sound während TTS</li>
-                </ul>
-            </article>
-
-            <article id="flows">
-                <h1>Event-Automation (Flows)</h1>
-                <p>"Wenn-Dann"-Automatisierungen ohne Code erstellen.</p>
-                
-                <h2>Flow-Komponenten</h2>
-                <ul>
-                    <li><strong>Trigger:</strong> Event das den Flow startet (Gift, Chat, Follow, etc.)</li>
-                    <li><strong>Conditions:</strong> Optionale Bedingungen (z.B. coins >= 100)</li>
-                    <li><strong>Actions:</strong> Was ausgeführt wird (TTS, Alert, OBS, OSC, etc.)</li>
-                </ul>
-
-                <h2>Verfügbare Trigger</h2>
-                <ul>
-                    <li><strong>Gift:</strong> Geschenk empfangen</li>
-                    <li><strong>Chat:</strong> Chat-Nachricht</li>
-                    <li><strong>Follow:</strong> Neuer Follower</li>
-                    <li><strong>Share:</strong> Stream geteilt</li>
-                    <li><strong>Subscribe:</strong> Neuer Subscriber</li>
-                    <li><strong>Like:</strong> Likes empfangen</li>
-                </ul>
-
-                <h2>Bedingungen (Conditions)</h2>
-                <p>Operatoren für Bedingungen:</p>
-                <pre><code>== (gleich)
+<h2 data-i18n="docs.h2.110">Event-Sounds</h2>
+<p data-i18n="docs.p.111">Sounds für verschiedene Events:</p>
+<ul>
+<li><strong>Follow Sound:</strong> Bei neuem Follower</li>
+<li><strong>Subscribe Sound:</strong> Bei Subscriber</li>
+<li><strong>Share Sound:</strong> Bei Stream-Share</li>
+<li><strong>Like Milestone:</strong> Bei Like-Schwellenwert (z.B. jede 100)</li>
+</ul>
+<h2 data-i18n="docs.h2.112">Sound-Kategorien</h2>
+<p data-i18n="docs.p.113">Organisiere Sounds in Kategorien:</p>
+<ul>
+<li>Alerts - Benachrichtigungen</li>
+<li>Reactions - Reaktionen</li>
+<li>Memes - Lustige Sounds</li>
+<li>Music - Musikclips</li>
+<li>Effects - Soundeffekte</li>
+<li>Custom - Eigene Uploads</li>
+</ul>
+<h2 data-i18n="docs.h2.114">Favoriten</h2>
+<p data-i18n="docs.p.115">Markiere häufig genutzte Sounds als Favoriten für schnellen Zugriff.</p>
+<h2 data-i18n="docs.h2.116">Lautstärke-Kontrolle</h2>
+<ul>
+<li><strong>Master-Volume:</strong> 0% - 200% für alle Sounds</li>
+<li><strong>Per-Sound-Volume:</strong> Individuelle Lautstärke</li>
+<li><strong>Volume Ducking:</strong> Reduziere Sound während TTS</li>
+</ul>
+</article>
+<article id="flows">
+<h1 data-i18n="docs.h1.117">Event-Automation (Flows)</h1>
+<p data-i18n="docs.p.118">"Wenn-Dann"-Automatisierungen ohne Code erstellen.</p>
+<h2 data-i18n="docs.h2.119">Flow-Komponenten</h2>
+<ul>
+<li><strong>Trigger:</strong> Event das den Flow startet (Gift, Chat, Follow, etc.)</li>
+<li><strong>Conditions:</strong> Optionale Bedingungen (z.B. coins &gt;= 100)</li>
+<li><strong>Actions:</strong> Was ausgeführt wird (TTS, Alert, OBS, OSC, etc.)</li>
+</ul>
+<h2 data-i18n="docs.h2.120">Verfügbare Trigger</h2>
+<ul>
+<li><strong>Gift:</strong> Geschenk empfangen</li>
+<li><strong>Chat:</strong> Chat-Nachricht</li>
+<li><strong>Follow:</strong> Neuer Follower</li>
+<li><strong>Share:</strong> Stream geteilt</li>
+<li><strong>Subscribe:</strong> Neuer Subscriber</li>
+<li><strong>Like:</strong> Likes empfangen</li>
+</ul>
+<h2 data-i18n="docs.h2.121">Bedingungen (Conditions)</h2>
+<p data-i18n="docs.p.122">Operatoren für Bedingungen:</p>
+<pre><code>== (gleich)
 != (ungleich)
-> (größer als)
-< (kleiner als)
->= (größer gleich)
-<= (kleiner gleich)
+&gt; (größer als)
+&lt; (kleiner als)
+&gt;= (größer gleich)
+&lt;= (kleiner gleich)
 contains (enthält)
 startsWith (beginnt mit)
 endsWith (endet mit)</code></pre>
-
-                <h2>Verfügbare Actions</h2>
-                <ul>
-                    <li><strong>TTS:</strong> Text-to-Speech abspielen</li>
-                    <li><strong>Alert:</strong> Alert anzeigen</li>
-                    <li><strong>Sound:</strong> Sound abspielen</li>
-                    <li><strong>OBS Scene:</strong> OBS-Szene wechseln</li>
-                    <li><strong>OBS Source:</strong> Source ein/ausblenden</li>
-                    <li><strong>VRChat OSC:</strong> Avatar-Steuerung</li>
-                    <li><strong>HTTP Request:</strong> Externe API aufrufen</li>
-                    <li><strong>Delay:</strong> Warten (für Action-Ketten)</li>
-                    <li><strong>Goal Increment:</strong> Ziel-Fortschritt erhöhen</li>
-                </ul>
-
-                <h2>Beispiel-Flows</h2>
-                
-                <h3>Rose Gift → TTS + Scene Change</h3>
-                <pre><code>Trigger: Gift
+<h2 data-i18n="docs.h2.123">Verfügbare Actions</h2>
+<ul>
+<li><strong>TTS:</strong> Text-to-Speech abspielen</li>
+<li><strong>Alert:</strong> Alert anzeigen</li>
+<li><strong>Sound:</strong> Sound abspielen</li>
+<li><strong>OBS Scene:</strong> OBS-Szene wechseln</li>
+<li><strong>OBS Source:</strong> Source ein/ausblenden</li>
+<li><strong>VRChat OSC:</strong> Avatar-Steuerung</li>
+<li><strong>HTTP Request:</strong> Externe API aufrufen</li>
+<li><strong>Delay:</strong> Warten (für Action-Ketten)</li>
+<li><strong>Goal Increment:</strong> Ziel-Fortschritt erhöhen</li>
+</ul>
+<h2 data-i18n="docs.h2.124">Beispiel-Flows</h2>
+<h3 data-i18n="docs.h3.125">Rose Gift → TTS + Scene Change</h3>
+<pre><code>Trigger: Gift
 Condition: giftName == "Rose"
 Actions:
   1. TTS: "Danke {username} für die Rose!"
   2. OBS Scene: "Cam2"
   3. Delay: 5 Sekunden
   4. OBS Scene: "Main"</code></pre>
-
-                <h3>High Value Gift → Special Alert</h3>
-                <pre><code>Trigger: Gift
-Condition: coins >= 1000
+<h3 data-i18n="docs.h3.126">High Value Gift → Special Alert</h3>
+<pre><code>Trigger: Gift
+Condition: coins &gt;= 1000
 Actions:
   1. Alert: "🎉 WOW! {username} → {giftName}!"
   2. Sound: celebration.mp3
   3. VRChat OSC: Celebrate animation</code></pre>
-
-                <h3>Chat Command → Action</h3>
-                <pre><code>Trigger: Chat
+<h3 data-i18n="docs.h3.127">Chat Command → Action</h3>
+<pre><code>Trigger: Chat
 Condition: message == "!dance"
 Actions:
   1. VRChat OSC: Dance animation
   2. TTS: "Let's dance!"</code></pre>
-
-                <h3>New Follower → Welcome</h3>
-                <pre><code>Trigger: Follow
+<h3 data-i18n="docs.h3.128">New Follower → Welcome</h3>
+<pre><code>Trigger: Follow
 Actions:
   1. TTS: "Willkommen {username}!"
   2. Alert: "Neuer Follower: {username}"
   3. Goal: Followers +1</code></pre>
-
-                <h2>Flow-Verwaltung</h2>
-                <ul>
-                    <li><strong>Enable/Disable:</strong> Flows ein/ausschalten</li>
-                    <li><strong>Test Flow:</strong> Flow testen ohne Live zu sein</li>
-                    <li><strong>Export/Import:</strong> Flows als JSON sichern/teilen</li>
-                    <li><strong>Priorität:</strong> Flow-Reihenfolge festlegen</li>
-                </ul>
-
-                <h2>Best Practices</h2>
-                <ul>
-                    <li>Teste Flows vor dem Stream</li>
-                    <li>Verwende beschreibende Namen</li>
-                    <li>Halte Conditions einfach</li>
-                    <li>Nutze Delays bei OBS-Szenen-Wechseln</li>
-                    <li>Verwende Variablen für dynamische Texte</li>
-                </ul>
-            </article>
-
-            <article id="goals">
-                <h1>Goals & Overlays</h1>
-                <p>Fortschrittsbalken für Likes, Follower, Subscriptions und Coins mit OBS-Integration.</p>
-                
-                <h2>Goal-Typen</h2>
-                <ul>
-                    <li><strong>Likes Goal:</strong> Ziel-Likes mit Echtzeit-Tracking</li>
-                    <li><strong>Followers Goal:</strong> Follower-Ziel</li>
-                    <li><strong>Subscriptions Goal:</strong> Subscriber-Ziel</li>
-                    <li><strong>Coins Goal:</strong> Coin-Spenden-Ziel</li>
-                    <li><strong>Custom Goal:</strong> Benutzerdefinierte Ziele (manuell)</li>
-                </ul>
-
-                <h2>Konfiguration</h2>
-                <p>Pro Goal einstellbar:</p>
-                <ul>
-                    <li><strong>Ziel-Wert:</strong> Anzahl zu erreichender Punkte</li>
-                    <li><strong>Aktueller Wert:</strong> Auto-Update oder manuell</li>
-                    <li><strong>Modus:</strong> Add, Set, Increment</li>
-                    <li><strong>Display-Text:</strong> Template mit {current}, {target}, {percentage}</li>
-                </ul>
-
-                <h2>Styling</h2>
-                <p>Passe Progress Bars an:</p>
-                <ul>
-                    <li><strong>Farben:</strong> Background, Progress, Text</li>
-                    <li><strong>Gradients:</strong> Linear-Gradient-Unterstützung</li>
-                    <li><strong>Größe:</strong> Breite, Höhe, Border-Radius</li>
-                    <li><strong>Animationen:</strong> Fill, Pulse, Shimmer</li>
-                </ul>
-
-                <h2>OBS Browser Source</h2>
-                <p>Zeige Goals in OBS:</p>
-                <pre><code>URL: http://localhost:3000/overlay/goals
+<h2 data-i18n="docs.h2.129">Flow-Verwaltung</h2>
+<ul>
+<li><strong>Enable/Disable:</strong> Flows ein/ausschalten</li>
+<li><strong>Test Flow:</strong> Flow testen ohne Live zu sein</li>
+<li><strong>Export/Import:</strong> Flows als JSON sichern/teilen</li>
+<li><strong>Priorität:</strong> Flow-Reihenfolge festlegen</li>
+</ul>
+<h2 data-i18n="docs.h2.130">Best Practices</h2>
+<ul>
+<li>Teste Flows vor dem Stream</li>
+<li>Verwende beschreibende Namen</li>
+<li>Halte Conditions einfach</li>
+<li>Nutze Delays bei OBS-Szenen-Wechseln</li>
+<li>Verwende Variablen für dynamische Texte</li>
+</ul>
+</article>
+<article id="goals">
+<h1 data-i18n="docs.h1.131">Goals &amp; Overlays</h1>
+<p data-i18n="docs.p.132">Fortschrittsbalken für Likes, Follower, Subscriptions und Coins mit OBS-Integration.</p>
+<h2 data-i18n="docs.h2.133">Goal-Typen</h2>
+<ul>
+<li><strong>Likes Goal:</strong> Ziel-Likes mit Echtzeit-Tracking</li>
+<li><strong>Followers Goal:</strong> Follower-Ziel</li>
+<li><strong>Subscriptions Goal:</strong> Subscriber-Ziel</li>
+<li><strong>Coins Goal:</strong> Coin-Spenden-Ziel</li>
+<li><strong>Custom Goal:</strong> Benutzerdefinierte Ziele (manuell)</li>
+</ul>
+<h2 data-i18n="docs.h2.134">Konfiguration</h2>
+<p data-i18n="docs.p.135">Pro Goal einstellbar:</p>
+<ul>
+<li><strong>Ziel-Wert:</strong> Anzahl zu erreichender Punkte</li>
+<li><strong>Aktueller Wert:</strong> Auto-Update oder manuell</li>
+<li><strong>Modus:</strong> Add, Set, Increment</li>
+<li><strong>Display-Text:</strong> Template mit {current}, {target}, {percentage}</li>
+</ul>
+<h2 data-i18n="docs.h2.136">Styling</h2>
+<p data-i18n="docs.p.137">Passe Progress Bars an:</p>
+<ul>
+<li><strong>Farben:</strong> Background, Progress, Text</li>
+<li><strong>Gradients:</strong> Linear-Gradient-Unterstützung</li>
+<li><strong>Größe:</strong> Breite, Höhe, Border-Radius</li>
+<li><strong>Animationen:</strong> Fill, Pulse, Shimmer</li>
+</ul>
+<h2 data-i18n="docs.h2.138">OBS Browser Source</h2>
+<p data-i18n="docs.p.139">Zeige Goals in OBS:</p>
+<pre><code>URL: http://localhost:3000/overlay/goals
 Breite: 1920
 Höhe: 200
 FPS: 30</code></pre>
-
-                <h2>Milestone-Benachrichtigungen</h2>
-                <p>Alerts bei bestimmten Fortschritts-Prozenten:</p>
-                <pre><code>25% → "Viertel geschafft!"
+<h2 data-i18n="docs.h2.140">Milestone-Benachrichtigungen</h2>
+<p data-i18n="docs.p.141">Alerts bei bestimmten Fortschritts-Prozenten:</p>
+<pre><code>25% → "Viertel geschafft!"
 50% → "Halbzeit!"
 75% → "Fast da!"
 100% → "🎉 Ziel erreicht!"</code></pre>
-
-                <h2>Goal-Modi</h2>
-                <ul>
-                    <li><strong>Add:</strong> Wert zum aktuellen Fortschritt addieren</li>
-                    <li><strong>Set:</strong> Fortschritt auf bestimmten Wert setzen</li>
-                    <li><strong>Increment:</strong> Um 1 erhöhen</li>
-                </ul>
-
-                <h2>Auto-Update</h2>
-                <p>Goals automatisch aktualisieren via Flows:</p>
-                <pre><code>Trigger: Follow
+<h2 data-i18n="docs.h2.142">Goal-Modi</h2>
+<ul>
+<li><strong>Add:</strong> Wert zum aktuellen Fortschritt addieren</li>
+<li><strong>Set:</strong> Fortschritt auf bestimmten Wert setzen</li>
+<li><strong>Increment:</strong> Um 1 erhöhen</li>
+</ul>
+<h2 data-i18n="docs.h2.143">Auto-Update</h2>
+<p data-i18n="docs.p.144">Goals automatisch aktualisieren via Flows:</p>
+<pre><code>Trigger: Follow
 Action: Goal Increment: Followers +1</code></pre>
-
-                <h2>Reset-Optionen</h2>
-                <ul>
-                    <li><strong>Manueller Reset:</strong> Jederzeit zurücksetzen</li>
-                    <li><strong>Daily Reset:</strong> Täglich um Mitternacht</li>
-                    <li><strong>Stream Start:</strong> Bei Stream-Beginn</li>
-                    <li><strong>Stream End:</strong> Bei Stream-Ende</li>
-                </ul>
-            </article>
-                <h1>Architektur</h1>
-                <p>PupCid's Little TikTool Helper basiert auf einer Event-Driven Microservice-Architektur.</p>
-                
-                <h2>Technologie-Stack</h2>
-                <ul>
-                    <li><strong>Backend:</strong> Node.js 18-23, Express 4, Socket.io 4</li>
-                    <li><strong>Datenbank:</strong> SQLite (WAL Mode) mit better-sqlite3</li>
-                    <li><strong>TikTok-Integration:</strong> tiktok-live-connector 2.1.0</li>
-                    <li><strong>OBS-Integration:</strong> obs-websocket-js 5.0.6</li>
-                    <li><strong>OSC-Protokoll:</strong> osc 2.4.5</li>
-                    <li><strong>Frontend:</strong> Bootstrap 5, Vanilla JavaScript</li>
-                </ul>
-
-                <h2>Module</h2>
-                <ul>
-                    <li><code>server.js</code> - Haupt-Server mit Express und Socket.io</li>
-                    <li><code>modules/database.js</code> - SQLite-Manager mit WAL-Mode</li>
-                    <li><code>modules/tiktok.js</code> - TikTok LIVE Connector</li>
-                    <li><code>modules/plugin-loader.js</code> - Plugin-System mit Hot-Loading</li>
-                    <li><code>modules/flows.js</code> - Event-Automation Engine</li>
-                </ul>
-
-                <p>Weitere Details findest du im <a href="https://github.com/Loggableim/ltth.app/wiki/Architektur" target="_blank">GitHub Wiki</a>.</p>
-            </article>
-
-            <article id="obs">
-                <h1>OBS Studio Integration</h1>
-                <p>Vollständige OBS-Kontrolle mit WebSocket v5 für Szenen, Sources und Overlays.</p>
-                
-                <h2>Voraussetzungen</h2>
-                <ul>
-                    <li><strong>OBS Studio 28.0+</strong> (WebSocket v5 integriert)</li>
-                    <li><strong>WebSocket aktiviert:</strong> Tools → WebSocket Server Settings</li>
-                    <li><strong>Port:</strong> 4455 (Standard)</li>
-                </ul>
-
-                <h2>Verbindung einrichten</h2>
-                <ol>
-                    <li>OBS öffnen: Tools → WebSocket Server Settings</li>
-                    <li>Enable WebSocket Server aktivieren</li>
-                    <li>Server Port: 4455</li>
-                    <li>Passwort setzen (optional aber empfohlen)</li>
-                    <li>ltth.app: Dashboard → Settings → OBS Integration</li>
-                    <li>WebSocket URL: <code>ws://localhost:4455</code></li>
-                    <li>Passwort eingeben (falls gesetzt)</li>
-                    <li>Connect klicken</li>
-                </ol>
-
-                <h2>Browser Source Overlays</h2>
-                <p><strong>Haupt-Overlay (Alle Features):</strong></p>
-                <pre><code>URL: http://localhost:3000/overlay
+<h2 data-i18n="docs.h2.145">Reset-Optionen</h2>
+<ul>
+<li><strong>Manueller Reset:</strong> Jederzeit zurücksetzen</li>
+<li><strong>Daily Reset:</strong> Täglich um Mitternacht</li>
+<li><strong>Stream Start:</strong> Bei Stream-Beginn</li>
+<li><strong>Stream End:</strong> Bei Stream-Ende</li>
+</ul>
+</article>
+<h1 data-i18n="docs.h1.146">Architektur</h1>
+<p data-i18n="docs.p.147">PupCid's Little TikTool Helper basiert auf einer Event-Driven Microservice-Architektur.</p>
+<h2 data-i18n="docs.h2.148">Technologie-Stack</h2>
+<ul>
+<li><strong>Backend:</strong> Node.js 18-23, Express 4, Socket.io 4</li>
+<li><strong>Datenbank:</strong> SQLite (WAL Mode) mit better-sqlite3</li>
+<li><strong>TikTok-Integration:</strong> tiktok-live-connector 2.1.0</li>
+<li><strong>OBS-Integration:</strong> obs-websocket-js 5.0.6</li>
+<li><strong>OSC-Protokoll:</strong> osc 2.4.5</li>
+<li><strong>Frontend:</strong> Bootstrap 5, Vanilla JavaScript</li>
+</ul>
+<h2 data-i18n="docs.h2.149">Module</h2>
+<ul>
+<li><code>server.js</code> - Haupt-Server mit Express und Socket.io</li>
+<li><code>modules/database.js</code> - SQLite-Manager mit WAL-Mode</li>
+<li><code>modules/tiktok.js</code> - TikTok LIVE Connector</li>
+<li><code>modules/plugin-loader.js</code> - Plugin-System mit Hot-Loading</li>
+<li><code>modules/flows.js</code> - Event-Automation Engine</li>
+</ul>
+<p data-i18n="docs.p.150">Weitere Details findest du im <a data-i18n="docs.a.151" href="https://github.com/Loggableim/ltth.app/wiki/Architektur" target="_blank">GitHub Wiki</a>.</p>
+<article id="obs">
+<h1 data-i18n="docs.h1.152">OBS Studio Integration</h1>
+<p data-i18n="docs.p.153">Vollständige OBS-Kontrolle mit WebSocket v5 für Szenen, Sources und Overlays.</p>
+<h2 data-i18n="docs.h2.154">Voraussetzungen</h2>
+<ul>
+<li><strong>OBS Studio 28.0+</strong> (WebSocket v5 integriert)</li>
+<li><strong>WebSocket aktiviert:</strong> Tools → WebSocket Server Settings</li>
+<li><strong>Port:</strong> 4455 (Standard)</li>
+</ul>
+<h2 data-i18n="docs.h2.155">Verbindung einrichten</h2>
+<ol>
+<li>OBS öffnen: Tools → WebSocket Server Settings</li>
+<li>Enable WebSocket Server aktivieren</li>
+<li>Server Port: 4455</li>
+<li>Passwort setzen (optional aber empfohlen)</li>
+<li>ltth.app: Dashboard → Settings → OBS Integration</li>
+<li>WebSocket URL: <code>ws://localhost:4455</code></li>
+<li>Passwort eingeben (falls gesetzt)</li>
+<li>Connect klicken</li>
+</ol>
+<h2 data-i18n="docs.h2.156">Browser Source Overlays</h2>
+<p data-i18n="docs.p.157"><strong>Haupt-Overlay (Alle Features):</strong></p>
+<pre><code>URL: http://localhost:3000/overlay
 Breite: 1920
 Höhe: 1080
 FPS: 30
 ☑ Shutdown source when not visible</code></pre>
-
-                <p><strong>Einzelne Overlays:</strong></p>
-                <ul>
-                    <li>Alerts: <code>/overlay/alerts</code> (1920x300)</li>
-                    <li>Goals: <code>/overlay/goals</code> (1920x200)</li>
-                    <li>Leaderboard: <code>/overlay/leaderboard</code> (400x600)</li>
-                    <li>Chat: <code>/overlay/chat</code> (400x800)</li>
-                </ul>
-
-                <h2>Szenen-Steuerung</h2>
-                <p>Wechsle OBS-Szenen automatisch:</p>
-                <pre><code>Trigger: Gift (coins >= 1000)
+<p data-i18n="docs.p.158"><strong>Einzelne Overlays:</strong></p>
+<ul>
+<li>Alerts: <code>/overlay/alerts</code> (1920x300)</li>
+<li>Goals: <code>/overlay/goals</code> (1920x200)</li>
+<li>Leaderboard: <code>/overlay/leaderboard</code> (400x600)</li>
+<li>Chat: <code>/overlay/chat</code> (400x800)</li>
+</ul>
+<h2 data-i18n="docs.h2.159">Szenen-Steuerung</h2>
+<p data-i18n="docs.p.160">Wechsle OBS-Szenen automatisch:</p>
+<pre><code>Trigger: Gift (coins &gt;= 1000)
 Actions:
   1. OBS Scene: "Celebration"
   2. Delay: 5 Sekunden
   3. OBS Scene: "Main"</code></pre>
-
-                <h2>Source-Kontrolle</h2>
-                <p>Zeige/Verstecke Sources:</p>
-                <pre><code>Trigger: Gift (Rose)
+<h2 data-i18n="docs.h2.161">Source-Kontrolle</h2>
+<p data-i18n="docs.p.162">Zeige/Verstecke Sources:</p>
+<pre><code>Trigger: Gift (Rose)
 Actions:
   1. OBS Source: Show "Heart Overlay"
   2. Delay: 3 Sekunden
   3. OBS Source: Hide "Heart Overlay"</code></pre>
-
-                <h2>Performance-Tipps</h2>
-                <ul>
-                    <li>FPS: 30 statt 60 für Browser Sources</li>
-                    <li>"Shutdown when not visible" aktivieren</li>
-                    <li>"Refresh when scene active" aktivieren</li>
-                    <li>Hardware-Beschleunigung in OBS aktivieren</li>
-                </ul>
-            </article>
-
-            <article id="vrchat">
-                <h1>VRChat OSC Integration</h1>
-                <p>Steuere deinen VRChat-Avatar mit TikTok LIVE-Events über OSC-Protokoll.</p>
-                
-                <h2>VRChat OSC aktivieren</h2>
-                <ol>
-                    <li>VRChat starten</li>
-                    <li>Action Menu öffnen (R-Taste)</li>
-                    <li>Options → OSC</li>
-                    <li>Enable OSC aktivieren</li>
-                    <li>Port notieren (Standard: 9000)</li>
-                </ol>
-
-                <h2>ltth.app Konfiguration</h2>
-                <ol>
-                    <li>Dashboard → Settings → VRChat OSC</li>
-                    <li>OSC IP: <code>127.0.0.1</code> (localhost)</li>
-                    <li>OSC Port: <code>9000</code></li>
-                    <li>Enable VRChat OSC Integration</li>
-                    <li>Connect klicken</li>
-                </ol>
-
-                <h2>Avatar-Parameter</h2>
-                <p>Häufige Avatar-Parameter:</p>
-                <ul>
-                    <li><strong>Wave:</strong> Winken-Geste (bool/int)</li>
-                    <li><strong>Dance:</strong> Tanz-Animation (bool/int)</li>
-                    <li><strong>Celebrate:</strong> Freude-Animation (bool)</li>
-                    <li><strong>Hearts:</strong> Herz-Partikel spawnen (bool/trigger)</li>
-                    <li><strong>Confetti:</strong> Konfetti-Effekt (bool/trigger)</li>
-                </ul>
-
-                <h2>Gift-to-Gesture Mapping</h2>
-                <p>Gifts triggern Avatar-Aktionen:</p>
-                <pre><code>Rose → Hearts-Partikel
+<h2 data-i18n="docs.h2.163">Performance-Tipps</h2>
+<ul>
+<li>FPS: 30 statt 60 für Browser Sources</li>
+<li>"Shutdown when not visible" aktivieren</li>
+<li>"Refresh when scene active" aktivieren</li>
+<li>Hardware-Beschleunigung in OBS aktivieren</li>
+</ul>
+</article>
+<article id="vrchat">
+<h1 data-i18n="docs.h1.164">VRChat OSC Integration</h1>
+<p data-i18n="docs.p.165">Steuere deinen VRChat-Avatar mit TikTok LIVE-Events über OSC-Protokoll.</p>
+<h2 data-i18n="docs.h2.166">VRChat OSC aktivieren</h2>
+<ol>
+<li>VRChat starten</li>
+<li>Action Menu öffnen (R-Taste)</li>
+<li>Options → OSC</li>
+<li>Enable OSC aktivieren</li>
+<li>Port notieren (Standard: 9000)</li>
+</ol>
+<h2 data-i18n="docs.h2.167">ltth.app Konfiguration</h2>
+<ol>
+<li>Dashboard → Settings → VRChat OSC</li>
+<li>OSC IP: <code>127.0.0.1</code> (localhost)</li>
+<li>OSC Port: <code>9000</code></li>
+<li>Enable VRChat OSC Integration</li>
+<li>Connect klicken</li>
+</ol>
+<h2 data-i18n="docs.h2.168">Avatar-Parameter</h2>
+<p data-i18n="docs.p.169">Häufige Avatar-Parameter:</p>
+<ul>
+<li><strong>Wave:</strong> Winken-Geste (bool/int)</li>
+<li><strong>Dance:</strong> Tanz-Animation (bool/int)</li>
+<li><strong>Celebrate:</strong> Freude-Animation (bool)</li>
+<li><strong>Hearts:</strong> Herz-Partikel spawnen (bool/trigger)</li>
+<li><strong>Confetti:</strong> Konfetti-Effekt (bool/trigger)</li>
+</ul>
+<h2 data-i18n="docs.h2.170">Gift-to-Gesture Mapping</h2>
+<p data-i18n="docs.p.171">Gifts triggern Avatar-Aktionen:</p>
+<pre><code>Rose → Hearts-Partikel
 Lion → Dance-Animation
 Galaxy → Celebrate + Fireworks</code></pre>
-
-                <h2>Beispiel-Flows</h2>
-                
-                <h3>Rose Gift → Hearts</h3>
-                <pre><code>Trigger: Gift
+<h2 data-i18n="docs.h2.172">Beispiel-Flows</h2>
+<h3 data-i18n="docs.h3.173">Rose Gift → Hearts</h3>
+<pre><code>Trigger: Gift
 Condition: giftName == "Rose"
 Actions:
   1. VRChat OSC: /avatar/parameters/Hearts = true
   2. Delay: 2 Sekunden
   3. VRChat OSC: /avatar/parameters/Hearts = false</code></pre>
-
-                <h3>Follower → Wave</h3>
-                <pre><code>Trigger: Follow
+<h3 data-i18n="docs.h3.174">Follower → Wave</h3>
+<pre><code>Trigger: Follow
 Actions:
   1. VRChat OSC: /avatar/parameters/Wave = true
   2. TTS: "Willkommen {username}!"
   3. Delay: 2 Sekunden
   4. VRChat OSC: /avatar/parameters/Wave = false</code></pre>
-            </article>
-
-            <article id="plugin-api">
-                <h1>Plugin-API</h1>
-                <p>Erstelle eigene Plugins für ltth.app mit der Plugin-API.</p>
-                
-                <h2>Plugin-Struktur</h2>
-                <pre><code>plugins/my-plugin/
+</article>
+<article id="plugin-api">
+<h1 data-i18n="docs.h1.175">Plugin-API</h1>
+<p data-i18n="docs.p.176">Erstelle eigene Plugins für ltth.app mit der Plugin-API.</p>
+<h2 data-i18n="docs.h2.177">Plugin-Struktur</h2>
+<pre><code>plugins/my-plugin/
 ├── plugin.json       # Metadata
 └── main.js           # Plugin-Klasse</code></pre>
-
-                <h2>Beispiel-Plugin</h2>
-                <pre><code>class MyPlugin {
+<h2 data-i18n="docs.h2.178">Beispiel-Plugin</h2>
+<pre><code>class MyPlugin {
     constructor(api) {
         this.api = api;
     }
 
     async init() {
         // Express-Route registrieren
-        this.api.registerRoute('GET', '/status', (req, res) => {
+        this.api.registerRoute('GET', '/status', (req, res) =&gt; {
             res.json({ status: 'ok' });
         });
 
         // TikTok-Event abonnieren
-        this.api.registerTikTokEvent('gift', async (data) => {
+        this.api.registerTikTokEvent('gift', async (data) =&gt; {
             this.api.log(`Gift: ${data.giftName} from ${data.username}`);
         });
     }
@@ -804,43 +706,37 @@ Actions:
 }
 
 module.exports = MyPlugin;</code></pre>
-
-                <h2>Verfügbare Plugins (Auswahl)</h2>
-                <ul>
-                    <li><strong>AnimazingPal</strong> – Interaktive Avatar-Animationen für TikTok LIVE</li>
-                </ul>
-
-                <p>Vollständige Plugin-Dokumentation: <a href="/plugins.html">Plugin-System</a></p>
-            </article>
-
-            <article id="troubleshooting">
-                <h1>Troubleshooting</h1>
-                
-                <h2>TikTok-Verbindung schlägt fehl</h2>
-                <ul>
-                    <li>Stelle sicher, dass du bereits LIVE bist auf TikTok</li>
-                    <li>Username muss korrekt sein (ohne @)</li>
-                    <li>Firewall/Antivirus könnte Verbindung blockieren</li>
-                    <li>Port 3000 muss verfügbar sein</li>
-                </ul>
-
-                <h2>Overlay wird nicht angezeigt</h2>
-                <ul>
-                    <li>Überprüfe die Browser-Source-URL: <code>http://localhost:3000/overlay</code></li>
-                    <li>Breite: 1920, Höhe: 1080</li>
-                    <li>OBS muss auf demselben PC laufen</li>
-                    <li>Server muss laufen (localhost:3000 erreichbar)</li>
-                </ul>
-
-                <h2>Weitere Hilfe</h2>
-                <p>Besuche das <a href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&-Troubleshooting" target="_blank">FAQ & Troubleshooting Wiki</a> oder öffne ein <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank">GitHub Issue</a>.</p>
-            </article>
-        </main>
-    </div>
-    <script src="/js/main.js"></script>
-    <script src="/js/i18n.js"></script>
-    <script src="/js/layout.js"></script>
-    <script>
+<h2 data-i18n="docs.h2.179">Verfügbare Plugins (Auswahl)</h2>
+<ul>
+<li><strong>AnimazingPal</strong> – Interaktive Avatar-Animationen für TikTok LIVE</li>
+</ul>
+<p data-i18n="docs.p.180">Vollständige Plugin-Dokumentation: <a data-i18n="docs.a.181" href="/plugins.html">Plugin-System</a></p>
+</article>
+<article id="troubleshooting">
+<h1 data-i18n="docs.h1.182">Troubleshooting</h1>
+<h2 data-i18n="docs.h2.183">TikTok-Verbindung schlägt fehl</h2>
+<ul>
+<li>Stelle sicher, dass du bereits LIVE bist auf TikTok</li>
+<li>Username muss korrekt sein (ohne @)</li>
+<li>Firewall/Antivirus könnte Verbindung blockieren</li>
+<li>Port 3000 muss verfügbar sein</li>
+</ul>
+<h2 data-i18n="docs.h2.184">Overlay wird nicht angezeigt</h2>
+<ul>
+<li>Überprüfe die Browser-Source-URL: <code>http://localhost:3000/overlay</code></li>
+<li>Breite: 1920, Höhe: 1080</li>
+<li>OBS muss auf demselben PC laufen</li>
+<li>Server muss laufen (localhost:3000 erreichbar)</li>
+</ul>
+<h2 data-i18n="docs.h2.185">Weitere Hilfe</h2>
+<p data-i18n="docs.p.186">Besuche das <a data-i18n="docs.a.187" href="https://github.com/Loggableim/ltth.app/wiki/FAQ-&amp;-Troubleshooting" target="_blank">FAQ &amp; Troubleshooting Wiki</a> oder öffne ein <a data-i18n="docs.a.188" href="https://github.com/Loggableim/ltth.app/issues" target="_blank">GitHub Issue</a>.</p>
+</article>
+</main>
+</div>
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
         document.addEventListener('DOMContentLoaded', async () => {
             if (window.LTTHLayout) await LTTHLayout.init();
             if (window.I18n) I18n.init(window.__ltthLang || 'de');
