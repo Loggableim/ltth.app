@@ -3,21 +3,63 @@
   const MAX_SONG_DURATION_LIMIT_SECONDS = 7200;
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
 
+  function debounce(fn, delay = 200) {
+    let timer = null;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
   function setActiveTab(target) {
     if (!target) return;
-    document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
-    const tab = document.querySelector(`.tab[data-tab="${target}"]`);
-    const content = document.querySelector(`[data-tab-content="${target}"]`);
-    if (tab) tab.classList.add('active');
-    if (content) content.classList.add('active');
+    document.querySelectorAll('.tab').forEach((t) => {
+      const isActive = t.getAttribute('data-tab') === target;
+      t.classList.toggle('active', isActive);
+      t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      if (isActive) t.setAttribute('tabindex', '0');
+    });
+    document.querySelectorAll('.tab-content').forEach((c) => {
+      const isActive = c.getAttribute('data-tab-content') === target;
+      c.classList.toggle('active', isActive);
+      c.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+    });
   }
 
   // ── Tab switching ──
+  const tabList = document.getElementById('tab-bar');
+  if (tabList) {
+    tabList.setAttribute('role', 'tablist');
+  }
   document.querySelectorAll('.tab').forEach((tab) => {
+    const target = tab.getAttribute('data-tab');
+    const isActive = tab.classList.contains('active');
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.setAttribute('aria-controls', `tab-content-${target}`);
+    tab.setAttribute('tabindex', isActive ? '0' : '-1');
     tab.addEventListener('click', () => {
-      setActiveTab(tab.getAttribute('data-tab'));
+      setActiveTab(target);
     });
+    tab.addEventListener('keydown', (e) => {
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const idx = tabs.indexOf(tab);
+      let next = null;
+      if (e.key === 'ArrowRight') next = tabs[(idx + 1) % tabs.length];
+      if (e.key === 'ArrowLeft') next = tabs[(idx - 1 + tabs.length) % tabs.length];
+      if (e.key === 'Home') next = tabs[0];
+      if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (next) {
+        e.preventDefault();
+        next.focus();
+        setActiveTab(next.getAttribute('data-tab'));
+      }
+    });
+  });
+  document.querySelectorAll('[data-tab-content]').forEach((panel) => {
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('id', `tab-content-${panel.getAttribute('data-tab-content')}`);
+    panel.setAttribute('aria-hidden', panel.classList.contains('active') ? 'false' : 'true');
   });
 
   const socket = io();
@@ -26,8 +68,6 @@
   const queueListEl = document.getElementById('queue-list');
   const queueLengthEl = document.getElementById('queue-length');
   const historyListEl = document.getElementById('history-list');
-  const requestForm = document.getElementById('request-form');
-  const requestInput = document.getElementById('request-input');
   const requestFeedback = document.getElementById('request-feedback');
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
@@ -256,23 +296,6 @@
     post('/clear');
   });
 
-  // Hidden legacy request form (kept for backward compatibility with queue button)
-  requestForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const query = requestInput.value.trim();
-    if (!query) return;
-    requestFeedback.textContent = 'Wird verarbeitet...';
-    const result = await post('/request', { query });
-    if (result?.success) {
-      requestFeedback.textContent = `✅ Hinzugefügt: ${result.song.title}`;
-      requestInput.value = '';
-      showToast('success', 'Song hinzugefügt', result.song.title);
-    } else {
-      requestFeedback.textContent = result?.error || 'Fehler beim Request.';
-      showToast('warn', 'Song-Request abgelehnt', result?.error || 'Fehler beim Request.');
-    }
-  });
-
   // Auto-detect YouTube URLs as the user types/pastes
   searchInput?.addEventListener('input', () => {
     const val = searchInput.value.trim();
@@ -335,22 +358,27 @@
     }
   });
 
-  masterVolumeInput?.addEventListener('input', async () => {
+  // Debounced volume/crossfade POSTs — the label updates immediately for responsiveness,
+  // but the server request (which also persists config) only fires after the user stops dragging.
+  const postMasterVolume = debounce((vol) => post('/volume', { masterVolume: vol }));
+  masterVolumeInput?.addEventListener('input', () => {
     const vol = Number(masterVolumeInput.value);
     if (masterVolumeValue) masterVolumeValue.textContent = vol;
-    await post('/volume', { masterVolume: vol });
+    postMasterVolume(vol);
   });
 
-  volumeInput.addEventListener('input', async () => {
+  const postSourceVolume = debounce((vol) => post('/volume', { sourceVolume: vol }));
+  volumeInput.addEventListener('input', () => {
     const vol = Number(volumeInput.value);
     volumeValue.textContent = vol;
-    await post('/volume', { sourceVolume: vol });
+    postSourceVolume(vol);
   });
 
-  crossfadeInput.addEventListener('input', async () => {
+  const postCrossfade = debounce((ms) => post('/config', { playback: { crossfadeDuration: ms } }));
+  crossfadeInput.addEventListener('input', () => {
     const seconds = Number(crossfadeInput.value);
     crossfadeValue.textContent = `${seconds}s`;
-    await post('/config', { playback: { crossfadeDuration: seconds * 1000 } });
+    postCrossfade(seconds * 1000);
   });
 
   duplicateDetection.addEventListener('change', async () => {
@@ -411,6 +439,13 @@
     giftCatalogTargetField = payToSkipGifts;
   });
 
+  payToPlayGifts?.addEventListener('blur', async () => {
+    await post('/config', { monetization: { payToPlayGiftCatalog: parseList(payToPlayGifts.value) } });
+  });
+  payToSkipGifts?.addEventListener('blur', async () => {
+    await post('/config', { monetization: { payToSkipGiftCatalog: parseList(payToSkipGifts.value) } });
+  });
+
   function buildOverlayUrl() {
     const design = overlayDesign?.value || 'compact';
     const theme = overlayTheme?.value || 'default';
@@ -423,9 +458,25 @@
     if (overlayUrl) overlayUrl.value = buildOverlayUrl();
   }
 
-  overlayDesign?.addEventListener('change', refreshOverlayUrl);
-  overlayTheme?.addEventListener('change', refreshOverlayUrl);
-  overlayPosition?.addEventListener('change', refreshOverlayUrl);
+  // Persist overlay design/theme/position to config (debounced) and refresh the URL locally.
+  const persistOverlay = debounce(() => {
+    post('/config', {
+      overlay: {
+        design: overlayDesign?.value || 'compact',
+        theme: overlayTheme?.value || 'default',
+        position: overlayPosition?.value || 'bottom-left'
+      }
+    });
+  });
+
+  function onOverlayChange() {
+    refreshOverlayUrl();
+    persistOverlay();
+  }
+
+  overlayDesign?.addEventListener('change', onOverlayChange);
+  overlayTheme?.addEventListener('change', onOverlayChange);
+  overlayPosition?.addEventListener('change', onOverlayChange);
 
   overlayCopy?.addEventListener('click', () => {
     const url = buildOverlayUrl();
@@ -584,10 +635,14 @@
 
   socket.on('musicbot:now-playing', (payload) => {
     renderNowPlaying(payload);
-    // If the currently-playing track is a YouTube video, show it in the player
+    // If the currently-playing track is a YouTube video, show it in the player.
+    // Only overwrite the search input when it is empty or untouched by the user,
+    // so we don't clobber a query the user is actively typing.
     if (payload?.youtubeId) {
       setPreviewVideo(payload.youtubeId);
-      searchInput.value = payload.url || '';
+      if (searchInput && !searchInput.value.trim()) {
+        searchInput.value = payload.url || '';
+      }
     }
     refreshHistory();
   });
@@ -766,6 +821,11 @@
 
     renderOnboarding(configData?.config?.onboarding || {}, currentSetupIssues);
 
+    if (configData?.config?.overlay) {
+      if (configData.config.overlay.design && overlayDesign) overlayDesign.value = configData.config.overlay.design;
+      if (configData.config.overlay.theme && overlayTheme) overlayTheme.value = configData.config.overlay.theme;
+      if (configData.config.overlay.position && overlayPosition) overlayPosition.value = configData.config.overlay.position;
+    }
     refreshOverlayUrl();
 
     const setupStatus = await get('/setup-status');
@@ -835,8 +895,8 @@
     nowPlayingEl.classList.remove('empty');
     const dur = formatDuration(track.duration);
     nowPlayingEl.innerHTML = `
-      <p class="title">🎵 ${track.title}</p>
-      <p class="meta">${track.artist || ''} • Angefragt von <strong>${track.requestedBy || 'Viewer'}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
+      <p class="title">🎵 ${escapeHtml(track.title)}</p>
+      <p class="meta">${escapeHtml(track.artist || '')} • Angefragt von <strong>${escapeHtml(track.requestedBy || 'Viewer')}</strong>${dur !== '—' ? ' • ' + dur : ''}</p>
     `;
     const actualState = track.state || 'playing';
     updateState(actualState === 'paused' ? 'Paused' : 'Playing');
@@ -873,8 +933,8 @@
           <span class="queue-pos">#${idx + 1}</span>
           ${thumb}
           <div class="queue-info">
-            <span class="queue-title"><strong>${item.title}</strong>${giftBadge}</span>
-            <span class="queue-meta">${item.requestedBy || 'Viewer'}${dur}</span>
+            <span class="queue-title"><strong>${escapeHtml(item.title)}</strong>${giftBadge}</span>
+            <span class="queue-meta">${escapeHtml(item.requestedBy || 'Viewer')}${dur}</span>
           </div>
           <div class="queue-actions">
             <button class="btn danger small" data-queue-action="remove" data-idx="${idx}" title="Entfernen">✕</button>
@@ -1040,7 +1100,7 @@
         const thumb = item.youtubeId
           ? `<img src="https://i.ytimg.com/vi/${item.youtubeId}/default.jpg" class="queue-thumb" alt="">`
           : '<span class="queue-thumb-placeholder">🎵</span>';
-        return `<div class="item queue-item">${thumb}<span class="queue-title">${item.title}</span><span class="text-secondary queue-by">${item.requestedBy || 'Viewer'}</span></div>`;
+        return `<div class="item queue-item">${thumb}<span class="queue-title">${escapeHtml(item.title)}</span><span class="text-secondary queue-by">${escapeHtml(item.requestedBy || 'Viewer')}</span></div>`;
       })
       .join('');
   }
@@ -1112,10 +1172,10 @@
       .map(
         (ban) => `
         <tr>
-          <td>${ban.type}</td>
-          <td>${ban.value}</td>
-          <td>${ban.reason || ''}</td>
-          <td><button class="btn ghost small" data-ban-id="${ban.id}">Löschen</button></td>
+          <td>${escapeHtml(ban.type)}</td>
+          <td>${escapeHtml(ban.value)}</td>
+          <td>${escapeHtml(ban.reason || '')}</td>
+          <td><button class="btn ghost small" data-ban-id="${escapeHtml(ban.id)}">Löschen</button></td>
         </tr>`
       )
       .join('');
