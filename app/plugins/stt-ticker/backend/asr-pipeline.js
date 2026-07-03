@@ -288,10 +288,18 @@ class AsrPipeline {
       maxAudioBytes: 25 * 1024 * 1024
     });
 
+    // Sanitize: nur Scribe-Modelle sind für STT gültig (alte Configs könnten TTS-Modelle haben)
+    const VALID_STT_MODELS = ['scribe_v2', 'scribe_v1', 'scribe_v1_experimental'];
+    let elModel = asrCfg.elevenlabsModel || 'scribe_v2';
+    if (!VALID_STT_MODELS.includes(elModel)) {
+      this.logger.warn(`STT Ticker: Invalid ElevenLabs STT model "${elModel}" in config, falling back to scribe_v2`);
+      elModel = 'scribe_v2';
+    }
+
     return await client.transcribe(audioBuffer, {
       mimeType: options.mimeType,
       filename: options.filename,
-      model: (asrCfg.elevenlabsModel || 'scribe_v2')
+      model: elModel
     });
   }
 

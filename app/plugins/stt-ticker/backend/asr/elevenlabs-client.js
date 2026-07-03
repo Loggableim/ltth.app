@@ -19,10 +19,8 @@ class ElevenLabsAsrClient {
 
   static MODELS = {
     'scribe_v2': { name: 'Scribe Realtime v2', multilingual: true },
-    'eleven_turbo_v2_5': { name: 'Eleven Turbo v2.5', multilingual: true },
-    'eleven_turbo_v2': { name: 'Eleven Turbo v2', multilingual: true },
-    'eleven_multilingual_v2': { name: 'Eleven Multilingual v2', multilingual: true },
-    'eleven_monolingual_v1': { name: 'Eleven Monolingual v1', multilingual: false }
+    'scribe_v1': { name: 'Scribe v1', multilingual: true },
+    'scribe_v1_experimental': { name: 'Scribe v1 Experimental', multilingual: true }
   };
 
   constructor(apiKey, logger, config = {}) {
@@ -52,7 +50,7 @@ class ElevenLabsAsrClient {
       throw new Error(`ElevenLabs ASR audio exceeds ${this.maxAudioBytes} bytes`);
     }
 
-    const model = options.model || 'eleven_turbo_v2_5';
+    const model = options.model || 'scribe_v2';
 
     const form = new FormData();
     form.append('file', audioBuffer, {
