@@ -109,6 +109,8 @@ class ThemeManager {
         try {
             if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
                 this.applyThemeToDocument(iframe.contentDocument, this.currentTheme);
+                // Also apply to nested iframes within this iframe
+                this.applyThemeToIframesInDoc(iframe.contentDocument, this.currentTheme);
             }
         } catch (e) {
             // Ignore cross-origin errors
@@ -120,10 +122,28 @@ class ThemeManager {
             try {
                 if (iframe.contentDocument) {
                     this.applyThemeToDocument(iframe.contentDocument, this.currentTheme);
+                    // Also apply to nested iframes within this iframe
+                    this.applyThemeToIframesInDoc(iframe.contentDocument, this.currentTheme);
                 }
             } catch (e) {
                 // Ignore cross-origin errors
                 console.debug('Cannot apply theme to loaded iframe:', e.message);
+            }
+        });
+    }
+
+    /**
+     * Apply theme to all iframes within a specific document (non-recursive helper)
+     */
+    applyThemeToIframesInDoc(doc, theme) {
+        const iframes = doc.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            try {
+                if (iframe.contentDocument && iframe.contentDocument.documentElement) {
+                    this.applyThemeToDocument(iframe.contentDocument, theme);
+                }
+            } catch (e) {
+                // Ignore cross-origin iframes
             }
         });
     }
@@ -260,20 +280,26 @@ class ThemeManager {
     }
 
     applyThemeToIframes(theme) {
-        // Find all iframes
-        const iframes = document.querySelectorAll('iframe');
-        
-        iframes.forEach(iframe => {
-            try {
-                // Check if iframe is loaded and accessible
-                if (iframe.contentDocument && iframe.contentDocument.documentElement) {
-                    this.applyThemeToDocument(iframe.contentDocument, theme);
+        // Find all iframes recursively
+        const applyToAllIframes = (rootDoc) => {
+            const iframes = rootDoc.querySelectorAll('iframe');
+            
+            iframes.forEach(iframe => {
+                try {
+                    // Check if iframe is loaded and accessible
+                    if (iframe.contentDocument && iframe.contentDocument.documentElement) {
+                        this.applyThemeToDocument(iframe.contentDocument, theme);
+                        // Recurse into nested iframes
+                        applyToAllIframes(iframe.contentDocument);
+                    }
+                } catch (e) {
+                    // Ignore cross-origin iframes
+                    console.debug('Cannot apply theme to iframe:', e.message);
                 }
-            } catch (e) {
-                // Ignore cross-origin iframes
-                console.debug('Cannot apply theme to iframe:', e.message);
-            }
-        });
+            });
+        };
+
+        applyToAllIframes(document);
     }
 
     saveTheme(theme) {

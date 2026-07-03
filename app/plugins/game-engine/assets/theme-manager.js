@@ -15,9 +15,26 @@ class ThemeManager {
    * Initialize theme system
    */
   init() {
-    // Load saved theme or default to system
-    const savedTheme = localStorage.getItem('game-engine-theme') || 'system';
-    this.setTheme(savedTheme);
+    // If a data-theme attribute is already set (e.g. by parent dashboard via iframe),
+    // respect it and don't override with our own localStorage value.
+    const existingTheme = document.documentElement.getAttribute('data-theme');
+    if (existingTheme) {
+      // Map dashboard theme names to our internal names
+      const dashboardThemeMap = {
+        'aurora': 'dark',
+        'night': 'dark',
+        'day': 'light',
+        'contrast': 'dark',
+        'vision-impaired': 'dark'
+      };
+      const mapped = dashboardThemeMap[existingTheme] || 'dark';
+      this.currentTheme = mapped;
+      console.log('[ThemeManager] Respecting parent theme:', existingTheme, '->', mapped);
+    } else {
+      // Load saved theme or default to system
+      const savedTheme = localStorage.getItem('game-engine-theme') || 'system';
+      this.setTheme(savedTheme);
+    }
 
     // Listen for system theme changes
     if (window.matchMedia) {
@@ -30,7 +47,32 @@ class ThemeManager {
       mediaQuery.addEventListener('change', this.systemThemeListener);
     }
 
-    console.log('[ThemeManager] Initialized with theme:', savedTheme);
+    // Listen for data-theme attribute changes from parent dashboard (iframe context)
+    this.parentThemeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme');
+          if (newTheme) {
+            const dashboardThemeMap = {
+              'aurora': 'dark',
+              'night': 'dark',
+              'day': 'light',
+              'contrast': 'dark',
+              'vision-impaired': 'dark'
+            };
+            const mapped = dashboardThemeMap[newTheme] || 'dark';
+            this.currentTheme = mapped;
+            console.log('[ThemeManager] Parent theme changed:', newTheme, '->', mapped);
+          }
+        }
+      });
+    });
+    this.parentThemeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    console.log('[ThemeManager] Initialized with theme:', this.currentTheme);
   }
 
   /**
@@ -131,6 +173,9 @@ class ThemeManager {
     if (this.systemThemeListener && window.matchMedia) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       mediaQuery.removeEventListener('change', this.systemThemeListener);
+    }
+    if (this.parentThemeObserver) {
+      this.parentThemeObserver.disconnect();
     }
   }
 }

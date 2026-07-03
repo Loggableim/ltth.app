@@ -471,14 +471,23 @@ class ChatangoThemeAdapter {
             return;
         }
 
-        // Note: Chatango embeds are loaded via script tags with JSON config
-        // Once loaded, their colors cannot be dynamically changed without reloading the iframe
-        // This is a limitation of the Chatango embed system
-        // The best we can do is log the theme change for future enhancement
-        console.log('Chatango theme would be:', currentTheme, config);
-        
         // Store the current theme preference for future page loads
         localStorage.setItem('chatango-preferred-theme', currentTheme);
+
+        // Reload the dashboard iframe with the new theme
+        const dashboardIframe = document.querySelector('iframe[id^="chatango-dashboard-iframe"]');
+        if (dashboardIframe) {
+            const newSrc = `/chatango/embed/dashboard?theme=${encodeURIComponent(currentTheme)}`;
+            if (dashboardIframe.src !== newSrc) {
+                console.log('💬 Reloading Chatango dashboard iframe with theme:', currentTheme);
+                dashboardIframe.src = newSrc;
+            }
+        }
+
+        // Note: The widget embed uses a script tag with JSON config that Chatango controls.
+        // Once loaded, its colors cannot be dynamically changed without a full page reload.
+        // This is a limitation of the Chatango embed system.
+        console.log('💬 Chatango theme updated to:', currentTheme);
     }
 
     /**

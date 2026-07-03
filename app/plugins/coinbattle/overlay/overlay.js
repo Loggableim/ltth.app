@@ -80,6 +80,50 @@
     applyTheme();
     connectSocket();
     startHeartbeat();
+
+    // Listen for theme changes from parent dashboard (iframe context)
+    // The parent sets data-theme on the html element
+    const parentThemeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme');
+          if (newTheme) {
+            const dashboardThemeMap = {
+              'aurora': 'dark',
+              'night': 'dark',
+              'day': 'light',
+              'contrast': 'dark',
+              'vision-impaired': 'dark'
+            };
+            config.theme = dashboardThemeMap[newTheme] || 'dark';
+            applyTheme();
+          }
+        }
+      });
+    });
+    parentThemeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Also listen for localStorage changes (cross-window sync)
+    try {
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'dashboard-theme' && e.newValue) {
+          const dashboardThemeMap = {
+            'aurora': 'dark',
+            'night': 'dark',
+            'day': 'light',
+            'contrast': 'dark',
+            'vision-impaired': 'dark'
+          };
+          config.theme = dashboardThemeMap[e.newValue] || 'dark';
+          applyTheme();
+        }
+      });
+    } catch (e) {
+      // storage event not available
+    }
   }
 
   /**
@@ -88,7 +132,7 @@
   function loadConfig() {
     const params = new URLSearchParams(window.location.search);
     
-    config.theme = params.get('theme') || 'dark';
+    config.theme = params.get('theme') || null;
     config.skin = params.get('skin') || 'gold';
     config.layout = params.get('layout') || 'fullscreen';
     config.showAvatars = params.get('showAvatars') !== 'false';
@@ -99,6 +143,38 @@
     config.pyramidMode = params.get('pyramidMode') === 'true';
     config.overlayWidth = clampOverlayDimension(params.get('overlayWidth'), 1920, 320, 7680);
     config.overlayHeight = clampOverlayDimension(params.get('overlayHeight'), 1080, 240, 4320);
+
+    // If no theme was specified via URL, try to sync with the dashboard theme
+    if (!config.theme) {
+      // Map dashboard themes to coinbattle overlay themes
+      const dashboardThemeMap = {
+        'aurora': 'dark',
+        'night': 'dark',
+        'day': 'light',
+        'contrast': 'dark',
+        'vision-impaired': 'dark'
+      };
+      // Try localStorage first (works in dashboard iframe context)
+      try {
+        const stored = localStorage.getItem('dashboard-theme');
+        if (stored) {
+          config.theme = dashboardThemeMap[stored] || 'dark';
+        }
+      } catch (e) {
+        // localStorage not available
+      }
+      // Fallback: check data-theme attribute on html element (set by parent)
+      if (!config.theme) {
+        const htmlTheme = document.documentElement.getAttribute('data-theme');
+        if (htmlTheme) {
+          config.theme = dashboardThemeMap[htmlTheme] || 'dark';
+        }
+      }
+      // Ultimate fallback
+      if (!config.theme) {
+        config.theme = 'dark';
+      }
+    }
   }
 
   function clampOverlayDimension(value, defaultValue, min, max) {
