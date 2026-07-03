@@ -6749,6 +6749,11 @@ class ArenaGame {
     this._normalizeLargeBallTransparencyDefaults(config, stored);
     this._normalizeGiftTierDefaults(config, stored);
     this._normalizeWeaponPickupPacingDefaults(config, stored);
+    // giftWeaponMappings: stored values must win over defaults to allow deletion.
+    // Without this, _mergeConfig re-introduces default mappings that were deleted by the user.
+    if (stored && stored.giftWeaponMappings && typeof stored.giftWeaponMappings === 'object') {
+      config.giftWeaponMappings = { ...stored.giftWeaponMappings };
+    }
     config.personalityProfiles = this._normalizePersonalityProfiles(config.personalityProfiles);
     config.weaponPickupTypes = this._normalizeWeaponPickupTypes(
       config.weaponPickupTypes,
