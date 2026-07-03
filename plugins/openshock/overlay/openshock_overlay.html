@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>OpenShock Overlay</title>
+    <style>
+        /* ===========================
+           BASE STYLES & RESET
+           =========================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            position: relative;
+        }
+
+        /* ===========================
+           BACKGROUND ORBS (TECH-GLOW)
+           =========================== */
+        .background-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .glow-orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #ff006e, #8338ec);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .glow-orb-2 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, #3a86ff, #06ffa5);
+            bottom: -80px;
+            right: -80px;
+            animation-delay: 2s;
+        }
+
+        .glow-orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #ffbe0b, #fb5607);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+
+        /* ===========================
+           UTILITY CLASSES
+           =========================== */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===========================
+           OVERLAY CONTAINER
+           =========================== */
+        .overlay-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            animation: slideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .overlay-container.hiding {
+            animation: slideOut 0.4s ease-in forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -40%) scale(0.8);
+            }
+        }
+
+        /* ===========================
+           EVENT CARD (GLASSMORPHISM)
+           =========================== */
+        .event-card {
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 2px solid rgba(138, 43, 226, 0.5);
+            box-shadow:
+                0 8px 32px 0 rgba(138, 43, 226, 0.37),
+                inset 0 0 40px rgba(138, 43, 226, 0.1);
+            padding: 32px;
+            min-width: 480px;
+            max-width: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+            background-size: 300% 100%;
+            animation: gradientShift 3s linear infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        /* EVENT HEADER */
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .event-type {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #06ffa5;
+            text-shadow: 0 0 20px rgba(6, 255, 165, 0.6);
+        }
+
+        .event-type::before {
+            content: '';
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background-size: contain;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .event-type.shock::before {
+            content: '⚡';
+            font-size: 32px;
+        }
+
+        .event-type.vibrate::before {
+            content: '📳';
+            font-size: 32px;
+        }
+
+        .event-type.sound::before {
+            content: '🔊';
+            font-size: 32px;
+        }
+
+        .event-device {
+            font-size: 16px;
+            font-weight: 500;
+            color: #a0a0ff;
+            background: rgba(138, 43, 226, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(138, 43, 226, 0.4);
+        }
+
+        /* EVENT BODY */
+        .event-body {
+            margin-bottom: 24px;
+        }
+
+        /* INTENSITY CONTAINER */
+        .intensity-container,
+        .duration-container {
+            margin-bottom: 20px;
+        }
+
+        .intensity-container label,
+        .duration-container label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            color: #8eb4f7;
+        }
+
+        .intensity-bar,
+        .duration-bar {
+            position: relative;
+            width: 100%;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(138, 43, 226, 0.4);
+        }
+
+        .intensity-fill,
+        .duration-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #ff006e, #ff4d94);
+            box-shadow: 0 0 20px rgba(255, 0, 110, 0.6);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .duration-fill {
+            background: linear-gradient(90deg, #3a86ff, #06ffa5);
+            box-shadow: 0 0 20px rgba(6, 255, 165, 0.6);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .intensity-value,
+        .duration-value {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        /* EVENT FOOTER */
+        .event-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .event-source {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(255, 190, 11, 0.2);
+            border: 1px solid rgba(255, 190, 11, 0.5);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #ffbe0b;
+            text-shadow: 0 0 10px rgba(255, 190, 11, 0.5);
+        }
+
+        .event-user {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.8);
+        }
+
+        .event-user::before {
+            content: '@';
+            color: #8338ec;
+        }
+
+        /* ===========================
+           PATTERN PREVIEW
+           =========================== */
+        .pattern-preview {
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 2px solid rgba(58, 134, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(58, 134, 255, 0.37);
+            padding: 24px;
+            margin-top: 16px;
+            min-width: 480px;
+        }
+
+        .pattern-preview h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #3a86ff;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pattern-timeline {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 12px 0;
+        }
+
+        .pattern-step {
+            min-width: 60px;
+            height: 60px;
+            background: rgba(58, 134, 255, 0.2);
+            border: 2px solid rgba(58, 134, 255, 0.4);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .pattern-step.active {
+            background: rgba(58, 134, 255, 0.5);
+            border-color: #3a86ff;
+            box-shadow: 0 0 20px rgba(58, 134, 255, 0.8);
+            transform: scale(1.1);
+        }
+
+        .pattern-step-intensity {
+            font-weight: 700;
+            color: #06ffa5;
+            font-size: 16px;
+        }
+
+        .pattern-step-duration {
+            color: #a0a0ff;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* ===========================
+           SAFETY WARNING
+           =========================== */
+        .safety-warning {
+            background: rgba(255, 0, 0, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 2px solid rgba(255, 0, 0, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.5);
+            padding: 16px 24px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: warningPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% {
+                box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.8);
+            }
+        }
+
+        .warning-icon {
+            font-size: 28px;
+            animation: shake 0.5s ease-in-out infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        #warning-message {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ff4444;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+        }
+
+        /* ===========================
+           STATS CORNER
+           =========================== */
+        .stats-corner {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(15, 15, 35, 0.8);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            border: 2px solid rgba(138, 43, 226, 0.4);
+            box-shadow: 0 4px 16px 0 rgba(138, 43, 226, 0.3);
+            padding: 16px 20px;
+            z-index: 50;
+            min-width: 180px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8eb4f7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #06ffa5;
+            text-shadow: 0 0 10px rgba(6, 255, 165, 0.6);
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* ===========================
+           RESPONSIVE ADJUSTMENTS
+           =========================== */
+        @media (max-width: 1920px) {
+            body {
+                width: 100vw;
+                height: 100vh;
+            }
+        }
+
+        /* Position variants (controlled via CSS class) */
+        .overlay-container.position-top-left {
+            top: 40px;
+            left: 40px;
+            transform: none;
+        }
+
+        .overlay-container.position-top-right {
+            top: 40px;
+            right: 40px;
+            left: auto;
+            transform: none;
+        }
+
+        .overlay-container.position-bottom-left {
+            bottom: 40px;
+            top: auto;
+            left: 40px;
+            transform: none;
+        }
+
+        .overlay-container.position-bottom-right {
+            bottom: 40px;
+            top: auto;
+            right: 40px;
+            left: auto;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Orbs for Tech-Glow Effect -->
+    <div class="background-orbs">
+        <div class="glow-orb glow-orb-1"></div>
+        <div class="glow-orb glow-orb-2"></div>
+        <div class="glow-orb glow-orb-3"></div>
+    </div>
+
+    <!-- Main Overlay Container (hidden by default) -->
+    <div id="overlay-container" class="overlay-container hidden">
+        <!-- Active Event Card -->
+        <div id="event-card" class="event-card">
+            <div class="event-header">
+                <div id="event-type" class="event-type">Shock</div>
+                <div id="event-device" class="event-device">Device Name</div>
+            </div>
+
+            <div class="event-body">
+                <!-- Intensity Bar -->
+                <div class="intensity-container">
+                    <label>Intensity</label>
+                    <div class="intensity-bar">
+                        <div id="intensity-fill" class="intensity-fill" style="width: 50%;"></div>
+                        <span id="intensity-value" class="intensity-value">50%</span>
+                    </div>
+                </div>
+
+                <!-- Duration Bar (Countdown) -->
+                <div class="duration-container">
+                    <label>Duration</label>
+                    <div class="duration-bar">
+                        <div id="duration-fill" class="duration-fill" style="width: 100%;"></div>
+                        <span id="duration-value" class="duration-value">1000ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="event-footer">
+                <div id="event-source" class="event-source">Gift</div>
+                <div id="event-user" class="event-user">Username</div>
+            </div>
+        </div>
+
+        <!-- Pattern Preview (shown when pattern is active) -->
+        <div id="pattern-preview" class="pattern-preview hidden">
+            <h3 id="pattern-name">Pattern Name</h3>
+            <div id="pattern-timeline" class="pattern-timeline">
+                <!-- Pattern steps will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Safety Warning (shown when safety issue occurs) -->
+        <div id="safety-warning" class="safety-warning hidden">
+            <span class="warning-icon">⚠️</span>
+            <span id="warning-message">Safety Warning Message</span>
+        </div>
+    </div>
+
+    <!-- Stats Corner (optional, can be toggled) -->
+    <div id="stats-corner" class="stats-corner hidden">
+        <div class="stat-item">
+            <span class="stat-label">Queue:</span>
+            <span id="stat-queue" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Active:</span>
+            <span id="stat-active" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Today:</span>
+            <span id="stat-total" class="stat-value">0</span>
+        </div>
+    </div>
+
+    <!-- Socket.IO Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- OpenShock Overlay JavaScript -->
+    <script src="/openshock/openshock_overlay.js"></script>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Installiere PupCid's Little TikTool Helper (LTTH) mit einem einzigen Befehl auf Windows, macOS oder Linux. One-Line Installer, Cloud Launcher und manuelle Downloads.">
+    <title>Download & Installieren - PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/download.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/download.html?lang=en">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/download.html?lang=fr">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/download.html?lang=es">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/download.html">
+    <link rel="canonical" href="https://ltth.app/download.html">
+
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <style>
+        /* ---------- Installer-spezifisch ---------- */
+        .installer-hero {
+            background: linear-gradient(135deg, #0a1929 0%, #1a2f4f 100%);
+            padding: var(--space-12) 0 var(--space-8);
+        }
+        .os-tabs {
+            display: flex;
+            gap: var(--space-2);
+            justify-content: center;
+            margin: var(--space-6) auto var(--space-4);
+            flex-wrap: wrap;
+            max-width: 720px;
+        }
+        .os-tab {
+            background: rgba(255,255,255,0.06);
+            border: 2px solid rgba(255,255,255,0.1);
+            color: #cfd8e3;
+            padding: var(--space-3) var(--space-5);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.18s;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .os-tab:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.25);
+        }
+        .os-tab.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(18,161,22,0.35);
+        }
+        .os-tab.detected-badge::after {
+            content: attr(data-detected);
+            background: rgba(18,161,22,0.2);
+            color: #8de88e;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-left: 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .install-card {
+            max-width: 820px;
+            margin: 0 auto;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .install-cmd {
+            background: #0d1117;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-md);
+            padding: var(--space-4) var(--space-5);
+            margin: var(--space-3) 0 var(--space-4);
+            position: relative;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.95rem;
+            color: #e6edf3;
+            line-height: 1.5;
+            word-break: break-all;
+            user-select: all;
+        }
+        .install-cmd .prompt {
+            color: #8de88e;
+            user-select: none;
+            margin-right: 0.5em;
+        }
+        .install-cmd .comment {
+            color: #6e7681;
+            font-style: italic;
+            display: block;
+            margin-bottom: 0.4em;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #cfd8e3;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.15s;
+        }
+        .copy-btn:hover {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+        .copy-btn.copied {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+        .os-panel { display: none; }
+        .os-panel.active { display: block; }
+        .install-steps {
+            margin-top: var(--space-6);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-3);
+        }
+        .install-step-mini {
+            background: rgba(255,255,255,0.04);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            border-left: 3px solid var(--color-primary);
+        }
+        .install-step-mini h4 {
+            margin: 0 0 var(--space-1);
+            color: var(--color-primary);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .install-step-mini p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+        .os-warning {
+            background: rgba(255, 184, 0, 0.08);
+            border-left: 3px solid #ffb800;
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            margin: var(--space-4) 0;
+            font-size: 0.85rem;
+            color: #ffd47a;
+        }
+        .install-divider {
+            text-align: center;
+            margin: var(--space-6) 0 var(--space-3);
+            position: relative;
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+        }
+        .install-divider::before,
+        .install-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .install-divider::before { left: 0; }
+        .install-divider::after  { right: 0; }
+        .alt-download {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: var(--space-3);
+            margin-top: var(--space-3);
+        }
+        .alt-download a {
+            display: block;
+            padding: var(--space-3) var(--space-4);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--color-text);
+            transition: all 0.18s;
+        }
+        .alt-download a:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--color-primary);
+        }
+        .alt-download .name { font-weight: 600; display: block; }
+        .alt-download .meta { color: var(--color-text-secondary); font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+<section class="installer-hero" id="main-content">
+    <div class="container">
+        <h1 class="hero-title text-center">
+            Installiere <span class="hero-highlight">LTTH</span>
+        </h1>
+        <p class="hero-description text-center" data-i18n="install.tagline" style="max-width: 720px; margin: 0 auto;">
+            Ein einziger Befehl. Windows, macOS, Linux. Lädt die neueste Version, installiert Abhängigkeiten und startet das Dashboard.
+        </p>
+
+        <div class="os-tabs" role="tablist" aria-label="Betriebssystem wählen">
+            <button class="os-tab" data-os="windows" role="tab" aria-selected="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5l7.5-1v8H3v-7zm0 13l7.5 1V12H3v6.5zM11.5 4.4L21 3v9.5h-9.5V4.4zm0 15.2V12H21v9l-9.5-1.4z"/></svg>
+                Windows
+            </button>
+            <button class="os-tab" data-os="macos" role="tab" aria-selected="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 1.5c0 1.2-.5 2.4-1.3 3.2-.9 1-2.3 1.6-3.5 1.5-.1-1.2.5-2.4 1.3-3.2.9-1 2.4-1.5 3.5-1.5zM20 17.3c-.6 1.4-.9 2-1.7 3.2-1.1 1.7-2.7 3.8-4.6 3.8-1.7 0-2.2-1.1-4.5-1.1-2.3 0-2.8 1.1-4.5 1.1-1.9 0-3.4-1.9-4.5-3.6C-.8 16.6-1.2 11 1 8c1.5-2.1 3.9-3.4 6.2-3.4 1.9 0 3.7 1 4.7 1 1 0 3.3-1.2 5.3-1 .9 0 3.5.4 5.2 2.8-.1.1-3.1 1.8-3.1 5.4.1 4.3 3.7 5.7 3.7 5.7z"/></svg>
+                macOS
+            </button>
+            <button class="os-tab" data-os="linux" role="tab" aria-selected="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 2c-2.4 0-3.6 1.6-3.6 4 0 1.3.4 2.4 1 3.4-.7.5-1.5 1-2.2 1.7-1.5 1.4-2.6 3.4-2.6 5.7 0 1.4.4 2.5 1 3.5-.5.7-1 1.5-1 2.4 0 1 .5 1.8 1.4 2.4-1.5.3-2.5 1.2-2.5 2.5 0 .5.2 1 .5 1.4 1 1.4 3 1.7 4.6 1.7 1.7 0 3.4-.4 4.6-1.7.3-.4.5-.9.5-1.4 0-1.3-1-2.2-2.5-2.5.9-.6 1.4-1.4 1.4-2.4 0-.9-.5-1.7-1-2.4.6-1 1-2.1 1-3.5 0-2.3-1.1-4.3-2.6-5.7-.7-.7-1.5-1.2-2.2-1.7.6-1 1-2.1 1-3.4 0-2.4-1.2-4-3.6-4z"/></svg>
+                Linux
+            </button>
+        </div>
+
+        <div class="install-card">
+            <!-- =================== WINDOWS =================== -->
+            <div class="os-panel" data-os-panel="windows">
+                <h3 style="margin-top:0; color: var(--color-primary);">
+                    <span data-i18n="install.windows.title">Windows — PowerShell</span>
+                </h3>
+                <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.windows.desc">
+                    Öffne PowerShell (Rechtsklick → "Als Administrator ausführen" optional), kopiere den Befehl und drücke Enter.
+                </p>
+                <div class="install-cmd" id="cmd-windows">
+                    <button class="copy-btn" data-copy-target="cmd-windows" data-i18n="install.copy">Kopieren</button>
+<span class="prompt">PS&gt;</span> iwr -useb https://ltth.app/install.ps1 | iex
+                </div>
+                <div class="os-warning" data-i18n="install.windows.warn">
+                    ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher.
+                </div>
+            </div>
+
+            <!-- =================== MACOS =================== -->
+            <div class="os-panel" data-os-panel="macos">
+                <h3 style="margin-top:0; color: var(--color-primary);">
+                    <span data-i18n="install.macos.title">macOS — Terminal</span>
+                </h3>
+                <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.macos.desc">
+                    Öffne Terminal (Spotlight → "Terminal"), kopiere den Befehl und drücke Enter.
+                </p>
+                <div class="install-cmd" id="cmd-macos">
+                    <button class="copy-btn" data-copy-target="cmd-macos" data-i18n="install.copy">Kopieren</button>
+<span class="prompt">$</span> curl -fsSL https://ltth.app/install.sh | bash
+                </div>
+                <div class="os-warning" data-i18n="install.macos.warn">
+                    💡 Falls Node.js fehlt, wirst du aufgefordert, Homebrew zu installieren (https://brew.sh) — das ist eine einmalige Aktion.
+                </div>
+            </div>
+
+            <!-- =================== LINUX =================== -->
+            <div class="os-panel" data-os-panel="linux">
+                <h3 style="margin-top:0; color: var(--color-primary);">
+                    <span data-i18n="install.linux.title">Linux — Bash</span>
+                </h3>
+                <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.linux.desc">
+                    Öffne ein Terminal, kopiere den Befehl und drücke Enter. Getestet auf Ubuntu, Debian, Fedora, Arch.
+                </p>
+                <div class="install-cmd" id="cmd-linux">
+                    <button class="copy-btn" data-copy-target="cmd-linux" data-i18n="install.copy">Kopieren</button>
+<span class="prompt">$</span> curl -fsSL https://ltth.app/install.sh | bash
+                </div>
+                <div class="os-warning" data-i18n="install.linux.warn">
+                    💡 Das Skript nutzt sudo nur, falls Node.js über den Paketmanager installiert werden muss.
+                </div>
+            </div>
+
+            <!-- Was passiert? -->
+            <div class="install-divider" data-i18n="install.whatHappens">Was passiert?</div>
+            <div class="install-steps">
+                <div class="install-step-mini">
+                    <h4 data-i18n="install.step1.title">1. Prüfen</h4>
+                    <p data-i18n="install.step1.desc">Git und Node.js werden erkannt — fehlende Tools werden installiert.</p>
+                </div>
+                <div class="install-step-mini">
+                    <h4 data-i18n="install.step2.title">2. Laden</h4>
+                    <p data-i18n="install.step2.desc">Neueste LTTH-Version wird von GitHub nach ~/.local/share/ltth geklont.</p>
+                </div>
+                <div class="install-step-mini">
+                    <h4 data-i18n="install.step3.title">3. Bauen</h4>
+                    <p data-i18n="install.step3.desc">npm install richtet alle 36 Plugins und Module ein.</p>
+                </div>
+                <div class="install-step-mini">
+                    <h4 data-i18n="install.step4.title">4. Starten</h4>
+                    <p data-i18n="install.step4.desc">Dashboard öffnet sich unter http://localhost:3000/dashboard.html.</p>
+                </div>
+            </div>
+
+            <!-- Alternative Downloads -->
+            <div class="install-divider" data-i18n="install.altDownloads">Alternative Downloads</div>
+            <div class="alt-download">
+                <a href="/downloads/launcher.exe">
+                    <span class="name" data-i18n="install.alt1.name">🪟 LTTH Cloud Launcher (Windows)</span>
+                    <span class="meta" data-i18n="install.alt1.meta">~7 MB · GUI · Auto-Updates · Rollback</span>
+                </a>
+                <a href="https://github.com/Loggableim/ltth_desktop2/archive/refs/heads/main.zip">
+                    <span class="name" data-i18n="install.alt2.name">📦 Quellcode als ZIP</span>
+                    <span class="meta" data-i18n="install.alt2.meta">Manuelle Installation · alle Plattformen</span>
+                </a>
+                <a href="https://github.com/Loggableim/ltth_desktop2/releases">
+                    <span class="name" data-i18n="install.alt3.name">🏷️ GitHub Releases</span>
+                    <span class="meta" data-i18n="install.alt3.meta">Versionierte Pakete &amp; Checksummen</span>
+                </a>
+                <a href="https://github.com/Loggableim/ltth_desktop2">
+                    <span class="name" data-i18n="install.alt4.name">⭐ Repository</span>
+                    <span class="meta" data-i18n="install.alt4.meta">Mit Sternen &amp; Issues auf GitHub</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- =================== Plattform-Info =================== -->
+<section>
+    <div class="container">
+        <h2 class="section-title" data-i18n="install.req.title">System-Anforderungen</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: var(--space-4);">
+            <div>
+                <h3 style="color:var(--color-primary);" data-i18n="install.req.os">🖥️ Betriebssystem</h3>
+                <ul class="requirements-list">
+                    <li>Windows 10 / 11 (1809+)</li>
+                    <li>macOS 11 Big Sur oder neuer</li>
+                    <li>Linux (Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch)</li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color:var(--color-primary);" data-i18n="install.req.runtime">⚙️ Runtime</h3>
+                <ul class="requirements-list">
+                    <li>Node.js 18, 20 oder 22 LTS</li>
+                    <li>Git 2.20+</li>
+                    <li>~500 MB freier Festplattenspeicher</li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="color:var(--color-primary);" data-i18n="install.req.hw">🧠 Hardware</h3>
+                <ul class="requirements-list">
+                    <li>1 GB RAM minimum (2 GB empfohlen)</li>
+                    <li>Dual-Core CPU</li>
+                    <li>Optional: GPU für WebGL/WebGPU-Overlays</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div style="background: var(--color-surface); padding: var(--space-6); border-radius: var(--radius-lg); margin-top: var(--space-6);">
+            <h3 style="color: var(--color-primary); margin-bottom: var(--space-4);" data-i18n="install.trouble.title">🛠️ Häufige Probleme</h3>
+            <details>
+                <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q1">PowerShell: "Die Skriptausführung ist auf diesem System deaktiviert"</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a1">
+                    Setze die Execution Policy einmalig: <code>Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned</code> und bestätige mit "J".
+                </p>
+            </details>
+            <details style="margin-top: var(--space-2);">
+                <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q2">macOS: "curl: (60) SSL certificate problem"</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a2">
+                    Aktualisiere curl via Homebrew (<code>brew install curl</code>) oder nutze stattdessen <code>curl -k</code>.
+                </p>
+            </details>
+            <details style="margin-top: var(--space-2);">
+                <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q3">Port 3000 ist belegt</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a3">
+                    Setze einen anderen Port: <code>LTTH_PORT=8080 curl -fsSL https://ltth.app/install.sh | bash</code>
+                </p>
+            </details>
+            <details style="margin-top: var(--space-2);">
+                <summary style="cursor:pointer; font-weight:600;" data-i18n="install.trouble.q4">Installation in ein anderes Verzeichnis</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);" data-i18n="install.trouble.a4">
+                    <code>LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install.sh | bash</code>
+                </p>
+            </details>
+        </div>
+
+        <!-- CTA -->
+        <div class="section-cta">
+            <h3 style="margin-bottom: var(--space-3);" data-i18n="install.cta.title">Brauchst du Hilfe?</h3>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);" data-i18n="install.cta.desc">
+                Schau dir die Dokumentation an oder kontaktiere unseren Support.
+            </p>
+            <div style="display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+                <a href="/docs.html" class="btn btn-primary" data-i18n="install.cta.docs">Dokumentation</a>
+                <a href="/support.html" class="btn btn-secondary" data-i18n="install.cta.support">Support</a>
+                <a href="https://github.com/Loggableim/ltth_desktop2/issues" class="btn btn-secondary" data-i18n="install.cta.issues">GitHub Issues</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="/js/main.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+/* ---------- OS-Tabs ---------- */
+(function () {
+    const tabs   = document.querySelectorAll('.os-tab');
+    const panels = document.querySelectorAll('.os-panel');
+
+    function show(os) {
+        tabs.forEach((t) => {
+            const active = t.dataset.os === os;
+            t.classList.toggle('active', active);
+            t.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach((p) => {
+            p.classList.toggle('active', p.dataset.osPanel === os);
+        });
+    }
+
+    tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.os)));
+
+    // ---------- Auto-Detect ----------
+    const ua = navigator.userAgent.toLowerCase();
+    let detected = 'windows';
+    let label = 'Win';
+    if (ua.includes('mac'))        { detected = 'macos'; label = 'Mac'; }
+    else if (ua.includes('linux')) { detected = 'linux'; label = 'Linux'; }
+    else if (ua.includes('win'))   { detected = 'windows'; label = 'Win'; }
+
+    const detTab = document.querySelector('.os-tab[data-os="' + detected + '"]');
+    if (detTab) {
+        detTab.classList.add('detected-badge');
+        detTab.setAttribute('data-detected', label);
+    }
+    show(detected);
+
+    // ---------- Copy-Buttons ----------
+    document.querySelectorAll('.copy-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const target = document.getElementById(btn.dataset.copyTarget);
+            if (!target) return;
+            const text = target.innerText.replace(/^(PS>|\$)\s*/, '').trim();
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.classList.add('copied');
+                btn.textContent = '✓ ' + (window.I18n ? I18n.t('install.copied', 'Kopiert!') : 'Kopiert!');
+                setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 1500);
+            });
+        });
+    });
+})();
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.LTTHLayout) await LTTHLayout.init();
+        if (window.I18n) {
+            // Lade die install-Sektion in die i18n-Konfiguration
+            const lang = window.__ltthLang || 'de';
+            try {
+                const r = await fetch('/locales/' + lang + '.json');
+                if (r.ok) {
+                    const j = await r.json();
+                    window.I18N_DATA = j; // global verfügbar machen
+                }
+            } catch (e) {}
+            I18n.init(lang);
+            // Manuelle Übersetzung der data-i18n Elemente, da install.* nicht im Standard-Set ist
+            const map = (window.I18N_DATA && window.I18N_DATA.install) || {};
+            document.querySelectorAll('[data-i18n]').forEach((el) => {
+                const key = el.getAttribute('data-i18n');
+                if (map[key]) el.innerHTML = map[key];
+            });
+        }
+    });
+</script>
+</body>
+</html>

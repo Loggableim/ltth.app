@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShock Pattern Editor - Complete Demo</title>
+    
+    <!-- Pattern Editor CSS -->
+    <link rel="stylesheet" href="pattern-editor.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .demo-header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .api-config {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .api-config-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .device-status {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .device-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-card.online {
+            border-left: 4px solid #00ff88;
+        }
+
+        .device-card.offline {
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-offline {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        @media (max-width: 768px) {
+            .api-config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>⚡ OpenShock Pattern Editor</h1>
+            <p style="color: #aaa; font-size: 1.2em;">Complete Pattern Design & Testing System</p>
+        </div>
+
+        <!-- API Configuration -->
+        <div class="api-config">
+            <h2 style="color: #00d4ff; margin-bottom: 15px;">🔑 API Konfiguration</h2>
+            <div class="api-config-grid">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">OpenShock API Key</label>
+                    <input type="password" id="apiKey" class="form-input" 
+                           value="6PP4UFqvQg1sWEyWKTD30dvbBMLfwtaW5sPwfopq8HKBSNIQYxdabBV0fANe623m"
+                           placeholder="Dein API Key">
+                </div>
+                <button class="btn btn-primary" id="connectBtn" style="height: 46px;">
+                    🔌 Verbinden
+                </button>
+            </div>
+        </div>
+
+        <!-- Device Status -->
+        <div class="device-status" id="deviceStatusContainer" style="display: none;">
+            <h2 style="color: #00d4ff; margin-bottom: 15px;">📱 Verbundene Geräte</h2>
+            <div id="deviceList" class="device-grid"></div>
+        </div>
+
+        <!-- Pattern Editor -->
+        <div id="patternEditorContainer"></div>
+
+        <!-- Emergency Stop -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-danger btn-lg" id="emergencyStopBtn">
+                🛑 NOTAUS - Alle Geräte stoppen
+            </button>
+        </div>
+    </div>
+
+    <!-- Load all pattern editor scripts -->
+    <script src="engine/PatternEngine.ts.js"></script>
+    <script src="state/patternTypes.ts.js"></script>
+    <script src="state/patternStore.ts.js"></script>
+    <script src="components/PatternLibrary.tsx.js"></script>
+    <script src="components/ParameterEditor.tsx.js"></script>
+    <script src="components/KeyframeEditor.tsx.js"></script>
+    <script src="components/LiveControls.tsx.js"></script>
+    <script src="PatternEditorView.tsx.js"></script>
+
+    <script>
+        // OpenShock API Client
+        class OpenShockAPIClient {
+            constructor(apiKey, baseUrl = 'https://api.openshock.app') {
+                this.apiKey = apiKey;
+                this.baseUrl = baseUrl;
+                this.devices = [];
+            }
+
+            async getDevices() {
+                const response = await fetch(`${this.baseUrl}/1/devices`, {
+                    headers: {
+                        'accept': 'application/json',
+                        'OpenShockToken': this.apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                this.devices = data.data || [];
+                return this.devices;
+            }
+
+            async sendControl(deviceId, type, intensity, duration, exclusive = false) {
+                const response = await fetch(`${this.baseUrl}/2/shockers/control`, {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'OpenShockToken': this.apiKey
+                    },
+                    body: JSON.stringify({
+                        shocks: [{
+                            id: deviceId,
+                            type: type,
+                            intensity: Math.round(intensity),
+                            duration: Math.round(duration),
+                            exclusive: exclusive
+                        }],
+                        customName: 'Pattern Editor'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                return await response.json();
+            }
+        }
+
+        // Global state
+        let apiClient = null;
+        let patternEditor = null;
+        let devices = [];
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[Pattern Editor] Initializing...');
+            
+            // Connect button
+            document.getElementById('connectBtn').addEventListener('click', async () => {
+                const apiKey = document.getElementById('apiKey').value.trim();
+                
+                if (!apiKey) {
+                    alert('Bitte API Key eingeben!');
+                    return;
+                }
+
+                try {
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('connectBtn').textContent = '⏳ Verbinde...';
+                    
+                    // Create API client
+                    apiClient = new OpenShockAPIClient(apiKey);
+                    
+                    // Get devices
+                    devices = await apiClient.getDevices();
+                    
+                    console.log(`[Pattern Editor] ${devices.length} Gerät(e) gefunden`);
+                    
+                    // Show devices
+                    showDevices(devices);
+                    
+                    // Initialize pattern editor
+                    if (!patternEditor) {
+                        const container = document.getElementById('patternEditorContainer');
+                        patternEditor = new PatternEditorView(container, apiClient);
+                        patternEditor.init();
+                    }
+                    
+                    // Set devices
+                    patternEditor.setDevices(devices);
+                    
+                    alert(`✅ Erfolgreich verbunden!\n${devices.length} Gerät(e) gefunden.`);
+                    
+                    document.getElementById('connectBtn').textContent = '✅ Verbunden';
+                } catch (error) {
+                    console.error('[Pattern Editor] Connection error:', error);
+                    alert(`❌ Verbindungsfehler:\n${error.message}`);
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('connectBtn').textContent = '🔌 Verbinden';
+                }
+            });
+
+            // Emergency stop
+            document.getElementById('emergencyStopBtn').addEventListener('click', async () => {
+                if (!apiClient || devices.length === 0) {
+                    alert('Nicht verbunden!');
+                    return;
+                }
+
+                if (!confirm('Wirklich alle Geräte stoppen?')) {
+                    return;
+                }
+
+                for (const device of devices) {
+                    for (const shocker of device.shockers) {
+                        try {
+                            await apiClient.sendControl(shocker.id, 0, 0, 300);
+                        } catch (error) {
+                            console.error('Emergency stop error:', error);
+                        }
+                    }
+                }
+
+                alert('🛑 NOTAUS ausgelöst!');
+            });
+        });
+
+        // Show devices
+        function showDevices(deviceList) {
+            const container = document.getElementById('deviceStatusContainer');
+            const listContainer = document.getElementById('deviceList');
+            
+            container.style.display = 'block';
+            
+            if (deviceList.length === 0) {
+                listContainer.innerHTML = '<p style="color: #aaa;">Keine Geräte gefunden</p>';
+                return;
+            }
+
+            listContainer.innerHTML = deviceList.map(device => `
+                <div class="device-card ${device.online ? 'online' : 'offline'}">
+                    <div>
+                        <strong>${device.name}</strong><br>
+                        <small style="color: #aaa;">
+                            ${device.shockers.length} Shocker(s)
+                        </small>
+                    </div>
+                    <span class="status-badge ${device.online ? 'status-online' : 'status-offline'}">
+                        ${device.online ? '● Online' : '○ Offline'}
+                    </span>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

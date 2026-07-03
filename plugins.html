@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Entdecke das modulare Plugin-System von PupCid's Little TikTool Helper. 7+ vorinstallierte Plugins für TTS, Soundboard, Multi-Cam-Switching, VRChat OSC, VDO.Ninja und mehr. Hot-Loading und eigene Plugin-Entwicklung.">
+    <title>Plugins - PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    
+    <!-- Hreflang Tags for Language Alternates -->
+    <link rel="alternate" hreflang="de" href="https://ltth.app/plugins.html">
+    <link rel="alternate" hreflang="en" href="https://ltth.app/plugins-en.html">
+    <link rel="alternate" hreflang="fr" href="https://ltth.app/plugins-fr.html">
+    <link rel="alternate" hreflang="es" href="https://ltth.app/plugins-es.html">
+    <link rel="alternate" hreflang="x-default" href="https://ltth.app/plugins.html">
+    <link rel="canonical" href="https://ltth.app/plugins.html">
+    
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <section class="hero" id="main-content">
+        <div class="container">
+            <h1 class="hero-title text-center">Modulares <span class="hero-highlight">Plugin-System</span></h1>
+            <p class="hero-description text-center" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+                Erweitere PupCid's Little TikTool Helper mit leistungsstarken Plugins. 30+ vorinstallierte Plugins 
+                für TTS, Soundboard, Multi-Cam-Switching, VRChat-Integration, RPG-Crafting, Leaderboards und mehr. 
+                Hot-Loading, ZIP-Upload und Plugin-API für eigene Erweiterungen.
+            </p>
+        </div>
+    </section>
+
+    <!-- Plugin Manager Screenshot -->
+    <section class="features-preview" style="padding-top: 2rem;">
+        <div class="container">
+            <div class="screenshot-container" style="text-align: center; margin-bottom: 3rem;">
+                <img src="/assets/screenshots/plugins.png" alt="Plugin Manager Interface" 
+                     style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);" />
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugins: Stable / Core -->
+    <section class="features-preview">
+        <div class="container">
+            <div style="border-left: 4px solid var(--color-primary); padding-left: 1rem; margin-bottom: 2rem;">
+                <span style="background: var(--color-primary); color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;" data-i18n="plugins.badge.stable">🟢 Stable</span>
+                <h2 class="section-title" style="margin-bottom: 0.5rem;" data-i18n="plugins.stableTitle">Stable &amp; Core Plugins</h2>
+                <p class="section-subtitle" data-i18n="plugins.stableSubtitle">Vollständig getestete und produktionsreife Plugins für deinen Stream.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎛️</div>
+                    <h3 class="feature-title" data-i18n="plugins.clarityHud.name">ClarityHUD</h3>
+                    <p class="feature-description" data-i18n="plugins.clarityHud.desc">Modulares OBS-Overlay mit anpassbaren Widgets: Viewer-Count, Top-Gifter, Chat-Feed und mehr.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/overlays.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎯</div>
+                    <h3 class="feature-title" data-i18n="plugins.lastEvent.name">LastEvent Spotlight</h3>
+                    <p class="feature-description" data-i18n="plugins.lastEvent.desc">Zeigt das letzte TikTok-Event als animiertes Overlay: Gift, Follow, Share – perfekt für Viewer-Engagement.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/overlays.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🔊</div>
+                    <h3 class="feature-title" data-i18n="plugins.soundboard.name">Soundboard</h3>
+                    <p class="feature-description" data-i18n="plugins.soundboard.desc">100.000+ Sounds via MyInstants, Hotkeys, OBS-Integration, Gift-Mappings und Kategorien-Management.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/soundboard.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🔔</div>
+                    <h3 class="feature-title" data-i18n="plugins.alertSystem.name">Alert System</h3>
+                    <p class="feature-description" data-i18n="plugins.alertSystem.desc">Anpassbare Alerts für Gifts, Follows, Shares, Likes mit Sound, Text und GIF/Bild-Kombinationen.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/alerts.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎙️</div>
+                    <h3 class="feature-title" data-i18n="plugins.ttsEngine.name">TTS Engine</h3>
+                    <p class="feature-description" data-i18n="plugins.ttsEngine.desc">75+ Stimmen, Multi-Engine (Windows SAPI, Google, Edge TTS), Queue-System mit Prioritäten und User-Blacklist.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/tts.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
+                    <h3 class="feature-title" data-i18n="plugins.flowEngine.name">Flow Engine</h3>
+                    <p class="feature-description" data-i18n="plugins.flowEngine.desc">Visueller Automations-Editor mit Drag &amp; Drop und event-basierten Triggern – kein Code nötig.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/flow-engine.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎮</div>
+                    <h3 class="feature-title" data-i18n="plugins.gameEngine.name">Game Engine</h3>
+                    <p class="feature-description" data-i18n="plugins.gameEngine.desc">5 Spiele: Slot Machine, Wheel of Fortune, Quiz, Predictions und Token Games – voll in TikTok-Events integriert.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/game-engine.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🧠</div>
+                    <h3 class="feature-title" data-i18n="plugins.animazingpal.name">AnimazingPal</h3>
+                    <p class="feature-description" data-i18n="plugins.animazingpal.desc">KI-Chat-Bot mit GPT-Integration, Langzeit-Gedächtnis, 5 Persönlichkeiten und kontextuellen Antworten.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/animazingpal.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🌐</div>
+                    <h3 class="feature-title" data-i18n="plugins.oscBridge.name">OSC Bridge</h3>
+                    <p class="feature-description" data-i18n="plugins.oscBridge.desc">VRChat/OpenShock-Integration über OSC-Protokoll – steuere Avatare und Hardware über TikTok-Events.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/osc-bridge.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📷</div>
+                    <h3 class="feature-title" data-i18n="plugins.multicam.name">Multi-Cam Switcher</h3>
+                    <p class="feature-description" data-i18n="plugins.multicam.desc">Automatisches OBS-Kamera-Switching basierend auf Gifts und Chat-Commands mit OBS WebSocket v5.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/multicam.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🌦️</div>
+                    <h3 class="feature-title" data-i18n="plugins.weatherOverlay.name">Weather Overlay</h3>
+                    <p class="feature-description" data-i18n="plugins.weatherOverlay.desc">13 GPU-beschleunigte Wetter-Effekte: Regen, Schnee, Aurora, Fireflies, Sakura, Gewitter und mehr.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/overlays.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🏆</div>
+                    <h3 class="feature-title" data-i18n="plugins.goalsSystem.name">Goals System</h3>
+                    <p class="feature-description" data-i18n="plugins.goalsSystem.desc">4 Ziel-Tracker (Likes, Follower, Subs, Coins) mit OBS Browser Source, Auto-Modes und Progress-Bars.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/goals.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎵</div>
+                    <h3 class="feature-title" data-i18n="plugins.musicBot.name">Music Bot</h3>
+                    <p class="feature-description" data-i18n="plugins.musicBot.desc">YouTube-Suche &amp; Streaming, Queue, Song Requests via Chat, OBS Overlay in 3 Designs, Vote-Skip.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎰</div>
+                    <h3 class="feature-title" data-i18n="plugins.slotMachine.name">Slot Machine</h3>
+                    <p class="feature-description" data-i18n="plugins.slotMachine.desc">3-Reel Slot Machine mit Multi-Machine-Support, Superfan-Erkennung, Custom Sounds und vollständig konfigurierbarem Design.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/slot-machine.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">💬</div>
+                    <h3 class="feature-title" data-i18n="plugins.chatCommands.name">Chat Commands</h3>
+                    <p class="feature-description" data-i18n="plugins.chatCommands.desc">Custom Chat Commands mit Cooldowns, Permission-Stufen (Broadcaster/Mod/All) und Flow-Trigger-Integration.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.stable">Stable</span>
+                        <a href="/features/chat-commands.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugins: Beta -->
+    <section class="features-preview" style="background: var(--color-surface);">
+        <div class="container">
+            <div style="border-left: 4px solid #f59e0b; padding-left: 1rem; margin-bottom: 2rem;">
+                <span style="background: #f59e0b; color: #000; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;" data-i18n="plugins.badge.beta">🟡 Beta</span>
+                <h2 class="section-title" style="margin-bottom: 0.5rem;" data-i18n="plugins.betaTitle">Beta Plugins</h2>
+                <p class="section-subtitle" data-i18n="plugins.betaSubtitle">Funktionsfähige Plugins in aktiver Weiterentwicklung. Feedback willkommen!</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⛏️</div>
+                    <h3 class="feature-title" data-i18n="plugins.minecraftConnect.name">Minecraft Connect</h3>
+                    <p class="feature-description" data-i18n="plugins.minecraftConnect.desc">Minecraft-Server-Integration mit Chat-Bridge – verbinde deinen TikTok-Live-Chat mit dem Minecraft-Spiel.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🖨️</div>
+                    <h3 class="feature-title" data-i18n="plugins.thermalPrinter.name">Thermal Printer</h3>
+                    <p class="feature-description" data-i18n="plugins.thermalPrinter.desc">Physischer Thermodrucker für Chat-Nachrichten und Events via ESC/POS (USB &amp; Netzwerk).</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">❓</div>
+                    <h3 class="feature-title" data-i18n="plugins.quizShow.name">Quiz Show</h3>
+                    <p class="feature-description" data-i18n="plugins.quizShow.desc">Interaktives Quiz-Game für Viewer mit GPT-generierten Fragen und OBS Browser Source Integration.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⭐</div>
+                    <h3 class="feature-title" data-i18n="plugins.viewerXp.name">Viewer XP</h3>
+                    <p class="feature-description" data-i18n="plugins.viewerXp.desc">XP-Tracking, Level-System und Bestenlisten – belohne treue Zuschauer mit Erfahrungspunkten.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/viewer-xp.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🥇</div>
+                    <h3 class="feature-title" data-i18n="plugins.leaderboard.name">Leaderboard</h3>
+                    <p class="feature-description" data-i18n="plugins.leaderboard.desc">Ranglisten-Overlay für Top-Gifter und Viewer in Echtzeit mit WebSocket-Updates und OBS Browser Source.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/viewer-xp.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
+                    <h3 class="feature-title" data-i18n="plugins.openShock.name">OpenShock</h3>
+                    <p class="feature-description" data-i18n="plugins.openShock.desc">Hardware-Shock-Steuerung via TikTok-Events mit konfigurierbaren Gift-Mappings und Pattern-Editor.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🎁</div>
+                    <h3 class="feature-title" data-i18n="plugins.giftMilestone.name">Gift Milestone</h3>
+                    <p class="feature-description" data-i18n="plugins.giftMilestone.desc">Meilenstein-Tracker für Gift-Ziele mit automatischen Feierlichkeiten beim Erreichen von Schwellenwerten.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/goals.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📹</div>
+                    <h3 class="feature-title" data-i18n="plugins.vdoninja.name">VDO.Ninja</h3>
+                    <p class="feature-description" data-i18n="plugins.vdoninja.desc">Multi-Guest-Streaming mit VDO.Ninja-Integration, Room-Management, QR-Codes und Audio-Routing.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/vdoninja.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🕹️</div>
+                    <h3 class="feature-title" data-i18n="plugins.gcce.name">GCCE</h3>
+                    <p class="feature-description" data-i18n="plugins.gcce.desc">Game Controller Chat Extension – chat-basierte Gamepad-Steuerung mit Permissions und Rate-Limiting.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #f59e0b; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.beta">Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugins: Early Beta -->
+    <section class="features-preview">
+        <div class="container">
+            <div style="border-left: 4px solid #ef4444; padding-left: 1rem; margin-bottom: 2rem;">
+                <span style="background: #ef4444; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 0.5rem;" data-i18n="plugins.badge.earlyBeta">🔴 Early Beta</span>
+                <h2 class="section-title" style="margin-bottom: 0.5rem;" data-i18n="plugins.earlyBetaTitle">Early Beta Plugins</h2>
+                <p class="section-subtitle" data-i18n="plugins.earlyBetaSubtitle">Experimentelle Plugins in früher Entwicklungsphase. Aktives Feedback hilft bei der Weiterentwicklung.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⏱️</div>
+                    <h3 class="feature-title" data-i18n="plugins.advancedTimer.name">Advanced Timer</h3>
+                    <p class="feature-description" data-i18n="plugins.advancedTimer.desc">Erweiterte Timer und Countdowns für Streams mit OBS Browser Source Integration und Event-Triggern.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">💬</div>
+                    <h3 class="feature-title" data-i18n="plugins.chatango.name">Chatango</h3>
+                    <p class="feature-description" data-i18n="plugins.chatango.desc">Chatango-Chat-Integration – verbinde deinen Chatango-Kanal mit dem LTTH-Dashboard.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🖥️</div>
+                    <h3 class="feature-title" data-i18n="plugins.gcceHud.name">GCCE HUD</h3>
+                    <p class="feature-description" data-i18n="plugins.gcceHud.desc">HUD-Overlay für die Game Controller Chat Extension – zeigt aktive Befehle und Spieler-Aktionen.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🧪</div>
+                    <h3 class="feature-title" data-i18n="plugins.streamAlchemy.name">Stream Alchemy</h3>
+                    <p class="feature-description" data-i18n="plugins.streamAlchemy.desc">RPG-Crafting-System: TikTok-Gifts werden zu KI-generierten RPG-Items kombiniert – 4 Seltenheitsstufen.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🌧️</div>
+                    <h3 class="feature-title" data-i18n="plugins.emojiRain.name">WebGPU Emoji Rain</h3>
+                    <p class="feature-description" data-i18n="plugins.emojiRain.desc">GPU-beschleunigter Emoji-Partikel-Regen ausgelöst durch TikTok Gifts, Likes und Follows.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/emoji-rain.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
+                    <h3 class="feature-title" data-i18n="plugins.vulkanRockets.name">Vulkan Rockets</h3>
+                    <p class="feature-description" data-i18n="plugins.vulkanRockets.desc">GPU-beschleunigte Raketen-Animationen als Overlay – visuelles Spektakel für besondere Stream-Momente.</p>
+                    <div style="margin-top: var(--space-4); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px;" data-i18n="plugins.badge.earlyBeta">Early Beta</span>
+                        <a href="/features/plugin-system.html" class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" data-i18n="common.learnMore">Mehr erfahren</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugin Screenshots Showcase -->
+    <section class="features-preview" style="background: var(--color-bg);">
+        <div class="container">
+            <h2 class="section-title">Plugin-Benutzeroberflächen</h2>
+            <p class="section-subtitle">
+                Professionelle Admin-Panels für erweiterte Konfiguration
+            </p>
+            
+            <!-- Primary Screenshots Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🎙️ TTS Admin Panel</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Umfassende Konfiguration mit 75+ TikTok-Stimmen, Google Cloud-Integration, 
+                        User-Voice-Mappings und erweiterten Audio-Einstellungen.
+                    </p>
+                    <img src="/assets/screenshots/tts-admin.png" alt="TTS Admin Panel mit umfassenden Voice-Einstellungen" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🎵 Soundboard Konfiguration</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Gift-zu-Sound-Mappings mit MyInstants-Integration. Über 100.000 Sounds sofort verfügbar 
+                        mit Vorschau, Favoriten und automatischer Icon-Anzeige.
+                    </p>
+                    <img src="/assets/screenshots/soundboard-detail.png" alt="Soundboard mit Gift-Mappings und MyInstants-Integration" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+
+            <!-- Secondary Screenshots Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">⚡ Flow-Editor (Event-Automation)</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Erstelle "Wenn-Dann"-Automatisierungen visuell ohne Code. Triggere TTS, Alerts, Sounds,
+                        OBS-Szenen und mehr basierend auf TikTok LIVE Events.
+                    </p>
+                    <img src="/assets/screenshots/flows-editor.png" alt="IFTTT Flow Editor für Event-Automatisierung" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🏆 Goals Plugin Admin</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">
+                        Verwaltung mehrerer Goal-Overlays mit individuellen Einstellungen, 
+                        Styles und Auto-Modi bei Zielerreichung.
+                    </p>
+                    <img src="/assets/screenshots/plugin-goals.png" alt="Goals Plugin Admin Interface" 
+                         style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+                </div>
+            </div>
+
+            <!-- Full Width Screenshots -->
+            <div style="margin-bottom: 3rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.5rem; text-align: center;">🎯 Goals Overlay für OBS</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    Transparente Progress-Bars für Coins, Followers, Likes und Subs. Anpassbar und OBS-ready 
+                    mit Live-Updates während des Streams.
+                </p>
+                <img src="/assets/screenshots/goals-overlay.png" alt="Goals Overlay mit Progress-Bars für OBS" 
+                     style="width: 100%; max-width: 900px; margin: 0 auto; display: block; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+            </div>
+
+            <!-- Plugin Manager Screenshot -->
+            <div style="text-align: center; padding: 2rem 0;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">🔌 Plugin Manager</h3>
+                <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+                    Zentrale Verwaltung aller Plugins mit Hot-Loading, ZIP-Upload, Enable/Disable und Reload-Funktionen.
+                    Einfache Installation neuer Plugins ohne Server-Neustart.
+                </p>
+                <img src="/assets/screenshots/plugins.png" alt="Plugin Manager Interface mit Hot-Loading" 
+                     style="width: 100%; max-width: 900px; margin: 0 auto; display: block; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" />
+            </div>
+        </div>
+    </section>
+
+    <!-- Plugin System Features -->
+    <section class="developer-features">
+        <div class="container">
+            <h2 class="section-title">Plugin-System Features</h2>
+            <p class="section-subtitle">Modulare Architektur für unbegrenzte Erweiterungen</p>
+            
+            <div class="dev-features-grid">
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <h3>Hot-Loading</h3>
+                    <p>Plugins ohne Server-Neustart laden, aktivieren und deaktivieren. Live-Updates während des Streams.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </div>
+                    <h3>ZIP-Upload</h3>
+                    <p>Plugins einfach via Web-UI als ZIP hochladen. Automatische Installation und Aktivierung.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>Plugin-API</h3>
+                    <p>Vollständige API für Express-Routes, Socket.io-Events, TikTok-Events und Datenbank-Zugriff.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3>Admin-UI</h3>
+                    <p>Plugins können eigene Web-Interfaces bereitstellen. Vollständig in Dashboard integriert.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3>Event-System</h3>
+                    <p>Registriere Callbacks für alle TikTok-Events (Gifts, Chat, Follows, etc.). Event-driven Architecture.</p>
+                </div>
+                
+                <div class="dev-feature">
+                    <div class="dev-feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>Dokumentation</h3>
+                    <p>Umfassende Plugin-Dokumentation mit Beispiel-Code, API-Reference und Best Practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Build Your Own Plugin -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Erstelle dein eigenes Plugin</h2>
+                <p class="cta-description" style="max-width: 700px; margin: 0 auto 2rem;">
+                    Das Plugin-System von ltth.app ist vollständig dokumentiert und einfach zu nutzen. 
+                    Erstelle custom Funktionalität, teile sie mit der Community oder nutze sie privat 
+                    für deine speziellen Stream-Anforderungen.
+                </p>
+                <div class="cta-actions">
+                    <a href="/docs.html" class="btn btn-primary btn-large">Plugin-Dokumentation</a>
+                    <a href="https://github.com/Loggableim/ltth.app" target="_blank" rel="noopener" class="btn btn-secondary btn-large">
+                        GitHub Repository
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>
