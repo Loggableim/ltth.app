@@ -253,5 +253,88 @@
   },
   "common": {
     "new": "NOUVEAU"
+  },
+  "beta": {
+    "notice": {
+      "text": "En cours de développement actif avec de nouvelles fonctionnalités !",
+      "ready": "Déjà entièrement fonctionnel pour une utilisation productive.",
+      "help": "Aidez-nous à nous améliorer :",
+      "reportBugs": "Signaler des Bugs",
+      "or": " ou ",
+      "suggestFeatures": "Suggérer des Fonctionnalités",
+      "viewRoadmap": "Voir la Feuille de Route →",
+      "close": "Fermer l'avis beta"
+    }
+  },
+  "nav": {
+    "home": "Accueil",
+    "features": "Fonctionnalités",
+    "mega": {
+      "ai": "🧠 IA &amp; Intelligence",
+      "animazingpal": "AnimazingPal",
+      "audio": "🎙️ Audio &amp; Voix",
+      "tts": "Moteur TTS",
+      "soundboard": "Soundboard",
+      "visual": "🎨 Visuel &amp; Overlay",
+      "overlays": "Overlays &amp; HUD",
+      "emojiRain": "Pluie d'Emojis",
+      "alerts": "Système d'Alertes",
+      "goals": "Système d'Objectifs",
+      "gaming": "🎮 Jeux &amp; Interaction",
+      "gameEngine": "Moteur de Jeux",
+      "slotMachine": "Machine à Sous",
+      "chatCommands": "Commandes de Chat",
+      "viewerXp": "XP du Spectateur",
+      "system": "🔌 Système &amp; Extension",
+      "pluginSystem": "Système de Plugins",
+      "flowEngine": "Moteur de Flux",
+      "autoUpdater": "Mise à Jour Automatique",
+      "tikfinity": "API TikFinity",
+      "connections": "📡 Connexions",
+      "osc": "OSC / VRChat",
+      "vdoninja": "VDO.Ninja",
+      "multicam": "MultiCam",
+      "overview": "📊 Aperçu",
+      "dashboard": "Tableau de Bord",
+      "security": "Sécurité",
+      "allFeatures": "Voir Toutes les Fonctionnalités →"
+    },
+    "plugins": "Plugins",
+    "docs": "Docs",
+    "download": "Télécharger",
+    "changelog": "Journal des Modifications",
+    "community": "Communauté",
+    "faq": "FAQ",
+    "support": "Support",
+    "toggle": "Basculer la navigation"
+  },
+  "lang": {
+    "select": "Sélectionner la langue"
+  },
+  "theme": {
+    "toggle": "Basculer le mode sombre"
+  },
+  "footer": {
+    "description": "PupCid's Little TikTool Helper - La solution professionnelle de streaming TikTok LIVE.",
+    "product": "Produit",
+    "features": "Fonctionnalités",
+    "plugins": "Plugins",
+    "changelog": "Journal des Modifications",
+    "roadmap": "Feuille de Route",
+    "download": "Télécharger",
+    "launcher": "Lanceur",
+    "resources": "Ressources",
+    "documentation": "Documentation",
+    "faq": "FAQ",
+    "github": "GitHub",
+    "community": "Communauté",
+    "communityHub": "Hub Communautaire",
+    "reportBug": "Signaler un Bug",
+    "requestFeature": "Demander une Fonctionnalité",
+    "supportDev": "Soutenir le Développement",
+    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Tous droits réservés.",
+    "imprint": "Mentions Légales",
+    "trademark": "Ce produit n'est pas un produit officiel TikTok et n'est ni approuvé, sponsorisé ou autorisé par TikTok ou ByteDance. Toutes les marques et logos appartiennent à leurs propriétaires respectifs.",
+    "credits": "Fait avec <span class=\"heart\">♥</span> par Loggableim"
   }
 }

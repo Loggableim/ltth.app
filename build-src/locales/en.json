@@ -253,5 +253,88 @@
   },
   "common": {
     "new": "NEW"
+  },
+  "beta": {
+    "notice": {
+      "text": "Actively being developed with new features!",
+      "ready": "Already fully functional for productive use.",
+      "help": "Help us improve:",
+      "reportBugs": "Report Bugs",
+      "or": " or ",
+      "suggestFeatures": "Suggest Features",
+      "viewRoadmap": "View Roadmap →",
+      "close": "Close beta notice"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "mega": {
+      "ai": "🧠 AI &amp; Intelligence",
+      "animazingpal": "AnimazingPal",
+      "audio": "🎙️ Audio &amp; Voice",
+      "tts": "TTS Engine",
+      "soundboard": "Soundboard",
+      "visual": "🎨 Visual &amp; Overlay",
+      "overlays": "Overlays &amp; HUD",
+      "emojiRain": "Emoji Rain",
+      "alerts": "Alert System",
+      "goals": "Goals System",
+      "gaming": "🎮 Gaming &amp; Interaction",
+      "gameEngine": "Game Engine",
+      "slotMachine": "Slot Machine",
+      "chatCommands": "Chat Commands",
+      "viewerXp": "Viewer XP",
+      "system": "🔌 System &amp; Extension",
+      "pluginSystem": "Plugin System",
+      "flowEngine": "Flow Engine",
+      "autoUpdater": "Auto Updater",
+      "tikfinity": "TikFinity API",
+      "connections": "📡 Connections",
+      "osc": "OSC / VRChat",
+      "vdoninja": "VDO.Ninja",
+      "multicam": "MultiCam",
+      "overview": "📊 Overview",
+      "dashboard": "Dashboard",
+      "security": "Security",
+      "allFeatures": "View All Features →"
+    },
+    "plugins": "Plugins",
+    "docs": "Docs",
+    "download": "Download",
+    "changelog": "Changelog",
+    "community": "Community",
+    "faq": "FAQ",
+    "support": "Support",
+    "toggle": "Toggle navigation"
+  },
+  "lang": {
+    "select": "Select language"
+  },
+  "theme": {
+    "toggle": "Toggle dark mode"
+  },
+  "footer": {
+    "description": "PupCid's Little TikTool Helper - The professional TikTok LIVE streaming solution.",
+    "product": "Product",
+    "features": "Features",
+    "plugins": "Plugins",
+    "changelog": "Changelog",
+    "roadmap": "Roadmap",
+    "download": "Download",
+    "launcher": "Launcher",
+    "resources": "Resources",
+    "documentation": "Documentation",
+    "faq": "FAQ",
+    "github": "GitHub",
+    "community": "Community",
+    "communityHub": "Community Hub",
+    "reportBug": "Report Bug",
+    "requestFeature": "Request Feature",
+    "supportDev": "Support the Development",
+    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. All rights reserved.",
+    "imprint": "Imprint",
+    "trademark": "This product is not an official TikTok product and is not endorsed, sponsored or authorized by TikTok or ByteDance. All trademarks and logos belong to their respective owners.",
+    "credits": "Made with <span class=\"heart\">♥</span> by Loggableim"
   }
 }

@@ -9,13 +9,14 @@
             </div>
             <div class="beta-text">
                 <strong>🚀 Version <span id="betaVersion">1.3.3</span>:</strong> <span data-i18n="beta.notice.text">Aktiv weiterentwickelt mit neuen Features!</span>
-                Bereits voll funktionsfähig für den produktiven Einsatz.
-                Hilf uns besser zu werden:<br>
-                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener">Bugs melden</a>
-                oder <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener">Features vorschlagen</a>.
-                <a href="/roadmap.html">Roadmap ansehen →</a>
+                <span data-i18n="beta.notice.ready">Bereits voll funktionsfähig für den produktiven Einsatz.</span>
+                <span data-i18n="beta.notice.help">Hilf uns besser zu werden:</span><br>
+                <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" rel="noopener" data-i18n="beta.notice.reportBugs">Bugs melden</a>
+                <span data-i18n="beta.notice.or"> oder </span>
+                <a href="https://github.com/Loggableim/ltth.app/issues/new" target="_blank" rel="noopener" data-i18n="beta.notice.suggestFeatures">Features vorschlagen</a>.
+                <a href="/roadmap.html" data-i18n="beta.notice.viewRoadmap">Roadmap ansehen →</a>
             </div>
-            <button class="beta-close" id="betaClose" aria-label="Beta-Hinweis schließen">
+            <button class="beta-close" id="betaClose" aria-label="Beta-Hinweis schließen" data-i18n-alt="beta.notice.close">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -32,18 +33,18 @@
                 <span class="logo-text">ltth.app</span>
             </a>
             
-            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" data-i18n-alt="nav.toggle">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
             
             <div class="nav-menu" id="navMenu">
-                <a href="/" class="nav-link" data-page="home">Home</a>
+                <a href="/" class="nav-link" data-page="home" data-i18n="nav.home">Home</a>
                 
                 <!-- Features Mega Menu -->
                 <div class="nav-mega" id="featuresMega">
-                    <a href="/features/" class="nav-link nav-mega-toggle" data-page="features" aria-haspopup="true" aria-expanded="false">
+                    <a href="/features/" class="nav-link nav-mega-toggle" data-page="features" aria-haspopup="true" aria-expanded="false" data-i18n="nav.features">
                         Features
                         <svg class="nav-mega-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9"/>
@@ -53,123 +54,123 @@
                         <div class="mega-panel-inner">
                             <div class="mega-grid">
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">🧠 KI &amp; Intelligenz</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.ai">🧠 KI &amp; Intelligenz</h3>
                                     <div class="mega-items">
                                         <a href="/features/animazingpal.html" class="mega-item">
                                             <span class="mega-item-emoji">🧠</span>
-                                            <span class="mega-item-label">AnimazingPal</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.animazingpal">AnimazingPal</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">🎙️ Audio &amp; Stimme</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.audio">🎙️ Audio &amp; Stimme</h3>
                                     <div class="mega-items">
                                         <a href="/features/tts.html" class="mega-item">
                                             <span class="mega-item-emoji">🎙️</span>
-                                            <span class="mega-item-label">TTS Engine</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.tts">TTS Engine</span>
                                         </a>
                                         <a href="/features/soundboard.html" class="mega-item">
                                             <span class="mega-item-emoji">🔊</span>
-                                            <span class="mega-item-label">Soundboard</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.soundboard">Soundboard</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">🎨 Visuell &amp; Overlay</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.visual">🎨 Visuell &amp; Overlay</h3>
                                     <div class="mega-items">
                                         <a href="/features/overlays.html" class="mega-item">
                                             <span class="mega-item-emoji">🎨</span>
-                                            <span class="mega-item-label">Overlays &amp; HUD</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.overlays">Overlays &amp; HUD</span>
                                         </a>
                                         <a href="/features/emoji-rain.html" class="mega-item">
                                             <span class="mega-item-emoji">🌧️</span>
-                                            <span class="mega-item-label">Emoji Rain</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.emojiRain">Emoji Rain</span>
                                         </a>
                                         <a href="/features/alerts.html" class="mega-item">
                                             <span class="mega-item-emoji">🔔</span>
-                                            <span class="mega-item-label">Alert System</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.alerts">Alert System</span>
                                         </a>
                                         <a href="/features/goals.html" class="mega-item">
                                             <span class="mega-item-emoji">🎯</span>
-                                            <span class="mega-item-label">Goals System</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.goals">Goals System</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">🎮 Gaming &amp; Interaktion</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.gaming">🎮 Gaming &amp; Interaktion</h3>
                                     <div class="mega-items">
                                         <a href="/features/game-engine.html" class="mega-item">
                                             <span class="mega-item-emoji">🎮</span>
-                                            <span class="mega-item-label">Game Engine</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.gameEngine">Game Engine</span>
                                         </a>
                                         <a href="/features/slot-machine.html" class="mega-item">
                                             <span class="mega-item-emoji">🎰</span>
-                                            <span class="mega-item-label">Slot Machine</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.slotMachine">Slot Machine</span>
                                         </a>
                                         <a href="/features/chat-commands.html" class="mega-item">
                                             <span class="mega-item-emoji">💬</span>
-                                            <span class="mega-item-label">Chat Commands</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.chatCommands">Chat Commands</span>
                                         </a>
                                         <a href="/features/viewer-xp.html" class="mega-item">
                                             <span class="mega-item-emoji">⭐</span>
-                                            <span class="mega-item-label">Viewer XP</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.viewerXp">Viewer XP</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">🔌 System &amp; Erweiterung</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.system">🔌 System &amp; Erweiterung</h3>
                                     <div class="mega-items">
                                         <a href="/features/plugin-system.html" class="mega-item">
                                             <span class="mega-item-emoji">🔌</span>
-                                            <span class="mega-item-label">Plugin System</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.pluginSystem">Plugin System</span>
                                         </a>
                                         <a href="/features/flow-engine.html" class="mega-item">
                                             <span class="mega-item-emoji">⚡</span>
-                                            <span class="mega-item-label">Flow Engine</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.flowEngine">Flow Engine</span>
                                         </a>
                                         <a href="/features/auto-updater.html" class="mega-item">
                                             <span class="mega-item-emoji">🔄</span>
-                                            <span class="mega-item-label">Auto Updater</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.autoUpdater">Auto Updater</span>
                                         </a>
                                         <a href="/features/tikfinity-api.html" class="mega-item">
                                             <span class="mega-item-emoji">🔗</span>
-                                            <span class="mega-item-label">TikFinity API</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.tikfinity">TikFinity API</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">📡 Verbindungen</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.connections">📡 Verbindungen</h3>
                                     <div class="mega-items">
                                         <a href="/features/osc-bridge.html" class="mega-item">
                                             <span class="mega-item-emoji">🥽</span>
-                                            <span class="mega-item-label">OSC / VRChat</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.osc">OSC / VRChat</span>
                                         </a>
                                         <a href="/features/vdoninja.html" class="mega-item">
                                             <span class="mega-item-emoji">📡</span>
-                                            <span class="mega-item-label">VDO.Ninja</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.vdoninja">VDO.Ninja</span>
                                         </a>
                                         <a href="/features/multicam.html" class="mega-item">
                                             <span class="mega-item-emoji">📷</span>
-                                            <span class="mega-item-label">MultiCam</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.multicam">MultiCam</span>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="mega-category">
-                                    <h3 class="mega-category-title">📊 Übersicht</h3>
+                                    <h3 class="mega-category-title" data-i18n="nav.mega.overview">📊 Übersicht</h3>
                                     <div class="mega-items">
                                         <a href="/features/dashboard.html" class="mega-item">
                                             <span class="mega-item-emoji">📊</span>
-                                            <span class="mega-item-label">Dashboard</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.dashboard">Dashboard</span>
                                         </a>
                                         <a href="/features/security.html" class="mega-item">
                                             <span class="mega-item-emoji">🔒</span>
-                                            <span class="mega-item-label">Security</span>
+                                            <span class="mega-item-label" data-i18n="nav.mega.security">Security</span>
                                         </a>
                                     </div>
                                 </div>
                             </div>
                             <div class="mega-panel-footer">
-                                <a href="/features/" class="mega-all-features">
+                                <a href="/features/" class="mega-all-features" data-i18n="nav.mega.allFeatures">
                                     Alle Features ansehen →
                                 </a>
                             </div>
@@ -177,17 +178,17 @@
                     </div>
                 </div>
                 
-                <a href="/plugins.html" class="nav-link" data-page="plugins">Plugins</a>
-                <a href="/docs.html" class="nav-link" data-page="docs">Docs</a>
-                <a href="/download.html" class="nav-link" data-page="download">Download</a>
-                <a href="/changelog.html" class="nav-link" data-page="changelog">Changelog</a>
-                <a href="/community.html" class="nav-link" data-page="community">Community</a>
-                <a href="/faq.html" class="nav-link" data-page="faq">FAQ</a>
-                <a href="/support.html" class="nav-link" data-page="support">Support</a>
+                <a href="/plugins.html" class="nav-link" data-page="plugins" data-i18n="nav.plugins">Plugins</a>
+                <a href="/docs.html" class="nav-link" data-page="docs" data-i18n="nav.docs">Docs</a>
+                <a href="/download.html" class="nav-link" data-page="download" data-i18n="nav.download">Download</a>
+                <a href="/changelog.html" class="nav-link" data-page="changelog" data-i18n="nav.changelog">Changelog</a>
+                <a href="/community.html" class="nav-link" data-page="community" data-i18n="nav.community">Community</a>
+                <a href="/faq.html" class="nav-link" data-page="faq" data-i18n="nav.faq">FAQ</a>
+                <a href="/support.html" class="nav-link" data-page="support" data-i18n="nav.support">Support</a>
                 
                 <!-- Language Switcher -->
                 <div class="lang-dropdown">
-                    <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
+                    <a href="#" class="lang-dropdown-toggle" aria-label="Select language" data-i18n-alt="lang.select">
                         <span class="lang-flag" id="currentLangFlag">🇩🇪</span>
                         <span class="lang-text" id="currentLangText">DE</span>
                         <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -215,7 +216,7 @@
                 </div>
                 
                 <!-- Theme Toggle -->
-                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" data-i18n-alt="theme.toggle">
                     <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"/>
                         <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>

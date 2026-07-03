@@ -1,6 +1,6 @@
 {
   "locale": "de",
-  "theme": "highcontrast",
+  "theme": "night",
   "preferredPort": 3000,
   "keepLauncherOpen": true,
   "safeMode": false,

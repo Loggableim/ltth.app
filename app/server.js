@@ -166,6 +166,9 @@ io.sockets.setMaxListeners(50);
 
 // Middleware
 app.use(express.json());
+// Locale API – serve translation JSON files
+const localeRouter = require('./routes/locale');
+app.use('/api/i18n/translations', localeRouter);
 
 // CORS-Header mit Whitelist (let so dynamic ports can be added at startup)
 // Populated dynamically by NetworkManager once PORT is resolved

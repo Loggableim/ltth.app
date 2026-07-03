@@ -253,5 +253,88 @@
   },
   "common": {
     "new": "NEU"
+  },
+  "beta": {
+    "notice": {
+      "text": "Aktiv weiterentwickelt mit neuen Features!",
+      "ready": "Bereits voll funktionsfähig für den produktiven Einsatz.",
+      "help": "Hilf uns besser zu werden:",
+      "reportBugs": "Bugs melden",
+      "or": " oder ",
+      "suggestFeatures": "Features vorschlagen",
+      "viewRoadmap": "Roadmap ansehen →",
+      "close": "Beta-Hinweis schließen"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "mega": {
+      "ai": "🧠 KI &amp; Intelligenz",
+      "animazingpal": "AnimazingPal",
+      "audio": "🎙️ Audio &amp; Stimme",
+      "tts": "TTS Engine",
+      "soundboard": "Soundboard",
+      "visual": "🎨 Visuell &amp; Overlay",
+      "overlays": "Overlays &amp; HUD",
+      "emojiRain": "Emoji Rain",
+      "alerts": "Alert System",
+      "goals": "Goals System",
+      "gaming": "🎮 Gaming &amp; Interaktion",
+      "gameEngine": "Game Engine",
+      "slotMachine": "Slot Machine",
+      "chatCommands": "Chat Commands",
+      "viewerXp": "Viewer XP",
+      "system": "🔌 System &amp; Erweiterung",
+      "pluginSystem": "Plugin System",
+      "flowEngine": "Flow Engine",
+      "autoUpdater": "Auto Updater",
+      "tikfinity": "TikFinity API",
+      "connections": "📡 Verbindungen",
+      "osc": "OSC / VRChat",
+      "vdoninja": "VDO.Ninja",
+      "multicam": "MultiCam",
+      "overview": "📊 Übersicht",
+      "dashboard": "Dashboard",
+      "security": "Security",
+      "allFeatures": "Alle Features ansehen →"
+    },
+    "plugins": "Plugins",
+    "docs": "Docs",
+    "download": "Download",
+    "changelog": "Changelog",
+    "community": "Community",
+    "faq": "FAQ",
+    "support": "Support",
+    "toggle": "Navigation umschalten"
+  },
+  "lang": {
+    "select": "Sprache auswählen"
+  },
+  "theme": {
+    "toggle": "Dark Mode umschalten"
+  },
+  "footer": {
+    "description": "PupCid's Little TikTool Helper - Die professionelle TikTok LIVE Streaming-Lösung.",
+    "product": "Produkt",
+    "features": "Features",
+    "plugins": "Plugins",
+    "changelog": "Changelog",
+    "roadmap": "Roadmap",
+    "download": "Download",
+    "launcher": "Launcher",
+    "resources": "Ressourcen",
+    "documentation": "Dokumentation",
+    "faq": "FAQ",
+    "github": "GitHub",
+    "community": "Community",
+    "communityHub": "Community Hub",
+    "reportBug": "Bug melden",
+    "requestFeature": "Feature vorschlagen",
+    "supportDev": "Entwicklung unterstützen",
+    "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Alle Rechte vorbehalten.",
+    "imprint": "Impressum",
+    "trademark": "Dieses Produkt ist kein offizielles TikTok-Produkt und wird weder von TikTok noch von ByteDance unterstützt, gesponsert oder autorisiert. Alle Marken und Logos gehören ihren jeweiligen Eigentümern.",
+    "credits": "Mit <span class=\"heart\">♥</span> gemacht von Loggableim"
   }
 }
