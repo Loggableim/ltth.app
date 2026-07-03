@@ -3386,6 +3386,127 @@ class QuizShowPlugin {
                null;
     }
 
+    // ============================================
+    // LAST MAN STANDING MODE
+    // ============================================
+
+    startLMSJoinPhase() {
+        this.gameState.lastManStanding.active = true;
+        this.gameState.lastManStanding.joinPhase = true;
+        this.gameState.lastManStanding.survivors = new Set();
+        this.gameState.lastManStanding.eliminated = new Set();
+        this.gameState.lastManStanding.joinEndTime = Date.now() + this.config.lastManStandingJoinTime * 1000;
+
+        this.api.log(`Last Man Standing join phase started (${this.config.lastManStandingJoinTime}s). Use !join to participate.`, 'info');
+        this.api.emit('quiz-show:lms-join-phase-started', {
+            duration: this.config.lastManStandingJoinTime,
+            endTime: this.gameState.lastManStanding.joinEndTime
+        });
+
+        // Auto-end join phase after timeout
+        setTimeout(() => {
+            this.endLMSJoinPhase();
+        }, this.config.lastManStandingJoinTime * 1000);
+    }
+
+    endLMSJoinPhase() {
+        this.gameState.lastManStanding.joinPhase = false;
+        const participantCount = this.gameState.lastManStanding.survivors.size;
+
+        this.api.log(`Last Man Standing join phase ended. Participants: ${participantCount}`, 'info');
+        this.api.emit('quiz-show:lms-join-phase-ended', {
+            participants: participantCount
+        });
+
+        if (participantCount < 2) {
+            this.api.log('Not enough participants for Last Man Standing. Disabling LMS mode.', 'warn');
+            this.gameState.lastManStanding.active = false;
+            this.config.lastManStandingEnabled = false;
+        }
+    }
+
+    handleLMSJoin(userId, username, profilePictureUrl) {
+        if (!this.gameState.lastManStanding.survivors.has(userId)) {
+            this.gameState.lastManStanding.survivors.add(userId);
+            this.api.log(`${username} joined Last Man Standing (${this.gameState.lastManStanding.survivors.size} total)`, 'info');
+            this.api.emit('quiz-show:lms-joined', { username, userId });
+        }
+    }
+
+    autoJoinLMS(userId, username, profilePictureUrl) {
+        if (this.gameState.lastManStanding.active && !this.gameState.lastManStanding.survivors.has(userId)) {
+            this.gameState.lastManStanding.survivors.add(userId);
+            this.api.log(`${username} auto-joined Last Man Standing via first-round answer (${this.gameState.lastManStanding.survivors.size} total)`, 'info');
+        }
+    }
+
+    getLMSTimerDuration() {
+        const currentRound = this.gameState.currentRound;
+        const decrementFrom = this.config.lastManStandingDecrementFromRound || 10;
+        const decrement = this.config.lastManStandingDecrement || 2;
+        const minTime = this.config.lastManStandingMinTime || 10;
+
+        let time = this.config.lastManStandingInitialTime || 30;
+
+        if (currentRound >= decrementFrom) {
+            const decrementRounds = currentRound - decrementFrom + 1;
+            time -= decrementRounds * decrement;
+            time = Math.max(time, minTime);
+        }
+
+        this.gameState.lastManStanding.currentRoundTime = time;
+        return time;
+    }
+
+    eliminateLMSPlayer(userId, reason) {
+        if (!this.gameState.lastManStanding.active) return;
+        if (!this.gameState.lastManStanding.survivors.has(userId)) return;
+
+        this.gameState.lastManStanding.survivors.delete(userId);
+        this.gameState.lastManStanding.eliminated.add(userId);
+
+        const survivors = this.gameState.lastManStanding.survivors.size;
+        this.api.log(`Player eliminated: ${userId} (${reason}). Survivors: ${survivors}`, 'info');
+        this.api.emit('quiz-show:lms-eliminated', { userId, reason, survivors });
+
+        // Check for winner
+        if (survivors === 1) {
+            const winnerId = Array.from(this.gameState.lastManStanding.survivors)[0];
+            this.handleLMSWinner(winnerId);
+        }
+    }
+
+    handleLMSWinner(winnerId) {
+        this.api.log(`Last Man Standing winner: ${winnerId}`, 'info');
+        this.api.emit('quiz-show:lms-winner', { userId: winnerId });
+
+        // End the quiz after a short delay
+        setTimeout(async () => {
+            await this.endRound({ suppressTTS: true });
+            this.api.emit('quiz-show:quiz-ended', {
+                message: 'Last Man Standing beendet!'
+            });
+            this.resetGameState();
+        }, 5000);
+    }
+
+    showLMSSurvivors() {
+        const survivors = Array.from(this.gameState.lastManStanding.survivors);
+        if (survivors.length === 0) return;
+
+        // Get user data for survivors (username, profilePictureUrl)
+        const survivorsData = survivors.map(userId => {
+            const answerData = this.gameState.answers.get(userId);
+            return {
+                userId,
+                username: answerData?.username || userId,
+                profilePictureUrl: answerData?.profilePictureUrl || null
+            };
+        });
+
+        this.api.emit('quiz-show:lms-survivors', { survivors: survivorsData });
+    }
+
     registerTikTokEvents() {
         // Handle chat messages for answers and jokers
         this.api.registerTikTokEvent('chat', async (data) => {
@@ -3413,6 +3534,14 @@ class QuizShowPlugin {
             if (canUseJoker && message.toLowerCase().startsWith(this.config.jokerCommandPrefix.toLowerCase())) {
                 this.handleJokerCommand(userId, username, message);
                 return;
+            }
+
+            // Check for !join command in Last Man Standing mode (during join phase)
+            if (this.config.lastManStandingEnabled && this.gameState.lastManStanding.joinPhase) {
+                if (message.toLowerCase() === '!join') {
+                    this.handleLMSJoin(userId, username, profilePictureUrl);
+                    return;
+                }
             }
 
             // Check for answers
@@ -3686,6 +3815,16 @@ class QuizShowPlugin {
         if (this.config.totalRounds > 0 && this.gameState.currentRound >= this.config.totalRounds) {
             this.api.log('Round limit reached before startRound - resetting game state for new session', 'info');
             this.resetGameState();
+        }
+
+        // Last Man Standing: start join phase on round 1
+        if (this.config.lastManStandingEnabled && this.gameState.currentRound === 0) {
+            this.startLMSJoinPhase();
+            // Wait for join phase to complete
+            await new Promise(resolve => setTimeout(resolve, this.config.lastManStandingJoinTime * 1000));
+            if (!this.gameState.lastManStanding.active) {
+                throw new Error('Last Man Standing cancelled - not enough participants');
+            }
         }
 
         const activeShow = this.getActiveShowConfig();

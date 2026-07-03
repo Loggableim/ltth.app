@@ -26,11 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
 (async function initLanguageSwitchers() {
     console.log('[Dashboard] Waiting for i18n initialization...');
     
-    // Wait for i18n to exist and be initialized
-    let attempts = 0;
-    while ((!window.i18n || !window.i18n.initialized) && attempts < 100) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        attempts++;
+    // Wait for i18n to be ready via the exposed Promise (no polling)
+    if (window.i18n && window.i18n.ready) {
+        await window.i18n.ready;
+    } else {
+        // Fallback: wait for i18n to exist and be initialized
+        let attempts = 0;
+        while ((!window.i18n || !window.i18n.initialized) && attempts < 100) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
     }
     
     if (!window.i18n || !window.i18n.initialized) {
@@ -66,4 +71,3 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[Dashboard] Settings selector value:', languageSelector.value);
     }
 })();
-

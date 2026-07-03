@@ -20,6 +20,8 @@ class I18nClient {
         this.listeners = [];
         this.initialized = false;
         this.onLanguageChangeCallbacks = [];
+        this._readyResolve = null;
+        this.ready = new Promise(resolve => { this._readyResolve = resolve; });
         
         // Load locale from localStorage
         const savedLocale = localStorage.getItem('app_locale');
@@ -45,6 +47,7 @@ class I18nClient {
         }
         
         this.initialized = true;
+        this._readyResolve();
         return this;
     }
 
@@ -87,7 +90,7 @@ class I18nClient {
         
         if (this.currentLocale === locale) {
             console.log(`[i18n] Already using locale: ${locale}`);
-            return true; // Already using this locale
+            return true;
         }
 
         const success = await this.loadTranslations(locale);
@@ -107,6 +110,10 @@ class I18nClient {
             // Update HTML lang attribute
             document.documentElement.lang = locale;
             console.log(`[i18n] Updated document.documentElement.lang to: ${locale}`);
+            
+            // Update DOM immediately
+            this.updateDOM();
+            console.log(`[i18n] DOM updated after language change to: ${locale}`);
         } else {
             console.error(`[i18n] Failed to load translations for: ${locale}`);
         }
