@@ -906,5 +906,105 @@
   "support-the-developement.a.11": "⭐ GitHub Star geben",
   "support-the-developement.a.12": "💬 Community beitreten",
   "support-the-developement.a.13": "🐛 Bug melden",
-  "support-the-developement.p.14": "Danke, dass du Teil der Community bist! ❤️"
+  "support-the-developement.p.14": "Danke, dass du Teil der Community bist! ❤️",
+  "changelog": {
+    "hero": {
+      "title": "Journal des Modifications",
+      "description": "Toutes les mises à jour, améliorations et corrections de bugs en un coup d'œil"
+    },
+    "span": {
+      "3": "Journal des Modifications",
+      "7": "Dernier"
+    }
+  },
+  "community": {
+    "hero": {
+      "title": "Communauté - Streamer plus fort ensemble",
+      "description": "Faites partie d'une communauté grandissante de streamers TikTok LIVE, développeurs et"
+    },
+    "feature": {
+      "description": "Discutez avec d'autres streamers"
+    },
+    "section": {
+      "title": "Règles de la Communauté",
+      "subtitle": "Pour une convivialité amicale et productive"
+    },
+    "cta": {
+      "title": "Prêt à faire partie de la communauté ?",
+      "description": "Rejoignez, partagez vos expériences et aidez à améliorer ltth.app !"
+    },
+    "span": {
+      "3": "Communauté"
+    }
+  },
+  "docs": {
+    "h1": {
+      "24": "Bienvenue sur PupCid's Little TikTool Helper",
+      "30": "Installation et Configuration",
+      "38": "Lanceur Cloud",
+      "46": "Démarrage Rapide",
+      "53": "Configuration",
+      "62": "Connexion TikTok LIVE",
+      "72": "Synthèse Vocale (TTS)",
+      "88": "Système d'Alertes",
+      "102": "Soundboard",
+      "117": "Automatisation d'Événements (Flux)",
+      "131": "Objectifs et Overlays",
+      "146": "Architecture",
+      "152": "Intégration OBS Studio",
+      "164": "Intégration VRChat OSC",
+      "175": "API Plugin",
+      "182": "Dépannage"
+    }
+  },
+  "faq": {
+    "hero": {
+      "description": "Trouvez des réponses aux questions fréquentes sur ltth.app",
+      "title": "FAQ - Questions Fréquemment Posées"
+    },
+    "span": {
+      "3": "FAQ"
+    }
+  },
+  "features": {
+    "hero": {
+      "title": "Aperçu des Fonctionnalités",
+      "subtitle": "Découvrez toutes les fonctionnalités puissantes de PupCid's Little TikTool Helper"
+    },
+    "cta": {
+      "download": "Télécharger Maintenant",
+      "learnMore": "En Savoir Plus",
+      "viewAll": "Voir Toutes les Fonctionnalités"
+    }
+  },
+  "support": {
+    "hero": {
+      "title": "Support",
+      "description": "Nous sommes là pour vous aider"
+    }
+  },
+  "roadmap": {
+    "hero": {
+      "title": "Feuille de Route",
+      "description": "Découvrez ce qui arrive ensuite pour ltth.app"
+    }
+  },
+  "impressum": {
+    "hero": {
+      "title": "Mentions Légales",
+      "description": "Informations légales sur ltth.app"
+    }
+  },
+  "thank-you": {
+    "hero": {
+      "title": "Merci !",
+      "description": "Votre soutien signifie tout pour nous"
+    }
+  },
+  "support-the-developement": {
+    "hero": {
+      "title": "Soutenir le Développement",
+      "description": "Aidez-nous à garder ltth.app gratuit et open source"
+    }
+  }
 }
