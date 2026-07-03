@@ -1,0 +1,163 @@
+{
+  "app_name": "PupCid's Little TikTool Helper",
+  "tabs": {
+    "changelog": "Changelog",
+    "api_keys": "API Keys",
+    "community": "Community",
+    "logging": "Logs"
+  },
+  "profile": {
+    "title": "User Profile",
+    "select": "Select Profile",
+    "no_profiles": "No user profiles available",
+    "selected": "Selected"
+  },
+  "status": {
+    "initializing": "Initializing...",
+    "checking_nodejs": "Checking Node.js installation...",
+    "nodejs_missing": "ERROR: Node.js is not installed!",
+    "nodejs_found": "Node.js found...",
+    "nodejs_version": "Node.js version: %s",
+    "checking_app_dir": "Checking app directory...",
+    "app_dir_missing": "ERROR: app directory not found",
+    "app_dir_found": "App directory found...",
+    "checking_dependencies": "Checking dependencies...",
+    "installing_dependencies": "Installing dependencies...",
+    "installation_hint": "NOTE: npm install can take several minutes, please keep the window open and wait",
+    "installation_failed": "ERROR: %v",
+    "installation_done": "Installation complete!",
+    "dependencies_installed": "Dependencies already installed...",
+    "npm_install_start": "Starting npm install...",
+    "npm_install_delay_notice": "NOTE: npm install can take several minutes, especially on slow connections. Please wait...",
+    "npm_install_line": "npm install: %s",
+    "npm_install_running": "npm install running... (%ds) - Please wait, downloads may take several minutes",
+    "checking_config": "Checking configuration...",
+    "config_ok": "Configuration checked!",
+    "starting_tool": "Starting tool...",
+    "start_error": "ERROR while starting: %v",
+    "check_logs": "Check the log file in app/logs/ for details.",
+    "waiting_for_server_start": "Waiting for server start...",
+    "env_restart": "🔄 .env created - restarting server...",
+    "server_restart_wait": "🔄 Server restarted - waiting for response...",
+    "server_failed_start": "⚠️ Server could not start!",
+    "auto_fixes_done": "📋 All auto-fixes have been attempted",
+    "check_launcher_logs": "💡 Check app/logs/launcher_*.log for details",
+    "manual_install_hint": "💡 Or run manually: cd app && npm install",
+    "port_check_hint": "💡 Or check if port 3000 is free",
+    "closing": "❌ Launcher will close in 15 seconds...",
+    "waiting_attempt": "Waiting for server... (attempt %d)",
+    "server_timeout": "⏱️ Server start timeout (60s)",
+    "server_no_response": "📋 Server not responding - check app/logs/",
+    "server_maybe_running": "💡 Server might still be running in the background",
+    "wait_manual_open": "💡 Wait 2-3 minutes and open localhost:3000",
+    "server_started": "Server started successfully!",
+    "redirecting_dashboard": "Redirecting to dashboard...",
+    "progress": "Progress",
+    "env_creating": "🔧 Auto-Fix: Creating .env file...",
+    "env_created": "✅ .env file created!",
+    "port_in_use": "⚠️ Port 3000 is in use - server will use an alternative port",
+    "server_already_running": "ℹ️ Server is already running on port 3000",
+    "port_delegated": "🔌 Port management is delegated to Node.js (.ltth_port)...",
+    "port_selected": "Port %d selected",
+    "manual_starting": "Manual server start on port %d...",
+    "manual_start_available": "Manual start is available in the launcher. Check logs and choose a port."
+  },
+  "api_keys": {
+    "title": "API Key Information",
+    "intro": "To use all features of LTTH, you need API keys from various providers:",
+    "eulerstream": {
+      "name": "Eulerstream (TikTok LIVE API)",
+      "url": "https://www.eulerstream.com",
+      "type": "Freemium",
+      "description": "Free tier available. Essential for TikTok LIVE connection.",
+      "mandatory": true
+    },
+    "openai": {
+      "name": "OpenAI (GPT / TTS)",
+      "url": "https://platform.openai.com",
+      "type": "Paid",
+      "description": "GPT models for Interactive Story + OpenAI TTS. Pay-as-you-go."
+    },
+    "siliconflow": {
+      "name": "SiliconFlow (AI / Image Gen)",
+      "url": "https://siliconflow.com",
+      "type": "Freemium",
+      "description": "Free tier available. Alternative AI models + image generation."
+    },
+    "fishAudio": {
+      "name": "Fish Audio (TTS)",
+      "url": "https://fish.audio",
+      "type": "Freemium",
+      "description": "Freemium TTS service, good ElevenLabs alternative."
+    },
+    "elevenlabs": {
+      "name": "ElevenLabs (TTS / STT)",
+      "url": "https://elevenlabs.io",
+      "type": "Freemium",
+      "description": "10,000 characters/month free, then paid. TTS + Speech-to-Text."
+    },
+    "deepgram": {
+      "name": "Deepgram (Speech-to-Text)",
+      "url": "https://deepgram.com",
+      "type": "Freemium",
+      "description": "Nova-2 model for real-time speech recognition. $200 free credit."
+    },
+    "googleCloud": {
+      "name": "Google Cloud (TTS / STT)",
+      "url": "https://cloud.google.com/text-to-speech",
+      "type": "Freemium",
+      "description": "Google TTS + Speech-to-Text. $300 new customer credit."
+    },
+    "ollama": {
+      "name": "Ollama (Local AI)",
+      "url": "https://ollama.com",
+      "type": "Free",
+      "description": "Local AI models (Llama, Mistral, Gemma). No API key needed."
+    },
+    "mandatory_warning": "⚠️ IMPORTANT: Eulerstream API key is essential!",
+    "fallback_warning": "The built-in fallback key is not guaranteed to work with heavy usage by all users.",
+    "where_to_get": "Where do I get the keys?"
+  },
+  "community": {
+    "title": "Community & Contribution",
+    "intro": "LTTH is an open-source project and thrives on community!",
+    "help_appreciated": "Your help with testing and development is very welcome! 🎉",
+    "links": {
+      "repo": "GitHub Repository",
+      "discussions": "Discussions & Questions",
+      "issues": "Bug Reports & Feature Requests",
+      "discord": "Discord Server"
+    },
+    "contribute": "How can I help?",
+    "contribute_text": "Test new features, report bugs, suggest improvements, or develop your own plugins!"
+  },
+  "footer": {
+    "powered_by": "Powered by LTTH Launcher",
+    "version": "Version"
+  },
+  "changelog": {
+    "title": "Latest Changes",
+    "loading": "Loading changelog...",
+    "error": "Could not load changelog."
+  },
+  "logs": {
+    "title": "Server Logs",
+    "intro": "View the latest launcher and server logs here.",
+    "loading": "Loading logs...",
+    "empty": "No log entries available.",
+    "error": "Could not load logs."
+  },
+  "theme": {
+    "label": "Theme Mode",
+    "daymode": "Day",
+    "nightmode": "Night",
+    "highcontrast": "High Contrast"
+  },
+  "options": {
+    "keep_open": "Keep launcher open",
+    "keep_open_hint": "Shows full server logging in launcher",
+    "open_app": "Open App",
+    "app_not_ready": "Server is starting...",
+    "app_ready": "Click here if the app doesn't open automatically"
+  }
+}
