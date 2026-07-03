@@ -265,5 +265,5 @@ const segment = {
 
 **Implementation Date**: 2026-01-13  
 **Developer**: GitHub Copilot  
-**Repository**: mycommunity/ltth_desktop2  
+**Repository**: mycommunity/ltth.app  
 **Branch**: copilot/update-gluecksrad-shock-options

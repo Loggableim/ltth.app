@@ -266,4 +266,4 @@ Bei Problemen nach dem Update:
 
 **Implementiert am:** 16. Januar 2026  
 **Entwickler:** GitHub Copilot  
-**Repository:** mycommunity/ltth_desktop2
+**Repository:** mycommunity/ltth.app

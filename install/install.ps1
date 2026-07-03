@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 
 # ---------- Konfiguration ----------
 $LTTHRepoOwner = if ($env:LTTH_REPO_OWNER) { $env:LTTH_REPO_OWNER } else { 'Loggableim' }
-$LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth_desktop2' }
+$LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth.app' }
 $LTTHVersion   = if ($env:LTTH_VERSION)     { $env:LTTH_VERSION     } else { 'latest' }
 $LTTHDir       = if ($env:LTTH_DIR)         { $env:LTTH_DIR         } else { Join-Path $env:LOCALAPPDATA 'LTTH' }
 $LTTHPort      = if ($env:LTTH_PORT)        { $env:LTTH_PORT        } else { '3000' }

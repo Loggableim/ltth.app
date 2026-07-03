@@ -85,14 +85,14 @@ npm --version
 ```bash
 # PowerShell oder CMD öffnen
 cd C:\Users\DeinName\Documents
-git clone https://github.com/Loggableim/ltth_desktop2.git
-cd ltth_desktop2
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 ```
 
 **Option B: ZIP-Download**
-1. Gehe zu [GitHub-Repository](https://github.com/Loggableim/ltth_desktop2)
+1. Gehe zu [GitHub-Repository](https://github.com/Loggableim/ltth.app)
 2. Klicke "Code" → "Download ZIP"
-3. Entpacke die ZIP-Datei nach `C:\Users\DeinName\Documents\ltth_desktop2`
+3. Entpacke die ZIP-Datei nach `C:\Users\DeinName\Documents\ltth.app`
 4. Öffne PowerShell/CMD in diesem Ordner
 
 ### Schritt 4: Dependencies installieren
@@ -209,8 +209,8 @@ sudo pacman -S base-devel python
 
 ```bash
 cd ~
-git clone https://github.com/Loggableim/ltth_desktop2.git
-cd ltth_desktop2
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 ```
 
 ### Schritt 4: Dependencies installieren
@@ -275,8 +275,8 @@ xcode-select --install
 
 ```bash
 cd ~/Documents
-git clone https://github.com/Loggableim/ltth_desktop2.git
-cd ltth_desktop2
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 ```
 
 ### Schritt 5: Dependencies installieren
@@ -670,7 +670,7 @@ open('http://localhost:3000');
 
 Falls Probleme weiterhin bestehen:
 - **E-Mail:** [loggableim@gmail.com](mailto:loggableim@gmail.com)
-- **GitHub Issues:** [Issues-Seite](https://github.com/Loggableim/ltth_desktop2/issues)
+- **GitHub Issues:** [Issues-Seite](https://github.com/Loggableim/ltth.app/issues)
 - **Wiki:** [FAQ & Troubleshooting](FAQ & Troubleshooting.md)
 
 ---

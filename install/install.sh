@@ -18,7 +18,7 @@ set -euo pipefail
 
 # ---------- Konfiguration ----------
 LTTH_REPO_OWNER="${LTTH_REPO_OWNER:-Loggableim}"
-LTTH_REPO_NAME="${LTTH_REPO_NAME:-ltth_desktop2}"
+LTTH_REPO_NAME="${LTTH_REPO_NAME:-ltth.app}"
 LTTH_VERSION="${LTTH_VERSION:-latest}"
 LTTH_DIR="${LTTH_DIR:-$HOME/.local/share/ltth}"
 LTTH_PORT="${LTTH_PORT:-3000}"

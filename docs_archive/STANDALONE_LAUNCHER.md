@@ -121,7 +121,7 @@ Teil von LTTH - siehe [LICENSE](LICENSE)
 
 - **Vollständige Docs:** [standalonelauncher/README.md](standalonelauncher/README.md)
 - **Distribution Guide:** [standalonelauncher/DISTRIBUTION.md](standalonelauncher/DISTRIBUTION.md)
-- **GitHub:** https://github.com/Loggableim/ltth_desktop2
+- **GitHub:** https://github.com/Loggableim/ltth.app
 - **Website:** https://ltth.app
 
 ---

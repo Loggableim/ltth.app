@@ -154,13 +154,13 @@ Neu hier? Starte mit diesen Seiten:
 ## ðŸ”— Externe Ressourcen
 
 ### Official Links
-- **GitHub Repository:** [Loggableim/ltth_desktop2](https://github.com/Loggableim/ltth_desktop2)
-- **Changelog:** [CHANGELOG.md](https://github.com/Loggableim/ltth_desktop2/blob/main/CHANGELOG.md)
+- **GitHub Repository:** [Loggableim/ltth.app](https://github.com/Loggableim/ltth.app)
+- **Changelog:** [CHANGELOG.md](https://github.com/Loggableim/ltth.app/blob/main/CHANGELOG.md)
 - **License:** CC BY-NC 4.0
 
 ### Support
 - **E-Mail:** loggableim@gmail.com
-- **Issues:** [GitHub Issues](https://github.com/Loggableim/ltth_desktop2/issues)
+- **Issues:** [GitHub Issues](https://github.com/Loggableim/ltth.app/issues)
 
 ### Externe Tools
 - **Node.js:** [nodejs.org](https://nodejs.org/)

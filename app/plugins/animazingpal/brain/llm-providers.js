@@ -83,7 +83,7 @@ class OpenAICompatibleProvider extends BaseProvider {
   async generateResponse(systemPrompt, userMessage, history = [], options = {}) {
     const headers = { Authorization: `Bearer ${this.config.apiKey}` };
     if (this.config.provider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://github.com/Loggableim/ltth_desktop2';
+      headers['HTTP-Referer'] = 'https://github.com/Loggableim/ltth.app';
       headers['X-Title'] = 'LTTH AnimazingPal';
     }
     const response = await this.execute({

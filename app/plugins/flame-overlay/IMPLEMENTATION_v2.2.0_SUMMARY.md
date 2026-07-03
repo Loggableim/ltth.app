@@ -392,7 +392,7 @@ app/plugins/flame-overlay/
 **Developer:** PupCid  
 **AI Assistant:** Claude (Anthropic)  
 **Plugin Name:** TikTok Visual Effects Overlay  
-**Repository:** ltth_desktop2  
+**Repository:** ltth.app  
 **License:** CC-BY-NC-4.0
 
 ---

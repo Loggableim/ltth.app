@@ -56,8 +56,8 @@ Speichere in `.vscode/extensions.json`.
 
 ```bash
 # Repository klonen
-git clone https://github.com/Loggableim/ltth_desktop2.git
-cd ltth_desktop2
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 
 # Dependencies installieren
 npm install

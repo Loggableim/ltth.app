@@ -112,7 +112,7 @@ socket.on('wheel:shock-triggered', (data) => {
 
 ### Manual Validation
 ```bash
-cd /home/runner/work/ltth_desktop2/ltth_desktop2/app/plugins/game-engine/games
+cd /home/runner/work/ltth.app/ltth.app/app/plugins/game-engine/games
 
 # Test 1: Verify module loads and structure is correct
 node -e "const WheelGame = require('./wheel.js'); console.log('✓ Module loads');"
@@ -122,7 +122,7 @@ node -e "const WheelGame = require('./wheel.js'); console.log('✓ Module loads'
 
 ### Unit Tests
 ```bash
-cd /home/runner/work/ltth_desktop2/ltth_desktop2/app
+cd /home/runner/work/ltth.app/ltth.app/app
 npm test -- plugins/game-engine/test/wheel-shock.test.js
 ```
 
@@ -188,7 +188,7 @@ const devices = await fetch('/api/openshock/devices').then(r => r.json());
    - Added 5 new tests for new functionality
 
 ## Author
-Implementation by GitHub Copilot for mycommunity/ltth_desktop2
+Implementation by GitHub Copilot for mycommunity/ltth.app
 
 ## Date
 2026-01-13

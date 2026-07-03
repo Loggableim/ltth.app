@@ -77,7 +77,7 @@ The release workflow now produces:
 
 The Windows payload assembly logic lives in:
 
-- [build-src/scripts/package-windows-bootstrap-release.ps1](/C:/Users/logga/Documents/ltth_codex/ltth_desktop2-main/build-src/scripts/package-windows-bootstrap-release.ps1)
+- [build-src/scripts/package-windows-bootstrap-release.ps1](/C:/Users/logga/Documents/ltth_codex/ltth.app-main/build-src/scripts/package-windows-bootstrap-release.ps1)
 
 Windows is the first supported bootstrapper path. The manifest and archive handling are intentionally platform-neutral so macOS/Linux payloads can be added without changing the bootstrapper contract.
 

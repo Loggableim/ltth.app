@@ -16,7 +16,7 @@
     "build:launcher:console": "cd build-src && go build -o ../launcher-console.exe -ldflags \"-s -w\" launcher.go",
     "build:launcher:dev": "cd build-src && go build -o ../dev_launcher.exe -ldflags \"-s -w\" dev-launcher.go",
     "build:bootstrapper:win": "cd build-src && go build -o ../ltth-bootstrapper.exe -ldflags \"-H windowsgui -s -w\" bootstrapper.go",
-    "package:payload:win": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-src\\scripts\\package-windows-bootstrap-release.ps1 -Version 0.0.0-local -Repository Loggableim/ltth_desktop2"
+    "package:payload:win": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\build-src\\scripts\\package-windows-bootstrap-release.ps1 -Version 0.0.0-local -Repository Loggableim/ltth.app"
   },
   "engines": {
     "node": ">=18.0.0 <25.0.0"

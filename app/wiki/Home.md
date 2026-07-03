@@ -2,8 +2,8 @@
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![Version](https://img.shields.io/badge/version-1.3.3-blue)](https://github.com/Loggableim/ltth_desktop2)
-[![Status](https://img.shields.io/badge/status-active-success)](https://github.com/Loggableim/ltth_desktop2)
+[![Version](https://img.shields.io/badge/version-1.3.3-blue)](https://github.com/Loggableim/ltth.app)
+[![Status](https://img.shields.io/badge/status-active-success)](https://github.com/Loggableim/ltth.app)
 
 ---
 
@@ -142,7 +142,7 @@ Actions:
 ### âš¡ Quick Start
 
 1. Install Node.js 18-23
-2. Clone repository: `git clone https://github.com/Loggableim/ltth_desktop2.git`
+2. Clone repository: `git clone https://github.com/Loggableim/ltth.app.git`
 3. Change into the runtime folder: `cd app`
 4. Install dependencies: `npm install`
 5. Start server: `npm start`
@@ -288,7 +288,7 @@ Actions:
 ### âš¡ Quick Start
 
 1. Node.js 18-23 installieren
-2. Repository klonen: `git clone https://github.com/Loggableim/ltth_desktop2.git`
+2. Repository klonen: `git clone https://github.com/Loggableim/ltth.app.git`
 3. In den Runtime-Ordner wechseln: `cd app`
 4. Dependencies installieren: `npm install`
 5. Server starten: `npm start`
@@ -434,7 +434,7 @@ Acciones:
 ### âš¡ Inicio RÃ¡pido
 
 1. Instalar Node.js 18-23
-2. Clonar repositorio: `git clone https://github.com/Loggableim/ltth_desktop2.git`
+2. Clonar repositorio: `git clone https://github.com/Loggableim/ltth.app.git`
 3. Entrar en la carpeta runtime: `cd app`
 4. Instalar dependencias: `npm install`
 5. Iniciar servidor: `npm start`
@@ -580,7 +580,7 @@ Actions :
 ### âš¡ DÃ©marrage Rapide
 
 1. Installer Node.js 18-23
-2. Cloner le dÃ©pÃ´t : `git clone https://github.com/Loggableim/ltth_desktop2.git`
+2. Cloner le dÃ©pÃ´t : `git clone https://github.com/Loggableim/ltth.app.git`
 3. Aller dans le dossier runtime : `cd app`
 4. Installer les dÃ©pendances : `npm install`
 5. DÃ©marrer le serveur : `npm start`

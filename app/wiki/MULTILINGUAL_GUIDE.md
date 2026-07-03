@@ -305,7 +305,7 @@ Potential improvements for Phase 5B and 5C:
 
 For questions or issues with multilingual wiki:
 - 📧 Email: loggableim@gmail.com
-- 🐛 GitHub Issues: [Report issues](https://github.com/Loggableim/ltth_desktop2/issues)
+- 🐛 GitHub Issues: [Report issues](https://github.com/Loggableim/ltth.app/issues)
 
 ---
 

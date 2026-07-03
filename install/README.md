@@ -28,7 +28,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 | `LTTH_NO_BROWSER` | `0` | Browser nach Start nicht öffnen (`1` = aus) |
 | `LTTH_QUIET` | `0` | Reduzierte Ausgabe (`1` = still) |
 | `LTTH_REPO_OWNER` | `Loggableim` | GitHub-Owner |
-| `LTTH_REPO_NAME` | `ltth_desktop2` | GitHub-Repo-Name |
+| `LTTH_REPO_NAME` | `ltth.app` | GitHub-Repo-Name |
 
 ### Beispiele
 

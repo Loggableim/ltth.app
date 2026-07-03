@@ -4,13 +4,13 @@
 
 ### Jest Tests (wenn vorhanden)
 ```bash
-cd /home/runner/work/ltth_desktop2/ltth_desktop2/app
+cd /home/runner/work/ltth.app/ltth.app/app
 npm test -- plugins/game-engine
 ```
 
 ### Plugin-spezifische Tests
 ```bash
-cd /home/runner/work/ltth_desktop2/ltth_desktop2/app/plugins/game-engine
+cd /home/runner/work/ltth.app/ltth.app/app/plugins/game-engine
 node test/connect4.test.js
 node test/challenge-flow.test.js
 ```

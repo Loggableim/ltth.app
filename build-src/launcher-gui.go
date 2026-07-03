@@ -40,7 +40,7 @@ const (
 
 	// GitHub API settings for auto-update
 	githubOwner    = "Loggableim"
-	githubRepo     = "ltth_desktop2"
+	githubRepo     = "ltth.app"
 	githubAPIURL   = "https://api.github.com"
 	updateInterval = 24 * time.Hour
 

@@ -201,7 +201,7 @@
 ## 📁 Verzeichnisstruktur
 
 ```
-ltth_desktop2/
+ltth.app/
 │
 ├── server.js                     # Haupt-Server (1500+ Zeilen)
 │                                 # Express-App, Socket.io, Event-Bus

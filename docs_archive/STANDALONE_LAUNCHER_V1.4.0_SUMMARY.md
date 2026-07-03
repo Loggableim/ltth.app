@@ -209,6 +209,6 @@ The new splash screen features:
 **Project:** LTTH (Little TikTool Helper) by PupCid  
 **Version:** 1.4.0  
 **License:** CC-BY-NC-4.0  
-**Repository:** https://github.com/Loggableim/ltth_desktop2
+**Repository:** https://github.com/Loggableim/ltth.app
 
 **Implementation completed successfully!** 🎊

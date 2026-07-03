@@ -24,7 +24,7 @@ const os = require('os');
 
 const cfg = {
     repoOwner: process.env.LTTH_REPO_OWNER || 'Loggableim',
-    repoName:  process.env.LTTH_REPO_NAME  || 'ltth_desktop2',
+    repoName:  process.env.LTTH_REPO_NAME  || 'ltth.app',
     version:   process.env.LTTH_VERSION     || 'latest',
     dir:       process.env.LTTH_DIR         || defaultInstallDir(),
     port:      process.env.LTTH_PORT        || '3000',

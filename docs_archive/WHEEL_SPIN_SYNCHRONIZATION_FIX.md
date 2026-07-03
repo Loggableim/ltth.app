@@ -235,5 +235,5 @@ The key insight: **Duration must remain constant** because the rotation calculat
 
 **Implementation Date**: 2026-01-16  
 **Developer**: GitHub Copilot  
-**Repository**: mycommunity/ltth_desktop2  
+**Repository**: mycommunity/ltth.app  
 **Branch**: copilot/fix-gluecksrad-spin-synchronization

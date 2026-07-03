@@ -378,7 +378,7 @@ For issues or questions:
 - Check OpenShock plugin logs
 - Monitor queue UI at `/openshock/queue`
 - Check main application logs
-- GitHub: [ltth_desktop2](https://github.com/Loggableim/ltth_desktop2)
+- GitHub: [ltth.app](https://github.com/Loggableim/ltth.app)
 
 ## Version History
 

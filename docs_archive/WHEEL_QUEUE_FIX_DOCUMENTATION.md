@@ -398,6 +398,6 @@ The fixes are minimal, surgical, and maintain 100% backward compatibility while 
 
 **Implementation Date:** 2026-01-16  
 **Developer:** GitHub Copilot  
-**Repository:** mycommunity/ltth_desktop2  
+**Repository:** mycommunity/ltth.app  
 **Branch:** copilot/fix-wheel-display-issues  
 **Commit:** 0455af5

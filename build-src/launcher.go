@@ -26,7 +26,7 @@ const (
 	
 	// GitHub API settings for auto-update
 	githubOwner      = "Loggableim"
-	githubRepo       = "ltth_desktop2"
+	githubRepo       = "ltth.app"
 	githubBranch     = "main"
 	githubAPIURL     = "https://api.github.com"
 	updateCheckFile  = "runtime/last_update_check.txt"
