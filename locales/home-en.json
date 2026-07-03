@@ -17,12 +17,10 @@
       },
       "visualCard1": "Real-time Events",
       "visualCard2": "Live Synchronization",
-      "visualCard3": "Premium Features",
-      "title": "Professional TikTok LIVE Streaming Solution"
+      "visualCard3": "Premium Features"
     },
     "disclaimer": {
-      "title": "Important Independence Notice",
-      "text": "PupCid's Little TikTool Helper is an independent analysis and creator tool. There is no business, partnership or technical connection to TikTok or ByteDance. TikTok™ is a registered trademark of ByteDance Ltd. All brand names are used exclusively for compatibility and description purposes."
+      "title": "Important Independence Notice"
     },
     "features": {
       "title": "Why ltth.app for Your Stream?",
@@ -77,18 +75,15 @@
       },
       "card13": {
         "desc": "Slot Machine, Wheel of Fortune, Plinko, Connect 4 and Chess - all controlled by TikTok gifts. Token system, superfan detection, OBS overlay and 7 unique sounds.",
-        "cta": "Learn more →",
-        "title": "🎰 Game Engine"
+        "cta": "Learn more →"
       },
       "card14": {
         "desc": "13 procedural weather effects including Aurora, Fireflies, Meteors, Sakura and WebGPU Emoji Rain. Adaptive FPS, GPU-optimized - live on your OBS stream.",
-        "cta": "Learn more →",
-        "title": "🌦️ Weather Engine"
+        "cta": "Learn more →"
       },
       "card15": {
         "desc": "YouTube search via yt-dlp (no Python needed), Spotify/SoundCloud oEmbed, vote-skip, 3 OBS overlay designs and superfan-only requests.",
-        "cta": "View plugins →",
-        "title": "🎵 Music Bot"
+        "cta": "View plugins →"
       },
       "cta": "View All Features"
     },
@@ -108,8 +103,7 @@
         "desc": "Control OBS scenes via gifts/chat. WebSocket v5, chat commands, macro system."
       },
       "card4": {
-        "title": "🎮 OSC-Bridge",
-        "desc": "VRChat integration via OSC. Avatar control, bidirectional communication, latency < 50ms."
+        "title": "🎮 OSC-Bridge"
       },
       "card5": {
         "title": "👥 VDO.Ninja Plugin",

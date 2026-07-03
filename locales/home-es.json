@@ -17,12 +17,10 @@
       },
       "visualCard1": "Eventos en Tiempo Real",
       "visualCard2": "Sincronización en Vivo",
-      "visualCard3": "Funciones Premium",
-      "title": "Solución Profesional de Streaming TikTok LIVE"
+      "visualCard3": "Funciones Premium"
     },
     "disclaimer": {
-      "title": "Aviso Importante de Independencia",
-      "text": "PupCid's Little TikTool Helper es una herramienta independiente de análisis y creación. No existe ninguna conexión comercial, de asociación o técnica con TikTok o ByteDance. TikTok™ es una marca registrada de ByteDance Ltd. Todos los nombres de marcas se utilizan exclusivamente con fines de compatibilidad y descripción."
+      "title": "Aviso Importante de Independencia"
     },
     "features": {
       "title": "¿Por qué ltth.app para tu Stream?",
@@ -77,18 +75,15 @@
       },
       "card13": {
         "desc": "Máquina Tragamonedas, Ruleta de la Fortuna, Plinko, Conecta 4 y Ajedrez - todo controlado por regalos de TikTok. Sistema de tokens, detección de superfans, overlay OBS y 7 sonidos únicos.",
-        "cta": "Más información →",
-        "title": "🎰 Motor de Juegos"
+        "cta": "Más información →"
       },
       "card14": {
         "desc": "13 efectos meteorológicos procedurales incluyendo Aurora, Luciérnagas, Meteoros, Sakura y Lluvia de Emojis WebGPU. FPS adaptativo, optimizado para GPU - en vivo en tu stream OBS.",
-        "cta": "Más información →",
-        "title": "🌦️ Motor Meteorológico"
+        "cta": "Más información →"
       },
       "card15": {
         "desc": "Búsqueda en YouTube via yt-dlp (no necesita Python), Spotify/SoundCloud oEmbed, vote-skip, 3 diseños de overlay OBS y solicitudes solo para superfans.",
-        "cta": "Ver plugins →",
-        "title": "🎵 Bot de Música"
+        "cta": "Ver plugins →"
       },
       "cta": "Ver Todas las Funciones"
     },
@@ -108,8 +103,7 @@
         "desc": "Controla escenas OBS mediante regalos/chat. WebSocket v5, comandos de chat, sistema de macros."
       },
       "card4": {
-        "title": "🎮 OSC-Bridge",
-        "desc": "Integración VRChat via OSC. Control de avatar, comunicación bidireccional, latencia < 50ms."
+        "title": "🎮 OSC-Bridge"
       },
       "card5": {
         "title": "👥 Plugin VDO.Ninja",

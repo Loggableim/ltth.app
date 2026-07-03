@@ -1,163 +1,257 @@
 {
-  "app_name": "PupCid's Little TikTool Helper",
-  "tabs": {
-    "changelog": "Journal des modifications",
-    "api_keys": "Clés API",
-    "community": "Communauté",
-    "logging": "Journaux"
-  },
-  "profile": {
-    "title": "Profil utilisateur",
-    "select": "Sélectionner le profil",
-    "no_profiles": "Aucun profil utilisateur disponible",
-    "selected": "Sélectionné"
-  },
-  "status": {
-    "initializing": "Initialisation...",
-    "checking_nodejs": "Vérification de l'installation de Node.js...",
-    "nodejs_missing": "ERREUR : Node.js n'est pas installé !",
-    "nodejs_found": "Node.js trouvé...",
-    "nodejs_version": "Version de Node.js : %s",
-    "checking_app_dir": "Vérification du dossier de l'application...",
-    "app_dir_missing": "ERREUR : dossier app introuvable",
-    "app_dir_found": "Dossier de l'application trouvé...",
-    "checking_dependencies": "Vérification des dépendances...",
-    "installing_dependencies": "Installation des dépendances...",
-    "installation_hint": "NOTE : npm install peut prendre plusieurs minutes, merci de laisser la fenêtre ouverte et d'attendre",
-    "installation_failed": "ERREUR : %v",
-    "installation_done": "Installation terminée !",
-    "dependencies_installed": "Dépendances déjà installées...",
-    "npm_install_start": "Démarrage de npm install...",
-    "npm_install_delay_notice": "NOTE : npm install peut prendre plusieurs minutes, surtout avec une connexion lente. Merci de patienter...",
-    "npm_install_line": "npm install : %s",
-    "npm_install_running": "npm install en cours... (%ds) - Merci de patienter, les téléchargements peuvent prendre plusieurs minutes",
-    "checking_config": "Vérification de la configuration...",
-    "config_ok": "Configuration vérifiée !",
-    "starting_tool": "Démarrage de l'outil...",
-    "start_error": "ERREUR au démarrage : %v",
-    "check_logs": "Consulte le fichier de log dans app/logs/ pour plus de détails.",
-    "waiting_for_server_start": "En attente du démarrage du serveur...",
-    "env_restart": "🔄 .env créé - redémarrage du serveur...",
-    "server_restart_wait": "🔄 Serveur redémarré - attente de la réponse...",
-    "server_failed_start": "⚠️ Le serveur n'a pas pu démarrer !",
-    "auto_fixes_done": "📋 Tous les auto-fixes ont été tentés",
-    "check_launcher_logs": "💡 Consulte app/logs/launcher_*.log pour plus de détails",
-    "manual_install_hint": "💡 Ou exécute manuellement : cd app && npm install",
-    "port_check_hint": "💡 Ou vérifie que le port 3000 est libre",
-    "closing": "❌ Le launcher se fermera dans 15 secondes...",
-    "waiting_attempt": "En attente du serveur... (tentative %d)",
-    "server_timeout": "⏱️ Délai de démarrage du serveur dépassé (60s)",
-    "server_no_response": "📋 Le serveur ne répond pas - vérifie app/logs/",
-    "server_maybe_running": "💡 Le serveur tourne peut-être encore en arrière-plan",
-    "wait_manual_open": "💡 Attends 2-3 minutes et ouvre localhost:3000",
-    "server_started": "Serveur démarré avec succès !",
-    "redirecting_dashboard": "Redirection vers le tableau de bord...",
-    "progress": "Progression",
-    "env_creating": "🔧 Auto-Fix : création du fichier .env...",
-    "env_created": "✅ Fichier .env créé !",
-    "port_in_use": "⚠️ Le port 3000 est occupé - le serveur utilisera un port alternatif",
-    "server_already_running": "ℹ️ Le serveur fonctionne déjà sur le port 3000",
-    "port_delegated": "🔌 La gestion des ports est déléguée à Node.js (.ltth_port)...",
-    "port_selected": "Port %d sélectionné",
-    "manual_starting": "Démarrage manuel du serveur sur le port %d...",
-    "manual_start_available": "Le démarrage manuel est disponible dans le launcher. Vérifiez les logs et choisissez un port."
-  },
-  "api_keys": {
-    "title": "Informations sur les clés API",
-    "intro": "Pour utiliser toutes les fonctionnalités de LTTH, vous avez besoin de clés API de différents fournisseurs:",
-    "eulerstream": {
-      "name": "Eulerstream (API TikTok LIVE)",
-      "url": "https://www.eulerstream.com",
-      "type": "Freemium",
-      "description": "Niveau gratuit disponible. Essentiel pour la connexion TikTok LIVE.",
-      "mandatory": true
+  "home": {
+    "hero": {
+      "subtitle": "PupCid's Little TikTool Helper est l'outil ultime pour les streamers TikTok LIVE. Traitez les événements en temps réel, utilisez la synthèse vocale avec plus de 75 voix, créez des alertes personnalisables, jouez des sons automatiquement et automatisez votre stream avec des flux puissants. Système de plugins modulaire, intégration OBS, support VRChat OSC et bien plus encore. Entièrement local, gratuit et open source.",
+      "featuresCta": "Explorer les Fonctionnalités",
+      "stat1": {
+        "value": "100%",
+        "label": "Gratuit & Open Source"
+      },
+      "stat2": {
+        "value": "Local",
+        "label": "Sans Dépendance Cloud"
+      },
+      "stat3": {
+        "value": "Temps Réel",
+        "label": "Traitement d'Événements en Direct"
+      },
+      "visualCard1": "Événements en Temps Réel",
+      "visualCard2": "Synchronisation en Direct",
+      "visualCard3": "Fonctionnalités Premium",
+      "title": "Solution Professionnelle de Streaming TikTok LIVE"
     },
-    "openai": {
-      "name": "OpenAI (GPT / TTS)",
-      "url": "https://platform.openai.com",
-      "type": "Payant",
-      "description": "Modèles GPT pour Histoire Interactive + OpenAI TTS. Paiement à l'usage."
+    "disclaimer": {
+      "title": "Avis Important d'Indépendance",
+      "text": "PupCid's Little TikTool Helper est un outil indépendant d'analyse et de création. Il n'existe aucun lien commercial, de partenariat ou technique avec TikTok ou ByteDance. TikTok™ est une marque déposée de ByteDance Ltd. Tous les noms de marques sont utilisés exclusivement à des fins de compatibilité et de description."
     },
-    "siliconflow": {
-      "name": "SiliconFlow (IA / Génération d'images)",
-      "url": "https://siliconflow.com",
-      "type": "Freemium",
-      "description": "Niveau gratuit disponible. Modèles IA alternatifs + génération d'images."
+    "features": {
+      "title": "Pourquoi ltth.app pour votre Stream ?",
+      "subtitle": "Fonctionnalités de streaming professionnelles développées spécifiquement pour TikTok LIVE",
+      "card1": {
+        "title": "AnimazingPal Brain Engine 🧠",
+        "desc": "Système de mémoire et de personnalité alimenté par IA pour les avatars VTuber avec GPT-4o-mini / GPT-5 Nano, recherche vectorielle sémantique et plus de 15 endpoints API."
+      },
+      "card2": {
+        "title": "Connexion TikTok LIVE en Temps Réel",
+        "desc": "Connectez-vous en direct à votre stream TikTok. Recevez des Cadeaux, Commentaires, Follows, Partages et Likes en temps réel sans délai. Reconnexion automatique en cas de perte de connexion."
+      },
+      "card3": {
+        "title": "Système de Synthèse Vocale",
+        "desc": "Plus de 75 voix TikTok et plus de 30 voix Google Cloud. Mappage vocal spécifique à l'utilisateur, TTS automatique pour le chat, fonction de liste noire et paramètres de volume/vitesse réglables."
+      },
+      "card4": {
+        "title": "Système d'Alertes Personnalisable",
+        "desc": "Créez des alertes individuelles pour tous les types d'événements. Support Son + Texte + Image/GIF, système de modèles avec variables et filtre de pièces minimum pour des présentations de stream professionnelles."
+      },
+      "card5": {
+        "title": "Soundboard avec plus de 100 000 Sons",
+        "desc": "Accès à la base de données MyInstants. Sons spécifiques aux cadeaux avec icônes, sons d'événements pour Follow/Subscribe/Share, système de seuil de likes et sélecteur de sons avec recherche et favoris."
+      },
+      "card6": {
+        "title": "Objectifs et Overlays",
+        "desc": "4 objectifs séparés (Likes, Followers, Subs, Pièces) avec des overlays individuels de source de navigateur. Styles, couleurs, polices personnalisables et modes automatiques à l'atteinte des objectifs pour votre intégration OBS."
+      },
+      "card7": {
+        "title": "Automatisation d'Événements (Flux)",
+        "desc": "Automatisations Si-Alors sans programmation. 6 types de déclencheurs, 6 types d'actions, conditions complexes avec 8 opérateurs. Déclenchez TTS, alertes, sons, webhooks et plus."
+      },
+      "card8": {
+        "title": "Intégration OBS",
+        "desc": "Overlay Full-HD transparent (1920x1080) pour vos streams. Configuration HUD par glisser-déposer, overlays d'objectifs séparés et compatibilité totale avec les sources de navigateur."
+      },
+      "card9": {
+        "title": "Système de Profils Utilisateur",
+        "desc": "Plusieurs bases de données pour différentes configurations de streaming. Changement de profil, fonction de sauvegarde et configurations séparées pour différents formats de stream."
+      },
+      "card10": {
+        "title": "100% Local et Sécurisé",
+        "desc": "Toutes les données restent sur votre ordinateur. Pas de connexion cloud, pas de données de connexion requises, pas de collecte de données. Open source et entièrement transparent."
+      },
+      "card11": {
+        "title": "Système de Plugins",
+        "desc": "Système d'extension modulaire avec chargement à chaud. Plus de 30 plugins préinstallés (TTS, Soundboard, Multi-Cam, OSC-Bridge, VDO.Ninja, Emoji Rain, Topboard). Créez vos propres plugins avec l'API Plugin."
+      },
+      "card12": {
+        "title": "Intégration VRChat OSC",
+        "desc": "Contrôlez votre avatar VRChat via le protocole OSC. Geste de salut sur les cadeaux, animation de célébration, déclencheur de danse, effets de cœurs et confettis. Paramètres OSC personnalisés pris en charge."
+      },
+      "card13": {
+        "desc": "Machine à Sous, Roue de la Fortune, Plinko, Puissance 4 et Échecs - tous contrôlés par les cadeaux TikTok. Système de jetons, détection de superfans, overlay OBS et 7 sons uniques.",
+        "cta": "En savoir plus →",
+        "title": "🎰 Moteur de Jeux"
+      },
+      "card14": {
+        "desc": "13 effets météorologiques procéduraux incluant Aurore, Lucioles, Météores, Sakura et Pluie d'Emojis WebGPU. FPS adaptatif, optimisé GPU - en direct sur votre stream OBS.",
+        "cta": "En savoir plus →",
+        "title": "🌦️ Moteur Météo"
+      },
+      "card15": {
+        "desc": "Recherche YouTube via yt-dlp (pas de Python nécessaire), Spotify/SoundCloud oEmbed, vote-skip, 3 designs d'overlay OBS et requêtes réservées aux superfans.",
+        "cta": "Voir les plugins →",
+        "title": "🎵 Bot Musical"
+      },
+      "cta": "Voir Toutes les Fonctionnalités"
     },
-    "fishAudio": {
-      "name": "Fish Audio (TTS)",
-      "url": "https://fish.audio",
-      "type": "Freemium",
-      "description": "Service TTS freemium, bonne alternative à ElevenLabs."
+    "plugins": {
+      "title": "Système de Plugins Extensible",
+      "subtitle": "Architecture modulaire avec chargement à chaud et plus de 30 plugins préinstallés",
+      "card1": {
+        "title": "🎙️ Plugin TTS",
+        "desc": "Plus de 75 voix TikTok et plus de 30 voix Google Cloud. Mappages vocaux utilisateur, auto-TTS, filtre de liste noire."
+      },
+      "card2": {
+        "title": "🎵 Plugin Soundboard",
+        "desc": "Plus de 100 000 sons via MyInstants. Mappages de cadeaux, sons d'événements, système de seuil de likes."
+      },
+      "card3": {
+        "title": "🎥 Multi-Cam Switcher",
+        "desc": "Contrôlez les scènes OBS via cadeaux/chat. WebSocket v5, commandes de chat, système de macros."
+      },
+      "card4": {
+        "title": "🎮 OSC-Bridge",
+        "desc": "Intégration VRChat via OSC. Contrôle d'avatar, communication bidirectionnelle, latence < 50ms."
+      },
+      "card5": {
+        "title": "👥 Plugin VDO.Ninja",
+        "desc": "Streaming multi-invités. Gestion de salle, gestion des invités, contrôle de mise en page."
+      },
+      "card6": {
+        "title": "🏆 Plugin Topboard",
+        "desc": "Meilleurs donateurs, plus longues séries, donateurs récents avec mises à jour en temps réel."
+      },
+      "card7": {
+        "title": "🎨 Pluie d'Emojis",
+        "desc": "Effet de pluie d'emojis sur les cadeaux. Mappages cadeau-vers-emoji, vitesse/densité d'animation."
+      },
+      "card8": {
+        "title": "🔧 Plugins Personnalisés",
+        "desc": "Créez vos propres plugins avec l'API Plugin. Téléchargement ZIP, chargement à chaud, interface d'administration."
+      },
+      "cta": "Explorer le Système de Plugins"
     },
-    "elevenlabs": {
-      "name": "ElevenLabs (TTS / STT)",
-      "url": "https://elevenlabs.io",
-      "type": "Freemium",
-      "description": "10 000 caractères/mois gratuits, puis payant. TTS + Reconnaissance vocale."
+    "obs": {
+      "title": "Intégration d'Overlay OBS",
+      "subtitle": "Overlay Full-HD transparent (1920x1080) pour streams professionnels"
     },
-    "deepgram": {
-      "name": "Deepgram (Reconnaissance vocale)",
-      "url": "https://deepgram.com",
-      "type": "Freemium",
-      "description": "Modèle Nova-2 pour la reconnaissance vocale en temps réel. 200 $ de crédit gratuit."
+    "dev": {
+      "title": "Pour les Développeurs et Utilisateurs Avancés",
+      "subtitle": "Open source, entièrement documenté, extensible",
+      "feature1": {
+        "title": "API REST et WebSocket",
+        "desc": "Documentation API complète. Routes Express, événements Socket.io, API Plugin."
+      },
+      "feature2": {
+        "title": "Open Source (MIT)",
+        "desc": "Entièrement open source. Code transparent, piloté par la communauté, facile à forker."
+      },
+      "feature3": {
+        "title": "Documentation Complète",
+        "desc": "Wiki avec architecture, documentation des plugins, référence API, FAQ et dépannage."
+      },
+      "feature4": {
+        "title": "Architecture Moderne",
+        "desc": "Node.js, Express, Socket.io, SQLite. Système de plugins modulaire piloté par événements."
+      },
+      "feature5": {
+        "title": "Communauté GitHub",
+        "desc": "Rapports de bugs, demandes de fonctionnalités, contributions bienvenues. GitHub Issues et Discussions."
+      },
+      "feature6": {
+        "title": "Image de Marque Personnalisée",
+        "desc": "Configurateur HUD, alertes personnalisées, propres sons, styles, couleurs et polices."
+      }
     },
-    "googleCloud": {
-      "name": "Google Cloud (TTS / STT)",
-      "url": "https://cloud.google.com/text-to-speech",
-      "type": "Freemium",
-      "description": "Google TTS + Reconnaissance vocale. 300 $ de crédit pour les nouveaux clients."
+    "screenshots": {
+      "title": "Découvrez l'Interface Utilisateur",
+      "subtitle": "Outils professionnels avec une utilisation intuitive pour chaque streamer",
+      "dashboard": {
+        "title": "Tableau de Bord Principal",
+        "desc": "Contrôle central sur toutes les fonctionnalités. Statistiques en direct, statut de connexion TikTok, actions rapides et accès direct à tous les outils et plugins."
+      },
+      "soundboard": {
+        "title": "Configuration du Soundboard",
+        "desc": "Mappages cadeau-vers-son avec intégration MyInstants. Plus de 100 000 sons disponibles instantanément."
+      },
+      "flows": {
+        "title": "Éditeur de Flux pour l'Automatisation",
+        "desc": "Créez des automatisations \"Si-Alors\" visuellement sans code. Déclenchez TTS, alertes et plus."
+      },
+      "tts": {
+        "title": "Panneau d'Administration TTS",
+        "desc": "Plus de 75 voix TikTok, voix Google Cloud, mappages vocaux utilisateur et paramètres avancés."
+      },
+      "goals": {
+        "title": "Overlay d'Objectifs pour OBS",
+        "desc": "Barres de progression transparentes pour les pièces, followers, likes et subs. Personnalisable et prêt pour OBS."
+      }
     },
-    "ollama": {
-      "name": "Ollama (IA Locale)",
-      "url": "https://ollama.com",
-      "type": "Gratuit",
-      "description": "Modèles IA locaux (Llama, Mistral, Gemma). Aucune clé API nécessaire."
+    "steps": {
+      "title": "Démarrez en 3 Étapes",
+      "step1": {
+        "title": "1 Téléchargement et Installation",
+        "desc": "Téléchargez le LTTH Cloud Launcher et installez l'outil sur votre PC Windows. Tout est configuré automatiquement."
+      },
+      "step2": {
+        "title": "2 Connecter à TikTok",
+        "desc": "Ouvrez le tableau de bord, entrez votre nom d'utilisateur TikTok et démarrez votre stream LIVE. La connexion s'établit automatiquement."
+      },
+      "step3": {
+        "title": "3 Configurer OBS et Streamer",
+        "desc": "Ajoutez l'URL de source de navigateur à OBS et profitez de fonctionnalités de stream professionnelles avec alertes, TTS et plus en temps réel !"
+      }
     },
-    "mandatory_warning": "⚠️ IMPORTANT: La clé API Eulerstream est essentielle!",
-    "fallback_warning": "La clé de secours intégrée n'est pas garantie de fonctionner en cas d'utilisation intensive par tous les utilisateurs.",
-    "where_to_get": "Où obtenir les clés?"
+    "demo": {
+      "title": "Voyez-le en Action",
+      "subtitle": "Découvrez ltth.app en moins d'une minute - de la configuration au stream en direct",
+      "comingSoon": "Vidéo démo bientôt disponible !",
+      "cta": "Vers le Guide"
+    },
+    "community": {
+      "title": "Communauté Grandissante",
+      "subtitle": "Rejoignez les streamers TikTok LIVE du monde entier",
+      "stars": {
+        "title": "⭐ Étoiles GitHub",
+        "desc": "Communauté Open Source sur GitHub"
+      },
+      "plugins": {
+        "title": "Plus de 30 Plugins",
+        "desc": "Plugins préinstallés, extensibilité illimitée"
+      },
+      "free": {
+        "title": "100% Gratuit",
+        "desc": "Entièrement gratuit, sans coûts cachés"
+      }
+    },
+    "devCta": {
+      "title": "🔧 Développeur ? Créez Votre Propre Plugin !",
+      "subtitle": "Utilisez l'API Plugin pour étendre ltth.app. Publiez vos plugins et partagez-les avec la communauté.",
+      "docsCta": "Documentation des Plugins"
+    },
+    "support": {
+      "title": "❤️ Soutenez le Projet",
+      "subtitle": "ltth.app est 100% gratuit et open source. Vous pouvez soutenir le projet de différentes manières :",
+      "star": {
+        "title": "🔧 Étoile GitHub",
+        "desc": "Donnez une étoile au projet sur GitHub"
+      },
+      "feedback": {
+        "title": "💬 Donner son Avis",
+        "desc": "Partagez vos expériences et suggestions d'amélioration"
+      },
+      "contribute": {
+        "title": "🔧 Contribuer",
+        "desc": "Contribuez au code ou créez vos propres plugins"
+      },
+      "thanks": "Chaque forme de soutien aide à développer davantage ltth.app et à le garder gratuit pour tous les streamers. Merci ! 🙏"
+    },
+    "cta": {
+      "title": "Prêt pour le Streaming TikTok LIVE Professionnel ?",
+      "desc": "Rejoignez la communauté grandissante qui a déjà fait passer ses streams au niveau supérieur avec PupCid's Little TikTool Helper. 100% gratuit, open source et local.",
+      "docsCta": "Lire la Documentation",
+      "available": "Disponible pour Windows"
+    }
   },
-  "community": {
-    "title": "Communauté et contribution",
-    "intro": "LTTH est un projet open-source qui vit grâce à la communauté!",
-    "help_appreciated": "Votre aide pour les tests et le développement est très appréciée! 🎉",
-    "links": {
-      "repo": "Dépôt GitHub",
-      "discussions": "Discussions et questions",
-      "issues": "Rapports de bogues et demandes de fonctionnalités",
-      "discord": "Serveur Discord"
-    },
-    "contribute": "Comment puis-je aider?",
-    "contribute_text": "Testez de nouvelles fonctionnalités, signalez des bogues, suggérez des améliorations ou développez vos propres plugins!"
-  },
-  "footer": {
-    "powered_by": "Propulsé par LTTH Launcher",
-    "version": "Version"
-  },
-  "changelog": {
-    "title": "Dernières modifications",
-    "loading": "Chargement du journal des modifications...",
-    "error": "Impossible de charger le journal des modifications."
-  },
-  "logs": {
-    "title": "Logs du serveur",
-    "intro": "Consulte ici les logs actuels du launcher et du serveur.",
-    "loading": "Chargement des logs...",
-    "empty": "Aucune entrée de log disponible.",
-    "error": "Impossible de charger les logs."
-  },
-  "theme": {
-    "label": "Mode de thème",
-    "daymode": "Jour",
-    "nightmode": "Nuit",
-    "highcontrast": "Contraste élevé"
-  },
-  "options": {
-    "keep_open": "Garder le lanceur ouvert",
-    "keep_open_hint": "Affiche la journalisation complète du serveur dans le lanceur",
-    "open_app": "Ouvrir l'application",
-    "app_not_ready": "Le serveur démarre...",
-    "app_ready": "Cliquez ici si l'application ne s'ouvre pas automatiquement"
+  "common": {
+    "new": "NOUVEAU"
   }
 }
