@@ -250,4 +250,4 @@ clarityhud/
 
 ## License
 
-Part of Pup Cid's Little TikTok Helper
+Part of Pup Cid's Little TikTool Helper

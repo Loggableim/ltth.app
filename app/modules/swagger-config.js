@@ -9,7 +9,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Pup Cid\'s Little TikTok Helper API',
+      title: 'Pup Cid\'s Little TikTool Helper API',
       version: '1.0.0',
       description: 'Professional TikTok LIVE streaming tool API',
       license: {

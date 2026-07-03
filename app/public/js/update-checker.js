@@ -53,7 +53,7 @@ class UpdateUI {
                 this.currentVersion = data.version;
                 
                 // Update document title
-                const baseTitle = "Pup Cid's Little TikTok Helper";
+                const baseTitle = "Pup Cid's Little TikTool Helper";
                 document.title = `${baseTitle} ${data.version}`;
                 
                 // Update header title if exists

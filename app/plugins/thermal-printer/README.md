@@ -1,6 +1,6 @@
 # Thermal Printer Plugin
 
-Ein vollständig funktionsfähiges Plugin für "Pup Cids Little TikTok Helper", das TikTok Live Events (Chat, Gifts, Follows) physisch auf einem Thermodrucker (ESC/POS) ausdruckt.
+Ein vollständig funktionsfähiges Plugin für "Pup Cids Little TikTool Helper", das TikTok Live Events (Chat, Gifts, Follows) physisch auf einem Thermodrucker (ESC/POS) ausdruckt.
 
 ## 🎯 Features
 

@@ -822,7 +822,7 @@ body {
     <div class="header">
         <div class="logo">L</div>
         <h1 class="title">LTTH Launcher</h1>
-        <p class="subtitle">PupCid's Little TikTok Helper</p>
+        <p class="subtitle">PupCid's Little TikTool Helper</p>
     </div>
     
     <div class="content">

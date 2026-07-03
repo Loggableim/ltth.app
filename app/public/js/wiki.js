@@ -1,5 +1,5 @@
 /**
- * Wiki System for Pup Cid's Little TikTok Helper
+ * Wiki System for Pup Cid's Little TikTool Helper
  * Provides comprehensive documentation with markdown rendering, search, and navigation
  */
 

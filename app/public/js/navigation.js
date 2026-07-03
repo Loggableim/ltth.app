@@ -1,6 +1,6 @@
 /**
  * Navigation & Sidebar Management
- * Pup Cid's Little TikTok Helper
+ * Pup Cid's Little TikTool Helper
  */
 
 (() => {

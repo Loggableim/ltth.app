@@ -6,7 +6,7 @@ The Config Import plugin allows users to import their settings from old installa
 
 ## Problem
 
-In older versions of Pup Cid's Little TikTok Helper, configuration files were stored directly in the application installation directory. This meant that when users:
+In older versions of Pup Cid's Little TikTool Helper, configuration files were stored directly in the application installation directory. This meant that when users:
 - Reinstalled the application
 - Updated to a new version
 - Moved the installation to a different location
@@ -357,7 +357,7 @@ config-import/
 
 ## License
 
-CC BY-NC 4.0 License - Part of Pup Cid's Little TikTok Helper
+CC BY-NC 4.0 License - Part of Pup Cid's Little TikTool Helper
 
 ## Support
 

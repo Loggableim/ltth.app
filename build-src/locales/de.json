@@ -65,32 +65,56 @@
   "api_keys": {
     "title": "API Key Informationen",
     "intro": "Um alle Funktionen von LTTH nutzen zu können, benötigen Sie API-Keys von verschiedenen Anbietern:",
-    "elevenlabs": {
-      "name": "ElevenLabs (Text-to-Speech)",
-      "url": "https://elevenlabs.io",
+    "eulerstream": {
+      "name": "Eulerstream (TikTok LIVE API)",
+      "url": "https://www.eulerstream.com",
       "type": "Freemium",
-      "description": "10.000 Zeichen/Monat kostenlos, dann kostenpflichtig",
+      "description": "Kostenloser Tier verfügbar. Essentiell für TikTok LIVE-Verbindung.",
       "mandatory": true
     },
     "openai": {
-      "name": "OpenAI (GPT für Interactive Story)",
+      "name": "OpenAI (GPT / TTS)",
       "url": "https://platform.openai.com",
       "type": "Bezahlt",
-      "description": "Pay-as-you-go Preismodell, API-Key erforderlich"
+      "description": "GPT-Modelle für Interactive Story + OpenAI TTS. Pay-as-you-go."
     },
     "siliconflow": {
-      "name": "SiliconFlow (Alternative AI)",
+      "name": "SiliconFlow (AI / Image Gen)",
       "url": "https://siliconflow.com",
       "type": "Freemium",
-      "description": "Kostenlose Tier verfügbar"
+      "description": "Kostenlose Tier verfügbar. Alternative KI-Modelle + Bildgenerierung."
     },
     "fishAudio": {
-      "name": "Fish Audio (TTS Alternative)",
+      "name": "Fish Audio (TTS)",
       "url": "https://fish.audio",
       "type": "Freemium",
-      "description": "Freemium TTS Service"
+      "description": "Freemium TTS Service, gute Alternative zu ElevenLabs."
     },
-    "mandatory_warning": "⚠️ WICHTIG: ElevenLabs API-Key ist verpflichtend!",
+    "elevenlabs": {
+      "name": "ElevenLabs (TTS / STT)",
+      "url": "https://elevenlabs.io",
+      "type": "Freemium",
+      "description": "10.000 Zeichen/Monat kostenlos, dann kostenpflichtig. TTS + Speech-to-Text."
+    },
+    "deepgram": {
+      "name": "Deepgram (Speech-to-Text)",
+      "url": "https://deepgram.com",
+      "type": "Freemium",
+      "description": "Nova-2 Modell für Echtzeit-Spracherkennung. $200 Gratisguthaben."
+    },
+    "googleCloud": {
+      "name": "Google Cloud (TTS / STT)",
+      "url": "https://cloud.google.com/text-to-speech",
+      "type": "Freemium",
+      "description": "Google TTS + Speech-to-Text. $300 Neukunden-Guthaben."
+    },
+    "ollama": {
+      "name": "Ollama (Lokale KI)",
+      "url": "https://ollama.com",
+      "type": "Kostenlos",
+      "description": "Lokale KI-Modelle (Llama, Mistral, Gemma). Kein API-Key nötig."
+    },
+    "mandatory_warning": "⚠️ WICHTIG: Eulerstream API-Key ist essentiell!",
     "fallback_warning": "Der integrierte Fallback-Key ist nicht garantiert funktionsfähig bei starker Nutzung durch alle User.",
     "where_to_get": "Wo bekomme ich die Keys?"
   },

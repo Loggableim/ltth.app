@@ -1,6 +1,6 @@
 # LTTH Release Flow Documentation
 
-This document describes the complete release workflow for PupCid's Little TikTok Helper (LTTH), including how to prepare, execute, and verify releases using the automated release system.
+This document describes the complete release workflow for PupCid's Little TikTool Helper (LTTH), including how to prepare, execute, and verify releases using the automated release system.
 
 ## Overview
 

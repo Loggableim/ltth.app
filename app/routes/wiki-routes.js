@@ -485,7 +485,7 @@ This section is currently under development. Documentation for **${title}** will
 
 ### What is ${title}?
 
-${title} is a feature/plugin of Pup Cid's Little TikTok Helper that enhances your streaming experience.
+${title} is a feature/plugin of Pup Cid's Little TikTool Helper that enhances your streaming experience.
 
 ### Getting Started
 

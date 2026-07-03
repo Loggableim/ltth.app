@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LTTH Release Automation Script
-Automates the release process for PupCid's Little TikTok Helper
+Automates the release process for PupCid's Little TikTool Helper
 
 This script:
 1. Finds the highest version in new_patch/

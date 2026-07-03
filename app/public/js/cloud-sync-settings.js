@@ -171,7 +171,7 @@
     choosePathBtn.addEventListener('click', async () => {
         // Since we can't use native file picker in web browser,
         // we'll use a prompt for now
-        const path = prompt('Gib den vollständigen Pfad zu deinem Cloud-Sync-Ordner ein:\n\nBeispiele:\n- Windows: C:\\Users\\DeinName\\OneDrive\\TikTokHelper\n- macOS: /Users/DeinName/Google Drive/TikTokHelper\n- Linux: /home/username/Dropbox/TikTokHelper');
+        const path = prompt('Gib den vollständigen Pfad zu deinem Cloud-Sync-Ordner ein:\n\nBeispiele:\n- Windows: C:\\Users\\DeinName\\OneDrive\\TikToolHelper\n- macOS: /Users/DeinName/Google Drive/TikToolHelper\n- Linux: /home/username/Dropbox/TikToolHelper');
         
         if (path) {
             cloudPathInput.value = path;

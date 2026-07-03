@@ -3,7 +3,7 @@
   "name": "Pup Cid's Little Quiz Show Plugin",
   "version": "1.1.0",
   "description": "Interactive quiz show plugin for TikTok livestreams with chat integration, category voting, duel mode, achievements, seasons, jokers, and leaderboard",
-  "author": "TikTok Helper",
+  "author": "TikTool Helper",
   "entry": "main.js",
   "enabled": true,
   "type": "module",

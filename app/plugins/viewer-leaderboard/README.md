@@ -348,7 +348,7 @@ CC-BY-NC-4.0 - Siehe Haupt-Repository für Details
 
 ## 👤 Autor
 
-**Pup Cid** - Creator of "Pup Cid's Little TikTok Helper"
+**Pup Cid** - Creator of "Pup Cid's Little TikTool Helper"
 
 ## 🙏 Credits
 

@@ -65,32 +65,56 @@
   "api_keys": {
     "title": "Información de claves API",
     "intro": "Para usar todas las funciones de LTTH, necesitas claves API de varios proveedores:",
-    "elevenlabs": {
-      "name": "ElevenLabs (Text-to-Speech)",
-      "url": "https://elevenlabs.io",
+    "eulerstream": {
+      "name": "Eulerstream (API TikTok LIVE)",
+      "url": "https://www.eulerstream.com",
       "type": "Freemium",
-      "description": "10,000 caracteres/mes gratis, luego de pago",
+      "description": "Nivel gratuito disponible. Esencial para la conexión TikTok LIVE.",
       "mandatory": true
     },
     "openai": {
-      "name": "OpenAI (GPT para Historia Interactiva)",
+      "name": "OpenAI (GPT / TTS)",
       "url": "https://platform.openai.com",
       "type": "De pago",
-      "description": "Modelo de precios de pago por uso, clave API requerida"
+      "description": "Modelos GPT para Historia Interactiva + OpenAI TTS. Pago por uso."
     },
     "siliconflow": {
-      "name": "SiliconFlow (IA Alternativa)",
+      "name": "SiliconFlow (IA / Generación de Imágenes)",
       "url": "https://siliconflow.com",
       "type": "Freemium",
-      "description": "Nivel gratuito disponible"
+      "description": "Nivel gratuito disponible. Modelos de IA alternativos + generación de imágenes."
     },
     "fishAudio": {
-      "name": "Fish Audio (TTS Alternativo)",
+      "name": "Fish Audio (TTS)",
       "url": "https://fish.audio",
       "type": "Freemium",
-      "description": "Servicio TTS freemium"
+      "description": "Servicio TTS freemium, buena alternativa a ElevenLabs."
     },
-    "mandatory_warning": "⚠️ IMPORTANTE: ¡La clave API de ElevenLabs es obligatoria!",
+    "elevenlabs": {
+      "name": "ElevenLabs (TTS / STT)",
+      "url": "https://elevenlabs.io",
+      "type": "Freemium",
+      "description": "10,000 caracteres/mes gratis, luego de pago. TTS + Reconocimiento de voz."
+    },
+    "deepgram": {
+      "name": "Deepgram (Reconocimiento de voz)",
+      "url": "https://deepgram.com",
+      "type": "Freemium",
+      "description": "Modelo Nova-2 para reconocimiento de voz en tiempo real. $200 crédito gratis."
+    },
+    "googleCloud": {
+      "name": "Google Cloud (TTS / STT)",
+      "url": "https://cloud.google.com/text-to-speech",
+      "type": "Freemium",
+      "description": "Google TTS + Reconocimiento de voz. $300 crédito para nuevos clientes."
+    },
+    "ollama": {
+      "name": "Ollama (IA Local)",
+      "url": "https://ollama.com",
+      "type": "Gratis",
+      "description": "Modelos de IA locales (Llama, Mistral, Gemma). No se necesita clave API."
+    },
+    "mandatory_warning": "⚠️ IMPORTANTE: ¡La clave API de Eulerstream es esencial!",
     "fallback_warning": "La clave de respaldo integrada no está garantizada para funcionar con un uso intensivo por todos los usuarios.",
     "where_to_get": "¿Dónde obtengo las claves?"
   },

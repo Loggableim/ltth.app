@@ -32,7 +32,7 @@ class APIBridgePlugin {
             res.json({
                 success: true,
                 data: {
-                    name: "PupCids Little TikTok Helper",
+                    name: "PupCids Little TikTool Helper",
                     author: "Python.72",
                     version: "1.0.0",
                     plugin: "api-bridge",

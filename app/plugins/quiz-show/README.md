@@ -214,7 +214,7 @@ Im Einstellungen-Tab können konfiguriert werden:
 
 ## Lizenz
 
-Teil des TikTok Helper Projekts
+Teil des TikTool Helper Projekts
 
 ## Support
 

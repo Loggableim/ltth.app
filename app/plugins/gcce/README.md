@@ -1,6 +1,6 @@
 # Global Chat Command Engine (GCCE)
 
-Universal chat command interpreter and framework for "Pup Cid's Little TikTok Helper".
+Universal chat command interpreter and framework for "Pup Cid's Little TikTool Helper".
 
 ## Overview
 

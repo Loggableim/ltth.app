@@ -439,7 +439,7 @@ class Launcher {
      */
     async startServer() {
         this.log.newLine();
-        this.log.header(`${this.log.symbols.rocket} Pup Cids little TikTok Helper wird gestartet...`);
+        this.log.header(`${this.log.symbols.rocket} Pup Cids little TikTool Helper wird gestartet...`);
 
         this.log.newLine();
         this.log.info('Server wird initialisiert...');

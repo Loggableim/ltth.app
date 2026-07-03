@@ -2,7 +2,7 @@
 
 ## Overview
 
-Successfully implemented a complete automated release flow system for PupCid's Little TikTok Helper (LTTH) that enables seamless version management and deployment for the Cloud-Installer.
+Successfully implemented a complete automated release flow system for PupCid's Little TikTool Helper (LTTH) that enables seamless version management and deployment for the Cloud-Installer.
 
 ## What Was Implemented
 

@@ -336,4 +336,4 @@ const apiKey = row ? row.value : null;
 ---
 
 **Last Updated:** 2025-12-12
-**For:** LTTH (Little TikTok Helper) Plugin Developers
+**For:** LTTH (Little TikTool Helper) Plugin Developers

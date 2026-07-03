@@ -402,7 +402,7 @@ Timer completion can trigger:
 
 ## 📄 License
 
-This plugin is part of Pup Cid's Little TikTok Helper
+This plugin is part of Pup Cid's Little TikTool Helper
 Licensed under CC-BY-NC-4.0
 
 ## 👤 Author

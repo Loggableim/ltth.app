@@ -90,7 +90,7 @@ class PortManager {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
-          if (data.includes('TikTok Helper') || data.includes('ltth') || data.includes('Pup Cid')) {
+          if (data.includes('TikTool Helper') || data.includes('ltth') || data.includes('Pup Cid')) {
             resolve({ isLTTH: true, pid: null });
           } else {
             resolve({ isLTTH: false, pid: null });

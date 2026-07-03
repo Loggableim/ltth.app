@@ -244,7 +244,7 @@ func startLauncherHealthTestServer(t *testing.T, pid int, name string) (int, fun
 }
 
 func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
-	port, closeServer := startLauncherHealthTestServer(t, 4242, "LTTH - Pup Cids little TikTok Helper")
+	port, closeServer := startLauncherHealthTestServer(t, 4242, "LTTH - Pup Cids little TikTool Helper")
 	defer closeServer()
 
 	launcher := NewLauncher()
@@ -286,7 +286,7 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 }
 
 func TestLauncherStatusPayloadIncludesExternallyDetectedServer(t *testing.T) {
-	port, closeServer := startLauncherHealthTestServer(t, 4343, "LTTH - Pup Cids little TikTok Helper")
+	port, closeServer := startLauncherHealthTestServer(t, 4343, "LTTH - Pup Cids little TikTool Helper")
 	defer closeServer()
 
 	launcher := NewLauncher()

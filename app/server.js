@@ -1282,7 +1282,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         success: true,
-        name: 'LTTH - Pup Cids little TikTok Helper',
+        name: 'LTTH - Pup Cids little TikTool Helper',
         pid: process.pid,
         port: PORT,
         uptime: process.uptime(),
@@ -3774,7 +3774,7 @@ const pluginCacheControl = (req, res, next) => {
         const accessURLs = networkManager.getAccessURLs(PORT);
 
         logger.info('\n' + '='.repeat(50));
-        logger.info('✅ Pup Cids little TikTok Helper läuft!');
+        logger.info('✅ Pup Cids little TikTool Helper läuft!');
         logger.info('='.repeat(50));
         logger.info(`\n📊 Dashboard:     ${accessURLs.localhost}/dashboard.html`);
         logger.info(`🎬 Overlay:       ${accessURLs.localhost}/overlay.html`);

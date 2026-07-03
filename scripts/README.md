@@ -6,7 +6,7 @@ This directory contains automation scripts for managing LTTH releases.
 
 ### release_from_new_patch.py
 
-Automates the complete release process for PupCid's Little TikTok Helper.
+Automates the complete release process for PupCid's Little TikTool Helper.
 
 **Purpose:**
 - Finds the highest version in `new_patch/`

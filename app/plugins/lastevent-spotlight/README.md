@@ -279,7 +279,7 @@ await renderer.render(userData, animate);
 
 ## 📝 Lizenz
 
-Teil des Pup Cid's TikTok Helper Systems
+Teil des Pup Cid's TikTool Helper Systems
 
 ## 🐛 Fehlerbehebung
 
