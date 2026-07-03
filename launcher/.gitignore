@@ -1,0 +1,23 @@
+# Build artifacts
+launcher.exe
+*.exe
+
+# Go build cache
+/go.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

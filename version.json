@@ -1,0 +1,346 @@
+{
+  "version": "1.3.8",
+  "releaseDate": "2026-07-02",
+  "status": "stable",
+  "downloadVersion": "1.3.8",
+  "downloadNote": "Latest stable release. One-line installer available for Windows (PowerShell), macOS, and Linux.",
+  "downloadUrl": "https://github.com/Loggableim/ltth_desktop2/releases/tag/1.3.8",
+  "oneLineInstaller": {
+    "windows": "iwr -useb https://ltth.app/install.ps1 | iex",
+    "macos": "curl -fsSL https://ltth.app/install.sh | bash",
+    "linux": "curl -fsSL https://ltth.app/install.sh | bash",
+    "universal": "curl -fsSL https://ltth.app/install.js | node"
+  },
+  "supportedPlatforms": [
+    "windows-amd64",
+    "macos-arm64",
+    "macos-amd64",
+    "linux-amd64",
+    "linux-arm64"
+  ],
+  "changelog": {
+    "1.3.8": {
+      "date": "2026-07-02",
+      "changes": [
+        "NEW: STT-Ticker — Deepgram ASR Provider-Integration (Nova-2/3, Whisper)",
+        "NEW: STT-Ticker — Halluzinations-Filter gegen Chinesisch/Japanisch/Koreanisch/Thai/Arabisch in DE+EN Captions",
+        "NEW: STT-Ticker — 3-Zeilen Ticker (newest unten, FIFO Ring-Buffer, kein DOM-Recycling)",
+        "NEW: STT-Ticker — Ollama-Translation mit persistent Key-Speicherung (nie in Git)",
+        "NEW: STT-Ticker — VAD-Client-Side (spart Fish/Deepgram Tokens durch Stille-Skip)",
+        "NEW: STT-Ticker — Dual-Language Mode (EN oben / DE unten, neue Sätze unten)",
+        "IMPROVED: STT-Ticker — Provider-Switch UI (Auto/Deepgram/Fish.audio)",
+        "IMPROVED: STT-Ticker — Admin-Panel mit Status-Badges ('✅ Deepgram aktiv' / '⚠️ Fish.audio')",
+        "IMPROVED: STT-Ticker — Halluzinations-Whitelist default ['de','en'] (filtert andere Sprachen)",
+        "IMPROVED: STT-Ticker — Deepgram Client mit language='multi' Mode (verhindert Auto-Detect-Halluzinationen)",
+        "IMPROVED: STT-Ticker — threshold=0.3 Filter für low-confidence Deepgram-Resultate",
+        "FIXED: STT-Ticker — `__KEEP__`-Bug: leeres Key-Feld überschrieb gespeicherten Key mit Literal-String",
+        "FIXED: STT-Ticker — Server-Route `/asr/settings` filtert jetzt `__KEEP__` korrekt vor _deepMerge",
+        "FIXED: STT-Ticker — Status-Endpoint zeigt jetzt aktiven Provider + deepgramConfigured",
+        "FIXED: STT-Ticker — Deepgram Key-Test-Endpoint gibt konkrete Fehlermeldung bei 401"
+      ]
+    },
+    "1.3.7": {
+      "date": "2026-06-29",
+      "changes": [
+        "FIX: Timer-Karte klappt sich beim Scrollen nicht mehr zu (gift-catalog CSS-Konflikt behoben)",
+        "FIX: Gift-Override Type-Mismatch (String vs Number giftId) im Advanced Timer Plugin",
+        "NEW: One-Line Installer für Windows / macOS / Linux (https://ltth.app/download.html)",
+        "NEW: TopTier Leaderboard v2.0 — Session-only, Coins=Score, kombinierte View, Portrait/Landscape, Glassmorphism Overlay v3.0",
+        "NEW: AnimazingPal Sidekick — Host-Brain, ASR (Fish), WAV-Streaming, Gating",
+        "NEW: Talking-Heads / Sidekick-Integration für autonomes Host-Speech-Pipeline",
+        "IMPROVED: Sidekick Host-Decision-Controls + Preflight + ASR UI-Lifecycle-Hardening",
+        "IMPROVED: Advanced Timer Plugin v1.3.6 — Gift-Katalog-Integration"
+      ]
+    },
+    "1.3.6": {
+      "date": "2026-06-21",
+      "changes": [
+        "NEW: Gift-Katalog-Integration ins Advanced Timer Plugin",
+        "IMPROVED: Plugin-Loader unterstützt jetzt 36+ Plugins",
+        "IMPROVED: Datenbank-Performance (WAL-Mode, größere Cache)"
+      ]
+    },
+    "1.3.5": {
+      "date": "2026-06-07",
+      "changes": [
+        "NEW: Sidekick-Plugin mit AnimazingPal-, TTS- und Talking-Heads-Integration",
+        "NEW: Dashboard-Refactoring — 186 KB JS-Monolith in 9 Module aufgeteilt",
+        "NEW: TopTier Viewer Leaderboard v2.0 — Session-only, Coins=Score",
+        "NEW: Host-Mode-ASR-Decision-Controls für Sidekick",
+        "IMPROVED: Release-Prep — Update-Mechanismus, Docker GHCR, Root-Route, Launcher-Build"
+      ]
+    },
+    "1.3.3": {
+      "date": "2026-03-11",
+      "changes": [
+        "NEW: Music Bot Plugin – YouTube search/streaming, queue management, song requests via chat, OBS overlay with 3 designs, Spotify oEmbed, vote-skip system",
+        "NEW: Slot Machine Plugin – Standalone 3-reel slot machine, multi-machine support, Superfan recognition, configurable symbols and sounds",
+        "NEW: Chat Commands Plugin – Custom chat commands with cooldowns, permission levels (broadcaster/mod/all), Flow trigger integration",
+        "NEW: Weather Engine expanded to 13 effects – Rain, Snow, Aurora, Fireflies, Sakura, Thunderstorm, Fog, Heatwave, Blizzard, Meteor Shower, Bubble Float, Leaf Fall, Confetti",
+        "NEW: PiShock / OpenShock hardware integration enhancements",
+        "IMPROVED: Plugin system now supports 31+ plugins with hot-reload",
+        "IMPROVED: AnimazingPal – GPT-5 Nano model support, improved batch processing",
+        "IMPROVED: TTS Engine – Edge TTS multi-engine support, improved queue system"
+      ]
+    },
+    "1.3.2": {
+      "date": "2026-02-07",
+      "changes": [
+        "IMPROVED: Version consistency updates - Synchronized all version numbers across package files",
+        "IMPROVED: Maintenance release ensuring all components report identical version 1.3.2"
+      ]
+    },
+    "1.3.0": {
+      "date": "2026-02-03",
+      "changes": [
+        "NEW: AnimazingPal Brain Engine - AI-powered memory and personality system for VTuber avatars with persistent long-term memory, semantic vector search, 5 pre-defined streamer personalities + custom personality creator, GPT-powered contextual responses (GPT-4o-mini, GPT-5 Nano)",
+        "NEW: AnimazingPal Batch Processing (Outbox System) - Natural speech flow with 8-second batch window, max 8 items per batch, automatic pause during speech/mic activity, TTL-based event deduplication (600s)",
+        "NEW: AnimazingPal Relevance Detection - Intelligent chat message filtering with question detection, greeting/thanks recognition, spam filtering, score-based relevance (0-1) with configurable threshold",
+        "NEW: AnimazingPal Response Engine - GPT-powered reply generation with contextual responses using user history and memories, 5-minute response caching, max 18-word responses for natural TTS pacing",
+        "NEW: AnimazingPal Enhanced API - 15 new endpoints for brain/batch/relevance management including activity status, batch flushing, relevance testing, memory decay, personality management",
+        "FIXED: Gift Duplicate Detection - TikTok sends gift events twice (popup/animation + chat log entry); now uses original createTime timestamp instead of generating new ones",
+        "IMPROVED: AnimazingPal Documentation - Expanded README to 443 lines with full Brain Engine documentation",
+        "IMPROVED: AnimazingPal Architecture - Modular event-driven system with separate engines for batching, relevance, and responses"
+      ]
+    },
+    "1.2.3": {
+      "date": "2026-01-06",
+      "changes": [
+        "FIXED: Goals Plugin Coins Double-Counting - TikTok event listeners were not properly removed when plugins were unloaded/reloaded, causing duplicate event handlers to accumulate",
+        "IMPROVED: Added proper cleanup in PluginAPI.unregisterAll() to remove TikTok event listeners",
+        "IMPROVED: Version consistency updates across all package files and preset manager"
+      ]
+    },
+    "1.2.2": {
+      "date": "2025-12-15",
+      "changes": [
+        "NEW: Electron Performance Diagnostics Guide and Tool - GPU diagnosis, build config validation, thread blocking analysis, IO/DB diagnostics, 13-step diagnostic checklist",
+        "NEW: Performance Diagnostics Tool - DOM node monitoring, memory tracking, CSS property scan, Long Task observer, scroll FPS tracking",
+        "NEW: Diagnostics Panel in Settings - GPU support detection, error logs, launches before all other plugins",
+        "NEW: Launch Mode Selection on Splash Screen - Choose between Electron app or Browser mode at startup with tray menu integration",
+        "IMPROVED: SQLite Performance Optimizations - WAL mode, 64MB cache, memory temp storage, 256MB mmap",
+        "IMPROVED: Electron Performance Flags - Disabled CalculateNativeWinOcclusion, enabled QUIC protocol, force sRGB color profile",
+        "IMPROVED: IPC Batch Operations - settings:getMultiple and settings:setMultiple for reduced overhead",
+        "IMPROVED: Virtual Scroller Optimization - requestAnimationFrame throttling, GPU layer promotion, passive event listeners",
+        "IMPROVED: CSS Performance - will-change, contain, overscroll-behavior optimizations",
+        "FIXED: Quick Actions Menu not updating after enabling plugins until page refresh",
+        "FIXED: Goals Modal focus issue in Electron - CSS stacking and focus fixes for iframe context",
+        "FIXED: TTS Admin Panel unclickable in Electron - user-select and cursor fixes",
+        "FIXED: Plugin Disabled Detection improved with better error messages",
+        "FIXED: Chatango Integration white window in Electron",
+        "FIXED: Language Selector flags not showing in installed version",
+        "FIXED: TikTok TTS Engine 500 Errors - Complete rewrite with hybrid endpoint approach and multiple fallback options",
+        "FIXED: TikTok Connection 504 Timeout - fetchRoomInfoOnConnect optimization",
+        "FIXED: TikTok Connection Invalid Option - Removed non-existent enableWebsocketUpgrade"
+      ]
+    },
+    "1.2.1": {
+      "date": "2025-12-15",
+      "changes": [
+        "NEW: Multilingual Plugin Descriptions - Added multilingual descriptions to all 30 plugin.json files (EN, DE, ES, FR)",
+        "NEW: Visual Indicators for API Key Storage - Added visual indicators showing API keys are stored persistently across updates",
+        "IMPROVED: Plugin Loader Enhancement - getAllPlugins() now accepts optional locale parameter",
+        "IMPROVED: Plugin API Responses - Now include both description (localized) and descriptions (all languages)",
+        "IMPROVED: Repository Cleanup - Moved 107 files to docs_archive/ folder for better maintainability",
+        "FIXED: Version Number Correction - Corrected erroneous version 2.2.1 to 1.2.1",
+        "FIXED: Advanced Timer Plugin - Fixed overlay routes and storage migration",
+        "FIXED: Timer Overlay - Fixed timer overlay not loading correctly in browser sources"
+      ]
+    },
+    "1.2.0": {
+      "date": "2025-12-08",
+      "changes": [
+        "NEW: Plugin System with Hot-Reloading - Upload, enable, disable, and delete plugins without server restart",
+        "NEW: Multi-Cam Switcher Plugin - OBS scene switching via TikTok gifts and chat commands",
+        "NEW: Platform-Agnostic Launcher - Cross-platform support (Windows, Linux, macOS) with TTY-safe logging",
+        "NEW: TTY-Logger Module - Automatic TTY detection with ANSI color fallback for non-TTY environments",
+        "NEW: Git-based Update System - Automatic updates via Git pull or GitHub Release ZIP download",
+        "NEW: Launch Mode Selection - Choose between Electron app or Browser mode on splash screen",
+        "IMPROVED: Database Performance - SQLite optimizations with WAL mode, 64MB cache, and memory temp store",
+        "IMPROVED: Plugin-Loader - Enhanced from 827 to 1043 lines with better plugin state management",
+        "IMPROVED: Leaderboard Module - Expanded from 362 to 480 lines with enhanced tracking features",
+        "IMPROVED: Rate-Limiter - Nearly doubled in size (80 to 150 lines) with improved request handling",
+        "IMPROVED: TikTok Module - Enhanced from 83,233 to 85,413 bytes with better event processing",
+        "FIXED: TTS Migration to Plugin - TTS engine now properly integrated as plugin with 75+ voices",
+        "FIXED: VDO.Ninja Plugin Migration - Multi-guest streaming now fully plugin-based with 20+ API routes",
+        "FIXED: Dynamic UI Visibility - Dashboard tabs now show/hide based on active plugins without page reload",
+        "FIXED: Update-Checker - Graceful 404 handling when GitHub Releases are not available"
+      ]
+    },
+    "1.1.1": {
+      "date": "2025-12-03",
+      "changes": [
+        "NEW: Leaderboard Plugin v1.2.0 - Multiple OBS Overlay Layouts (Bar, Sidebar, Popup)",
+        "NEW: Hype Mode System - WebSocket events for hype phases with visual effects",
+        "NEW: Progress Bar Visualization - Visual progress bars relative to #1 gifter",
+        "NEW: Auto-Hide Popup Functionality - Configurable auto-hide with smart detection",
+        "NEW: OpenShock Plugin - Gift Event Pipeline Debugging with comprehensive logging",
+        "NEW: OpenShock Plugin - Wildcard Gift Matching for catch-all mappings",
+        "NEW: OpenShock Plugin - Coin Range Mappings for precise event control",
+        "NEW: OpenShock Plugin - Configurable Like Threshold with accumulation",
+        "FIXED: Console Errors - Cloud Sync, Audio System, GPU Detection, Socket.IO timing",
+        "FIXED: Profile Pictures - Extraction helper for TikTok API object structure",
+        "FIXED: OpenShock Gift Event Pipeline - Complete repair of TikTok to OpenShock forwarding",
+        "FIXED: TikTok Diamond Count Extraction - Restored original priority order",
+        "FIXED: System initialization now completes in <400ms instead of 30s timeout",
+        "IMPROVED: OpenShock Pattern UI - Simplified workflow with edit functionality",
+        "IMPROVED: OpenShock Gift Matching - Case-insensitive matching",
+        "IMPROVED: OpenShock Debug Logging - Real-time event logging in UI"
+      ]
+    },
+    "1.1.0": {
+      "date": "2025-12-01",
+      "changes": [
+        "BREAKING: Migration to Eulerstream WebSocket SDK - Complete replacement of tiktok-live-connector",
+        "NEW: Weather Control Plugin - 7 modern weather effects with GPU-accelerated rendering",
+        "NEW: Auto-Update System - Launcher checks for updates on startup",
+        "NEW: Direct download from ltth.app/app/ltth_1.1.0.zip",
+        "FIXED: TikTok TTS Engine 500 Errors - Complete rewrite with hybrid endpoint approach",
+        "FIXED: TikTok Connection 504 Timeout - fetchRoomInfoOnConnect optimization",
+        "FIXED: Quick Actions Menu not updating after plugin activation",
+        "FIXED: Goals Modal focus issue in Electron",
+        "FIXED: TTS Admin Panel unclickable in Electron",
+        "FIXED: Chatango Integration white window in Electron",
+        "FIXED: Language Selector flags not showing correctly",
+        "IMPROVED: CSS Performance - will-change, contain, overscroll-behavior optimizations",
+        "IMPROVED: Scroll Performance - Passive event listeners",
+        "IMPROVED: Rendering - Isolated rendering with contain: layout style paint"
+      ]
+    },
+    "1.0.9": {
+      "date": "2025-11-24",
+      "changes": [
+        "NEW: OpenAI Integration for Quiz Show - GPT-5.1 powered question package generation (Nano, Mini, Standard models)",
+        "NEW: Inline Pattern Editor - Edit OpenShock patterns directly in event mapping modal",
+        "NEW: Launcher.exe - GUI launcher with background image, progress bar, and auto-redirect to dashboard",
+        "IMPROVED: OSC-Bridge (VRChat) - Gift catalogue integration for easier gift mapping setup",
+        "IMPROVED: VDO.Ninja Multi-Guest - Director URL control room iframe tab in room management",
+        "IMPROVED: Event Mapping UI - Pattern details now visible in mapping list view",
+        "IMPROVED: OpenShock - Pattern selection in event mapping modal with updateMappingPatternList",
+        "FIXED: Emoji Rain v2.0 - Bounce/bubble animation triggers, pixel mode rendering, defensive positioning",
+        "FIXED: VDO.Ninja - Content Security Policy violations (removed inline onclick handlers)",
+        "FIXED: OpenShock - Null checks now correctly handle pattern ID 0 as valid value",
+        "DOCS: Added JSDoc documentation for inline pattern editor functions",
+        "DOCS: Technical documentation for launcher.exe in infos/ directory"
+      ]
+    },
+    "1.0.8": {
+      "date": "2025-11-24",
+      "changes": [
+        "NEW: Configurable XP System - Level-up animations with advanced admin features for viewer engagement",
+        "NEW: Graphical Pattern Curve Generator - Visual interface for OpenShock pattern creation",
+        "NEW: OBS HUD for Command Overlays - Real-time command display integration",
+        "IMPROVED: Plugin Manager - Added compact mode switch for better space management",
+        "IMPROVED: Resource Monitor - Fixed compact mode 2x2 grid layout (CPU/GPU, RAM/Network)",
+        "IMPROVED: Leaderboard - Multiple overlay themes (Classic, Neon, Gradient) with preview mode",
+        "IMPROVED: Quiz Show - Integrated with application theme system for better readability",
+        "IMPROVED: Thermal Printer - Full theme integration using CSS variables",
+        "IMPROVED: VDO.Ninja Multi-Guest - Comprehensive UI refactoring with method aliases",
+        "IMPROVED: OSC-Bridge (VRChat) - Gift catalogue mappings and avatar switching support",
+        "FIXED: Windows path validation in config-import plugin",
+        "FIXED: OpenShock pattern engine - Removed duplicate wait causing duration bugs",
+        "FIXED: OpenShock custom pattern editor - Improved step configuration workflow",
+        "FIXED: OpenShock emergency stop - Added prominent button to main UI header",
+        "FIXED: Plugin update checking - Added changelog fallback mechanism",
+        "SECURITY: Enhanced input validation across all plugins"
+      ]
+    },
+    "1.0.7": {
+      "date": "2025-11-23",
+      "changes": [
+        "NEW: Independent volume control for gift animation audio",
+        "NEW: Stream Alchemy extensible settings with custom prompts and item management",
+        "NEW: OBS password authentication and gift-to-scene mapping UI for Multicam plugin",
+        "FIXED: Emoji rain - bubble blop animation, pixel mode, color filters, and edge spawning",
+        "FIXED: Follow sounds not playing - improved event detection with multiple displayType patterns",
+        "FIXED: OpenShock pattern settings in mapping modal",
+        "FIXED: Sidebar layout - removed duplicate text spans in VDO.Ninja and Plugin Manager",
+        "FIXED: Gift Milestone Celebration - tier-specific media assignment",
+        "FIXED: Weather Control overlay animations in OBS Browser Source - GSAP library loading",
+        "FIXED: Resource monitor compact mode to display all content on one page",
+        "FIXED: Plugin initialization - all 23 plugins now load successfully with proper logger API",
+        "ENABLED: VDO.Ninja Multi-Guest and Emoji Rain v2.0 plugins by default",
+        "UI: Added comprehensive UI integration for Stream Alchemy, GCCE, and Thermal Printer plugins",
+        "UI: Added Leaderboard admin panel with session and all-time tracking",
+        "SECURITY: XSS protection and input validation for Stream Alchemy",
+        "DOCS: Reorganized documentation files into infos/ subdirectory"
+      ]
+    },
+    "1.0.6": {
+      "date": "2025-11-23",
+      "changes": [
+        "NEW: StreamAlchemy Plugin - TikTok gift to RPG item alchemy with AI-powered crafting",
+        "NEW: Leaderboard Plugin - Session and all-time top gifter tracking with real-time overlay",
+        "NEW: Thermal Printer Plugin - Physical printout of TikTok Live events on ESC/POS printers",
+        "NEW: GCCE (Global Chat Command Engine) - Universal chat command system for all plugins",
+        "AI-generated isometric item icons with DALL-E 3 integration",
+        "Real-time crafting mechanics with 6-second gift combination window",
+        "Dual leaderboard tracking with WebSocket live updates",
+        "ESC/POS thermal printer support for USB and network printers"
+      ]
+    },
+    "1.0.5": {
+      "date": "2025-11-23",
+      "changes": [
+        "BREAKING: Migration to Eulerstream WebSocket SDK - Complete replacement of tiktok-live-connector",
+        "CRITICAL: Fixed TikTok TTS Engine 500 errors - Complete rewrite with hybrid endpoint approach",
+        "CRITICAL: Fixed TikTok Connection 504 timeout - Euler Stream optimizations",
+        "CRITICAL: Fixed Invalid Option error - Removed non-existent enableWebsocketUpgrade option",
+        "NEW: Weather Control Plugin - Professional weather effects system with 7 effects",
+        "GPU-accelerated Canvas 2D rendering with 60 FPS performance",
+        "Flow action support for IFTTT automation",
+        "Gift-based automatic triggers with coin thresholds"
+      ]
+    },
+    "1.0.4": {
+      "date": "2025-11-23",
+      "changes": [
+        "Navbar-Logo-Fix - Text-Überlappung mit Menü-Items behoben",
+        "Logo-Größe von 32px auf 48px erhöht für bessere Sichtbarkeit",
+        "Plugins-Seite überarbeitet mit vollständigen Screenshots",
+        "Dokumentation erweitert mit umfassenden Plugin-Anleitungen",
+        "Sprach-Dropdown mit Flaggen implementiert (🇩🇪 🇬🇧)",
+        "Verbesserte visuelle Trennung in Plugin-Kategorien",
+        "Bessere mobile Responsivität auf allen Seiten"
+      ]
+    },
+    "1.0.3": {
+      "date": "2024-11-10",
+      "changes": [
+        "Validators Module - Umfassende Input-Validierung für alle API-Endpoints",
+        "Template Engine - Zentrale Template-Verarbeitung mit RegExp-Caching (10x Performance)",
+        "Error Handler Module - Standardisierte Fehlerbehandlung",
+        "CORS-Policy verschärft - Whitelist-basiert statt Wildcard",
+        "CSP mit Nonces gegen XSS-Angriffe implementiert",
+        "DNS-basierte Webhook-Validierung gegen SSRF",
+        "Database-Batching - Event-Logs werden gebatcht (50x schnellere Inserts)",
+        "Performance: ~500 → ~800 Events/s (+60%)",
+        "Sicherheit verbessert: 5/10 → 9/10 (+80%)"
+      ]
+    },
+    "2.0.0-beta": {
+      "date": "2024-11-18",
+      "changes": [
+        "Complete website rework with modern design",
+        "New branding system with #12a116 primary color",
+        "Dark/Light/Monochrome theme support",
+        "Improved accessibility (WCAG 2.1 AA compliant)",
+        "120 FPS animation system",
+        "Responsive mobile-first design",
+        "Live search functionality",
+        "Scroll progress indicator",
+        "Mascot sprite sheet system",
+        "Enhanced SEO and performance"
+      ]
+    },
+    "1.0.0": {
+      "date": "2024-01-01",
+      "changes": [
+        "Initial website launch",
+        "Basic feature showcase",
+        "Documentation pages",
+        "Download section"
+      ]
+    }
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "id": "openshock",
+  "name": "OpenShock Integration",
+  "version": "1.0.0",
+  "description": "Vollständige OpenShock API-Integration für TikTok Live Events mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professionellem Overlay",
+  "author": "pupcidslittletiktokhelper Team",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "integration",
+  "devStatus": "development-beta",
+  "permissions": [
+    "routes",
+    "socket.io",
+    "tiktok-events",
+    "database",
+    "network"
+  ],
+  "features": [
+    {
+      "id": "api-integration",
+      "name": "OpenShock API-Integration",
+      "description": "Vollständige Integration mit OpenShock API für Shock-, Vibrate- und Sound-Befehle"
+    },
+    {
+      "id": "device-management",
+      "name": "Device Management & Status Monitoring",
+      "description": "Verwaltung von OpenShock-Geräten mit Echtzeit-Status-Überwachung und Konfiguration"
+    },
+    {
+      "id": "event-mapping",
+      "name": "Event-Mapping-System",
+      "description": "Abbildung von TikTok-Events auf OpenShock-Aktionen mit erweiterbarem System"
+    },
+    {
+      "id": "pattern-engine",
+      "name": "Pattern Engine mit 8 Preset-Patterns",
+      "description": "Vordefinierte Muster und benutzerdefinierte Sequenzen für komplexe Effekte"
+    },
+    {
+      "id": "curve-generator",
+      "name": "Curve-Generator",
+      "description": "Erzeugt Kurven in verschiedenen Modes: Linear, Exponential, Sine, Cosine und Custom"
+    },
+    {
+      "id": "safety-layer",
+      "name": "Safety-Layer mit Multi-Level Limits",
+      "description": "Mehrschichtiges Sicherheitssystem mit globalen, gerätespezifischen und benutzerspezifischen Grenzen"
+    },
+    {
+      "id": "queue-system",
+      "name": "Queue-System mit Priority & Retry",
+      "description": "Verarbeitungswarteschlange mit Prioritäten, Retry-Mechanismus und Load-Balancing"
+    },
+    {
+      "id": "cooldown-system",
+      "name": "Global/Device/User Cooldowns",
+      "description": "Abklingzeiten auf mehreren Ebenen zur Kontrolle der Befehlshäufigkeit"
+    },
+    {
+      "id": "emergency-stop",
+      "name": "Emergency Stop Funktion",
+      "description": "Sofortige Deaktivierung aller OpenShock-Geräte im Notfall"
+    },
+    {
+      "id": "whitelist-blacklist",
+      "name": "Whitelist/Blacklist System",
+      "description": "Benutzer- und Gerätefilterung über Whitelist- und Blacklist-Mechanismen"
+    },
+    {
+      "id": "follower-age-filter",
+      "name": "Follower Age Filtering",
+      "description": "Filterung von Befehlen basierend auf Follower-Alter und Account-Status"
+    },
+    {
+      "id": "live-dashboard",
+      "name": "Live Dashboard mit Tabs",
+      "description": "Übersichtliches Dashboard mit Status, Events, Log und Einstellungen-Tabs"
+    },
+    {
+      "id": "event-mapper-ui",
+      "name": "Event-Mapper UI",
+      "description": "Benutzeroberfläche zur Verwaltung und Bearbeitung von Event-Mappings"
+    },
+    {
+      "id": "pattern-builder-ui",
+      "name": "Pattern Builder UI",
+      "description": "Visueller Editor zur Erstellung und Bearbeitung von Custom Patterns"
+    },
+    {
+      "id": "safety-settings-ui",
+      "name": "Safety-Settings UI",
+      "description": "Konfigurierbare Benutzeroberfläche für alle Sicherheitsparameter und Limits"
+    },
+    {
+      "id": "debug-monitoring",
+      "name": "Debug & Monitoring Tools",
+      "description": "Umfassende Debug-Werkzeuge, Logging und Performance-Monitoring"
+    },
+    {
+      "id": "high-end-overlay",
+      "name": "High-End Overlay mit Animations",
+      "description": "Professionelle Overlay-Anzeige mit Animationen, Echtzeit-Feedback und visuellen Effekten"
+    },
+    {
+      "id": "import-export",
+      "name": "Import/Export von Mappings & Patterns",
+      "description": "Möglichkeit zum Exportieren und Importieren von Konfigurationen, Mappings und Patterns"
+    }
+  ],
+  "config": {
+    "apiKey": "",
+    "baseUrl": "https://api.openshock.app",
+    "globalLimits": {
+      "maxIntensity": 80,
+      "maxDuration": 5000,
+      "maxCommandsPerMinute": 30
+    },
+    "defaultCooldowns": {
+      "global": 500,
+      "perDevice": 3000,
+      "perUser": 10000
+    },
+    "userLimits": {
+      "minFollowerAge": 7,
+      "maxCommandsPerUser": 10
+    },
+    "queueSettings": {
+      "maxQueueSize": 1000,
+      "processingDelay": 300
+    },
+    "emergencyStop": {
+      "enabled": false
+    },
+    "overlay": {
+      "enabled": true,
+      "showDevice": true,
+      "showIntensity": true,
+      "showPattern": true,
+      "animationDuration": 2000
+    }
+  },
+  "descriptions": {
+    "en": "Complete OpenShock API integration for TikTok Live events with event mapping, pattern system, safety layer, queue management, and professional overlay support.",
+    "de": "Vollständige OpenShock-API-Integration für TikTok-Live-Events mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professioneller Overlay-Unterstützung.",
+    "es": "Integración completa de API de OpenShock para eventos en vivo de TikTok con mapeo de eventos, sistema de patrones, capa de seguridad, gestión de colas y soporte de overlay profesional.",
+    "fr": "Intégration API OpenShock complète pour événements TikTok Live avec mappage d'événements, système de patterns, couche de sécurité, gestion de file d'attente et support d'overlay professionnel."
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "webgpu-emoji-rain",
+  "name": "WebGPU Emoji Rain",
+  "version": "2.0.0",
+  "description": "GPU-accelerated emoji rain effect using WebGPU instanced rendering. 1:1 port of emoji-rain with better performance. Features custom emoji sets, user mappings, file uploads, SuperFan bursts, and full TikTok integration.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-upload"
+  ],
+  "dependencies": [],
+  "features": [
+    "webgpu-rendering",
+    "instanced-rendering",
+    "custom-emoji-sets",
+    "user-mappings",
+    "file-upload",
+    "superfan-burst",
+    "flow-integration",
+    "obs-hud-support",
+    "database-config",
+    "localization",
+    "gift-triggered",
+    "like-triggered",
+    "follow-triggered",
+    "share-triggered",
+    "persistent-storage"
+  ],
+  "descriptions": {
+    "en": "GPU-accelerated emoji rain effect using WebGPU instanced rendering.",
+    "de": "GPU-beschleunigter Emoji-Regen-Effekt mit WebGPU Instanced Rendering.",
+    "es": "Efecto de lluvia de emojis acelerado por GPU usando renderizado instanciado WebGPU.",
+    "fr": "Effet de pluie d'émojis accéléré par GPU utilisant le rendu instancié WebGPU."
+  }
+}

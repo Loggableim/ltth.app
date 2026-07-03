@@ -1,0 +1,46 @@
+{
+  "webgpu_emoji_rain": {
+    "title": "Configuración de Lluvia de Emojis",
+    "subtitle": "Overlays Interactivos de Emojis",
+    "config": {
+      "title": "Configuración",
+      "enabled": "Activar Lluvia de Emojis",
+      "trigger_on_gift": "Activar con Regalo",
+      "trigger_on_follow": "Activar con Seguimiento",
+      "trigger_on_like": "Activar con Hito de Me Gusta",
+      "like_threshold": "Umbral de Me Gusta",
+      "duration": "Duración de Lluvia (segundos)",
+      "intensity": "Intensidad de Lluvia",
+      "emoji_size": "Tamaño de Emoji",
+      "custom_emojis": "Emojis Personalizados",
+      "save": "Guardar Configuración"
+    },
+    "toaster_mode": {
+      "title": "Modo Tostadora (PCs de Gama Baja)",
+      "description": "Reduce el uso de CPU y consumo de recursos para PCs débiles",
+      "enabled": "Activar Modo Tostadora",
+      "help": "Optimizado para máximo rendimiento en sistemas débiles",
+      "changes_title": "Qué cambia:",
+      "max_emojis": "Emojis Máximos: 200 → 50",
+      "target_fps": "FPS Objetivo: 60 → 30",
+      "rotation": "Rotación: Desactivada",
+      "wind": "Viento: Desactivado",
+      "effects": "Arcoíris/Píxel/Brillo: Desactivados",
+      "burst": "Intensidad de Ráfaga: Reducida",
+      "tip": "Usa el Modo Tostadora si tu PC se ralentiza durante el streaming o el uso de CPU es demasiado alto."
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "URL del Overlay",
+      "obs_url": "URL del HUD OBS",
+      "copy": "Copiar URL",
+      "open": "Abrir Overlay",
+      "test": "Probar Lluvia"
+    },
+    "preview": {
+      "title": "Vista Previa",
+      "start": "Iniciar Vista Previa",
+      "stop": "Detener Vista Previa"
+    }
+  }
+}

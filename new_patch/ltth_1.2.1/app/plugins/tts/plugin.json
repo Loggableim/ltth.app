@@ -1,0 +1,58 @@
+{
+  "id": "tts",
+  "name": "Text-to-Speech System",
+  "version": "2.0.0",
+  "description": "Enterprise-grade TTS plugin with multi-engine support, permission system, language detection, caching, and queue management",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "core",
+  "devStatus": "working-beta",
+  "dependencies": [
+    "axios",
+    "franc-min"
+  ],
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database",
+    "file-system"
+  ],
+  "features": [
+    "TikTok TTS Engine (Free)",
+    "Google Cloud TTS Engine (Optional)",
+    "Speechify TTS Engine (Optional)",
+    "ElevenLabs TTS Engine (Optional)",
+    "Team-level Permission System",
+    "Manual Voice Assignment Whitelist",
+    "Language Detection & Routing",
+    "Audio Caching with TTL",
+    "Priority Queue System",
+    "Rate Limiting & Flood Control",
+    "Profanity Filter",
+    "Per-user Voice Profiles",
+    "Volume & Speed Control",
+    "Audio Ducking Support"
+  ],
+  "config": {
+    "defaultEngine": "tiktok",
+    "defaultVoice": "en_us_ghostface",
+    "volume": 80,
+    "speed": 1,
+    "teamMinLevel": 0,
+    "rateLimit": 3,
+    "rateLimitWindow": 60,
+    "maxQueueSize": 100,
+    "maxTextLength": 300,
+    "profanityFilter": "moderate",
+    "duckOtherAudio": false,
+    "duckVolume": 0.3
+  },
+  "descriptions": {
+    "en": "Enterprise-grade TTS plugin with multi-engine support (TikTok, Google Cloud, Speechify, ElevenLabs), permission system, language detection, caching, and queue management.",
+    "de": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.",
+    "es": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs), sistema de permisos, detección de idioma, almacenamiento en caché y gestión de colas.",
+    "fr": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs), système de permissions, détection de langue, mise en cache et gestion de file d'attente."
+  }
+}

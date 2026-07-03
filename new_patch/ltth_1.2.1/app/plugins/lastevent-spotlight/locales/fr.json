@@ -1,0 +1,41 @@
+{
+  "lastevent_spotlight": {
+    "title": "LastEvent Spotlight",
+    "subtitle": "Highlight Recent Events",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Enable LastEvent Spotlight",
+      "display_duration": "Display Duration (seconds)",
+      "animation": "Animation Style",
+      "position": "Position",
+      "save": "Enregistrer les Paramètres"
+    },
+    "event_types": {
+      "title": "Event Types",
+      "follower": "Latest Follower",
+      "gifter": "Top Gifter",
+      "chatter": "Top Chatter",
+      "subscriber": "Latest Subscriber",
+      "like": "Latest Like",
+      "gift_streak": "Gift Streak"
+    },
+    "overlays": {
+      "title": "Overlays",
+      "follower_url": "Follower Spotlight URL",
+      "gifter_url": "Gifter Spotlight URL",
+      "chatter_url": "Chatter Spotlight URL",
+      "subscriber_url": "Subscriber Spotlight URL",
+      "like_url": "Like Spotlight URL",
+      "gift_streak_url": "Gift Streak URL",
+      "copy": "Copier l'URL",
+      "open": "Ouvrir l'Overlay"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "font_size": "Font Size",
+      "show_avatar": "Show Avatar",
+      "show_animation": "Show Animation"
+    }
+  }
+}

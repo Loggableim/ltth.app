@@ -1,0 +1,39 @@
+{
+  "id": "flame-overlay",
+  "name": "TikTok Visual Effects Overlay",
+  "version": "2.1.0",
+  "description": "Advanced WebGL effects overlay with 4 stunning visual modes, real-time preview, frame positioning, and support up to 4K resolution. Features: Flames, Particle Burst, Energy Waves, Electric Lightning. Fully customizable colors, intensity, speed, and precise frame positioning with transparent background for OBS.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "early-version",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "database"
+  ],
+  "features": [
+    "multiple-effect-modes",
+    "webgl-rendering",
+    "particle-systems",
+    "energy-waves",
+    "lightning-effects",
+    "enhanced-flames",
+    "customizable-colors",
+    "adjustable-intensity",
+    "obs-transparent-overlay",
+    "tiktok-format-presets",
+    "configurable-frame-borders",
+    "real-time-switching",
+    "real-time-preview",
+    "frame-positioning",
+    "4k-support",
+    "2k-support"
+  ],
+  "descriptions": {
+    "en": "Advanced WebGL effects overlay featuring 4 stunning visual modes with real-time preview and frame positioning. Includes Enhanced Flames, Particle Burst, Energy Waves, and Electric Lightning. Supports resolutions up to 4K with fully customizable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration.",
+    "de": "Fortgeschrittenes WebGL-Effekt-Overlay mit 4 beeindruckenden visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. Enthält verbesserte Flammen, Partikel-Burst, Energie-Wellen und elektrische Blitze. Unterstützt Auflösungen bis 4K mit vollständig anpassbaren Farben, Intensität, Geschwindigkeit und präziser Rahmenpositionierung. Transparenter Hintergrund für nahtlose OBS-Integration.",
+    "es": "Overlay de efectos WebGL avanzado con 4 modos visuales impresionantes, vista previa en tiempo real y posicionamiento de marco. Incluye Llamas Mejoradas, Explosión de Partículas, Ondas de Energía y Relámpagos Eléctricos. Admite resoluciones de hasta 4K con colores, intensidad, velocidad y posicionamiento de marco totalmente personalizables. Fondo transparente para integración perfecta con OBS.",
+    "fr": "Overlay d'effets WebGL avancé avec 4 modes visuels époustouflants, aperçu en temps réel et positionnement de cadre. Comprend des Flammes Améliorées, une Rafale de Particules, des Ondes d'Énergie et des Éclairs Électriques. Prend en charge les résolutions jusqu'à 4K avec des couleurs, une intensité, une vitesse et un positionnement de cadre entièrement personnalisables. Fond transparent pour intégration transparente OBS."
+  }
+}

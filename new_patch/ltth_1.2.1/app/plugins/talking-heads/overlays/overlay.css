@@ -1,0 +1,160 @@
+/* Talking Heads OBS Overlay Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#talking-heads-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 20px;
+}
+
+.talking-head {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity var(--fade-in, 0.3s) ease, transform var(--fade-in, 0.3s) ease;
+}
+
+.talking-head.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.talking-head.hiding {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity var(--fade-out, 0.3s) ease, transform var(--fade-out, 0.3s) ease;
+}
+
+.avatar-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.avatar-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.1s ease;
+}
+
+.avatar-image.closed-mouth {
+    z-index: 1;
+}
+
+.avatar-image.open-mouth {
+    z-index: 2;
+    opacity: 0;
+}
+
+.talking-head.speaking .avatar-image.open-mouth {
+    opacity: 1;
+}
+
+.talking-head.speaking .avatar-image.closed-mouth {
+    opacity: 0;
+}
+
+/* Blink animation */
+.talking-head.blinking .avatar-image {
+    animation: blink 0.15s ease-in-out;
+}
+
+@keyframes blink {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.1); }
+}
+
+/* Username label */
+.username-label {
+    margin-top: 10px;
+    padding: 6px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 20px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Speaking indicator */
+.speaking-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.talking-head.speaking .speaking-indicator {
+    opacity: 1;
+}
+
+.speaking-indicator .bar {
+    width: 4px;
+    height: 20px;
+    background: #48bb78;
+    border-radius: 2px;
+    animation: soundBar 0.5s ease-in-out infinite;
+}
+
+.speaking-indicator .bar:nth-child(1) { animation-delay: 0s; }
+.speaking-indicator .bar:nth-child(2) { animation-delay: 0.1s; }
+.speaking-indicator .bar:nth-child(3) { animation-delay: 0.2s; }
+.speaking-indicator .bar:nth-child(4) { animation-delay: 0.1s; }
+.speaking-indicator .bar:nth-child(5) { animation-delay: 0s; }
+
+@keyframes soundBar {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}
+
+/* Glow effect when speaking */
+.talking-head.speaking .avatar-container {
+    box-shadow: 0 0 30px rgba(72, 187, 120, 0.6), 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive sizing */
+@media (max-width: 600px) {
+    .avatar-container {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .username-label {
+        font-size: 14px;
+        padding: 4px 12px;
+    }
+}

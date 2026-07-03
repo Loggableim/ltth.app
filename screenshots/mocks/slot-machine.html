@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Slot Machine</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr 300px;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:1.25rem}
+.btn{padding:.4rem .85rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.82rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.slot-preview{background:#0a0c0a;border:2px solid #12a116;border-radius:1rem;padding:2rem;text-align:center;margin-bottom:1.25rem}
+.slot-machine{display:flex;justify-content:center;gap:1rem;margin-bottom:1rem}
+.reel{background:#1a1b1c;border:2px solid #2a2b2c;border-radius:.625rem;width:100px;height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem}
+.reel.winner{border-color:#f59e0b;box-shadow:0 0 16px #f59e0b60}
+.spin-btn{background:linear-gradient(135deg,#0d8a10,#12a116);color:#fff;border:none;padding:.75rem 2.5rem;border-radius:.5rem;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.05em}
+.card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-weight:600;margin-bottom:.75rem;font-size:.9rem}
+.label{font-size:.75rem;color:#9ca3af;margin-bottom:.3rem;margin-top:.5rem}
+input,select{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem;margin-bottom:.5rem}
+.symbol-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin-bottom:.5rem}
+.symbol-item{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.5rem;padding:.6rem;text-align:center;cursor:pointer}
+.symbol-item.selected{border-color:#12a116}
+.symbol-emoji{font-size:1.5rem}
+.symbol-weight{font-size:.65rem;color:#9ca3af}
+.right-panel{background:#1a1b1c;border-left:1px solid #2a2b2c;padding:1.25rem;overflow-y:auto}
+.payout-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #2a2b2c;font-size:.82rem}
+.payout-row:last-child{border-bottom:none}
+.payout-symbols{font-size:1.1rem;letter-spacing:-.1rem}
+.payout-val{color:#f59e0b;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🎰 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item active">🎰 Slot Machine</div>
+    <div class="nav-item">🎯 Goals</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <h1>🎰 Slot Machine</h1>
+    <div class="slot-preview">
+      <div class="slot-machine">
+        <div class="reel winner">🍒</div>
+        <div class="reel winner">🍒</div>
+        <div class="reel">⭐</div>
+      </div>
+      <button class="spin-btn">SPIN 🎰</button>
+      <div style="font-size:.8rem;color:#9ca3af;margin-top:.75rem">Triggered by: 🌹 Rose gift · @StarGazer99</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Symbol Configuration</div>
+      <div class="symbol-grid">
+        <div class="symbol-item selected"><div class="symbol-emoji">🍒</div><div class="symbol-weight">40%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">🍋</div><div class="symbol-weight">25%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">🍊</div><div class="symbol-weight">20%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">⭐</div><div class="symbol-weight">10%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">💎</div><div class="symbol-weight">5%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">🎰</div><div class="symbol-weight">2%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">👑</div><div class="symbol-weight">1%</div></div>
+        <div class="symbol-item"><div class="symbol-emoji">🚀</div><div class="symbol-weight">1%</div></div>
+        <div class="symbol-item" style="border-style:dashed;color:#9ca3af;font-size:.7rem;display:flex;align-items:center;justify-content:center">+ Add</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gift Trigger Settings</div>
+      <div class="label">Trigger Event</div>
+      <select><option>Any Gift</option><option>Gift ≥ 500 coins</option><option>Specific Gift</option></select>
+      <div class="label">Spins per trigger</div>
+      <input type="number" value="1">
+      <div class="label">Spin animation speed (ms)</div>
+      <input type="number" value="2000">
+    </div>
+  </div>
+  <div class="right-panel">
+    <div style="font-weight:700;margin-bottom:1rem">Payout Table</div>
+    <div class="payout-row"><span class="payout-symbols">🎰🎰🎰</span><span class="payout-val">JACKPOT 🎉</span></div>
+    <div class="payout-row"><span class="payout-symbols">👑👑👑</span><span class="payout-val">5,000 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">💎💎💎</span><span class="payout-val">2,000 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">⭐⭐⭐</span><span class="payout-val">500 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">🍊🍊🍊</span><span class="payout-val">200 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">🍋🍋🍋</span><span class="payout-val">100 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">🍒🍒🍒</span><span class="payout-val">50 coins</span></div>
+    <div class="payout-row"><span class="payout-symbols">Any 2 match</span><span class="payout-val">10 coins</span></div>
+    <div style="margin-top:1rem;border-top:1px solid #2a2b2c;padding-top:1rem">
+      <div style="font-weight:600;margin-bottom:.5rem">Recent Wins</div>
+      <div style="font-size:.78rem;color:#9ca3af;display:flex;flex-direction:column;gap:.3rem">
+        <div>@StarGazer99 · 🍒🍒🍒 · 50 coins</div>
+        <div>@NightOwl_42 · ⭐⭐⭐ · 500 coins</div>
+        <div>@PixelDancer · 🍋🍋🍋 · 100 coins</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

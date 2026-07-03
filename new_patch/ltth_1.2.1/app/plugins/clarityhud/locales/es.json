@@ -1,0 +1,45 @@
+{
+  "clarityhud": {
+    "dashboard": {
+      "title": "ClarityHUD Dashboard",
+      "subtitle": "Ultra-minimalistic, VR-optimized, and accessible HUD overlays for TikTok Live"
+    },
+    "chat_hud": {
+      "title": "Chat HUD",
+      "description": "Minimalistic chat-only overlay with clean typography"
+    },
+    "full_hud": {
+      "title": "Full Activity HUD",
+      "description": "Complete activity feed with layout modes and animations"
+    },
+    "buttons": {
+      "settings": "Configuración",
+      "test_event": "Test Event",
+      "refresh_preview": "Refresh Preview",
+      "copy_url": "Copiar URL",
+      "save": "Guardar Configuración",
+      "cancel": "Cancel",
+      "reset_defaults": "Reset to Defaults"
+    },
+    "labels": {
+      "overlay_url": "URL del Overlay",
+      "live_preview": "LIVE PREVIEW"
+    },
+    "settings": {
+      "title": "Configuración",
+      "tabs": {
+        "appearance": "Appearance",
+        "layout": "Layout",
+        "styling": "Styling",
+        "accessibility": "Accessibility",
+        "events": "Events",
+        "animation": "Animation"
+      }
+    },
+    "messages": {
+      "url_copied": "URL copied to clipboard!",
+      "settings_saved": "Settings saved successfully!",
+      "preset_applied": "Applied {preset} preset"
+    }
+  }
+}

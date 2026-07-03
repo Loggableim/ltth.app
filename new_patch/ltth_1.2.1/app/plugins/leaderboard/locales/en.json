@@ -1,0 +1,67 @@
+{
+  "leaderboard_plugin": {
+    "title": "Leaderboard Configuration",
+    "subtitle": "Manage and display top gifters on your stream",
+    "statistics": {
+      "title": "Statistics",
+      "session_gifters": "Session Gifters",
+      "alltime_gifters": "All-Time Gifters",
+      "session_coins": "Session Total Coins",
+      "alltime_coins": "All-Time Total Coins"
+    },
+    "tabs": {
+      "session": "Current Session",
+      "alltime": "All-Time",
+      "settings": "Settings"
+    },
+    "session": {
+      "title": "Current Session Leaderboard",
+      "reset": "Reset Session",
+      "started": "Session started:",
+      "empty": "Waiting for gifts in this session...",
+      "reset_confirm": "Are you sure you want to reset the current session? This cannot be undone."
+    },
+    "alltime": {
+      "title": "All-Time Champions",
+      "empty": "No champions yet..."
+    },
+    "table": {
+      "rank": "Rank",
+      "user": "User",
+      "coins": "Coins",
+      "gifts_count": "Gifts Count",
+      "total_coins": "Total Coins",
+      "total_gifts": "Total Gifts"
+    },
+    "settings": {
+      "title": "Leaderboard Settings",
+      "display_limit": "Display Limit",
+      "display_limit_desc": "Number of top users to display on overlay",
+      "min_coins": "Minimum Coins",
+      "min_coins_desc": "Minimum coins required to appear on leaderboard",
+      "theme": "Overlay Theme",
+      "theme_desc": "Choose the visual style for your overlay",
+      "animations": "Enable Overtake Animations",
+      "animations_desc": "Show special effects when someone moves up in rank",
+      "overlay_url": "Overlay URL",
+      "overlay_url_desc": "Use this URL in OBS Browser Source",
+      "preview_url": "Preview URL (Test Mode with Mock Data)",
+      "preview_url_desc": "Use this URL to preview different themes with test data",
+      "save": "Save Settings",
+      "preview": "Preview Overlay"
+    },
+    "themes": {
+      "neon": "Neon/Cyberpunk (Cyan & Magenta)",
+      "elegant": "Elegant/Minimalist (Clean White)",
+      "gaming": "Gaming/Esports (Red & Orange)",
+      "royal": "Royal/Crown (Purple & Gold)",
+      "gradient": "Modern Gradient (Blue & Teal)"
+    },
+    "messages": {
+      "config_saved": "Configuration saved successfully!",
+      "config_failed": "Failed to save configuration",
+      "session_reset": "Session reset successfully!",
+      "session_reset_failed": "Failed to reset session"
+    }
+  }
+}

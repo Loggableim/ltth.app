@@ -1,0 +1,42 @@
+{
+  "soundboard": {
+    "title": "Soundboard",
+    "subtitle": "Sound Effect Management",
+    "sounds": {
+      "title": "Sound Library",
+      "add": "Add Sound",
+      "upload": "Upload Sound",
+      "name": "Sound Name",
+      "file": "Sound File",
+      "category": "Category",
+      "volume": "Volume",
+      "play": "Play",
+      "stop": "Stop",
+      "delete": "Delete",
+      "edit": "Edit"
+    },
+    "config": {
+      "title": "Settings",
+      "enabled": "Enable Soundboard",
+      "trigger_mode": "Trigger Mode",
+      "manual": "Manual Only",
+      "automatic": "Automatic on Events",
+      "master_volume": "Master Volume",
+      "save": "Save Settings"
+    },
+    "categories": {
+      "all": "All Sounds",
+      "alerts": "Alerts",
+      "effects": "Effects",
+      "music": "Music",
+      "custom": "Custom"
+    },
+    "triggers": {
+      "title": "Event Triggers",
+      "gift": "On Gift",
+      "follow": "On Follow",
+      "subscribe": "On Subscribe",
+      "like": "On Like"
+    }
+  }
+}

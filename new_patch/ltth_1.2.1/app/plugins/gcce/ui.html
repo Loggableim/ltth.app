@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Chat Command Engine - Configuration</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent-primary);
+        }
+
+        .config-group {
+            margin-bottom: 20px;
+        }
+
+        .config-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+
+        .config-description {
+            color: var(--color-text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-accent-primary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+
+        .commands-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .commands-table th,
+        .commands-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .commands-table th {
+            background: var(--color-bg-secondary);
+            font-weight: 600;
+        }
+
+        .commands-table tr:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .command-name {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--color-accent-primary);
+        }
+
+        .command-plugin {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+        }
+
+        .permission-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .permission-viewer { background: #10b981; color: white; }
+        .permission-subscriber { background: #3b82f6; color: white; }
+        .permission-moderator { background: #8b5cf6; color: white; }
+        .permission-owner { background: #f59e0b; color: white; }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-bg-tertiary);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--color-accent-primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Dashboard Enhancements */
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+
+        .nav-tab:hover {
+            color: var(--color-text-primary);
+        }
+
+        .nav-tab.active {
+            color: var(--color-accent-primary);
+            border-bottom-color: var(--color-accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 16px;
+        }
+
+        .realtime-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .log-entry.success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid #10b981;
+        }
+
+        .log-entry.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+        }
+
+        .log-timestamp {
+            color: var(--color-text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .log-user {
+            color: var(--color-accent-primary);
+            font-weight: 600;
+        }
+
+        .log-command {
+            color: var(--color-text-primary);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-accent-primary);
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--color-bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--color-accent-primary);
+            transition: width 0.3s;
+        }
+
+        .metric-trend {
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .metric-trend.up {
+            color: #10b981;
+        }
+
+        .metric-trend.down {
+            color: #ef4444;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Global Chat Command Engine</h1>
+            <p>Universal chat command interpreter and framework for all plugins</p>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="commands">⚡ Commands</button>
+            <button class="nav-tab" data-tab="monitoring">📈 Monitoring</button>
+            <button class="nav-tab" data-tab="hud">🎨 HUD Overlay</button>
+            <button class="nav-tab" data-tab="config">⚙️ Configuration</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content active">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-title">🚀 Quick Actions</div>
+                <div class="quick-actions">
+                    <button class="action-btn" id="btn-refresh-stats">
+                        <span>🔄</span> Refresh Stats
+                    </button>
+                    <button class="action-btn" id="btn-clear-cache">
+                        <span>🗑️</span> Clear Caches
+                    </button>
+                    <button class="action-btn" id="btn-export-audit">
+                        <span>📥</span> Export Audit Log
+                    </button>
+                    <button class="action-btn" id="btn-view-history">
+                        <span>📜</span> View History
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enhanced Statistics Grid -->
+            <div class="card">
+                <div class="card-title">📊 Live Statistics</div>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Commands</div>
+                        <div class="stat-value" id="stat-total-commands">-</div>
+                        <div class="metric-trend up" id="trend-commands">↑ Live</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Enabled Commands</div>
+                        <div class="stat-value" id="stat-enabled-commands">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Commands Executed</div>
+                        <div class="stat-value" id="stat-executed">-</div>
+                        <div class="metric-trend up" id="trend-executed">+0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Success Rate</div>
+                        <div class="stat-value" id="stat-success-rate">-</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-success" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cache Hit Rate</div>
+                        <div class="stat-value" id="stat-cache-hit">-</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-cache" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Users</div>
+                        <div class="stat-value" id="stat-active-users">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Event Reduction</div>
+                        <div class="stat-value" id="stat-event-reduction">-</div>
+                        <div class="metric-trend down" id="trend-events">↓ Optimized</div>
+                    </div>
+                    <div class="stat-card">
+                    <div class="stat-label">Registered Plugins</div>
+                    <div class="stat-value" id="stat-plugins">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="card">
+            <div class="card-title">⚙️ Configuration</div>
+            <form id="config-form">
+                <div class="config-group">
+                    <label class="config-label" for="command-prefix">Command Prefix</label>
+                    <div class="config-description">Prefix used to identify chat commands (e.g., "!" for !help)</div>
+                    <input type="text" id="command-prefix" name="commandPrefix" maxlength="5" value="!">
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-built-in" name="enableBuiltInCommands" checked>
+                        <label class="config-label" for="enable-built-in" style="margin: 0;">Enable Built-in Commands</label>
+                    </div>
+                    <div class="config-description">Enable default commands like !help, !commands, etc.</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-overlay" name="enableOverlayMessages" checked>
+                        <label class="config-label" for="enable-overlay" style="margin: 0;">Enable Overlay Messages</label>
+                    </div>
+                    <div class="config-description">Show command responses on stream overlays</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-help" name="enableHelpCommand" checked>
+                        <label class="config-label" for="enable-help" style="margin: 0;">Enable Help Command</label>
+                    </div>
+                    <div class="config-description">Allow users to use !help command</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </form>
+        </div>
+
+        <!-- Registered Commands -->
+        <div class="card">
+            <div class="card-title">📝 Registered Commands</div>
+            <div id="commands-container" class="loading">Loading commands...</div>
+        </div>
+    </div>
+
+    <!-- Commands Tab -->
+    <div id="tab-commands" class="tab-content">
+        <div class="card">
+            <div class="card-title">⚡ All Commands</div>
+            
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands...">
+                <select id="cmd-filter-category" class="filter-input">
+                    <option value="">All Categories</option>
+                    <option value="System">System</option>
+                    <option value="Information">Information</option>
+                    <option value="HUD">HUD</option>
+                    <option value="Moderation">Moderation</option>
+                    <option value="Fun">Fun</option>
+                    <option value="Utility">Utility</option>
+                </select>
+                <select id="cmd-filter-permission" class="filter-input">
+                    <option value="">All Permissions</option>
+                    <option value="all">All Viewers</option>
+                    <option value="subscriber">Subscribers</option>
+                    <option value="moderator">Moderators</option>
+                    <option value="owner">Owner Only</option>
+                </select>
+                <select id="cmd-filter-status" class="filter-input">
+                    <option value="">All Status</option>
+                    <option value="enabled">Enabled Only</option>
+                    <option value="disabled">Disabled Only</option>
+                </select>
+            </div>
+            
+            <div id="all-commands-container" class="loading">Loading commands...</div>
+        </div>
+    </div>
+
+    <!-- Monitoring Tab -->
+    <div id="tab-monitoring" class="tab-content">
+        <!-- Real-time Command Log -->
+        <div class="card">
+            <div class="card-title">📊 Real-time Command Execution Log</div>
+            <div class="filter-bar">
+                <input type="text" id="log-filter-user" class="filter-input" placeholder="Filter by username...">
+                <select id="log-filter-status" class="filter-input">
+                    <option value="">All Statuses</option>
+                    <option value="success">Success Only</option>
+                    <option value="failed">Failed Only</option>
+                </select>
+                <button class="btn btn-sm" id="btn-clear-logs">🗑️ Clear Logs</button>
+            </div>
+            <div class="realtime-log" id="realtime-log">
+                <div class="log-entry">
+                    <span class="log-timestamp">--:--:--</span>
+                    <span class="log-user">Waiting for commands...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="card">
+            <div class="card-title">⚡ Performance Metrics</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Avg Execution Time</div>
+                    <div class="stat-value" id="monitor-avg-time">0ms</div>
+                    <div class="metric-trend" id="monitor-time-trend">Calculating...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Commands/Minute</div>
+                    <div class="stat-value" id="monitor-rate">0</div>
+                    <div class="metric-trend up" id="monitor-rate-trend">Live</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Error Rate</div>
+                    <div class="stat-value" id="monitor-error-rate">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="monitor-error-progress" style="width: 0%; background: #ef4444;"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Peak Load</div>
+                    <div class="stat-value" id="monitor-peak">0</div>
+                    <div class="metric-trend" id="monitor-peak-time">--:--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="card">
+            <div class="card-title">🏥 System Health</div>
+            <div class="grid-2">
+                <div>
+                    <div class="config-group">
+                        <div class="stat-label">Cache Performance</div>
+                        <div id="health-cache-status">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>User Data Cache:</span>
+                                <span id="health-user-cache">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Command Cache:</span>
+                                <span id="health-cmd-cache">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Permission Cache:</span>
+                                <span id="health-perm-cache">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="config-group">
+                        <div class="stat-label">Rate Limiter Status</div>
+                        <div id="health-ratelimit-status">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Active Limiters:</span>
+                                <span id="health-active-limiters">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Blocked Requests:</span>
+                                <span id="health-blocked">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Cooldowns Active:</span>
+                                <span id="health-cooldowns">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Commands Chart -->
+        <div class="card">
+            <div class="card-title">📈 Most Used Commands (Last Hour)</div>
+            <div id="top-commands-chart">
+                <table class="commands-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Command</th>
+                            <th>Executions</th>
+                            <th>Success Rate</th>
+                            <th>Avg Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-commands-body">
+                        <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD Overlay Tab (NEW - integrated from gcce-hud plugin) -->
+        <div id="tab-hud" class="tab-content">
+            <!-- HUD Configuration -->
+            <div class="card">
+                <div class="card-title">🎨 HUD Overlay Configuration</div>
+                
+            <div class="config-group">
+                <label class="config-label">Overlay URL for OBS</label>
+                <div class="config-description">
+                    Add this URL as a Browser Source in OBS:
+                    <code id="hud-overlay-url">http://localhost:3000/plugins/gcce/overlay-hud</code>
+                    <button class="btn-sm" id="btn-copy-overlay-url">📋 Copy</button>
+                </div>
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Enable HUD Commands</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="hud-enabled" onchange="updateHUDConfig()">
+                    <label for="hud-enabled">Allow HUD display commands</label>
+                </div>
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Text Display Permission</label>
+                <select id="hud-perm-text" onchange="updateHUDConfig()">
+                    <option value="all">All Viewers</option>
+                    <option value="subscriber">Subscribers</option>
+                    <option value="moderator">Moderators</option>
+                    <option value="broadcaster">Broadcaster Only</option>
+                </select>
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Image Display Permission</label>
+                <select id="hud-perm-image" onchange="updateHUDConfig()">
+                    <option value="all">All Viewers</option>
+                    <option value="subscriber">Subscribers</option>
+                    <option value="moderator">Moderators</option>
+                    <option value="broadcaster">Broadcaster Only</option>
+                </select>
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Default Text Duration (seconds)</label>
+                <input type="number" id="hud-text-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Default Image Duration (seconds)</label>
+                <input type="number" id="hud-image-duration" min="3" max="60" value="10" onchange="updateHUDConfig()">
+            </div>
+
+            <div class="config-group">
+                <label class="config-label">Default Position</label>
+                <select id="hud-position" onchange="updateHUDConfig()">
+                    <option value="top-left">Top Left</option>
+                    <option value="top-center">Top Center</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="center-left">Center Left</option>
+                    <option value="center">Center</option>
+                    <option value="center-right">Center Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-center">Bottom Center</option>
+                    <option value="bottom-right">Bottom Right</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Custom Media -->
+        <div class="card">
+            <div class="card-title">🎞️ Custom Media via Chat</div>
+            <p class="config-description">Allow viewers to trigger your GIF/MP4 snippets with <code>/hudmedia &lt;name&gt;</code> or <code>/hudmedia &lt;url&gt;</code>. Supported: .gif, .mp4, .webm.</p>
+            <div class="grid-2">
+                <div>
+                    <div class="config-group">
+                        <label class="config-label">Media Name</label>
+                        <input type="text" id="media-label" placeholder="e.g. hype" maxlength="50">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Media URL</label>
+                        <input type="text" id="media-url" placeholder="https://...gif or mp4">
+                    </div>
+                </div>
+                <div>
+                    <div class="config-group">
+                        <label class="config-label">Default Duration (s)</label>
+                        <input type="number" id="media-duration" min="3" max="60" value="10">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Detected Type</label>
+                        <div id="media-type-preview" class="config-description">GIF/MP4 automatically detected</div>
+                    </div>
+                </div>
+            </div>
+            <div class="quick-actions">
+                <button class="btn btn-primary btn-sm" id="btn-add-media">➕ Add Media</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-media">💾 Save Library</button>
+                <button class="btn btn-primary btn-sm" id="btn-test-media">🧪 Test /hudmedia</button>
+            </div>
+            <div id="hud-media-list" class="loading">Loading media library...</div>
+        </div>
+
+        <!-- Gift Rotator -->
+        <div class="card">
+            <div class="card-title">🎁 Gift HUD Rotator</div>
+            <p class="config-description">Select gifts from the TikTok gift catalog, add headline & info, choose a template/font/color, and rotate them on your OBS HUD.</p>
+            <div class="grid-2">
+                <div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="rotator-enabled">
+                        <label for="rotator-enabled" class="config-label" style="margin:0;">Enable Gift Rotator</label>
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Rotation Interval (s)</label>
+                        <input type="number" id="rotator-interval" min="3" max="60" value="10">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Gift Selection</label>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary btn-sm" id="btn-load-gift-catalog">🔄 Load Gift Catalog</button>
+                        </div>
+                        <div id="gift-catalog-status" class="config-description">Catalog not loaded</div>
+                        <select id="rotator-gift-select"></select>
+                    </div>
+                </div>
+                <div>
+                    <div class="config-group">
+                        <label class="config-label">Headline</label>
+                        <input type="text" id="rotator-title" placeholder="e.g. Star Gifter">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Info Text (optional)</label>
+                        <input type="text" id="rotator-info" placeholder="Short message to show on HUD">
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Design</label>
+                        <div class="grid-2">
+                            <select id="rotator-template">
+                                <option value="card">Card</option>
+                                <option value="banner">Banner</option>
+                                <option value="minimal">Minimal</option>
+                            </select>
+                            <select id="rotator-font">
+                                <option value="Inter, sans-serif">Inter</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Oswald', sans-serif">Oswald</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="config-group">
+                        <label class="config-label">Colors</label>
+                        <div class="grid-2">
+                            <div>
+                                <div class="config-description">Text</div>
+                                <input type="color" id="rotator-text-color" value="#ffffff">
+                            </div>
+                            <div>
+                                <div class="config-description">Accent</div>
+                                <input type="color" id="rotator-accent-color" value="#ff5f9e">
+                            </div>
+                        </div>
+                        <div class="config-description" style="margin-top:8px;">Background</div>
+                        <input type="text" id="rotator-bg-color" value="rgba(0,0,0,0.65)">
+                    </div>
+                </div>
+            </div>
+            <div class="quick-actions">
+                <button class="btn btn-primary btn-sm" id="btn-add-rotator">➕ Add to Rotator</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-rotator">💾 Save Rotator</button>
+            </div>
+            <div id="rotator-entries" class="loading">No entries yet</div>
+        </div>
+
+        <!-- HUD Statistics -->
+        <div class="card">
+            <div class="card-title">📊 HUD Statistics</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Displayed</div>
+                    <div class="stat-value" id="hud-stat-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Elements</div>
+                    <div class="stat-value" id="hud-stat-active">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Most Used Position</div>
+                    <div class="stat-value" id="hud-stat-position">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Duration</div>
+                    <div class="stat-value" id="hud-stat-duration">0s</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active HUD Elements -->
+        <div class="card">
+            <div class="card-title">🎬 Active Elements</div>
+            <div id="hud-active-elements">
+                <p>No active HUD elements</p>
+            </div>
+            <button class="btn btn-primary" id="btn-clear-hud" style="margin-top: 16px;">Clear All</button>
+        </div>
+
+        <!-- Test HUD -->
+        <div class="card">
+            <div class="card-title">🧪 Test HUD Display</div>
+            <div class="config-group">
+                <label class="config-label">Test Text</label>
+                <input type="text" id="hud-test-text" placeholder="Enter test text" value="Hello from HUD!">
+                <button class="btn btn-primary" id="btn-test-hud-text" style="margin-top: 8px;">Display Text</button>
+            </div>
+            <div class="config-group">
+                <label class="config-label">Test Image URL</label>
+                <input type="text" id="hud-test-image" placeholder="Enter image URL">
+                <button class="btn btn-primary" id="btn-test-hud-image" style="margin-top: 8px;">Display Image</button>
+            </div>
+        </div>
+
+        <!-- Available Commands -->
+        <div class="card">
+            <div class="card-title">💬 Available Commands</div>
+            <ul>
+                 <li><code>/hudtext [duration] &lt;text&gt;</code> - Display text on overlay</li>
+                 <li><code>/hudimage [duration] &lt;url&gt;</code> - Display image on overlay</li>
+                <li><code>/hudmedia [duration] &lt;name|url&gt;</code> - Display custom GIF/MP4 from your media library</li>
+                 <li><code>/hudclear</code> - Clear all HUD elements (moderator)</li>
+             </ul>
+         </div>
+     </div>
+
+    <!-- Configuration Tab -->
+    <div id="tab-config" class="tab-content">
+        <!-- Advanced Configuration -->
+        <div class="card">
+            <div class="card-title">⚙️ Advanced GCCE Configuration</div>
+            <form id="advanced-config-form">
+                <div class="grid-2">
+                    <div class="config-group">
+                        <label class="config-label" for="rate-limit-global">Global Rate Limit (commands/minute)</label>
+                        <div class="config-description">Maximum commands per minute across all users</div>
+                        <input type="number" id="rate-limit-global" min="1" max="1000" value="100">
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label" for="rate-limit-user">User Rate Limit (commands/minute)</label>
+                        <div class="config-description">Maximum commands per minute per user</div>
+                        <input type="number" id="rate-limit-user" min="1" max="100" value="10">
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label" for="cache-ttl">User Cache TTL (seconds)</label>
+                        <div class="config-description">How long to cache user data</div>
+                        <input type="number" id="cache-ttl" min="60" max="3600" value="300">
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label" for="audit-max">Audit Log Max Entries</label>
+                        <div class="config-description">Maximum number of audit log entries to keep</div>
+                        <input type="number" id="audit-max" min="1000" max="100000" value="10000">
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label" for="history-max">History Max Entries</label>
+                        <div class="config-description">Maximum number of history entries to keep</div>
+                        <input type="number" id="history-max" min="50" max="1000" value="100">
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label" for="batch-interval">Socket Batch Interval (ms)</label>
+                        <div class="config-description">Interval for batching socket events</div>
+                        <input type="number" id="batch-interval" min="10" max="500" value="50">
+                    </div>
+                </div>
+
+                <div class="config-group" style="margin-top: 24px;">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-autocomplete" checked>
+                        <label class="config-label" for="enable-autocomplete" style="margin: 0;">Enable Command Auto-Complete</label>
+                    </div>
+                    <div class="config-description">Allow users to get command suggestions</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-macros" checked>
+                        <label class="config-label" for="enable-macros" style="margin: 0;">Enable Command Macros</label>
+                    </div>
+                    <div class="config-description">Allow execution of command macros (sequences)</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-scheduler" checked>
+                        <label class="config-label" for="enable-scheduler" style="margin: 0;">Enable Command Scheduler</label>
+                    </div>
+                    <div class="config-description">Allow scheduled command execution</div>
+                </div>
+
+                <div class="config-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-pipeline" checked>
+                        <label class="config-label" for="enable-pipeline" style="margin: 0;">Enable Command Pipelines</label>
+                    </div>
+                    <div class="config-description">Allow chaining multiple commands together</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 16px;">💾 Save Advanced Configuration</button>
+            </form>
+        </div>
+
+        <!-- Debug & Diagnostics -->
+        <div class="card">
+            <div class="card-title">🔧 Debug & Diagnostics</div>
+            <div class="quick-actions">
+                <button class="action-btn" id="btn-test-command">
+                    <span>🧪</span> Test Command
+                </button>
+                <button class="action-btn" id="btn-validate-commands">
+                    <span>✅</span> Validate All Commands
+                </button>
+                <button class="action-btn" id="btn-rebuild-indexes">
+                    <span>🔨</span> Rebuild Indexes
+                </button>
+                <button class="action-btn" id="btn-system-info">
+                    <span>ℹ️</span> System Info
+                </button>
+            </div>
+        </div>
+
+        <!-- Import/Export -->
+        <div class="card">
+            <div class="card-title">📦 Import/Export</div>
+            <div class="grid-2">
+                <div class="config-group">
+                    <label class="config-label">Export Commands</label>
+                    <div class="config-description">Export all command definitions to JSON</div>
+                    <button class="btn btn-primary btn-sm" id="btn-export-commands">📥 Export Commands</button>
+                </div>
+                <div class="config-group">
+                    <label class="config-label">Import Commands</label>
+                    <div class="config-description">Import command definitions from JSON</div>
+                    <input type="file" id="import-commands-file" accept=".json" style="display: none;">
+                    <button class="btn btn-primary btn-sm" id="btn-import-commands">📤 Import Commands</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let config = {};
+        let stats = {};
+        let commands = [];
+        let hudMediaLibrary = [];
+        let giftRotator = { enabled: false, intervalSeconds: 10, entries: [] };
+        let giftCatalog = [];
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/gcce/config');
+                const data = await response.json();
+                if (data.success) {
+                    config = data.config;
+                    updateConfigForm();
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/gcce/stats');
+                const data = await response.json();
+                if (data.success) {
+                    stats = data.stats;
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load commands
+        async function loadCommands() {
+            try {
+                const response = await fetch('/api/gcce/commands');
+                const data = await response.json();
+                if (data.success) {
+                    commands = data.commands;
+                    displayCommands(commands);
+                }
+            } catch (error) {
+                console.error('Failed to load commands:', error);
+                document.getElementById('commands-container').innerHTML = '<div class="error">Failed to load commands</div>';
+            }
+        }
+
+        // Update config form
+        function updateConfigForm() {
+            document.getElementById('command-prefix').value = config.commandPrefix || '!';
+            document.getElementById('enable-built-in').checked = config.enableBuiltInCommands !== false;
+            document.getElementById('enable-overlay').checked = config.enableOverlayMessages !== false;
+            document.getElementById('enable-help').checked = config.enableHelpCommand !== false;
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('stat-total-commands').textContent = stats.totalCommands || 0;
+            document.getElementById('stat-enabled-commands').textContent = stats.enabledCommands || 0;
+            document.getElementById('stat-plugins').textContent = stats.plugins || 0;
+        }
+
+        // Display commands
+        function displayCommands(commandsList) {
+            const container = document.getElementById('commands-container');
+            
+            if (!commandsList || commandsList.length === 0) {
+                container.innerHTML = '<p class="loading">No commands registered yet.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'commands-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                        <th>Description</th>
+                        <th>Plugin</th>
+                        <th>Permission</th>
+                        <th>Enabled</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${commandsList.map(cmd => `
+                        <tr>
+                            <td><span class="command-name">${cmd.name}</span></td>
+                            <td>${cmd.description || '-'}</td>
+                            <td><span class="command-plugin">${cmd.plugin || 'built-in'}</span></td>
+                            <td><span class="permission-badge permission-${cmd.permission || 'viewer'}">${cmd.permission || 'viewer'}</span></td>
+                            <td>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${cmd.enabled ? 'checked' : ''} data-command-name="${cmd.name}">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(table);
+            
+            // Add event delegation for toggle switches
+            table.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox' && e.target.dataset.commandName) {
+                    toggleCommand(e.target.dataset.commandName, e.target.checked);
+                }
+            });
+        }
+
+        // Toggle command
+        async function toggleCommand(commandName, enabled) {
+            try {
+                const response = await fetch(`/api/gcce/commands/${commandName}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(`Command ${commandName} ${enabled ? 'enabled' : 'disabled'}`, 'success');
+                    loadStats();
+                } else {
+                    showMessage('Failed to toggle command', 'error');
+                    loadCommands(); // Reload to reset checkbox
+                }
+            } catch (error) {
+                console.error('Failed to toggle command:', error);
+                showMessage('Failed to toggle command', 'error');
+                loadCommands(); // Reload to reset checkbox
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const newConfig = {
+                commandPrefix: formData.get('commandPrefix'),
+                enableBuiltInCommands: formData.get('enableBuiltInCommands') === 'on',
+                enableOverlayMessages: formData.get('enableOverlayMessages') === 'on',
+                enableHelpCommand: formData.get('enableHelpCommand') === 'on'
+            };
+
+            try {
+                const response = await fetch('/api/gcce/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Configuration saved successfully!', 'success');
+                    config = data.config;
+                } else {
+                    showMessage('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save config:', error);
+                showMessage('Failed to save configuration', 'error');
+            }
+        });
+
+        // Show message
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = type;
+            message.textContent = text;
+            container.appendChild(message);
+            
+            setTimeout(() => message.remove(), 5000);
+        }
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.nav-tab');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+
+            // Find and set active class on the correct button
+            const activeButton = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+
+            // Load tab-specific data
+            if (tabName === 'hud') {
+                loadHUDConfig();
+                loadHUDStats();
+                loadActiveElements();
+                loadHUDMedia();
+                loadGiftRotator();
+                if (!giftCatalog || giftCatalog.length === 0) {
+                    loadGiftCatalog();
+                }
+            } else if (tabName === 'monitoring') {
+                startMonitoring();
+            } else if (tabName === 'commands') {
+                if (allCommandsCache.length === 0) {
+                    loadAllCommands();
+                }
+            } else if (tabName === 'config') {
+                loadAdvancedConfig();
+            } else {
+                // Stop monitoring when leaving monitoring tab
+                if (tabName !== 'monitoring') {
+                    stopMonitoring();
+                }
+            }
+        }
+
+        // HUD Functions
+        let hudConfig = {};
+        let hudRefreshInterval = null;
+
+        async function loadHUDConfig() {
+            try {
+                const response = await fetch('/api/gcce/hud/config');
+                const data = await response.json();
+                if (data.success) {
+                    hudConfig = data.config;
+                    hudMediaLibrary = hudConfig.mediaLibrary || [];
+                    giftRotator = hudConfig.giftRotator || giftRotator;
+                    giftRotator.entries = giftRotator.entries || [];
+                    updateHUDForm();
+                    renderMediaLibrary();
+                    renderRotatorEntries();
+                }
+            } catch (error) {
+                console.error('Failed to load HUD config:', error);
+            }
+        }
+
+        function updateHUDForm() {
+            if (!hudConfig) return;
+
+            document.getElementById('hud-enabled').checked = hudConfig.chatCommands?.enabled || false;
+            document.getElementById('hud-perm-text').value = hudConfig.permissions?.text || 'all';
+            document.getElementById('hud-perm-image').value = hudConfig.permissions?.image || 'subscriber';
+            document.getElementById('hud-text-duration').value = hudConfig.defaults?.textDuration || 10;
+            document.getElementById('hud-image-duration').value = hudConfig.defaults?.imageDuration || 10;
+            document.getElementById('hud-position').value = hudConfig.defaults?.position || 'top-center';
+        }
+
+        function detectMediaType(url) {
+            if (!url) return '-';
+            const lower = url.toLowerCase();
+            if (lower.endsWith('.mp4') || lower.endsWith('.webm')) return 'video';
+            if (lower.endsWith('.gif')) return 'gif';
+            return 'unknown';
+        }
+
+        async function loadHUDMedia() {
+            try {
+                const response = await fetch('/api/gcce/hud/media');
+                const data = await response.json();
+                if (data.success) {
+                    hudMediaLibrary = data.media || [];
+                    renderMediaLibrary();
+                } else {
+                    document.getElementById('hud-media-list').innerHTML = '<div class="error">Failed to load media library</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load media library:', error);
+                document.getElementById('hud-media-list').innerHTML = '<div class="error">Failed to load media library</div>';
+            }
+        }
+
+        function renderMediaLibrary() {
+            const container = document.getElementById('hud-media-list');
+            if (!hudMediaLibrary || hudMediaLibrary.length === 0) {
+                container.innerHTML = '<div class="config-description">No custom media configured yet.</div>';
+                return;
+            }
+
+            const rows = hudMediaLibrary.map(item => `
+                <tr>
+                    <td class="command-name">${item.label}</td>
+                    <td>${detectMediaType(item.url)}</td>
+                    <td>${item.duration || hudConfig.defaults?.mediaDuration || 10}s</td>
+                    <td><span class="config-description">${item.url}</span></td>
+                    <td><button class="btn btn-sm" data-remove-media="${item.id}">Remove</button></td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="commands-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Duration</th>
+                            <th>URL</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+
+            container.querySelectorAll('button[data-remove-media]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-remove-media');
+                    hudMediaLibrary = hudMediaLibrary.filter(item => item.id !== id);
+                    renderMediaLibrary();
+                });
+            });
+        }
+
+        function addMediaFromForm() {
+            const label = document.getElementById('media-label').value.trim();
+            const url = document.getElementById('media-url').value.trim();
+            const duration = parseInt(document.getElementById('media-duration').value, 10) || 10;
+
+            if (!label || !url) {
+                showMessage('Please enter media name and URL', 'error');
+                return;
+            }
+
+            const type = detectMediaType(url);
+            document.getElementById('media-type-preview').textContent = `Detected: ${type}`;
+
+            hudMediaLibrary.push({
+                id: `media-${Date.now()}`,
+                label,
+                url,
+                duration,
+                type
+            });
+            renderMediaLibrary();
+        }
+
+        async function saveMediaLibrary() {
+            try {
+                const response = await fetch('/api/gcce/hud/media', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ media: hudMediaLibrary })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    hudMediaLibrary = data.media || [];
+                    renderMediaLibrary();
+                    showMessage('Media library saved', 'success');
+                } else {
+                    showMessage('Failed to save media library', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save media library:', error);
+                showMessage('Failed to save media library', 'error');
+            }
+        }
+
+        async function testHUDMedia() {
+            const label = document.getElementById('media-label').value.trim();
+            const url = document.getElementById('media-url').value.trim();
+            const duration = document.getElementById('media-duration').value || (hudConfig?.defaults?.mediaDuration ?? '8');
+            const payloadUrl = url || (hudMediaLibrary.find(m => m.label === label)?.url || '');
+
+            if (!payloadUrl) {
+                showMessage('Enter a media URL or pick an existing entry', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/gcce/hud/test/media', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: payloadUrl, duration })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Media test sent to HUD overlay', 'success');
+                } else {
+                    showMessage(data.error || 'Media test failed', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to test media:', error);
+                showMessage('Failed to test media', 'error');
+            }
+        }
+
+        async function updateHUDConfig() {
+            try {
+                const updatedConfig = {
+                    chatCommands: {
+                        enabled: document.getElementById('hud-enabled').checked,
+                        allowText: true,
+                        allowImages: true,
+                        allowMedia: true
+                    },
+                    defaults: {
+                        textDuration: parseInt(document.getElementById('hud-text-duration').value),
+                        imageDuration: parseInt(document.getElementById('hud-image-duration').value),
+                        position: document.getElementById('hud-position').value,
+                        mediaDuration: hudConfig?.defaults?.mediaDuration || 12,
+                        mediaMaxWidth: hudConfig?.defaults?.mediaMaxWidth || 480,
+                        mediaMaxHeight: hudConfig?.defaults?.mediaMaxHeight || 480
+                    },
+                    permissions: {
+                        text: document.getElementById('hud-perm-text').value,
+                        image: document.getElementById('hud-perm-image').value,
+                        clear: 'moderator',
+                        media: hudConfig?.permissions?.media || document.getElementById('hud-perm-image').value
+                    }
+                };
+
+                const response = await fetch('/api/gcce/hud/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedConfig)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('HUD configuration saved', 'success');
+                    hudConfig = data.config;
+                }
+            } catch (error) {
+                console.error('Failed to save HUD config:', error);
+                showMessage('Failed to save HUD configuration', 'error');
+            }
+        }
+
+        async function loadHUDStats() {
+            try {
+                const response = await fetch('/api/gcce/hud/stats');
+                const data = await response.json();
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('hud-stat-total').textContent = stats.totalDisplayed || 0;
+                    document.getElementById('hud-stat-active').textContent = stats.activeCount || 0;
+                    document.getElementById('hud-stat-position').textContent = stats.mostUsedPosition || '-';
+                    document.getElementById('hud-stat-duration').textContent = (stats.averageDuration || 0) + 's';
+                }
+            } catch (error) {
+                console.error('Failed to load HUD stats:', error);
+            }
+        }
+
+        async function loadActiveElements() {
+            try {
+                const response = await fetch('/api/gcce/hud/elements');
+                const data = await response.json();
+                if (data.success) {
+                    displayActiveElements(data.elements);
+                }
+            } catch (error) {
+                console.error('Failed to load active elements:', error);
+            }
+        }
+
+        function displayActiveElements(elements) {
+            const container = document.getElementById('hud-active-elements');
+            
+            if (!elements || elements.length === 0) {
+                container.innerHTML = '<p>No active HUD elements</p>';
+                return;
+            }
+
+            let html = '<div class="active-elements-list">';
+            elements.forEach(el => {
+                const remaining = Math.max(0, Math.ceil((el.expiresAt - Date.now()) / 1000));
+                html += `
+                    <div class="element-item">
+                        <strong>${el.type.toUpperCase()}</strong>: ${el.content.substring(0, 50)}...
+                        <br><small>User: ${el.username} | Remaining: ${remaining}s</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function testHUDText() {
+            const text = document.getElementById('hud-test-text').value;
+            if (!text) {
+                showMessage('Please enter test text', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/gcce/hud/test/text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, duration: 5 })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Test text displayed on HUD overlay', 'success');
+                    setTimeout(() => loadActiveElements(), 500);
+                } else {
+                    showMessage('Failed to display text: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to test HUD text:', error);
+                showMessage('Failed to display text', 'error');
+            }
+        }
+
+        async function testHUDImage() {
+            const url = document.getElementById('hud-test-image').value;
+            if (!url) {
+                showMessage('Please enter image URL', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/gcce/hud/test/image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, duration: 5 })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Test image displayed on HUD overlay', 'success');
+                    setTimeout(() => loadActiveElements(), 500);
+                } else {
+                    showMessage('Failed to display image: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to test HUD image:', error);
+                showMessage('Failed to display image', 'error');
+            }
+        }
+
+        async function clearHUD() {
+            try {
+                const response = await fetch('/api/gcce/hud/clear', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('All HUD elements cleared', 'success');
+                    loadActiveElements();
+                }
+            } catch (error) {
+                console.error('Failed to clear HUD:', error);
+                showMessage('Failed to clear HUD', 'error');
+            }
+        }
+
+        async function loadGiftCatalog() {
+            try {
+                const response = await fetch('/api/gift-catalog');
+                const data = await response.json();
+                const status = document.getElementById('gift-catalog-status');
+                if (!data.success) {
+                    status.textContent = 'Failed to load gift catalog';
+                    return;
+                }
+                giftCatalog = data.catalog || [];
+                status.textContent = `Loaded ${giftCatalog.length} gifts`;
+                const select = document.getElementById('rotator-gift-select');
+                select.innerHTML = giftCatalog.map(g => `<option value="${g.id}">${g.name} (${g.id})</option>`).join('');
+            } catch (error) {
+                console.error('Failed to load gift catalog:', error);
+                document.getElementById('gift-catalog-status').textContent = 'Failed to load gift catalog';
+            }
+        }
+
+        function renderRotatorEntries() {
+            const container = document.getElementById('rotator-entries');
+            if (!giftRotator.entries || giftRotator.entries.length === 0) {
+                container.innerHTML = '<div class="config-description">No gifts added yet.</div>';
+                return;
+            }
+
+            container.innerHTML = giftRotator.entries.map(entry => `
+                <div class="quick-actions" style="justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${entry.title || entry.giftName}</strong>
+                        <div class="config-description">${entry.info || ''}</div>
+                    </div>
+                    <button class="btn btn-sm" data-remove-rotator="${entry.id}">Remove</button>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('button[data-remove-rotator]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-remove-rotator');
+                    giftRotator.entries = giftRotator.entries.filter(e => e.id !== id);
+                    renderRotatorEntries();
+                });
+            });
+        }
+
+        function addRotatorEntry() {
+            const giftId = document.getElementById('rotator-gift-select').value;
+            const gift = giftCatalog.find(g => String(g.id) === String(giftId));
+            if (!gift) {
+                showMessage('Select a gift from the catalog first', 'error');
+                return;
+            }
+
+            const title = document.getElementById('rotator-title').value || gift.name;
+            const info = document.getElementById('rotator-info').value || '';
+            const template = document.getElementById('rotator-template').value;
+            const fontFamily = document.getElementById('rotator-font').value;
+            const textColor = document.getElementById('rotator-text-color').value;
+            const accentColor = document.getElementById('rotator-accent-color').value;
+            const backgroundColor = document.getElementById('rotator-bg-color').value;
+
+            giftRotator.entries = giftRotator.entries || [];
+            giftRotator.entries.push({
+                id: `gift-${Date.now()}`,
+                giftId: gift.id,
+                giftName: gift.name,
+                giftImage: gift.image_url || gift.image_url_72 || '',
+                title,
+                info,
+                template,
+                fontFamily,
+                textColor,
+                accentColor,
+                backgroundColor
+            });
+            renderRotatorEntries();
+        }
+
+        async function loadGiftRotator() {
+            try {
+                const response = await fetch('/api/gcce/hud/rotator');
+                const data = await response.json();
+                if (data.success) {
+                    giftRotator = data.rotator || giftRotator;
+                    giftRotator.entries = giftRotator.entries || [];
+                    document.getElementById('rotator-enabled').checked = !!giftRotator.enabled;
+                    document.getElementById('rotator-interval').value = giftRotator.intervalSeconds || 10;
+                    renderRotatorEntries();
+                }
+            } catch (error) {
+                console.error('Failed to load gift rotator:', error);
+            }
+        }
+
+        async function saveGiftRotator() {
+            try {
+                giftRotator.enabled = document.getElementById('rotator-enabled').checked;
+                giftRotator.intervalSeconds = parseInt(document.getElementById('rotator-interval').value, 10) || 10;
+
+                const response = await fetch('/api/gcce/hud/rotator', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rotator: giftRotator })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    giftRotator = data.rotator || giftRotator;
+                    renderRotatorEntries();
+                    showMessage('Gift rotator saved', 'success');
+                } else {
+                    showMessage('Failed to save gift rotator', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save gift rotator:', error);
+                showMessage('Failed to save gift rotator', 'error');
+            }
+        }
+
+        function copyOverlayUrl() {
+            const url = document.getElementById('hud-overlay-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                showMessage('Overlay URL copied to clipboard', 'success');
+            }).catch(() => {
+                showMessage('Failed to copy URL', 'error');
+            });
+        }
+
+        // Quick action functions
+        function refreshAllStats() {
+            loadStats();
+            loadCommands();
+            if (document.getElementById('tab-hud').classList.contains('active')) {
+                loadHUDStats();
+                loadActiveElements();
+            }
+            showMessage('Stats refreshed', 'success');
+        }
+
+        async function clearCache() {
+            try {
+                const response = await fetch('/api/gcce/cache/invalidate', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Cache cleared successfully', 'success');
+                    loadStats();
+                }
+            } catch (error) {
+                showMessage('Failed to clear cache', 'error');
+            }
+        }
+
+        async function exportAuditLog() {
+            try {
+                const response = await fetch('/api/gcce/audit/export', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `gcce-audit-${Date.now()}.json`;
+                    a.click();
+                    showMessage('Audit log exported', 'success');
+                }
+            } catch (error) {
+                showMessage('Failed to export audit log', 'error');
+            }
+        }
+
+        async function viewHistory() {
+            try {
+                const response = await fetch('/api/gcce/history?limit=100');
+                const data = await response.json();
+                if (data.success) {
+                    displayHistoryModal(data.history);
+                } else {
+                    showMessage('Failed to load history', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to load history:', error);
+                showMessage('Failed to load history', 'error');
+            }
+        }
+
+        function displayHistoryModal(history) {
+            const modalHTML = `
+                <div id="history-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: var(--color-bg-card); border-radius: 12px; padding: 24px; max-width: 90%; max-height: 90%; overflow: auto; width: 1000px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h2 style="margin: 0;">📜 Command History</h2>
+                            <button class="btn btn-sm" onclick="document.getElementById('history-modal').remove()">✕ Close</button>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <input type="text" id="history-search" placeholder="Search by username or command..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-primary);">
+                        </div>
+                        <table class="commands-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Command</th>
+                                    <th>Arguments</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                ${history.map(entry => `
+                                    <tr>
+                                        <td>${new Date(entry.timestamp).toLocaleString()}</td>
+                                        <td>${entry.context?.username || 'Unknown'}</td>
+                                        <td><span class="command-name">/${entry.command?.name || 'Unknown'}</span></td>
+                                        <td>${(entry.command?.args || []).join(' ')}</td>
+                                        <td>
+                                            ${entry.result?.success 
+                                                ? '<span class="permission-badge permission-viewer" style="background: #10b981;">Success</span>' 
+                                                : '<span class="permission-badge permission-owner" style="background: #ef4444;">Failed</span>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            const modalDiv = document.createElement('div');
+            modalDiv.innerHTML = modalHTML;
+            document.body.appendChild(modalDiv.firstElementChild);
+            
+            // Add search functionality
+            document.getElementById('history-search').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#history-table-body tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+
+        // ========================================
+        // Monitoring Tab Functions
+        // ========================================
+        let realtimeLog = [];
+        let monitoringStats = {
+            executions: [],
+            errorCount: 0,
+            totalExecutions: 0
+        };
+        let monitoringInterval = null;
+
+        async function loadMonitoringData() {
+            try {
+                // Load recent audit logs for real-time display
+                const response = await fetch('/api/gcce/audit/recent?limit=50');
+                const data = await response.json();
+                if (data.success) {
+                    updateRealtimeLog(data.logs || []);
+                    updateMonitoringMetrics(data.logs || []);
+                }
+
+                // Load enhanced stats
+                const statsResponse = await fetch('/api/gcce/stats/enhanced');
+                const statsData = await statsResponse.json();
+                if (statsData.success) {
+                    updateSystemHealth(statsData.stats);
+                }
+
+                // Load top commands
+                await loadTopCommands();
+            } catch (error) {
+                console.error('Failed to load monitoring data:', error);
+            }
+        }
+
+        function updateRealtimeLog(logs) {
+            const container = document.getElementById('realtime-log');
+            if (!logs || logs.length === 0) return;
+
+            const filterUser = document.getElementById('log-filter-user')?.value.toLowerCase() || '';
+            const filterStatus = document.getElementById('log-filter-status')?.value || '';
+
+            const filteredLogs = logs.filter(log => {
+                const matchUser = !filterUser || log.username.toLowerCase().includes(filterUser);
+                const matchStatus = !filterStatus || 
+                    (filterStatus === 'success' && log.success) || 
+                    (filterStatus === 'failed' && !log.success);
+                return matchUser && matchStatus;
+            }).slice(0, 20);
+
+            container.innerHTML = filteredLogs.map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                const statusClass = log.success ? 'success' : 'error';
+                return `
+                    <div class="log-entry ${statusClass}">
+                        <span class="log-timestamp">${time}</span>
+                        <span class="log-user">${log.username}</span>
+                        <span class="log-command">/${log.command}</span>
+                        <span>${log.success ? '✓' : '✗'} ${log.executionTime}ms</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateMonitoringMetrics(logs) {
+            if (!logs || logs.length === 0) return;
+
+            // Calculate average execution time
+            const avgTime = logs.reduce((sum, log) => sum + (log.executionTime || 0), 0) / logs.length;
+            document.getElementById('monitor-avg-time').textContent = Math.round(avgTime) + 'ms';
+
+            // Calculate commands per minute (based on last 50 logs)
+            const now = Date.now();
+            const oneMinuteAgo = now - 60000;
+            const recentLogs = logs.filter(log => log.timestamp >= oneMinuteAgo);
+            document.getElementById('monitor-rate').textContent = recentLogs.length;
+
+            // Calculate error rate
+            const failures = logs.filter(log => !log.success).length;
+            const errorRate = logs.length > 0 ? (failures / logs.length * 100).toFixed(1) : 0;
+            document.getElementById('monitor-error-rate').textContent = errorRate + '%';
+            document.getElementById('monitor-error-progress').style.width = errorRate + '%';
+
+            // Update trend
+            const trend = document.getElementById('monitor-time-trend');
+            if (avgTime < 50) {
+                trend.textContent = '⚡ Fast';
+                trend.className = 'metric-trend up';
+            } else if (avgTime < 200) {
+                trend.textContent = '✓ Good';
+                trend.className = 'metric-trend';
+            } else {
+                trend.textContent = '⚠ Slow';
+                trend.className = 'metric-trend down';
+            }
+
+            // Peak load (max commands in any minute)
+            document.getElementById('monitor-peak').textContent = Math.max(recentLogs.length, parseInt(document.getElementById('monitor-peak').textContent) || 0);
+        }
+
+        function updateSystemHealth(stats) {
+            if (!stats) return;
+
+            // Cache performance
+            if (stats.userDataCache) {
+                document.getElementById('health-user-cache').textContent = `${stats.userDataCache.hitRate}% hit rate`;
+            }
+            if (stats.registry && stats.registry.cacheHitRate !== undefined) {
+                document.getElementById('health-cmd-cache').textContent = `${stats.registry.cacheHitRate}% hit rate`;
+            }
+            if (stats.permissionMemoization) {
+                document.getElementById('health-perm-cache').textContent = `${stats.permissionMemoization.hitRate || 0}% hit rate`;
+            }
+
+            // Rate limiter
+            if (stats.rateLimiter) {
+                document.getElementById('health-active-limiters').textContent = stats.rateLimiter.activeLimiters || 0;
+                document.getElementById('health-blocked').textContent = stats.rateLimiter.blockedRequests || 0;
+            }
+            if (stats.cooldowns) {
+                document.getElementById('health-cooldowns').textContent = stats.cooldowns.activeCooldowns || 0;
+            }
+        }
+
+        async function loadTopCommands() {
+            try {
+                const response = await fetch('/api/gcce/audit/recent?limit=200');
+                const data = await response.json();
+                if (!data.success) return;
+
+                const logs = data.logs || [];
+                const commandStats = {};
+
+                logs.forEach(log => {
+                    if (!commandStats[log.command]) {
+                        commandStats[log.command] = {
+                            count: 0,
+                            successes: 0,
+                            totalTime: 0
+                        };
+                    }
+                    commandStats[log.command].count++;
+                    if (log.success) commandStats[log.command].successes++;
+                    commandStats[log.command].totalTime += log.executionTime || 0;
+                });
+
+                const topCommands = Object.entries(commandStats)
+                    .map(([cmd, stats]) => ({
+                        command: cmd,
+                        count: stats.count,
+                        successRate: ((stats.successes / stats.count) * 100).toFixed(1),
+                        avgTime: Math.round(stats.totalTime / stats.count)
+                    }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 10);
+
+                const tbody = document.getElementById('top-commands-body');
+                if (topCommands.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No command data yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = topCommands.map((cmd, index) => `
+                    <tr>
+                        <td>#${index + 1}</td>
+                        <td><span class="command-name">/${cmd.command}</span></td>
+                        <td>${cmd.count}</td>
+                        <td>${cmd.successRate}%</td>
+                        <td>${cmd.avgTime}ms</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load top commands:', error);
+            }
+        }
+
+        function startMonitoring() {
+            if (monitoringInterval) return;
+            loadMonitoringData();
+            monitoringInterval = setInterval(loadMonitoringData, 5000);
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('realtime-log').innerHTML = '<div class="log-entry"><span class="log-timestamp">--:--:--</span><span class="log-user">Logs cleared</span></div>';
+        }
+
+        // ========================================
+        // Commands Tab Functions
+        // ========================================
+        let allCommandsCache = [];
+
+        async function loadAllCommands() {
+            try {
+                const response = await fetch('/api/gcce/commands');
+                const data = await response.json();
+                if (data.success) {
+                    allCommandsCache = data.commands;
+                    displayFilteredCommands();
+                }
+            } catch (error) {
+                console.error('Failed to load all commands:', error);
+                document.getElementById('all-commands-container').innerHTML = '<div class="error">Failed to load commands</div>';
+            }
+        }
+
+        function displayFilteredCommands() {
+            const search = document.getElementById('cmd-filter-search')?.value.toLowerCase() || '';
+            const category = document.getElementById('cmd-filter-category')?.value || '';
+            const permission = document.getElementById('cmd-filter-permission')?.value || '';
+            const status = document.getElementById('cmd-filter-status')?.value || '';
+
+            const filtered = allCommandsCache.filter(cmd => {
+                const matchSearch = !search || 
+                    cmd.name.toLowerCase().includes(search) || 
+                    (cmd.description || '').toLowerCase().includes(search);
+                const matchCategory = !category || cmd.category === category;
+                const matchPermission = !permission || cmd.permission === permission;
+                const matchStatus = !status || 
+                    (status === 'enabled' && cmd.enabled) || 
+                    (status === 'disabled' && !cmd.enabled);
+                
+                return matchSearch && matchCategory && matchPermission && matchStatus;
+            });
+
+            displayCommands(filtered, 'all-commands-container');
+        }
+
+        // ========================================
+        // Configuration Tab Functions
+        // ========================================
+        async function loadAdvancedConfig() {
+            // Load configuration values from API
+            try {
+                const response = await fetch('/api/gcce/stats/enhanced');
+                const data = await response.json();
+                if (data.success && data.stats) {
+                    // Populate form with current values if available
+                    // This is a placeholder - actual values would come from backend config
+                }
+            } catch (error) {
+                console.error('Failed to load advanced config:', error);
+            }
+        }
+
+        async function saveAdvancedConfig(e) {
+            e.preventDefault();
+            
+            const config = {
+                rateLimitGlobal: parseInt(document.getElementById('rate-limit-global').value),
+                rateLimitUser: parseInt(document.getElementById('rate-limit-user').value),
+                cacheTTL: parseInt(document.getElementById('cache-ttl').value),
+                auditMax: parseInt(document.getElementById('audit-max').value),
+                historyMax: parseInt(document.getElementById('history-max').value),
+                batchInterval: parseInt(document.getElementById('batch-interval').value),
+                enableAutocomplete: document.getElementById('enable-autocomplete').checked,
+                enableMacros: document.getElementById('enable-macros').checked,
+                enableScheduler: document.getElementById('enable-scheduler').checked,
+                enablePipeline: document.getElementById('enable-pipeline').checked
+            };
+
+            try {
+                const response = await fetch('/api/gcce/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ advanced: config })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Advanced configuration saved successfully', 'success');
+                } else {
+                    showMessage('Failed to save advanced configuration', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save advanced config:', error);
+                showMessage('Failed to save advanced configuration', 'error');
+            }
+        }
+
+        async function testCommand() {
+            const cmdName = prompt('Enter command name to test (without /):');
+            if (!cmdName) return;
+
+            try {
+                const response = await fetch('/api/gcce/helpers/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        commandName: cmdName,
+                        args: [],
+                        mockContext: { username: 'test-user', userId: 'test-123' }
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(`Test passed in ${data.executionTime}ms`, 'success');
+                } else {
+                    showMessage(`Test failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Test execution failed', 'error');
+            }
+        }
+
+        async function validateCommands() {
+            try {
+                const response = await fetch('/api/gcce/commands');
+                const data = await response.json();
+                if (data.success) {
+                    const invalid = data.commands.filter(cmd => 
+                        !cmd.name || !cmd.handler || !cmd.pluginId
+                    );
+                    if (invalid.length === 0) {
+                        showMessage(`All ${data.commands.length} commands are valid`, 'success');
+                    } else {
+                        showMessage(`Found ${invalid.length} invalid commands`, 'error');
+                    }
+                }
+            } catch (error) {
+                showMessage('Validation failed', 'error');
+            }
+        }
+
+        async function rebuildIndexes() {
+            try {
+                const response = await fetch('/api/gcce/cache/invalidate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'all' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('Indexes rebuilt successfully', 'success');
+                }
+            } catch (error) {
+                showMessage('Failed to rebuild indexes', 'error');
+            }
+        }
+
+        async function showSystemInfo() {
+            try {
+                const response = await fetch('/api/gcce/stats/enhanced');
+                const data = await response.json();
+                if (data.success) {
+                    const info = JSON.stringify(data.stats, null, 2);
+                    const modal = `
+                        <div id="info-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                            <div style="background: var(--color-bg-card); border-radius: 12px; padding: 24px; max-width: 90%; max-height: 90%; overflow: auto;">
+                                <h2>System Information</h2>
+                                <pre style="background: var(--color-bg-secondary); padding: 16px; border-radius: 8px; overflow: auto;">${info}</pre>
+                                <button class="btn btn-primary" onclick="document.getElementById('info-modal').remove()">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    const div = document.createElement('div');
+                    div.innerHTML = modal;
+                    document.body.appendChild(div.firstElementChild);
+                }
+            } catch (error) {
+                showMessage('Failed to load system info', 'error');
+            }
+        }
+
+        async function exportCommands() {
+            try {
+                const response = await fetch('/api/gcce/helpers/export');
+                const data = await response.json();
+                if (data.success) {
+                    const blob = new Blob([JSON.stringify(data.commands, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `gcce-commands-${Date.now()}.json`;
+                    a.click();
+                    showMessage(`Exported ${data.count} commands`, 'success');
+                }
+            } catch (error) {
+                showMessage('Failed to export commands', 'error');
+            }
+        }
+
+        async function importCommands() {
+            const input = document.getElementById('import-commands-file');
+            if (!input.files || !input.files[0]) {
+                input.click();
+                input.onchange = () => {
+                    const file = input.files[0];
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const commands = JSON.parse(e.target.result);
+                            const response = await fetch('/api/gcce/helpers/import', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ commands })
+                            });
+                            const data = await response.json();
+                            if (data.success) {
+                                showMessage(`Imported ${data.result.imported} commands`, 'success');
+                                loadCommands();
+                                loadAllCommands();
+                            }
+                        } catch (error) {
+                            showMessage('Failed to import commands', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                return;
+            }
+        }
+
+        // Add event listeners for all buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab navigation
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+
+            // Quick action buttons
+            const btnRefreshStats = document.getElementById('btn-refresh-stats');
+            if (btnRefreshStats) {
+                btnRefreshStats.addEventListener('click', refreshAllStats);
+            }
+
+            const btnClearCache = document.getElementById('btn-clear-cache');
+            if (btnClearCache) {
+                btnClearCache.addEventListener('click', clearCache);
+            }
+
+            const btnExportAudit = document.getElementById('btn-export-audit');
+            if (btnExportAudit) {
+                btnExportAudit.addEventListener('click', exportAuditLog);
+            }
+
+            const btnViewHistory = document.getElementById('btn-view-history');
+            if (btnViewHistory) {
+                btnViewHistory.addEventListener('click', viewHistory);
+            }
+
+            // HUD buttons
+            const btnCopyOverlayUrl = document.getElementById('btn-copy-overlay-url');
+            if (btnCopyOverlayUrl) {
+                btnCopyOverlayUrl.addEventListener('click', copyOverlayUrl);
+            }
+
+            const btnClearHUD = document.getElementById('btn-clear-hud');
+            if (btnClearHUD) {
+                btnClearHUD.addEventListener('click', clearHUD);
+            }
+
+            const btnTestHUDText = document.getElementById('btn-test-hud-text');
+            if (btnTestHUDText) {
+                btnTestHUDText.addEventListener('click', testHUDText);
+            }
+
+            const btnTestHUDImage = document.getElementById('btn-test-hud-image');
+            if (btnTestHUDImage) {
+                btnTestHUDImage.addEventListener('click', testHUDImage);
+            }
+
+            const btnAddMedia = document.getElementById('btn-add-media');
+            if (btnAddMedia) {
+                btnAddMedia.addEventListener('click', addMediaFromForm);
+            }
+
+            const btnSaveMedia = document.getElementById('btn-save-media');
+            if (btnSaveMedia) {
+                btnSaveMedia.addEventListener('click', saveMediaLibrary);
+            }
+
+            const btnTestMedia = document.getElementById('btn-test-media');
+            if (btnTestMedia) {
+                btnTestMedia.addEventListener('click', testHUDMedia);
+            }
+
+            const btnLoadGiftCatalog = document.getElementById('btn-load-gift-catalog');
+            if (btnLoadGiftCatalog) {
+                btnLoadGiftCatalog.addEventListener('click', loadGiftCatalog);
+            }
+
+            const btnAddRotator = document.getElementById('btn-add-rotator');
+            if (btnAddRotator) {
+                btnAddRotator.addEventListener('click', addRotatorEntry);
+            }
+
+            const btnSaveRotator = document.getElementById('btn-save-rotator');
+            if (btnSaveRotator) {
+                btnSaveRotator.addEventListener('click', saveGiftRotator);
+            }
+
+            // Monitoring Tab buttons
+            const btnClearLogs = document.getElementById('btn-clear-logs');
+            if (btnClearLogs) {
+                btnClearLogs.addEventListener('click', clearLogs);
+            }
+
+            // Commands Tab filters
+            const cmdFilterSearch = document.getElementById('cmd-filter-search');
+            if (cmdFilterSearch) {
+                cmdFilterSearch.addEventListener('input', displayFilteredCommands);
+            }
+
+            const cmdFilterCategory = document.getElementById('cmd-filter-category');
+            if (cmdFilterCategory) {
+                cmdFilterCategory.addEventListener('change', displayFilteredCommands);
+            }
+
+            const cmdFilterPermission = document.getElementById('cmd-filter-permission');
+            if (cmdFilterPermission) {
+                cmdFilterPermission.addEventListener('change', displayFilteredCommands);
+            }
+
+            const cmdFilterStatus = document.getElementById('cmd-filter-status');
+            if (cmdFilterStatus) {
+                cmdFilterStatus.addEventListener('change', displayFilteredCommands);
+            }
+
+            // Monitoring Tab filters
+            const logFilterUser = document.getElementById('log-filter-user');
+            if (logFilterUser) {
+                logFilterUser.addEventListener('input', () => {
+                    if (monitoringInterval) loadMonitoringData();
+                });
+            }
+
+            const logFilterStatus = document.getElementById('log-filter-status');
+            if (logFilterStatus) {
+                logFilterStatus.addEventListener('change', () => {
+                    if (monitoringInterval) loadMonitoringData();
+                });
+            }
+
+            // Configuration Tab buttons
+            const advancedConfigForm = document.getElementById('advanced-config-form');
+            if (advancedConfigForm) {
+                advancedConfigForm.addEventListener('submit', saveAdvancedConfig);
+            }
+
+            const btnTestCommand = document.getElementById('btn-test-command');
+            if (btnTestCommand) {
+                btnTestCommand.addEventListener('click', testCommand);
+            }
+
+            const btnValidateCommands = document.getElementById('btn-validate-commands');
+            if (btnValidateCommands) {
+                btnValidateCommands.addEventListener('click', validateCommands);
+            }
+
+            const btnRebuildIndexes = document.getElementById('btn-rebuild-indexes');
+            if (btnRebuildIndexes) {
+                btnRebuildIndexes.addEventListener('click', rebuildIndexes);
+            }
+
+            const btnSystemInfo = document.getElementById('btn-system-info');
+            if (btnSystemInfo) {
+                btnSystemInfo.addEventListener('click', showSystemInfo);
+            }
+
+            const btnExportCommands = document.getElementById('btn-export-commands');
+            if (btnExportCommands) {
+                btnExportCommands.addEventListener('click', exportCommands);
+            }
+
+            const btnImportCommands = document.getElementById('btn-import-commands');
+            if (btnImportCommands) {
+                btnImportCommands.addEventListener('click', importCommands);
+            }
+        });
+
+        // Socket.io listeners for real-time updates
+        socket.on('gcce:command_result', (data) => {
+            // Update real-time log in monitoring tab if active
+            if (monitoringInterval && data) {
+                const time = new Date().toLocaleTimeString();
+                const statusClass = data.success ? 'success' : 'error';
+                const logEntry = `
+                    <div class="log-entry ${statusClass}">
+                        <span class="log-timestamp">${time}</span>
+                        <span class="log-user">${data.username || 'Unknown'}</span>
+                        <span class="log-command">${data.message || ''}</span>
+                        <span>${data.success ? '✓' : '✗'}</span>
+                    </div>
+                `;
+                const container = document.getElementById('realtime-log');
+                if (container) {
+                    container.insertAdjacentHTML('afterbegin', logEntry);
+                    // Keep only last 20 entries
+                    const entries = container.querySelectorAll('.log-entry');
+                    if (entries.length > 20) {
+                        entries[entries.length - 1].remove();
+                    }
+                }
+            }
+        });
+
+        socket.on('gcce:stats_update', (data) => {
+            // Update stats if available
+            if (data.stats) {
+                updateStats(data.stats);
+            }
+        });
+
+        // Initialize
+        loadConfig();
+        loadStats();
+        loadCommands();
+
+        // Refresh stats and commands periodically
+        setInterval(() => {
+            loadStats();
+            loadCommands();
+        }, 10000);
+    </script>
+</body>
+</html>

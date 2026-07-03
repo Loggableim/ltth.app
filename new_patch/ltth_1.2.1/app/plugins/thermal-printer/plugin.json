@@ -1,0 +1,49 @@
+{
+  "id": "thermal-printer",
+  "name": "Thermal Printer",
+  "version": "1.0.0",
+  "description": "Druckt TikTok Live Events (Chat, Gifts, Follows) physisch auf einem Thermodrucker (ESC/POS). Prints TikTok Live Events (Chat, Gifts, Follows) on a thermal printer (ESC/POS).",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "early-version",
+  "settings": {
+    "enabled": false,
+    "printerType": "usb",
+    "usbVendorId": "",
+    "usbProductId": "",
+    "networkHost": "192.168.1.100",
+    "networkPort": 9100,
+    "printChats": true,
+    "printGifts": true,
+    "printFollows": true,
+    "printShares": false,
+    "minCoinsToPrint": 1,
+    "ignoreBotCommands": true,
+    "autoCutPaper": true,
+    "encoding": "GB18030",
+    "width": 48,
+    "reconnectAttempts": 5,
+    "reconnectDelay": 5000,
+    "queueMaxSize": 100,
+    "printDelay": 500
+  },
+  "permissions": [
+    "network",
+    "events",
+    "hardware"
+  ],
+  "tags": [
+    "printer",
+    "hardware",
+    "thermal",
+    "escpos",
+    "events"
+  ],
+  "descriptions": {
+    "en": "Prints TikTok Live events (chat, gifts, follows) physically on a thermal printer (ESC/POS). Supports USB and network printers with customizable print templates.",
+    "de": "Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). Unterstützt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen.",
+    "es": "Imprime eventos en vivo de TikTok (chat, regalos, seguimientos) físicamente en una impresora térmica (ESC/POS). Admite impresoras USB y de red con plantillas de impresión personalizables.",
+    "fr": "Imprime les événements TikTok Live (chat, cadeaux, abonnements) physiquement sur une imprimante thermique (ESC/POS). Prend en charge les imprimantes USB et réseau avec modèles d'impression personnalisables."
+  }
+}

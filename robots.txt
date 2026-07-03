@@ -1,0 +1,16 @@
+# Robots.txt for ltth.app
+# https://ltth.app/robots.txt
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin/
+Disallow: /.git/
+Disallow: /.github/
+
+# Sitemap location
+Sitemap: https://ltth.app/sitemap.xml
+
+# Crawl delay (be nice to search engines)
+Crawl-delay: 1

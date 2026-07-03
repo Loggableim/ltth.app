@@ -1,0 +1,126 @@
+{
+  "plugin": {
+    "name": "Erweiterter Timer",
+    "description": "Professionelles Multi-Timer-System mit Event-Automatisierung und anpassbaren Overlays"
+  },
+  "ui": {
+    "title": "Erweiterter Timer - Multi-Timer-System",
+    "tabs": {
+      "timers": "Timer",
+      "create": "Timer erstellen",
+      "profiles": "Profile",
+      "help": "Hilfe"
+    },
+    "buttons": {
+      "newTimer": "Neuer Timer",
+      "start": "Starten",
+      "pause": "Pausieren",
+      "stop": "Stoppen",
+      "reset": "Zurücksetzen",
+      "settings": "Einstellungen",
+      "delete": "Löschen",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "create": "Timer erstellen",
+      "export": "Exportieren",
+      "copy": "URL kopieren"
+    },
+    "labels": {
+      "timerName": "Timer-Name",
+      "timerMode": "Timer-Modus",
+      "initialDuration": "Anfangsdauer (Sekunden)",
+      "targetValue": "Zielwert (Sekunden)",
+      "overlayUrl": "Overlay-URL",
+      "activityLog": "Aktivitätsprotokoll"
+    },
+    "modes": {
+      "countdown": "Countdown - Von einer Zeit herunterzählen",
+      "countup": "Hochzählen - Auf einen Zielwert hochzählen",
+      "stopwatch": "Stoppuhr - Unbegrenzt hochzählen",
+      "loop": "Schleife - Countdown kontinuierlich wiederholen",
+      "interval": "Intervall - Bis zum Ziel hochzählen und wiederholen"
+    },
+    "states": {
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "stopped": "Gestoppt",
+      "completed": "Abgeschlossen"
+    },
+    "messages": {
+      "noTimers": "Noch keine Timer vorhanden",
+      "createFirst": "Erstellen Sie Ihren ersten Timer",
+      "timerCreated": "Timer erfolgreich erstellt!",
+      "timerUpdated": "Timer erfolgreich aktualisiert!",
+      "timerDeleted": "Timer erfolgreich gelöscht!",
+      "confirmDelete": "Sind Sie sicher, dass Sie diesen Timer löschen möchten?",
+      "urlCopied": "URL in Zwischenablage kopiert!",
+      "noActivity": "Noch keine Aktivität",
+      "quickStart": "Erstellen Sie einen Timer und konfigurieren Sie Events in den Timer-Einstellungen, um basierend auf TikTok-Events (Geschenke, Likes, Follows usw.) Zeit hinzuzufügen"
+    },
+    "help": {
+      "modesTitle": "Timer-Modi",
+      "modesCountdown": "Countdown: Zählt von einer Startzeit auf Null herunter",
+      "modesCountup": "Hochzählen: Zählt von Null auf einen Zielwert hoch",
+      "modesStopwatch": "Stoppuhr: Zählt unbegrenzt hoch",
+      "modesLoop": "Schleife: Wiederholt den Countdown kontinuierlich",
+      "modesInterval": "Intervall: Zählt zum Ziel hoch, setzt zurück und wiederholt",
+      "eventAutomationTitle": "Event-Automatisierung",
+      "eventAutomationDesc": "Konfigurieren Sie Timer so, dass sie auf TikTok-Events reagieren:",
+      "eventGifts": "Geschenke - Zeit basierend auf Geschenktyp und Wert hinzufügen/entfernen",
+      "eventLikes": "Likes - Timer basierend auf erhaltenen Likes modifizieren",
+      "eventFollows": "Follows - Neue Follower belohnen",
+      "eventShares": "Shares - Teilen ermutigen",
+      "eventChat": "Chat-Befehle - Zuschauer-Interaktion ermöglichen",
+      "timerChainsTitle": "Timer-Ketten",
+      "timerChainsDesc": "Verketten Sie Timer - wenn Timer A abgeschlossen ist, automatisch Timer B starten/stoppen/zurücksetzen",
+      "overlaysTitle": "Overlays",
+      "overlaysDesc": "Jeder Timer hat seine eigene Overlay-URL, die als Browser-Quelle in OBS hinzugefügt werden kann"
+    },
+    "settings": {
+      "tabs": {
+        "basic": "Grundlagen",
+        "events": "Events",
+        "overlay": "Overlay",
+        "logs": "Protokolle"
+      },
+      "eventsDesc": "Konfigurieren Sie, wie TikTok-Events diesen Timer beeinflussen",
+      "addEventRule": "+ Event-Regel hinzufügen",
+      "overlayInfo": "Fügen Sie diese URL als Browser-Quelle in OBS hinzu, um diesen Timer anzuzeigen"
+    }
+  },
+  "events": {
+    "types": {
+      "gift": "Geschenk",
+      "like": "Like",
+      "follow": "Follow",
+      "share": "Share",
+      "subscribe": "Abonnement",
+      "chat": "Chat"
+    },
+    "actions": {
+      "addTime": "Zeit hinzufügen",
+      "removeTime": "Zeit entfernen",
+      "setValue": "Wert setzen"
+    }
+  },
+  "logs": {
+    "events": {
+      "started": "Gestartet",
+      "paused": "Pausiert",
+      "stopped": "Gestoppt",
+      "reset": "Zurückgesetzt",
+      "completed": "Abgeschlossen",
+      "time_added": "Zeit hinzugefügt",
+      "time_removed": "Zeit entfernt",
+      "gift": "Geschenk",
+      "like": "Like",
+      "follow": "Follow",
+      "share": "Share",
+      "subscribe": "Abonnement",
+      "chat": "Chat",
+      "chain_triggered": "Kette ausgelöst",
+      "threshold_reached": "Schwellenwert erreicht",
+      "flow": "Flow"
+    }
+  }
+}

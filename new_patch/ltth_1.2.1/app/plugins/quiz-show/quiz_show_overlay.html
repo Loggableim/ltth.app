@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Show Overlay</title>
+    <link rel="stylesheet" href="/quiz-show/quiz_show_overlay.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div id="overlay-container" class="overlay-container hidden" data-theme="dark">
+        <!-- Background Effects -->
+        <div class="background-effects">
+            <div class="glow-orb glow-orb-1"></div>
+            <div class="glow-orb glow-orb-2"></div>
+            <div class="glow-orb glow-orb-3"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Question Section -->
+            <div id="questionSection" class="question-section draggable" data-element="question">
+                <div class="question-header">
+                    <div class="quiz-logo" id="roundNumberDisplay" style="display: none;">
+                        <span class="logo-text" id="roundNumberText">Runde 1</span>
+                    </div>
+                    <div id="roundIndicator" class="round-indicator" style="display: none;">
+                        <!-- Removed: no longer needed -->
+                    </div>
+                    <div class="category-display" id="categoryDisplay" style="display: none;">
+                        <span class="category-icon" id="categoryIcon">📚</span>
+                        <span class="category-text" id="categoryText">Kategorie</span>
+                    </div>
+                </div>
+
+                <div id="questionDisplay" class="question-display">
+                    <div class="question-card">
+                        <div class="question-text" id="questionText">
+                            Warte auf Frage...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answers Section -->
+            <div id="answersSection" class="answers-section draggable" data-element="answers">
+                <div class="answers-grid" id="answersGrid">
+                    <div class="answer-card" data-index="0">
+                        <div class="voter-icons-container" data-answer="0"></div>
+                        <div class="answer-letter">A</div>
+                        <div class="answer-content">
+                            <div class="answer-text" id="answerA">-</div>
+                        </div>
+                        <div class="answer-glow"></div>
+                    </div>
+
+                    <div class="answer-card" data-index="1">
+                        <div class="voter-icons-container" data-answer="1"></div>
+                        <div class="answer-letter">B</div>
+                        <div class="answer-content">
+                            <div class="answer-text" id="answerB">-</div>
+                        </div>
+                        <div class="answer-glow"></div>
+                    </div>
+
+                    <div class="answer-card" data-index="2">
+                        <div class="voter-icons-container" data-answer="2"></div>
+                        <div class="answer-letter">C</div>
+                        <div class="answer-content">
+                            <div class="answer-text" id="answerC">-</div>
+                        </div>
+                        <div class="answer-glow"></div>
+                    </div>
+
+                    <div class="answer-card" data-index="3">
+                        <div class="voter-icons-container" data-answer="3"></div>
+                        <div class="answer-letter">D</div>
+                        <div class="answer-content">
+                            <div class="answer-text" id="answerD">-</div>
+                        </div>
+                        <div class="answer-glow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Section -->
+            <div id="timerSection" class="timer-section draggable" data-element="timer">
+                <!-- Circular SVG Timer -->
+                <div class="timer-circular active" id="timerCircular">
+                    <svg class="timer-svg" viewBox="0 0 200 200">
+                        <defs>
+                            <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#34d399;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="timerGradientWarning" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="timerGradientDanger" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#f87171;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Background Circle -->
+                        <circle class="timer-bg" cx="100" cy="100" r="85" />
+                        <!-- Progress Circle -->
+                        <circle id="timerProgress" class="timer-progress" cx="100" cy="100" r="85" />
+                    </svg>
+                    <div class="timer-text">
+                        <div class="timer-value" id="timerValue">30</div>
+                        <div class="timer-label">Sekunden</div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Timer -->
+                <div class="timer-bar-wrapper" id="timerBar">
+                    <div class="timer-bar-container">
+                        <div id="timerBarProgress" class="timer-bar"></div>
+                    </div>
+                    <div class="timer-bar-text">
+                        <span id="timerBarValue">30</span>s
+                    </div>
+                </div>
+
+                <!-- Neon Glow Timer -->
+                <div class="timer-neon" id="timerNeon">
+                    <div class="timer-neon-value" id="timerNeonValue">30</div>
+                    <div class="timer-neon-label">Sekunden verbleibend</div>
+                </div>
+
+                <!-- Ring Timer with Gradient -->
+                <div class="timer-ring" id="timerRing">
+                    <svg class="timer-ring-svg" viewBox="0 0 220 220">
+                        <defs>
+                            <linearGradient id="timerRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Background Circle -->
+                        <circle class="timer-ring-bg" cx="110" cy="110" r="90" />
+                        <!-- Progress Circle -->
+                        <circle id="timerRingProgress" class="timer-ring-progress" cx="110" cy="110" r="90" />
+                    </svg>
+                    <div class="timer-text">
+                        <div class="timer-value" id="timerRingValue">30</div>
+                        <div class="timer-label">Sekunden</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Joker Notification -->
+            <div id="jokerNotification" class="joker-notification hidden">
+                <div class="joker-icon" id="jokerIcon">✨</div>
+                <div class="joker-content">
+                    <div class="joker-title" id="jokerTitle">Joker aktiviert!</div>
+                    <div class="joker-user" id="jokerUser">von Username</div>
+                </div>
+            </div>
+
+            <!-- Correct Answer Reveal -->
+            <div id="correctReveal" class="correct-reveal hidden">
+                <div class="correct-reveal-content">
+                    <div class="correct-icon">✓</div>
+                    <div class="correct-text">Richtige Antwort!</div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Overlay -->
+            <div id="leaderboardOverlay" class="leaderboard-overlay hidden" data-animation="fade">
+                <div class="leaderboard-header">
+                    <div class="leaderboard-title">🏆 Leaderboard</div>
+                    <div class="leaderboard-type" id="leaderboardType">Season</div>
+                </div>
+                <ul class="leaderboard-list" id="leaderboardList">
+                    <!-- Leaderboard entries will be inserted here -->
+                </ul>
+            </div>
+
+            <!-- Joker Info Overlay -->
+            <div id="jokerInfoOverlay" class="joker-info-overlay hidden">
+                <div class="joker-info-title">🎯 Joker</div>
+                <div class="joker-list" id="jokerList">
+                    <!-- Joker items will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/quiz-show/quiz_show_overlay.js"></script>
+</body>
+</html>

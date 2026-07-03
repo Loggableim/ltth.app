@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de" data-lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Alert System – Vollständig anpassbare Alerts für Gifts, Follows, Shares, Likes und Subscriptions mit Sound, Text und Bild/GIF-Kombinationen.">
+    <title>Alert System – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Alert System – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Anpassbare Alerts für alle Event-Typen mit Sound, Text und Bild/GIF-Kombinationen für TikTok LIVE.">
+    <meta property="og:url" content="https://ltth.app/features/alerts.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/alerts.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Alert System</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🔔</span>
+                <h1 class="feature-hero-title">Alert System</h1>
+                <p class="feature-hero-subtitle">Vollständig anpassbare Alerts für alle TikTok LIVE Event-Typen. Kombiniere Sounds, Texte und Bilder/GIFs für spektakuläre Benachrichtigungen – direkt in OBS.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/screenshots/features/alerts.png"
+                         alt=""
+                         data-i18n-alt="screenshots.alerts.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.alerts.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Event Types -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Unterstützte Event-Typen</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎁</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Gift Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Alerts für eingehende TikTok Gifts mit konfigurierbarem Mindestwert. Nutze Variablen wie {username}, {giftName} und {coins} für personalisierte Nachrichten.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👥</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Follow Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Begrüße neue Follower mit einem benutzerdefinierten Alert. Verwende {username} im Template für namentliche Ansprache in Echtzeit.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔗</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Share Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Belohne Viewer, die deinen Stream teilen, mit einem besonderen Alert. Anpassbare Animationen und Sounds unterstützen die Community-Interaktion.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">❤️</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Like Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Zeige Wertschätzung für Likes mit konfigurierbaren Schwellenwert-Alerts (z. B. alle 100 Likes). Motiviere deine Zuschauer zur aktiven Teilnahme.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⭐</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Subscription Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Feiere neue Abonnements mit spektakulären Alerts. Unterstützt {username}, {subMonth} und {message} Variablen für persönliche Ansprache.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">💬</span>
+                            <span style="background:#12a116; color:#fff; font-size:0.65rem; font-weight:700; padding:0.15rem 0.4rem; border-radius:0.25rem;">NEU</span>
+                        </div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Chat Message Alerts</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Triggere Alerts basierend auf bestimmten Chat-Schlüsselwörtern oder -Mustern. Ideal für Spenden-Nachrichten oder VIP-Nachrichten.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Template System -->
+        <section style="padding: 3rem 0;">
+            <div class="container">
+                <h2 class="section-title">Template-System & Variablen</h2>
+                <p style="color:var(--color-text-secondary); text-align:center; max-width:640px; margin:0 auto 2.5rem;">
+                    Nutze Variablen in Alert-Texten und -Titeln, um personalisierte, dynamische Nachrichten zu erzeugen.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:1rem;">📝 Verfügbare Variablen</h3>
+                        <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--color-border);">
+                                    <th style="text-align:left; padding:0.4rem 0; color:var(--color-text-secondary);">Variable</th>
+                                    <th style="text-align:left; padding:0.4rem 0; color:var(--color-text-secondary);">Beschreibung</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{username}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">TikTok-Benutzername</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{coins}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">Münzwert des Gifts</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{giftName}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">Name des Gifts</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{message}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">Nachricht des Viewers</td>
+                                </tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{subMonth}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">Abo-Monat (Sub-Alerts)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0.5rem 0; color:#12a116; font-family:monospace;">{likeCount}</td>
+                                    <td style="padding:0.5rem 0; color:var(--color-text-secondary);">Anzahl der Likes</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:1rem;">🎨 Alert-Komponenten</h3>
+                        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                            <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+                                <span style="font-size:1.25rem; min-width:2rem;">🔊</span>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">Sound</div>
+                                    <div style="color:var(--color-text-secondary); font-size:0.85rem;">MP3/OGG/WAV-Dateien hochladen, Lautstärke und Verzögerung konfigurierbar</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+                                <span style="font-size:1.25rem; min-width:2rem;">✍️</span>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">Text</div>
+                                    <div style="color:var(--color-text-secondary); font-size:0.85rem;">Titel und Nachricht mit Template-Variablen, anpassbare Schriftart und Farbe</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+                                <span style="font-size:1.25rem; min-width:2rem;">🖼️</span>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">Bild / GIF</div>
+                                    <div style="color:var(--color-text-secondary); font-size:0.85rem;">PNG, JPEG, GIF und WebP unterstützt – animierte GIFs für maximalen Impact</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+                                <span style="font-size:1.25rem; min-width:2rem;">⏱️</span>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">Anzeigedauer</div>
+                                    <div style="color:var(--color-text-secondary); font-size:0.85rem;">Konfigurierbare Anzeige- und Einblend-/Ausblend-Dauer pro Alert-Typ</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Advanced Features -->
+        <section style="padding: 3rem 0; background:var(--color-surface-alt, rgba(255,255,255,0.02));">
+            <div class="container">
+                <h2 class="section-title">Erweiterte Funktionen</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💰</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Mindest-Coins-Filter</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Setze einen Mindestwert in TikTok-Coins, ab dem Gift-Alerts ausgelöst werden. Filtere kleine Gifts heraus und reserviere spektakuläre Alerts für Premium-Geschenke.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📺</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">OBS Browser Source</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Jeder Alert-Typ hat eine eigene Browser-Source-URL für OBS. Overlay-Alerts erscheinen direkt im Stream – transparent und anpassbar.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎭</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Alert-Warteschlange</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Mehrere Alerts werden in einer Warteschlange verarbeitet und nacheinander angezeigt – kein Überlappen, keine verpassten Benachrichtigungen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔧</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Test-Funktion</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Teste jeden Alert direkt in der Konfigurationsoberfläche, ohne auf echte Events warten zu müssen. Schnelle Iteration beim Design von Alert-Layouts.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Flow-Automation-Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Verbinde Alerts mit der Flow Engine für komplexe Automationen. Triggere Alerts als Teil von mehrstufigen Aktionsketten.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌐</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Mehrsprachige Templates</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Konfiguriere Alert-Texte in mehreren Sprachen und schalte automatisch basierend auf der Viewer-Sprache. Perfekt für internationale Streams.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Related Features -->
+        <section style="padding: 3rem 0;">
+            <div class="container">
+                <h2 class="section-title">Verwandte Features</h2>
+                <div class="feature-cards-grid">
+                    <a href="/features/goals.html" class="feature-card">
+                        <span class="feature-card-icon">🎯</span>
+                        <h3 class="feature-card-title">Goals System</h3>
+                        <p class="feature-card-desc">Likes-, Follower-, Abo- und Coins-Ziele mit OBS-Overlay-Integration.</p>
+                    </a>
+                    <a href="/features/overlays.html" class="feature-card">
+                        <span class="feature-card-icon">🎨</span>
+                        <h3 class="feature-card-title">Overlays & HUD</h3>
+                        <p class="feature-card-desc">Stream-Overlays und HUD-Elemente für professionelle Produktionen.</p>
+                    </a>
+                    <a href="/features/flow-engine.html" class="feature-card">
+                        <span class="feature-card-icon">⚡</span>
+                        <h3 class="feature-card-title">Flow Engine</h3>
+                        <p class="feature-card-desc">Komplexe Event-Automationen mit mehrstufigen Aktionsketten.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Alert System aktivieren</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Erstelle beeindruckende Alerts für deinen TikTok LIVE Stream.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

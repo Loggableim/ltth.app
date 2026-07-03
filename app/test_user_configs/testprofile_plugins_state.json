@@ -1,0 +1,18 @@
+{
+  "chatango": {
+    "enabled": true,
+    "loadedAt": "2026-04-26T15:54:16.807Z"
+  },
+  "config-import": {
+    "enabled": true,
+    "loadedAt": "2026-04-26T15:54:16.915Z"
+  },
+  "data-source": {
+    "enabled": true,
+    "loadedAt": "2026-04-26T15:54:16.916Z"
+  },
+  "lastevent-spotlight": {
+    "enabled": true,
+    "loadedAt": "2026-04-26T15:54:17.559Z"
+  }
+}

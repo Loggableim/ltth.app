@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Overlays & HUD – OBS Overlays, Goals HUD, WebGPU Emoji Rain, Talking Heads, Fireworks und 13 Wettereffekte für TikTok LIVE Streamer.">
+    <title>Overlays &amp; HUD – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Overlays & HUD – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="OBS Overlays, Goals HUD, WebGPU Emoji Rain, Talking Heads, Fireworks und 13 Wettereffekte für TikTok LIVE.">
+    <meta property="og:url" content="https://ltth.app/features/overlays.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/overlays.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Overlays &amp; HUD</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🎨</span>
+                <h1 class="feature-hero-title">Overlays &amp; HUD</h1>
+                <p class="feature-hero-subtitle">Professionelle Stream-Visualisierungen direkt in OBS. Von animierten Goals-Balken über GPU-beschleunigten Emoji-Regen bis zu 13 atemberaubenden Wettereffekten.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/assets/screenshots/overlay-preview.png"
+                         alt=""
+                         data-i18n-alt="screenshots.overlays.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.overlays.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- OBS integration -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">OBS Integration</h2>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:center; margin-bottom:3rem;">
+                    <div>
+                        <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:1rem;">Browser-Source Overlays</h3>
+                        <p style="color:var(--color-text-secondary); line-height:1.8; margin-bottom:1.5rem;">
+                            Alle Overlays laufen als OBS Browser-Sources über WebSocket-Verbindung. Einfach die URL in OBS einfügen – keine zusätzliche Software nötig. Vollständig transparent und schichtbar.
+                        </p>
+                        <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:0.75rem;">
+                            <li style="display:flex; align-items:center; gap:0.5rem; color:var(--color-text-secondary);">
+                                <span style="color:var(--color-primary); font-size:1.1rem;">✓</span> OBS WebSocket v5 kompatibel
+                            </li>
+                            <li style="display:flex; align-items:center; gap:0.5rem; color:var(--color-text-secondary);">
+                                <span style="color:var(--color-primary); font-size:1.1rem;">✓</span> Automatische Szenen-Erkennung
+                            </li>
+                            <li style="display:flex; align-items:center; gap:0.5rem; color:var(--color-text-secondary);">
+                                <span style="color:var(--color-primary); font-size:1.1rem;">✓</span> Live-Vorschau im Admin-Panel
+                            </li>
+                            <li style="display:flex; align-items:center; gap:0.5rem; color:var(--color-text-secondary);">
+                                <span style="color:var(--color-primary); font-size:1.1rem;">✓</span> Transparenter Hintergrund
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:2rem; text-align:center;">
+                        <div style="font-size:3rem; margin-bottom:1rem;">🎬</div>
+                        <div style="font-weight:700; margin-bottom:0.5rem;">OBS WebSocket</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem; margin-bottom:1rem;">localhost:4455</div>
+                        <div style="background:rgba(18,161,22,0.1); border:1px solid rgba(18,161,22,0.3); border-radius:0.5rem; padding:0.75rem; font-size:0.85rem; color:var(--color-primary);">
+                            ✓ Verbunden
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- overlay features -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Overlay-Typen</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Goals HUD</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Animierte Fortschrittsbalken für Follower-, Like- und Gift-Ziele. Gradient-Farben, Pulse-Animation bei Erreichen und Custom-CSS-Styles.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Animiert</span>
+                            <span class="feature-tag">Gradient</span>
+                            <span class="feature-tag">Custom CSS</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(100,18,161,0.4); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">🌧️</span>
+                            <span class="feature-tag feature-tag-new">GPU</span>
+                        </div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">WebGPU Emoji Rain</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            GPU-beschleunigtes Partikelsystem für Emoji-Regen. Tausende von Emojis fallen gleichzeitig ohne Performance-Einbußen. Trigger bei Gifts und Events.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">WebGPU</span>
+                            <span class="feature-tag">Partikel</span>
+                            <span class="feature-tag">Gift-Trigger</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">👥</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Talking Heads</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Viewer Rotator mit Custom-Sprites. Zeige aktive Chat-Teilnehmer als animierte Charaktere im Stream. Sprite-Upload und Editor integriert.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Sprites</span>
+                            <span class="feature-tag">Rotator</span>
+                            <span class="feature-tag">VTuber</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎆</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Fireworks Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Feuerwerks-Animation für besondere Momente: Ziel erreicht, Mega-Gift empfangen oder Stream-Meilensteine feiern mit spektakulären Effekten.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Partikel</span>
+                            <span class="feature-tag">Events</span>
+                            <span class="feature-tag">Animiert</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌦️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Weather Engine</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            13 atmosphärische Effekte: Aurora Borealis, Fireflies, Meteor Shower, Sakura Blossom, Snow, Rain, Fog und mehr. Jeder Effekt vollständig konfigurierbar.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">13 Effekte</span>
+                            <span class="feature-tag">Aurora</span>
+                            <span class="feature-tag">Sakura</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔔</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Alert System</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Anpassbare Alert-Animationen für Follows, Gifts, Subscriptions und Custom-Events. Eigene Sounds, GIFs und Texte für jeden Alert-Typ konfigurierbar.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Alerts</span>
+                            <span class="feature-tag">Custom GIF</span>
+                            <span class="feature-tag">Animiert</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- weather effects list -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">13 Weather Engine Effekte</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:0.75rem;" id="weatherEffectsGrid">
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌌</div><div style="font-size:0.8rem;font-weight:600;">Aurora Borealis</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌟</div><div style="font-size:0.8rem;font-weight:600;">Starfield</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌠</div><div style="font-size:0.8rem;font-weight:600;">Meteor Shower</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🦋</div><div style="font-size:0.8rem;font-weight:600;">Fireflies</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌸</div><div style="font-size:0.8rem;font-weight:600;">Sakura Blossom</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">❄️</div><div style="font-size:0.8rem;font-weight:600;">Snow</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌧️</div><div style="font-size:0.8rem;font-weight:600;">Rain</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">⛈️</div><div style="font-size:0.8rem;font-weight:600;">Thunderstorm</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌫️</div><div style="font-size:0.8rem;font-weight:600;">Fog</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🍂</div><div style="font-size:0.8rem;font-weight:600;">Falling Leaves</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🎈</div><div style="font-size:0.8rem;font-weight:600;">Balloons</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🫧</div><div style="font-size:0.8rem;font-weight:600;">Bubbles</div></div>
+                    <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:0.75rem;padding:1rem;text-align:center;"><div style="font-size:1.75rem;margin-bottom:0.4rem;">🌊</div><div style="font-size:0.8rem;font-weight:600;">Ocean Waves</div></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- WebGPU Emoji Rain -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">🌧️ WebGPU Emoji Rain</h2>
+                <p style="color:var(--color-text-secondary); text-align:center; max-width:650px; margin:0 auto 2rem; line-height:1.7;">
+                    Der neue WebGPU Emoji Rain ersetzt das veraltete Emoji-Rain-Plugin durch eine GPU-beschleunigte Implementation mit massiv verbesserter Performance.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">⚡</span>
+                            <span class="feature-tag feature-tag-new">Neu</span>
+                        </div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">GPU-beschleunigt</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            WebGPU-basiertes Rendering für Emoji Rain. Hunderte von Emojis gleichzeitig ohne CPU-Last. Ersetzt das veraltete Canvas-basierte Emoji-Rain-Plugin.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎨</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Vollständig konfigurierbar</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Emoji-Auswahl, Fallgeschwindigkeit, Größe, Rotation und Dichte über das Dashboard konfigurierbar. Gift-Trigger für Emoji-Regen-Bursts.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎁</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Event-basierte Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Starte Emoji Rain durch TikTok-Events: Gifts, Follows, Subscriber-Milestones oder Chat-Commands. Anpassbare Burst-Größe pro Event-Typ.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- ClarityHUD & Goals -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">📊 ClarityHUD & Goals Overlay</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔍</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">ClarityHUD</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Transparentes HUD mit Echtzeit-Stream-Statistiken. Zeigt Viewer-Anzahl, Likes, Gifts, Chat-Aktivität und weitere Metriken direkt im Stream-Overlay.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Goals Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Visuelle Fortschrittsbalken für Stream-Ziele (Followers, Gifts, Likes). Anpassbares Design, gespeicherte Styles nach Browser-Refresh und korrekter Fortschritts-Tracking.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid rgba(18,161,22,0.3); border-radius:1rem; padding:1.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
+                            <span style="font-size:2rem;">🔧</span>
+                            <span class="feature-tag">Bugfix</span>
+                        </div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Goals – Verbesserungen</h3>
+                        <ul style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.8; padding-left:1.25rem; margin:0;">
+                            <li>Doppel-Zählung bei Gifts behoben</li>
+                            <li>Styles bleiben nach Browser-Refresh erhalten</li>
+                            <li>Verbesserte Zahlen-Formatierung</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Overlays aktivieren</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Mach deinen Stream visuell unwiderstehlich – kostenlos und einfach.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

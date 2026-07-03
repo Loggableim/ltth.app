@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        #animation-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .animation-item {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80vw;
+            max-height: 80vh;
+        }
+
+        .animation-item video,
+        .animation-item audio {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .animation-item.fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .animation-item.fade-out {
+            animation: fadeOut 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+
+        /* Debug info */
+        #debug-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            display: none;
+            pointer-events: none;
+        }
+
+        #debug-info.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="animation-container"></div>
+    <div id="debug-info"></div>
+
+    <script>
+        // Connect to Socket.IO
+        const socket = io();
+        const container = document.getElementById('animation-container');
+        const debugInfo = document.getElementById('debug-info');
+
+        // Queue for animations
+        let animationQueue = [];
+        let isPlaying = false;
+
+        // Debug mode (can be enabled via URL parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const debugMode = urlParams.get('debug') === 'true';
+
+        if (debugMode) {
+            debugInfo.classList.add('visible');
+            updateDebug('Animation overlay loaded (debug mode)');
+        }
+
+        function updateDebug(message) {
+            if (debugMode) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.textContent = `[${timestamp}] ${message}`;
+                console.log(`[Animation] ${message}`);
+            }
+        }
+
+        socket.on('connect', () => {
+            updateDebug('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            updateDebug('Disconnected from server');
+        });
+
+        // Listen for event animations (follow, subscribe, share)
+        socket.on('event:animation', (data) => {
+            updateDebug(`Event animation: ${data.eventType} - ${data.username}`);
+            console.log('Event animation received:', data);
+            queueAnimation(data);
+        });
+
+        // Listen for gift animations
+        socket.on('gift:animation', (data) => {
+            updateDebug(`Gift animation: ${data.giftName}`);
+            console.log('Gift animation received:', data);
+            queueAnimation(data);
+        });
+
+        function queueAnimation(data) {
+            animationQueue.push(data);
+            if (!isPlaying) {
+                playNextAnimation();
+            }
+        }
+
+        async function playNextAnimation() {
+            if (animationQueue.length === 0) {
+                isPlaying = false;
+                return;
+            }
+
+            isPlaying = true;
+            const animation = animationQueue.shift();
+
+            try {
+                await playAnimation(animation);
+            } catch (error) {
+                console.error('Error playing animation:', error);
+                updateDebug(`Error: ${error.message}`);
+            }
+
+            // Play next animation after a small delay
+            setTimeout(() => playNextAnimation(), 500);
+        }
+
+        async function playAnimation(data) {
+            const { url, volume, type, eventType, username, giftName } = data;
+
+            if (!url) {
+                console.warn('Animation URL is missing');
+                return;
+            }
+
+            updateDebug(`Playing: ${url}`);
+
+            // Validate and clamp volume between 0 and 1
+            const validVolume = Math.max(0, Math.min(1, volume || 1.0));
+
+            // Create animation element based on URL type
+            const isVideo = url.match(/\.(mp4|webm|mov)($|\?)/i);
+            const isAudio = url.match(/\.(mp3|wav|ogg)($|\?)/i);
+
+            let element;
+            let duration = 3000; // Default duration in milliseconds
+            const MAX_ANIMATION_DURATION = 30000; // Maximum 30 seconds
+
+            if (isVideo) {
+                element = document.createElement('video');
+                element.src = url;
+                element.volume = validVolume;
+                element.autoplay = true;
+            } else if (isAudio) {
+                element = document.createElement('audio');
+                element.src = url;
+                element.volume = validVolume;
+                element.autoplay = true;
+            } else {
+                // Assume it's a video if we can't determine
+                element = document.createElement('video');
+                element.src = url;
+                element.volume = validVolume;
+                element.autoplay = true;
+            }
+
+            // Create wrapper div
+            const wrapper = document.createElement('div');
+            wrapper.className = 'animation-item fade-in';
+            wrapper.appendChild(element);
+            container.appendChild(wrapper);
+
+            // Return a promise that resolves when animation is complete
+            return new Promise((resolve) => {
+                if (isVideo) {
+                    // For videos, wait for the video to end
+                    element.addEventListener('loadedmetadata', () => {
+                        duration = element.duration * 1000;
+                    });
+
+                    element.addEventListener('ended', () => {
+                        fadeOutAndRemove(wrapper, resolve);
+                    });
+
+                    element.addEventListener('error', (e) => {
+                        console.error('Video error:', e);
+                        updateDebug(`Video error: ${url}`);
+                        fadeOutAndRemove(wrapper, resolve);
+                    });
+                } else if (isAudio) {
+                    // For audio, wait for it to end
+                    element.addEventListener('loadedmetadata', () => {
+                        duration = element.duration * 1000;
+                    });
+
+                    element.addEventListener('ended', () => {
+                        fadeOutAndRemove(wrapper, resolve);
+                    });
+
+                    element.addEventListener('error', (e) => {
+                        console.error('Audio error:', e);
+                        updateDebug(`Audio error: ${url}`);
+                        fadeOutAndRemove(wrapper, resolve);
+                    });
+                } else {
+                    // Fallback: remove after default duration
+                    setTimeout(() => {
+                        fadeOutAndRemove(wrapper, resolve);
+                    }, duration);
+                }
+
+                // Safety timeout to prevent stuck animations
+                setTimeout(() => {
+                    if (container.contains(wrapper)) {
+                        fadeOutAndRemove(wrapper, resolve);
+                    }
+                }, MAX_ANIMATION_DURATION);
+            });
+        }
+
+        function fadeOutAndRemove(element, callback) {
+            element.classList.remove('fade-in');
+            element.classList.add('fade-out');
+
+            setTimeout(() => {
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+                if (callback) callback();
+            }, 500); // Match animation duration
+        }
+
+        // Test function (can be called from console)
+        window.testAnimation = function(url, volume = 1.0) {
+            queueAnimation({
+                url: url,
+                volume: volume,
+                type: 'test',
+                eventType: 'test',
+                username: 'TestUser'
+            });
+        };
+
+        updateDebug('Animation overlay ready');
+    </script>
+</body>
+</html>

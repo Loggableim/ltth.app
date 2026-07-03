@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Fixed viewport for OBS Browser Source - standard 1080p overlay dimensions -->
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>GCCE Overlay</title>
+    <link rel="stylesheet" href="/gcce/style.css">
+</head>
+<body>
+    <!-- Command Input Notifications -->
+    <div id="commandInputNotifications" class="command-input-notifications"></div>
+
+    <!-- Command Result Messages -->
+    <div id="commandMessages" class="command-messages"></div>
+
+    <!-- Help Panel -->
+    <div id="helpPanel" class="help-panel hidden">
+        <div class="help-content">
+            <h2 id="helpTitle">Available Commands</h2>
+            <div id="helpBody"></div>
+            <div class="help-footer">
+                <p>Type /help &lt;command&gt; for details</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Messages -->
+    <div id="errorContainer" class="error-container hidden">
+        <div class="error-content">
+            <span id="errorIcon">⚠️</span>
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        // ===== SOCKET.IO CONNECTION =====
+        const socket = io();
+        
+        // ===== MESSAGE DISPLAY =====
+        
+        /**
+         * Display a command input notification
+         */
+        function displayCommandInput(data) {
+            const container = document.getElementById('commandInputNotifications');
+            const notification = document.createElement('div');
+            notification.className = 'command-input-notification';
+            
+            // Create notification content
+            notification.innerHTML = `
+                <div class="command-input-content">
+                    <div class="command-input-icon">💬</div>
+                    <div class="command-input-details">
+                        <div class="command-input-user">${escapeHtml(data.username)}</div>
+                        <div class="command-input-text">${escapeHtml(data.command)}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Remove after duration
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+        
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        /**
+         * Display a command result message
+         */
+        function displayCommandResult(data) {
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+
+            if (data.message) {
+                showMessage(data.message, data.success ? 'success' : 'info');
+            }
+
+            // Handle specific data types
+            if (data.data) {
+                handleDataDisplay(data.data);
+            }
+        }
+
+        /**
+         * Show a message
+         */
+        function showMessage(message, type = 'info') {
+            const container = document.getElementById('commandMessages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `command-message ${type}`;
+            messageEl.textContent = message;
+            
+            container.appendChild(messageEl);
+            
+            // Animate in
+            setTimeout(() => {
+                messageEl.classList.add('show');
+            }, 10);
+            
+            // Remove after duration
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+                setTimeout(() => {
+                    messageEl.remove();
+                }, 500);
+            }, 5000);
+        }
+
+        /**
+         * Show an error message
+         */
+        function showError(errorText) {
+            const container = document.getElementById('errorContainer');
+            const message = document.getElementById('errorMessage');
+            
+            message.textContent = errorText;
+            container.classList.remove('hidden');
+            container.classList.add('show');
+            
+            setTimeout(() => {
+                container.classList.remove('show');
+                setTimeout(() => {
+                    container.classList.add('hidden');
+                }, 500);
+            }, 3000);
+        }
+
+        /**
+         * Handle specific data display types
+         */
+        function handleDataDisplay(data) {
+            switch (data.type) {
+                case 'help_list':
+                    showHelpPanel(data);
+                    break;
+                case 'help_detail':
+                    showCommandHelp(data.command);
+                    break;
+                case 'command_list':
+                    showCommandList(data.commands);
+                    break;
+            }
+        }
+
+        /**
+         * Show help panel with command categories
+         */
+        function showHelpPanel(data) {
+            const panel = document.getElementById('helpPanel');
+            const body = document.getElementById('helpBody');
+            
+            let html = '';
+            for (const [category, commands] of Object.entries(data.categories)) {
+                html += `<div class="help-category">`;
+                html += `<h3>${category}</h3>`;
+                html += `<ul>`;
+                for (const cmd of commands) {
+                    html += `<li><strong>/${cmd.name}</strong> - ${cmd.description}</li>`;
+                }
+                html += `</ul>`;
+                html += `</div>`;
+            }
+            
+            body.innerHTML = html;
+            panel.classList.remove('hidden');
+            panel.classList.add('show');
+            
+            setTimeout(() => {
+                panel.classList.remove('show');
+                setTimeout(() => {
+                    panel.classList.add('hidden');
+                }, 500);
+            }, 10000);
+        }
+
+        /**
+         * Show detailed help for a command
+         */
+        function showCommandHelp(command) {
+            const panel = document.getElementById('helpPanel');
+            const title = document.getElementById('helpTitle');
+            const body = document.getElementById('helpBody');
+            
+            title.textContent = `/${command.name}`;
+            body.innerHTML = `
+                <div class="command-detail">
+                    <p class="description">${command.description}</p>
+                    <p class="syntax"><strong>Syntax:</strong> ${command.syntax}</p>
+                    <p class="permission"><strong>Permission:</strong> ${command.permission}</p>
+                    <p class="plugin"><strong>Plugin:</strong> ${command.pluginId}</p>
+                </div>
+            `;
+            
+            panel.classList.remove('hidden');
+            panel.classList.add('show');
+            
+            setTimeout(() => {
+                panel.classList.remove('show');
+                setTimeout(() => {
+                    panel.classList.add('hidden');
+                }, 500);
+            }, 8000);
+        }
+
+        /**
+         * Show list of commands
+         */
+        function showCommandList(commands) {
+            const commandNames = commands.map(cmd => `/${cmd.name}`).join(', ');
+            showMessage(`Available commands: ${commandNames}`, 'info');
+        }
+
+        // ===== SOCKET EVENT HANDLERS =====
+
+        /**
+         * Handle command input notification
+         */
+        socket.on('gcce:command_input', (data) => {
+            console.log('GCCE command input:', data);
+            displayCommandInput(data);
+        });
+
+        /**
+         * Handle command result from GCCE
+         */
+        socket.on('gcce:command_result', (data) => {
+            console.log('GCCE command result:', data);
+            displayCommandResult(data);
+        });
+
+        /**
+         * Connection status
+         */
+        socket.on('connect', () => {
+            console.log('Connected to GCCE');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from GCCE');
+        });
+
+        // ===== INITIALIZATION =====
+        console.log('GCCE Overlay loaded');
+    </script>
+</body>
+</html>

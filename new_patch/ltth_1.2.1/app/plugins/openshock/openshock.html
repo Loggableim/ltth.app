@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShock Control Panel</title>
+    <link rel="stylesheet" href="/openshock/openshock.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div>
+                <h1>⚡ OpenShock Control Panel</h1>
+                <p class="text-muted header-subtitle">TikTok Live Integration mit OpenShock API</p>
+            </div>
+            <div id="connection-status">
+                <div class="status-badge status-disconnected">
+                    <span class="status-dot"></span>
+                    <span>Getrennt</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="dashboard">📊 Dashboard</button>
+            <button class="tab-button" data-tab="mapper">🔗 Event Mapper</button>
+            <button class="tab-button" data-tab="gifts">🎁 Gift Catalog</button>
+            <button class="tab-button" data-tab="safety">🛡️ Safety</button>
+            <button class="tab-button" data-tab="patterns">🎵 Patterns</button>
+            <button class="tab-button" data-tab="advanced">⚙️ Advanced</button>
+        </div>
+
+        <!-- Tab 1: Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Connection Status Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Connection Status</h2>
+                </div>
+                <div class="grid-3">
+                    <div class="stat-card">
+                        <div class="stat-label">API Status</div>
+                        <div class="stat-value" id="apiStatus">⚫</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Connection</div>
+                        <div class="stat-value" id="connectionState">Offline</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Devices</div>
+                        <div class="stat-value" id="deviceCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Shock Function -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ Test Shock Function</h2>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Device for Test</label>
+                    <select class="form-input" id="testShockDevice">
+                        <option value="">-- Select a device --</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-warning btn-lg" id="testShockButton" disabled>
+                        ⚡ Test Shock (1s, 100%)
+                    </button>
+                </div>
+                <p class="text-muted mt-2">
+                    <small>⚠️ This will send a 1-second shock at 100% intensity to the selected device.</small>
+                </p>
+            </div>
+
+            <!-- Devices List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Devices</h2>
+                    <button class="btn btn-primary btn-sm" id="refreshDevices">🔄 Refresh</button>
+                </div>
+                <div id="devicesList">
+                    <p class="text-muted text-center">No devices found. Configure API key first.</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Live Queue Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Live Queue</h2>
+                    </div>
+                    <div class="grid-3">
+                        <div class="stat-card">
+                            <div class="stat-label">Queue Length</div>
+                            <div class="stat-value" id="queueLength">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Processing</div>
+                            <div class="stat-value" id="queueProcessing">No</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Cmd/Min</div>
+                            <div class="stat-value" id="commandsPerMin">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Statistics</h2>
+                        <button class="btn btn-secondary btn-sm" id="resetStats">🔄 Reset</button>
+                    </div>
+                    <div class="grid-3">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Commands</div>
+                            <div class="stat-value" id="totalCommands">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-value" id="successRate">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Uptime</div>
+                            <div class="stat-value" id="uptime">0s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Commands Log -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Commands</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary btn-sm" id="clearLog">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportLog">📥 Export</button>
+                    </div>
+                </div>
+                <div class="log-container" id="commandLog">
+                    <p class="text-muted text-center">No commands executed yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Event Mapper -->
+        <div id="mapper" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Event Mappings</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="addMapping">➕ Add Mapping</button>
+                        <button class="btn btn-secondary" id="importMappings">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportMappings">📤 Export</button>
+                    </div>
+                </div>
+                <div id="mappingsList">
+                    <p class="text-muted text-center">No mappings configured. Click "Add Mapping" to create one.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Gift Catalog -->
+        <div id="gifts" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🎁 TikTok Gift Catalog</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="refreshGiftCatalog">🔄 Refresh Catalog</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Below are all available TikTok gifts. You can create Event Mappings to trigger shock patterns when specific gifts are received.</p>
+                    <div id="giftCatalogList">
+                        <p class="text-center text-muted">Loading gift catalog...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Safety -->
+        <div id="safety" class="tab-content">
+            <!-- Global Limits -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Global Safety Limits</h2>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Max Intensity</span>
+                            <span class="slider-value" id="globalMaxIntensityValue">100</span>
+                        </div>
+                        <input type="range" id="globalMaxIntensity" min="1" max="100" value="100">
+                    </div>
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Max Duration (ms)</span>
+                            <span class="slider-value" id="globalMaxDurationValue">30000</span>
+                        </div>
+                        <input type="range" id="globalMaxDuration" min="300" max="30000" step="100" value="30000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Commands per Minute</label>
+                        <input type="number" class="form-input" id="globalMaxCommandsPerMin" value="60" min="1" max="600">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cooldown between Commands (ms)</label>
+                        <input type="number" class="form-input" id="globalCooldown" value="1000" min="0" step="100">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="saveGlobalLimits">💾 Save Global Limits</button>
+            </div>
+
+            <!-- Device Limits -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Per-Device Limits</h2>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Device</th>
+                            <th>Max Intensity</th>
+                            <th>Max Duration (ms)</th>
+                            <th>Cooldown (ms)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deviceLimitsTable">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No devices configured</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- User Limits -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">User Restrictions</h2>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Min Follower Age (days)</label>
+                        <input type="number" class="form-input" id="minFollowerAge" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Commands per User (per session)</label>
+                        <input type="number" class="form-input" id="maxCommandsPerUser" value="10" min="1">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Whitelist (usernames, comma separated)</label>
+                        <input type="text" class="form-input" id="whitelist" placeholder="user1, user2, user3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Blacklist (usernames, comma separated)</label>
+                        <input type="text" class="form-input" id="blacklist" placeholder="baduser1, baduser2">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="saveUserLimits">💾 Save User Limits</button>
+            </div>
+
+            <!-- Emergency Stop -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Emergency Controls</h2>
+                </div>
+                <div class="text-center">
+                    <button class="btn btn-danger btn-lg" id="emergencyStop">🛑 EMERGENCY STOP</button>
+                    <p class="text-muted mt-2">Immediately stops all commands and pauses the queue</p>
+                    <div id="emergencyStatus" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Patterns -->
+        <div id="patterns" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Shock Patterns</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="addPattern">➕ Add Pattern</button>
+                        <button class="btn btn-secondary" id="importPatterns">📥 Import</button>
+                        <button class="btn btn-secondary" id="exportPatterns">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Preset Patterns -->
+                <div class="mb-3">
+                    <h3 class="pattern-section-title">Preset Patterns</h3>
+                    <div class="grid-3" id="presetPatternsList">
+                        <!-- Preset patterns will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Custom Patterns -->
+                <div>
+                    <h3 class="pattern-section-title">Custom Patterns</h3>
+                    <div class="grid-3" id="customPatternsList">
+                        <p class="text-muted text-center">No custom patterns created yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Curve Generator -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Pattern Curve Generator</h2>
+                </div>
+                <p class="text-muted mb-3">
+                    Create custom patterns by drawing intensity curves over time. Each action type (shock, vibrate, beep) has a unique color for easy identification.
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-lg" id="openCurveEditor">🎨 Open Visual Curve Editor</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Advanced -->
+        <div id="advanced" class="tab-content">
+            <!-- API Settings -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">OpenShock API Settings</h2>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-input" id="apiKey" placeholder="Enter your OpenShock API key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Base URL</label>
+                    <input type="text" class="form-input" id="baseUrl" value="https://api.openshock.app" placeholder="https://api.openshock.app">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="saveApiSettings">💾 Save Settings</button>
+                    <button class="btn btn-secondary" id="testConnection">🔌 Test Connection</button>
+                </div>
+            </div>
+
+            <!-- Queue Management -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Queue Management</h2>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-warning" id="pauseQueue">⏸️ Pause Queue</button>
+                    <button class="btn btn-success" id="resumeQueue">▶️ Resume Queue</button>
+                    <button class="btn btn-danger" id="clearQueue">🗑️ Clear Queue</button>
+                </div>
+            </div>
+
+            <!-- Debug Log -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Debug Log</h2>
+                    <div class="btn-group">
+                        <select class="form-select form-select-auto" id="logFilter">
+                            <option value="all">All</option>
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" id="clearDebugLog">🗑️ Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="exportDebugLog">📥 Export</button>
+                    </div>
+                </div>
+                <div class="log-container" id="debugLog">
+                    <p class="text-muted text-center">Debug log is empty.</p>
+                </div>
+            </div>
+
+            <!-- Detailed Statistics -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Detailed Statistics</h2>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailedStatsTable">
+                        <tr>
+                            <td>Total Events Received</td>
+                            <td id="statTotalEvents">0</td>
+                        </tr>
+                        <tr>
+                            <td>Total Commands Sent</td>
+                            <td id="statTotalCommands">0</td>
+                        </tr>
+                        <tr>
+                            <td>Successful Commands</td>
+                            <td id="statSuccessfulCommands">0</td>
+                        </tr>
+                        <tr>
+                            <td>Failed Commands</td>
+                            <td id="statFailedCommands">0</td>
+                        </tr>
+                        <tr>
+                            <td>Average Response Time</td>
+                            <td id="statAvgResponseTime">0ms</td>
+                        </tr>
+                        <tr>
+                            <td>Commands in Queue</td>
+                            <td id="statQueueSize">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Mapping Editor -->
+    <div id="mappingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="mappingModalTitle">Add Event Mapping</h2>
+                <button class="modal-close" id="closeMappingModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Mapping Name</label>
+                    <input type="text" class="form-input" id="mappingName" placeholder="e.g., Rose Gift Shock">
+                </div>
+
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="mappingEnabled" checked>
+                        <label class="form-label form-label-no-margin">Enabled</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Event Type</label>
+                    <select class="form-select" id="mappingEventType">
+                        <option value="gift">Gift</option>
+                        <option value="chat">Chat Message</option>
+                        <option value="follow">Follow</option>
+                        <option value="share">Share</option>
+                        <option value="like">Like</option>
+                        <option value="subscribe">Subscribe</option>
+                    </select>
+                </div>
+
+                <!-- Conditions (dynamic based on event type) -->
+                <div id="mappingConditions">
+                    <div class="form-group" id="conditionGift">
+                        <label class="form-label">Gift Name</label>
+                        <select class="form-select" id="mappingGiftNameSelect">
+                            <option value="">All Gifts</option>
+                        </select>
+                        <small class="form-help-text">Or enter custom name below:</small>
+                        <input type="text" class="form-input" id="mappingGiftName" placeholder="e.g., Rose, TikTok (leave empty to use selection above)">
+                    </div>
+                    <div class="form-group" id="conditionMinCoins">
+                        <label class="form-label">Min Coins</label>
+                        <input type="number" class="form-input" id="mappingMinCoins" value="0" min="0">
+                    </div>
+                    <div class="form-group hidden" id="conditionMessagePattern">
+                        <label class="form-label">Message Pattern (regex)</label>
+                        <input type="text" class="form-input" id="mappingMessagePattern" placeholder="e.g., ^!shock">
+                    </div>
+                </div>
+
+                <!-- Action Configuration -->
+                <div class="form-group">
+                    <label class="form-label">Action Type</label>
+                    <select class="form-select" id="mappingActionType">
+                        <option value="shock">Shock</option>
+                        <option value="vibrate">Vibrate</option>
+                        <option value="sound">Sound</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Device</label>
+                    <select class="form-select" id="mappingDevice">
+                        <option value="">Select Device...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="slider-label">
+                        <span class="form-label">Intensity</span>
+                        <span class="slider-value" id="mappingIntensityValue">50</span>
+                    </div>
+                    <input type="range" id="mappingIntensity" min="1" max="100" value="50">
+                </div>
+
+                <div class="form-group">
+                    <div class="slider-label">
+                        <span class="form-label">Duration (ms)</span>
+                        <span class="slider-value" id="mappingDurationValue">1000</span>
+                    </div>
+                    <input type="range" id="mappingDuration" min="300" max="30000" step="100" value="1000">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Pattern (optional)</label>
+                    <div class="pattern-selector-group">
+                        <select class="form-select" id="mappingPattern">
+                            <option value="">None (Single pulse)</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-secondary" id="createPatternFromMapping" title="Create new pattern">
+                            ➕
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" id="editPatternFromMapping" title="Edit selected pattern" style="display: none;">
+                            ✏️
+                        </button>
+                    </div>
+                    <div id="mappingPatternPreview" class="pattern-preview-box" style="display: none;">
+                        <div class="pattern-preview-header">
+                            <strong>Pattern Steps:</strong>
+                        </div>
+                        <div id="mappingPatternSteps" class="pattern-steps-list">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cooldowns -->
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">Global Cooldown (ms)</label>
+                        <input type="number" class="form-input" id="mappingGlobalCooldown" value="0" min="0" step="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Per-Device Cooldown (ms)</label>
+                        <input type="number" class="form-input" id="mappingDeviceCooldown" value="0" min="0" step="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Per-User Cooldown (ms)</label>
+                        <input type="number" class="form-input" id="mappingUserCooldown" value="0" min="0" step="100">
+                    </div>
+                </div>
+
+                <!-- Safety Overrides -->
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Max Intensity Override</label>
+                        <input type="number" class="form-input" id="mappingMaxIntensity" value="100" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Duration Override (ms)</label>
+                        <input type="number" class="form-input" id="mappingMaxDuration" value="30000" min="300" step="100">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveMappingBtn">💾 Save Mapping</button>
+                <button class="btn btn-secondary" id="cancelMappingBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Pattern Editor -->
+    <div id="patternModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="patternModalTitle">Add Pattern</h2>
+                <button class="modal-close" id="closePatternModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Pattern Name</label>
+                    <input type="text" class="form-input" id="patternName" placeholder="e.g., Escalating Shock">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-input" id="patternDescription" placeholder="Brief description of this pattern">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Steps</label>
+                    <div class="step-list" id="patternSteps">
+                        <!-- Steps will be rendered here -->
+                    </div>
+                    <button class="btn btn-secondary btn-sm mt-2" id="addPatternStep">➕ Add Step</button>
+                </div>
+
+                <!-- Step Form (for adding/editing) -->
+                <div class="card mt-3 step-form-hidden" id="stepForm">
+                    <div class="card-header">
+                        <h3 class="modal-title-small">Step Configuration</h3>
+                    </div>
+                    <div class="modal-body-padding">
+                        <div class="form-group">
+                            <label class="form-label">Action Type</label>
+                            <select class="form-select" id="stepType">
+                                <option value="shock">Shock</option>
+                                <option value="vibrate">Vibrate</option>
+                                <option value="sound">Sound</option>
+                                <option value="pause">Pause</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div class="slider-label">
+                                <span class="form-label">Intensity</span>
+                                <span class="slider-value" id="stepIntensityValue">50</span>
+                            </div>
+                            <input type="range" id="stepIntensity" min="1" max="100" value="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration (ms)</label>
+                            <input type="number" class="form-input" id="stepDuration" value="500" min="100" step="100">
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" id="saveStep">💾 Save Step</button>
+                            <button class="btn btn-secondary btn-sm" id="cancelStep">❌ Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Timeline -->
+                <div class="form-group mt-3">
+                    <label class="form-label">Pattern Preview</label>
+                    <div class="pattern-timeline" id="patternPreview">
+                        <p class="text-muted text-center pattern-timeline-text">Add steps to see preview</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="savePatternBtn">💾 Save Pattern</button>
+                <button class="btn btn-secondary" id="cancelPatternBtn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Visual Curve Editor -->
+    <div id="curveEditorModal" class="modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2 class="modal-title">🎨 Visual Pattern Curve Editor</h2>
+                <button class="modal-close" id="closeCurveEditor">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Action Type Selector -->
+                <div class="form-group">
+                    <label class="form-label">Action Type</label>
+                    <div class="btn-group">
+                        <button class="btn btn-action active" data-action="shock">⚡ Shock</button>
+                        <button class="btn btn-action" data-action="vibrate">📳 Vibrate</button>
+                        <button class="btn btn-action" data-action="sound">🔔 Beep</button>
+                    </div>
+                    <p class="text-muted form-help-text">Select the action type for your pattern. The color will change based on your selection.</p>
+                </div>
+
+                <!-- Canvas -->
+                <div class="form-group">
+                    <label class="form-label">Draw Your Pattern</label>
+                    <div class="curve-canvas-container">
+                        <canvas id="curveCanvas"></canvas>
+                        <div class="curve-info">
+                            <span>Intensity: <strong id="currentIntensity">0</strong>%</span>
+                            <span>Time: <strong id="currentTime">0</strong>ms</span>
+                        </div>
+                    </div>
+                    <p class="text-muted form-help-text">Click and drag on the canvas to draw your intensity curve over time.</p>
+                </div>
+
+                <!-- Controls Row 1 -->
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Pattern Name</label>
+                        <input type="text" class="form-input" id="curvePatternName" placeholder="My Custom Pattern">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Template Curves</label>
+                        <select class="form-select" id="curveTemplate">
+                            <option value="custom">Custom (Draw your own)</option>
+                            <option value="linear-up">Linear Ramp Up</option>
+                            <option value="linear-down">Linear Ramp Down</option>
+                            <option value="exponential-up">Exponential Ramp Up</option>
+                            <option value="exponential-down">Exponential Ramp Down</option>
+                            <option value="sine">Sine Wave</option>
+                            <option value="pulse">Pulse Wave</option>
+                            <option value="sawtooth">Sawtooth Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Controls Row 2: Intensity Range -->
+                <div class="grid-2">
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Min Intensity</span>
+                            <span class="slider-value" id="minIntensityValue">10%</span>
+                        </div>
+                        <input type="range" id="minIntensity" min="0" max="100" value="10" step="5">
+                    </div>
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Max Intensity</span>
+                            <span class="slider-value" id="maxIntensityValue">80%</span>
+                        </div>
+                        <input type="range" id="maxIntensity" min="0" max="100" value="80" step="5">
+                    </div>
+                </div>
+
+                <!-- Controls Row 3: Timing -->
+                <div class="grid-3">
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Step Duration</span>
+                            <span class="slider-value" id="stepDurationValue">500ms</span>
+                        </div>
+                        <input type="range" id="stepDurationSlider" min="100" max="2000" value="500" step="50">
+                    </div>
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Step Delay</span>
+                            <span class="slider-value" id="stepDelayValue">100ms</span>
+                        </div>
+                        <input type="range" id="stepDelaySlider" min="0" max="1000" value="100" step="50">
+                    </div>
+                    <div class="form-group">
+                        <div class="slider-label">
+                            <span class="form-label">Resolution (Steps)</span>
+                            <span class="slider-value" id="resolutionValue">20</span>
+                        </div>
+                        <input type="range" id="resolutionSlider" min="5" max="50" value="20" step="1">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group mb-3">
+                    <button class="btn btn-secondary" id="applyTemplate">📋 Apply Template</button>
+                    <button class="btn btn-secondary" id="clearCanvas">🗑️ Clear Canvas</button>
+                    <button class="btn btn-secondary" id="undoStep">↩️ Undo</button>
+                </div>
+
+                <!-- Preview Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="modal-title-small">Pattern Statistics</h3>
+                    </div>
+                    <div class="grid-4">
+                        <div class="stat-card">
+                            <div class="stat-label">Steps</div>
+                            <div class="stat-value" id="stepCount">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Duration</div>
+                            <div class="stat-value" id="totalDuration">0ms</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Avg Intensity</div>
+                            <div class="stat-value" id="avgIntensity">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Peak Intensity</div>
+                            <div class="stat-value" id="peakIntensity">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Preview -->
+                <div class="form-group mt-3">
+                    <label class="form-label">Timeline Preview</label>
+                    <div id="curveTimelinePreview" class="pattern-timeline">
+                        <div class="timeline-empty">Draw on the canvas above to create your pattern</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveCurvePattern">💾 Save Pattern</button>
+                <button class="btn btn-info" id="previewCurvePattern">👁️ Preview</button>
+                <button class="btn btn-secondary" id="cancelCurveEditor">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- OpenShock UI JavaScript -->
+    <script src="/openshock/openshock.js"></script>
+</body>
+</html>

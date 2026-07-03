@@ -1,0 +1,22 @@
+{
+  "id": "weather-control",
+  "name": "Weather Control",
+  "version": "1.0.0",
+  "description": "Professional weather effects plugin with rain, snow, storm, fog, thunder, sunbeam, and glitch cloud effects for TikTok Live overlays",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Professional weather effects plugin with rain, snow, storm, fog, thunder, sunbeam, and glitch cloud effects for TikTok Live overlays. Features customizable intensity and layering.",
+    "de": "Professionelles Wettereffekt-Plugin mit Regen, Schnee, Sturm, Nebel, Donner, Sonnenstrahl und Glitch-Cloud-Effekten für TikTok-Live-Overlays. Bietet anpassbare Intensität und Layering.",
+    "es": "Plugin profesional de efectos climáticos con lluvia, nieve, tormenta, niebla, trueno, rayo de sol y efectos de nube con falla para overlays de TikTok Live. Presenta intensidad y capas personalizables.",
+    "fr": "Plugin d'effets météorologiques professionnel avec pluie, neige, tempête, brouillard, tonnerre, rayon de soleil et effets de nuage glitch pour overlays TikTok Live. Comprend intensité et superposition personnalisables."
+  }
+}

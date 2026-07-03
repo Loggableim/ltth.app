@@ -1,0 +1,336 @@
+{
+    "lang": "en",
+    "nav": {
+        "home": "Home",
+        "features": "Features",
+        "plugins": "Plugins",
+        "gameEngine": "Game Engine",
+        "docs": "Docs",
+        "download": "Download",
+        "changelog": "Changelog",
+        "community": "Community",
+        "faq": "FAQ",
+        "support": "Support",
+        "launcher": "Launcher",
+        "vdoninja": "VDO.Ninja",
+        "viewerXp": "Viewer XP",
+        "alerts": "Alert System",
+        "goals": "Goals System"
+    },
+    "features": {
+        "animazingpal": "AnimazingPal Brain Engine",
+        "tts": "Text-to-Speech Engine",
+        "overlays": "Overlays & HUD",
+        "osc": "OSC / VRChat Bridge",
+        "flowEngine": "Flow Engine",
+        "soundboard": "Soundboard Pro",
+        "multicam": "Multi-Cam Switcher",
+        "security": "Security",
+        "gameEngine": "Game Engine",
+        "pluginSystem": "Plugin System",
+        "vdoninja": "VDO.Ninja Multi-Guest",
+        "viewerXp": "Viewer XP System",
+        "alerts": {
+            "title": "Alert System",
+            "description": "Fully customizable alerts for Gifts, Follows, Shares, Likes and Subscriptions with sound, text and image/GIF combinations."
+        },
+        "goals": {
+            "title": "Goals System",
+            "description": "4 separate goal trackers for Likes, Followers, Subs, Coins with OBS Browser Source and auto-modes."
+        },
+        "slot_machine": {
+            "title": "Slot Machine",
+            "description": "3-reel slot machine with multi-machine support, custom sounds, superfan recognition and 15+ API endpoints."
+        }
+    },
+    "common": {
+        "learnMore": "Learn more",
+        "download": "Download now",
+        "getStarted": "Get Started",
+        "viewDocs": "Documentation",
+        "openSource": "Open Source",
+        "free": "Free",
+        "windowsOnly": "Available for Windows",
+        "version": "Version",
+        "comingSoon": "Coming Soon",
+        "new": "New",
+        "back": "Back",
+        "viewAll": "View all"
+    },
+    "home": {
+        "hero": {
+            "title": "Professional TikTok LIVE Streaming Solution",
+            "subtitle": "PupCid's Little TikTool Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create custom alerts, play sounds automatically, and automate your stream with powerful flows. Modular plugin system, OBS integration, VRChat OSC support, and more. Completely local, free, and open source.",
+            "downloadCta": "Download Now",
+            "featuresCta": "Explore Features",
+            "statsUsers": "Active Streamers",
+            "statsPlugins": "Plugins",
+            "statsStars": "GitHub Stars",
+            "stat1": {
+                "value": "100%",
+                "label": "Free & Open Source"
+            },
+            "stat2": {
+                "value": "Local",
+                "label": "No Cloud Dependency"
+            },
+            "stat3": {
+                "value": "Realtime",
+                "label": "Live Event Processing"
+            },
+            "visualCard1": "Realtime Events",
+            "visualCard2": "Live Synchronization",
+            "visualCard3": "Premium Features"
+        },
+        "footer": {
+            "description": "PupCid's Little TikTool Helper – The professional TikTok LIVE streaming solution.",
+            "product": "Product",
+            "resources": "Resources",
+            "community": "Community",
+            "support": "Support",
+            "supportDev": "Support the Development",
+            "legal": "Legal",
+            "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. All rights reserved.",
+            "trademark": "Not an official TikTok product."
+        },
+        "meta": {
+            "home": {
+                "title": "PupCid's Little TikTool Helper – Professional TikTok LIVE Streaming Solution",
+                "description": "Real-time events, TTS with 75+ voices, soundboard, plugin system, OBS integration and game engine for TikTok LIVE streamers. Free and Open Source."
+            },
+            "features": {
+                "title": "Features – PupCid's Little TikTool Helper",
+                "description": "Discover all features: AnimazingPal Brain Engine, Game Engine, TTS, Flow Engine, Soundboard Pro, Overlays and more."
+            },
+            "download": {
+                "title": "Download – PupCid's Little TikTool Helper",
+                "description": "Download PupCid's Little TikTool Helper for free. Available for Windows 10/11."
+            }
+        },
+        "disclaimer": {
+            "title": "Important Note on Independence",
+            "text": "<strong>PupCid's Little TikTool Helper</strong> is an independent analysis and creator tool. There is no commercial, partnership, or technical connection to TikTok or ByteDance. <strong>TikTok™</strong> is a registered trademark of ByteDance Ltd. All brand names are used solely for compatibility and description purposes."
+        }
+        "features": {
+        "title": "Why ltth.app for your stream?",
+        "subtitle": "Professional streaming features specifically designed for TikTok LIVE",
+        "card1": {
+            "title": "AnimazingPal Brain Engine 🧠",
+            "desc": "AI-powered memory and personality system for VTuber avatars with GPT-4o-mini / GPT-5 Nano, semantic vector search and 15+ API endpoints."
+        },
+        "card2": {
+            "title": "Realtime TikTok LIVE Connection",
+            "desc": "Connect live with your TikTok stream. Receive gifts, comments, follows, shares, and likes in real-time with no delay. Auto-reconnect on connection loss."
+        },
+        "card3": {
+            "title": "Text-to-Speech System",
+            "desc": "75+ TikTok voices and 30+ Google Cloud voices. User-specific voice mapping, automatic TTS for chat, blacklist function and adjustable volume/speed settings."
+        },
+        "card4": {
+            "title": "Customizable Alert System",
+            "desc": "Create custom alerts for all event types. Sound + Text + Image/GIF support, template system with variables and minimum coin filter for professional stream presentations."
+        },
+        "card5": {
+            "title": "Soundboard with 100,000+ Sounds",
+            "desc": "Access to MyInstants database. Gift-specific sounds with icons, event sounds for follow/subscribe/share, like-threshold system and sound picker with search and favorites."
+        },
+        "card6": {
+            "title": "Goals & Overlays",
+            "desc": "4 separate goals (likes, followers, subs, coins) with individual browser source overlays. Customizable styles, colors, fonts and auto-modes on goal achievement for your OBS integration."
+        },
+        "card7": {
+            "title": "Event Automation (Flows)",
+            "desc": "If-then automations without programming. 6 trigger types, 6 action types, complex conditions with 8 operators. Trigger TTS, alerts, sounds, webhooks and more."
+        },
+        "card8": {
+            "title": "OBS Integration",
+            "desc": "Transparent full-HD overlay (1920x1080) for your streams. HUD configuration via drag & drop, separate goal overlays and full browser source compatibility."
+        },
+        "card9": {
+            "title": "User Profile System",
+            "desc": "Multiple databases for different streaming setups. Profile switching, backup function and separate configurations for different stream formats."
+        },
+        "card10": {
+            "title": "Slot Machine",
+            "desc": "Slot Machine, Wheel of Fortune, Plinko, Connect 4 and Chess – all driven by TikTok gifts. Token system, superfan detection, OBS overlay and 7 unique sounds."
+        },
+        "card11": {
+            "title": "Weather Engine",
+            "desc": "13 procedural weather effects including Aurora, Fireflies, Meteors, Sakura and WebGPU Emoji Rain. Adaptive FPS, GPU-optimized – live on your OBS stream."
+        },
+        "card12": {
+            "title": "Music Bot",
+            "desc": "YouTube search via yt-dlp (no Python required), Spotify/SoundCloud oEmbed, vote-skip, 3 OBS overlay designs and superfan-only requests."
+        },
+        "card13": {
+            "title": "Game Engine",
+            "desc": "Slot Machine, Wheel of Fortune, Quiz, Predictions and Token Games – fully integrated with TikTok events."
+        },
+        "card14": {
+            "title": "VRChat OSC Integration",
+            "desc": "VRChat/OpenShock integration via OSC protocol – control avatars and hardware via TikTok events."
+        },
+        "card15": {
+            "title": "Plugin System",
+            "desc": "Modular extension system with hot-loading. 30+ pre-installed plugins (TTS, Soundboard, Multi-Cam, OSC-Bridge, VDO.Ninja, Emoji Rain, Topboard). Create your own plugins with the plugin API."
+        },
+        "cta": "View All Features"
+    },
+    "plugins": {
+        "title": "Expandable Plugin System",
+        "subtitle": "Modular architecture with hot-loading and 30+ pre-installed plugins",
+        "card1": {
+            "title": "TTS Plugin",
+            "desc": "75+ TikTok voices & 30+ Google Cloud voices. User-voice mappings, auto-TTS, blacklist filter."
+        },
+        "card2": {
+            "title": "Soundboard Plugin",
+            "desc": "100,000+ sounds via MyInstants. Gift mappings, event sounds, like-threshold system."
+        },
+        "card3": {
+            "title": "Multi-Cam Switcher",
+            "desc": "OBS scenes via gifts/chat control. WebSocket v5, chat commands, macro system."
+        },
+        "card4": {
+            "title": "OSC-Bridge",
+            "desc": "VRChat integration via OSC. Avatar control, bidirectional communication, latency < 50ms."
+        },
+        "card5": {
+            "title": "VDO.Ninja Plugin",
+            "desc": "Multi-guest streaming. Room management, guest management, layout control."
+        },
+        "card6": {
+            "title": "Topboard Plugin",
+            "desc": "Top gifters, longest streaks, recent donors with real-time updates."
+        },
+        "card7": {
+            "title": "Emoji Rain",
+            "desc": "Emoji rain effect on gifts. Gift-to-emoji mappings, animation speed/density."
+        },
+        "card8": {
+            "title": "Custom",
+            "desc": "Create your own plugins with the plugin API. ZIP upload, hot-loading, admin UI."
+        },
+        "cta": "Explore Plugin System"
+    },
+    "obs": {
+        "title": "OBS Overlay Integration",
+        "subtitle": "Transparent full-HD overlay (1920x1080) for professional streams"
+    },
+    "dev": {
+        "title": "For Developers & Power-Users",
+        "subtitle": "Open source, fully documented, extensible",
+        "feature1": {
+            "title": "REST-API & WebSocket",
+            "desc": "Complete API documentation. Express routes, Socket.io events, plugin API."
+        },
+        "feature2": {
+            "title": "Open Source (MIT)",
+            "desc": "Fully open source. Transparent code, community-driven, fork-friendly."
+        },
+        "feature3": {
+            "title": "Comprehensive Documentation",
+            "desc": "Wiki with architecture, plugin docs, API reference, FAQ & troubleshooting."
+        },
+        "feature4": {
+            "title": "Modern Architecture",
+            "desc": "Node.js, Express, Socket.io, SQLite. Event-driven, modular plugin system."
+        },
+        "feature5": {
+            "title": "GitHub",
+            "desc": "GitHub repository, issues, PRs."
+        },
+        "feature6": {
+            "title": "Custom Branding",
+            "desc": "HUD configurator, custom alerts, own sounds, styles, colors & fonts."
+        }
+    },
+    "screenshots": {
+        "title": "Discover the Interface",
+        "subtitle": "Professional tools with intuitive operation for every streamer",
+        "dashboard": {
+            "title": "Dashboard",
+            "desc": "Central control over all features. Live statistics, TikTok connection status, quick actions and direct access to all tools and plugins."
+        },
+        "soundboard": {
+            "title": "Soundboard",
+            "desc": "Gift-to-sound mappings with MyInstants integration. Over 100,000 sounds immediately available."
+        },
+        "flows": {
+            "title": "Flows",
+            "desc": "If-then automations visually without code. Trigger TTS, alerts and more."
+        },
+        "tts": {
+            "title": "TTS",
+            "desc": "75+ TikTok voices and 30+ Google Cloud voices. User-specific voice mapping, automatic TTS for chat, blacklist function and adjustable volume/speed settings."
+        },
+        "goals": {
+            "title": "Goals",
+            "desc": "4 separate goals (likes, followers, subs, coins) with individual browser source overlays. Customizable styles, colors, fonts and auto-modes on goal achievement for your OBS integration."
+        }
+    },
+    "steps": {
+        "title": "Start in 3 Steps",
+        "step1": {
+            "title": "Download & Installation",
+            "desc": "Download the LTTH Cloud Launcher and install the tool on your Windows PC. Everything will be set up automatically."
+        },
+        "step2": {
+            "title": "Connect with TikTok",
+            "desc": "Open the dashboard, enter your TikTok username and start your LIVE stream. The connection is automatic."
+        },
+        "step3": {
+            "title": "Set up OBS & Stream",
+            "desc": "Add the browser source URL to OBS and enjoy professional stream features with alerts, TTS and more in real-time!"
+        }
+    },
+    "demo": {
+        "title": "See it in Action",
+        "subtitle": "Experience ltth.app in under 1 minute – from setup to live stream",
+        "comingSoon": "Demo video coming soon!",
+        "cta": "Read Documentation"
+    },
+    "community": {
+        "title": "Community",
+        "subtitle": "Join TikTok LIVE streamers worldwide",
+        "stars": {
+            "title": "GitHub Stars",
+            "desc": "Open source community on GitHub"
+        },
+        "plugins": {
+            "title": "Plugins",
+            "desc": "Multiple plugins for TikTok LIVE streams. Extensions for every use case."
+        },
+        "free": {
+            "title": "Free",
+            "desc": "All data stays on your computer. No cloud connection, no login data required, no data collection. Open source and fully transparent."
+        }
+    },
+    "devCta": {
+        "title": "Developers? Create your own plugin!",
+        "subtitle": "Use the plugin API to extend ltth.app. Publish your plugins and share them with the community."
+    },
+    "support": {
+        "title": "Support the Project",
+        "subtitle": "ltth.app is 100% free and open source. You can support the project in various ways:",
+        "star": {
+            "title": "GitHub Star",
+            "desc": "Give the project a star on GitHub"
+        },
+        "feedback": {
+            "title": "Give Feedback",
+            "desc": "Share your experiences and improvement suggestions"
+        },
+        "contribute": {
+            "title": "Contribute",
+            "desc": "Contribute code or create your own plugins"
+        }
+    },
+    "cta": {
+        "title": "Ready for professional TikTok LIVE streaming?",
+        "desc": "Join the growing community that has already taken their streams to the next level with PupCid's Little TikTool Helper. 100% free, open source and fully local.",
+        "downloadCta": "Download Now",
+        "docsCta": "Read Documentation",
+        "available": "Available for Windows"
+    }
+}

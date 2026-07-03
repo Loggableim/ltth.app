@@ -1,0 +1,22 @@
+[
+  {
+    "name": "01_homepage_hero",
+    "url": "http://localhost:8080/index-en.html",
+    "description": "Homepage - Professional TikTok LIVE streaming solution with hero section, feature highlights, plugin overview, and complete product showcase showing the updated PupCid's Little TikTool Helper branding"
+  },
+  {
+    "name": "02_features_page",
+    "url": "http://localhost:8080/features-en.html",
+    "description": "Features Page - Comprehensive overview of all core features including TikTok LIVE integration, Text-to-Speech with 75+ voices, Alert System, Soundboard, Goals, Event Automation, and OBS Integration"
+  },
+  {
+    "name": "03_plugins_page",
+    "url": "http://localhost:8080/plugins-en.html",
+    "description": "Plugins Page - Extensible plugin system with 20+ pre-installed plugins including TTS, Soundboard, Multi-Cam Switcher, OSC-Bridge, VDO.Ninja, StreamAlchemy, Leaderboard, and more"
+  },
+  {
+    "name": "04_download_page",
+    "url": "http://localhost:8080/download-en.html",
+    "description": "Download Page - Installation guide for Windows, macOS, and Linux with system requirements, step-by-step instructions, and support links"
+  }
+]

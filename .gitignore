@@ -1,85 +1,82 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 app/node_modules/
 
-# Build outputs
-dist/
+# Testing
+coverage/
+app/test/*.db
+app/test/*.sqlite
+
+# Production
 build/
+dist/
+
+# Logs
 *.log
-
-# Build artifacts (Go executables in build-src)
-# Ignore all exe files in build-src (these are build outputs)
-build-src/*.exe
-
-# Test binaries
-build-src/*_test
-build-src/*.test
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Environment
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+app/.env
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
+# Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Test coverage
-coverage/
+# Temporary
+/tmp/
+.tmp/
+tmp/
 
-# User data
-app/user_data/
-app/user_configs/
+# Backup files
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts (Go launcher)
+build-src/*.exe
+build-src/*_test
+build-src/*.test
+
+# Runtime data
+runtime/
 app/data/
-
-# Logs and runtime files
-logs/
-app/logs/
-app/jest-results.json
-app/jest-run.txt
-app/jest-stderr.txt
-app/npm-test-run.txt
-app/plugins/plugins_state.json
 app/plugins/*/data/
+
+# Puppeteer / user data (runtime artifacts)
+app/user_data/
+
+# Temp workspace artifacts
+naked/
+naked.zip
+tmp_*
+tmp-*
+
+# Workspace runtime files
 .ltth_port
 obs-overlay-wrapper.html
-
-# Database files
-*.db
-*.sqlite
-*.db-journal
-
-# Test artifacts
-app/test_user_configs/
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-*~
-tmp_*
 1390
-
-# NSIS Installer Build
-build-src/assets/node/
-build-src/installer/*.exe
-LTTH-Setup-*.exe
-launcher.exe~
-test-quiz-timing.js
-test-new-voices.js
-
-# Local plugin secrets (NEVER commit real API keys)
-# Deepgram STT-Ticker
-app/plugins/stt-ticker/data/
-# TTS-Plugin Fish.audio key (wenn separat gespeichert)
-app/plugins/tts/data/
-# Local config overrides
-*.local.json
-
-# Local dev scripts
-app/start-server.sh

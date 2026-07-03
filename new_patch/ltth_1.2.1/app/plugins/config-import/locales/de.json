@@ -1,0 +1,39 @@
+{
+  "config-import": {
+    "title": "Konfiguration importieren",
+    "description": "Importieren Sie Ihre Einstellungen aus einer alten Installation",
+    "selectPath": "Alten Installationspfad auswählen",
+    "pathPlaceholder": "z.B. C:\\alte-installation\\pupcidslittletiktokhelper",
+    "profileName": "Profilname (optional)",
+    "profileNamePlaceholder": "z.B. importiert-config (leer lassen für automatischen Namen)",
+    "profileNameHelp": "Dieser Name wird für das importierte Profil verwendet. Wenn ein Profil mit diesem Namen bereits existiert, wird automatisch ein Zeitstempel hinzugefügt.",
+    "validatePath": "Pfad validieren",
+    "importSettings": "Einstellungen importieren",
+    "validating": "Validiere Pfad...",
+    "importing": "Importiere Einstellungen...",
+    "pathValid": "Gültiger Konfigurationspfad gefunden!",
+    "pathInvalid": "Ungültiger Pfad. Keine Konfigurationsdateien gefunden.",
+    "importSuccess": "Einstellungen erfolgreich importiert!",
+    "importFailed": "Import fehlgeschlagen",
+    "filesFound": "Gefundene Dateien",
+    "userConfigs": "Benutzerprofile",
+    "userData": "Benutzerdaten",
+    "uploads": "Hochgeladene Dateien",
+    "pluginData": "Plugin-Daten (plugins/*/data)",
+    "legacyDatabase": "Legacy-Datenbank (database.db)",
+    "legacyData": "Legacy-Datenordner (data/)",
+    "conflictWarning": "Warnung: Einige Dateien existieren bereits und werden überschrieben",
+    "noFilesFound": "Keine Konfigurationsdateien im ausgewählten Pfad gefunden",
+    "help": {
+      "title": "Hilfe",
+      "description": "Dieses Plugin hilft Ihnen, Ihre Einstellungen aus einer alten Installation zu importieren.",
+      "step1": "1. Geben Sie den vollständigen Pfad Ihrer alten Installation ein",
+      "step2": "2. Optional: Geben Sie einen Namen für das importierte Profil ein",
+      "step3": "3. Klicken Sie auf 'Pfad validieren' um zu prüfen, ob Konfigurationsdateien vorhanden sind",
+      "step4": "4. Wenn der Pfad gültig ist, klicken Sie auf 'Einstellungen importieren'",
+      "note": "Hinweis: Wenn ein Profil mit dem gleichen Namen existiert, wird automatisch ein eindeutiger Name generiert.",
+      "legacyNote": "Dieses Plugin unterstützt auch ältere Versionen mit database.db im Hauptverzeichnis.",
+      "subdirNote": "Das System sucht automatisch nach Config-Dateien im app/ Unterordner, falls diese nicht im Hauptverzeichnis gefunden werden."
+    }
+  }
+}

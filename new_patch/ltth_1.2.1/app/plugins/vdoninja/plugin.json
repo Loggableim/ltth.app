@@ -1,0 +1,23 @@
+{
+  "id": "vdoninja",
+  "name": "VDO.Ninja Multi-Guest Manager",
+  "description": "VDO.Ninja Integration für Multi-Guest-Streaming. Verwaltet Räume, Guests, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups.",
+  "version": "1.0.0",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "integration",
+  "devStatus": "early-version",
+  "dependencies": [],
+  "permissions": [
+    "tiktok-events",
+    "database",
+    "socket-emit"
+  ],
+  "descriptions": {
+    "en": "VDO.Ninja integration for multi-guest streaming. Manages rooms, guests, layouts, and audio controls for professional multi-cam setups with seamless guest integration.",
+    "de": "VDO.Ninja-Integration für Multi-Guest-Streaming. Verwaltet Räume, Gäste, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups mit nahtloser Gast-Integration.",
+    "es": "Integración de VDO.Ninja para transmisión con múltiples invitados. Gestiona salas, invitados, diseños y controles de audio para configuraciones multi-cámara profesionales con integración fluida de invitados.",
+    "fr": "Intégration VDO.Ninja pour streaming multi-invités. Gère les salles, invités, dispositions et contrôles audio pour configurations multi-caméras professionnelles avec intégration transparente des invités."
+  }
+}

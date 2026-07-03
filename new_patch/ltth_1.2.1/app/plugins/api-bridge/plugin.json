@@ -1,0 +1,23 @@
+{
+  "id": "api-bridge",
+  "name": "API Bridge",
+  "version": "1.0.0",
+  "description": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket",
+  "author": "copilot",
+  "entry": "main.js",
+  "enabled": false,
+  "type": "core",
+  "devStatus": "working-beta",
+  "permissions": [
+    "routes",
+    "socket.io",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Enables external applications to control the tool via HTTP and WebSocket. Provides REST API endpoints and real-time event streaming for third-party integrations.",
+    "de": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming für Drittanbieter-Integrationen.",
+    "es": "Permite que aplicaciones externas controlen la herramienta mediante HTTP y WebSocket. Proporciona endpoints de API REST y streaming de eventos en tiempo real para integraciones de terceros.",
+    "fr": "Permet aux applications externes de contrôler l'outil via HTTP et WebSocket. Fournit des endpoints API REST et streaming d'événements en temps réel pour les intégrations tierces."
+  }
+}

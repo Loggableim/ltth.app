@@ -1,0 +1,33 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0e0f10;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1b1d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#12a116;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#42ff73;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <circle cx="900" cy="315" r="200" fill="url(#accentGradient)" opacity="0.2"/>
+  
+  <g transform="translate(100, 200)">
+    <circle cx="80" cy="80" r="70" fill="url(#accentGradient)"/>
+    <path d="M80 30 L120 80 L80 130 L40 80 Z" fill="#ffffff" opacity="0.95"/>
+  </g>
+  
+  <text x="220" y="280" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">
+    ltth.app
+  </text>
+  
+  <text x="220" y="340" font-family="Arial, sans-serif" font-size="32" fill="#f5f7f4" opacity="0.8">
+    PupCid's Little TikTok Helper
+  </text>
+  
+  <text x="220" y="400" font-family="Arial, sans-serif" font-size="24" fill="#12a116">
+    Enhance Your TikTok Experience
+  </text>
+</svg>

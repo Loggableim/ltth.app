@@ -1,0 +1,60 @@
+{
+  "gift_milestone": {
+    "title": "Geschenk-Meilenstein",
+    "subtitle": "Verfolge pro Benutzer, wie viele Coins ausgegeben wurden - streamübergreifend gespeichert",
+    "tiers": {
+      "title": "Meilenstein-Stufen (Tiers)",
+      "description": "Definiere benutzerdefinierte Meilenstein-Stufen. Wenn Benutzer diese Coin-Schwellenwerte erreichen, wird eine Celebration ausgelöst.",
+      "add": "Neue Stufe hinzufügen",
+      "edit": "Stufe bearbeiten",
+      "name": "Stufen-Name",
+      "level": "Stufen-Level (Reihenfolge)",
+      "threshold": "Coin-Schwellenwert",
+      "enabled": "Stufe aktiviert",
+      "test": "Test",
+      "delete": "Löschen",
+      "save": "Speichern",
+      "cancel": "Abbrechen"
+    },
+    "users": {
+      "title": "Benutzer-Statistiken",
+      "description": "Zeigt an, welche Benutzer wie viele Coins ausgegeben haben (streamübergreifend). Die Zählung wird NICHT bei jedem Stream zurückgesetzt.",
+      "refresh": "Aktualisieren",
+      "reset_all": "Alle Benutzer zurücksetzen",
+      "reset": "Zurücksetzen",
+      "no_users": "Noch keine Benutzer-Statistiken vorhanden.",
+      "total_coins": "Coins gesamt",
+      "last_milestone": "Letzter Meilenstein"
+    },
+    "config": {
+      "title": "Konfiguration",
+      "description": "Globale Einstellungen für Meilenstein-Celebrations. Die Standard-Medien werden verwendet, wenn eine Stufe keine eigenen Medien hat.",
+      "enabled": "Geschenk-Meilenstein-Verfolgung aktivieren",
+      "playback_mode": "Wiedergabe-Modus",
+      "playback_exclusive": "Exklusiv (pausiert andere Alerts)",
+      "playback_parallel": "Parallel (läuft gleichzeitig)",
+      "audio_volume": "Audio-Lautstärke (%)",
+      "animation_duration": "Animation-Dauer (ms)",
+      "save": "Konfiguration speichern"
+    },
+    "media": {
+      "title": "Medien hochladen",
+      "gif": "GIF/Bild Animation",
+      "video": "Video Animation",
+      "audio": "Audio",
+      "select": "auswählen",
+      "delete": "Löschen",
+      "tier_specific": "Stufen-spezifisch"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen"
+    },
+    "actions": {
+      "title": "Aktionen",
+      "test": "Celebration testen"
+    }
+  }
+}

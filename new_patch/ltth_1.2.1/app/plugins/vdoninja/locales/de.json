@@ -1,0 +1,65 @@
+{
+  "vdoninja": {
+    "title": "VDO.Ninja Multi-Gast-Manager",
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "room": {
+      "title": "Raumverwaltung",
+      "name": "Raumname",
+      "name_placeholder": "Mein TikTok Stream",
+      "max_guests": "Max. Gäste",
+      "create": "Raum erstellen",
+      "close": "Raum schließen",
+      "info": {
+        "name": "Raumname:",
+        "director_url": "Regisseur-URL (für OBS):",
+        "guest_invite_url": "Gast-Einladungs-URL:",
+        "connected_guests": "Verbundene Gäste:"
+      },
+      "copy": "Kopieren"
+    },
+    "guests": {
+      "title": "Gäste-Steuerung",
+      "mute_all": "Alle stumm",
+      "unmute_all": "Alle laut",
+      "empty": "Noch keine Gäste verbunden",
+      "empty_hint": "Teile die Gast-Einladungs-URL, um Gäste zu deinem Raum hinzuzufügen",
+      "slot": "Platz",
+      "controls": {
+        "mute": "Stumm",
+        "unmute": "Laut",
+        "hide": "Verstecken",
+        "show": "Zeigen",
+        "kick": "Entfernen",
+        "volume": "Lautstärke"
+      }
+    },
+    "layout": {
+      "title": "Layout-Vorlagen",
+      "grid_2x2": "Raster 2x2",
+      "grid_3x2": "Raster 3x2",
+      "solo": "Solo"
+    },
+    "director": {
+      "title": "Regisseur-Kontrollraum",
+      "hide": "Verstecken",
+      "show": "Zeigen"
+    },
+    "guide": {
+      "title": "Kurzanleitung:",
+      "step1": "1. Erstelle einen Raum, um zu beginnen",
+      "step2": "2. Füge die Regisseur-URL als Browser-Quelle in OBS hinzu (1920x1080)",
+      "step3": "3. Teile die Gast-Einladungs-URL mit deinen Gästen",
+      "step4": "4. Steuere Gäste in Echtzeit von diesem Dashboard"
+    },
+    "messages": {
+      "room_created": "Raum erfolgreich erstellt!",
+      "room_closed": "Raum erfolgreich geschlossen!",
+      "guest_kicked": "Gast aus dem Raum entfernt",
+      "copied": "In die Zwischenablage kopiert!",
+      "error": "Ein Fehler ist aufgetreten"
+    }
+  }
+}

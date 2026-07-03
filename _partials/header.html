@@ -1,0 +1,231 @@
+<header id="site-header">
+<section class="beta-notice" id="betaNotice">
+    <div class="container">
+        <div class="beta-content">
+            <div class="beta-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+            </div>
+            <div class="beta-text">
+                <strong>🚀 Version <span id="betaVersion">1.3.3</span>:</strong> Aktiv weiterentwickelt mit neuen Features!
+                Bereits voll funktionsfähig für den produktiven Einsatz.
+                Hilf uns besser zu werden:<br>
+                <a href="https://github.com/Loggableim/ltth_desktop2/issues" target="_blank" rel="noopener">Bugs melden</a>
+                oder <a href="https://github.com/Loggableim/ltth_desktop2/issues/new" target="_blank" rel="noopener">Features vorschlagen</a>.
+                <a href="/roadmap.html">Roadmap ansehen →</a>
+            </div>
+            <button class="beta-close" id="betaClose" aria-label="Beta-Hinweis schließen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+<nav class="navbar" id="navbar">
+    <div class="container">
+        <div class="nav-wrapper">
+            <a href="/" class="logo">
+                <img src="/assets/ltthicon.png" alt="ltth.app logo" class="logo-icon" />
+                <span class="logo-text">ltth.app</span>
+            </a>
+            
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <div class="nav-menu" id="navMenu">
+                <a href="/" class="nav-link" data-page="home">Home</a>
+                
+                <!-- Features Mega Menu -->
+                <div class="nav-mega" id="featuresMega">
+                    <a href="/features/" class="nav-link nav-mega-toggle" data-page="features" aria-haspopup="true" aria-expanded="false">
+                        Features
+                        <svg class="nav-mega-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <div class="nav-mega-panel" role="region" aria-label="Features Menu">
+                        <div class="mega-panel-inner">
+                            <div class="mega-grid">
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🧠 KI &amp; Intelligenz</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/animazingpal.html" class="mega-item">
+                                            <span class="mega-item-emoji">🧠</span>
+                                            <span class="mega-item-label">AnimazingPal</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎙️ Audio &amp; Stimme</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/tts.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎙️</span>
+                                            <span class="mega-item-label">TTS Engine</span>
+                                        </a>
+                                        <a href="/features/soundboard.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔊</span>
+                                            <span class="mega-item-label">Soundboard</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎨 Visuell &amp; Overlay</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/overlays.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎨</span>
+                                            <span class="mega-item-label">Overlays &amp; HUD</span>
+                                        </a>
+                                        <a href="/features/emoji-rain.html" class="mega-item">
+                                            <span class="mega-item-emoji">🌧️</span>
+                                            <span class="mega-item-label">Emoji Rain</span>
+                                        </a>
+                                        <a href="/features/alerts.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔔</span>
+                                            <span class="mega-item-label">Alert System</span>
+                                        </a>
+                                        <a href="/features/goals.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎯</span>
+                                            <span class="mega-item-label">Goals System</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🎮 Gaming &amp; Interaktion</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/game-engine.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎮</span>
+                                            <span class="mega-item-label">Game Engine</span>
+                                        </a>
+                                        <a href="/features/slot-machine.html" class="mega-item">
+                                            <span class="mega-item-emoji">🎰</span>
+                                            <span class="mega-item-label">Slot Machine</span>
+                                        </a>
+                                        <a href="/features/chat-commands.html" class="mega-item">
+                                            <span class="mega-item-emoji">💬</span>
+                                            <span class="mega-item-label">Chat Commands</span>
+                                        </a>
+                                        <a href="/features/viewer-xp.html" class="mega-item">
+                                            <span class="mega-item-emoji">⭐</span>
+                                            <span class="mega-item-label">Viewer XP</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">🔌 System &amp; Erweiterung</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/plugin-system.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔌</span>
+                                            <span class="mega-item-label">Plugin System</span>
+                                        </a>
+                                        <a href="/features/flow-engine.html" class="mega-item">
+                                            <span class="mega-item-emoji">⚡</span>
+                                            <span class="mega-item-label">Flow Engine</span>
+                                        </a>
+                                        <a href="/features/auto-updater.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔄</span>
+                                            <span class="mega-item-label">Auto Updater</span>
+                                        </a>
+                                        <a href="/features/tikfinity-api.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔗</span>
+                                            <span class="mega-item-label">TikFinity API</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">📡 Verbindungen</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/osc-bridge.html" class="mega-item">
+                                            <span class="mega-item-emoji">🥽</span>
+                                            <span class="mega-item-label">OSC / VRChat</span>
+                                        </a>
+                                        <a href="/features/vdoninja.html" class="mega-item">
+                                            <span class="mega-item-emoji">📡</span>
+                                            <span class="mega-item-label">VDO.Ninja</span>
+                                        </a>
+                                        <a href="/features/multicam.html" class="mega-item">
+                                            <span class="mega-item-emoji">📷</span>
+                                            <span class="mega-item-label">MultiCam</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mega-category">
+                                    <h3 class="mega-category-title">📊 Übersicht</h3>
+                                    <div class="mega-items">
+                                        <a href="/features/dashboard.html" class="mega-item">
+                                            <span class="mega-item-emoji">📊</span>
+                                            <span class="mega-item-label">Dashboard</span>
+                                        </a>
+                                        <a href="/features/security.html" class="mega-item">
+                                            <span class="mega-item-emoji">🔒</span>
+                                            <span class="mega-item-label">Security</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mega-panel-footer">
+                                <a href="/features/" class="mega-all-features">
+                                    Alle Features ansehen →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="/plugins.html" class="nav-link" data-page="plugins">Plugins</a>
+                <a href="/docs.html" class="nav-link" data-page="docs">Docs</a>
+                <a href="/download.html" class="nav-link" data-page="download">Download</a>
+                <a href="/changelog.html" class="nav-link" data-page="changelog">Changelog</a>
+                <a href="/community.html" class="nav-link" data-page="community">Community</a>
+                <a href="/faq.html" class="nav-link" data-page="faq">FAQ</a>
+                <a href="/support.html" class="nav-link" data-page="support">Support</a>
+                
+                <!-- Language Switcher -->
+                <div class="lang-dropdown">
+                    <a href="#" class="lang-dropdown-toggle" aria-label="Select language">
+                        <span class="lang-flag" id="currentLangFlag">🇩🇪</span>
+                        <span class="lang-text" id="currentLangText">DE</span>
+                        <svg class="lang-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </a>
+                    <div class="lang-dropdown-menu">
+                        <a href="#" class="lang-dropdown-item" data-lang-switch="de">
+                            <span class="lang-flag">🇩🇪</span>
+                            <span>Deutsch</span>
+                        </a>
+                        <a href="#" class="lang-dropdown-item" data-lang-switch="en">
+                            <span class="lang-flag">🇬🇧</span>
+                            <span>English</span>
+                        </a>
+                        <a href="#" class="lang-dropdown-item" data-lang-switch="es">
+                            <span class="lang-flag">🇪🇸</span>
+                            <span>Español</span>
+                        </a>
+                        <a href="#" class="lang-dropdown-item" data-lang-switch="fr">
+                            <span class="lang-flag">🇫🇷</span>
+                            <span>Français</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+</header>

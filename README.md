@@ -1,115 +1,352 @@
-# PupCid's Little TikTool Helper (LTTH)
+# ltth.app
 
-LTTH is a local TikTok LIVE helper for stream overlays, alerts, TTS, soundboard actions, goals, automation flows, OBS integration, and plugin-driven extensions.
+**PupCid's Little TikTool Helper** - Official Website  
+**Version 2.0 - Complete Rework**
 
-This workspace is a local snapshot, not a Git checkout. We are treating `app/` as the maintained runtime and `build-src/` as the Windows launcher source. The older Electron main-process folder is not present in this snapshot, so Electron build scripts were removed from the active root package metadata.
+> The professional TikTok LIVE streaming solution with real-time events, TTS, alerts, soundboard, plugin system and OBS integration.
 
-## Current Runtime
+[![Live Website](https://img.shields.io/badge/Live-ltth.app-12a116)](https://ltth.app)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Beta Status](https://img.shields.io/badge/Status-Beta-orange)](https://ltth.app)
+[![Lighthouse Score](https://img.shields.io/badge/Lighthouse-100-success)](https://ltth.app)
 
-- Backend: Node.js, Express, Socket.IO
-- Persistence: SQLite via `better-sqlite3`
-- Frontend: static HTML/CSS/JavaScript under `app/public`
-- Integrations: Eulerstream, TikFinity, OBS WebSocket, MyInstants, OSC, OpenAI and other plugin-specific APIs
-- Plugin system: 36 plugin manifests under `app/plugins`
-- Launcher: Go sources and compiled Windows launchers under `build-src/` and the repository root
+## 🎉 What's New in Version 2.0
 
-## Setup
+### Complete Website Rework
+- ✨ **Modern Design System** - Fresh, clean interface with improved UX
+- 🎨 **Enhanced Branding** - New #12a116 primary green with harmonious color palette
+- 🌓 **Multiple Themes** - Light, Dark, System, and Monochrome (accessibility) modes
+- ⚡ **120 FPS Animations** - Smooth, GPU-accelerated animations
+- 🔍 **Live Search** - Instant search across all pages
+- 📊 **Scroll Progress** - Visual indicator of page scroll position
+- 📱 **Mobile-First** - Completely responsive, optimized for all devices
+- ♿ **WCAG 2.1 AA** - Full accessibility compliance
+- 🚀 **Perfect Lighthouse** - 100/100 scores across all metrics
+- 🎭 **Mascot Sprites** - Interactive mascot with multiple poses
+- 📦 **Version Badge** - Auto-updating version indicator
+- 📝 **Changelog Renderer** - Dynamic changelog from version.json
 
-Install dependencies only after reviewing the snapshot state:
+## 🌟 About
+
+This repository contains the complete static website for **PupCid's Little TikTool Helper** (ltth.app), a professional streaming tool designed for TikTok LIVE streamers with features like:
+
+- 📡 **Real-time TikTok LIVE connection** - Gifts, Chat, Follows, Shares, Likes, Subscriptions
+- 🎙️ **Text-to-Speech** - 75+ TikTok voices & 30+ Google Cloud voices
+- 🔔 **Customizable Alerts** - Sound + Text + Image/GIF support for all event types
+- 🎵 **Soundboard** - 100,000+ sounds via MyInstants integration
+- 🎯 **Goals & Overlays** - 4 separate goals with browser source overlays for OBS
+- ⚡ **Event Automation (Flows)** - "If-Then" automation without programming
+- 🎥 **OBS Integration** - Full-HD overlay & WebSocket v5 scene control
+- 🎮 **VRChat OSC Support** - Avatar control via OSC protocol
+- 🔌 **Plugin System** - 7+ pre-installed plugins, create your own with Plugin API
+- 💾 **100% Local** - No cloud services, no login required, fully transparent
+
+## 🎨 Branding
+
+The website features a complete brand identity built around our primary color palette:
+
+- **Primary Green**: `#12a116` - Main branding color for CTAs and highlights
+- **Secondary Green**: `#19c724` - Accent color
+- **Neon Green**: `#42ff73` - Hover and success states
+- **Complementary Purple**: `#6412a1`, `#7a1cd6` - Visual balance
+- **Dark Mode**: `#0e0f10`, `#111213` - Deep anthracite backgrounds
+- **Light Mode**: `#f5f7f4` - Off-white backgrounds
+
+## 📁 Project Structure
+
+```
+ltth.app/
+├── index.html           # Landing page with beta notice
+├── features.html        # Feature showcase
+├── plugins.html         # Plugin gallery
+├── docs.html           # Documentation
+├── download.html       # Download page
+├── changelog.html      # Version history
+├── roadmap.html        # Product roadmap
+├── faq.html            # Frequently asked questions
+├── support.html        # Support & contact
+├── css/
+│   ├── main.css        # Complete branding & design system
+│   └── docs.css        # Documentation-specific styles
+├── js/
+│   ├── main.js         # Core interactivity
+│   └── docs.js         # Documentation features
+├── assets/
+│   ├── ltthicon.png    # Brand icon
+│   ├── winken.png      # Mascot waving
+│   ├── zwinkern.png    # Mascot winking
+│   └── *.png           # Icon assets
+├── wiki/               # Complete wiki documentation
+│   ├── Home.md         # Wiki home
+│   ├── Architektur.md  # Architecture documentation
+│   ├── Plugin-Dokumentation.md
+│   └── ...             # More wiki files
+├── manifest.json       # PWA manifest
+├── sw.js              # Service worker
+└── CNAME              # Custom domain configuration
+```
+
+## 🚀 Key Features
+
+### TikTok LIVE Streaming Tool
+- ✅ Real-time event processing (Gifts, Chat, Follows, Shares, Likes, Subscriptions)
+- ✅ Text-to-Speech with 75+ TikTok voices and 30+ Google Cloud voices
+- ✅ Customizable alert system with templates and variable support
+- ✅ Soundboard with MyInstants integration (100,000+ sounds)
+- ✅ Goals & Progress Bars with OBS browser source overlays
+- ✅ Event Automation (Flows) - "If-Then" rules without coding
+- ✅ OBS Integration via WebSocket v5
+- ✅ VRChat OSC Integration for avatar control
+- ✅ Multi-Profile System for different streaming setups
+- ✅ Plugin System with 7+ pre-installed plugins
+
+### Website Features
+- ✅ Beta status notice with GitHub issue links
+- ✅ Responsive mobile-first design
+- ✅ Dark/Light mode with system preference detection
+- ✅ Smooth animations and transitions
+- ✅ Accessible color contrast ratios
+- ✅ Consistent spacing and typography
+
+### Modern Web Technologies
+- ✅ Static HTML/CSS/JavaScript (no build step required)
+- ✅ Progressive Web App (PWA) support
+- ✅ Service Worker for offline functionality
+- ✅ SEO optimized with Open Graph tags
+- ✅ Structured data (Schema.org)
+
+### Interactive Elements
+- ✅ Mobile-friendly navigation
+- ✅ Theme toggle with localStorage persistence
+- ✅ Smooth scrolling
+- ✅ Intersection Observer animations
+- ✅ Form validation
+- ✅ Search functionality (docs)
+
+## 🛠️ Local Development
+
+### Prerequisites
+- A modern web browser
+- Python 3 (for local server) or any static file server
+
+### Running Locally
 
 ```bash
-cd app
-npm install
+# Clone the repository
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
+
+# Start a local server
+python3 -m http.server 8080
+
+# Or use Node.js
+npx http-server -p 8080
+
+# Visit http://localhost:8080 in your browser
 ```
 
-Start the backend:
+### Generate Favicons
 
 ```bash
-npm start
+# Install Pillow (if not already installed)
+pip install Pillow
+
+# Generate PNG favicons from SVG
+python3 generate_favicons.py
 ```
 
-Development mode with auto-reload:
+## 📦 Deployment
+
+This website is designed for **GitHub Pages** deployment and requires no build step.
+
+### GitHub Pages Setup
+
+1. **Repository Settings**
+   - Go to repository Settings → Pages
+   - Source: Deploy from a branch
+   - Branch: `main` / (root)
+   - Save
+
+2. **Custom Domain (Optional)**
+   - Add `CNAME` file with your domain (e.g., `ltth.app`)
+   - Configure DNS A records:
+     ```
+     185.199.108.153
+     185.199.109.153
+     185.199.110.153
+     185.199.111.153
+     ```
+   - Or CNAME record: `<username>.github.io`
+
+3. **HTTPS**
+   - GitHub Pages automatically provides HTTPS
+   - Enable "Enforce HTTPS" in repository settings
+
+### Local Development
 
 ```bash
-npm run dev
+# Clone the repository
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
+
+# Start a local server (Python)
+python3 -m http.server 8080
+
+# Or use Node.js
+npx http-server -p 8080
+
+# Or use PHP
+php -S localhost:8080
+
+# Visit http://localhost:8080
 ```
 
-The dashboard is served at:
+### File Structure for Deployment
 
-```text
-http://localhost:3000/dashboard.html
+```
+ltth.app/
+├── index.html              # Landing page (required)
+├── CNAME                   # Custom domain configuration
+├── robots.txt              # SEO - Search engine directives
+├── sitemap.xml             # SEO - Site structure
+├── manifest.json           # PWA manifest
+├── version.json            # Version data for badge
+├── brand-kit.md            # Complete brand guidelines
+├── css/
+│   ├── main.css            # Core styles (enhanced)
+│   └── docs.css            # Documentation styles
+├── js/
+│   ├── main.js             # Core JavaScript (enhanced)
+│   └── docs.js             # Documentation features
+├── assets/
+│   ├── favicon-*.png       # Favicons
+│   ├── ltthicon.png        # Brand icon
+│   ├── logo.svg            # SVG logo
+│   ├── mascot-sprite.png   # Mascot sprite sheet
+│   ├── winken.png          # Mascot waving
+│   ├── zwinkern.png        # Mascot winking
+│   └── screenshots/        # Product screenshots
+└── [other-pages].html      # Additional pages
 ```
 
-OBS overlay entry points:
+### Deployment Checklist
 
-```text
-http://localhost:3000/overlay.html
-http://localhost:3000/goals-overlay.html
-http://localhost:3000/animation-overlay.html
-```
+Before deploying to production:
 
-## Required Configuration
+- [ ] All images optimized (use WebP when possible)
+- [ ] CSS minified (optional, GitHub Pages handles caching)
+- [ ] JavaScript tested in all major browsers
+- [ ] All links working (no 404s)
+- [ ] Meta tags updated (OG, Twitter Cards)
+- [ ] Sitemap.xml updated with all pages
+- [ ] Robots.txt configured correctly
+- [ ] HTTPS enabled
+- [ ] Custom domain configured (if applicable)
+- [ ] Version.json updated with latest version
+- [ ] Lighthouse scores: 100/100 across all metrics
 
-TikTok LIVE connections through Eulerstream require an API key. Configure it in one of these places:
+### Performance Optimization
 
-- Dashboard settings after startup
-- `app/.env` copied from `app/.env.example`
-- Environment variable `EULER_API_KEY`
+The website is optimized for maximum performance:
 
-Runtime user data is stored outside the app directory through `ConfigPathManager`, usually in the platform-local application data directory. Plugin data should use `api.getPluginDataDir()` and not write persistent state into `app/plugins`.
+1. **No Build Step Required**
+   - Pure HTML/CSS/JavaScript
+   - No frameworks or bundlers needed
+   - Instant deployment
 
-## Important Paths
+2. **Optimized Assets**
+   - Lazy loading for images
+   - CSS custom properties for theming
+   - Minimal JavaScript footprint
+   - SVG for icons and logos
 
-- `app/server.js`: main backend, API routes, Socket.IO, TikTok event wiring
-- `app/modules/tiktok.js`: facade for Eulerstream and TikFinity adapters
-- `app/modules/adapters/`: live data source adapters
-- `app/modules/database.js`: SQLite schema and persistence helpers
-- `app/modules/plugin-loader.js`: plugin lifecycle and PluginAPI
-- `app/modules/ifttt/`: automation engine
-- `app/public/`: dashboard and overlay assets
-- `app/plugins/`: built-in plugins
-- `app/test/`: Jest tests and regression tests
-- `build-src/`: Go launcher source and installer material
-- `infos/`: current developer and agent documentation
-- `docs_archive/`: historical reference only
+3. **GitHub Pages Benefits**
+   - Global CDN
+   - Automatic HTTPS
+   - Fast edge caching
+   - 99.9% uptime
 
-## Commands
-
-From the repository root:
+### Updating the Website
 
 ```bash
-npm start
-npm run dev
-npm test
-npm run build:css
+# Make changes locally
+git add .
+git commit -m "Update website content"
+git push origin main
+
+# GitHub Pages will automatically deploy within 1-2 minutes
 ```
 
-From `app/` directly:
+## 📦 Deployment
 
-```bash
-npm start
-npm run dev
-npm test
-npm run test:coverage
-npm run build:css
-npm run lint
-```
+This website is designed for GitHub Pages deployment:
 
-Build launcher binaries from root:
+1. Push to the `main` branch
+2. GitHub Pages will automatically deploy
+3. Custom domain `ltth.app` is configured via CNAME file
 
-```bash
-npm run build:launcher:win
-npm run build:launcher:console
-npm run build:launcher:dev
-```
+## 🎯 SEO & Performance
 
-## Development Rules
+- ✅ Semantic HTML5 markup
+- ✅ Meta descriptions on all pages
+- ✅ Keywords optimized for TikTok LIVE streaming tools
+- ✅ Open Graph and Twitter Card tags
+- ✅ Structured data for search engines
+- ✅ Optimized images and assets
+- ✅ Fast load times (no external dependencies)
 
-- Code and comments should be English.
-- User-facing UI and wiki documentation may be German.
-- Use the existing logger or `this.api.log()` in plugins.
-- Validate external input and use prepared SQLite statements.
-- Keep plugin data in persistent config/plugin data paths.
-- Update `infos/` docs when changing architecture, setup, plugin contracts, or APIs.
+## 🐛 Beta Status
 
-Start future work with [AGENTS.md](AGENTS.md), [infos/llm_start_here.md](infos/llm_start_here.md), and [docs/SNAPSHOT_STATUS.md](docs/SNAPSHOT_STATUS.md).
+This tool is currently in **active development** (Beta). Bugs may occur and features are being actively improved. 
+
+**Report bugs:** [GitHub Issues](https://github.com/Loggableim/ltth.app/issues)  
+**Request features:** [GitHub Issue System](https://github.com/Loggableim/ltth.app/issues/new)
+
+## 📚 Documentation
+
+Comprehensive wiki documentation is available in the `/wiki` folder:
+
+- **[Home](wiki/Home.md)** - Wiki overview and navigation
+- **[Installation & Setup](wiki/Installation-&-Setup.md)** - Getting started guide
+- **[Architecture](wiki/Architektur.md)** - Technical architecture and system design
+- **[Plugin Documentation](wiki/Plugin-Dokumentation.md)** - Plugin system guide
+- **[API Reference](wiki/API-Reference.md)** - REST API and WebSocket events
+- **[FAQ & Troubleshooting](wiki/FAQ-&-Troubleshooting.md)** - Common issues and solutions
+
+## 🌐 Browser Support
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Opera 76+
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 💬 Support
+
+Need help? Check out our resources:
+
+- 📚 [Documentation](https://ltth.app/docs.html)
+- ❓ [FAQ](https://ltth.app/faq.html)
+- 🐛 [Report Issues](https://github.com/Loggableim/ltth.app/issues)
+- 💡 [Feature Requests](https://github.com/Loggableim/ltth.app/issues/new)
+
+## 🙏 Acknowledgments
+
+Made with ♥ by [Loggableim](https://github.com/Loggableim)
+
+---
+
+**[Visit ltth.app →](https://ltth.app)**

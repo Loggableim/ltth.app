@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Security & Privacy – CORS-Konfiguration, CSP, Input-Validatoren, Rate Limiting und 100% lokale Verarbeitung ohne Cloud für PupCid's Little TikTool Helper.">
+    <title>Security &amp; Privacy – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Security & Privacy – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="CORS, CSP, Input-Validatoren, Rate Limiting und 100% lokale Verarbeitung – deine Daten bleiben bei dir.">
+    <meta property="og:url" content="https://ltth.app/features/security.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/security.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Security &amp; Privacy</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🔒</span>
+                <h1 class="feature-hero-title">Security &amp; Privacy</h1>
+                <p class="feature-hero-subtitle">Deine Daten gehören dir. LTTH läuft vollständig lokal auf deinem PC – kein Cloud-Zwang, keine Daten-Weitergabe. Gebaut mit modernen Web-Security-Standards von Grund auf.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/screenshots/features/security.png"
+                         alt=""
+                         data-i18n-alt="screenshots.security.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.security.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- privacy first -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Privacy First</h2>
+                <div style="background:rgba(18,161,22,0.05); border:1px solid rgba(18,161,22,0.2); border-radius:1rem; padding:2rem; margin-bottom:3rem; text-align:center;">
+                    <div style="font-size:3rem; margin-bottom:1rem;">🏠</div>
+                    <h3 style="font-size:1.5rem; font-weight:700; margin-bottom:1rem;">100% Lokal – Kein Cloud-Zwang</h3>
+                    <p style="color:var(--color-text-secondary); font-size:1rem; line-height:1.8; max-width:600px; margin:0 auto;">
+                        PupCid's Little TikTool Helper läuft vollständig auf deinem lokalen Rechner. Chat-Daten, Zuschauer-Informationen und Stream-Konfigurationen verlassen niemals dein Gerät. Keine Telemetrie, keine Cloud-Synchronisation, kein Account erforderlich.
+                    </p>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌐</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">CORS Konfiguration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Cross-Origin Resource Sharing ist strikt konfiguriert. Nur explizit erlaubte Origins (z.B. OBS Browser-Source, localhost) haben Zugriff auf die LTTH API.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🛡️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Content Security Policy</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Strenge CSP-Header schützen das Admin-UI vor Cross-Site-Scripting (XSS). Nur autorisierte Ressourcen werden geladen, externe Scripts werden blockiert.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">✅</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Input Validatoren</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Alle Benutzereingaben werden serverseitig validiert und sanitiert. Typen-Validierung, Längen-Limits und Schema-Validierung schützen vor Injection-Angriffen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⏱️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Rate Limiting</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Alle API-Endpunkte sind mit Rate-Limiting geschützt. Verhindert Denial-of-Service durch zu viele Anfragen, Chat-Spam und automatisierte Angriffe.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔑</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">API Key Schutz</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            API-Keys für Azure, ElevenLabs und andere Dienste werden sicher verschlüsselt in der lokalen Konfiguration gespeichert, niemals im Klartext übertragen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔓</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Open Source</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Der komplette Quellcode ist öffentlich auf GitHub einsehbar. Jeder kann den Code auditieren, Schwachstellen melden und zu Sicherheitsverbesserungen beitragen.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- data privacy -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Datenschutz-Versprechen</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2rem; color:var(--color-primary); margin-bottom:0.5rem;">✗</div>
+                        <div style="font-weight:700; margin-bottom:0.25rem;">Keine Telemetrie</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.85rem;">Keine Usage-Daten werden gesammelt</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2rem; color:var(--color-primary); margin-bottom:0.5rem;">✗</div>
+                        <div style="font-weight:700; margin-bottom:0.25rem;">Kein Account</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.85rem;">Keine Registrierung erforderlich</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2rem; color:var(--color-primary); margin-bottom:0.5rem;">✗</div>
+                        <div style="font-weight:700; margin-bottom:0.25rem;">Kein Cloud-Sync</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.85rem;">Alles bleibt auf deinem PC</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2rem; color:var(--color-primary); margin-bottom:0.5rem;">✗</div>
+                        <div style="font-weight:700; margin-bottom:0.25rem;">Keine Werbung</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.85rem;">Vollständig werbe- und trackingfrei</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Sicher streamen</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">PupCid's Little TikTool Helper – kostenlos, Open Source und datenschutzfreundlich.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Kostenlos Herunterladen</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

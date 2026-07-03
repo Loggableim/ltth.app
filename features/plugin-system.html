@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plugin System – 30+ eingebaute Plugins, Hot-Reload, JavaScript API für eigene Plugins und nahtlose Admin-UI Integration für PupCid's Little TikTool Helper.">
+    <title>Plugin System – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Plugin System – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="30+ eingebaute Plugins, Hot-Reload, JavaScript API für eigene Plugins und nahtlose Admin-UI Integration.">
+    <meta property="og:url" content="https://ltth.app/features/plugin-system.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/plugin-system.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Plugin System</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🔌</span>
+                <h1 class="feature-hero-title">Plugin System</h1>
+                <p class="feature-hero-subtitle">Erweitere PupCid's Little TikTool Helper unbegrenzt. 30+ eingebaute Plugins, Hot-Reload ohne Neustart und eine vollständige JavaScript API für eigene Erweiterungen.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/assets/screenshots/plugins.png"
+                         alt=""
+                         data-i18n-alt="screenshots.pluginSystem.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.pluginSystem.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- core features -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Kern-Features</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📦</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">30+ Eingebaute Plugins</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Sofort einsatzbereite Plugins für alle wichtigen Streaming-Funktionen: TTS, Soundboard, Overlays, Alerts, Goals, Leaderboards und viele mehr.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Hot-Reload</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Plugins aktivieren, deaktivieren und aktualisieren ohne den Server neu zu starten. Änderungen am Plugin-Code werden sofort übernommen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">JavaScript API</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Vollständige Plugin-API in JavaScript. Eigene Plugins mit Zugriff auf alle Events, TTS, Overlays, Soundboard und Admin-UI schreiben.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎣</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Event Hooks &amp; Trigger</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Eigene Hooks auf alle TikTok-Events registrieren: Chat, Gifts, Follows, Subscriptions, Room State und mehr. Vollständige Event-Daten im Plugin verfügbar.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖥️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Admin-UI Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Eigene Einstellungsseiten im Admin-Panel registrieren. Plugins können eigene UI-Komponenten, Settings-Forms und Dashboard-Widgets hinzufügen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔒</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Sandboxed Execution</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Plugins laufen in einer isolierten Umgebung. Fehlgeschlagene Plugins crashen nicht den Server. Automatische Fehlerbehandlung und Plugin-Logging.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- plugin marketplace -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Plugin Kategorien</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem;">
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">🎙️</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">Audio &amp; TTS</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">8 Plugins</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">🎨</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">Overlays &amp; Visuals</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">7 Plugins</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">🎰</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">Games &amp; Interactive</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">5 Plugins</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">📊</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">Analytics &amp; Goals</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">4 Plugins</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">🥽</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">VRChat &amp; OSC</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">3 Plugins</div>
+                        </div>
+                    </div>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:0.75rem; padding:1.25rem; display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">🔧</span>
+                        <div>
+                            <div style="font-weight:600; font-size:0.95rem;">Utilities &amp; Tools</div>
+                            <div style="color:var(--color-text-secondary); font-size:0.8rem;">6 Plugins</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- code example -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Plugin entwickeln</h2>
+                <div style="max-width:700px; margin:0 auto;">
+                    <p style="color:var(--color-text-secondary); margin-bottom:1.5rem; text-align:center; line-height:1.7;">
+                        Ein Plugin besteht aus einer einzigen JavaScript-Datei. Mit wenigen Zeilen Code kannst du auf alle TikTok-Events reagieren und den Stream automatisieren.
+                    </p>
+                    <div style="background:#111; border:1px solid var(--color-border); border-radius:0.75rem; padding:1.5rem; font-family:var(--font-mono); font-size:0.875rem; line-height:1.8; overflow-x:auto;">
+                        <div style="color:#6a9955;">// Beispiel: Eigenes Plugin</div>
+                        <div><span style="color:#569cd6;">module.exports</span> = {</div>
+                        <div style="padding-left:1.5rem;"><span style="color:#9cdcfe;">name</span>: <span style="color:#ce9178;">'my-plugin'</span>,</div>
+                        <div style="padding-left:1.5rem;"><span style="color:#9cdcfe;">version</span>: <span style="color:#ce9178;">'1.0.0'</span>,</div>
+                        <div style="padding-left:1.5rem;"><span style="color:#dcdcaa;">onGift</span>(<span style="color:#9cdcfe;">event</span>, <span style="color:#9cdcfe;">api</span>) {</div>
+                        <div style="padding-left:3rem;"><span style="color:#9cdcfe;">api</span>.<span style="color:#dcdcaa;">tts</span>(<span style="color:#ce9178;">`${event.user} hat ein Geschenk gesendet!`</span>);</div>
+                        <div style="padding-left:3rem;"><span style="color:#9cdcfe;">api</span>.<span style="color:#dcdcaa;">playSound</span>(<span style="color:#ce9178;">'fanfare'</span>);</div>
+                        <div style="padding-left:1.5rem;">}</div>
+                        <div>};</div>
+                    </div>
+                    <p style="color:var(--color-text-secondary); font-size:0.875rem; margin-top:1rem; text-align:center;">
+                        Vollständige API-Dokumentation: <a href="/docs.html" style="color:var(--color-primary);">docs.ltth.app →</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section style="padding: 3rem 0 4rem;">
+            <div class="container" style="text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; margin-bottom:1rem;">Plugin System erkunden</h2>
+                <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Lade LTTH herunter und entdecke alle 30+ Plugins – oder baue dein eigenes.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/plugins.html" class="btn btn-primary btn-large">Plugin-Übersicht</a>
+                    <a href="/features/" class="btn btn-secondary btn-large">← Alle Features</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.LTTHLayout) await LTTHLayout.init();
+            if (window.I18n) I18n.init(window.__ltthLang || 'de');
+        });
+    </script>
+</body>
+</html>

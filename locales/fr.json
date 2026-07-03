@@ -1,0 +1,540 @@
+{
+    "lang": "fr",
+    "nav": {
+        "home": "Accueil",
+        "features": "Fonctionnalités",
+        "plugins": "Plugins",
+        "gameEngine": "Moteur de jeu",
+        "docs": "Docs",
+        "download": "Télécharger",
+        "changelog": "Journal des modifications",
+        "community": "Communauté",
+        "faq": "FAQ",
+        "support": "Support",
+        "launcher": "Lanceur",
+        "vdoninja": "VDO.Ninja",
+        "viewerXp": "XP Spectateurs",
+        "alerts": "Système d'Alertes",
+        "goals": "Système d'Objectifs"
+    },
+    "features": {
+        "animazingpal": "AnimazingPal Brain Engine",
+        "tts": "Moteur Text-to-Speech",
+        "overlays": "Overlays et HUD",
+        "osc": "Pont OSC / VRChat",
+        "flowEngine": "Moteur de flux",
+        "soundboard": "Soundboard Pro",
+        "multicam": "Commutateur MultiCam",
+        "security": "Sécurité",
+        "gameEngine": "Moteur de jeu",
+        "pluginSystem": "Système de plugins",
+        "vdoninja": "VDO.Ninja Multi-Invité",
+        "viewerXp": "Système XP Spectateurs",
+        "alerts": {
+            "title": "Système d'Alertes",
+            "description": "Alertes entièrement personnalisables pour les Cadeaux, Abonnements, Partages, Likes et Souscriptions avec son, texte et combinaisons image/GIF."
+        },
+        "goals": {
+            "title": "Système d'Objectifs",
+            "description": "4 trackers d'objectifs séparés pour les Likes, Abonnés, Souscriptions et Coins avec URL de source de navigateur OBS et modes automatiques."
+        },
+        "slot_machine": {
+            "title": "Machine à Sous",
+            "description": "Machine à sous 3 rouleaux avec support multi-machine, sons personnalisés, reconnaissance superfan et design entièrement configurable."
+        }
+    },
+    "common": {
+        "learnMore": "En savoir plus",
+        "download": "Télécharger maintenant",
+        "getStarted": "Commencer",
+        "viewDocs": "Documentation",
+        "openSource": "Open Source",
+        "free": "Gratuit",
+        "windowsOnly": "Disponible pour Windows",
+        "version": "Version",
+        "comingSoon": "Bientôt disponible",
+        "new": "Nouveau",
+        "back": "Retour",
+        "viewAll": "Voir tout"
+    },
+    "hero": {
+        "title": "Solution professionnelle de streaming en direct TikTok",
+        "subtitle": "Avec plus de 30 plugins, gestion de chat par IA, moteur de jeu, TTS et bien plus. Gratuit, open source et entièrement local.",
+        "downloadCta": "Télécharger maintenant",
+        "featuresCta": "Découvrir les fonctionnalités",
+        "statsUsers": "Streamers actifs",
+        "statsPlugins": "Plugins",
+        "statsStars": "Étoiles GitHub"
+    },
+    "footer": {
+        "description": "PupCid's Little TikTool Helper – La solution professionnelle de streaming en direct TikTok.",
+        "product": "Produit",
+        "resources": "Ressources",
+        "community": "Communauté",
+        "support": "Support",
+        "supportDev": "Soutenir le développement",
+        "legal": "Mentions légales",
+        "copyright": "© 2025–2026 ltth.app – PupCid's Little TikTool Helper. Tous droits réservés.",
+        "trademark": "Pas un produit officiel de TikTok."
+    },
+    "meta": {
+        "home": {
+            "title": "PupCid's Little TikTool Helper – Solution professionnelle de streaming en direct TikTok",
+            "description": "Événements en temps réel, TTS avec plus de 75 voix, soundboard, système de plugins, intégration OBS et moteur de jeu pour les streamers TikTok LIVE. Gratuit et open source."
+        },
+        "features": {
+            "title": "Fonctionnalités – PupCid's Little TikTool Helper",
+            "description": "Découvrez toutes les fonctionnalités : AnimazingPal Brain Engine, Moteur de jeu, TTS, Moteur de flux, Soundboard Pro, Overlays et plus encore."
+        },
+        "download": {
+            "title": "Télécharger – PupCid's Little TikTool Helper",
+            "description": "Téléchargez PupCid's Little TikTool Helper gratuitement. Disponible pour Windows 10/11."
+        }
+    },
+    "slotMachine": {
+        "title": "Machine à Sous",
+        "subtitle": "Machine à sous classique comme overlay de navigateur OBS",
+        "reels": "Rouleaux",
+        "symbols": "Symboles",
+        "weights": "Poids",
+        "odds": "Probabilités",
+        "triggers": "Déclencheurs",
+        "rewards": "Récompenses",
+        "chatCommand": "Commande Chat",
+        "cooldown": "Cooldown",
+        "jackpot": "Jackpot",
+        "spin": "Tourner",
+        "winGlow": "Éclat de Victoire",
+        "designPresets": "Préréglages de Design",
+        "symbolUpload": "Upload de Symboles",
+        "soundManagement": "Gestion des Sons",
+        "multiMachine": "Support Multi-Machine",
+        "superfan": "Reconnaissance Superfan",
+        "tokenSystem": "Système de Tokens"
+    },
+    "viewerXp": {
+        "title": "Système XP Spectateurs",
+        "subtitle": "Suivi XP, système de niveaux et classements pour vos spectateurs",
+        "xpTracking": "Suivi XP",
+        "levelSystem": "Système de Niveaux",
+        "leaderboard": "Classement",
+        "overlayIntegration": "Intégration Overlay OBS",
+        "statistics": "Statistiques",
+        "watchTime": "Temps de Visionnage",
+        "offlineProtection": "Protection Hors Ligne"
+    },
+    "vdoninja": {
+        "title": "VDO.Ninja Multi-Invité",
+        "subtitle": "Streams professionnels multi-invités avec intégration VDO.Ninja",
+        "roomManagement": "Gestion des Salles",
+        "guestManagement": "Gestion des Invités",
+        "apiRoutes": "Routes API",
+        "socketEvents": "Événements Socket.io",
+        "multiGuest": "Streaming Multi-Invité",
+        "flowIntegration": "Intégration Automatisation Flux",
+        "autoInjection": "Auto-Injection dans les Flux"
+    },
+    "pages": {
+        "index": {
+            "title": "PupCid's Little TikTool Helper – Solution de Streaming Professionnelle pour TikTok LIVE",
+            "description": "La solution de streaming professionnelle pour les streamers TikTok LIVE. Événements en temps réel, TTS, soundboard, système de plugins et plus."
+        },
+        "plugins": {
+            "title": "Plugins – PupCid's Little TikTool Helper",
+            "description": "Plus de 30 plugins pour les streams TikTok LIVE. Extensions pour chaque cas d'utilisation."
+        },
+        "docs": {
+            "title": "Documentation – PupCid's Little TikTool Helper",
+            "description": "Documentation complète : installation, configuration, référence API et développement de plugins."
+        },
+        "community": {
+            "title": "Communauté – PupCid's Little TikTool Helper",
+            "description": "Rejoignez la communauté LTTH. Discord, GitHub, retours et support."
+        },
+        "changelog": {
+            "title": "Journal des Modifications – PupCid's Little TikTool Helper",
+            "description": "Tous les changements, nouvelles fonctionnalités et corrections de bugs dans chaque version de LTTH."
+        },
+        "roadmap": {
+            "title": "Feuille de Route – PupCid's Little TikTool Helper",
+            "description": "Fonctionnalités planifiées et développement futur de PupCid's Little TikTool Helper."
+        },
+        "faq": {
+            "title": "FAQ – PupCid's Little TikTool Helper",
+            "description": "Questions fréquemment posées sur l'installation, l'utilisation et la configuration de LTTH."
+        },
+        "support": {
+            "title": "Support – PupCid's Little TikTool Helper",
+            "description": "Aide et support pour PupCid's Little TikTool Helper. Signaler des bugs, obtenir de l'aide."
+        },
+        "download": {
+            "title": "Télécharger – PupCid's Little TikTool Helper",
+            "description": "Téléchargez PupCid's Little TikTool Helper gratuitement. Disponible pour Windows 10/11."
+        },
+        "impressum": {
+            "title": "Mentions Légales – PupCid's Little TikTool Helper",
+            "description": "Informations légales, mentions légales et politique de confidentialité de ltth.app."
+        },
+        "donate": {
+            "title": "Soutenir le Projet – PupCid's Little TikTool Helper",
+            "description": "Soutenez le développement de PupCid's Little TikTool Helper avec un don."
+        },
+        "thankyou": {
+            "title": "Merci ! – PupCid's Little TikTool Helper",
+            "description": "Merci de soutenir PupCid's Little TikTool Helper."
+        },
+        "emoji_rain": {
+            "title": "WebGPU Emoji Rain – PupCid's Little TikTool Helper",
+            "description": "Effets de particules accélérés par matériel déclenchés par les cadeaux, likes et abonnements TikTok. Ensembles d'emojis personnalisables."
+        },
+        "dashboard": {
+            "title": "Tableau de Bord Multi-Onglets – PupCid's Little TikTool Helper",
+            "description": "Panneau de contrôle central avec statistiques en direct, fil de chat, journal d'événements, actions rapides et intégration OBS."
+        },
+        "auto_updater": {
+            "title": "Système de Mise à Jour Automatique – PupCid's Little TikTool Helper",
+            "description": "Vérification automatique des mises à jour, application de correctifs en un clic, gestion des versions et support de retour arrière."
+        },
+        "chat_commands": {
+            "title": "Commandes de Chat Personnalisées – PupCid's Little TikTool Helper",
+            "description": "Définir des commandes de chat personnalisées, déclencher des flux, gérer les délais et définir les niveaux de permissions."
+        },
+        "tikfinity_api": {
+            "title": "Intégration API TikFinity – PupCid's Little TikTool Helper",
+            "description": "Gestion étendue des événements via TikFinity, flux de données bidirectionnel, support webhooks et synchronisation en temps réel."
+        }
+    },
+    "plugins": {
+        "stableTitle": "Plugins Stables et Principaux",
+        "stableSubtitle": "Plugins entièrement testés et prêts pour la production pour votre stream.",
+        "betaTitle": "Plugins Beta",
+        "betaSubtitle": "Plugins fonctionnels en développement actif. Vos retours sont les bienvenus !",
+        "earlyBetaTitle": "Plugins Early Beta",
+        "earlyBetaSubtitle": "Plugins expérimentaux en développement précoce. Vos retours actifs aident au développement.",
+        "badge": {
+            "stable": "🟢 Stable",
+            "beta": "🟡 Bêta",
+            "earlyBeta": "🔴 Early Beta"
+        },
+        "clarityHud": {
+            "name": "ClarityHUD",
+            "desc": "Overlay OBS modulaire avec widgets personnalisables : compteur de spectateurs, top gifter, flux de chat et plus."
+        },
+        "lastEvent": {
+            "name": "LastEvent Spotlight",
+            "desc": "Affiche le dernier événement TikTok en tant qu'overlay animé : cadeau, follow, partage – parfait pour l'engagement."
+        },
+        "soundboard": {
+            "name": "Soundboard",
+            "desc": "100 000+ sons via MyInstants, raccourcis clavier, intégration OBS, mappages de cadeaux et gestion des catégories."
+        },
+        "alertSystem": {
+            "name": "Système d'Alertes",
+            "desc": "Alertes personnalisables pour les cadeaux, follows, partages, likes avec son, texte et combinaisons GIF/image."
+        },
+        "ttsEngine": {
+            "name": "Moteur TTS",
+            "desc": "75+ voix, multi-moteur (Windows SAPI, Google, Edge TTS), système de file d'attente avec priorités et liste noire."
+        },
+        "flowEngine": {
+            "name": "Moteur de Flux",
+            "desc": "Éditeur d'automatisation visuel avec glisser-déposer et déclencheurs basés sur les événements – sans code."
+        },
+        "gameEngine": {
+            "name": "Moteur de Jeu",
+            "desc": "5 jeux : Machine à sous, Roue de la fortune, Quiz, Prédictions et Token Games – intégrés aux événements TikTok."
+        },
+        "animazingpal": {
+            "name": "AnimazingPal",
+            "desc": "Bot de chat IA avec intégration GPT, mémoire à long terme, 5 personnalités et réponses contextuelles."
+        },
+        "oscBridge": {
+            "name": "Pont OSC",
+            "desc": "Intégration VRChat/OpenShock via le protocole OSC – contrôlez des avatars et du matériel via les événements TikTok."
+        },
+        "multicam": {
+            "name": "Commutateur Multi-Cam",
+            "desc": "Changement automatique de caméra OBS basé sur les cadeaux et les commandes de chat avec OBS WebSocket v5."
+        },
+        "weatherOverlay": {
+            "name": "Overlay Météo",
+            "desc": "13 effets météo accélérés par GPU : pluie, neige, aurore, lucioles, sakura, orage et plus encore."
+        },
+        "goalsSystem": {
+            "name": "Système d'Objectifs",
+            "desc": "4 suiveurs d'objectifs (Likes, Abonnés, Subs, Coins) avec source de navigateur OBS, modes automatiques et barres de progression."
+        },
+        "musicBot": {
+            "name": "Music Bot",
+            "desc": "Recherche et streaming YouTube, file d'attente, demandes de chansons via chat, overlay OBS en 3 designs, vote-skip."
+        },
+        "slotMachine": {
+            "name": "Machine à Sous",
+            "desc": "Machine à sous 3 rouleaux avec support multi-machine, reconnaissance superfan, sons personnalisés et design configurable."
+        },
+        "chatCommands": {
+            "name": "Commandes de Chat",
+            "desc": "Commandes de chat personnalisées avec cooldowns, niveaux de permission (Diffuseur/Mod/Tous) et intégration de déclencheurs Flow."
+        },
+        "minecraftConnect": {
+            "name": "Minecraft Connect",
+            "desc": "Intégration de serveur Minecraft avec pont de chat – connectez votre chat TikTok en direct au jeu Minecraft."
+        },
+        "thermalPrinter": {
+            "name": "Imprimante Thermique",
+            "desc": "Imprimante thermique physique pour les messages de chat et les événements via ESC/POS (USB et réseau)."
+        },
+        "quizShow": {
+            "name": "Quiz Show",
+            "desc": "Jeu de quiz interactif pour les spectateurs avec des questions générées par GPT et intégration de source de navigateur OBS."
+        },
+        "viewerXp": {
+            "name": "XP Spectateurs",
+            "desc": "Suivi des XP, système de niveaux et classements – récompensez les spectateurs fidèles avec des points d'expérience."
+        },
+        "leaderboard": {
+            "name": "Classement",
+            "desc": "Overlay de classement en temps réel pour les meilleurs donateurs et spectateurs avec mises à jour WebSocket."
+        },
+        "openShock": {
+            "name": "OpenShock",
+            "desc": "Contrôle de choc matériel via les événements TikTok avec des mappages de cadeaux configurables et un éditeur de modèles."
+        },
+        "giftMilestone": {
+            "name": "Jalon de Cadeaux",
+            "desc": "Suivi des jalons pour les objectifs de cadeaux avec des célébrations automatiques lors de l'atteinte des seuils."
+        },
+        "vdoninja": {
+            "name": "VDO.Ninja",
+            "desc": "Streaming multi-invité avec intégration VDO.Ninja, gestion des salles, codes QR et routage audio."
+        },
+        "gcce": {
+            "name": "GCCE",
+            "desc": "Game Controller Chat Extension – contrôle de manette basé sur le chat avec permissions et limitation de débit."
+        },
+        "advancedTimer": {
+            "name": "Minuterie Avancée",
+            "desc": "Minuteries et comptes à rebours avancés pour les streams avec intégration de source de navigateur OBS."
+        },
+        "chatango": {
+            "name": "Chatango",
+            "desc": "Intégration de chat Chatango – connectez votre chaîne Chatango au tableau de bord LTTH."
+        },
+        "gcceHud": {
+            "name": "GCCE HUD",
+            "desc": "Overlay HUD pour la Game Controller Chat Extension – affiche les commandes actives et les actions des joueurs."
+        },
+        "streamAlchemy": {
+            "name": "Stream Alchemy",
+            "desc": "Système de craft RPG : les cadeaux TikTok sont combinés en objets RPG générés par IA – 4 niveaux de rareté."
+        },
+        "emojiRain": {
+            "name": "WebGPU Emoji Rain",
+            "desc": "Pluie de particules emoji accélérée par GPU déclenchée par les cadeaux, likes et follows TikTok."
+        },
+        "vulkanRockets": {
+            "name": "Vulkan Rockets",
+            "desc": "Animations de fusées accélérées par GPU en overlay – spectacle visuel pour les moments spéciaux du stream."
+        }
+    },
+    "screenshots": {
+        "tts": {
+            "hero": {
+                "alt": "Panneau d'administration TTS avec sélecteur de voix, file d'attente et paramètres des fournisseurs",
+                "caption": "Panneau TTS multi-fournisseurs avec gestion de la file d'attente en temps réel"
+            }
+        },
+        "soundboard": {
+            "hero": {
+                "alt": "Grille de sons avec cartes, mappages de cadeaux et contrôles de volume",
+                "caption": "Soundboard avec sons déclenchés par cadeaux, raccourcis clavier et volume individuel"
+            }
+        },
+        "alerts": {
+            "hero": {
+                "alt": "Système d'alertes avec liste d'événements, panneau d'aperçu et paramètres d'animation",
+                "caption": "Système d'alertes entièrement personnalisable pour les follows, cadeaux, abonnements et événements personnalisés"
+            }
+        },
+        "goals": {
+            "hero": {
+                "alt": "Quatre suiveurs d'objectifs avec barres de progression pour les pièces, followers, likes et abonnements",
+                "caption": "Suiveurs d'objectifs synchronisés en direct avec cibles configurables et affichage pour overlay"
+            }
+        },
+        "flowEngine": {
+            "hero": {
+                "alt": "Canevas de l'éditeur de flux avec nœuds de déclencheur, condition et action connectés",
+                "caption": "Éditeur visuel de flux : enchaînez déclencheurs, conditions et actions sans code"
+            }
+        },
+        "dashboard": {
+            "hero": {
+                "alt": "Tableau de bord principal avec statistiques de stream, statut de connexion et boutons d'action rapide",
+                "caption": "Tableau de bord central avec métriques en temps réel et contrôles en un clic"
+            }
+        },
+        "overlays": {
+            "hero": {
+                "alt": "Gestionnaire d'overlays avec grille d'effets météo et aperçu de source navigateur",
+                "caption": "Overlays pour source navigateur dans OBS : météo, particules, alertes et plus"
+            }
+        },
+        "multicam": {
+            "hero": {
+                "alt": "Panneau multicam avec liste de caméras, statut de connexion OBS et règles de changement",
+                "caption": "Changement automatique de caméras piloté par les événements TikTok LIVE"
+            }
+        },
+        "oscBridge": {
+            "hero": {
+                "alt": "OSC Bridge avec liste d'adresses, paramètres VRChat et mappages de déclencheurs",
+                "caption": "Envoyez des messages OSC vers VRChat, VTUBE Studio ou tout logiciel compatible OSC"
+            }
+        },
+        "animazingpal": {
+            "hero": {
+                "alt": "Paramètres du chatbot AnimazingPal avec sélecteur de personnalité et statistiques de mémoire",
+                "caption": "Compagnon de chat IA avec personnalité personnalisable et mémoire contextuelle"
+            }
+        },
+        "vdoninja": {
+            "hero": {
+                "alt": "Gestionnaire de salle VDO.Ninja avec liste d'invités, paramètres et QR code",
+                "caption": "Intégrez des invités distants via VDO.Ninja avec gestion automatique des salles"
+            }
+        },
+        "viewerXp": {
+            "hero": {
+                "alt": "Classement Viewer XP avec paramètres XP, seuils de niveau et badges de rang",
+                "caption": "Récompensez les spectateurs fidèles avec XP, niveaux et un classement en direct"
+            }
+        },
+        "security": {
+            "hero": {
+                "alt": "Paramètres de sécurité avec liste de blocage, règles de limitation de débit et options de modération",
+                "caption": "Protégez votre stream avec filtres de mots-clés, limitation de débit et modération automatisée"
+            }
+        },
+        "pluginSystem": {
+            "hero": {
+                "alt": "Grille du gestionnaire de plugins avec badges de statut et bouton d'installation",
+                "caption": "Étendez les fonctionnalités avec des plugins communautaires : parcourez, installez et gérez en un seul endroit"
+            }
+        },
+        "slotMachine": {
+            "hero": {
+                "alt": "Interface de la machine à sous avec aperçu des rouleaux, configuration des symboles et déclencheur cadeau",
+                "caption": "Machine à sous déclenchée par cadeaux avec symboles personnalisés et overlay animé"
+            }
+        },
+        "gameEngine": {
+            "hero": {
+                "alt": "Moteur de jeux avec sélecteur de type de jeu, liste des jeux actifs et statistiques des participants",
+                "caption": "Mini-jeux interactifs déclenchés par les cadeaux, likes et commentaires TikTok"
+            }
+        },
+        "emojiRain": {
+            "hero": {
+                "alt": "Paramètres de pluie d'emojis avec aperçu des particules, sélection du jeu d'emojis et curseur de densité",
+                "caption": "Déclenchez des effets de pluie d'emojis colorés sur l'overlay depuis les événements en direct"
+            }
+        },
+        "autoUpdater": {
+            "hero": {
+                "alt": "Panneau de mise à jour automatique avec version actuelle, statut et journal des modifications",
+                "caption": "Restez à jour automatiquement : mises à jour en un clic avec journal des modifications intégré"
+            }
+        },
+        "chatCommands": {
+            "hero": {
+                "alt": "Tableau des commandes de chat avec commandes, réponses et niveaux d'autorisation",
+                "caption": "Créez des commandes de chat personnalisées avec délais, alias et niveaux d'autorisation"
+            }
+        },
+        "tikfinityApi": {
+            "hero": {
+                "alt": "Panneau API TikFinity avec statut de connexion, liste de webhooks et paramètres de synchronisation",
+                "caption": "Intégration TikFinity de premier ordre pour des données d'événements étendues et la prise en charge des webhooks"
+            }
+        }
+    },
+    "install": {
+        "tagline": "Une seule commande. Windows, macOS, Linux. Charge la dernière version, installe les dépendances et démarre le tableau de bord.",
+        "windows": {
+            "title": "Windows — PowerShell",
+            "desc": "Ouvre PowerShell (clic droit → \"Exécuter en tant qu'administrateur\" est facultatif), copie la commande et appuie sur Entrée.",
+            "warn": "⚠ Si Windows SmartScreen avertit : \"Informations complémentaires\" → \"Exécuter quand même\". Le script est signé et sûr."
+        },
+        "macos": {
+            "title": "macOS — Terminal",
+            "desc": "Ouvre Terminal (Spotlight → \"Terminal\"), copie la commande et appuie sur Entrée.",
+            "warn": "💡 Si Node.js manque, tu seras invité à installer Homebrew (https://brew.sh) — action unique."
+        },
+        "linux": {
+            "title": "Linux — Bash",
+            "desc": "Ouvre un terminal, copie la commande et appuie sur Entrée. Testé sur Ubuntu, Debian, Fedora, Arch.",
+            "warn": "💡 Le script utilise sudo uniquement si Node.js doit être installé via le gestionnaire de paquets."
+        },
+        "copy": "Copier",
+        "copied": "Copié !",
+        "whatHappens": "Que se passe-t-il ?",
+        "step1": {
+            "title": "1. Vérifier",
+            "desc": "Git et Node.js sont détectés — les outils manquants sont installés."
+        },
+        "step2": {
+            "title": "2. Télécharger",
+            "desc": "La dernière version de LTTH est clonée depuis GitHub vers ~/.local/share/ltth."
+        },
+        "step3": {
+            "title": "3. Construire",
+            "desc": "npm install configure les 36 plugins et modules."
+        },
+        "step4": {
+            "title": "4. Démarrer",
+            "desc": "Le tableau de bord s'ouvre sur http://localhost:3000/dashboard.html."
+        },
+        "altDownloads": "Téléchargements alternatifs",
+        "alt1": {
+            "name": "🪟 LTTH Cloud Launcher (Windows)",
+            "meta": "~7 Mo · GUI · Mises à jour auto · Retour en arrière"
+        },
+        "alt2": {
+            "name": "📦 Code source en ZIP",
+            "meta": "Installation manuelle · toutes plateformes"
+        },
+        "alt3": {
+            "name": "🏷️ Versions GitHub",
+            "meta": "Paquets versionnés &amp; sommes de contrôle"
+        },
+        "alt4": {
+            "name": "⭐ Dépôt",
+            "meta": "Stars &amp; issues sur GitHub"
+        },
+        "req": {
+            "title": "Configuration requise",
+            "os": "🖥️ Système d'exploitation",
+            "runtime": "⚙️ Runtime",
+            "hw": "🧠 Matériel"
+        },
+        "trouble": {
+            "title": "🛠️ Problèmes fréquents",
+            "q1": "PowerShell : « l'exécution de scripts est désactivée sur ce système »",
+            "a1": "Définit la stratégie d'exécution une fois : <code>Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned</code> et confirme avec « O ».",
+            "q2": "macOS : « curl: (60) SSL certificate problem »",
+            "a2": "Mets à jour curl via Homebrew (<code>brew install curl</code>) ou utilise <code>curl -k</code>.",
+            "q3": "Le port 3000 est occupé",
+            "a3": "Utilise un autre port : <code>LTTH_PORT=8080 curl -fsSL https://ltth.app/install.sh | bash</code>",
+            "q4": "Installer dans un autre dossier",
+            "a4": "<code>LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install.sh | bash</code>"
+        },
+        "cta": {
+            "title": "Besoin d'aide ?",
+            "desc": "Consulte la documentation ou contacte le support.",
+            "docs": "Documentation",
+            "support": "Support",
+            "issues": "GitHub Issues"
+        }
+    }
+}

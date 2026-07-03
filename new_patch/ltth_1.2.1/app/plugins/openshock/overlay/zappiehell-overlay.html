@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZappieHell - Goal Progress Overlay</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .goals-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .goal-card {
+            background: linear-gradient(135deg, rgba(220, 20, 60, 0.95), rgba(139, 0, 0, 0.95));
+            border-radius: 15px;
+            padding: 20px 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transform: translateX(-100px);
+            transition: all 0.5s ease-out;
+        }
+
+        .goal-card.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .goal-card.completed {
+            animation: goalCompleted 1s ease-in-out;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 140, 0, 0.95));
+        }
+
+        @keyframes goalCompleted {
+            0%, 100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.05);
+            }
+            50% {
+                transform: scale(0.95);
+            }
+            75% {
+                transform: scale(1.05);
+            }
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .goal-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .goal-icon {
+            font-size: 32px;
+        }
+
+        .goal-type {
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 5px 12px;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .goal-progress {
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-wrapper {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            height: 40px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FFD93D, #6BCB77);
+            border-radius: 18px;
+            transition: width 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .goal-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .coin-icon {
+            font-size: 20px;
+        }
+
+        .no-goals {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 24px;
+            padding: 60px 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .completion-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.6), transparent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .completion-flash.active {
+            opacity: 1;
+        }
+
+        /* Particles for goal completion */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 24px;
+            animation: particleFloat 2s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-200px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        .goal-card:not(.completed) {
+            animation: pulse 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="goals-container" id="goalsContainer">
+        <div class="no-goals" id="noGoals">
+            ⚡ No active ZappieHell goals configured ⚡
+        </div>
+    </div>
+
+    <div class="completion-flash" id="completionFlash"></div>
+    <div class="particles" id="particles"></div>
+
+    <script>
+        // State
+        let goals = [];
+        let socket = null;
+
+        // Initialize Socket.io connection
+        function initSocket() {
+            socket = io();
+
+            socket.on('connect', () => {
+                console.log('[ZappieHell] Connected to server');
+                // Request initial state
+                socket.emit('zappiehell:request:state');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('[ZappieHell] Disconnected from server');
+            });
+
+            // Receive initial state
+            socket.on('zappiehell:goals:state', (data) => {
+                console.log('[ZappieHell] Received initial state:', data);
+                updateGoals(data.goals || []);
+            });
+
+            // Receive goal updates
+            socket.on('zappiehell:goals:update', (data) => {
+                console.log('[ZappieHell] Goals updated:', data);
+                updateGoals(data.goals || []);
+            });
+
+            // Receive goal completion
+            socket.on('zappiehell:goals:completed', (data) => {
+                console.log('[ZappieHell] Goal completed:', data);
+                handleGoalCompletion(data.goal);
+            });
+        }
+
+        // Update goals
+        function updateGoals(newGoals) {
+            goals = newGoals.filter(g => g.active);
+            renderGoals();
+        }
+
+        // Render goals
+        function renderGoals() {
+            const container = document.getElementById('goalsContainer');
+            const noGoalsMessage = document.getElementById('noGoals');
+
+            if (goals.length === 0) {
+                noGoalsMessage.style.display = 'block';
+                // Clear any existing goal cards
+                Array.from(container.children).forEach(child => {
+                    if (child.id !== 'noGoals') {
+                        child.remove();
+                    }
+                });
+                return;
+            }
+
+            noGoalsMessage.style.display = 'none';
+
+            // Update or create goal cards
+            goals.forEach((goal, index) => {
+                let card = document.getElementById(`goal-${goal.id}`);
+                
+                if (!card) {
+                    card = createGoalCard(goal);
+                    container.appendChild(card);
+                    
+                    // Trigger animation after a short delay
+                    setTimeout(() => {
+                        card.classList.add('visible');
+                    }, index * 100);
+                } else {
+                    updateGoalCard(card, goal);
+                }
+            });
+
+            // Remove goals that are no longer active
+            Array.from(container.children).forEach(child => {
+                if (child.id === 'noGoals') return;
+                
+                const goalId = child.id.replace('goal-', '');
+                const exists = goals.some(g => g.id === goalId);
+                
+                if (!exists) {
+                    child.style.opacity = '0';
+                    child.style.transform = 'translateX(100px)';
+                    setTimeout(() => child.remove(), 500);
+                }
+            });
+        }
+
+        // Create goal card element
+        function createGoalCard(goal) {
+            const card = document.createElement('div');
+            card.className = 'goal-card';
+            card.id = `goal-${goal.id}`;
+
+            const percentage = Math.min(100, Math.round((goal.currentCoins / goal.targetCoins) * 100));
+            const isCompleted = goal.currentCoins >= goal.targetCoins;
+
+            card.innerHTML = `
+                <div class="goal-header">
+                    <div class="goal-name">
+                        <span class="goal-icon">⚡</span>
+                        <span>${escapeHtml(goal.name)}</span>
+                    </div>
+                    <div class="goal-type">${goal.type === 'stream' ? '🔴 Stream' : '🌐 Global'}</div>
+                </div>
+                <div class="goal-progress">
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar" style="width: ${percentage}%"></div>
+                        <div class="progress-text">${percentage}%</div>
+                    </div>
+                </div>
+                <div class="goal-stats">
+                    <div class="stat-item">
+                        <span class="coin-icon">💎</span>
+                        <span>${formatNumber(goal.currentCoins)} / ${formatNumber(goal.targetCoins)} coins</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>${formatNumber(goal.targetCoins - goal.currentCoins)} to go</span>
+                    </div>
+                </div>
+            `;
+
+            if (isCompleted) {
+                card.classList.add('completed');
+            }
+
+            return card;
+        }
+
+        // Update existing goal card
+        function updateGoalCard(card, goal) {
+            const percentage = Math.min(100, Math.round((goal.currentCoins / goal.targetCoins) * 100));
+            const isCompleted = goal.currentCoins >= goal.targetCoins;
+
+            // Update progress bar
+            const progressBar = card.querySelector('.progress-bar');
+            progressBar.style.width = `${percentage}%`;
+
+            // Update progress text
+            const progressText = card.querySelector('.progress-text');
+            progressText.textContent = `${percentage}%`;
+
+            // Update stats
+            const stats = card.querySelectorAll('.stat-item span');
+            stats[1].textContent = `${formatNumber(goal.currentCoins)} / ${formatNumber(goal.targetCoins)} coins`;
+            stats[2].textContent = `${formatNumber(goal.targetCoins - goal.currentCoins)} to go`;
+
+            // Update completion status
+            if (isCompleted && !card.classList.contains('completed')) {
+                card.classList.add('completed');
+            }
+        }
+
+        // Handle goal completion
+        function handleGoalCompletion(goal) {
+            console.log('[ZappieHell] Handling completion for:', goal.name);
+            
+            // Flash effect
+            const flash = document.getElementById('completionFlash');
+            flash.classList.add('active');
+            setTimeout(() => {
+                flash.classList.remove('active');
+            }, 500);
+
+            // Create particles
+            createParticles(goal);
+
+            // Update the goal card if it exists
+            const card = document.getElementById(`goal-${goal.id}`);
+            if (card) {
+                card.classList.add('completed');
+            }
+        }
+
+        // Create celebration particles
+        function createParticles(goal) {
+            const particlesContainer = document.getElementById('particles');
+            const emojis = ['⚡', '💥', '🔥', '✨', '💫', '⭐'];
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${50 + Math.random() * 30}%`;
+                particle.style.animationDelay = `${Math.random() * 0.5}s`;
+                
+                particlesContainer.appendChild(particle);
+
+                // Remove particle after animation
+                setTimeout(() => {
+                    particle.remove();
+                }, 2500);
+            }
+        }
+
+        // Format number with thousands separator
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            console.log('[ZappieHell] Overlay loaded');
+            initSocket();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

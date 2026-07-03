@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Goals Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0e0f10;color:#e8eaed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;width:1280px;height:800px;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+.sidebar{background:#1a1b1c;border-right:1px solid #2a2b2c;padding:1rem;display:flex;flex-direction:column;gap:.5rem}
+.sidebar-logo{font-size:1.2rem;font-weight:700;color:#12a116;padding:.75rem 0 1rem;border-bottom:1px solid #2a2b2c;margin-bottom:.5rem}
+.nav-item{padding:.6rem .75rem;border-radius:.5rem;cursor:pointer;color:#9ca3af;display:flex;align-items:center;gap:.6rem;font-size:.85rem}
+.nav-item.active{background:#12a116;color:#fff}
+.main{padding:1.5rem;overflow-y:auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+h1{font-size:1.4rem;font-weight:700}
+.btn{padding:.45rem 1rem;border-radius:.375rem;border:none;cursor:pointer;font-size:.85rem;font-weight:500}
+.btn-primary{background:#12a116;color:#fff}
+.btn-secondary{background:#2a2b2c;color:#e8eaed}
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.goal-card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.875rem;padding:1.5rem}
+.goal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.goal-icon{font-size:2rem}
+.goal-badge{font-size:.7rem;padding:.2rem .5rem;border-radius:1rem}
+.badge-active{background:#12a11625;color:#12a116;border:1px solid #12a11640}
+.badge-paused{background:#f59e0b25;color:#f59e0b;border:1px solid #f59e0b40}
+.goal-title{font-size:1.05rem;font-weight:700;margin-bottom:.25rem}
+.goal-sub{font-size:.78rem;color:#9ca3af;margin-bottom:1rem}
+.progress-track{background:#2a2b2c;border-radius:4px;height:10px;margin-bottom:.6rem;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .3s}
+.fill-green{background:linear-gradient(90deg,#0d8a10,#12a116)}
+.fill-yellow{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.fill-blue{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+.fill-purple{background:linear-gradient(90deg,#7c3aed,#8b5cf6)}
+.goal-values{display:flex;justify-content:space-between;font-size:.8rem}
+.goal-current{color:#12a116;font-weight:700;font-size:1.1rem}
+.goal-target{color:#9ca3af}
+.goal-pct{font-weight:600}
+.settings-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.setting-card{background:#1a1b1c;border:1px solid #2a2b2c;border-radius:.75rem;padding:1rem}
+.setting-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:.5rem}
+select,input{background:#0e0f10;border:1px solid #2a2b2c;border-radius:.375rem;color:#e8eaed;padding:.4rem .65rem;width:100%;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">🎯 ltth.app</div>
+    <div class="nav-item">📊 Dashboard</div>
+    <div class="nav-item">🔊 Text-to-Speech</div>
+    <div class="nav-item">🎵 Soundboard</div>
+    <div class="nav-item">🔔 Alerts</div>
+    <div class="nav-item active">🎯 Goals</div>
+    <div class="nav-item">🔀 Flow Engine</div>
+    <div class="nav-item">⚙️ Settings</div>
+  </div>
+  <div class="main">
+    <div class="header">
+      <h1>🎯 Goals Tracker</h1>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-secondary">Reset All</button>
+        <button class="btn btn-primary">+ New Goal</button>
+      </div>
+    </div>
+    <div class="goals-grid">
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-icon">🪙</div>
+          <span class="goal-badge badge-active">Active</span>
+        </div>
+        <div class="goal-title">Coin Goal</div>
+        <div class="goal-sub">Trigger: Gift received · Resets: Stream end</div>
+        <div class="progress-track"><div class="progress-fill fill-green" style="width:68%"></div></div>
+        <div class="goal-values">
+          <span class="goal-current">6,800</span>
+          <span class="goal-target">/ 10,000 coins</span>
+          <span class="goal-pct">68%</span>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-icon">👤</div>
+          <span class="goal-badge badge-active">Active</span>
+        </div>
+        <div class="goal-title">Follower Goal</div>
+        <div class="goal-sub">Trigger: Follow · Resets: Manual</div>
+        <div class="progress-track"><div class="progress-fill fill-blue" style="width:42%"></div></div>
+        <div class="goal-values">
+          <span class="goal-current" style="color:#3b82f6">210</span>
+          <span class="goal-target">/ 500 followers</span>
+          <span class="goal-pct">42%</span>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-icon">❤️</div>
+          <span class="goal-badge badge-active">Active</span>
+        </div>
+        <div class="goal-title">Like Goal</div>
+        <div class="goal-sub">Trigger: Like · Resets: Stream end</div>
+        <div class="progress-track"><div class="progress-fill fill-purple" style="width:85%"></div></div>
+        <div class="goal-values">
+          <span class="goal-current" style="color:#8b5cf6">8,500</span>
+          <span class="goal-target">/ 10,000 likes</span>
+          <span class="goal-pct">85%</span>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-icon">⭐</div>
+          <span class="goal-badge badge-paused">Paused</span>
+        </div>
+        <div class="goal-title">Sub Goal</div>
+        <div class="goal-sub">Trigger: Subscribe · Resets: Manual</div>
+        <div class="progress-track"><div class="progress-fill fill-yellow" style="width:25%"></div></div>
+        <div class="goal-values">
+          <span class="goal-current" style="color:#f59e0b">5</span>
+          <span class="goal-target">/ 20 subs</span>
+          <span class="goal-pct">25%</span>
+        </div>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="setting-card">
+        <div class="setting-title">Overlay Style</div>
+        <select><option>Progress Bar</option><option>Circle</option><option>Counter</option></select>
+      </div>
+      <div class="setting-card">
+        <div class="setting-title">Completion Action</div>
+        <select><option>Play Sound</option><option>Show Alert</option><option>Trigger Flow</option></select>
+      </div>
+      <div class="setting-card">
+        <div class="setting-title">Browser Source URL</div>
+        <input type="text" value="http://localhost:3000/goals-overlay">
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

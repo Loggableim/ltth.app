@@ -1,0 +1,42 @@
+{
+  "soundboard": {
+    "title": "Soundboard",
+    "subtitle": "Sound-Effekt-Verwaltung",
+    "sounds": {
+      "title": "Sound-Bibliothek",
+      "add": "Sound hinzufügen",
+      "upload": "Sound hochladen",
+      "name": "Sound-Name",
+      "file": "Sound-Datei",
+      "category": "Kategorie",
+      "volume": "Lautstärke",
+      "play": "Abspielen",
+      "stop": "Stoppen",
+      "delete": "Löschen",
+      "edit": "Bearbeiten"
+    },
+    "config": {
+      "title": "Einstellungen",
+      "enabled": "Soundboard aktivieren",
+      "trigger_mode": "Trigger-Modus",
+      "manual": "Nur manuell",
+      "automatic": "Automatisch bei Events",
+      "master_volume": "Master-Lautstärke",
+      "save": "Einstellungen speichern"
+    },
+    "categories": {
+      "all": "Alle Sounds",
+      "alerts": "Benachrichtigungen",
+      "effects": "Effekte",
+      "music": "Musik",
+      "custom": "Benutzerdefiniert"
+    },
+    "triggers": {
+      "title": "Event-Trigger",
+      "gift": "Bei Geschenk",
+      "follow": "Bei Follow",
+      "subscribe": "Bei Abo",
+      "like": "Bei Like"
+    }
+  }
+}

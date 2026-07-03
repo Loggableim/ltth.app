@@ -1,0 +1,46 @@
+{
+  "webgpu_emoji_rain": {
+    "title": "Paramètres Pluie d'Émojis",
+    "subtitle": "Overlays Émojis Interactifs",
+    "config": {
+      "title": "Configuration",
+      "enabled": "Activer la Pluie d'Émojis",
+      "trigger_on_gift": "Déclencher sur Cadeau",
+      "trigger_on_follow": "Déclencher sur Suivi",
+      "trigger_on_like": "Déclencher sur Jalon de J'aime",
+      "like_threshold": "Seuil de J'aime",
+      "duration": "Durée de la Pluie (secondes)",
+      "intensity": "Intensité de la Pluie",
+      "emoji_size": "Taille des Émojis",
+      "custom_emojis": "Émojis Personnalisés",
+      "save": "Enregistrer les Paramètres"
+    },
+    "toaster_mode": {
+      "title": "Mode Grille-Pain (PCs Bas de Gamme)",
+      "description": "Réduit l'utilisation du CPU et la consommation de ressources pour les PCs faibles",
+      "enabled": "Activer le Mode Grille-Pain",
+      "help": "Optimisé pour des performances maximales sur systèmes faibles",
+      "changes_title": "Changements :",
+      "max_emojis": "Émojis Maximum: 200 → 50",
+      "target_fps": "FPS Cible: 60 → 30",
+      "rotation": "Rotation: Désactivée",
+      "wind": "Vent: Désactivé",
+      "effects": "Arc-en-ciel/Pixel/Lueur: Désactivés",
+      "burst": "Intensité de Rafale: Réduite",
+      "tip": "Utilisez le Mode Grille-Pain si votre PC ralentit pendant le streaming ou si l'utilisation du CPU est trop élevée."
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "URL de l'Overlay",
+      "obs_url": "URL du HUD OBS",
+      "copy": "Copier l'URL",
+      "open": "Ouvrir l'Overlay",
+      "test": "Tester la Pluie"
+    },
+    "preview": {
+      "title": "Aperçu",
+      "start": "Démarrer l'Aperçu",
+      "stop": "Arrêter l'Aperçu"
+    }
+  }
+}

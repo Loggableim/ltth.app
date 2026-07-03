@@ -1,0 +1,636 @@
+/* layout.css - Shared Layout Styles for ltth.app */
+
+/* ===================================
+   Layout Loading State
+   Prevents layout shift while header/footer partials are being injected.
+   The `data-layout-loading` attribute is set by layout.js at the start of
+   init() and removed once injection is complete.
+   =================================== */
+
+body[data-layout-loading] > *:not(script):not(style):not(link):not(#scrollProgress) {
+    visibility: hidden;
+}
+
+/* ===================================
+   Navigation Dropdown Styles
+   =================================== */
+
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+}
+
+.nav-dropdown-arrow {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nav-dropdown.open .nav-dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    min-width: 220px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    z-index: 200;
+    animation: dropdownIn 0.15s ease;
+}
+
+.nav-dropdown.open .nav-dropdown-menu {
+    display: block;
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-text, #f5f7f4);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.nav-dropdown-item:hover {
+    background: rgba(18, 161, 22, 0.15);
+    color: var(--color-primary, #12a116);
+}
+
+/* ===================================
+   Feature Card Grid
+   =================================== */
+
+.feature-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+@media (max-width: 900px) {
+    .feature-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .feature-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.feature-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.feature-card-item {
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 1rem;
+    padding: 1.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    height: 100%;
+}
+
+.feature-card-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(18, 161, 22, 0.15);
+    border-color: var(--color-primary, #12a116);
+}
+
+.feature-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--color-text, #f5f7f4);
+}
+
+.feature-card-desc {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.feature-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.feature-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background: rgba(18, 161, 22, 0.12);
+    color: var(--color-primary, #12a116);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.feature-tag-new {
+    background: rgba(100, 18, 161, 0.2);
+    color: #a855f7;
+}
+
+/* ===================================
+   Sub-Page Layout (Sidebar + Content)
+   =================================== */
+
+.subpage-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2.5rem;
+    align-items: start;
+    padding: 2rem 0;
+}
+
+@media (max-width: 860px) {
+    .subpage-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.subpage-sidebar {
+    position: sticky;
+    top: 5rem;
+}
+
+.subpage-sidebar-nav {
+    background: var(--color-surface, #1a1b1d);
+    border: 1px solid var(--color-border, #2a2b2d);
+    border-radius: 1rem;
+    padding: 1.25rem;
+}
+
+.subpage-sidebar-nav h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary, #b5b7b4);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border, #2a2b2d);
+}
+
+.subpage-sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.subpage-sidebar-nav li a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s, color 0.15s;
+}
+
+.subpage-sidebar-nav li a:hover,
+.subpage-sidebar-nav li a.active {
+    background: rgba(18, 161, 22, 0.12);
+    color: var(--color-primary, #12a116);
+}
+
+/* ===================================
+   Breadcrumb Navigation
+   =================================== */
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.breadcrumb a {
+    color: var(--color-text-secondary, #b5b7b4);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary, #12a116);
+}
+
+.breadcrumb-sep {
+    opacity: 0.5;
+}
+
+.breadcrumb-current {
+    color: var(--color-text, #f5f7f4);
+    font-weight: 500;
+}
+
+/* ===================================
+   Version Badge
+   =================================== */
+
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    background: rgba(18, 161, 22, 0.15);
+    color: var(--color-primary, #12a116);
+    border: 1px solid rgba(18, 161, 22, 0.3);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+}
+
+/* ===================================
+   Mobile Hamburger Open State
+   =================================== */
+
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-surface, #1a1b1d);
+        border-bottom: 1px solid var(--color-border, #2a2b2d);
+        padding: 1rem;
+        gap: 0.25rem;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    
+    .nav-menu.open,
+    .nav-menu.active {
+        display: flex;
+    }
+    
+    .nav-toggle.open span:nth-child(1),
+    .nav-toggle.active span:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+    .nav-toggle.open span:nth-child(2),
+    .nav-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    .nav-toggle.open span:nth-child(3),
+    .nav-toggle.active span:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+    
+    .nav-dropdown-menu {
+        position: static;
+        box-shadow: none;
+        border: none;
+        background: rgba(18, 161, 22, 0.05);
+        margin: 0.25rem 0;
+    }
+    
+    .lang-dropdown .lang-dropdown-menu {
+        position: static;
+    }
+}
+
+/* ===================================
+   Feature Section Hero
+   =================================== */
+
+.feature-hero {
+    padding: 5rem 0 3rem;
+    text-align: center;
+}
+
+.feature-hero-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-hero-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--color-primary, #12a116), #42ff73);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.feature-hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--color-text-secondary, #b5b7b4);
+    max-width: 650px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+}
+
+/* ===================================
+   Section dividers
+   =================================== */
+
+.section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-border, #2a2b2d), transparent);
+    margin: 3rem 0;
+}
+
+/* ===================================
+   Mega Menu (Features)
+   =================================== */
+
+.nav-mega {
+    position: static;
+}
+
+.nav-mega-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    position: relative;
+}
+
+.nav-mega-arrow {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.nav-mega.open .nav-mega-arrow {
+    transform: rotate(180deg);
+}
+
+/* Panel: hidden by default using opacity+visibility pattern */
+.nav-mega-panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 190;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-12px);
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s 0.22s;
+}
+
+.nav-mega.open .nav-mega-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+    transform: translateY(0);
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s 0s;
+}
+
+.mega-panel-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 1.25rem;
+}
+
+.mega-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 1.5rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.mega-category-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.mega-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.mega-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.5rem;
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+    min-height: 44px;
+}
+
+.mega-item:hover {
+    background: rgba(18, 161, 22, 0.12);
+    color: var(--color-primary);
+    transform: translateX(3px);
+}
+
+.mega-item:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+
+.mega-item-emoji {
+    font-size: 1rem;
+    flex-shrink: 0;
+    width: 1.4rem;
+    text-align: center;
+}
+
+.mega-item-label {
+    line-height: 1.3;
+}
+
+.mega-panel-footer {
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.875rem;
+    text-align: right;
+}
+
+.mega-all-features {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: background 0.15s ease;
+}
+
+.mega-all-features:hover {
+    background: rgba(18, 161, 22, 0.1);
+}
+
+/* Mobile mega menu: accordion inside hamburger */
+@media (max-width: 768px) {
+    .nav-mega {
+        width: 100%;
+    }
+
+    .nav-mega-panel {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: all;
+        transform: none;
+        transition: none;
+        box-shadow: none;
+        border: none;
+        background: rgba(18, 161, 22, 0.05);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        max-height: 0;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .nav-mega.open .nav-mega-panel {
+        max-height: 2000px;
+        transition: max-height 0.3s ease;
+        padding: 0;
+    }
+
+    .mega-panel-inner {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .mega-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .mega-category-title {
+        font-size: 0.7rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .mega-items {
+        gap: 0;
+    }
+
+    .mega-item {
+        padding: 0.4rem 0.5rem;
+        min-height: 40px;
+        font-size: 0.85rem;
+    }
+
+    .mega-item:hover {
+        transform: none;
+    }
+
+    .mega-panel-footer {
+        text-align: left;
+        padding-top: 0.5rem;
+    }
+}
+
+/* ===================================
+   Desktop Dropdown Hover Support
+   =================================== */
+
+@media (min-width: 769px) {
+    /* Pure CSS hover: show dropdown when hovering the container */
+    .nav-dropdown:hover .nav-dropdown-menu {
+        display: block;
+    }
+
+    /* Invisible bridge above the menu to cover the gap between
+       trigger and menu, preventing mouseleave from firing mid-transit */
+    .nav-dropdown-menu::before {
+        content: '';
+        position: absolute;
+        top: -0.5rem;
+        left: 0;
+        width: 100%;
+        height: 0.5rem;
+        background: transparent;
+    }
+
+    /* Invisible bridge above the mega panel to cover any gap between
+       the navbar bottom and the panel top */
+    .nav-mega-panel::before {
+        content: '';
+        position: absolute;
+        top: -1rem;
+        left: 0;
+        width: 100%;
+        height: 1rem;
+        background: transparent;
+    }
+}
+
+/* Nav link underline hover animation (desktop only) */
+@media (min-width: 769px) {
+    .nav-link:not(.nav-cta) {
+        position: relative;
+    }
+
+    .nav-link:not(.nav-cta)::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        right: 50%;
+        height: 2px;
+        background: var(--color-primary);
+        border-radius: 1px;
+        transition: left 0.2s ease, right 0.2s ease;
+    }
+
+    .nav-link:not(.nav-cta):hover::after,
+    .nav-link:not(.nav-cta).active::after {
+        left: 0.75rem;
+        right: 0.75rem;
+    }
+}

@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGPU Emoji Rain Konfiguration - TikTok Stream Tool</title>
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-primary);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--color-text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            color: var(--color-text-primary);
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--color-text-secondary);
+            font-size: 1.1em;
+        }
+
+        .nav-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-button {
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-button:hover {
+            background: var(--color-bg-hover);
+            transform: translateY(-2px);
+        }
+
+        .toggle-section {
+            background: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .toggle-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-bg-tertiary);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--color-bg-primary);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--brand-primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .config-section {
+            background: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+        }
+
+        .config-section h2 {
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--color-border);
+            padding-bottom: 10px;
+            color: var(--color-text-primary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--color-input-border);
+            border-radius: 8px;
+            background: var(--color-input-bg);
+            color: var(--color-input-text);
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--color-input-focus);
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--color-input-placeholder);
+        }
+
+        /* Fix select dropdown colors for all themes */
+        .form-group select option {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+        }
+
+        .form-group select option:checked,
+        .form-group select option:hover {
+            background: var(--brand-primary);
+            color: var(--color-text-primary);
+        }
+
+        .form-group select optgroup {
+            background: var(--color-bg-primary);
+            color: var(--brand-primary);
+            font-weight: bold;
+        }
+
+        .form-group input[type="range"] {
+            padding: 0;
+        }
+
+        .range-value {
+            display: inline-block;
+            min-width: 60px;
+            text-align: right;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .emoji-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .emoji-input textarea {
+            flex: 1;
+            min-height: 80px;
+            font-size: 1.5em;
+        }
+
+        .emoji-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 15px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            min-height: 60px;
+        }
+
+        .emoji-preview-item {
+            font-size: 2em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .emoji-preview-item:hover {
+            transform: scale(1.3);
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: var(--color-text-muted);
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            background: var(--brand-primary);
+            border: 1px solid var(--brand-primary);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--brand-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--glow-brand);
+        }
+
+        button.secondary {
+            background: var(--color-accent-primary);
+            border-color: var(--color-accent-primary);
+        }
+
+        button.secondary:hover {
+            background: var(--color-accent-primary);
+            filter: brightness(1.1);
+            box-shadow: var(--glow-primary);
+        }
+
+        button.danger {
+            background: var(--color-accent-danger);
+            border-color: var(--color-accent-danger);
+        }
+
+        button.danger:hover {
+            background: var(--color-accent-danger);
+            filter: brightness(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: var(--color-accent-success);
+            color: white;
+            font-weight: 600;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-lg);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: var(--color-accent-danger);
+        }
+
+        /* Uploaded Images Grid */
+        .image-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--color-bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .image-item:hover {
+            transform: scale(1.05);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-item .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--color-accent-danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .image-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .image-item .delete-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .section-warning {
+            border: 2px solid var(--color-accent-warning);
+            background: var(--color-bg-card);
+        }
+
+        .section-success {
+            border: 2px solid var(--color-accent-success);
+            background: var(--color-bg-card);
+        }
+
+        .info-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+
+        .info-box strong {
+            color: var(--color-text-primary);
+        }
+
+        .info-box-item {
+            margin-top: 10px;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .info-box-item span {
+            color: var(--brand-primary);
+        }
+
+        .tip-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--brand-primary-light);
+            border-radius: 8px;
+            border: 1px solid var(--brand-primary);
+        }
+
+        .tip-box strong {
+            color: var(--color-text-primary);
+        }
+
+        .code-block {
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: var(--color-text-secondary);
+        }
+
+        .highlight {
+            color: var(--brand-primary);
+        }
+
+        .nav-button-primary {
+            background: var(--brand-primary-light);
+            border-color: var(--brand-primary);
+        }
+
+        .nav-button-primary:hover {
+            background: var(--brand-primary-light);
+            filter: brightness(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌧️ WebGPU Emoji Rain Konfiguration</h1>
+        <p class="subtitle">Physik-basierte Emoji-Animationen für TikTok Events</p>
+
+        <div class="nav-buttons">
+            <a href="/dashboard.html" class="nav-button">← Zurück zum Dashboard</a>
+            <a href="/webgpu-emoji-rain/obs-hud" class="nav-button nav-button-primary" target="_blank">🎮 OBS HUD öffnen</a>
+        </div>
+
+        <!-- Enable/Disable Toggle -->
+        <div class="toggle-section">
+            <div class="toggle-container">
+                <h2>Emoji Rain</h2>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="enabled-toggle">
+                    <span class="slider"></span>
+                </label>
+                <span id="enabled-status">Deaktiviert</span>
+            </div>
+        </div>
+
+        <!-- Toaster Mode (Low-End PC Mode) -->
+        <div class="config-section section-warning">
+            <h2>🍞 Toaster Modus (Schwache PCs)</h2>
+            <div class="help-text" style="margin-bottom: 20px; font-size: 1em;">
+                Reduziert CPU-Auslastung und Ressourcenverbrauch für schwache PCs. Aktiviere diesen Modus, wenn du Performance-Probleme hast.
+            </div>
+
+            <div class="form-group">
+                <label for="toaster_mode" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="toaster_mode" style="width: auto;">
+                    <strong>Toaster Modus aktivieren</strong>
+                </label>
+                <div class="help-text">Optimiert für maximale Performance auf schwachen Systemen</div>
+            </div>
+
+            <div class="info-box">
+                <strong>🔧 Was wird geändert:</strong><br>
+                <div class="info-box-item">
+                    <div>• <span>Max. Emojis:</span> 200 → 50</div>
+                    <div>• <span>Ziel-FPS:</span> 60 → 30</div>
+                    <div>• <span>Rotation:</span> Deaktiviert</div>
+                    <div>• <span>Wind:</span> Deaktiviert</div>
+                    <div>• <span>Rainbow/Pixel/Glow:</span> Deaktiviert</div>
+                    <div>• <span>Burst Intensität:</span> Reduziert</div>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Tipp:</strong> Nutze den Toaster Modus, wenn dein PC beim Streamen langsamer wird oder die CPU-Auslastung zu hoch ist.
+            </div>
+        </div>
+
+        <!-- OBS HUD Settings -->
+        <div class="config-section section-success">
+            <h2>🎮 OBS HUD Einstellungen</h2>
+            <div class="help-text" style="margin-bottom: 20px; font-size: 1em;">
+                Separate hochwertige Overlay-Seite für OBS mit fester Auflösung und Game-Quality Grafik
+            </div>
+
+            <div class="form-group">
+                <label for="obs_hud_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="obs_hud_enabled" style="width: auto;">
+                    OBS HUD aktivieren
+                </label>
+                <div class="help-text">Aktiviert die separate OBS HUD Seite mit fester Auflösung</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="obs_hud_preset">Auflösungs-Preset</label>
+                    <select id="obs_hud_preset">
+                        <option value="custom">Custom</option>
+                        <optgroup label="16:9 (Landscape)">
+                            <option value="720p">720p (1280x720)</option>
+                            <option value="1080p" selected>1080p (1920x1080)</option>
+                            <option value="1440p">1440p (2560x1440)</option>
+                            <option value="4k">4K (3840x2160)</option>
+                        </optgroup>
+                        <optgroup label="9:16 (Portrait)">
+                            <option value="720p-portrait">720p Portrait (720x1280)</option>
+                            <option value="1080p-portrait">1080p Portrait (1080x1920)</option>
+                            <option value="1440p-portrait">1440p Portrait (1440x2560)</option>
+                            <option value="4k-portrait">4K Portrait (2160x3840)</option>
+                        </optgroup>
+                    </select>
+                    <div class="help-text">Wähle eine Standard-Auflösung oder Custom</div>
+                </div>
+                <div class="form-group">
+                    <label for="obs_hud_width">OBS HUD Breite (px)</label>
+                    <input type="number" id="obs_hud_width" min="640" max="7680" step="1">
+                    <div class="help-text">Feste Breite für OBS Browser Source</div>
+                </div>
+                <div class="form-group">
+                    <label for="obs_hud_height">OBS HUD Höhe (px)</label>
+                    <input type="number" id="obs_hud_height" min="360" max="4320" step="1">
+                    <div class="help-text">Feste Höhe für OBS Browser Source</div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="enable_glow" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="enable_glow" style="width: auto;">
+                        Glow-Effekte aktivieren
+                    </label>
+                    <div class="help-text">Leuchtende Effekte bei Aufprall</div>
+                </div>
+                <div class="form-group">
+                    <label for="enable_particles" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="enable_particles" style="width: auto;">
+                        Partikel-Effekte aktivieren
+                    </label>
+                    <div class="help-text">Partikel beim Aufprall spawnen</div>
+                </div>
+                <div class="form-group">
+                    <label for="enable_depth" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="enable_depth" style="width: auto;">
+                        Tiefeneffekte aktivieren
+                    </label>
+                    <div class="help-text">Schatten und 3D-Tiefe</div>
+                </div>
+                <div class="form-group">
+                    <label for="target_fps">Ziel-FPS</label>
+                    <input type="number" id="target_fps" min="30" max="120" step="10" value="60">
+                    <div class="help-text">Performance-Ziel (Standard: 60 FPS)</div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>🔗 OBS Setup:</strong><br>
+                <div class="code-block">
+                    1. In OBS: Neue Browser Source hinzufügen<br>
+                    2. URL eingeben: <span class="highlight">http://localhost:3000/webgpu-emoji-rain/obs-hud</span><br>
+                    3. Breite & Höhe auf gewählte Auflösung setzen<br>
+                    4. "Shutdown source when not visible" aktivieren (für bessere Performance)<br>
+                    5. "Refresh browser when scene becomes active" aktivieren
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Settings (Standard Overlay) -->
+        <div class="config-section">
+            <h2>📐 Canvas Einstellungen (Standard Overlay)</h2>
+            <div class="help-text" style="margin-bottom: 15px;">
+                Diese Einstellungen gelten für das Standard-Overlay (/webgpu-emoji-rain/overlay)
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="width_px">Breite (px)</label>
+                    <input type="number" id="width_px" min="640" max="3840" step="1">
+                    <div class="help-text">Empfohlen: 1280 (720p) oder 1920 (1080p)</div>
+                </div>
+                <div class="form-group">
+                    <label for="height_px">Höhe (px)</label>
+                    <input type="number" id="height_px" min="360" max="2160" step="1">
+                    <div class="help-text">Empfohlen: 720 (720p) oder 1080 (1080p)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emoji Set Configuration -->
+        <div class="config-section">
+            <h2>😊 Emoji Set</h2>
+            <div class="form-group">
+                <label for="emoji_set">Emojis (durch Komma getrennt)</label>
+                <textarea id="emoji_set" placeholder="💧,💙,💚,💜,❤️,🩵,✨,🌟,🔥,🎉"></textarea>
+                <div class="help-text">Gib die Emojis ein, die zufällig gespawnt werden sollen</div>
+            </div>
+            <div class="emoji-preview" id="emoji-preview"></div>
+        </div>
+
+        <!-- Custom Images Configuration -->
+        <div class="config-section">
+            <h2>🖼️ Custom Grafiken</h2>
+            <div class="form-group">
+                <label for="use_custom_images" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="use_custom_images" style="width: auto;">
+                    Custom Grafiken statt Emojis verwenden
+                </label>
+                <div class="help-text">Wenn aktiviert, werden Bilder statt Emojis verwendet</div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="form-group">
+                <label>Bilder hochladen</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="image-upload" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml" multiple style="flex: 1;">
+                    <button type="button" id="upload-images-btn" class="secondary">📤 Upload</button>
+                </div>
+                <div class="help-text">PNG, JPG, GIF, WebP, SVG (max. 5MB pro Datei)</div>
+                <div id="upload-progress" style="display: none; margin-top: 10px; color: var(--brand-primary); font-weight: 600;"></div>
+            </div>
+
+            <!-- Uploaded Images Grid -->
+            <div class="form-group">
+                <label>Hochgeladene Bilder</label>
+                <div id="uploaded-images-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px; padding: 15px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border); border-radius: 8px; min-height: 100px;">
+                    <div style="text-align: center; color: var(--color-text-muted); grid-column: 1 / -1;">Keine Bilder hochgeladen</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="image_urls">Manuelle Bild-URLs (eine pro Zeile)</label>
+                <textarea id="image_urls" rows="3" placeholder="/images/coin.png&#10;/images/heart.png&#10;https://example.com/star.png"></textarea>
+                <div class="help-text">Optional: Externe URLs hinzufügen</div>
+            </div>
+        </div>
+
+        <!-- Per-User Emoji Selection -->
+        <div class="config-section">
+            <h2>👤 Benutzerspezifische Emojis</h2>
+            <div class="help-text" style="margin-bottom: 15px;">
+                Weise jedem Benutzer ein individuelles Emoji zu. Falls kein Mapping existiert, wird das Standard-Emoji verwendet.
+            </div>
+            
+            <div class="form-group">
+                <label for="user_filter">Benutzer filtern</label>
+                <input type="text" id="user_filter" placeholder="Benutzername eingeben...">
+                <div class="help-text">Tippe, um Benutzer zu filtern</div>
+            </div>
+
+            <div class="form-group">
+                <label>Benutzer-Emoji-Zuordnungen</label>
+                <div id="user-emoji-mappings" style="max-height: 300px; overflow-y: auto; padding: 15px; background: var(--color-bg-tertiary); border: 1px solid var(--color-border); border-radius: 8px;">
+                    <div style="text-align: center; color: var(--color-text-muted);">Keine Zuordnungen</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div style="display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 10px; align-items: end;">
+                    <div>
+                        <label for="new_user_name">Benutzername</label>
+                        <input type="text" id="new_user_name" placeholder="username">
+                    </div>
+                    <div>
+                        <label for="new_user_emoji">Emoji</label>
+                        <input type="text" id="new_user_emoji" placeholder="🌟" maxlength="10">
+                    </div>
+                    <button type="button" id="add-user-mapping-btn" class="secondary">➕ Hinzufügen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wind Simulation -->
+        <div class="config-section">
+            <h2>💨 Wind Simulation</h2>
+            <div class="form-group">
+                <label for="wind_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="wind_enabled" style="width: auto;">
+                    Wind aktivieren
+                </label>
+                <div class="help-text">Horizontale Bewegung der Emojis</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="wind_strength">Windstärke</label>
+                    <input type="range" id="wind_strength" min="0" max="100" step="5">
+                    <span class="range-value" id="wind_strength_value">50</span>
+                    <div class="help-text">0 = kein Wind, 100 = Sturm</div>
+                </div>
+                <div class="form-group">
+                    <label for="wind_direction">Windrichtung</label>
+                    <select id="wind_direction">
+                        <option value="auto">Auto (variabel)</option>
+                        <option value="left">Links</option>
+                        <option value="right">Rechts</option>
+                    </select>
+                    <div class="help-text">Auto = natürliche Variation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Bounce Physics -->
+        <div class="config-section">
+            <h2>🏀 Erweiterte Bounce-Physik</h2>
+            <div class="form-group">
+                <label for="floor_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="floor_enabled" style="width: auto;" checked>
+                    Boden aktivieren
+                </label>
+                <div class="help-text">Deaktivieren für Free-Flow Mode (Emojis fliegen durch)</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="bounce_height">Bounce Höhe</label>
+                    <input type="range" id="bounce_height" min="0" max="1" step="0.05">
+                    <span class="range-value" id="bounce_height_value">0.6</span>
+                    <div class="help-text">Wie hoch emojis zurückprallen</div>
+                </div>
+                <div class="form-group">
+                    <label for="bounce_damping">Damping (Dämpfung)</label>
+                    <input type="range" id="bounce_damping" min="0" max="1" step="0.05">
+                    <span class="range-value" id="bounce_damping_value">0.1</span>
+                    <div class="help-text">Energieverlust nach jedem Bounce</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color Theme -->
+        <div class="config-section">
+            <h2>🎨 Farbthemen & Effekte</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="color_mode">Farbmodus</label>
+                    <select id="color_mode">
+                        <option value="off">Aus</option>
+                        <option value="warm">Warm</option>
+                        <option value="cool">Cool</option>
+                        <option value="neon">Neon</option>
+                        <option value="pastel">Pastel</option>
+                    </select>
+                    <div class="help-text">Theme-basierte Farbgebung</div>
+                </div>
+                <div class="form-group">
+                    <label for="color_intensity">Farbintensität</label>
+                    <input type="range" id="color_intensity" min="0" max="1" step="0.1">
+                    <span class="range-value" id="color_intensity_value">0.5</span>
+                    <div class="help-text">Stärke des Farbeffekts</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rainbow Mode -->
+        <div class="config-section">
+            <h2>🌈 Rainbow Modus</h2>
+            <div class="form-group">
+                <label for="rainbow_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="rainbow_enabled" style="width: auto;">
+                    Rainbow Mode aktivieren
+                </label>
+                <div class="help-text">Kontinuierliche Hue-Rotation (Pride-Style)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="rainbow_speed">Rainbow Geschwindigkeit</label>
+                <input type="range" id="rainbow_speed" min="0.1" max="5" step="0.1">
+                <span class="range-value" id="rainbow_speed_value">1.0</span>
+                <div class="help-text">Rotationsgeschwindigkeit des Regenbogens</div>
+            </div>
+        </div>
+
+        <!-- Pixel Mode -->
+        <div class="config-section">
+            <h2>🕹️ Retro Pixel Mode</h2>
+            <div class="form-group">
+                <label for="pixel_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="pixel_enabled" style="width: auto;">
+                    Pixel Mode aktivieren
+                </label>
+                <div class="help-text">8-Bit Retro Pixelisierung</div>
+            </div>
+
+            <div class="form-group">
+                <label for="pixel_size">Pixel Größe</label>
+                <input type="range" id="pixel_size" min="1" max="10" step="1">
+                <span class="range-value" id="pixel_size_value">4</span>
+                <div class="help-text">Größe der Pixel (höher = gröber)</div>
+            </div>
+        </div>
+
+        <!-- SuperFan Burst -->
+        <div class="config-section">
+            <h2>⭐ SuperFan Burst</h2>
+            <div class="form-group">
+                <label for="superfan_burst_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="superfan_burst_enabled" style="width: auto;" checked>
+                    SuperFan Burst aktivieren
+                </label>
+                <div class="help-text">Automatischer Burst bei SuperFan-Events</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="superfan_burst_intensity">Burst Intensität</label>
+                    <input type="range" id="superfan_burst_intensity" min="1" max="10" step="0.5">
+                    <span class="range-value" id="superfan_burst_intensity_value">3.0</span>
+                    <div class="help-text">Multiplikator für Emoji-Anzahl</div>
+                </div>
+                <div class="form-group">
+                    <label for="superfan_burst_duration">Burst Dauer (ms)</label>
+                    <input type="number" id="superfan_burst_duration" min="500" max="10000" step="500" value="2000">
+                    <div class="help-text">Dauer des Burst-Effekts</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FPS Optimization -->
+        <div class="config-section">
+            <h2>⚡ Dynamische FPS-Optimierung</h2>
+            <div class="form-group">
+                <label for="fps_optimization_enabled" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="fps_optimization_enabled" style="width: auto;" checked>
+                    Automatische FPS-Optimierung
+                </label>
+                <div class="help-text">Reduziert automatisch Effekte bei FPS-Drop</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fps_sensitivity">Sensitivität</label>
+                    <input type="range" id="fps_sensitivity" min="0" max="1" step="0.1">
+                    <span class="range-value" id="fps_sensitivity_value">0.8</span>
+                    <div class="help-text">0 = träge, 1 = aggressiv</div>
+                </div>
+                <div class="form-group">
+                    <label for="target_fps_optimization">Ziel-FPS</label>
+                    <input type="number" id="target_fps_optimization" min="30" max="120" step="10" value="60">
+                    <div class="help-text">Angestrebte Framerate</div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>📊 Performance Status:</strong><br>
+                <div class="code-block">
+                    <div>Aktuelle FPS: <span id="current-fps-display" class="highlight">--</span></div>
+                    <div>Aktive Emojis: <span id="active-emojis-display" class="highlight">--</span></div>
+                    <div>Performance-Modus: <span id="performance-mode-display" class="highlight">Normal</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Effect Configuration -->
+        <div class="config-section">
+            <h2>✨ Effekte</h2>
+            <div class="form-group">
+                <label for="effect">Animation beim Aufprall</label>
+                <select id="effect">
+                    <option value="bounce">Bounce (Standard)</option>
+                    <option value="bubble">Bubble Blop</option>
+                    <option value="none">Keine Animation</option>
+                </select>
+                <div class="help-text">Wähle die Animation, die beim Aufprall am Boden abgespielt wird</div>
+            </div>
+        </div>
+
+        <!-- Physics Settings -->
+        <div class="config-section">
+            <h2>⚙️ Physik Einstellungen</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="physics_gravity_y">Gravitation (Y-Achse)</label>
+                    <input type="range" id="physics_gravity_y" min="0" max="3" step="0.1">
+                    <span class="range-value" id="physics_gravity_y_value">1.0</span>
+                </div>
+                <div class="form-group">
+                    <label for="physics_air">Luftwiderstand</label>
+                    <input type="range" id="physics_air" min="0" max="0.2" step="0.01">
+                    <span class="range-value" id="physics_air_value">0.02</span>
+                </div>
+                <div class="form-group">
+                    <label for="physics_friction">Reibung</label>
+                    <input type="range" id="physics_friction" min="0" max="1" step="0.05">
+                    <span class="range-value" id="physics_friction_value">0.1</span>
+                </div>
+                <div class="form-group">
+                    <label for="physics_restitution">Elastizität (Bounce)</label>
+                    <input type="range" id="physics_restitution" min="0" max="1" step="0.05">
+                    <span class="range-value" id="physics_restitution_value">0.6</span>
+                    <div class="help-text">Grundelastizität (wird von Bounce Height überschrieben)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appearance Settings -->
+        <div class="config-section">
+            <h2>🎨 Darstellung</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="emoji_min_size_px">Minimale Emoji-Größe (px)</label>
+                    <input type="number" id="emoji_min_size_px" min="20" max="200" step="5">
+                </div>
+                <div class="form-group">
+                    <label for="emoji_max_size_px">Maximale Emoji-Größe (px)</label>
+                    <input type="number" id="emoji_max_size_px" min="20" max="200" step="5">
+                </div>
+                <div class="form-group">
+                    <label for="emoji_rotation_speed">Rotationsgeschwindigkeit</label>
+                    <input type="range" id="emoji_rotation_speed" min="0" max="0.2" step="0.01">
+                    <span class="range-value" id="emoji_rotation_speed_value">0.05</span>
+                </div>
+                <div class="form-group">
+                    <label for="emoji_lifetime_ms">Lebensdauer (ms)</label>
+                    <input type="number" id="emoji_lifetime_ms" min="1000" max="30000" step="500">
+                    <div class="help-text">0 = unbegrenzt</div>
+                </div>
+                <div class="form-group">
+                    <label for="emoji_fade_duration_ms">Ausblenden-Dauer (ms)</label>
+                    <input type="number" id="emoji_fade_duration_ms" min="0" max="3000" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="max_emojis_on_screen">Max. Emojis auf Screen</label>
+                    <input type="number" id="max_emojis_on_screen" min="10" max="500" step="10">
+                </div>
+            </div>
+        </div>
+
+        <!-- Scaling Rules -->
+        <div class="config-section">
+            <h2>📊 Skalierungs-Regeln</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="like_count_divisor">Likes Divisor</label>
+                    <input type="number" id="like_count_divisor" min="1" max="1000" step="1">
+                    <div class="help-text">Anzahl Likes / Divisor = Anzahl Emojis</div>
+                </div>
+                <div class="form-group">
+                    <label for="like_min_emojis">Min. Emojis bei Likes</label>
+                    <input type="number" id="like_min_emojis" min="0" max="50" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="like_max_emojis">Max. Emojis bei Likes</label>
+                    <input type="number" id="like_max_emojis" min="1" max="100" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gift_base_emojis">Basis Emojis bei Gifts</label>
+                    <input type="number" id="gift_base_emojis" min="1" max="20" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="gift_coin_multiplier">Gift Coins Multiplikator</label>
+                    <input type="range" id="gift_coin_multiplier" min="0" max="1" step="0.01">
+                    <span class="range-value" id="gift_coin_multiplier_value">0.1</span>
+                    <div class="help-text">Emojis = base + (coins * multiplier)</div>
+                </div>
+                <div class="form-group">
+                    <label for="gift_max_emojis">Max. Emojis bei Gifts</label>
+                    <input type="number" id="gift_max_emojis" min="1" max="100" step="1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Save & Test Buttons -->
+        <div class="button-group">
+            <button id="save-config-btn">💾 Konfiguration speichern</button>
+            <button class="secondary" id="test-emoji-rain-btn">🧪 Emoji Rain testen</button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/webgpu-emoji-rain-ui.js"></script>
+</body>
+</html>

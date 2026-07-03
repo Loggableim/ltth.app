@@ -1,0 +1,27 @@
+{
+  "id": "soundboard",
+  "name": "Soundboard",
+  "version": "1.0.0",
+  "description": "Gift-specific sounds, audio queue management, and MyInstants integration for TikTok events",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": true,
+  "type": "module",
+  "devStatus": "working-beta",
+  "dependencies": [
+    "axios",
+    "cheerio"
+  ],
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Gift-specific sounds, audio queue management, and MyInstants integration for TikTok events. Features customizable sound mappings, volume control, and queue prioritization.",
+    "de": "Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration für TikTok-Events. Bietet anpassbare Sound-Mappings, Lautstärkeregelung und Queue-Priorisierung.",
+    "es": "Sonidos específicos de regalos, gestión de cola de audio e integración de MyInstants para eventos de TikTok. Presenta mapeos de sonido personalizables, control de volumen y priorización de cola.",
+    "fr": "Sons spécifiques aux cadeaux, gestion de file d'attente audio et intégration MyInstants pour événements TikTok. Comprend mappages de sons personnalisables, contrôle du volume et priorisation de file d'attente."
+  }
+}

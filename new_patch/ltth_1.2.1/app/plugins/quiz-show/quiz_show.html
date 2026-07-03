@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pup Cid´s Little Quiz Show Plugin</title>
+    <link rel="stylesheet" href="/quiz-show/quiz_show.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/lucide.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Pup Cid´s Little Quiz Show Plugin</h1>
+            <div class="header-status">
+                <div id="connectionStatus" class="status-badge status-connected">Verbunden</div>
+                <div id="quizStatus" class="status-badge status-idle">Bereit</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="dashboard">
+                <span>📊 Dashboard</span>
+            </button>
+            <button class="tab-button" data-tab="questions">
+                <span>❓ Fragen</span>
+            </button>
+            <button class="tab-button" data-tab="ai-packages">
+                <span>🤖 AI Fragenpakete</span>
+            </button>
+            <button class="tab-button" data-tab="settings">
+                <span>⚙️ Einstellungen</span>
+            </button>
+            <button class="tab-button" data-tab="leaderboard">
+                <span>🏆 Leaderboard</span>
+            </button>
+            <button class="tab-button" data-tab="overlay-config">
+                <span>🎨 Overlay Konfiguration</span>
+            </button>
+            <button class="tab-button" data-tab="gift-jokers">
+                <span>🎁 Gift-Joker</span>
+            </button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- Current Question Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Aktuelle Frage</h2>
+                        <div class="panel-controls">
+                            <select id="gameModeSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
+                                <option value="classic">Klassisch</option>
+                                <option value="fastestFinger">Schnellste Finger</option>
+                                <option value="elimination">Elimination</option>
+                                <option value="marathon">Marathon</option>
+                            </select>
+                            <div class="category-filter-container">
+                                <button type="button" id="categoryFilterButton" class="category-filter-button">
+                                    <span id="categoryFilterLabel">Alle Kategorien</span>
+                                    <span class="category-filter-arrow">▼</span>
+                                </button>
+                                <div id="categoryFilterDropdown" class="category-dropdown">
+                                    <div class="category-dropdown-header">
+                                        <label class="category-filter-all-label">
+                                            <input type="checkbox" id="categoryFilterAll" checked>
+                                            <strong>Alle Kategorien</strong>
+                                        </label>
+                                    </div>
+                                    <div id="categoryFilterOptions" class="category-dropdown-options">
+                                        <!-- Categories will be populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="startQuizBtn" class="btn btn-primary">▶️ Quiz Starten</button>
+                            <button id="nextQuestionBtn" class="btn btn-secondary" disabled>⏭️ Nächste Frage</button>
+                            <button id="stopQuizBtn" class="btn btn-danger" disabled>⏹️ Stoppen</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="currentQuestionDisplay" class="question-display">
+                            <p class="no-question">Keine Frage aktiv. Starte das Quiz!</p>
+                        </div>
+
+                        <div id="answerOptions" class="answer-options hidden">
+                            <!-- Answers will be inserted here -->
+                        </div>
+
+                        <div id="timerDisplay" class="timer-display hidden">
+                            <div class="timer-bar-container">
+                                <div id="timerBar" class="timer-bar"></div>
+                            </div>
+                            <div class="timer-text">
+                                <span id="timeRemaining">30</span>s verbleibend
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Live Statistiken</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Antworten</div>
+                                <div class="stat-value" id="answerCount">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Runden Total</div>
+                                <div class="stat-value" id="totalRounds">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Richtig Total</div>
+                                <div class="stat-value" id="totalCorrect">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Erfolgsrate</div>
+                                <div class="stat-value" id="successRate">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Joker Events Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Joker Aktivitäten</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div id="jokerEvents" class="joker-events">
+                            <p class="no-events">Keine Joker verwendet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Tab -->
+        <div id="questions" class="tab-content">
+            <div class="questions-grid">
+                <!-- Upload Section -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Fragen Upload (JSON)</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="upload-section">
+                            <div class="help-text">
+                                Format: <code>[{"question": "...", "answers": ["A", "B", "C", "D"], "correct": 0, "difficulty": 2, "category": "...", "info": "..."}]</code>
+                            </div>
+                            <textarea id="jsonUpload" class="json-input" placeholder='[
+  {
+    "question": "Was ist die Hauptstadt von Deutschland?",
+    "answers": ["Berlin", "München", "Hamburg", "Köln"],
+    "correct": 0,
+    "difficulty": 2,
+    "category": "Geographie",
+    "info": "Berlin ist seit 1990 die Hauptstadt des wiedervereinigten Deutschlands"
+  }
+]'></textarea>
+                            <div class="button-group">
+                                <button id="uploadQuestionsBtn" class="btn btn-primary">📤 Hochladen</button>
+                                <button id="exportQuestionsBtn" class="btn btn-secondary">📥 Exportieren</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Editor -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Frage Erstellen/Bearbeiten</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>Frage:</label>
+                            <input type="text" id="questionInput" class="form-control" placeholder="Was ist...?">
+                        </div>
+
+                        <div class="answers-grid">
+                            <div class="form-group">
+                                <label>Antwort A:</label>
+                                <input type="text" id="answerA" class="form-control" placeholder="Antwort A">
+                            </div>
+                            <div class="form-group">
+                                <label>Antwort B:</label>
+                                <input type="text" id="answerB" class="form-control" placeholder="Antwort B">
+                            </div>
+                            <div class="form-group">
+                                <label>Antwort C:</label>
+                                <input type="text" id="answerC" class="form-control" placeholder="Antwort C">
+                            </div>
+                            <div class="form-group">
+                                <label>Antwort D:</label>
+                                <input type="text" id="answerD" class="form-control" placeholder="Antwort D">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Richtige Antwort:</label>
+                            <select id="correctAnswer" class="form-control">
+                                <option value="0">A</option>
+                                <option value="1">B</option>
+                                <option value="2">C</option>
+                                <option value="3">D</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Kategorie:</label>
+                                <input type="text" id="questionCategory" class="form-control" placeholder="Allgemein" list="categoryList">
+                                <datalist id="categoryList">
+                                    <!-- Categories will be populated dynamically -->
+                                </datalist>
+                            </div>
+                            <div class="form-group">
+                                <label>Schwierigkeit:</label>
+                                <select id="questionDifficulty" class="form-control">
+                                    <option value="1">⭐ Leicht</option>
+                                    <option value="2" selected>⭐⭐ Mittel</option>
+                                    <option value="3">⭐⭐⭐ Schwer</option>
+                                    <option value="4">⭐⭐⭐⭐ Experte</option>
+                                    <option value="5">⭐⭐⭐⭐⭐ Master</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Info (optional - wird nach der Runde angezeigt):</label>
+                            <textarea id="questionInfo" class="form-control" rows="2" placeholder="Zusätzliche Informationen zur Antwort (optional)"></textarea>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="addQuestionBtn" class="btn btn-primary">➕ Frage Hinzufügen</button>
+                            <button id="updateQuestionBtn" class="btn btn-secondary hidden">💾 Frage Aktualisieren</button>
+                            <button id="cancelEditBtn" class="btn btn-secondary hidden">❌ Abbrechen</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>Fragen Datenbank</h2>
+                        <div class="panel-info">
+                            <span id="questionCount">0 Fragen</span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div id="questionsList" class="questions-list">
+                            <p class="no-data">Keine Fragen vorhanden</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Question Packages Tab -->
+        <div id="ai-packages" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🤖 AI Fragenpakete mit OpenAI</h2>
+                </div>
+                <div class="panel-body">
+                    <!-- Info about OpenAI Configuration -->
+                    <div class="info-message" style="margin-bottom: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
+                        <strong>ℹ️ OpenAI Konfiguration</strong><br>
+                        Der OpenAI API-Schlüssel wird jetzt zentral im <strong>Haupteinstellungspanel</strong> (Einstellungen → OpenAI API Configuration) verwaltet.
+                    </div>
+
+                    <!-- Generate Question Package Section -->
+                    <div class="panel" style="margin-bottom: 20px;">
+                        <div class="panel-header">
+                            <h3>Neues Fragenpaket Generieren</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div id="generateWarning" class="warning-message" style="margin-bottom: 15px; display: none;">
+                                ⚠️ Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel im Haupteinstellungspanel.
+                            </div>
+
+                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                                <div class="form-group">
+                                    <label for="packageCategory">Kategorie *</label>
+                                    <input 
+                                        type="text" 
+                                        id="packageCategory" 
+                                        class="form-control" 
+                                        list="categoryList"
+                                        placeholder="z.B. Geographie, Geschichte, Sport"
+                                    >
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="packageSize">Anzahl Fragen</label>
+                                    <input 
+                                        type="number" 
+                                        id="packageSize" 
+                                        class="form-control" 
+                                        min="5" 
+                                        max="50" 
+                                        value="10"
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="packageName">Paketname (optional)</label>
+                                    <input 
+                                        type="text" 
+                                        id="packageName" 
+                                        class="form-control" 
+                                        placeholder="Automatisch generiert"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="info-box" style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
+                                <strong>ℹ️ Schwierigkeitsverteilung:</strong>
+                                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                                    <li>50% Einfach (⭐)</li>
+                                    <li>~17% Mittel (⭐⭐)</li>
+                                    <li>~17% Schwer (⭐⭐⭐)</li>
+                                    <li>~16% Expert (⭐⭐⭐⭐)</li>
+                                </ul>
+                                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #666;">
+                                    Vorhandene Fragen in der Kategorie werden automatisch erkannt, um Duplikate zu vermeiden.
+                                </p>
+                            </div>
+
+                            <div class="form-actions">
+                                <button id="generatePackageBtn" class="btn btn-success">🤖 Fragenpaket Generieren</button>
+                            </div>
+                            <div id="generateMessage" class="message hidden" style="margin-top: 10px;"></div>
+                            <div id="generationProgress" class="progress-container hidden" style="margin-top: 15px;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="generationProgressBar"></div>
+                                </div>
+                                <div class="progress-text" id="generationProgressText">Generiere Fragen...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Generate Question Packages Section -->
+                    <div class="panel" style="margin-bottom: 20px;">
+                        <div class="panel-header">
+                            <h3>🚀 Batch Fragenpakete Generieren</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div id="batchGenerateWarning" class="warning-message" style="margin-bottom: 15px; display: none;">
+                                ⚠️ Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel oben.
+                            </div>
+
+                            <div class="form-group">
+                                <label for="batchCategories">Kategorien (eine pro Zeile) *</label>
+                                <textarea 
+                                    id="batchCategories" 
+                                    class="form-control" 
+                                    rows="8"
+                                    placeholder="Geographie&#10;Geschichte&#10;Mathematik&#10;Naturwissenschaften&#10;Sport&#10;Musik&#10;Film & Fernsehen&#10;..."
+                                    style="font-family: monospace; resize: vertical;"
+                                ></textarea>
+                                <small style="color: #666; margin-top: 5px; display: block;">
+                                    Geben Sie jede Kategorie in eine neue Zeile ein. Leere Zeilen werden ignoriert.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="batchPackageSize">Anzahl Fragen pro Paket</label>
+                                <input 
+                                    type="number" 
+                                    id="batchPackageSize" 
+                                    class="form-control" 
+                                    min="5" 
+                                    max="50" 
+                                    value="10"
+                                    style="max-width: 200px;"
+                                >
+                            </div>
+
+                            <div class="info-box" style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
+                                <strong>ℹ️ Batch-Generierung:</strong>
+                                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                                    <li>Die Generierung läuft im Hintergrund</li>
+                                    <li>Sie können die Seite während der Generierung nutzen</li>
+                                    <li>Fortschritt wird in Echtzeit angezeigt</li>
+                                    <li>Zwischen den Kategorien wird eine kurze Pause eingelegt</li>
+                                </ul>
+                            </div>
+
+                            <div class="form-actions">
+                                <button id="batchGenerateBtn" class="btn btn-success">🤖 Batch Generierung Starten</button>
+                            </div>
+                            <div id="batchGenerateMessage" class="message hidden" style="margin-top: 10px;"></div>
+                            <div id="batchGenerationProgress" class="hidden" style="margin-top: 15px;">
+                                <div style="background: #f3f4f6; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <strong>Fortschritt:</strong>
+                                        <span id="batchProgressText">0 / 0</span>
+                                    </div>
+                                    <div class="progress-bar" style="height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden;">
+                                        <div class="progress-fill" id="batchProgressBar" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); width: 0%; transition: width 0.3s ease;"></div>
+                                    </div>
+                                </div>
+                                <div id="batchProgressLog" style="max-height: 300px; overflow-y: auto; background: #1f2937; color: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question Packages List -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>📦 Verfügbare Fragenpakete</h3>
+                            <div class="panel-controls">
+                                <span id="packageCount" class="badge">0 Pakete</span>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="info-box" style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                                <strong>💡 Tipp:</strong> Wählen Sie ein oder mehrere Pakete aus, um nur Fragen aus diesen Paketen im Quiz zu verwenden. Wenn keine Pakete ausgewählt sind, werden alle Fragen verwendet.
+                            </div>
+                            <div id="packagesList" class="packages-list">
+                                <p class="no-data">Keine Pakete vorhanden. Generieren Sie Ihr erstes Paket oben!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-grid">
+                <!-- Game Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Spiel Einstellungen</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label title="Wie lange haben Zuschauer Zeit zu antworten?">
+                                Rundendauer (Sekunden):
+                            </label>
+                            <input type="number" id="roundDuration" class="form-control" min="10" max="120" value="30">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Punkte für die erste richtige Antwort">
+                                Punkte für erste richtige Antwort:
+                            </label>
+                            <input type="number" id="pointsFirstCorrect" class="form-control" min="1" max="1000" value="100">
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Punkte für weitere richtige Antworten">
+                                Punkte für weitere richtige Antworten:
+                            </label>
+                            <input type="number" id="pointsOtherCorrect" class="form-control" min="1" max="1000" value="50">
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="multipleWinners" checked>
+                                <span>Mehrere Gewinner (alle richtigen Antworten zählen)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="showAnswersAfterTime">
+                                <span>Antworten erst nach Ablauf anzeigen</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="shuffleAnswers">
+                                <span>Antwortreihenfolge mischen</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="randomQuestions" checked>
+                                <span>Fragen in zufälliger Reihenfolge</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Anzahl der Runden im Quiz (0 = unbegrenzt)">
+                                Anzahl Runden:
+                            </label>
+                            <input type="number" id="totalRounds" class="form-control" min="0" max="100" value="10">
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                0 = Unbegrenzt, sonst Anzahl der Fragen pro Quiz-Session
+                            </small>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="showRoundNumber" checked>
+                                <span>Rundenzahl im OBS HUD anzeigen</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Joker Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Joker Einstellungen</h2>
+                        <div class="help-text">Nur für Superfans</div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label title="Maximale Anzahl an Jokern, die pro Runde insgesamt eingesetzt werden können">Joker pro Runde (gesamt):</label>
+                            <input type="number" id="jokersPerRound" class="form-control" min="0" max="10" value="3">
+                            <div class="help-text small">Begrenzt die Gesamtanzahl aller Joker-Einsätze pro Fragerunde</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label title="Aktiviert den 50:50 Joker - entfernt zwei falsche Antwortoptionen">
+                                <input type="checkbox" id="joker50Enabled" checked>
+                                <span>50:50 Joker aktiviert (!joker50)</span>
+                            </label>
+                            <div class="help-text small">Entfernt zwei falsche Antworten und lässt nur zwei Optionen übrig</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label title="Aktiviert den Info Joker - zeigt eine falsche Antwort zur Orientierung">
+                                <input type="checkbox" id="jokerInfoEnabled" checked>
+                                <span>Info Joker aktiviert (!jokerInfo)</span>
+                            </label>
+                            <div class="help-text small">Zeigt eine falsche Antwort als Hinweis zur Eingrenzung</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label title="Aktiviert den Zeit Joker - verlängert die verfügbare Zeit zum Antworten">
+                                <input type="checkbox" id="jokerTimeEnabled" checked>
+                                <span>Zeit Joker aktiviert (!jokerTime)</span>
+                            </label>
+                            <div class="help-text small">Verlängert die Countdown-Zeit um den eingestellten Bonus</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Wie viele Sekunden durch den Zeit-Joker hinzugefügt werden">Zeit-Bonus (Sekunden):</label>
+                            <input type="number" id="jokerTimeBoost" class="form-control" min="5" max="60" value="15">
+                            <div class="help-text small">Zusätzliche Zeit, die beim Einsatz des Zeit-Jokers gewährt wird</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Commands Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>💬 Chat Befehle</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="help-text" style="margin-bottom: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 4px;">
+                            <strong>📝 Hinweis:</strong> Konfigurieren Sie, wie Zuschauer antworten können. Mehrere Prefixe können gleichzeitig verwendet werden (z.B. sowohl !a als auch /a).
+                        </div>
+
+                        <!-- Answer Commands -->
+                        <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 600;">Antwort-Befehle</h3>
+                        
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="allowPlainLetters" checked>
+                                <span>Einfache Buchstaben erlauben (a, b, c, d)</span>
+                            </label>
+                            <div class="help-text small">Erlaubt Antworten ohne Präfix: Einfach "a" schreiben</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="allowExclamation" checked>
+                                <span>Ausrufezeichen-Prefix (!a, !b, !c, !d)</span>
+                            </label>
+                            <div class="help-text small">Erlaubt Antworten mit !: "!a" schreiben</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="allowSlash">
+                                <span>Slash-Prefix (/a, /b, /c, /d)</span>
+                            </label>
+                            <div class="help-text small">Erlaubt Antworten mit /: "/a" schreiben</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="allowFullText" checked>
+                                <span>Vollständige Antworten erlauben</span>
+                            </label>
+                            <div class="help-text small">Erlaubt das Schreiben der kompletten Antwort (z.B. "Berlin")</div>
+                        </div>
+
+                        <!-- Joker Commands -->
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Joker-Befehle</h3>
+                        
+                        <div class="form-group">
+                            <label>Joker-Command-Prefix:</label>
+                            <select id="jokerCommandPrefix" class="form-control">
+                                <option value="!joker">!joker (Standard)</option>
+                                <option value="/joker">/joker</option>
+                                <option value="!j">!j (Kurzform)</option>
+                                <option value="/j">/j (Kurzform)</option>
+                            </select>
+                            <div class="help-text small">Beispiel: !joker50, !jokerTime, etc.</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="jokerSuperfanOnly" checked>
+                                <span>Joker nur für Superfans/Subscriber</span>
+                            </label>
+                            <div class="help-text small">Beschränkt Joker-Nutzung auf Zuschauer mit Superfan- oder Subscriber-Status</div>
+                        </div>
+
+                        <!-- Command Permissions -->
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Berechtigungen</h3>
+                        
+                        <div class="form-group">
+                            <label>Minimale Berechtigung für Antworten:</label>
+                            <select id="answerPermissionLevel" class="form-control">
+                                <option value="all" selected>Alle Zuschauer</option>
+                                <option value="subscriber">Nur Subscriber</option>
+                                <option value="superfan">Nur Superfans</option>
+                                <option value="moderator">Nur Moderatoren</option>
+                            </select>
+                            <div class="help-text small">Wer darf auf Quiz-Fragen antworten?</div>
+                        </div>
+
+                        <!-- Integration Status -->
+                        <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px; font-weight: 600;">Integration</h3>
+                        
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="useGCCE">
+                                <span>Global Chat Command Engine (GCCE) nutzen</span>
+                            </label>
+                            <div class="help-text small">Integriert Quiz-Commands mit dem globalen Command-System (empfohlen)</div>
+                        </div>
+
+                        <div id="gcceStatus" class="help-text" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;">
+                            <strong>GCCE Status:</strong> <span id="gcceStatusText">Wird geladen...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TTS Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>🗣️ TTS Einstellungen</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group checkbox-group">
+                            <label title="Aktiviert die automatische Vorlesefunktion für Fragen">
+                                <input type="checkbox" id="ttsEnabled">
+                                <span>TTS Aktiviert (Fragen vorlesen)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Wählen Sie die Stimme für die Sprachausgabe">TTS Stimme:</label>
+                            <select id="ttsVoice" class="form-control">
+                                <option value="default">Standard</option>
+                                <option value="de-DE-Standard-A">Deutsch (Weiblich A)</option>
+                                <option value="de-DE-Standard-B">Deutsch (Männlich B)</option>
+                                <option value="de-DE-Standard-C">Deutsch (Weiblich C)</option>
+                                <option value="de-DE-Standard-D">Deutsch (Männlich D)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Lautstärke der TTS-Wiedergabe (0-100%)">TTS Lautstärke (%):</label>
+                            <input type="number" id="ttsVolume" class="form-control" min="0" max="100" value="80">
+                            <div class="help-text small">Steuert die Lautstärke der automatischen Sprachausgabe</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Geschwindigkeit der TTS-Wiedergabe (0.5-2.0, 1.0 = normal)">TTS Geschwindigkeit:</label>
+                            <input type="number" id="ttsSpeed" class="form-control" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <div class="help-text small">0.5 = langsam, 1.0 = normal, 2.0 = schnell</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label title="Verzögerung in Sekunden bevor Frage angezeigt wird">TTS Startzeit vor Frage (Sekunden):</label>
+                            <input type="number" id="ttsStartDelay" class="form-control" min="0" max="10" value="2">
+                            <div class="help-text small">Wie lange TTS spricht bevor die Frage angezeigt wird (Synchronisierung)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marathon Mode Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>🏃 Marathon Modus</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>Marathon Länge (Anzahl richtiger Antworten):</label>
+                            <input type="number" id="marathonLength" class="form-control" min="5" max="50" value="15">
+                            <div class="help-text small">Wie viele Fragen muss ein Spieler in Folge richtig beantworten?</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto Mode Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>⚡ Auto Modus</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="autoMode">
+                                <span>Auto Modus aktiviert (Automatisch zur nächsten Frage)</span>
+                            </label>
+                            <div class="help-text small">Hotkey: Shift + A toggelt den Auto Modus direkt im Dashboard.</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="autoRestartRound" checked>
+                                <span>Automatischer Neustart nach Rundenende</span>
+                            </label>
+                            <div class="help-text small">Wenn deaktiviert, pausiert das Quiz nach jeder Runde und zeigt das Leaderboard</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Wartezeit vor nächster Frage (Sekunden):</label>
+                            <input type="number" id="autoModeDelay" class="form-control" min="3" max="30" value="5">
+                            <div class="help-text small">Zeit in Sekunden zwischen Antwortanzeige und nächster Frage</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Antworteinblendedauer (Sekunden):</label>
+                            <input type="number" id="answerDisplayDuration" class="form-control" min="6" max="30" value="6">
+                            <div class="help-text small">Mindestens 6 Sekunden - Zeit für korrekte Antwort und Info-Text (inkl. TTS-Ausgabe)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voter Icons Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>👥 Voter Icons (Antwortvisualisierung)</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="voterIconsEnabled" checked>
+                                <span>Voter Icons anzeigen</span>
+                            </label>
+                            <div class="help-text small">Zeigt Profilbilder der Zuschauer über den Antworten an, für die sie gestimmt haben</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Icon-Größe:</label>
+                            <select id="voterIconSize" class="form-control">
+                                <option value="small">Klein (24px)</option>
+                                <option value="medium" selected>Mittel (32px)</option>
+                                <option value="large">Groß (40px)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Maximale Icons pro Antwort:</label>
+                            <input type="number" id="voterIconMaxVisible" class="form-control" min="3" max="50" value="10">
+                            <div class="help-text small">Überschüssige Voter werden als "+X weitere" angezeigt</div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="voterIconCompactMode" checked>
+                                <span>Kompaktmodus bei vielen Votes</span>
+                            </label>
+                            <div class="help-text small">Verkleinert Icons automatisch bei mehr als 5 Teilnehmern</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Animationsstil:</label>
+                            <select id="voterIconAnimation" class="form-control">
+                                <option value="fade" selected>Einblenden (Fade)</option>
+                                <option value="slide">Einsliden (Slide)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Positionierung:</label>
+                            <select id="voterIconPosition" class="form-control">
+                                <option value="above" selected>Über der Antwort</option>
+                                <option value="beside">Neben der Antwort</option>
+                                <option value="embedded">Eingebettet</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="voterIconShowOnScoreboard">
+                                <span>Avatare im Scoreboard anzeigen</span>
+                            </label>
+                            <div class="help-text small">Zeigt kleine Avatare neben der Punktzahl bei korrekten Antworten</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="panel full-width">
+                    <div class="panel-body">
+                        <button id="saveSettingsBtn" class="btn btn-primary btn-large">💾 Einstellungen Speichern</button>
+                        <div id="saveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="leaderboard" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🏆 Leaderboard</h2>
+                    <div class="panel-controls">
+                        <select id="seasonSelect" class="form-control" style="width: auto; display: inline-block; margin-right: 10px;">
+                            <option value="active">Aktuelle Saison</option>
+                            <!-- Seasons will be populated dynamically -->
+                        </select>
+                        <button id="newSeasonBtn" class="btn btn-secondary">🆕 Neue Saison</button>
+                        <button id="exportLeaderboardBtn" class="btn btn-secondary">📥 Exportieren</button>
+                        <button id="importLeaderboardBtn" class="btn btn-secondary">📤 Importieren</button>
+                        <button id="resetLeaderboardBtn" class="btn btn-danger">🗑️ Zurücksetzen</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div id="leaderboardTable" class="leaderboard-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Platz</th>
+                                    <th>Username</th>
+                                    <th>Punkte</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardBody">
+                                <tr>
+                                    <td colspan="3" class="no-data">Keine Einträge</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Modal -->
+            <div id="importModal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Leaderboard Importieren</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="importLeaderboardJson" class="json-input" placeholder='[
+  {
+    "userId": "user123",
+    "username": "Player1",
+    "points": 500
+  }
+]'></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="confirmImportBtn" class="btn btn-primary">Importieren</button>
+                        <button id="cancelImportBtn" class="btn btn-secondary">Abbrechen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay Configuration Tab (Redesigned with Accordion) -->
+        <div id="overlay-config" class="tab-content">
+            <!-- Quick Actions Header -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🎬 Overlay Konfiguration</h2>
+                    <div class="panel-controls">
+                        <button id="openOverlayBtn" class="btn btn-secondary">🔗 Overlay öffnen</button>
+                        <button id="openLeaderboardOverlayBtn" class="btn btn-secondary">🏆 Leaderboard öffnen</button>
+                        <button id="refreshPreviewBtn" class="btn btn-secondary">🔄 Vorschau aktualisieren</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="help-text" style="padding: 15px; background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; border-radius: 6px;">
+                        <strong>📺 OBS Browser-Quellen URLs:</strong><br>
+                        <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/overlay</code>
+                        <code style="display: block; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">/quiz-show/leaderboard-overlay</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion Sections -->
+            <div class="overlay-accordion">
+
+                <!-- Section 1: Layout Management -->
+                <div class="accordion-section">
+                    <button class="accordion-header" data-section="layouts">
+                        <span class="accordion-icon">📐</span>
+                        <span class="accordion-title">Layout Management</span>
+                        <span class="accordion-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" data-content="layouts">
+                        <div class="accordion-inner">
+                            <!-- Saved Layouts -->
+                            <div class="config-subsection">
+                                <h3>Gespeicherte Layouts</h3>
+                                <div class="help-text" style="margin-bottom: 15px;">
+                                    Layouts speichern Element-Positionen und Größen für verschiedene Auflösungen.
+                                </div>
+                                <button id="createNewLayoutBtn" class="btn btn-primary btn-sm" style="margin-bottom: 15px;">➕ Neues Layout erstellen</button>
+                                <div id="layoutsList" class="layouts-list">
+                                    <!-- Layouts will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Layout Editor -->
+                            <div class="config-subsection" id="layoutEditorSection" style="display: none;">
+                                <h3>Layout bearbeiten</h3>
+                                <div class="form-grid-2col">
+                                    <div class="form-group">
+                                        <label>Layout Name</label>
+                                        <input type="text" id="layoutName" class="form-control" placeholder="Mein Custom Layout">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Ausrichtung</label>
+                                        <select id="layoutOrientation" class="form-control">
+                                            <option value="horizontal">Horizontal (Landscape)</option>
+                                            <option value="vertical">Vertikal (Portrait)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Breite (px)</label>
+                                        <input type="number" id="layoutWidth" class="form-control" value="1920" min="800" max="3840">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Höhe (px)</label>
+                                        <input type="number" id="layoutHeight" class="form-control" value="1080" min="600" max="2160">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="layoutIsDefault">
+                                        Als Standard-Layout für diese Ausrichtung setzen
+                                    </label>
+                                </div>
+                                
+                                <!-- Grid-Based Element Positioning -->
+                                <div class="help-text" style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                                    <strong>💡 Grid-System (wie Schiffe versenken):</strong><br>
+                                    • <strong>Spalte (X):</strong> A-Z (horizontal von links nach rechts)<br>
+                                    • <strong>Zeile (Y):</strong> 1-20 (vertikal von oben nach unten)<br>
+                                    • <strong>Größe:</strong> Vordefinierte Größen für konsistentes Layout<br>
+                                    • <strong>Sichtbarkeit:</strong> Ein/Aus schalten mit Checkbox<br>
+                                    • Beispiel: "C-5" = Spalte C, Zeile 5
+                                </div>
+
+                                <!-- Elements Configuration Table -->
+                                <div class="grid-config-table">
+                                    <table class="element-config-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Element</th>
+                                                <th>Spalte (X)</th>
+                                                <th>Zeile (Y)</th>
+                                                <th>Größe</th>
+                                                <th>Sichtbar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr data-element="question">
+                                                <td><strong>❓ Frage</strong></td>
+                                                <td>
+                                                    <select class="grid-column" data-element="question">
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="C" selected>C</option>
+                                                        <option value="D">D</option>
+                                                        <option value="E">E</option>
+                                                        <option value="F">F</option>
+                                                        <option value="G">G</option>
+                                                        <option value="H">H</option>
+                                                        <option value="I">I</option>
+                                                        <option value="J">J</option>
+                                                        <option value="K">K</option>
+                                                        <option value="L">L</option>
+                                                        <option value="M">M</option>
+                                                        <option value="N">N</option>
+                                                        <option value="O">O</option>
+                                                        <option value="P">P</option>
+                                                        <option value="Q">Q</option>
+                                                        <option value="R">R</option>
+                                                        <option value="S">S</option>
+                                                        <option value="T">T</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="grid-row" data-element="question" min="1" max="20" value="2">
+                                                </td>
+                                                <td>
+                                                    <select class="grid-size" data-element="question">
+                                                        <option value="small">Klein (400x100)</option>
+                                                        <option value="medium" selected>Mittel (800x150)</option>
+                                                        <option value="large">Groß (1200x200)</option>
+                                                        <option value="xlarge">Extra Groß (1600x250)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="grid-visible" data-element="question" checked>
+                                                </td>
+                                            </tr>
+                                            <tr data-element="answers">
+                                                <td><strong>🅰️ Antworten</strong></td>
+                                                <td>
+                                                    <select class="grid-column" data-element="answers">
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="C" selected>C</option>
+                                                        <option value="D">D</option>
+                                                        <option value="E">E</option>
+                                                        <option value="F">F</option>
+                                                        <option value="G">G</option>
+                                                        <option value="H">H</option>
+                                                        <option value="I">I</option>
+                                                        <option value="J">J</option>
+                                                        <option value="K">K</option>
+                                                        <option value="L">L</option>
+                                                        <option value="M">M</option>
+                                                        <option value="N">N</option>
+                                                        <option value="O">O</option>
+                                                        <option value="P">P</option>
+                                                        <option value="Q">Q</option>
+                                                        <option value="R">R</option>
+                                                        <option value="S">S</option>
+                                                        <option value="T">T</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="grid-row" data-element="answers" min="1" max="20" value="5">
+                                                </td>
+                                                <td>
+                                                    <select class="grid-size" data-element="answers">
+                                                        <option value="small">Klein (400x300)</option>
+                                                        <option value="medium" selected>Mittel (800x400)</option>
+                                                        <option value="large">Groß (1200x500)</option>
+                                                        <option value="xlarge">Extra Groß (1600x600)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="grid-visible" data-element="answers" checked>
+                                                </td>
+                                            </tr>
+                                            <tr data-element="timer">
+                                                <td><strong>⏱️ Timer</strong></td>
+                                                <td>
+                                                    <select class="grid-column" data-element="timer">
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="C">C</option>
+                                                        <option value="D">D</option>
+                                                        <option value="E">E</option>
+                                                        <option value="F">F</option>
+                                                        <option value="G">G</option>
+                                                        <option value="H">H</option>
+                                                        <option value="I">I</option>
+                                                        <option value="J">J</option>
+                                                        <option value="K">K</option>
+                                                        <option value="L">L</option>
+                                                        <option value="M">M</option>
+                                                        <option value="N">N</option>
+                                                        <option value="O" selected>O</option>
+                                                        <option value="P">P</option>
+                                                        <option value="Q">Q</option>
+                                                        <option value="R">R</option>
+                                                        <option value="S">S</option>
+                                                        <option value="T">T</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="grid-row" data-element="timer" min="1" max="20" value="2">
+                                                </td>
+                                                <td>
+                                                    <select class="grid-size" data-element="timer">
+                                                        <option value="small" selected>Klein (150x150)</option>
+                                                        <option value="medium">Mittel (200x200)</option>
+                                                        <option value="large">Groß (250x250)</option>
+                                                        <option value="xlarge">Extra Groß (300x300)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="grid-visible" data-element="timer" checked>
+                                                </td>
+                                            </tr>
+                                            <tr data-element="leaderboard">
+                                                <td><strong>🏆 Leaderboard</strong></td>
+                                                <td>
+                                                    <select class="grid-column" data-element="leaderboard">
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="C">C</option>
+                                                        <option value="D">D</option>
+                                                        <option value="E">E</option>
+                                                        <option value="F">F</option>
+                                                        <option value="G">G</option>
+                                                        <option value="H">H</option>
+                                                        <option value="I">I</option>
+                                                        <option value="J">J</option>
+                                                        <option value="K">K</option>
+                                                        <option value="L">L</option>
+                                                        <option value="M">M</option>
+                                                        <option value="N">N</option>
+                                                        <option value="O" selected>O</option>
+                                                        <option value="P">P</option>
+                                                        <option value="Q">Q</option>
+                                                        <option value="R">R</option>
+                                                        <option value="S">S</option>
+                                                        <option value="T">T</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="grid-row" data-element="leaderboard" min="1" max="20" value="6">
+                                                </td>
+                                                <td>
+                                                    <select class="grid-size" data-element="leaderboard">
+                                                        <option value="small">Klein (250x300)</option>
+                                                        <option value="medium" selected>Mittel (300x400)</option>
+                                                        <option value="large">Groß (350x500)</option>
+                                                        <option value="xlarge">Extra Groß (400x600)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="grid-visible" data-element="leaderboard" checked>
+                                                </td>
+                                            </tr>
+                                            <tr data-element="jokerInfo">
+                                                <td><strong>🎯 Joker Info</strong></td>
+                                                <td>
+                                                    <select class="grid-column" data-element="jokerInfo">
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="C" selected>C</option>
+                                                        <option value="D">D</option>
+                                                        <option value="E">E</option>
+                                                        <option value="F">F</option>
+                                                        <option value="G">G</option>
+                                                        <option value="H">H</option>
+                                                        <option value="I">I</option>
+                                                        <option value="J">J</option>
+                                                        <option value="K">K</option>
+                                                        <option value="L">L</option>
+                                                        <option value="M">M</option>
+                                                        <option value="N">N</option>
+                                                        <option value="O">O</option>
+                                                        <option value="P">P</option>
+                                                        <option value="Q">Q</option>
+                                                        <option value="R">R</option>
+                                                        <option value="S">S</option>
+                                                        <option value="T">T</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="grid-row" data-element="jokerInfo" min="1" max="20" value="13">
+                                                </td>
+                                                <td>
+                                                    <select class="grid-size" data-element="jokerInfo">
+                                                        <option value="small" selected>Klein (300x80)</option>
+                                                        <option value="medium">Mittel (400x100)</option>
+                                                        <option value="large">Groß (500x120)</option>
+                                                        <option value="xlarge">Extra Groß (600x150)</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" class="grid-visible" data-element="jokerInfo" checked>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Visual Grid Preview -->
+                                <div class="help-text" style="margin-top: 20px; margin-bottom: 10px;">
+                                    <strong>📊 Visuelle Vorschau:</strong> Die unten gezeigte Vorschau zeigt die Elemente in ihrer Position im Grid.
+                                </div>
+                                <div class="grid-visual-preview" id="gridVisualPreview">
+                                    <div class="grid-overlay">
+                                        <!-- Grid lines will be added dynamically -->
+                                    </div>
+                                    <div class="grid-elements" id="gridElements">
+                                        <!-- Elements will be positioned here based on grid settings -->
+                                    </div>
+                                </div>
+
+                                <div class="button-group" style="margin-top: 15px;">
+                                    <button id="saveLayoutBtn" class="btn btn-primary">💾 Layout Speichern</button>
+                                    <button id="deleteLayoutBtn" class="btn btn-danger">🗑️ Layout Löschen</button>
+                                    <button id="cancelLayoutBtn" class="btn btn-secondary">❌ Abbrechen</button>
+                                </div>
+                                <div id="layoutSaveMessage" class="message hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Visual Settings -->
+
+                <!-- Section 2: Visual Settings -->
+                <div class="accordion-section">
+                    <button class="accordion-header" data-section="visual">
+                        <span class="accordion-icon">🎨</span>
+                        <span class="accordion-title">Theme & Visuals</span>
+                        <span class="accordion-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" data-content="visual">
+                        <div class="accordion-inner">
+                            <div class="form-grid-2col">
+                                <div class="form-group">
+                                    <label>Theme:</label>
+                                    <select id="hudTheme" class="form-control">
+                                        <option value="dark">Dark Professional</option>
+                                        <option value="light">Light Clean</option>
+                                        <option value="neon">Neon Cyberpunk</option>
+                                        <option value="gold">Gold TV Show</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Antworten Layout:</label>
+                                    <select id="answersLayout" class="form-control">
+                                        <option value="grid">Grid (2x2)</option>
+                                        <option value="vertical">Vertikal</option>
+                                        <option value="horizontal">Horizontal</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Timer-Variante:</label>
+                                    <select id="timerVariant" class="form-control">
+                                        <option value="circular" selected>Circular SVG</option>
+                                        <option value="bar">Progress Bar</option>
+                                        <option value="neon">Neon Glow</option>
+                                        <option value="ring">Ring mit Farbverlauf</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Animations-Geschwindigkeit:</label>
+                                <input type="range" id="animationSpeed" min="0.5" max="2" step="0.1" value="1" class="form-range">
+                                <div class="range-value"><span id="animationSpeedValue">1.0</span>x</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Glow-Intensität:</label>
+                                <input type="range" id="glowIntensity" min="0" max="2" step="0.1" value="1" class="form-range">
+                                <div class="range-value"><span id="glowIntensityValue">1.0</span>x</div>
+                            </div>
+
+                            <div class="button-group">
+                                <button id="saveVisualSettingsBtn" class="btn btn-primary">💾 Visuelle Einstellungen Speichern</button>
+                            </div>
+                            <div id="visualSaveMessage" class="message hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Animations -->
+                <div class="accordion-section">
+                    <button class="accordion-header" data-section="animations">
+                        <span class="accordion-icon">✨</span>
+                        <span class="accordion-title">Animationen</span>
+                        <span class="accordion-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" data-content="animations">
+                        <div class="accordion-inner">
+                            <div class="form-grid-2col">
+                                <div class="form-group">
+                                    <label>Frage-Einblendung:</label>
+                                    <select id="questionAnimation" class="form-control">
+                                        <option value="slide-in-left">Slide In Left</option>
+                                        <option value="slide-in-right">Slide In Right</option>
+                                        <option value="slide-in-top">Slide In Top</option>
+                                        <option value="slide-in-bottom" selected>Slide In Bottom</option>
+                                        <option value="fade-in">Fade In</option>
+                                        <option value="scale-in">Scale In</option>
+                                        <option value="bounce-in">Bounce In</option>
+                                        <option value="elastic-in">Elastic Pop</option>
+                                        <option value="flip-in">Flip In</option>
+                                        <option value="rotate-in">Rotate In</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Richtige Antwort:</label>
+                                    <select id="correctAnimation" class="form-control">
+                                        <option value="glow-pulse" selected>Glow Pulse</option>
+                                        <option value="explode">Explode Highlight</option>
+                                        <option value="burst">Correct Burst</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Falsche Antwort:</label>
+                                    <select id="wrongAnimation" class="form-control">
+                                        <option value="shake" selected>Shake Reject</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button id="saveAnimationSettingsBtn" class="btn btn-primary">💾 Animations-Einstellungen Speichern</button>
+                            </div>
+                            <div id="animationSaveMessage" class="message hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Colors & Fonts -->
+                <div class="accordion-section">
+                    <button class="accordion-header" data-section="colors">
+                        <span class="accordion-icon">🎨</span>
+                        <span class="accordion-title">Farben & Schriftarten</span>
+                        <span class="accordion-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" data-content="colors">
+                        <div class="accordion-inner">
+                            <h3>Farben</h3>
+                            <div class="color-grid">
+                                <div class="form-group">
+                                    <label>Primärfarbe:</label>
+                                    <input type="color" id="colorPrimary" value="#3b82f6" class="form-control color-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Sekundärfarbe:</label>
+                                    <input type="color" id="colorSecondary" value="#8b5cf6" class="form-control color-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Erfolg:</label>
+                                    <input type="color" id="colorSuccess" value="#10b981" class="form-control color-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Warnung:</label>
+                                    <input type="color" id="colorWarning" value="#f59e0b" class="form-control color-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Fehler:</label>
+                                    <input type="color" id="colorDanger" value="#ef4444" class="form-control color-input">
+                                </div>
+                            </div>
+
+                            <h3 style="margin-top: 25px;">Schriftarten</h3>
+                            <div class="form-grid-2col">
+                                <div class="form-group">
+                                    <label>Schriftfamilie:</label>
+                                    <select id="fontFamily" class="form-control">
+                                        <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" selected>System Standard</option>
+                                        <option value="'Arial', sans-serif">Arial</option>
+                                        <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+                                        <option value="'Georgia', serif">Georgia</option>
+                                        <option value="'Times New Roman', serif">Times New Roman</option>
+                                        <option value="'Courier New', monospace">Courier New</option>
+                                        <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Frage-Schriftgröße:</label>
+                                    <input type="text" id="fontSizeQuestion" value="2.2rem" class="form-control">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Antwort-Schriftgröße:</label>
+                                    <input type="text" id="fontSizeAnswer" value="1.1rem" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button id="saveColorFontSettingsBtn" class="btn btn-primary">💾 Farben & Schriften Speichern</button>
+                            </div>
+                            <div id="colorFontSaveMessage" class="message hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Advanced (Custom CSS) -->
+                <div class="accordion-section">
+                    <button class="accordion-header" data-section="advanced">
+                        <span class="accordion-icon">💻</span>
+                        <span class="accordion-title">Erweitert (Custom CSS)</span>
+                        <span class="accordion-arrow">▼</span>
+                    </button>
+                    <div class="accordion-content" data-content="advanced">
+                        <div class="accordion-inner">
+                            <div class="help-text" style="margin-bottom: 15px;">
+                                Fügen Sie hier eigenes CSS hinzu, um das Overlay weiter anzupassen.
+                            </div>
+                            <textarea id="customCSS" class="css-editor" placeholder="/* Eigenes CSS hier einfügen */
+.question-text {
+    /* Beispiel: Textschatten */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}"></textarea>
+
+                            <div class="button-group" style="margin-top: 15px;">
+                                <button id="saveCustomCSSBtn" class="btn btn-primary">💾 Custom CSS Speichern</button>
+                            </div>
+                            <div id="customCSSSaveMessage" class="message hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Save/Reset -->
+                <div class="panel" style="margin-top: 20px;">
+                    <div class="panel-header">
+                        <h2>💾 Alle Einstellungen</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="help-text" style="margin-bottom: 15px;">
+                            Nutzen Sie die "Alle Speichern" Funktion, um alle Overlay-Einstellungen auf einmal zu speichern, 
+                            oder speichern Sie einzelne Abschnitte über die jeweiligen Buttons in den Accordion-Bereichen.
+                        </div>
+                        <div class="button-group">
+                            <button id="saveHUDConfigBtn" class="btn btn-primary btn-large">💾 Alle Einstellungen Speichern</button>
+                            <button id="resetHUDConfigBtn" class="btn btn-danger">🔄 Auf Standard zurücksetzen</button>
+                        </div>
+                        <div id="hudSaveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Live Preview -->
+                <div class="panel" style="margin-top: 20px;">
+                    <div class="panel-header">
+                        <h2>👁️ Live Vorschau</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="preview-wrapper" id="previewWrapper">
+                            <iframe id="overlayPreview" src="/quiz-show/overlay" frameborder="0"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gift-Joker Mapping Tab -->
+        <div id="gift-jokers" class="tab-content">
+            <div class="content-grid">
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>🎁 Gift-Einstellungen</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="help-text">
+                            Konfigurieren Sie TikTok-Geschenke für Quiz-Start und Joker-Aktivierung.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz-Start Gift Configuration -->
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>🎮 Quiz-Start per Geschenk</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="help-text" style="margin-bottom: 20px;">
+                            Wählen Sie ein Geschenk, das automatisch ein Quiz mit Auto-Play startet. 
+                            Das Quiz läuft dann automatisch weiter mit den konfigurierten Einstellungen (siehe Settings-Tab).
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="quizStartGiftEnabled">
+                                Quiz-Start per Geschenk aktivieren
+                            </label>
+                        </div>
+
+                        <div id="quizStartGiftConfig" style="margin-top: 20px; display: none;">
+                            <div class="form-group">
+                                <label>Quiz-Start Geschenk auswählen</label>
+                                <select id="quizStartGiftSelector" class="form-control">
+                                    <option value="">-- Geschenk wählen --</option>
+                                </select>
+                                <small>Oder manuell eingeben:</small>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Geschenk ID</label>
+                                    <input type="number" id="quizStartGiftId" class="form-control" placeholder="z.B. 5655">
+                                </div>
+                                <div class="form-group">
+                                    <label>Geschenk Name</label>
+                                    <input type="text" id="quizStartGiftName" class="form-control" placeholder="z.B. Galaxy">
+                                </div>
+                            </div>
+
+                            <div class="help-text" style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-left: 4px solid #3b82f6;">
+                                <strong>ℹ️ Hinweis:</strong> Wenn ein Viewer dieses Geschenk sendet, wird automatisch ein Quiz gestartet. 
+                                Der Auto-Modus wird aktiviert und das Quiz läuft mit den Einstellungen aus dem Settings-Tab 
+                                (z.B. Auto-Modus Verzögerung, Rundenzahl, etc.).
+                            </div>
+                        </div>
+
+                        <div class="button-group" style="margin-top: 20px;">
+                            <button id="saveQuizStartGiftBtn" class="btn btn-primary">💾 Einstellungen Speichern</button>
+                        </div>
+                        <div id="quizStartGiftSaveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Gift-Joker List -->
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>📋 Aktive Zuordnungen</h2>
+                        <button id="addGiftJokerBtn" class="btn btn-primary btn-sm">➕ Zuordnung Hinzufügen</button>
+                    </div>
+                    <div class="panel-body">
+                        <table class="data-table" id="giftJokerTable">
+                            <thead>
+                                <tr>
+                                    <th>Geschenk ID</th>
+                                    <th>Geschenk Name</th>
+                                    <th>Joker Typ</th>
+                                    <th>Status</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="giftJokerTableBody">
+                                <!-- Gift-Joker mappings will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Gift-Joker Mapping -->
+                <div class="panel full-width" id="giftJokerFormPanel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>➕ Zuordnung Hinzufügen/Bearbeiten</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Geschenk auswählen</label>
+                                <select id="giftSelector" class="form-control">
+                                    <option value="">-- Geschenk wählen --</option>
+                                </select>
+                                <small>Oder manuell eingeben:</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Geschenk ID</label>
+                                <input type="number" id="giftJokerId" class="form-control" placeholder="z.B. 5655">
+                            </div>
+                            <div class="form-group">
+                                <label>Geschenk Name</label>
+                                <input type="text" id="giftJokerName" class="form-control" placeholder="z.B. Rose">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Joker Typ</label>
+                            <select id="giftJokerType" class="form-control">
+                                <option value="25">25% Joker (1 falsche Antwort entfernen)</option>
+                                <option value="50">50:50 Joker (2 falsche Antworten entfernen)</option>
+                                <option value="info">Info Joker (eine falsche Antwort markieren)</option>
+                                <option value="time">Zeit Joker (Zeit verlängern)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="giftJokerEnabled" checked>
+                                Aktiviert
+                            </label>
+                        </div>
+
+                        <div class="button-group">
+                            <button id="saveGiftJokerBtn" class="btn btn-primary">💾 Zuordnung Speichern</button>
+                            <button id="cancelGiftJokerBtn" class="btn btn-secondary">❌ Abbrechen</button>
+                        </div>
+                        <div id="giftJokerSaveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+
+                <!-- TTS Configuration -->
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>🔊 TTS Lautstärke</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>Globale TTS Lautstärke (0-100%)</label>
+                            <input type="range" id="ttsVolumeGlobal" class="form-range" min="0" max="100" value="80">
+                            <div class="range-value" id="ttsVolumeGlobalValue">80%</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Session TTS Lautstärke (0-100%)</label>
+                            <input type="range" id="ttsVolumeSession" class="form-range" min="0" max="100" value="80">
+                            <div class="range-value" id="ttsVolumeSessionValue">80%</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="ttsEnabled" checked>
+                                TTS Aktiviert
+                            </label>
+                        </div>
+
+                        <button id="saveTTSConfigBtn" class="btn btn-primary">💾 TTS Einstellungen Speichern</button>
+                        <div id="ttsConfigSaveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Display Configuration -->
+                <div class="panel full-width">
+                    <div class="panel-header">
+                        <h2>🏆 Leaderboard Anzeige</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="leaderboardShowAfterQuestion" checked>
+                                Leaderboard nach jeder Frage anzeigen
+                            </label>
+                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;">
+                                Zeigt das Leaderboard sofort nach jeder einzelnen Frage an
+                            </small>
+                        </div>
+
+                        <div class="form-group" id="questionDisplayTypeGroup" style="display: none; margin-left: 20px;">
+                            <label>Fragen-Anzeige Typ</label>
+                            <select id="leaderboardQuestionDisplayType" class="form-control">
+                                <option value="round">Nur Runden-Leaderboard (aktuelle Frage)</option>
+                                <option value="season" selected>Nur Season-Leaderboard (Gesamtwertung)</option>
+                                <option value="both">Runde + Season</option>
+                            </select>
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Was nach jeder Frage angezeigt werden soll
+                            </small>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>
+                                <input type="checkbox" id="leaderboardShowAfterRound" checked>
+                                Leaderboard am Ende der Runde anzeigen
+                            </label>
+                            <small style="color: #666; display: block; margin-top: 5px; margin-left: 20px;">
+                                Zeigt das Leaderboard am Ende einer Quiz-Runde an (wenn Sie manuell "Stop" drücken)
+                            </small>
+                        </div>
+
+                        <div class="form-group" id="roundDisplayTypeGroup" style="margin-left: 20px;">
+                            <label>Runden-Anzeige Typ</label>
+                            <select id="leaderboardRoundDisplayType" class="form-control">
+                                <option value="round">Nur Runden-Leaderboard</option>
+                                <option value="season">Nur Season-Leaderboard</option>
+                                <option value="both">Runde + Season</option>
+                            </select>
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Was am Ende der Runde angezeigt werden soll
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Spielende-Anzeige Typ</label>
+                            <select id="leaderboardEndGameDisplayType" class="form-control">
+                                <option value="round">Runden-Leaderboard</option>
+                                <option value="season">Season-Leaderboard</option>
+                            </select>
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Was beim Beenden des gesamten Quiz angezeigt werden soll
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Auto-Hide Verzögerung (Sekunden)</label>
+                            <input type="number" id="leaderboardAutoHideDelay" class="form-control" value="6" min="6" max="60" readonly>
+                            <small style="color: #666; display: block; margin-top: 5px;">
+                                Fest auf 6 Sekunden eingestellt - Leaderboard wird nach jeder Frage für 6 Sekunden angezeigt (wenn aktiviert)
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Animationsstil</label>
+                            <select id="leaderboardAnimationStyle" class="form-control">
+                                <option value="fade">Einblenden (Fade)</option>
+                                <option value="slide">Hereingleiten (Slide)</option>
+                                <option value="zoom">Zoomen (Zoom)</option>
+                            </select>
+                        </div>
+
+                        <button id="saveLeaderboardConfigBtn" class="btn btn-primary">💾 Leaderboard Einstellungen Speichern</button>
+                        <div id="leaderboardConfigSaveMessage" class="message hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/theme-manager.js"></script>
+    <script src="/quiz-show/quiz_show.js"></script>
+</body>
+</html>

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="tts.admin_panel.title">TTS Admin Panel</title>
+    <link rel="stylesheet" href="/css/tailwind.output.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        /* Custom animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Electron iframe compatibility fixes */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            cursor: text;
+        }
+        select, button, .tab-button, .filter-btn, .log-filter-btn {
+            -webkit-user-select: none;
+            user-select: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
+    <!-- Debug Info (will be hidden once JS loads) -->
+    <div id="debug-info" class="fixed top-0 left-0 right-0 bg-yellow-600 text-black p-2 text-center z-50">
+        ⚠️ Loading TTS Admin Panel... If this message persists, check browser console (F12)
+    </div>
+
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold mb-2" data-i18n="tts.admin_panel.title">🔊 TTS Admin Panel</h1>
+                <p class="text-gray-400" data-i18n="tts.admin_panel.subtitle">Text-to-Speech System v2.0</p>
+                <div id="init-status" class="text-sm text-gray-500 mt-2" data-i18n="tts.admin_panel.initializing">Initializing...</div>
+            </div>
+            <div>
+                <button id="saveConfigBtnTop" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">
+                    💾 Save Configuration
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6 border-b border-gray-700">
+            <nav class="flex space-x-4">
+                <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="tts.admin_panel.tabs.config">Configuration</button>
+                <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.users">User Management</button>
+                <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</button>
+                <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.stats">Statistics</button>
+                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">🐛 Debug Logs</button>
+            </nav>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="content-config" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Engine Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎙️ Engine Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Default Engine (Main)</label>
+                            <select id="defaultEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="tiktok">TikTok TTS (Free, No API Key Required)</option>
+                                <option value="google">Google Cloud TTS</option>
+                                <option value="speechify">Speechify TTS (Premium)</option>
+                                <option value="elevenlabs">ElevenLabs TTS (Premium)</option>
+                                <option value="openai">OpenAI TTS</option>
+                                <option value="fishaudio">Fish.audio TTS (Official API)</option>
+                                <option value="siliconflow">SiliconFlow TTS (Fish Speech 1.5)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">The primary TTS engine to use. TikTok TTS is free and requires no API key. Other engines require API keys configured in the API Keys section below.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Default Voice</label>
+                            <select id="defaultVoice" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <div id="defaultEmotionContainer" style="display: none;">
+                            <label class="block text-sm font-medium mb-2">🎭 Default Emotion (Speechify only)</label>
+                            <select id="defaultEmotion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="">None (Neutral)</option>
+                                <option value="angry">😡 Angry - Forceful, intense</option>
+                                <option value="cheerful">😄 Cheerful - Upbeat, positive</option>
+                                <option value="sad">😢 Sad - Downcast, melancholic</option>
+                                <option value="terrified">😱 Terrified - Extreme fear</option>
+                                <option value="relaxed">😌 Relaxed - Calm, at-ease</option>
+                                <option value="fearful">😰 Fearful - Anxious, worried</option>
+                                <option value="surprised">😲 Surprised - Astonished</option>
+                                <option value="calm">😊 Calm - Tranquil, peaceful</option>
+                                <option value="assertive">💪 Assertive - Confident, authoritative</option>
+                                <option value="energetic">⚡ Energetic - Dynamic, lively</option>
+                                <option value="warm">❤️ Warm - Friendly, inviting</option>
+                                <option value="direct">➡️ Direct - Straightforward, clear</option>
+                                <option value="bright">☀️ Bright - Optimistic, cheerful</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Add emotional expression to Speechify voices. Works best with shorter sentences.</p>
+                        </div>
+
+                        <!-- Fallback Engines Activation -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <label class="block text-sm font-medium mb-3">🔄 Enabled Fallback Engines</label>
+                            <p class="text-xs text-gray-400 mb-3">Select which engines should be available as fallbacks when the main engine fails. Only enabled engines will be loaded (saves system resources).</p>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableTikTokFallback" class="w-4 h-4">
+                                    <label for="enableTikTokFallback" class="text-sm flex-1">
+                                        <span class="font-medium">TikTok TTS</span>
+                                        <span class="text-xs text-gray-400 block">Free, fast, no API key needed</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableGoogleFallback" class="w-4 h-4">
+                                    <label for="enableGoogleFallback" class="text-sm flex-1">
+                                        <span class="font-medium">Google Cloud TTS</span>
+                                        <span class="text-xs text-gray-400 block">Neural voices, high quality</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableSpeechifyFallback" class="w-4 h-4">
+                                    <label for="enableSpeechifyFallback" class="text-sm flex-1">
+                                        <span class="font-medium">Speechify</span>
+                                        <span class="text-xs text-gray-400 block">1000+ voices, 60+ languages</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableElevenlabsFallback" class="w-4 h-4">
+                                    <label for="enableElevenlabsFallback" class="text-sm flex-1">
+                                        <span class="font-medium">ElevenLabs</span>
+                                        <span class="text-xs text-gray-400 block">Ultra-realistic AI voices</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableOpenAIFallback" class="w-4 h-4">
+                                    <label for="enableOpenAIFallback" class="text-sm flex-1">
+                                        <span class="font-medium">OpenAI TTS</span>
+                                        <span class="text-xs text-gray-400 block">TTS-1 and TTS-1-HD models</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableFishAudioFallback" class="w-4 h-4">
+                                    <label for="enableFishAudioFallback" class="text-sm flex-1">
+                                        <span class="font-medium">Fish.audio</span>
+                                        <span class="text-xs text-gray-400 block">Multilingual, Official Fish.audio API</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center space-x-2 bg-gray-700 rounded p-3">
+                                    <input type="checkbox" id="enableSiliconFlowFallback" class="w-4 h-4">
+                                    <label for="enableSiliconFlowFallback" class="text-sm flex-1">
+                                        <span class="font-medium">SiliconFlow (Fish Speech 1.5)</span>
+                                        <span class="text-xs text-gray-400 block">Multilingual, SiliconFlow API</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="text-xs text-yellow-500 mt-2">⚠️ Engines with API keys require corresponding keys in the API Keys section. TikTok TTS is free and requires no API key.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Performance Mode</label>
+                            <select id="performanceMode" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="fast">🚀 Fast (Low-Resource / Toaster PCs)</option>
+                                <option value="balanced">⚖️ Balanced (Default)</option>
+                                <option value="quality">🎯 Quality (High-Resource)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Fast mode is optimized for low-end PCs with faster timeouts (5s) and fewer retries (1). 
+                                Balanced mode is recommended for most users (10s timeout, 2 retries). 
+                                Quality mode provides maximum reliability for high-end PCs (20s timeout, 3 retries).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎚️ Audio Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Volume: <span id="volumeValue">80</span>%</label>
+                            <input type="range" id="volume" min="0" max="100" value="80" class="w-full">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Speed: <span id="speedValue">1.0</span>x</label>
+                            <input type="range" id="speed" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full">
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="duckOtherAudio" class="w-4 h-4">
+                            <label for="duckOtherAudio" class="text-sm">Duck other audio during TTS</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Duck Volume: <span id="duckVolumeValue">30</span>%</label>
+                            <input type="range" id="duckVolume" min="0" max="100" value="30" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permission Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🔒 Permission Settings</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Minimum Team Level</label>
+                            <input type="number" id="teamMinLevel" min="0" max="10" value="0" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <p class="text-xs text-gray-400 mt-1">Team level equals the number of team hearts sent to the streamer (0 = Anyone can use TTS, 1+ = Only users who have sent team hearts)</p>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="enabledForChat" checked class="w-4 h-4">
+                            <label for="enabledForChat" class="text-sm">Enable TTS for chat messages</label>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="autoLanguageDetection" checked class="w-4 h-4">
+                            <label for="autoLanguageDetection" class="text-sm">Auto-detect language</label>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="enableAutoFallback" checked class="w-4 h-4">
+                            <label for="enableAutoFallback" class="text-sm">Enable automatic fallback to other engines</label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">When disabled, only the selected engine will be used. If it fails, TTS will not work instead of falling back to another engine.</p>
+
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="stripEmojis" class="w-4 h-4">
+                            <label for="stripEmojis" class="text-sm" data-i18n="tts.admin_panel.config.strip_emojis">Strip emojis from TTS text</label>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1" data-i18n="tts.admin_panel.config.strip_emojis_desc">When enabled, emojis will be removed from messages before they are spoken, preventing the TTS engine from reading emoji names aloud.</p>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Message Prefix Filter</label>
+                            <input type="text" id="messagePrefixFilter" placeholder="e.g., ! / ." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-400 mt-1">Messages starting with these characters will be ignored. Separate multiple prefixes with spaces (e.g., "! / .")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Language Detection Settings -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🌍 Language Detection</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Fallback Language (Default if Detection Uncertain)</label>
+                            <select id="fallbackLanguage" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                                <option value="de">Deutsch (German)</option>
+                                <option value="en">English</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="fr">Français (French)</option>
+                                <option value="it">Italiano (Italian)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="zh">中文 (Chinese)</option>
+                                <option value="ru">Русский (Russian)</option>
+                                <option value="ar">العربية (Arabic)</option>
+                                <option value="tr">Türkçe (Turkish)</option>
+                                <option value="nl">Nederlands (Dutch)</option>
+                                <option value="pl">Polski (Polish)</option>
+                                <option value="vi">Tiếng Việt (Vietnamese)</option>
+                                <option value="th">ภาษาไทย (Thai)</option>
+                                <option value="id">Bahasa Indonesia (Indonesian)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Used when language detection confidence is below threshold or text is too short</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Confidence Threshold: <span id="confidenceThresholdValue">90</span>%</label>
+                            <input type="range" id="languageConfidenceThreshold" min="0.5" max="1.0" step="0.05" value="0.90" class="w-full">
+                            <p class="text-xs text-gray-400 mt-1">Minimum confidence required to use detected language (recommended: 90%)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Minimum Text Length for Detection</label>
+                            <input type="number" id="languageMinTextLength" min="5" max="50" value="10" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                            <p class="text-xs text-gray-400 mt-1">Short texts (e.g., "ok", "lol", "hi") will use fallback language</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Limiting & Queue -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">⏱️ Rate Limiting & Queue</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Messages per User</label>
+                            <input type="number" id="rateLimit" min="1" max="20" value="3" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Time Window (seconds)</label>
+                            <input type="number" id="rateLimitWindow" min="10" max="300" value="60" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Max Queue Size</label>
+                            <input type="number" id="maxQueueSize" min="10" max="500" value="100" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Max Text Length</label>
+                            <input type="number" id="maxTextLength" min="50" max="1000" value="300" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profanity Filter -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🚫 Profanity Filter</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Filter Mode</label>
+                            <select id="profanityFilter" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                                <option value="off">Off - No filtering</option>
+                                <option value="moderate">Moderate - Replace profanity</option>
+                                <option value="strict">Strict - Drop messages with profanity</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Keys Notice -->
+                <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6 shadow-xl lg:col-span-2">
+                    <h2 class="text-2xl font-bold mb-4">🔑 API Keys</h2>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas fa-info-circle text-blue-400 text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-300 mb-3">
+                                <strong>API keys are now managed in the global Settings panel.</strong>
+                            </p>
+                            <p class="text-gray-400 text-sm mb-4">
+                                To configure your TTS engine API keys (Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), please go to:
+                            </p>
+                            <ol class="text-gray-400 text-sm space-y-2 mb-4">
+                                <li>1. Click <strong>Settings</strong> in the left sidebar</li>
+                                <li>2. Scroll down to the <strong>"TTS Engine API Keys"</strong> section</li>
+                                <li>3. Enter your API keys and click <strong>Save</strong></li>
+                            </ol>
+                            <p class="text-gray-500 text-xs italic">
+                                This centralized approach makes it easier to manage all your API keys in one place.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6">
+                <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">
+                    💾 Save Configuration
+                </button>
+            </div>
+        </div>
+
+        <!-- User Management Tab -->
+        <div id="content-users" class="tab-content hidden">
+            <!-- Manual Voice Assignment -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <h2 class="text-2xl font-bold mb-4">🎤 Manual Voice Assignment</h2>
+                <p class="text-gray-400 text-sm mb-4">Assign a voice to a user directly by entering their username</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Username (TikTok uniqueId)</label>
+                        <input type="text" id="manualUsername" list="recentUsersList" placeholder="Enter TikTok username..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                        <datalist id="recentUsersList">
+                            <!-- Populated dynamically with recent chat users -->
+                        </datalist>
+                        <p class="text-xs text-gray-400 mt-1">Enter the exact TikTok username (case-sensitive) or select from recent chat users</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Engine</label>
+                        <select id="manualEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <!-- TikTok TTS removed - no longer supported -->
+                            <option value="google">Google Cloud TTS</option>
+                            <option value="speechify">Speechify TTS</option>
+                            <option value="elevenlabs">ElevenLabs TTS</option>
+                            <option value="openai">OpenAI TTS</option>
+                            <option value="fishaudio">Fish.audio TTS</option>
+                            <option value="siliconflow">SiliconFlow TTS</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Voice</label>
+                        <select id="manualVoice" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="flex items-end">
+                        <button id="assignManualVoiceBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition">
+                            Assign Voice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User List -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">👥 User Management</h2>
+                    <div class="space-x-2">
+                        <button data-filter="all" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">All</button>
+                        <button data-filter="whitelisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Whitelisted</button>
+                        <button data-filter="blacklisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Blacklisted</button>
+                        <button data-filter="voice_assigned" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Voice Assigned</button>
+                    </div>
+                </div>
+
+                <div id="userList" class="space-y-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Tab -->
+        <div id="content-queue" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">📋 Current Queue</h2>
+                        <button id="clearQueueBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Clear Queue</button>
+                    </div>
+
+                    <div id="queueList" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h2 class="text-2xl font-bold mb-4">🎵 Now Playing</h2>
+
+                    <div id="nowPlaying" class="text-center text-gray-400">
+                        No audio playing
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="skipCurrentBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+                            ⏭️ Skip Current
+                        </button>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="text-xl font-bold mb-2">🎤 Test TTS</h3>
+                        <input type="text" id="testText" placeholder="Enter test text..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            🔊 Speak
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="content-stats" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Queue Stats -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">📊 Queue Statistics</h3>
+                    <div id="queueStats" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Permission Stats -->
+                <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">🔒 Permission Statistics</h3>
+                    <div id="permissionStats" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Debug Logs Tab -->
+        <div id="content-debug" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">🐛 Debug Logs - Live TTS Pipeline Tracking</h2>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="autoScrollLogs" checked class="w-4 h-4">
+                            <span class="text-sm">Auto-scroll</span>
+                        </label>
+                        <button id="clearLogsBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Clear Logs</button>
+                        <button id="toggleDebugBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <span id="debugToggleText">Disable Debug</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="mb-4 flex flex-wrap gap-2">
+                    <button data-category="all" class="log-filter-btn px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium">All</button>
+                    <button data-category="INIT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">INIT</button>
+                    <button data-category="TIKTOK_EVENT" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">TikTok Events</button>
+                    <button data-category="SPEAK_START" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Speak Start</button>
+                    <button data-category="SPEAK_STEP" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Pipeline Steps</button>
+                    <button data-category="SPEAK_SUCCESS" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Success</button>
+                    <button data-category="SPEAK_DENIED" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Denied</button>
+                    <button data-category="SPEAK_ERROR" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Errors</button>
+                    <button data-category="PLAYBACK" class="log-filter-btn px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Playback</button>
+                </div>
+
+                <!-- Status Info -->
+                <div class="mb-4 p-4 bg-gray-900 rounded">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-400">Total Logs:</span>
+                            <span id="totalLogsCount" class="ml-2 font-bold text-white">0</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Displayed:</span>
+                            <span id="displayedLogsCount" class="ml-2 font-bold text-white">0</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Debug Mode:</span>
+                            <span id="debugModeStatus" class="ml-2 font-bold text-green-500">Enabled</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Live Updates:</span>
+                            <span id="liveUpdateStatus" class="ml-2 font-bold text-green-500 pulse">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Display -->
+                <div id="debugLogsContainer" class="bg-gray-900 rounded p-4 h-96 overflow-y-auto font-mono text-sm">
+                    <div id="debugLogsList">
+                        <div class="text-gray-500 text-center py-8">Waiting for logs... Try triggering TTS events</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-3">📖 Debug Log Categories</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong class="text-blue-400">INIT:</strong> Plugin initialization events
+                    </div>
+                    <div>
+                        <strong class="text-purple-400">TIKTOK_EVENT:</strong> TikTok chat messages received
+                    </div>
+                    <div>
+                        <strong class="text-green-400">SPEAK_START:</strong> speak() method called
+                    </div>
+                    <div>
+                        <strong class="text-yellow-400">SPEAK_STEP1-6:</strong> Each pipeline step (permissions, profanity, validation, voice selection, synthesis, queue)
+                    </div>
+                    <div>
+                        <strong class="text-green-500">SPEAK_SUCCESS:</strong> TTS successfully queued
+                    </div>
+                    <div>
+                        <strong class="text-red-400">SPEAK_DENIED:</strong> TTS request denied (permissions/rate limit)
+                    </div>
+                    <div>
+                        <strong class="text-red-600">SPEAK_ERROR:</strong> Errors during processing
+                    </div>
+                    <div>
+                        <strong class="text-cyan-400">PLAYBACK:</strong> Audio playback events
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded">
+                    <strong class="text-yellow-500">💡 Tip:</strong> If TTS works in test mode but not live, check for TIKTOK_EVENT logs. If missing, the TikTok integration isn't receiving events. If present but no SPEAK_START, permission checks may be blocking.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Assignment Modal -->
+    <div id="voiceAssignmentModal" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center hidden" style="z-index: 2000;">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto relative" tabindex="-1">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">🎤 Assign Voice</h2>
+                <button id="modalCloseX" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-gray-300">Assigning voice for: <span id="modalUsername" class="font-bold text-blue-400"></span></p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Engine</label>
+                <select id="modalEngine" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                    <option value="tiktok">TikTok TTS (Free)</option>
+                    <option value="google">Google Cloud TTS (Premium)</option>
+                    <option value="speechify">Speechify (Premium)</option>
+                    <option value="elevenlabs">ElevenLabs (Premium)</option>
+                    <option value="openai">OpenAI TTS (Premium)</option>
+                    <option value="fishaudio">Fish.audio (Premium)</option>
+                    <option value="siliconflow">SiliconFlow (Premium)</option>
+                </select>
+            </div>
+
+            <!-- Emotion Selection (Speechify only) -->
+            <div id="modalEmotionContainer" class="mb-4" style="display: none;">
+                <label class="block text-sm font-bold mb-2">🎭 Emotion (Speechify only)</label>
+                <select id="modalEmotion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                    <option value="">None (Neutral)</option>
+                    <option value="angry">😡 Angry</option>
+                    <option value="cheerful">😄 Cheerful</option>
+                    <option value="sad">😢 Sad</option>
+                    <option value="terrified">😱 Terrified</option>
+                    <option value="relaxed">😌 Relaxed</option>
+                    <option value="fearful">😰 Fearful</option>
+                    <option value="surprised">😲 Surprised</option>
+                    <option value="calm">😊 Calm</option>
+                    <option value="assertive">💪 Assertive</option>
+                    <option value="energetic">⚡ Energetic</option>
+                    <option value="warm">❤️ Warm</option>
+                    <option value="direct">➡️ Direct</option>
+                    <option value="bright">☀️ Bright</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Search Voice</label>
+                <input type="text" id="modalVoiceSearch" placeholder="Search voices..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Select Voice</label>
+                <div id="modalVoiceList" class="bg-gray-700 rounded p-4 max-h-64 overflow-y-auto space-y-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Cancel
+                </button>
+                <button id="confirmVoiceAssignment" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Assign Voice
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load i18n and theme support -->
+    <script src="/js/i18n-client.js"></script>
+    <script src="/js/theme-manager.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Initialize i18n before loading TTS admin
+        (async () => {
+            if (typeof I18nClient !== 'undefined') {
+                window.i18n = new I18nClient();
+                await window.i18n.init();
+                
+                // Apply translations to elements with data-i18n attributes
+                const applyTranslations = () => {
+                    document.querySelectorAll('[data-i18n]').forEach(el => {
+                        const key = el.getAttribute('data-i18n');
+                        const translation = window.i18n.t(key);
+                        if (translation !== key) {
+                            // For input placeholders
+                            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                                el.setAttribute('placeholder', translation);
+                            } else {
+                                // For text content - preserve emojis at the start
+                                const emojiMatch = el.textContent.match(/^([\u{1F300}-\u{1F9FF}]+\s*)/u);
+                                el.textContent = emojiMatch ? emojiMatch[1] + translation : translation;
+                            }
+                        }
+                    });
+                };
+                
+                // Apply translations initially
+                applyTranslations();
+                
+                // Re-apply when language changes
+                window.i18n.onLanguageChange(() => {
+                    applyTranslations();
+                });
+                
+                console.log('✅ TTS Admin Panel: i18n initialized');
+            }
+        })();
+    </script>
+    <script src="/plugins/tts/ui/tts-admin-production.js"></script>
+</body>
+</html>
