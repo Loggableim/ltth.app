@@ -6,7 +6,7 @@
   "navigation": {
     "dashboard": "Dashboard",
     "events": "Ereignisse",
-    "flows": "Flows",
+    "flows": "AblÃ¤ufe",
     "goals": "Ziele",
     "lastevent": "LastEvent",
     "clarityhud": "ClarityHUD",
@@ -14,8 +14,8 @@
     "core_functions": "Kernfunktionen",
     "automations_goals": "Automationen & Ziele",
     "audio_voice": "Audio & Sprache",
-    "visual_fx": "Visual FX",
-    "games_engagement": "Games & Engagement",
+    "visual_fx": "Visuelle Effekte",
+    "games_engagement": "Spiele & Engagement",
     "integrations": "Integrationen",
     "management": "Verwaltung",
     "tts": "TTS",
@@ -37,12 +37,12 @@
     "viewer_leaderboard": "Zuschauer XP & Bestenliste",
     "viewer_profiles": "Zuschauer-Profile",
     "coinbattle": "CoinBattle",
-    "quiz_show": "Quiz Show",
+    "quiz_show": "Quiz-Show",
     "interactive_story": "Interaktive Story",
     "game_engine": "Spielmaschine",
     "viewer_xp": "Zuschauer XP",
     "weather_control": "Wetterkontrolle",
-    "minecraft_connect": "Minecraft Connect",
+    "minecraft_connect": "Minecraft-Connect",
     "plugin_manager": "Plugin-Manager",
     "automations": "Automatisierungen",
     "overlays": "Overlays",
@@ -50,7 +50,7 @@
     "vdoninja": "VDO.Ninja",
     "streamalchemy": "Stream-Alchemie",
     "gcce": "Globale Chat-Befehls-Engine",
-    "gcce_hud": "GCCE HUD Overlay",
+    "gcce_hud": "GCCE HUD-Overlay",
     "chatango": "Chatango",
     "thermal_printer": "Thermaldrucker",
     "config_import": "Konfiguration Importieren",
@@ -59,14 +59,14 @@
     "wiki": "Wiki",
     "settings": "Einstellungen",
     "toptier": "Top Tier",
-    "stt_ticker": "STT Ticker",
-    "stt_capture": "STT Capture"
+    "stt_ticker": "STT-Ticker",
+    "stt_capture": "STT-Erfassung"
   },
   "chatango": {
     "loading": "Community-Chat wird geladen..."
   },
   "talking_heads_ui": {
-    "title": "Talking Heads - AI Avatar Animation",
+    "title": "Talking Heads - KI-Avatar-Animation",
     "subtitle": "Dynamische 2D-Avatare für TikTok-User mit TTS-synchronisierter Animation",
     "sections": {
       "status": "Status & Einstellungen",
@@ -75,7 +75,7 @@
       "animation": "Animations-Einstellungen",
       "cache": "Cache-Verwaltung",
       "active_animations": "Aktive Animationen",
-      "debug_log": "Debug Log"
+      "debug_log": "Debug-Protokoll"
     },
     "labels": {
       "plugin_enabled": "Plugin aktiviert",
@@ -197,7 +197,7 @@
     "run_diagnostics": "Verbindungsdiagnose ausführen",
     "tts_action": "TTS",
     "soundboard_action": "Soundboard",
-    "flows_action": "Flows",
+    "flows_action": "AblÃ¤ufe",
     "emoji_rain_action": "Emoji-Regen",
     "osc_bridge_action": "OSC-Brücke",
     "live_stats": "Live-Statistiken",
@@ -238,7 +238,7 @@
     "cancel": "Abbrechen",
     "extract_session_manual": "Manueller Login (Browser)",
     "extract_session_help": "Nutzen Sie \"SessionID extrahieren\" für automatische Extraktion mit gespeichertem Login, oder \"SessionID importieren\" um die SessionID direkt aus Ihrem Browser zu kopieren (empfohlen bei Login-Problemen oder Browser-Sicherheitswarnungen).",
-    "session_status": "TikTok SessionID Status",
+    "session_status": "TikTok SessionID-Status",
     "session_method": "Extraktionsmethode",
     "session_extracted": "Extrahiert am",
     "plugin_notice": {
@@ -252,7 +252,7 @@
   "tabs": {
     "events": "Ereignisse",
     "overlays": "Overlays",
-    "flows": "Flows",
+    "flows": "AblÃ¤ufe",
     "soundboard": "Soundboard",
     "settings": "Einstellungen",
     "leaderboard": "Bestenliste",
@@ -400,7 +400,7 @@
     "title": "Einstellungen",
     "general": "Allgemeine Einstellungen",
     "obs": "OBS-Integration",
-    "theme": "Theme",
+    "theme": "Design",
     "language": "Sprache",
     "save": "Einstellungen speichern",
     "saved": "Einstellungen erfolgreich gespeichert!",
@@ -590,7 +590,7 @@
     "test": "Testen",
     "settings": "TTS-Einstellungen",
     "admin_panel": {
-      "title": "TTS Admin Panel",
+      "title": "TTS-Admin-Panel",
       "subtitle": "Text-zu-Sprache System v2.0",
       "initializing": "Wird initialisiert...",
       "loading_config": "Konfiguration wird geladen...",
@@ -821,7 +821,7 @@
     "search": "Suchen"
   },
   "multicam": {
-    "title": "Multi-Cam Switcher",
+    "title": "Multi-Cam-Switcher",
     "status": {
       "disconnected": "Getrennt",
       "connected": "Mit OBS verbunden"
@@ -894,7 +894,7 @@
     "test_medium": "Mittel testen",
     "test_big": "Groß testen",
     "test_massive": "Massiv testen",
-    "audio": "🔊 Audio",
+    "audio": "ð Audio",
     "enable_sounds": "Sounds aktivieren",
     "volume": "Lautstärke",
     "explosion_shapes": "✨ Explosionsformen",
@@ -930,7 +930,7 @@
     "enable_goal_finales": "Ziel-Finales aktivieren",
     "finale_intensity": "Finale-Intensität",
     "test_finale": "🎇 Finale testen",
-    "overlay": "📺 Overlay",
+    "overlay": "ðº Overlay",
     "copy_overlay_url": "📋 Overlay-URL kopieren",
     "open_in_new_tab": "🔗 In neuem Tab öffnen",
     "test_firework": "🧪 Feuerwerk testen",
@@ -956,7 +956,7 @@
     "max_concurrent_fireworks": "Max. gleichzeitige Feuerwerke",
     "max_total_particles": "Max. Partikel gesamt",
     "emergency_cleanup_threshold": "Emergency-Cleanup-Schwelle",
-    "adaptive_performance": "Adaptive Performance",
+    "adaptive_performance": "Adaptive Leistung",
     "min_target_fps": "Minimale Ziel-FPS",
     "frame_skip_info": "Frame Skip wird aktiviert, wenn die FPS unter diesen Wert fallen",
     "enable_frame_skip": "Frame Skip aktivieren",

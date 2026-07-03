@@ -729,9 +729,9 @@
     "fireworks.benchmark.alternative"
   ],
   "stats": {
-    "totalEnKeys": 850,
-    "totalDeKeys": 850,
-    "usedKeys": 127,
+    "totalEnKeys": 854,
+    "totalDeKeys": 854,
+    "usedKeys": 131,
     "missingEnKeys": 0,
     "missingDeKeys": 0,
     "unusedKeys": 723

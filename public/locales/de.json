@@ -1,8 +1,8 @@
 {
   "app_name": "PupCid's Little TikTool Helper",
   "tabs": {
-    "changelog": "Changelog",
-    "api_keys": "API Keys",
+    "changelog": "Änderungsprotokoll",
+    "api_keys": "API‑Schlüssel",
     "community": "Community",
     "logging": "Logging"
   },
@@ -125,14 +125,14 @@
     "links": {
       "repo": "GitHub Repository",
       "discussions": "Diskussionen & Fragen",
-      "issues": "Bug Reports & Feature Requests",
+      "issues": "Bugberichte & Funktionsanfragen",
       "discord": "Discord Server"
     },
     "contribute": "Wie kann ich helfen?",
     "contribute_text": "Teste neue Features, melde Bugs, schlage Verbesserungen vor oder entwickle eigene Plugins!"
   },
   "footer": {
-    "powered_by": "Powered by LTTH Launcher",
+    "powered_by": "Von LTTH Launcher unterstützt",
     "version": "Version"
   },
   "changelog": {
