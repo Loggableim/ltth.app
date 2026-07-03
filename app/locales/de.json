@@ -225,7 +225,7 @@
       "soundboard": "Soundboard",
       "flows": "Automatisierungsflows",
       "emoji_rain": "Emoji-Regen",
-      "osc_bridge": "OSC-Bridge",
+      "osc_bridge": "OSC-Brücke",
       "openshock_emergency_stop": "OpenShock Stopp",
       "plugin_disabled": "Plugin deaktiviert",
       "enable_plugin_hint": "Aktiviere dieses Plugin um Schnellaktionen zu nutzen"
@@ -943,7 +943,7 @@
       "enabled": "Toaster-Modus aktivieren",
       "help": "Optimiert für schwache Systeme und maximale Kompatibilität",
       "changes_title": "🔧 Was wird geändert:",
-      "renderer": "Renderer: WebGL -> Canvas 2D",
+      "renderer": "Renderer: WebGL → Canvas 2D",
       "gpu": "GPU-Beschleunigung: Deaktiviert",
       "compatibility": "Kompatibilität: Maximum",
       "performance": "Performance: Reduziert, aber stabil",
