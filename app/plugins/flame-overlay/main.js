@@ -270,9 +270,9 @@ class FlameOverlayPlugin {
             backgroundTintOpacity: 0.0, // 0.0 = fully transparent
             
             // Flame animation
-            flameSpeed: 0.5, // Time multiplier
-            flameIntensity: 1.3, // Magnitude/turbulence
-            flameBrightness: 0.38, // Overall brightness multiplier
+            flameSpeed: 0.46, // Time multiplier
+            flameIntensity: 1.18, // Magnitude/turbulence
+            flameBrightness: 0.34, // Overall brightness multiplier
             
             // Visual effects
             enableGlow: true,
@@ -289,43 +289,43 @@ class FlameOverlayPlugin {
             detailScaleAuto: true, // Automatic detail scaling based on resolution
             
             // Edge Settings
-            edgeFeather: 0.52, // 0.0-1.0: Soft edge blending amount
-            frameCurve: 0.14, // 0.0-1.0: Curved frame edges (0=sharp corners)
-            frameNoiseAmount: 0.18, // 0.0-1.0: Noise modulation on frame edges
+            edgeFeather: 0.46, // 0.0-1.0: Soft edge blending amount
+            frameCurve: 0.1, // 0.0-1.0: Curved frame edges (0=sharp corners)
+            frameNoiseAmount: 0.12, // 0.0-1.0: Noise modulation on frame edges
             
             // Animation
             animationEasing: 'linear', // 'linear', 'sine', 'quad', 'elastic'
             pulseEnabled: false, // Enable pulsing/breathing animation
-            pulseAmount: 0.2, // 0.0-1.0: Pulse intensity
+            pulseAmount: 0.16, // 0.0-1.0: Pulse intensity
             pulseSpeed: 1.0, // 0.1-3.0: Pulse frequency
             
             // Bloom
             bloomEnabled: true, // Enable bloom post-processing
-            bloomIntensity: 1.05, // 0.0-2.0: Bloom strength
-            bloomThreshold: 0.52, // 0.0-1.0: Brightness threshold for bloom
-            bloomRadius: 5, // 1-10: Bloom blur radius
+            bloomIntensity: 0.78, // 0.0-2.0: Bloom strength
+            bloomThreshold: 0.58, // 0.0-1.0: Brightness threshold for bloom
+            bloomRadius: 4, // 1-10: Bloom blur radius
             
             // Layers
             layersEnabled: true, // Enable multi-layer compositing
-            layerCount: 3, // 1-3: Number of layers
-            layerParallax: 0.3, // 0.0-1.0: Parallax effect strength
+            layerCount: 2, // 1-3: Number of layers
+            layerParallax: 0.18, // 0.0-1.0: Parallax effect strength
             
             // Post-FX
-            chromaticAberration: 0.006, // 0.0-0.02: RGB channel offset
-            filmGrain: 0.025, // 0.0-0.1: Film grain intensity
-            depthIntensity: 0.78, // 0.0-1.0: Fake depth/inner glow
-            cinematicContrast: 1.18,
-            coreWhiteness: 0.72,
-            emberTrailAmount: 0.42,
+            chromaticAberration: 0.004, // 0.0-0.02: RGB channel offset
+            filmGrain: 0.015, // 0.0-0.1: Film grain intensity
+            depthIntensity: 0.66, // 0.0-1.0: Fake depth/inner glow
+            cinematicContrast: 1.12,
+            coreWhiteness: 0.66,
+            emberTrailAmount: 0.28,
             sparkEnabled: true,
-            sparkDensity: 0.78,
+            sparkDensity: 0.52,
             heatDistortionEnabled: true,
-            heatDistortionStrength: 0.32,
+            heatDistortionStrength: 0.24,
             
             // Smoke
-            smokeEnabled: true, // Enable smoke layer
-            smokeIntensity: 0.48, // 0.0-1.0: Smoke opacity
-            smokeSpeed: 0.28, // 0.1-1.0: Smoke movement speed
+            smokeEnabled: false, // Enable smoke layer
+            smokeIntensity: 0.18, // 0.0-1.0: Smoke opacity
+            smokeSpeed: 0.22, // 0.1-1.0: Smoke movement speed
             smokeColor: '#2d2623', // Smoke color
 
             // ===== TRIGGER SYSTEM (v3.0.0) =====
