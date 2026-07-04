@@ -492,6 +492,37 @@ describe('Game Engine GCCE Integration', () => {
       }
     });
 
+    test('should support passing viewer opponent when accepting challenge', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4,
+          streamerRole: 'player1'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(101, {
+        sessionId: 101,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(101, 'viewer456');
+
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(101, 'viewer456', 'viewer');
+      expect(mockSocketIO.emit).toHaveBeenCalledWith(
+        'game-engine:game-started',
+        expect.objectContaining({
+          sessionId: 101,
+          gameType: 'connect4'
+        })
+      );
+      expect(plugin.pendingChallenges.has(101)).toBe(false);
+    });
+
     test('should ignore malformed challenge payload without gameType', () => {
       plugin.db = {
         getGameConfig: jest.fn(),

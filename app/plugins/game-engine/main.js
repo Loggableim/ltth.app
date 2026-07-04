@@ -1107,7 +1107,7 @@ class GameEnginePlugin {
   /**
    * Accept a challenge (by another viewer or streamer)
    */
-  acceptChallenge(sessionId) {
+  acceptChallenge(sessionId, opponentUsername = 'streamer') {
     const challenge = this.pendingChallenges.get(sessionId);
     
     if (!challenge) {
@@ -1124,7 +1124,7 @@ class GameEnginePlugin {
     this.pendingChallenges.delete(sessionId);
 
     // Start the game with streamer as opponent
-    this.startGameFromChallenge(sessionId, challenge, 'streamer');
+    this.startGameFromChallenge(sessionId, challenge, opponentUsername || 'streamer');
   }
 
   /**
@@ -3270,7 +3270,7 @@ class GameEnginePlugin {
       });
 
       socket.on('game-engine:accept-challenge', (data) => {
-        this.acceptChallenge(data.sessionId);
+        this.acceptChallenge(data?.sessionId, data?.opponentUsername || data?.username);
       });
 
       socket.on('game-engine:reject-challenge', (data) => {
