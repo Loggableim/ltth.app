@@ -1188,6 +1188,8 @@ class GameEnginePlugin {
 
     const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
     const opponent = opponentUsername || 'streamer';
+    const challengerUsername = challenge.challengerUsername;
+    const challengerNickname = challenge.challengerNickname || challengerUsername;
 
     if (!config) {
       this.logger.warn(`Missing config for challenge game type ${challenge.gameType}`);
@@ -1202,12 +1204,17 @@ class GameEnginePlugin {
     const streamerRole = config.streamerRole || 'player2';
 
     // Keep stored session players aligned with the in-memory player numbers.
+    const opponentIsStreamer = opponent === 'streamer';
     if (streamerRole === 'player1') {
-      this.db.updateSession(sessionId, {
-        player1_username: 'streamer',
-        player1_role: 'streamer'
-      });
-      this.db.addPlayer2(sessionId, challenge.challengerUsername, 'viewer');
+      if (opponentIsStreamer) {
+        this.db.updateSession(sessionId, {
+          player1_username: 'streamer',
+          player1_role: 'streamer'
+        });
+        this.db.addPlayer2(sessionId, challengerUsername, 'viewer');
+      } else {
+        this.db.addPlayer2(sessionId, opponent, 'viewer');
+      }
     } else {
       this.db.addPlayer2(
         sessionId,
@@ -1218,27 +1225,27 @@ class GameEnginePlugin {
 
     // Create game instance
     const player1 = streamerRole === 'player1' ? {
-      username: 'streamer',
-      role: 'streamer',
+      username: opponentIsStreamer ? 'streamer' : challengerUsername,
+      role: opponentIsStreamer ? 'streamer' : 'viewer',
       color: config.player1Color,
-      nickname: 'Streamer'
+      nickname: opponentIsStreamer ? 'Streamer' : challengerNickname
     } : {
-      username: challenge.challengerUsername,
+      username: challengerUsername,
       role: 'viewer',
       color: config.player1Color,
-      nickname: challenge.challengerNickname
+      nickname: challengerNickname
     };
 
     const player2 = streamerRole === 'player2' ? {
-      username: 'streamer',
-      role: 'streamer',
+      username: opponentIsStreamer ? 'streamer' : opponent,
+      role: opponentIsStreamer ? 'streamer' : 'viewer',
       color: config.player2Color,
-      nickname: 'Streamer'
+      nickname: opponentIsStreamer ? 'Streamer' : opponent
     } : {
-      username: challenge.challengerUsername,
+      username: opponent,
       role: 'viewer',
       color: config.player2Color,
-      nickname: challenge.challengerNickname
+      nickname: opponent
     };
 
     const game = new Connect4Game(sessionId, player1, player2, this.logger);

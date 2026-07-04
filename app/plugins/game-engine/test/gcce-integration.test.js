@@ -520,6 +520,11 @@ describe('Game Engine GCCE Integration', () => {
           gameType: 'connect4'
         })
       );
+
+      const game = plugin.activeSessions.get(101);
+      expect(game).toBeDefined();
+      expect(game.player1.username).toBe('viewer123');
+      expect(game.player2.username).toBe('viewer456');
       expect(plugin.pendingChallenges.has(101)).toBe(false);
     });
 
