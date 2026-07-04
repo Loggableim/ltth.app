@@ -1137,6 +1137,10 @@ class GameEnginePlugin {
       return;
     }
 
+    if (challenge.timeout) {
+      clearTimeout(challenge.timeout);
+    }
+
     // Remove from pending
     this.pendingChallenges.delete(sessionId);
 
