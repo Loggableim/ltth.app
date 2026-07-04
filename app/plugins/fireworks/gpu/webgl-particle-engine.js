@@ -633,10 +633,11 @@ class WebGLParticleEngine {
      * Render all particles in a single draw call
      */
     render() {
-        if (!this.initialized || this.particleCount === 0) return;
+        if (!this.initialized) return;
 
         const gl = this.gl;
         this.processAtlasUploads();
+        if (this.particleCount === 0) return;
 
         // Clear canvas with transparent background
         gl.clearColor(0, 0, 0, 0);

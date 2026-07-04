@@ -56,6 +56,7 @@ const CONFIG = {
     minRenderScale: 0.75,
     renderScaleStep: 0.15,
     renderScaleRecoveryFpsMargin: 6,
+    renderScaleEmergencyParticleThreshold: 1200,
     giftPopupPosition: 'bottom', // 'top', 'middle', 'bottom', 'none', or {x, y} coordinates
     giftPopupEnabled: true, // Whether to show gift popup at all
     despawnFadeDuration: 1.5, // Duration in seconds for rocket despawn fade effect (when rockets are removed due to overload)
@@ -1856,6 +1857,9 @@ class FireworksEngine {
             });
 
             this.socket.on('fireworks:trigger', (data) => {
+                this.prewarmTriggerAssets(data).catch((error) => {
+                    if (DEBUG) console.warn('[Fireworks] Asset prewarm failed:', error);
+                });
                 this.handleTrigger(data);
             });
 
@@ -2350,7 +2354,7 @@ class FireworksEngine {
             return null;
         }
 
-        return new Promise((resolve) => {
+        const imagePromise = new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = async () => {
@@ -2365,9 +2369,40 @@ class FireworksEngine {
                 this.imageCache.set(url, img);
                 resolve(img);
             };
-            img.onerror = () => resolve(null);
+            img.onerror = () => {
+                this.imageCache.delete(url);
+                resolve(null);
+            };
             img.src = url;
         });
+
+        this.imageCache.set(url, imagePromise);
+        return imagePromise;
+    }
+
+    async prewarmAtlasImage(key, url) {
+        if (!url || !this.useWebGL || !this.webglEngine) return;
+
+        const image = await this.loadImage(url);
+        if (image) {
+            this.webglEngine.queueImageUpload(key, image);
+        }
+    }
+
+    async prewarmTriggerAssets(data) {
+        if (!data) return;
+
+        const prewarmTasks = [];
+        if (data.giftImage) {
+            prewarmTasks.push(this.prewarmAtlasImage('gift:' + data.giftImage, data.giftImage));
+        }
+        if (data.userAvatar) {
+            prewarmTasks.push(this.prewarmAtlasImage('avatar:' + data.userAvatar, data.userAvatar));
+        }
+
+        if (prewarmTasks.length > 0) {
+            await Promise.all(prewarmTasks);
+        }
     }
     
     /**
@@ -2721,7 +2756,7 @@ class FireworksEngine {
 
     updateAdaptiveRenderScale(avgFps) {
         if (this.isBenchmarkMode) return;
-        if (this.fireworks.length > 0) return;
+        if (!this.shouldPreferRenderScaleRecovery(avgFps)) return;
 
         if (this.config.adaptiveRenderScaleEnabled === false) {
             if (this.renderScale !== 1.0) {
@@ -2751,6 +2786,20 @@ class FireworksEngine {
             this.lastRenderScaleChange = now;
             this.applyRenderScale();
         }
+    }
+
+    shouldPreferRenderScaleRecovery(avgFps) {
+        if (this.config.adaptiveRenderScaleEnabled === false) return true;
+
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+        return avgFps < desiredFps * 0.75 ||
+            (this.renderScale < 1.0 && avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin);
+    }
+
+    shouldUseEmergencyDespawn() {
+        const minScale = this.config.minRenderScale || CONFIG.minRenderScale;
+        const totalParticles = this.getTotalParticles();
+        return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold;
     }
 
     updateAdaptiveQuality(avgFps) {
@@ -2867,6 +2916,8 @@ class FireworksEngine {
                 CONFIG.baseSecondaryExplosionChance = 0.03;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
+
+                if (!this.shouldUseEmergencyDespawn()) break;
                 
                 // Bug #3 Fix: Fixed despawn logic - iterate in reverse and check properly
                 const maxFireworksMinimal = 5;
@@ -2921,6 +2972,8 @@ class FireworksEngine {
                 CONFIG.baseSecondaryExplosionChance = 0.05;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
+
+                if (!this.shouldUseEmergencyDespawn()) break;
                 
                 // Bug #3 Fix: Fixed despawn logic for reduced mode
                 const maxFireworksReduced = 15;

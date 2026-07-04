@@ -196,6 +196,19 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, giftImg)');
             expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, avatarImg)');
         });
+
+        test('Fireworks engine prewarms gift and avatar atlas textures before peak bursts', () => {
+            expect(engineCode).toContain('prewarmTriggerAssets(data)');
+            expect(engineCode).toContain('prewarmAtlasImage(\'gift:\' + data.giftImage, data.giftImage)');
+            expect(engineCode).toContain('prewarmAtlasImage(\'avatar:\' + data.userAvatar, data.userAvatar)');
+            expect(engineCode).toContain('this.prewarmTriggerAssets(data).catch');
+        });
+
+        test('Despawn is reserved for emergency overload after adaptive scaling', () => {
+            expect(engineCode).toContain('shouldUseEmergencyDespawn()');
+            expect(engineCode).toContain('if (!this.shouldUseEmergencyDespawn()) break');
+            expect(engineCode).toContain('return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold');
+        });
     });
     
     describe('Code Quality', () => {

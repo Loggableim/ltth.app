@@ -167,9 +167,12 @@ describe('Fireworks Performance Optimizations', () => {
             expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
         });
 
-        test('should keep WebGL canvas size stable during benchmark and active fireworks', () => {
+        test('should keep WebGL canvas size stable during benchmark while allowing active adaptive resize', () => {
             expect(engineCode).toContain('if (this.isBenchmarkMode) return');
-            expect(engineCode).toContain('if (this.fireworks.length > 0) return');
+            expect(engineCode).toContain('shouldPreferRenderScaleRecovery(avgFps)');
+            expect(engineCode).toContain('if (!this.shouldPreferRenderScaleRecovery(avgFps)) return');
+            expect(engineCode).toContain('CONFIG.renderScaleEmergencyParticleThreshold');
+            expect(engineCode).not.toContain('if (this.fireworks.length > 0) return');
         });
 
         test('should degrade quality before dropping fireworks features', () => {
