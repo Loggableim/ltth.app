@@ -93,10 +93,10 @@
     const base = `providers.${providerName}`;
     const configured = get(`${base}.apiKeyConfigured`, false);
     return `<details class="card mt-3" ${state.config.provider === providerName ? 'open' : ''}>
-      <summary class="font-bold cursor-pointer uppercase">${providerName} ${configured ? '• Key konfiguriert' : '• kein Key'}</summary>
+      <summary class="font-bold cursor-pointer uppercase">${providerName} ${configured ? '🔑 Key konfiguriert' : '🔓 kein Key'}</summary>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
         ${input(`${base}.model`, 'Modell')}${input(`${base}.baseUrl`, 'Base-URL')}
-        ${input(`${base}.apiKey`, 'API-Key', { type: 'password', placeholder: configured ? 'Konfiguriert – leer lassen zum Behalten' : 'API-Key' })}
+        ${input(`${base}.apiKey`, 'API-Key', { type: 'password', placeholder: configured ? 'Konfiguriert - leer lassen zum Behalten' : 'API-Key' })}
         ${input(`${base}.timeoutMs`, 'Timeout (ms)', { type: 'number', min: 1000, max: 120000 })}
         ${input(`${base}.maxRetries`, 'Retries', { type: 'number', min: 0, max: 10 })}
         ${input(`${base}.retryBackoffMs`, 'Backoff (ms)', { type: 'number', min: 0, max: 30000 })}
@@ -116,9 +116,9 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
         ${input(`${base}.enabled`, 'Aktiv', { type: 'checkbox' })}${input(`${base}.brainEnabled`, 'Brain-Antwort', { type: 'checkbox' })}
         ${input(`${base}.templateEnabled`, 'Feste Vorlage', { type: 'checkbox' })}${input(`${base}.avatarActionEnabled`, 'Avataraktion', { type: 'checkbox' })}
-        ${input(`${base}.probability`, 'Wahrscheinlichkeit 0–1', { type: 'number', min: 0, max: 1, step: 0.01 })}
+        ${input(`${base}.probability`, 'Wahrscheinlichkeit 0-1', { type: 'number', min: 0, max: 1, step: 0.01 })}
         ${input(`${base}.cooldownMs`, 'Cooldown (ms)', { type: 'number', min: 0, max: 3600000 })}
-        ${input(`${base}.priority`, 'Priorität 0–100', { type: 'number', min: 0, max: 100 })}
+        ${input(`${base}.priority`, 'Priorität 0-100', { type: 'number', min: 0, max: 100 })}
         ${input(`${base}.minCoins`, 'Minimum Coins', { type: 'number', min: 0 })}
         ${input(`${base}.minLikes`, 'Minimum Likes', { type: 'number', min: 0 })}
         ${input(`${base}.minQuantity`, 'Minimum Anzahl', { type: 'number', min: 1 })}
@@ -136,7 +136,7 @@
     const select = document.getElementById(selectId);
     if (!select) return;
     const selected = select.value;
-    select.innerHTML = '<option value="">Gift aus Katalog wÃ¤hlen...</option>';
+    select.innerHTML = '<option value="">Gift aus Katalog wählen...</option>';
     state.gifts.forEach(gift => {
       const option = document.createElement('option');
       option.value = gift.id || gift.name;
@@ -260,7 +260,7 @@
         <div>TikTok-Quelle: <strong class="${sourceStatus.connectedToSource ? 'text-green-400' : sourceStatus.autoConnect ? 'text-yellow-300' : 'text-red-300'}">${sourceStatus.connectedToSource ? 'verbunden' : sourceStatus.autoConnect ? 'watchdog' : 'getrennt'}</strong></div>
         <div>TikTok-Events: <strong class="${sourceEventStatus.seen && !sourceEventStatus.stale ? 'text-green-400' : 'text-yellow-300'}">${sourceEventStatus.seen ? (sourceEventStatus.stale ? 'stale' : 'aktiv') : 'noch keine'}</strong></div>
       </div>
-      ${browserHeartbeat.present ? `<p class="text-xs ${browserHeartbeat.stale ? 'text-red-300' : 'text-gray-400'} mt-2">Browser-Heartbeat: ${escapeHtml(browserHeartbeat.ageMs ?? '?')}ms alt · Audio ${browserHeartbeat.audioUnlocked ? 'frei' : 'gesperrt'} · Device ${browserHeartbeat.configuredOutputDeviceAvailable ? 'verfügbar' : 'fehlt'}</p>` : '<p class="text-xs text-red-300 mt-2">Kein Browser-Heartbeat empfangen. Standalone-Tab offen lassen.</p>'}
+      ${browserHeartbeat.present ? `<p class="text-xs ${browserHeartbeat.stale ? 'text-red-300' : 'text-gray-400'} mt-2">Browser-Heartbeat: ${escapeHtml(browserHeartbeat.ageMs ?? '?')}ms alt - Audio ${browserHeartbeat.audioUnlocked ? 'frei' : 'gesperrt'} - Device ${browserHeartbeat.configuredOutputDeviceAvailable ? 'verfügbar' : 'fehlt'}</p>` : '<p class="text-xs text-red-300 mt-2">Kein Browser-Heartbeat empfangen. Standalone-Tab offen lassen.</p>'}
       ${sourceStatus.configured ? `<p class="text-xs ${sourceStatus.connectedToSource ? 'text-gray-400' : 'text-yellow-300'} mt-2">TikTok-Quelle: @${escapeHtml(sourceStatus.username || '?')} · aktuell ${escapeHtml(sourceStatus.currentUsername || 'nicht verbunden')} · Reconnects ${escapeHtml(sourceStatus.reconnectAttempts || 0)}${sourceStatus.lastReconnectError ? ` · ${escapeHtml(sourceStatus.lastReconnectError)}` : ''}</p>` : '<p class="text-xs text-red-300 mt-2">Keine TikTok-Quelle konfiguriert.</p>'}
       ${lastEventResult ? `<p class="text-xs ${lastEventResult.responded ? 'text-green-400' : 'text-yellow-300'} mt-2">Letztes Host-Event: ${escapeHtml(lastEventResult.eventType || '?')} · ${lastEventResult.responded ? 'gesprochen' : 'nicht gesprochen'} · ${escapeHtml(lastEventResult.reason || 'ohne Grund')}</p>` : '<p class="text-xs text-yellow-300 mt-2">Letztes Host-Event: noch keines verarbeitet.</p>'}
       ${ttsProbe ? `<p class="text-xs ${ttsProbe.success ? 'text-green-400' : 'text-red-300'} mt-2">TTS-Probe: ${ttsProbe.success ? 'ok' : 'fehlgeschlagen'} · ${escapeHtml(ttsProbe.engine || 'fishaudio')}${ttsProbe.error ? ` · ${escapeHtml(ttsProbe.error)}` : ''}</p>` : '<p class="text-xs text-yellow-300 mt-2">Noch keine TTS-Probe in dieser Laufzeit.</p>'}
@@ -448,7 +448,7 @@
       </div>
       <div class="flex flex-wrap items-center gap-3 mt-3">
         <button class="btn btn-success" data-greeting-warmup ${warmup.running ? 'disabled' : ''}>${escapeHtml(runningLabel)}</button>
-        <span class="text-sm text-gray-400">Stimme: ${escapeHtml(voice)} · Standard: Top-20 × 3 Varianten</span>
+        <span class="text-sm text-gray-400">Stimme: ${escapeHtml(voice)} · Standard: Top-20 · 3 Varianten</span>
       </div>
       ${warmup.lastError ? `<p class="text-sm text-red-300 mt-3">Warmup-Fehler: ${escapeHtml(warmup.lastError)}</p>` : ''}
       ${status}
@@ -490,7 +490,7 @@
 
   function renderBundles() {
     const bundles = get('avatarBundles', []);
-    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Geschenkekatalog → Avatar-Bundles</h2>
+    return `<section class="mt-4"><div class="card"><h2 class="text-xl font-bold mb-3">Geschenkekatalog ? Avatar-Bundles</h2>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         ${input('avatarSwitch.enabled', 'Auto-Switch aktiv', { type: 'checkbox' })}${input('avatarSwitch.persistUntilNextSwitch', 'Bis zum nächsten Switch aktiv', { type: 'checkbox' })}
         ${input('avatarSwitch.revertAfterMs', 'Zurücksetzen nach ms', { type: 'number', min: 0 })}${input('avatarSwitch.matchGiftNameFallback', 'Gift-Name-Fallback', { type: 'checkbox' })}${input('avatarSwitch.waitForRepeatEnd', 'Streak-Ende abwarten', { type: 'checkbox' })}

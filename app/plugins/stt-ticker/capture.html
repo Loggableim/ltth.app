@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -250,7 +250,7 @@
   </style>
 </head>
 <body>
-  <h1>🎤 STT Ticker — Audio Capture</h1>
+  <h1>STT Ticker - Audio Capture</h1>
   <p class="subtitle">Client-seitige Stille-Erkennung + Multi-Language Output</p>
 
   <div class="container">
@@ -284,75 +284,48 @@
     </div>
 
     <div class="controls">
-      <button id="btn-start" class="btn btn-primary">▶ Capture starten</button>
-      <button id="btn-stop" class="btn btn-danger" disabled>■ Stop</button>
+      <button id="btn-start" class="btn btn-primary">Capture starten</button>
+      <button id="btn-stop" class="btn btn-danger" disabled>Stop</button>
     </div>
 
     <!-- OBS Overlay URL -->
     <div class="settings-section" style="margin-bottom:12px;padding:10px 14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span style="font-size:14px;">🖥️</span>
+        <span style="font-size:14px;">OBS</span>
         <strong style="color:#64B5F6;font-size:13px;">OBS Overlay URL</strong>
       </div>
       <div class="inline-flex" style="gap:6px;">
-        <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="—">
-        <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">📋 Kopieren</button>
+        <input type="text" id="ml-overlay-url" readonly style="flex:1;font-family:monospace;font-size:12px;padding:6px 8px;cursor:text;" value="">
+        <button id="btn-copy-overlay-url" class="btn btn-small btn-primary" style="flex:0;">Kopieren</button>
       </div>
       <p class="help-text" style="margin-top:4px;">Als Browser Source in OBS einfügen</p>
     </div>
 
     <!-- Multi-Language Live Preview -->
     <div class="preview-section" id="preview-section">
-      <h3>🌐 Live-Output <span id="preview-lang-count" style="font-size:11px;color:#888;"></span></h3>
+      <h3>Live-Output <span id="preview-lang-count" style="font-size:11px;color:#888;"></span></h3>
       <div id="preview-lines"></div>
     </div>
 
     <!-- Multi-Language Settings -->
     <div class="settings-section" id="settings-section">
-      <h3 id="settings-toggle">⚙️ Multi-Language Einstellungen ▾</h3>
+      <h3 id="settings-toggle">Multi-Language Einstellungen</h3>
       <div id="settings-body">
         <div class="settings-row">
           <label>STT-Modell</label>
           <select id="ml-asr-model" style="flex:1;">
-            <option value="">— Modell wählen —</option>
+            <option value="">Modell wählen</option>
           </select>
         </div>
         <div class="settings-row">
           <label>Übersetzungs-Modell</label>
           <select id="ml-model" style="flex:1;">
-            <option value="">— Modelle laden... —</option>
+            <option value="">Modelle laden...</option>
           </select>
         </div>
         <div class="settings-row">
           <label>Default-Sprache (Original)</label>
-          <select id="ml-default-lang" style="flex:1;">
-            <option value="de">🇩🇪 Deutsch</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="es">🇪🇸 Español</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="it">🇮🇹 Italiano</option>
-            <option value="pt">🇵🇹 Português</option>
-            <option value="nl">🇳🇱 Nederlands</option>
-            <option value="pl">🇵🇱 Polski</option>
-            <option value="ru">🇷🇺 Русский</option>
-            <option value="ja">🇯🇵 日本語</option>
-            <option value="ko">🇰🇷 한국어</option>
-            <option value="zh">🇨🇳 中文</option>
-            <option value="ar">🇸🇦 العربية</option>
-            <option value="tr">🇹🇷 Türkçe</option>
-            <option value="sv">🇸🇪 Svenska</option>
-            <option value="da">🇩🇰 Dansk</option>
-            <option value="fi">🇫🇮 Suomi</option>
-            <option value="no">🇳🇴 Norsk</option>
-            <option value="cs">🇨🇿 Čeština</option>
-            <option value="hu">🇭🇺 Magyar</option>
-            <option value="ro">🇷🇴 Română</option>
-            <option value="uk">🇺🇦 Українська</option>
-            <option value="el">🇬🇷 Ελληνικά</option>
-            <option value="he">🇮🇱 עברית</option>
-            <option value="th">🇹🇭 ไทย</option>
-            <option value="vi">🇻🇳 Tiếng Việt</option>
-          </select>
+          <select id="ml-default-lang" style="flex:1;"></select>
         </div>
         <div class="settings-row">
           <label style="min-width:auto;">
@@ -362,35 +335,7 @@
         </div>
         <div class="settings-row">
           <label>Sprache hinzufügen</label>
-          <select id="ml-add-lang" style="flex:1;">
-            <option value="">— Sprache wählen —</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="de">🇩🇪 Deutsch</option>
-            <option value="es">🇪🇸 Español</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="it">🇮🇹 Italiano</option>
-            <option value="pt">🇵🇹 Português</option>
-            <option value="nl">🇳🇱 Nederlands</option>
-            <option value="pl">🇵🇱 Polski</option>
-            <option value="ru">🇷🇺 Русский</option>
-            <option value="ja">🇯🇵 日本語</option>
-            <option value="ko">🇰🇷 한국어</option>
-            <option value="zh">🇨🇳 中文</option>
-            <option value="ar">🇸🇦 العربية</option>
-            <option value="tr">🇹🇷 Türkçe</option>
-            <option value="sv">🇸🇪 Svenska</option>
-            <option value="da">🇩🇰 Dansk</option>
-            <option value="fi">🇫🇮 Suomi</option>
-            <option value="no">🇳🇴 Norsk</option>
-            <option value="cs">🇨🇿 Čeština</option>
-            <option value="hu">🇭🇺 Magyar</option>
-            <option value="ro">🇷🇴 Română</option>
-            <option value="uk">🇺🇦 Українська</option>
-            <option value="el">🇬🇷 Ελληνικά</option>
-            <option value="he">🇮🇱 עברית</option>
-            <option value="th">🇹🇭 ไทย</option>
-            <option value="vi">🇻🇳 Tiếng Việt</option>
-          </select>
+          <select id="ml-add-lang" style="flex:1;"></select>
           <button id="btn-add-lang" class="btn btn-small btn-primary">+</button>
         </div>
         <div class="settings-row">
@@ -398,7 +343,7 @@
           <div id="lang-tags" class="lang-tag-list"></div>
         </div>
         <div style="margin-top:8px;">
-          <button id="btn-save-ml" class="btn btn-small btn-primary">💾 Speichern</button>
+          <button id="btn-save-ml" class="btn btn-small btn-primary">Speichern</button>
           <span id="ml-status" style="font-size:12px;color:#4CAF50;margin-left:8px;"></span>
         </div>
       </div>
@@ -413,9 +358,9 @@
       1. Wähle <strong>Default-Sprache</strong> (was gesprochen wird)<br>
       2. Füge <strong>Zielsprachen</strong> hinzu (je eine Zeile im Output)<br>
       3. Wähle <strong>Übersetzungs-Modell</strong> (wird automatisch geladen wenn API-Key vorhanden)<br>
-      4. Starte Capture — jede Zeile zeigt eine Sprache<br>
+      4. Starte Capture - jede Zeile zeigt eine Sprache<br>
       <br>
-      <strong class="accent-yellow">Übersetzung via Ollama Cloud</strong> — muss in den Admin-Settings aktiviert sein.
+      <strong class="accent-yellow">Übersetzung via Ollama Cloud</strong> - muss in den Admin-Settings aktiviert sein.
     </div>
   </div>
 
@@ -444,7 +389,7 @@
       sustainedSilenceMs: 1500
     };
 
-    // Eigene lokale Liste — NICHT an multiLang.outputLanguages gebunden
+    // Eigene lokale Liste - NICHT an multiLang.outputLanguages gebunden
     let currentOutputLangs = [];
 
     // Multi-Language Config (vom Server)
@@ -466,15 +411,56 @@
     let stats = { sent: 0, skipped: 0 };
     let lastSpeechAt = 0;
 
-    const LANG_NAMES = {
-      'de': '🇩🇪 DE', 'en': '🇬🇧 EN', 'es': '🇪🇸 ES', 'fr': '🇫🇷 FR',
-      'it': '🇮🇹 IT', 'pt': '🇵🇹 PT', 'nl': '🇳🇱 NL', 'pl': '🇵🇱 PL',
-      'ru': '🇷🇺 RU', 'ja': '🇯🇵 JA', 'ko': '🇰🇷 KO', 'zh': '🇨🇳 ZH',
-      'ar': '🇸🇦 AR', 'tr': '🇹🇷 TR', 'sv': '🇸🇪 SV', 'da': '🇩🇰 DA',
-      'fi': '🇫🇮 FI', 'no': '🇳🇴 NO', 'cs': '🇨🇿 CS', 'hu': '🇭🇺 HU',
-      'ro': '🇷🇴 RO', 'uk': '🇺🇦 UK', 'el': '🇬🇷 EL', 'he': '🇮🇱 HE',
-      'th': '🇹🇭 TH', 'vi': '🇻🇳 VI'
-    };
+    const LANGUAGE_OPTIONS = [
+      ['de', 'Deutsch'],
+      ['en', 'English'],
+      ['es', 'Español'],
+      ['fr', 'Français'],
+      ['it', 'Italiano'],
+      ['pt', 'Português'],
+      ['nl', 'Nederlands'],
+      ['pl', 'Polski'],
+      ['ru', 'Русский'],
+      ['ja', '日本語'],
+      ['ko', '한국어'],
+      ['zh', '中文'],
+      ['ar', 'العربية'],
+      ['tr', 'Türkçe'],
+      ['sv', 'Svenska'],
+      ['da', 'Dansk'],
+      ['fi', 'Suomi'],
+      ['no', 'Norsk'],
+      ['cs', 'Čeština'],
+      ['hu', 'Magyar'],
+      ['ro', 'Română'],
+      ['uk', 'Українська'],
+      ['el', 'Ελληνικά'],
+      ['he', 'עברית'],
+      ['th', 'ไทย'],
+      ['vi', 'Tiếng Việt']
+    ];
+
+    const LANG_NAMES = Object.fromEntries(LANGUAGE_OPTIONS);
+
+    function populateLanguageSelect(selectEl, selectedValue, includeEmpty = false) {
+      if (!selectEl) return;
+      const currentValue = selectedValue || selectEl.value || '';
+      selectEl.innerHTML = '';
+      if (includeEmpty) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Sprache wählen...';
+        selectEl.appendChild(placeholder);
+      }
+      for (const [code, label] of LANGUAGE_OPTIONS) {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = label;
+        if (code === currentValue) opt.selected = true;
+        selectEl.appendChild(opt);
+      }
+      if (currentValue && !selectEl.value) selectEl.value = currentValue;
+    }
 
     const statusEl = document.getElementById('status');
     const statusTextEl = document.getElementById('status-text');
@@ -494,6 +480,9 @@
     const mlAsrModelEl = document.getElementById('ml-asr-model');
     const mlShowDefaultEl = document.getElementById('ml-show-default');
     const mlOverlayUrlEl = document.getElementById('ml-overlay-url');
+
+    populateLanguageSelect(mlDefaultLangEl, 'de');
+    populateLanguageSelect(mlAddLangEl, '', true);
 
     // Socket.IO
     const socket = io({ transports: ['websocket', 'polling'] });
@@ -540,7 +529,7 @@
         badge.style.color = line.color || '#fff';
         const textSpan = document.createElement('span');
         textSpan.className = 'line-text';
-        textSpan.textContent = line.text || '⏳ wartet auf Übersetzung...';
+        textSpan.textContent = line.text || 'wartet auf Übersetzung...';
         textSpan.style.color = line.color || '#fff';
         div.appendChild(badge);
         div.appendChild(textSpan);
@@ -605,10 +594,10 @@
           mlModelEl.appendChild(opt);
         }
         if (data.models.length > 0) {
-          log('🧠 ' + data.models.length + ' Modelle geladen');
+          log(data.models.length + ' Modelle geladen');
         }
       } catch (e) {
-        log('⚠ Konnte Modelle nicht laden', 'warn');
+        log('Konnte Modelle nicht laden', 'warn');
       }
     }
 
@@ -626,7 +615,7 @@
       } catch (e) { /* ignore */ }
       window._dgModels = dgModels;
       window._elModels = elModels;
-      // Effektiven ASR-Provider aus Status nehmen (nicht Config — der sagt nur 'auto')
+      // Effektiven ASR-Provider aus Status nehmen (nicht Config - der sagt nur 'auto')
       const statusRes = await fetch(API + '/api/stt-ticker/status');
       const statusData = await statusRes.json();
       const effectiveProvider = statusData.status?.asr?.provider || 'fish.audio';
@@ -654,7 +643,7 @@
           mlAsrModelEl.appendChild(opt);
         }
       } else {
-        mlAsrModelEl.innerHTML = '<option value="">— ' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + ' —</option>';
+        mlAsrModelEl.innerHTML = '<option value="">' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + '</option>';
       }
     }
 
@@ -666,17 +655,18 @@
           vad = Object.assign(vad, data.vad);
           const thresholdPct = Math.min(95, Math.max(5, (vad.rmsThreshold || 0.012) * 1000));
           meterThresholdEl.style.left = thresholdPct + '%';
-          log('⚙ VAD geladen: threshold=' + vad.rmsThreshold);
+          log('VAD geladen: threshold=' + vad.rmsThreshold);
         }
         // Multi-Language Settings laden
         if (data.multiLanguage) {
           multiLang = Object.assign({}, multiLang, data.multiLanguage);
-          mlDefaultLangEl.value = multiLang.defaultLanguage || 'de';
+          populateLanguageSelect(mlDefaultLangEl, multiLang.defaultLanguage || 'de');
+          populateLanguageSelect(mlAddLangEl, '', true);
           // Kopiere in lokale Liste
           currentOutputLangs = (multiLang.outputLanguages || []).slice();
           renderLangTags();
           updatePreviewFromConfig();
-          log('🌐 Multi-Language: ' + currentOutputLangs.length + ' Zielsprachen');
+          log('Multi-Language: ' + currentOutputLangs.length + ' Zielsprachen');
         }
         // Translation Config laden (für Modell)
         const statusRes = await fetch(API + '/api/stt-ticker/status');
@@ -697,21 +687,21 @@
               const globalData = await globalRes.json();
               if (globalData && globalData.tts_ollama_api_key) {
                 translationConfig.apiKey = globalData.tts_ollama_api_key;
-                log('🔑 Ollama Key aus globalen Settings geladen');
+                log('Ollama Key aus globalen Settings geladen');
               }
             } catch (e) { /* ignore */ }
           }
 
           if (translationConfig.apiKey) {
-            log('🔑 Ollama Key vorhanden — lade Modelle...');
+            log('Ollama Key vorhanden - lade Modelle...');
             await loadModels(translationConfig.apiKey);
           } else {
-            log('⚠ Kein Ollama Key — Übersetzung deaktiviert', 'warn');
-            mlModelEl.innerHTML = '<option value="">— Kein API-Key —</option>';
+            log('Kein Ollama Key - Übersetzung deaktiviert', 'warn');
+            mlModelEl.innerHTML = '<option value="">Kein API-Key</option>';
           }
         }
       } catch (e) {
-        log('⚠ Konnte Settings nicht laden, nutze Defaults', 'warn');
+        log('Konnte Settings nicht laden, nutze Defaults', 'warn');
       }
       // Overlay-URL setzen
       mlOverlayUrlEl.value = API + '/overlay/stt-ticker?design=dual-language&position=bottom-center&maxLines=2&fontSize=36px';
@@ -745,14 +735,14 @@
           if (data.translation && data.translation.model) {
             translationConfig.model = data.translation.model;
           }
-          document.getElementById('ml-status').textContent = '✅ Gespeichert';
+          document.getElementById('ml-status').textContent = 'Gespeichert';
           setTimeout(function() { document.getElementById('ml-status').textContent = ''; }, 2000);
-          log('🌐 Multi-Language gespeichert: ' + outputLangs.length + ' Sprachen');
+          log('Multi-Language gespeichert: ' + outputLangs.length + ' Sprachen');
         } else {
-          document.getElementById('ml-status').textContent = '❌ ' + (data.error || 'Fehler');
+          document.getElementById('ml-status').textContent = data.error || 'Fehler';
         }
       } catch (e) {
-        document.getElementById('ml-status').textContent = '❌ ' + e.message;
+        document.getElementById('ml-status').textContent = e.message;
       }
     }
 
@@ -777,7 +767,7 @@
         audioStream = await navigator.mediaDevices.getUserMedia({
           audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
         });
-        log('✅ Mikrofon-Erlaubnis erteilt');
+        log('Mikrofon-Erlaubnis erteilt');
         audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
         if (audioContext.state === 'suspended') await audioContext.resume();
         audioSource = audioContext.createMediaStreamSource(audioStream);
@@ -805,13 +795,13 @@
         }, CHUNK_DURATION_MS + 1000);
         isCapturing = true;
         lastSpeechAt = Date.now();
-        setStatus('🎤 Höre zu…', 'listening');
+        setStatus('Höre zu...', 'listening');
         btnStart.disabled = true;
         btnStop.disabled = false;
-        log('✅ Capture aktiv — sende alle ' + (CHUNK_DURATION_MS / 1000) + 's, VAD ' + (vad.enabled ? 'AN' : 'AUS'));
+        log('Capture aktiv - sende alle ' + (CHUNK_DURATION_MS / 1000) + 's, VAD ' + (vad.enabled ? 'AN' : 'AUS'));
       } catch (error) {
-        log('❌ Mikrofon-Zugriff fehlgeschlagen: ' + error.message, 'err');
-        setStatus('❌ Mikrofon-Zugriff fehlgeschlagen', 'error');
+        log('Mikrofon-Zugriff fehlgeschlagen: ' + error.message, 'err');
+        setStatus('Mikrofon-Zugriff fehlgeschlagen', 'error');
         btnStart.disabled = false;
       }
     }
@@ -824,10 +814,10 @@
       if (audioContext) { audioContext.close(); audioContext = null; }
       if (audioStream) { audioStream.getTracks().forEach(function(t) { t.stop(); }); audioStream = null; }
       audioBuffer = [];
-      setStatus('■ Gestoppt', 'idle');
+      setStatus('Gestoppt', 'idle');
       btnStart.disabled = false;
       btnStop.disabled = true;
-      log('■ Capture gestoppt');
+      log('Capture gestoppt');
       updateStats();
     }
 
@@ -839,9 +829,9 @@
       if (vad.enabled && !vadResult.hasSpeech) {
         stats.skipped++;
         updateStats();
-        log('⏸ Stille übersprungen (chunk=' + vadResult.chunkMs + 'ms, RMS=' + vadResult.rms.toFixed(4) + ')', 'silence');
+        log('Stille übersprungen (chunk=' + vadResult.chunkMs + 'ms, RMS=' + vadResult.rms.toFixed(4) + ')', 'silence');
         if (Date.now() - lastSpeechAt > (vad.sustainedSilenceMs || 1500)) {
-          setStatus('🤫 Stille — keine Tokens verbrannt', 'silence');
+          setStatus('Stille - keine Tokens verbrannt', 'silence');
         }
         sendingWav = false;
         return;
@@ -849,7 +839,7 @@
       if (vad.enabled && vadResult.chunkMs < (vad.minChunkMs || 600)) {
         stats.skipped++;
         updateStats();
-        log('⏸ Zu kurz übersprungen (' + vadResult.chunkMs + 'ms)', 'silence');
+        log('Zu kurz übersprungen (' + vadResult.chunkMs + 'ms)', 'silence');
         sendingWav = false;
         return;
       }
@@ -857,8 +847,8 @@
       const wavBlob = encodeWav(samples, SAMPLE_RATE);
       stats.sent++;
       updateStats();
-      setStatus('🎤 Höre zu — Transkribiere', 'listening');
-      log('📤 Sende ' + vadResult.chunkMs + 'ms (RMS=' + vadResult.rms.toFixed(4) + ')');
+      setStatus('Höre zu - Transkribiere', 'listening');
+      log('Sende ' + vadResult.chunkMs + 'ms (RMS=' + vadResult.rms.toFixed(4) + ')');
       sendAudioToServer(wavBlob).finally(function() { sendingWav = false; });
     }
 
@@ -905,12 +895,12 @@
           const tr = data.transcript;
           const txt = (tr.text || '').slice(0, 60);
           const lang = tr.language ? ' [' + tr.language + ']' : '';
-          log('✅ "' + txt + (txt.length >= 60 ? '...' : '') + '"' + lang, 'transcript');
+          log('"'+ txt + (txt.length >= 60 ? '...' : '') + '"' + lang, 'transcript');
         } else {
-          log('❌ ' + (data.message || 'Unknown error'), 'err');
+          log(data.message || 'Unknown error', 'err');
         }
       } catch (error) {
-        log('❌ Netzwerk: ' + error.message, 'err');
+        log('Netzwerk: ' + error.message, 'err');
       }
     }
 
@@ -931,11 +921,11 @@
     document.getElementById('btn-add-lang').addEventListener('click', function() {
       var lang = mlAddLangEl.value;
       if (!lang) {
-        document.getElementById('ml-status').textContent = '⚠️ Bitte Sprache wählen';
+        document.getElementById('ml-status').textContent = 'Bitte Sprache wählen';
         return;
       }
       if (currentOutputLangs.indexOf(lang) !== -1) {
-        document.getElementById('ml-status').textContent = '⚠️ Bereits vorhanden';
+        document.getElementById('ml-status').textContent = 'Bereits vorhanden';
         return;
       }
       currentOutputLangs.push(lang);
@@ -964,13 +954,13 @@
       mlOverlayUrlEl.select();
       try {
         navigator.clipboard.writeText(mlOverlayUrlEl.value);
-        log('📋 Overlay-URL kopiert');
+        log('Overlay-URL kopiert');
       } catch (e) { /* fallback */ }
     });
 
     // Init
     loadSettings().then(function() {
-      log('Bereit. Klicke "▶ Capture starten" um loszulegen.');
+      log('Bereit. Klicke "Capture starten" um loszulegen.');
     });
     loadAsrModels();
     updateStats();

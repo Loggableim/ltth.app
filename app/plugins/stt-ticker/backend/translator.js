@@ -1,8 +1,8 @@
-/**
+﻿/**
  * STT Ticker - Translator
  *
  * Übersetzt transkribierten Text via Ollama Cloud API (OpenAI-kompatibel).
- * Optionales Feature — nur aktiv wenn translation.enabled=true und apiKey gesetzt.
+ * Optionales Feature - nur aktiv wenn translation.enabled=true und apiKey gesetzt.
  *
  * API: POST https://api.ollama.cloud/v1/chat/completions
  * (OpenAI-kompatibler Endpoint)
@@ -65,13 +65,13 @@ class Translator {
    * Wenn deaktiviert oder Fehler: { translated: false, text: original }
    *
    * Optionen:
-   *   sourceLanguage    — explizite Quellsprache (überschreibt cfg.sourceLanguage)
-   *   _detectedLanguage — vom ASR-Pipeline erkannte Sprache (für auto-mode)
+   *   sourceLanguage    - explizite Quellsprache (überschreibt cfg.sourceLanguage)
+   *   _detectedLanguage - vom ASR-Pipeline erkannte Sprache (für auto-mode)
    */
   async translate(text, options = {}) {
     const cfg = this.config.translation || {};
 
-    // Nicht aktiviert → Original zurückgeben
+    // Nicht aktiviert - Original zurückgeben
     if (!cfg.enabled || !cfg.apiKey) {
       return { translated: false, text };
     }
@@ -127,7 +127,7 @@ class Translator {
     }
     const targetLang = cfg.targetLanguage || 'en';
     if (sourceLang === targetLang) {
-      // Bereits in Zielsprache → keine Übersetzung nötig, Token sparen
+      // Bereits in Zielsprache - keine Übersetzung nötig, Token sparen
       return { translated: false, text: trimmed, sameAsTarget: true };
     }
     const systemPrompt = `You are a real-time caption translator. Translate the following ${sourceLang} text to ${targetLang}. Return ONLY the translation, no explanations, no quotes, no formatting. Keep the tone and style. If the text is already in ${targetLang}, return it unchanged.`;
