@@ -83,7 +83,7 @@ Remove-Item -Recurse -Force $env:LOCALAPPDATA\LTTH
 |---|---|---|
 | `install.sh` | Linux + macOS | Bash >= 4.0 |
 | `install.ps1` | Windows | PowerShell >= 5.0 |
-| `install.js` | Alle (Fallback) | Node.js 18+ |
+| `install.js` | Plattformunabhängig | Node.js 18+ |
 
 ## Lizenz
 
