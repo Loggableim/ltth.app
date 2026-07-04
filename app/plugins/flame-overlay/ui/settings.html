@@ -336,30 +336,277 @@
         }
 
         /* Trigger System Styles (v3.0.0) */
-        .trigger-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
+        .trigger-workspace {
+            --trigger-bg: rgba(18, 21, 28, 0.95);
+            --trigger-bg-soft: rgba(255, 255, 255, 0.04);
+            --trigger-border: rgba(255, 140, 61, 0.16);
+            --trigger-border-strong: rgba(255, 140, 61, 0.32);
+        }
+
+        .trigger-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .trigger-column {
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .trigger-card {
+            background: linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+            border: 1px solid var(--trigger-border);
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .trigger-card-hero {
+            background:
+                radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 30%),
+                linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+        }
+
+        .trigger-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .trigger-card-kicker {
+            display: inline-flex;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255, 122, 26, 0.08);
+            border: 1px solid rgba(255, 122, 26, 0.2);
+            color: #ffc88f;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .trigger-card h3 {
+            margin: 0;
+            color: #fff5ea;
+            font-size: 17px;
+            line-height: 1.2;
+        }
+
+        .trigger-card-meta {
+            font-size: 12px;
+            color: #9aa3b2;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            white-space: nowrap;
+        }
+
+        .trigger-master-row small {
+            display: block;
             margin-top: 10px;
         }
 
-        .trigger-table th {
-            background: #333;
-            color: #ff9933;
-            padding: 8px 6px;
+        .preset-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .preset-selector-trigger {
+            margin-bottom: 0;
+        }
+
+        .preset-btn {
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #d7d9df;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+        }
+
+        .preset-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 122, 26, 0.08);
+            border-color: rgba(255, 140, 61, 0.4);
+            color: #ffe0c4;
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.95), rgba(255, 86, 0, 0.95));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 10px 22px rgba(255, 104, 13, 0.24);
+        }
+
+        .gift-catalog-panel {
+            background: rgba(15, 18, 24, 0.9);
+            border: 1px solid var(--trigger-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .gift-catalog-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .gift-catalog-toolbar input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(8, 10, 14, 0.96);
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 12px;
+            color: #e8edf5;
+        }
+
+        .gift-catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+            max-height: 320px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .gift-chip {
+            display: grid;
+            grid-template-columns: 34px 1fr;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 10px;
+            color: #e8edf5;
+            cursor: pointer;
             text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #ff6600;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+        }
+
+        .gift-chip:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 140, 61, 0.45);
+            background: rgba(255, 122, 26, 0.08);
+        }
+
+        .gift-chip img,
+        .gift-chip-placeholder {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: rgba(10, 12, 16, 0.96);
+            display: grid;
+            place-items: center;
+            color: #ffbb66;
+            font-size: 18px;
+        }
+
+        .gift-chip-name {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .gift-chip-coins {
+            display: block;
+            color: #ffbb66;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .gift-catalog-empty {
+            color: #96a0af;
+            font-size: 13px;
+            padding: 12px;
+            text-align: center;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .trigger-policy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .trigger-table-shell {
+            overflow: auto;
+            border: 1px solid rgba(255, 140, 61, 0.18);
+            border-radius: 16px;
+            background: rgba(10, 12, 16, 0.84);
+            max-height: 520px;
+        }
+
+        .trigger-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            font-size: 13px;
+            margin-top: 0;
+            min-width: 840px;
+        }
+
+        .trigger-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(20, 23, 30, 0.98), rgba(16, 18, 24, 0.98));
+            color: #ffbb77;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 122, 26, 0.24);
+            letter-spacing: 0.03em;
         }
 
         .trigger-table td {
-            padding: 6px 4px;
-            border-bottom: 1px solid #3a3a3a;
+            padding: 8px 6px;
             vertical-align: middle;
+            background: rgba(255, 255, 255, 0.025);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .trigger-table tr td:first-child {
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px 0 0 12px;
+        }
+
+        .trigger-table tr td:last-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0 12px 12px 0;
         }
 
         .trigger-table tr:hover td {
-            background: #333;
+            background: rgba(255, 122, 26, 0.06);
+        }
+
+        .trigger-table input[type="checkbox"] {
+            accent-color: #ff7a1a;
         }
 
         .trigger-table input[type="checkbox"] {
@@ -371,202 +618,155 @@
         .trigger-table input[type="text"],
         .trigger-table input[type="number"] {
             width: 100%;
-            padding: 4px 6px;
+            padding: 8px 10px;
             font-size: 12px;
-            background: #1a1a1a;
-            border: 1px solid #444;
-            border-radius: 3px;
-            color: #e0e0e0;
+            background: rgba(8, 10, 14, 0.96);
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 10px;
+            color: #e8edf5;
         }
 
         .trigger-table input[type="color"] {
-            width: 36px;
-            height: 28px;
+            width: 38px;
+            height: 32px;
             padding: 2px;
-            border-radius: 3px;
+            border-radius: 10px;
             cursor: pointer;
+            border: 1px solid rgba(109, 119, 139, 0.26);
+            background: rgba(8, 10, 14, 0.96);
         }
 
         .trigger-row-remove {
-            background: #7f1d1d;
-            color: #fca5a5;
-            border: none;
-            border-radius: 3px;
-            padding: 3px 8px;
+            background: rgba(127, 29, 29, 0.92);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.24);
+            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
             cursor: pointer;
             font-size: 12px;
         }
 
         .trigger-row-remove:hover {
-            background: #991b1b;
+            background: rgba(153, 27, 27, 0.96);
+        }
+
+        .trigger-actions-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 2px;
         }
 
         .btn-add-rule {
-            background: #14532d;
-            color: #86efac;
-            border: 1px solid #166534;
-            padding: 8px 16px;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #d8f4e8;
+            border: 1px solid rgba(255, 140, 61, 0.22);
+            padding: 10px 16px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 13px;
-            margin-top: 10px;
+            font-weight: 700;
         }
 
         .btn-add-rule:hover {
-            background: #166534;
+            background: rgba(255, 122, 26, 0.12);
+            color: #ffffff;
         }
 
-        .preset-selector {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-
-        .preset-btn {
-            padding: 8px 14px;
-            background: #333;
-            color: #ccc;
-            border: 1px solid #555;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-
-        .preset-btn:hover {
-            background: #444;
-            border-color: #ff6600;
-            color: #ff9933;
-        }
-
-        .preset-btn.active {
-            background: #ff6600;
+        .btn-save-triggers {
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.96), rgba(255, 86, 0, 0.96));
             color: white;
-            border-color: #ff6600;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
         }
 
-        .gift-catalog-panel {
-            background: #181818;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 16px;
+        .btn-save-triggers:hover {
+            filter: brightness(1.04);
         }
 
-        .gift-catalog-toolbar {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
+        .chat-commands-list {
+            display: flex;
+            flex-wrap: wrap;
             gap: 8px;
-            align-items: center;
-            margin-bottom: 10px;
+            margin-top: 10px;
         }
 
-        .gift-catalog-toolbar input {
-            width: 100%;
-            padding: 8px 10px;
-            background: #111;
-            border: 1px solid #444;
-            border-radius: 4px;
-            color: #e0e0e0;
+        .chat-command-badge {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #ffd7b5;
         }
 
-        .gift-catalog-grid {
+        .test-buttons-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 8px;
-            max-height: 260px;
-            overflow: auto;
+            gap: 10px;
+            margin-top: 12px;
         }
 
-        .gift-chip {
-            display: grid;
-            grid-template-columns: 34px 1fr;
-            gap: 8px;
-            align-items: center;
-            background: #242424;
-            border: 1px solid #3f3f3f;
-            border-radius: 6px;
-            padding: 7px;
-            color: #e0e0e0;
+        .btn-test {
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #f1dfca;
+            border: 1px solid rgba(255, 140, 61, 0.16);
+            border-radius: 12px;
             cursor: pointer;
-            text-align: left;
-        }
-
-        .gift-chip:hover {
-            border-color: #ff6600;
-            background: #2f2a24;
-        }
-
-        .gift-chip img,
-        .gift-chip-placeholder {
-            width: 34px;
-            height: 34px;
-            border-radius: 5px;
-            object-fit: cover;
-            background: #111;
-            display: grid;
-            place-items: center;
-            color: #ff9933;
-            font-size: 18px;
-        }
-
-        .gift-chip-name {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
             font-size: 12px;
-            font-weight: 600;
-        }
-
-        .gift-chip-coins {
-            display: block;
-            color: #ffbb66;
-            font-size: 11px;
-            margin-top: 2px;
-        }
-
-        .gift-catalog-empty {
-            color: #888;
-            font-size: 13px;
-            padding: 12px;
             text-align: center;
-            border: 1px dashed #444;
-            border-radius: 6px;
+            transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+        }
+
+        .btn-test:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 122, 26, 0.1);
+            color: white;
+            border-color: rgba(255, 140, 61, 0.4);
         }
 
         .trigger-status-box {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 12px;
-            margin-top: 10px;
+            background: rgba(12, 14, 19, 0.88);
+            border: 1px solid var(--trigger-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 14px;
         }
 
         .trigger-status-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
         .trigger-active-count {
-            background: #ff6600;
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.96), rgba(255, 86, 0, 0.96));
             color: white;
-            border-radius: 12px;
-            padding: 2px 10px;
-            font-size: 13px;
-            font-weight: bold;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 800;
         }
 
         .trigger-log-item {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid #2a2a2a;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             font-size: 12px;
-            color: #aaa;
+            color: #aab3c1;
         }
 
         .trigger-log-item:last-child {
@@ -574,117 +774,142 @@
         }
 
         .trigger-log-type {
-            color: #ff9933;
-            font-weight: 600;
+            color: #ffbb77;
+            font-weight: 700;
         }
 
-        .chat-commands-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .chat-command-badge {
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-family: 'Courier New', monospace;
-            color: #ff9933;
-        }
-
-        .test-buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .btn-test {
-            padding: 8px 12px;
-            background: #1e3a5f;
-            color: #93c5fd;
-            border: 1px solid #1d4ed8;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-align: center;
-            transition: background 0.2s;
-        }
-
-        .btn-test:hover {
-            background: #1d4ed8;
-            color: white;
-        }
-
-        .btn-save-triggers {
-            background: #14532d;
-            color: #86efac;
-            border: 1px solid #166534;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
+        .trigger-stop-btn {
             margin-top: 12px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            color: #e7edf7;
+            border: 1px solid rgba(255, 140, 61, 0.18);
         }
 
-        .btn-save-triggers:hover {
-            background: #166534;
+        .trigger-stop-btn:hover {
+            background: rgba(255, 122, 26, 0.1);
+            color: white;
+            border-color: rgba(255, 140, 61, 0.36);
+        }
+
+        .trigger-status-box #triggerLogContainer {
+            min-height: 36px;
         }
 
         body {
             min-height: 100vh;
             background:
-                radial-gradient(circle at 24% 0%, rgba(255, 102, 0, 0.2), transparent 34%),
-                linear-gradient(135deg, #07090d 0%, #11151d 48%, #08090c 100%);
+                radial-gradient(circle at top, rgba(255, 122, 26, 0.14), transparent 30%),
+                radial-gradient(circle at 80% 8%, rgba(255, 180, 90, 0.08), transparent 22%),
+                linear-gradient(180deg, #090b0f 0%, #11151c 44%, #08090c 100%);
         }
 
         .control-room-shell {
-            max-width: 1440px;
+            max-width: 1280px;
         }
 
         .control-room-hero {
             display: grid;
-            grid-template-columns: minmax(280px, 0.88fr) minmax(360px, 1.12fr);
-            gap: 18px;
+            grid-template-columns: minmax(300px, 1fr) minmax(420px, 1.15fr);
+            gap: 16px;
             align-items: stretch;
             margin-bottom: 18px;
         }
 
         .control-room-panel,
-        .section {
-            background: rgba(18, 22, 30, 0.92);
-            border: 1px solid rgba(255, 153, 51, 0.18);
+        .section,
+        .info-box,
+        .gift-catalog-panel,
+        .trigger-status-box {
+            background: linear-gradient(180deg, rgba(22, 25, 32, 0.96), rgba(14, 16, 21, 0.98));
+            border: 1px solid rgba(255, 140, 61, 0.18);
             box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
         }
 
         .control-room-panel {
-            border-radius: 8px;
-            padding: 18px;
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .hero-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-self: flex-start;
+            padding: 7px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 122, 26, 0.24);
+            background: rgba(255, 122, 26, 0.08);
+            color: #ffc88f;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         .control-room-title {
-            color: #fff3df;
-            font-size: 30px;
-            line-height: 1.08;
-            margin-bottom: 10px;
+            color: #fff5ea;
+            font-size: clamp(28px, 4vw, 42px);
+            line-height: 1.02;
+            margin-bottom: 0;
         }
 
         .control-room-subtitle {
             color: #aeb7c6;
             font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 18px;
+            line-height: 1.7;
+            margin-bottom: 0;
+            max-width: 58ch;
+        }
+
+        .hero-highlights {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hero-chip,
+        .chat-command-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .hero-chip {
+            background: rgba(255, 122, 26, 0.1);
+            color: #ffe0c4;
+            border: 1px solid rgba(255, 122, 26, 0.2);
+        }
+
+        .hero-hint {
+            color: #aeb7c6;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 122, 26, 0.06);
+            border: 1px solid rgba(255, 122, 26, 0.16);
         }
 
         .preset-strip,
         .tab-strip {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .preset-strip {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .visual-preset-btn,
@@ -692,18 +917,27 @@
             border: 1px solid rgba(255, 153, 51, 0.28);
             background: rgba(255, 255, 255, 0.045);
             color: #f6d6a8;
-            border-radius: 6px;
-            padding: 9px 12px;
+            border-radius: 12px;
+            padding: 10px 12px;
             cursor: pointer;
             font-weight: 700;
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
         }
 
         .visual-preset-btn:hover,
-        .tab-btn:hover,
-        .tab-btn.active {
-            border-color: #ff9f43;
+        .tab-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 159, 67, 0.65);
             background: rgba(255, 123, 0, 0.16);
             color: #ffffff;
+        }
+
+        .tab-btn.active,
+        .visual-preset-btn.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, rgba(255, 122, 26, 0.98), rgba(255, 86, 0, 0.98));
+            color: #ffffff;
+            box-shadow: 0 12px 26px rgba(255, 104, 13, 0.25);
         }
 
         .control-room-metrics {
@@ -714,10 +948,10 @@
         }
 
         .metric {
-            background: rgba(0, 0, 0, 0.24);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 12px;
+            padding: 12px;
         }
 
         .metric-label {
@@ -725,14 +959,15 @@
             display: block;
             font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .metric-value {
             color: #fff3df;
             display: block;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 800;
-            margin-top: 3px;
+            margin-top: 4px;
         }
 
         .tab-pane.hidden {
@@ -740,15 +975,88 @@
         }
 
         .section {
-            border-radius: 8px;
+            border-radius: 16px;
         }
 
         .section-title {
             border-bottom-color: rgba(255, 102, 0, 0.42);
+            color: #fff4e7;
+        }
+
+        .preview-container {
+            border-radius: 16px;
+            overflow: hidden;
+            width: min(100%, 760px);
+            max-width: 760px;
+        }
+
+        .frame-position-controls {
+            width: min(100%, 760px);
+            max-width: 760px;
+        }
+
+        .preview-wrapper {
+            background:
+                radial-gradient(circle at center, rgba(255, 122, 26, 0.08), transparent 44%),
+                repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 16px),
+                linear-gradient(180deg, rgba(26, 29, 37, 0.96), rgba(9, 10, 13, 0.96));
+        }
+
+        .broadcast-stack {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .broadcast-card {
+            padding: 18px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(19, 22, 29, 0.92), rgba(12, 14, 18, 0.96));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            min-height: 150px;
+        }
+
+        .broadcast-card h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            color: #fff2e8;
+        }
+
+        .broadcast-card p {
+            margin: 0;
+            color: #aeb7c6;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .card-tag {
+            display: inline-flex;
+            margin-bottom: 12px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255, 122, 26, 0.1);
+            color: #ffc88f;
+            border: 1px solid rgba(255, 122, 26, 0.18);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions .btn {
+            margin-right: 0;
         }
 
         @media (max-width: 980px) {
-            .control-room-hero {
+            .control-room-hero,
+            .broadcast-stack {
                 grid-template-columns: 1fr;
             }
         }
@@ -762,21 +1070,42 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .gift-catalog-toolbar {
+            .gift-catalog-toolbar,
+            .preset-strip,
+            .control-room-metrics {
                 grid-template-columns: 1fr;
+            }
+
+            .tab-strip {
+                position: static;
             }
         }
     </style>
 </head>
 <body>
     <div class="container control-room-shell">
-        <h1>🎨 TikTok Visual Effects Overlay</h1>
-        <p class="subtitle">Konfiguriere dein WebGL Effekt-Overlay mit 4 verschiedenen visuellen Modi für TikTok Livestreams</p>
+        <h1>TikTok Visual Effects Overlay</h1>
+        <p class="subtitle">Broadcast-safe WebGL overlay mit klarer Layer-Hierarchie, gezielten Trigger-Akzenten und Live-Preview fuer TikTok und OBS.</p>
         
         <div class="control-room-hero">
+            <div class="control-room-panel hero-copy">
+                <div>
+                    <div class="hero-kicker">Broadcast Effects System</div>
+                    <h1 class="control-room-title">Flame Overlay Control Room</h1>
+                    <p class="control-room-subtitle">Die Ausgabe ist auf Lesbarkeit getrimmt: ein ruhiger Base Layer, kurze Accent-Reaktionen und seltene Impact-Momente fuer grosse TikTok-Events.</p>
+                </div>
+                <div class="hero-highlights">
+                    <span class="hero-chip">Base Layer</span>
+                    <span class="hero-chip">Accent Layer</span>
+                    <span class="hero-chip">Impact Layer</span>
+                    <span class="hero-chip">OBS Safe</span>
+                </div>
+                <div class="hero-hint">
+                    Content bleibt in der Mitte frei, waehrend die Effekte an den Kanten, im Rahmen und bei Triggern mit kurzer Laufzeit reagieren.
+                </div>
+            </div>
+
             <div class="control-room-panel">
-                <h1 class="control-room-title">Flame Overlay Control Room</h1>
-                <p class="control-room-subtitle">Cinematic HDR flame material, OBS-safe quality control, live preview, trigger rules and production presets in one operator surface.</p>
                 <div class="form-group">
                     <label for="qualityMode">Quality Mode</label>
                     <select id="qualityMode">
@@ -786,9 +1115,9 @@
                     </select>
                 </div>
                 <div class="preset-strip">
-                    <button class="visual-preset-btn" type="button" data-visual-preset="cinematic-hdr">Cinematic HDR</button>
-                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-heat">Neon Heat</button>
-                    <button class="visual-preset-btn" type="button" data-visual-preset="clean-broadcast">Clean Broadcast</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="cinematic-hdr">Base Layer</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="neon-heat">Accent Layer</button>
+                    <button class="visual-preset-btn" type="button" data-visual-preset="clean-broadcast">Broadcast Safe</button>
                     <button class="visual-preset-btn" type="button" data-visual-preset="low-load">Low Load</button>
                 </div>
                 <div class="control-room-metrics">
@@ -796,6 +1125,24 @@
                     <div class="metric"><span class="metric-label">Render</span><span class="metric-value" id="qualityMetric">OBS</span></div>
                     <div class="metric"><span class="metric-label">Trigger</span><span class="metric-value" id="triggerMetric">Ready</span></div>
                 </div>
+            </div>
+        </div>
+
+        <div class="broadcast-stack">
+            <div class="broadcast-card">
+                <div class="card-tag">Base</div>
+                <h3>Stable frame first</h3>
+                <p>Der Grundzustand bleibt ruhig, sauber und permanent lesbar. So wirkt das Overlay auch in langen Sessions nicht ueberladen.</p>
+            </div>
+            <div class="broadcast-card">
+                <div class="card-tag">Accent</div>
+                <h3>Short reaction bursts</h3>
+                <p>Follows, Likes und kleine Gifts loesen kurze Pulse und Farbimpulse aus, ohne die Content-Zone zu verdecken.</p>
+            </div>
+            <div class="broadcast-card">
+                <div class="card-tag">Impact</div>
+                <h3>Peak moments only</h3>
+                <p>Grosse Gifts, Shares oder manuelle Tests ziehen Lightning und starke Bloom-Spikes nur fuer wenige Sekunden.</p>
             </div>
         </div>
         <div class="tab-strip" role="tablist">
@@ -810,20 +1157,20 @@
         
         <!-- Resolution Settings -->
         <div class="section tab-pane" data-tab="look">
-            <h2 class="section-title">🎭 Effekt-Typ</h2>
+            <h2 class="section-title">🎭 Visual Mode</h2>
             
             <div class="form-group">
-                <label for="effectType">Wähle deinen Effekt:</label>
+                <label for="effectType">Wähle die Rolle des Overlays:</label>
                 <select id="effectType">
-                    <option value="flames">🔥 Flammen (Klassisch)</option>
-                    <option value="particles">✨ Partikel-Burst</option>
-                    <option value="energy">⚡ Energie-Wellen</option>
-                    <option value="lightning">⚡ Elektrische Blitze</option>
+                    <option value="flames">Flames - Base Layer</option>
+                    <option value="particles">Particle Burst - Accent</option>
+                    <option value="energy">Energy Waves - Rhythm</option>
+                    <option value="lightning">Lightning - Impact</option>
                 </select>
             </div>
             
-            <p style="color: #888; font-size: 13px; margin-top: 10px;">
-                <strong>Tipp:</strong> Jeder Effekt verwendet unterschiedliche Rendering-Techniken für maximale visuelle Wirkung!
+            <p class="hero-hint">
+                Jeder Modus hat eine klare Aufgabe: Grundstimmung, Reaktions-Peak oder Impact-Moment. So bleibt die Mitte ruhig und die Kanten liefern die Energie.
             </p>
         </div>
         
@@ -831,8 +1178,8 @@
         <div class="section tab-pane" data-tab="look">
             <h2 class="section-title">👁️ Echtzeit-Vorschau</h2>
             
-            <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
-                Die Vorschau zeigt deine Einstellungen in Echtzeit. Alle Änderungen werden sofort sichtbar.
+            <p class="hero-hint">
+                Die Vorschau zeigt die Layer-Hierarchie in Echtzeit. Achte darauf, dass die Content-Zone frei bleibt und nur die Aussenkanten leben.
             </p>
             
             <div class="preview-controls">
@@ -851,7 +1198,7 @@
             <div class="frame-position-controls" id="framePositionControls" style="display: none;">
                 <h3 style="color: #ff9933; font-size: 14px; margin-bottom: 10px;">📍 Rahmen-Positionierung (in %)</h3>
                 <p style="color: #888; font-size: 12px; margin-bottom: 10px;">
-                    Definiere die Position und Größe des Effekt-Rahmens innerhalb der Vorschau
+                    Definiere Position und Groesse so, dass Kamera, Facecam oder Gameplay nicht mit dem Effekt kollidieren.
                 </p>
                 <div class="frame-position-grid">
                     <div class="frame-position-input">
@@ -873,6 +1220,27 @@
                 </div>
                 <button class="btn" id="applyFramePositionBtn" type="button" style="margin-top: 10px;">Anwenden</button>
             </div>
+        </div>
+
+        <!-- Presets Section -->
+        <div class="section tab-pane" data-tab="look">
+            <h2 class="section-title">💾 Presets</h2>
+            
+            <div class="form-group">
+                <label for="presetName">Aktuelle Einstellungen als Preset speichern:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="presetName" placeholder="Preset-Name (z.B. Hype Mode)" style="flex: 1;">
+                    <button class="btn" id="savePresetBtn" type="button">💾 Speichern</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Gespeicherte Presets:</label>
+                <div id="presetList" style="margin-top: 10px;">
+                    <p style="color: #888; font-size: 13px;">Lade Presets...</p>
+                </div>
+            </div>
+            <p class="hero-hint">Presets sichern komplette Looks fuer unterschiedliche Show-Phasen: ruhig, sauber, hektisch oder maximal laut.</p>
         </div>
         
         <!-- Resolution Settings -->
@@ -1236,153 +1604,163 @@
             </div>
         </div>
         
-        <!-- Presets Section -->
-        <div class="section tab-pane" data-tab="look">
-            <h2 class="section-title">💾 Presets</h2>
-            
-            <div class="form-group">
-                <label for="presetName">Aktuelle Einstellungen als Preset speichern:</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="presetName" placeholder="Preset-Name (z.B. Hype Mode)" style="flex: 1;">
-                    <button class="btn" id="savePresetBtn" type="button">💾 Speichern</button>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Gespeicherte Presets:</label>
-                <div id="presetList" style="margin-top: 10px;">
-                    <p style="color: #888; font-size: 13px;">Lade Presets...</p>
-                </div>
-            </div>
-        </div>
-        
         <!-- Trigger System (v3.0.0) -->
-        <div class="section tab-pane" data-tab="trigger">
+        <div class="section tab-pane trigger-workspace" data-tab="trigger">
             <h2 class="section-title">🎮 Triggers</h2>
 
-            <!-- Master Toggle -->
-            <div class="form-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="triggersEnabled" checked>
-                    <label for="triggersEnabled">Triggers aktiviert</label>
-                </div>
-                <small style="color: #888;">Reagiere auf TikTok LIVE Events (Gifts, Follows, Likes, Chat, ...)</small>
-            </div>
-
-            <!-- Preset Selector -->
-            <div class="form-group">
-                <label>Preset:</label>
-                <div class="preset-selector" id="presetSelector">
-                    <button class="preset-btn active" data-preset="default">Default</button>
-                    <button class="preset-btn" data-preset="hype">🔥 Hype</button>
-                    <button class="preset-btn" data-preset="chill">😎 Chill</button>
-                    <button class="preset-btn" data-preset="party">🎉 Party</button>
-                </div>
-                <small style="color: #888;">Wähle ein Preset oder passe die Regeln unten individuell an (→ Custom)</small>
-            </div>
-
-            <!-- Gift Catalog -->
-            <div class="form-group">
-                <label>Geschenkekatalog:</label>
-                <div class="gift-catalog-panel">
-                    <div class="gift-catalog-toolbar">
-                        <input type="search" id="giftCatalogSearch" placeholder="Geschenk suchen oder Coin-Bereich wie 99-499">
-                        <button class="btn btn-secondary" id="refreshGiftCatalogBtn" type="button">Aktualisieren</button>
-                        <button class="btn btn-secondary" id="addGiftRangeRuleBtn" type="button">Coin-Regel</button>
+            <div class="trigger-grid">
+                <div class="trigger-column">
+                    <div class="trigger-card trigger-card-hero">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Policy</div>
+                                <h3>Trigger state</h3>
+                            </div>
+                        </div>
+                        <div class="form-group trigger-master-row">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="triggersEnabled" checked>
+                                <label for="triggersEnabled">Triggers aktiviert</label>
+                            </div>
+                            <small style="color: #888;">Reagiere auf TikTok LIVE Events mit klar begrenzten visuellen Signaturen fuer kleine und grosse Momente.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Preset:</label>
+                            <div class="preset-selector preset-selector-trigger" id="presetSelector">
+                                <button class="preset-btn active" data-preset="default">Default</button>
+                                <button class="preset-btn" data-preset="hype">Hype</button>
+                                <button class="preset-btn" data-preset="chill">Chill</button>
+                                <button class="preset-btn" data-preset="party">Party</button>
+                            </div>
+                            <small style="color: #888;">Wähle ein Preset oder passe die Regeln unten individuell an. Das Ergebnis bleibt immer erst lesbar, dann laut.</small>
+                        </div>
                     </div>
-                    <div id="giftCatalogStatus" class="gift-catalog-empty">Geschenkekatalog wird geladen...</div>
-                    <div id="giftCatalogGrid" class="gift-catalog-grid"></div>
-                </div>
-            </div>
 
-            <!-- Trigger Rules Table -->
-            <div class="form-group">
-                <label>Trigger-Regeln:</label>
-                <div style="overflow-x: auto;">
-                    <table class="trigger-table" id="triggerRulesTable">
-                        <thead>
-                            <tr>
-                                <th style="width:40px;">An</th>
-                                <th style="width:90px;">Event</th>
-                                <th style="width:130px;">Bedingung</th>
-                                <th style="width:130px;">Aktion</th>
-                                <th style="width:70px;">Dauer (ms)</th>
-                                <th style="width:80px;">Effekt</th>
-                                <th style="width:45px;">Intensität</th>
-                                <th style="width:40px;">Farbe</th>
-                                <th style="width:36px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="triggerRulesBody">
-                            <!-- Dynamically filled by JS -->
-                        </tbody>
-                    </table>
-                </div>
-                <button class="btn-add-rule" id="addRuleBtn">＋ Regel hinzufügen</button>
-            </div>
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Catalog</div>
+                                <h3>Gift mapping</h3>
+                            </div>
+                            <div class="trigger-card-meta">Reward, Accent, Impact</div>
+                        </div>
+                        <div class="gift-catalog-panel">
+                            <div class="gift-catalog-toolbar">
+                                <input type="search" id="giftCatalogSearch" placeholder="Geschenk suchen oder Coin-Bereich wie 99-499">
+                                <button class="btn btn-secondary" id="refreshGiftCatalogBtn" type="button">Aktualisieren</button>
+                                <button class="btn btn-secondary" id="addGiftRangeRuleBtn" type="button">Coin-Regel</button>
+                            </div>
+                            <div id="giftCatalogStatus" class="gift-catalog-empty">Geschenkekatalog wird geladen...</div>
+                            <div id="giftCatalogGrid" class="gift-catalog-grid"></div>
+                        </div>
+                        <small style="color: #888;">Der Katalog dient als Trigger-Landkarte fuer Reward-, Accent- und Impact-Regeln.</small>
+                    </div>
 
-            <!-- Cooldown Settings -->
-            <div class="grid-2">
-                <div class="form-group">
-                    <label for="triggerCooldown">Trigger-Cooldown: <span class="slider-value" id="triggerCooldownValue">2000</span> ms</label>
-                    <input type="range" id="triggerCooldown" min="0" max="10000" value="2000" step="100">
-                    <small style="color: #888;">Mindestabstand zwischen Triggern gleichen Typs (Anti-Spam)</small>
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Policy</div>
+                                <h3>Cooldown & chat</h3>
+                            </div>
+                        </div>
+                        <div class="trigger-policy-grid">
+                            <div class="form-group">
+                                <label for="triggerCooldown">Trigger-Cooldown: <span class="slider-value" id="triggerCooldownValue">2000</span> ms</label>
+                                <input type="range" id="triggerCooldown" min="0" max="10000" value="2000" step="100">
+                                <small style="color: #888;">Mindestabstand zwischen Triggern gleichen Typs (Anti-Spam)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="triggerMaxStack">Max. gleichzeitige Triggers: <span class="slider-value" id="triggerMaxStackValue">5</span></label>
+                                <input type="range" id="triggerMaxStack" min="1" max="20" value="5" step="1">
+                                <small style="color: #888;">Maximale Anzahl gleichzeitig aktiver Trigger-Effekte</small>
+                            </div>
+                        </div>
+                        <div class="form-group trigger-chat-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="chatColorCommands" checked>
+                                <label for="chatColorCommands">Chat-Farbbefehle aktivieren</label>
+                            </div>
+                            <small style="color: #888;">Viewer können via Chat-Nachricht die Effektfarbe ändern</small>
+                            <div class="chat-commands-list" id="chatCommandsList">
+                                <span class="chat-command-badge">!red → 🔴</span>
+                                <span class="chat-command-badge">!blue → 🔵</span>
+                                <span class="chat-command-badge">!green → 🟢</span>
+                                <span class="chat-command-badge">!purple → 🟣</span>
+                                <span class="chat-command-badge">!pink → 💗</span>
+                                <span class="chat-command-badge">!gold → 🟡</span>
+                                <span class="chat-command-badge">!cyan → 🩵</span>
+                                <span class="chat-command-badge">!orange → 🟠</span>
+                                <span class="chat-command-badge">!white → ⚪</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="triggerMaxStack">Max. gleichzeitige Triggers: <span class="slider-value" id="triggerMaxStackValue">5</span></label>
-                    <input type="range" id="triggerMaxStack" min="1" max="20" value="5" step="1">
-                    <small style="color: #888;">Maximale Anzahl gleichzeitig aktiver Trigger-Effekte</small>
-                </div>
-            </div>
 
-            <!-- Chat Commands -->
-            <div class="form-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="chatColorCommands" checked>
-                    <label for="chatColorCommands">Chat-Farbbefehle aktivieren</label>
-                </div>
-                <small style="color: #888;">Viewer können via Chat-Nachricht die Effektfarbe ändern</small>
-                <div class="chat-commands-list" id="chatCommandsList">
-                    <span class="chat-command-badge">!red → 🔴</span>
-                    <span class="chat-command-badge">!blue → 🔵</span>
-                    <span class="chat-command-badge">!green → 🟢</span>
-                    <span class="chat-command-badge">!purple → 🟣</span>
-                    <span class="chat-command-badge">!pink → 💗</span>
-                    <span class="chat-command-badge">!gold → 🟡</span>
-                    <span class="chat-command-badge">!cyan → 🩵</span>
-                    <span class="chat-command-badge">!orange → 🟠</span>
-                    <span class="chat-command-badge">!white → ⚪</span>
-                </div>
-            </div>
+                <div class="trigger-column">
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Rules</div>
+                                <h3>Trigger table</h3>
+                            </div>
+                            <div class="trigger-card-meta">Active rule set</div>
+                        </div>
+                        <div class="trigger-table-shell">
+                            <table class="trigger-table" id="triggerRulesTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;">An</th>
+                                        <th style="width:90px;">Event</th>
+                                        <th style="width:130px;">Bedingung</th>
+                                        <th style="width:130px;">Aktion</th>
+                                        <th style="width:70px;">Dauer (ms)</th>
+                                        <th style="width:80px;">Effekt</th>
+                                        <th style="width:45px;">Intensität</th>
+                                        <th style="width:40px;">Farbe</th>
+                                        <th style="width:36px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="triggerRulesBody">
+                                    <!-- Dynamically filled by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="trigger-actions-row">
+                            <button class="btn-add-rule" id="addRuleBtn">＋ Regel hinzufügen</button>
+                            <button class="btn-save-triggers" id="saveTriggerRulesBtn" type="button">💾 Trigger-Regeln speichern</button>
+                        </div>
+                    </div>
 
-            <!-- Save Trigger Rules -->
-            <button class="btn-save-triggers" id="saveTriggerRulesBtn" type="button">💾 Trigger-Regeln speichern</button>
+                    <div class="trigger-card">
+                        <div class="trigger-card-header">
+                            <div>
+                                <div class="trigger-card-kicker">Actions</div>
+                                <h3>Test & status</h3>
+                            </div>
+                        </div>
+                        <div class="test-buttons-grid">
+                            <button class="btn-test" data-trigger-type="gift-small">🎁 Gift (klein)</button>
+                            <button class="btn-test" data-trigger-type="gift-medium">🎁 Gift (mittel)</button>
+                            <button class="btn-test" data-trigger-type="gift-big">🎁 Gift (groß)</button>
+                            <button class="btn-test" data-trigger-type="follow">👤 Follow</button>
+                            <button class="btn-test" data-trigger-type="like-burst">❤️ Like Burst</button>
+                            <button class="btn-test" data-trigger-type="share">📤 Share</button>
+                            <button class="btn-test" data-trigger-type="subscribe">⭐ Subscribe</button>
+                            <button class="btn-test" data-trigger-type="chat-red">💬 Chat !red</button>
+                        </div>
 
-            <!-- Test Buttons -->
-            <div class="form-group" style="margin-top: 20px;">
-                <label>🧪 Test-Trigger senden:</label>
-                <div class="test-buttons-grid">
-                    <button class="btn-test" data-trigger-type="gift-small">🎁 Gift (klein)</button>
-                    <button class="btn-test" data-trigger-type="gift-medium">🎁 Gift (mittel)</button>
-                    <button class="btn-test" data-trigger-type="gift-big">🎁 Gift (groß)</button>
-                    <button class="btn-test" data-trigger-type="follow">👤 Follow</button>
-                    <button class="btn-test" data-trigger-type="like-burst">❤️ Like Burst</button>
-                    <button class="btn-test" data-trigger-type="share">📤 Share</button>
-                    <button class="btn-test" data-trigger-type="subscribe">⭐ Subscribe</button>
-                    <button class="btn-test" data-trigger-type="chat-red">💬 Chat !red</button>
-                </div>
-            </div>
+                        <div class="trigger-status-box" id="triggerStatusBox">
+                            <div class="trigger-status-header">
+                                <span style="color: #ccc; font-size: 13px;">📊 Trigger-Status</span>
+                                <span class="trigger-active-count" id="activeTriggerCount">0 aktiv</span>
+                            </div>
+                            <div id="triggerLogContainer">
+                                <p style="color: #666; font-size: 12px; text-align: center; padding: 8px 0;">Noch keine Trigger ausgelöst</p>
+                            </div>
+                        </div>
 
-            <button class="btn-test" id="stopActiveTriggersBtn" type="button" style="margin-top: 8px;">Stop Effects</button>
-
-            <!-- Live Status -->
-            <div class="trigger-status-box" id="triggerStatusBox">
-                <div class="trigger-status-header">
-                    <span style="color: #ccc; font-size: 13px;">📊 Trigger-Status</span>
-                    <span class="trigger-active-count" id="activeTriggerCount">0 aktiv</span>
-                </div>
-                <div id="triggerLogContainer">
-                    <p style="color: #666; font-size: 12px; text-align: center; padding: 8px 0;">Noch keine Trigger ausgelöst</p>
+                        <button class="btn-test trigger-stop-btn" id="stopActiveTriggersBtn" type="button">Stop Effects</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1401,15 +1779,15 @@
             <p><strong>2.</strong> URL eingeben: <code id="overlayUrl">http://localhost:3000/flame-overlay/overlay</code></p>
             <p><strong>3.</strong> Breite und Höhe entsprechend deiner Auswahl einstellen</p>
             <p><strong>4.</strong> "Shutdown source when not visible" deaktivieren (für bessere Performance)</p>
-            <p><strong>5.</strong> Transparenter Hintergrund ist bereits aktiviert ✅</p>
+            <p><strong>5.</strong> Transparenter Hintergrund ist bereits aktiviert und OBS-safe ✅</p>
         </div>
         
         <div class="info-box">
             <h3>💡 Tipps</h3>
-            <p>• <strong>Rahmen Position:</strong> Wähle "Unten" für klassisches TikTok-Layout, "Rundherum" für volle Immersion</p>
-            <p>• <strong>Intensität:</strong> Höhere Werte erzeugen wildere, chaotischere Flammen</p>
-            <p>• <strong>Geschwindigkeit:</strong> Niedrigere Werte für ruhige, höhere für energetische Flammen</p>
-            <p>• <strong>Additive Blending:</strong> Macht Flammen heller und leuchtender (empfohlen)</p>
+            <p>• <strong>Base Layer:</strong> Halte die Grundbewegung ruhig und die Kanten sauber, damit der Stream immer lesbar bleibt.</p>
+            <p>• <strong>Accent Layer:</strong> Nutze kurze Pulse und Partikel fuer kleine Geschenke, Likes und Follow-Spikes.</p>
+            <p>• <strong>Impact Layer:</strong> Reserviere Lightning und starke Bloom-Spikes fuer die wirklich grossen Momente.</p>
+            <p>• <strong>Quality Mode:</strong> OBS-safe ist der Default, Low Load ist die Notbremse fuer schwache Hardware.</p>
         </div>
     </div>
     
@@ -1454,27 +1832,27 @@
             'cinematic-hdr': {
                 qualityMode: 'obs-safe',
                 flameColor: '#ff6600',
-                flameIntensity: 1.48,
-                flameBrightness: 0.46,
+                flameIntensity: 1.22,
+                flameBrightness: 0.4,
                 noiseOctaves: 9,
                 edgeFeather: 0.52,
                 frameCurve: 0.14,
                 frameNoiseAmount: 0.18,
                 bloomEnabled: true,
-                bloomIntensity: 1.05,
+                bloomIntensity: 0.92,
                 bloomThreshold: 0.52,
-                bloomRadius: 5,
-                depthIntensity: 0.78,
+                bloomRadius: 4,
+                depthIntensity: 0.72,
                 sparkEnabled: true,
-                sparkDensity: 0.78,
+                sparkDensity: 0.56,
                 heatDistortionEnabled: true,
-                heatDistortionStrength: 0.32,
-                cinematicContrast: 1.18,
-                coreWhiteness: 0.72,
-                emberTrailAmount: 0.42,
+                heatDistortionStrength: 0.24,
+                cinematicContrast: 1.16,
+                coreWhiteness: 0.68,
+                emberTrailAmount: 0.32,
                 smokeEnabled: true,
-                smokeIntensity: 0.48,
-                smokeSpeed: 0.28,
+                smokeIntensity: 0.36,
+                smokeSpeed: 0.24,
                 smokeColor: '#2d2623'
             },
             'neon-heat': {
@@ -1483,40 +1861,51 @@
                 flameIntensity: 1.75,
                 flameBrightness: 0.58,
                 bloomEnabled: true,
-                bloomIntensity: 1.4,
+                bloomIntensity: 1.25,
                 chromaticAberration: 0.01,
-                sparkDensity: 1.25,
-                heatDistortionStrength: 0.46,
-                cinematicContrast: 1.34,
-                coreWhiteness: 0.86,
-                emberTrailAmount: 0.62
+                sparkDensity: 1.1,
+                heatDistortionStrength: 0.42,
+                cinematicContrast: 1.32,
+                coreWhiteness: 0.82,
+                emberTrailAmount: 0.58
             },
             'clean-broadcast': {
                 qualityMode: 'obs-safe',
                 flameColor: '#ff7a1a',
-                flameIntensity: 1.08,
-                flameBrightness: 0.36,
-                edgeFeather: 0.38,
-                bloomIntensity: 0.68,
-                sparkDensity: 0.28,
-                heatDistortionStrength: 0.12,
-                cinematicContrast: 1.06,
-                coreWhiteness: 0.48,
-                emberTrailAmount: 0.18,
-                smokeIntensity: 0.2,
-                filmGrain: 0.01
+                flameIntensity: 0.98,
+                flameBrightness: 0.33,
+                edgeFeather: 0.44,
+                bloomEnabled: true,
+                bloomIntensity: 0.62,
+                bloomThreshold: 0.6,
+                bloomRadius: 3,
+                sparkDensity: 0.22,
+                heatDistortionStrength: 0.08,
+                cinematicContrast: 1.04,
+                coreWhiteness: 0.44,
+                emberTrailAmount: 0.14,
+                smokeEnabled: false,
+                smokeIntensity: 0.12,
+                filmGrain: 0.008,
+                layerCount: 2,
+                layerParallax: 0.16
             },
             'low-load': {
                 qualityMode: 'low-load',
-                flameIntensity: 1.15,
-                flameBrightness: 0.4,
-                noiseOctaves: 6,
-                bloomRadius: 3,
-                sparkDensity: 0.24,
-                heatDistortionStrength: 0.08,
+                flameIntensity: 0.92,
+                flameBrightness: 0.3,
+                noiseOctaves: 5,
+                bloomEnabled: false,
+                bloomRadius: 2,
+                layersEnabled: false,
+                sparkEnabled: false,
+                sparkDensity: 0.1,
+                heatDistortionEnabled: false,
+                heatDistortionStrength: 0.04,
                 smokeEnabled: false,
-                filmGrain: 0.005,
-                chromaticAberration: 0.002
+                smokeIntensity: 0,
+                filmGrain: 0.004,
+                chromaticAberration: 0.001
             }
         };
 
@@ -1538,7 +1927,13 @@
             for (const [key, value] of Object.entries(preset)) {
                 setFieldValue(key, value);
             }
-            document.getElementById('profileMetric').textContent = name === 'neon-heat' ? 'NEON' : (name === 'low-load' ? 'LOW' : 'HDR');
+            const profileLabels = {
+                'cinematic-hdr': 'HDR',
+                'neon-heat': 'ACCENT',
+                'clean-broadcast': 'SAFE',
+                'low-load': 'LOW'
+            };
+            document.getElementById('profileMetric').textContent = profileLabels[name] || 'HDR';
             document.querySelectorAll('.visual-preset-btn').forEach(button => {
                 button.classList.toggle('active', button.dataset.visualPreset === name);
             });
