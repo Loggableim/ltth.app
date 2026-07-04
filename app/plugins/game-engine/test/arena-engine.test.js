@@ -381,7 +381,7 @@ describe('ArenaGame', () => {
 
   it('keeps AI states stable briefly while allowing urgent retreats to interrupt', () => {
     let now = 1000;
-    const { arena } = createArena({}, { now: () => now });
+    const { arena } = createArena({ aiStateMinDurationMs: 1000 }, { now: () => now });
     const config = arena.getConfig();
     const player = movementPlayer(arena, config, 'stateful_player', 40, { lives: 180 });
     const context = { now, personality: player.personality, sizeProfile: arena._sizeBehaviorProfile(player, config), threat: null };

@@ -45,11 +45,25 @@ describe('Sidekick host speech to AnimazingPal integration', () => {
       hostMinConfidence: 0
     });
     const { plugin, ttsPlugin } = createAnimazingPal();
-    const decision = coordinator.shouldAcceptHostSpeech('Kannst du das im Chat sehen?', { now: 1000 });
     const event = coordinator.buildHostSpeechEvent('Kannst du das im Chat sehen?', {
       confidence: 0.91,
       provider: 'future-asr'
     });
+    const decision = {
+      accept: true,
+      respond: true,
+      score: 0.8,
+      reason: 'accepted',
+      selection: 'host-speech',
+      type: 'host',
+      features: {
+        isQuestion: true,
+        isGreeting: false,
+        isLongForm: false,
+        wordCount: 6,
+        charCount: 28
+      }
+    };
 
     const originalRandom = Math.random;
     Math.random = () => 0;

@@ -11,6 +11,11 @@
 const fs = require('fs');
 const path = require('path');
 
+function readJsonFile(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
+  return JSON.parse(raw);
+}
+
 class I18n {
   constructor(defaultLocale = 'en') {
     this.defaultLocale = defaultLocale;
@@ -36,7 +41,7 @@ class I18n {
 
       if (fs.existsSync(filePath)) {
         try {
-          this.translations[locale] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          this.translations[locale] = readJsonFile(filePath);
         } catch (error) {
           console.error(`Failed to load ${locale} translations:`, error.message);
           this.translations[locale] = {};
@@ -65,7 +70,7 @@ class I18n {
     const legacyStateFile = path.join(pluginsDir, 'plugins_state.json');
     if (fs.existsSync(legacyStateFile)) {
       try {
-        pluginsState = JSON.parse(fs.readFileSync(legacyStateFile, 'utf8'));
+        pluginsState = readJsonFile(legacyStateFile);
       } catch (error) {
         console.error('Failed to read plugins_state.json:', error.message);
       }
@@ -80,7 +85,7 @@ class I18n {
         let manifest = null;
         if (fs.existsSync(pluginManifestPath)) {
           try {
-            manifest = JSON.parse(fs.readFileSync(pluginManifestPath, 'utf8'));
+            manifest = readJsonFile(pluginManifestPath);
           } catch (error) {
             console.error(`Failed to read plugin.json for plugin ${plugin}:`, error.message);
           }
@@ -103,7 +108,7 @@ class I18n {
 
             if (fs.existsSync(pluginLocalePath)) {
               try {
-                const pluginTranslations = JSON.parse(fs.readFileSync(pluginLocalePath, 'utf8'));
+                const pluginTranslations = readJsonFile(pluginLocalePath);
 
                 // Merge plugin translations into main translations
                 if (!this.translations[locale]) {
