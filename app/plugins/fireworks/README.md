@@ -10,6 +10,8 @@
 - **Gift Escalation**: Small → Medium → Big → Massive tiers based on coin value
 - **GPU Particle Engine**: WebGL 2.0 rendering with Canvas 2D fallback
 - **Custom Explosion Shapes**: Burst, Heart, Star, Ring, Spiral
+- **Streamer-Safe Backpressure**: Low-FPS and high-load protection prioritizes bigger gifts and finales while reducing or dropping smaller effects under pressure
+- **Validated Runtime Settings**: Config, manual triggers, finales, and gift mappings are normalized before use to avoid broken settings crashing the overlay
 
 ### Visual Effects
 - **Gift-based Particles**: Uses gift images as particles
@@ -140,6 +142,8 @@ Parameters:
 - **Frame Rate**: Targets 60 FPS
 - **Memory**: Particle pooling prevents allocation
 - **Freeze Protection**: Auto-reload failsafe when FPS drops to 0 for 3+ seconds
+- **Trigger Backpressure**: Uses overlay FPS, active firework count, queue depth, and particle budgets to protect OBS during gift spam
+- **Priority Handling**: Manual tests/finales bypass safety drops, large gifts are preferred over small gifts, and medium effects can be reduced instead of discarded
 
 ### Automatic Freeze Recovery
 

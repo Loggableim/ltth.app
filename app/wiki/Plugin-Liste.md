@@ -912,6 +912,10 @@ http://localhost:3000/fireworks/overlay
 **Bekannte Einschränkungen:**
 - Keine bekannten Einschränkungen
 
+**Stabilität:**
+- Streamer-sichere Backpressure bei niedrigen FPS oder hoher Effektlast
+- Validierte Config-, Trigger-, Finale- und Gift-Mapping-Payloads
+
 ---
 
 ### 27. API Bridge

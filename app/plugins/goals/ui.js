@@ -225,10 +225,6 @@ function editGoal(id) {
     document.getElementById('goal-firework-enabled').checked = Number(goal.firework_enabled) === 1;
     document.getElementById('goal-firework-intensity').value = clampNumber(goal.firework_intensity, 1, 10, 3);
     document.getElementById('goal-firework-duration').value = clampNumber((goal.firework_duration || 5000) / 1000, 1, 30, 5);
-    document.getElementById('goal-firework-theme').value = goal.firework_theme || '';
-    document.getElementById('goal-firework-encounter').value = goal.firework_encounter_mode || 'finale';
-    document.getElementById('goal-firework-quality').value = goal.firework_quality_profile || 'high';
-    document.getElementById('goal-firework-hud-label').value = goal.firework_hud_label || '';
     document.getElementById('goal-firework-progress-enabled').checked = Number(goal.firework_progress_enabled) !== 0;
     document.getElementById('goal-firework-progress-milestones').value = goal.firework_progress_milestones || '25,50,75';
     document.getElementById('goal-width').value = goal.overlay_width;
@@ -278,10 +274,6 @@ async function saveGoal(e) {
         firework_enabled: document.getElementById('goal-firework-enabled').checked ? 1 : 0,
         firework_intensity: clampNumber(document.getElementById('goal-firework-intensity').value, 1, 10, 3),
         firework_duration: Math.round(clampNumber(document.getElementById('goal-firework-duration').value, 1, 30, 5) * 1000),
-        firework_theme: document.getElementById('goal-firework-theme').value || null,
-        firework_encounter_mode: document.getElementById('goal-firework-encounter').value,
-        firework_quality_profile: document.getElementById('goal-firework-quality').value,
-        firework_hud_label: document.getElementById('goal-firework-hud-label').value.trim() || null,
         firework_progress_enabled: document.getElementById('goal-firework-progress-enabled').checked ? 1 : 0,
         firework_progress_milestones: document.getElementById('goal-firework-progress-milestones').value.trim() || '25,50,75',
         theme: buildGoalThemeFromForm(),

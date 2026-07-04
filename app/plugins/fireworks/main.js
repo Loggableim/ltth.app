@@ -21,6 +21,13 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const {
+    normalizeConfig,
+    normalizeFinaleRequest,
+    normalizeFireworkTrigger,
+    normalizeGiftMapping
+} = require('./lib/config-schema');
+const { evaluateTriggerPolicy } = require('./lib/trigger-policy');
 
 class FireworksPlugin {
     constructor(api) {
@@ -50,6 +57,7 @@ class FireworksPlugin {
         // Server-side active firework tracking (browser global not available server-side)
         this.activeFireworkCount = 0;
         this.activeFireworkTimers = new Map();
+        this.useLegacyGiftDropGuards = false;
     }
 
     async init() {
@@ -327,10 +335,10 @@ class FireworksPlugin {
             windStrength: 0.02
         };
 
-        this.config = {
+        this.config = normalizeConfig({
             ...defaultConfig,
             ...(savedConfig || {})
-        };
+        });
         
         this.COMBO_TIMEOUT = this.config.comboTimeout;
     }
@@ -410,8 +418,8 @@ class FireworksPlugin {
         // Update configuration
         this.api.registerRoute('post', '/api/fireworks/config', (req, res) => {
             try {
-                const updates = req.body;
-                this.config = { ...this.config, ...updates };
+                const updates = req.body || {};
+                this.config = normalizeConfig({ ...this.config, ...updates });
                 this.saveConfig();
                 
                 // Restart random timer if relevant settings changed
@@ -464,17 +472,11 @@ class FireworksPlugin {
         // Trigger fireworks manually
         this.api.registerRoute('post', '/api/fireworks/trigger', (req, res) => {
             try {
-                const { type, intensity, shape, colors, position, giftId, duration, userAvatar } = req.body;
+                const triggerOptions = normalizeFireworkTrigger(req.body || {}, this.config);
                 
                 this.triggerFirework({
-                    type: type || 'burst',
-                    intensity: intensity || 1.0,
-                    shape: shape || this.config.defaultShape,
-                    colors: colors || null,
-                    position: position || { x: 0.5, y: 0.7 },
-                    giftId: giftId || null,
-                    userAvatar: userAvatar || null,
-                    duration: duration || 2000,
+                    ...triggerOptions,
+                    position: triggerOptions.position || { x: 0.5, y: 0.7 },
                     reason: 'manual',
                     bypassEnabled: true  // Allow test triggers even when disabled
                 });
@@ -488,8 +490,8 @@ class FireworksPlugin {
         // Trigger finale
         this.api.registerRoute('post', '/api/fireworks/finale', (req, res) => {
             try {
-                const { intensity, duration } = req.body;
-                this.triggerFinale(intensity || 3.0, duration || 5000, true); // true = bypass enabled check
+                const { intensity, duration } = normalizeFinaleRequest(req.body || {});
+                this.triggerFinale(intensity, duration, true); // true = bypass enabled check
                 res.json({ success: true, message: 'Finale triggered' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -536,7 +538,7 @@ class FireworksPlugin {
         // Set gift shape mapping
         this.api.registerRoute('post', '/api/fireworks/gift-mappings', (req, res) => {
             try {
-                const { giftId, shape, colors, intensity } = req.body;
+                const { giftId, shape, colors, intensity } = normalizeGiftMapping(req.body || {});
                 
                 if (!giftId) {
                     return res.status(400).json({ success: false, error: 'giftId is required' });
@@ -765,13 +767,13 @@ class FireworksPlugin {
 
         // Check concurrent firework limit
         const activeFireworks = this.getActiveFireworkCount();
-        if (activeFireworks >= this.config.maxConcurrentFireworks) {
+        if (this.useLegacyGiftDropGuards && activeFireworks >= this.config.maxConcurrentFireworks) {
             this.api.log(`[FIREWORKS] Limit erreicht (${activeFireworks}/${this.config.maxConcurrentFireworks}), Gift übersprungen`, 'warn');
             return;
         }
 
         // Bei hoher Last: Nur große Gifts zulassen
-        if (activeFireworks >= Math.floor(this.config.maxConcurrentFireworks * 0.6) && coins < 500) {
+        if (this.useLegacyGiftDropGuards && activeFireworks >= Math.floor(this.config.maxConcurrentFireworks * 0.6) && coins < 500) {
             this.api.log(`[FIREWORKS] Hohe Last (${activeFireworks}), kleines Gift (${coins} coins) übersprungen`, 'debug');
             return;
         }
@@ -975,6 +977,17 @@ class FireworksPlugin {
     }
 
     /**
+     * Get overlay/server health used by the stability trigger policy.
+     */
+    getTriggerHealth() {
+        return {
+            currentFps: this.currentFps || 0,
+            activeFireworkCount: this.getActiveFireworkCount(),
+            queueDepth: this.queueTimestamps.length
+        };
+    }
+
+    /**
      * Handle chat trigger
      */
     handleChatTrigger(data) {
@@ -1098,13 +1111,24 @@ class FireworksPlugin {
      */
     triggerFirework(options) {
         // Ensure options object exists
-        options = options || {};
+        options = normalizeFireworkTrigger(options || {}, this.config);
         
         // Allow bypass of enabled check for manual triggers (tests, API calls)
         if (!this.config.enabled && !options.bypassEnabled) return;
 
         // Check queue rate limiting (unless bypass is enabled)
         if (!options.bypassEnabled && !this.shouldAllowFirework()) {
+            return;
+        }
+
+        const policyDecision = evaluateTriggerPolicy({
+            trigger: options,
+            config: this.config,
+            health: this.getTriggerHealth()
+        });
+
+        if (!policyDecision.allowed) {
+            this.api.log(`[FIREWORKS] Trigger dropped by stability policy: ${policyDecision.reason}`, 'debug');
             return;
         }
 
@@ -1116,11 +1140,11 @@ class FireworksPlugin {
             shape: options.shape || this.config.defaultShape,
             colors: options.colors || this.config.themeColors,
             position: options.position || { x: 0.5, y: 0.5 },
-            particleCount: options.particleCount || 50,
+            particleCount: policyDecision.particleCount || options.particleCount || 50,
             giftId: options.giftId || null,
             giftImage: options.giftImage || null,
             userAvatar: options.userAvatar || null,
-            requestedParticleCount: options.requestedParticleCount || null,
+            requestedParticleCount: options.requestedParticleCount || options.particleCount || null,
             tier: options.tier || 'medium',
             username: options.username || null,
             coins: options.coins || 0,
@@ -1158,7 +1182,7 @@ class FireworksPlugin {
         // Capped at 8000ms to avoid counter staying high for unusually long fireworks.
         this.activeFireworkCount++;
         const fireworkId = payload.id;
-        const estimatedLifetime = Math.min(8000, 3000 + (options.intensity || 1) * 2000);
+        const estimatedLifetime = Math.min(8000, 3000 + (payload.intensity || 1) * 2000);
         const timer = setTimeout(() => {
             this.activeFireworkCount = Math.max(0, this.activeFireworkCount - 1);
             this.activeFireworkTimers.delete(fireworkId);
@@ -1169,7 +1193,7 @@ class FireworksPlugin {
         
         this.api.log(
             `🎆 [FIREWORKS] Triggered: ${payload.shape} @ (${payload.position.x.toFixed(2)}, ${payload.position.y.toFixed(2)}) ` +
-            `intensity=${payload.intensity.toFixed(2)}`,
+            `intensity=${payload.intensity.toFixed(2)} particles=${payload.particleCount}${policyDecision.reduced ? ' reduced=true' : ''}`,
             'debug'
         );
     }
@@ -1179,6 +1203,9 @@ class FireworksPlugin {
      */
     triggerFinale(intensity = 3.0, duration = 5000, bypassEnabled = false) {
         if (!this.config.enabled && !bypassEnabled) return;
+        const finale = normalizeFinaleRequest({ intensity, duration });
+        intensity = finale.intensity;
+        duration = finale.duration;
 
         this.api.log(`🎆 [FIREWORKS] FINALE! Intensity: ${intensity}, Duration: ${duration}ms`, 'info');
 

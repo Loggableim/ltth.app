@@ -372,11 +372,6 @@ class GoalsPlugin extends EventEmitter {
     }
 
     resolveFireworksPlugin() {
-        const devPlugin = this.api.getPlugin ? this.api.getPlugin('fireworks-dev') : null;
-        if (devPlugin && typeof devPlugin.triggerFinale === 'function') {
-            return { id: 'fireworks-dev', plugin: devPlugin };
-        }
-
         const stablePlugin = this.api.getPlugin ? this.api.getPlugin('fireworks') : null;
         if (stablePlugin && typeof stablePlugin.triggerFinale === 'function') {
             return { id: 'fireworks', plugin: stablePlugin };
@@ -411,11 +406,6 @@ class GoalsPlugin extends EventEmitter {
         return `${goal.id}:${goal.target_value}:progress:${milestone}`;
     }
 
-    buildGoalFireworkHudLabel(goal, suffix) {
-        const base = goal.firework_hud_label || goal.name || 'Goal';
-        return suffix ? `${base} ${suffix}` : base;
-    }
-
     triggerGoalFireworkProgress(goal, milestone) {
         try {
             if (!goal || !goal.firework_enabled || goal.firework_progress_enabled === 0) {
@@ -432,34 +422,11 @@ class GoalsPlugin extends EventEmitter {
                 return false;
             }
 
-            const { id, plugin } = resolved;
+            const { plugin } = resolved;
             const intensity = this.clampNumber(goal.firework_intensity, 1, 10, 3);
             const milestoneIntensity = milestone >= 75 ? Math.max(1.8, intensity * 0.72) : milestone >= 50 ? Math.max(1.35, intensity * 0.58) : Math.max(1.05, intensity * 0.44);
-            const qualityProfile = goal.firework_quality_profile || 'high';
-            const encounterMode = milestone >= 75 ? 'raid' : 'skirmish';
-            const hudLabel = this.buildGoalFireworkHudLabel(goal, `${milestone}%`);
 
-            if (id === 'fireworks-dev' && typeof plugin.triggerFirework === 'function') {
-                plugin.triggerFirework({
-                    type: 'goal-progress',
-                    intensity: milestoneIntensity,
-                    shape: milestone >= 75 ? 'ring' : 'star',
-                    position: {
-                        x: 0.24 + Math.random() * 0.52,
-                        y: 0.28 + Math.random() * 0.24
-                    },
-                    duration: 2200,
-                    theme: goal.firework_theme || undefined,
-                    encounterMode,
-                    qualityProfile,
-                    impactLevel: milestone >= 75 ? 'raid' : milestone >= 50 ? 'heavy' : 'medium',
-                    ultimateTier: null,
-                    hudLabel,
-                    cameraImpulse: 0.16 + (milestone / 220),
-                    screenFxPreset: milestone >= 75 ? 'milestone-raid' : 'milestone',
-                    bypassEnabled: true
-                });
-            } else if (typeof plugin.triggerFirework === 'function') {
+            if (typeof plugin.triggerFirework === 'function') {
                 plugin.triggerFirework({
                     type: 'goal-progress',
                     intensity: milestoneIntensity,
@@ -523,25 +490,12 @@ class GoalsPlugin extends EventEmitter {
                 return false;
             }
 
-            const { id: pluginId, plugin: fireworks } = resolved;
+            const { plugin: fireworks } = resolved;
             const intensity = this.clampNumber(goal.firework_intensity, 1, 10, 3);
             const duration = this.clampNumber(goal.firework_duration, 1000, 30000, 5000);
 
             this.fireworkFinaleMilestones.add(milestoneKey);
-            if (pluginId === 'fireworks-dev') {
-                fireworks.triggerFinale(intensity, duration, true, {
-                    theme: goal.firework_theme || undefined,
-                    encounterMode: goal.firework_encounter_mode || 'finale',
-                    qualityProfile: goal.firework_quality_profile || 'high',
-                    impactLevel: 'ultimate',
-                    ultimateTier: 'goal-finale',
-                    hudLabel: this.buildGoalFireworkHudLabel(goal, 'Complete'),
-                    cameraImpulse: Math.max(0.4, intensity * 0.14),
-                    screenFxPreset: 'goal-finale'
-                });
-            } else {
-                fireworks.triggerFinale(intensity, duration);
-            }
+            fireworks.triggerFinale(intensity, duration);
             this.api.log(`Triggered firework finale for goal "${goal.name}" (${intensity}x, ${duration}ms)`, 'info');
             return true;
         } catch (error) {

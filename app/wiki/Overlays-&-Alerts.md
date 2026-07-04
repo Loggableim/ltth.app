@@ -352,6 +352,10 @@ Dashboard → Plugins → Fireworks → Configure
 - Combo-Thresholds einstellen
 ```
 
+**Stabilität:**
+- Streamer-sichere Backpressure bei niedrigen FPS oder hoher Effektlast
+- Validierte Trigger-, Finale- und Gift-Mapping-Payloads
+
 #### Weather Control
 **URL:**
 ```
