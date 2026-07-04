@@ -523,6 +523,37 @@ describe('Game Engine GCCE Integration', () => {
       expect(plugin.pendingChallenges.has(101)).toBe(false);
     });
 
+    test('should allow viewer opponent to start chess challenge with both viewer sides represented', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'white'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(102, {
+        sessionId: 102,
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(102, 'viewer456');
+
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(102, 'viewer456', 'viewer');
+      const game = plugin.activeSessions.get(102);
+      expect(game).toBeDefined();
+      expect(game.whitePlayer.username).toBe('viewer456');
+      expect(game.blackPlayer.username).toBe('viewer123');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
+
     test('should ignore malformed challenge payload without gameType', () => {
       plugin.db = {
         getGameConfig: jest.fn(),

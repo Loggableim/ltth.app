@@ -1282,7 +1282,8 @@ class GameEnginePlugin {
   startChessGameFromChallenge(sessionId, challenge, opponentUsername, config) {
     const challengerUsername = challenge.challengerUsername;
     const challengerNickname = challenge.challengerNickname || challengerUsername;
-    const opponentIsStreamer = opponentUsername === 'streamer';
+    const opponent = opponentUsername || challengerUsername;
+    const opponentIsStreamer = opponent === 'streamer';
 
     // Determine sides (white/black)
     const streamerRole = config.streamerRole || 'random';
@@ -1301,42 +1302,51 @@ class GameEnginePlugin {
     }
 
     // Keep stored session players aligned with the in-memory player colors.
-    if (streamerSide === 'white') {
-      this.db.updateSession(sessionId, {
-        player1_username: 'streamer',
-        player1_role: 'streamer'
-      });
-      this.db.addPlayer2(sessionId, challengerUsername, 'viewer');
+    if (opponentIsStreamer) {
+      if (streamerSide === 'white') {
+        this.db.updateSession(sessionId, {
+          player1_username: 'streamer',
+          player1_role: 'streamer'
+        });
+        this.db.addPlayer2(sessionId, challengerUsername, 'viewer');
+      } else {
+        this.db.addPlayer2(sessionId, opponent, 'streamer');
+      }
     } else {
-      this.db.addPlayer2(
-        sessionId,
-        opponentUsername,
-        opponentIsStreamer ? 'streamer' : 'viewer'
-      );
+      this.db.addPlayer2(sessionId, opponent, 'viewer');
     }
 
-    const whitePlayer = streamerSide === 'white'
+    const viewerChallengerSide = opponentIsStreamer
+      ? viewerSide
+      : (streamerRole === 'white'
+        ? 'black'
+        : streamerRole === 'black'
+          ? 'white'
+          : viewerSide);
+    const viewerOpponentSide = viewerChallengerSide === 'white' ? 'black' : 'white';
+
+    const whitePlayer = viewerChallengerSide === 'white'
       ? {
-          username: 'streamer',
-          role: 'streamer',
-          color: config.whiteColor,
-          nickname: 'Streamer',
-          side: 'white'
-        }
-      : {
           username: challengerUsername,
           role: 'viewer',
           color: config.whiteColor,
           nickname: challengerNickname,
           side: 'white'
+        }
+      : {
+          username: opponent,
+          role: opponentIsStreamer ? 'streamer' : 'viewer',
+          color: config.whiteColor,
+          nickname: opponentIsStreamer ? 'Streamer' : opponent,
+          side: 'white'
         };
 
-    const blackPlayer = streamerSide === 'black'
+    const blackPlayer = viewerOpponentSide === 'black'
       ? {
-          username: 'streamer',
-          role: 'streamer',
+          username: opponent,
+          role: opponentIsStreamer ? 'streamer' : 'viewer',
           color: config.blackColor,
-          nickname: 'Streamer',
+          nickname: opponentIsStreamer ? 'Streamer' : opponent,
           side: 'black'
         }
       : {
