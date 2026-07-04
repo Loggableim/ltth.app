@@ -419,7 +419,7 @@ Manchmal hilft nur ein Neustart von VRChat:
 ## Weitere Hilfe
 
 ### Community
-- GitHub Issues: https://github.com/mycommunity/ltth.app/issues
+- GitHub Issues: https://github.com/Loggableim/ltth.app/issues
 - Discord: [Link zum Server]
 
 ### Logs einsenden

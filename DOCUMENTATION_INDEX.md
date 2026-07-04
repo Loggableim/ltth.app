@@ -7,6 +7,7 @@ This workspace is the combined LTTH repository layout (runtime app + website + l
 ## Start Here
 
 - [README.md](README.md): project overview and commands
+- [REPOSITORY_IDENTITY.md](REPOSITORY_IDENTITY.md): canonical `ltth.app` / `Loggableim/ltth.app` identity and old-repo warning
 - [AGENTS.md](AGENTS.md): required orientation for coding agents
 - [docs/SNAPSHOT_STATUS.md](docs/SNAPSHOT_STATUS.md): current workspace facts, gaps, dependency state
 - [infos/llm_start_here.md](infos/llm_start_here.md): technical onboarding for future development
@@ -47,6 +48,7 @@ These pages may still include older wording. When a user-facing feature changes,
 - `docs_archive/` is retained only for historical context.
 - Do not treat archived implementation reports as current instructions.
 - Verify archived claims against code before using them.
+- Ignore archived references to old repositories such as `Loggableim/pupcidslittletiktoolhelper_desktop` or `mycommunity/ltth.app` unless the user explicitly asks about that history.
 
 ## Build And Runtime
 

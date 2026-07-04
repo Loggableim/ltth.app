@@ -5,6 +5,7 @@ This project is currently a local snapshot. There is no Git history in the works
 ## Core Rules
 
 - Read `AGENTS.md` before work.
+- Use `Loggableim/ltth.app` as the canonical GitHub repository and `https://ltth.app` as the canonical website. See `REPOSITORY_IDENTITY.md`.
 - Treat `app/` as the runtime source of truth.
 - Keep changes scoped.
 - Do not reintroduce stale Electron assumptions unless Electron is explicitly restored.

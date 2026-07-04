@@ -8,6 +8,15 @@ This workspace is a local LTTH snapshot prepared for future development before p
 
 It does not contain Git metadata and currently does not contain the old Electron main-process source folder.
 
+Canonical project identity:
+
+- Product/site: `ltth.app`
+- GitHub repository: `Loggableim/ltth.app`
+- Repository URL: `https://github.com/Loggableim/ltth.app`
+- Website: `https://ltth.app`
+
+Do not confuse this snapshot with older LTTH repositories or stale archive references. `REPOSITORY_IDENTITY.md` is the canonical identity marker.
+
 ## Current Source Of Truth
 
 - Runtime app: `app/`
@@ -16,6 +25,7 @@ It does not contain Git metadata and currently does not contain the old Electron
 - Backend package: `app/package.json`
 - Root helper package: `package.json`
 - Plugin manifests: `app/plugins/*/plugin.json`
+- Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
 
 ## Dependency State
@@ -44,6 +54,7 @@ The root package has no dependency tree on purpose. It only forwards commands in
 - Electron-specific source files are missing. Any future desktop shell work needs a deliberate Electron restoration task.
 - The old root `package-lock.json` described a stale Electron package and was removed.
 - Historical docs in `docs_archive/` may mention removed paths, old plugin names, previous architecture, and obsolete release processes.
+- Historical docs may mention old repository identities such as `Loggableim/pupcidslittletiktoolhelper_desktop` or `mycommunity/ltth.app`; those are not current.
 - Some app/wiki pages may still be user-facing historical copy and should be updated feature-by-feature when touched.
 - The active Jest suite is currently test-green. Treat future failures as new regressions or environmental drift and investigate them from current output.
 
