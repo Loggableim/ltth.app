@@ -7,6 +7,7 @@
 Use these first:
 
 - `README.md`
+- `REPOSITORY_IDENTITY.md`
 - `AGENTS.md`
 - `DOCUMENTATION_INDEX.md`
 - `docs/SNAPSHOT_STATUS.md`
@@ -19,6 +20,7 @@ Use these first:
 ## Archive Rules
 
 - Do not cite `docs_archive/` as current behavior without verifying the code.
+- Do not use repository names from `docs_archive/` as current identity. The active identity is `Loggableim/ltth.app` and `https://ltth.app`.
 - Do not update archive files for ordinary feature work.
 - If an archived document contains still-useful information, promote the relevant part into an active doc and leave the archive unchanged.
 - If a future cleanup deletes the archive, first confirm that no active docs link to the deleted files.
@@ -32,3 +34,4 @@ Archive files may mention:
 - Removed or renamed plugin directories.
 - GitHub workflows that no longer match this snapshot.
 - Electron/NW.js/Tauri migration experiments.
+- Old repository names such as `Loggableim/pupcidslittletiktoolhelper_desktop` or `mycommunity/ltth.app`.

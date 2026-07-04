@@ -1,7 +1,7 @@
 {
   "name": "ltth.app-snapshot",
   "version": "1.3.9",
-  "description": "PupCid's Little TikTool Helper snapshot - backend app plus Windows launcher sources",
+  "description": "ltth.app snapshot for Loggableim/ltth.app - runtime app, website assets, and Windows launcher sources",
   "private": true,
   "license": "CC-BY-NC-4.0",
   "scripts": {
@@ -31,6 +31,7 @@
     "plugins"
   ],
   "notes": {
+    "repository": "Canonical GitHub repository is Loggableim/ltth.app; website is https://ltth.app. Do not use old LTTH repo names from archived docs.",
     "snapshot": "This workspace is not a Git checkout and currently does not include the Electron main-process folder. Use app/package.json for Node dependencies.",
     "install": "Run npm install in app/ before starting the backend."
   }

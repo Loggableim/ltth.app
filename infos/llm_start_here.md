@@ -6,6 +6,15 @@ This is the current technical entry point for agents working on the LTTH snapsho
 
 LTTH is a local TikTok LIVE helper with a Node.js backend, Socket.IO realtime layer, SQLite persistence, static frontend assets, OBS overlays, event automation, and a plugin ecosystem.
 
+Canonical identity:
+
+- Project/site: `ltth.app`
+- GitHub repository: `Loggableim/ltth.app`
+- Repository URL: `https://github.com/Loggableim/ltth.app`
+- Website: `https://ltth.app`
+
+If older repo names appear in archive files, generated reports, comments, or paths, do not use them for current GitHub work. `REPOSITORY_IDENTITY.md` is the canonical identity marker.
+
 This workspace is a local snapshot:
 
 - No `.git` directory is present.
@@ -17,9 +26,10 @@ This workspace is a local snapshot:
 Before making changes, read:
 
 1. `AGENTS.md`
-2. `docs/SNAPSHOT_STATUS.md`
-3. this file
-4. the module or plugin you will edit
+2. `REPOSITORY_IDENTITY.md`
+3. `docs/SNAPSHOT_STATUS.md`
+4. this file
+5. the module or plugin you will edit
 
 ## Runtime Shape
 

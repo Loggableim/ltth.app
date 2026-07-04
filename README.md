@@ -2,6 +2,9 @@
 
 This repository contains both the LTTH runtime application and the official ltth.app website assets/docs in a single workspace snapshot.
 
+- Canonical GitHub repo: `Loggableim/ltth.app`
+- Canonical repo URL: https://github.com/Loggableim/ltth.app
+- Official website: https://ltth.app
 - Runtime app: `app/`
 - Website + marketing pages: repository root (root html/css/js/assets)
 - Launcher build sources: `build-src/`
@@ -10,6 +13,7 @@ This repository contains both the LTTH runtime application and the official ltth
 ## Current project shape
 
 - This is not a legacy Git checkout: no `.git` folder is included in this snapshot.
+- If older repo names appear in archived docs or generated reports, ignore them for current work. The active repo identity is documented in [REPOSITORY_IDENTITY.md](REPOSITORY_IDENTITY.md).
 - The root `package.json` is a convenience wrapper that delegates common commands into `app/`.
 - The old Electron main-process folder is intentionally not present in this snapshot.
 - The maintained runtime source is `app/`.
@@ -64,6 +68,7 @@ npm run lint
 - Issues: https://github.com/Loggableim/ltth.app/issues
 - App/runtime docs: [app/wiki/Getting-Started.md](app/wiki/Getting-Started.md)
 - Developer orientation:
+  - [REPOSITORY_IDENTITY.md](REPOSITORY_IDENTITY.md)
   - [AGENTS.md](AGENTS.md)
   - [infos/llm_start_here.md](infos/llm_start_here.md)
   - [docs/SNAPSHOT_STATUS.md](docs/SNAPSHOT_STATUS.md)

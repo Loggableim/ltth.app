@@ -4,6 +4,7 @@ This file is the first stop for future agents working on this LTTH snapshot.
 
 ## Snapshot Facts
 
+- Canonical project identity: `ltth.app`, GitHub `Loggableim/ltth.app`, website `https://ltth.app`. Read `REPOSITORY_IDENTITY.md` before using repository names or GitHub links.
 - This workspace is not a Git checkout. Do not rely on `git status`, branches, tags, or commit history until the owner uploads it to GitHub.
 - The maintained runtime is `app/`.
 - Root `package.json` is only a convenience wrapper for `app/` commands and Go launcher builds.
@@ -14,8 +15,9 @@ This file is the first stop for future agents working on this LTTH snapshot.
 
 1. Read `docs/SNAPSHOT_STATUS.md`.
 2. Read `infos/llm_start_here.md`.
-3. Inspect the relevant module or plugin before changing it.
-4. If dependencies are not installed, assume `app/node_modules` is absent and do not run Node tests until `cd app && npm install` has been done.
+3. Read `REPOSITORY_IDENTITY.md` if your task touches repository names, clone URLs, GitHub links, releases, or docs that mention old repos.
+4. Inspect the relevant module or plugin before changing it.
+5. If dependencies are not installed, assume `app/node_modules` is absent and do not run Node tests until `cd app && npm install` has been done.
 
 ## Coding Rules
 

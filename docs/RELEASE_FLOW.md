@@ -2,9 +2,11 @@
 
 This document describes the complete release workflow for PupCid's Little TikTool Helper (LTTH), including how to prepare, execute, and verify releases using the automated release system.
 
+Canonical repository identity: `Loggableim/ltth.app` at `https://github.com/Loggableim/ltth.app`. Do not use older repository names from archived reports for release work.
+
 ## Overview
 
-The LTTH release system automates the process of deploying new versions from the build repository (`ltth.app`) to the website repository (`ltth.app`), ensuring that:
+The LTTH release system automates the process of staging built LTTH payloads inside the canonical `Loggableim/ltth.app` repository, where the same repository hosts the runtime release files and the public `ltth.app` website assets. This ensures that:
 
 - The Cloud-Installer always downloads the latest version from a fixed URL
 - Old versions are properly archived
@@ -51,9 +53,9 @@ ltth.app/
 
 ## Release Process
 
-### Step 1: Prepare Build in ltth.app
+### Step 1: Prepare Build
 
-In the separate build repository (`ltth.app`):
+In the canonical `Loggableim/ltth.app` workspace:
 
 1. Complete development work for the new version
 2. Run the build process to generate the application package
@@ -77,18 +79,18 @@ IMPROVEMENTS:
 - Optimized WebSocket connection handling
 ```
 
-### Step 2: Transfer Files to ltth.app
+### Step 2: Stage Files In ltth.app
 
-In the `ltth.app` repository:
+In the `Loggableim/ltth.app` repository:
 
 1. Create a new directory in `new_patch/` with the format `ltth_X.Y.Z/`
-2. Copy the files from the build repository:
+2. Copy the prepared release files into that directory:
 
 ```bash
 # Example for version 1.2.3
 mkdir -p new_patch/ltth_1.2.3/
-cp /path/to/build/ltth_1.2.3.zip new_patch/ltth_1.2.3/
-cp /path/to/build/changelog.txt new_patch/ltth_1.2.3/
+cp /path/to/prepared-release/ltth_1.2.3.zip new_patch/ltth_1.2.3/
+cp /path/to/prepared-release/changelog.txt new_patch/ltth_1.2.3/
 ```
 
 **Expected structure:**
