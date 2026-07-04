@@ -9,6 +9,11 @@ const {
     resolvePluginEntryPath
 } = require('./plugin-paths');
 
+function parseJsonText(text) {
+    const value = String(text || '');
+    return JSON.parse(value.charCodeAt(0) === 0xFEFF ? value.slice(1) : value);
+}
+
 /**
  * PluginAPI - Bereitgestellte API für Plugins
  * Ermöglicht sicheren Zugriff auf System-Funktionen
@@ -828,7 +833,7 @@ class PluginLoader extends EventEmitter {
                 return false;
             }
 
-            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
             if (!manifest.id || manifest.disabled === true) {
                 return false;
             }
@@ -859,7 +864,7 @@ class PluginLoader extends EventEmitter {
             }
 
             try {
-                const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
                 if (manifest.id) {
                     installedPluginIds.add(manifest.id);
                 }
@@ -960,7 +965,7 @@ class PluginLoader extends EventEmitter {
                     if (fs.existsSync(manifestPath)) {
                         try {
                             const manifestData = fs.readFileSync(manifestPath, 'utf8');
-                            const manifest = JSON.parse(manifestData);
+                            const manifest = parseJsonText(manifestData);
                             const pluginState = this.state[manifest.id] || {};
                             const isEnabled = pluginState.enabled !== undefined ? pluginState.enabled : manifest.enabled !== false;
                             if (!isEnabled) {
@@ -1011,7 +1016,7 @@ class PluginLoader extends EventEmitter {
 
             // Manifest laden
             const manifestData = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = JSON.parse(manifestData);
+            const manifest = parseJsonText(manifestData);
 
             // Validierung
             if (!manifest.id || !manifest.name || !manifest.entry) {

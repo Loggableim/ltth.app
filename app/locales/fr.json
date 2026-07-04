@@ -33,8 +33,8 @@
     "gcce": "Moteur de Commandes de Chat Global",
     "thermal_printer": "Imprimante Thermique",
     "config_import": "Importer la Configuration",
-    "plugin_manager": "Gestionnaire de Plugins",
-    "plugins": "Gestionnaire de Plugins",
+    "plugin_manager": "Plugin Store",
+    "plugins": "Plugin Store",
     "automations": "Automatisations",
     "overlays": "Superpositions",
     "effects": "Effets Interactifs",
@@ -253,7 +253,7 @@
     "enabling_plugin": "Activation...",
     "plugin_enabled_success": "Plugin activÃ© ! Redirection...",
     "plugin_enabled_error": "Ã‰chec de l'activation du plugin. Veuillez rÃ©essayer.",
-    "go_to_plugin_manager": "Aller au Gestionnaire de Plugins",
+    "go_to_plugin_manager": "Aller au Plugin Store",
     "rate_limit": "Trop de requÃªtes. Veuillez patienter un moment.",
     "plugin_load_failed_title": "Ã‰chec du Chargement du Plugin",
     "plugin_load_failed_heading": "âš ï¸ Ã‰chec du Chargement du Plugin",
@@ -337,7 +337,7 @@
     "play_mode_description_queue_per_gift": "Les mÃªmes types de cadeaux attendent, diffÃ©rents cadeaux peuvent Ãªtre jouÃ©s simultanÃ©ment."
   },
   "plugins": {
-    "title": "Gestionnaire de Plugins",
+    "title": "Plugin Store",
     "installed": "InstallÃ©s",
     "available": "Disponibles",
     "enabled": "ActivÃ©s",

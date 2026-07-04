@@ -43,7 +43,7 @@
     "viewer_xp": "Zuschauer XP",
     "weather_control": "Wetterkontrolle",
     "minecraft_connect": "Minecraft-Connect",
-    "plugin_manager": "Plugin-Manager",
+    "plugin_manager": "Plugin Store",
     "automations": "Automatisierungen",
     "overlays": "Overlays",
     "effects": "Interaktive Effekte",
@@ -55,7 +55,7 @@
     "thermal_printer": "Thermaldrucker",
     "config_import": "Konfiguration Importieren",
     "animazingpal": "AnimazingPal",
-    "plugins": "Plugin-Manager",
+    "plugins": "Plugin Store",
     "wiki": "Wiki",
     "settings": "Einstellungen",
     "toptier": "Top Tier",
@@ -335,7 +335,7 @@
     "sequential": "Sequenziell"
   },
   "plugins": {
-    "title": "Plugin-Manager",
+    "title": "Plugin Store",
     "installed": "Installiert",
     "available": "VerfÃ¼gbar",
     "enabled": "Aktiviert",
@@ -587,7 +587,7 @@
     "enabling_plugin": "Wird aktiviert...",
     "plugin_enabled_success": "Plugin aktiviert! Weiterleitung...",
     "plugin_enabled_error": "Plugin konnte nicht aktiviert werden. Bitte erneut versuchen.",
-    "go_to_plugin_manager": "Zum Plugin-Manager"
+    "go_to_plugin_manager": "Zum Plugin Store"
   },
   "tts": {
     "title": "Text-zu-Sprache",

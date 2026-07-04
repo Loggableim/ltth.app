@@ -54,8 +54,8 @@
     "thermal_printer": "Thermal Printer",
     "config_import": "Config Import",
     "animazingpal": "AnimazingPal",
-    "plugin_manager": "Plugin Manager",
-    "plugins": "Plugin Manager",
+    "plugin_manager": "Plugin Store",
+    "plugins": "Plugin Store",
     "wiki": "Wiki",
     "settings": "Settings",
     "toptier": "Top Tier",
@@ -335,7 +335,7 @@
     "sequential": "Sequential"
   },
   "plugins": {
-    "title": "Plugin Manager",
+    "title": "Plugin Store",
     "installed": "Installed",
     "available": "Available",
     "enabled": "Enabled",
@@ -587,7 +587,7 @@
     "enabling_plugin": "Enabling...",
     "plugin_enabled_success": "Plugin enabled! Redirecting...",
     "plugin_enabled_error": "Failed to enable plugin. Please try again.",
-    "go_to_plugin_manager": "Go to Plugin Manager"
+    "go_to_plugin_manager": "Go to Plugin Store"
   },
   "tts": {
     "title": "Text-to-Speech",

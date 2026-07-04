@@ -3,6 +3,7 @@ const path = require('path');
 const multer = require('multer');
 const { getRootLogsDir } = require('../modules/log-paths');
 const { extract } = require('zip-lib');
+const { PluginStore } = require('../modules/plugin-store');
 const {
     assertPluginId,
     resolvePluginChildPath,
@@ -15,6 +16,7 @@ const {
 function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger, io = null, pluginLimiter = null) {
     // Use pluginLimiter if provided, otherwise fall back to apiLimiter
     const limiter = pluginLimiter || apiLimiter;
+    const pluginStore = new PluginStore(pluginLoader, { logger });
     // Multer für ZIP-Upload konfigurieren
     const pluginUploadDir = path.join(__dirname, '..', 'plugins', '_uploads');
     if (!fs.existsSync(pluginUploadDir)) {
@@ -43,6 +45,133 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
         }
     });
 
+    function parseJsonText(text) {
+        const value = String(text || '');
+        return JSON.parse(value.charCodeAt(0) === 0xFEFF ? value.slice(1) : value);
+    }
+
+    /**
+     * GET /api/plugin-store - List official store plugins and opt-in community plugins.
+     */
+    app.get('/api/plugin-store', limiter, async (req, res) => {
+        try {
+            const store = await pluginStore.listPlugins({
+                locale: req.query.locale || 'en',
+                forceRefresh: req.query.refresh === 'true'
+            });
+
+            res.json({
+                success: true,
+                ...store
+            });
+        } catch (error) {
+            logger.error(`Failed to list plugin store: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * GET /api/plugin-store/sources - List configured store sources.
+     */
+    app.get('/api/plugin-store/sources', limiter, (req, res) => {
+        try {
+            res.json({
+                success: true,
+                ...pluginStore.getSourceState()
+            });
+        } catch (error) {
+            logger.error(`Failed to list plugin store sources: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * POST /api/plugin-store/community/enable - Opt in to community plugin sources.
+     */
+    app.post('/api/plugin-store/community/enable', limiter, (req, res) => {
+        try {
+            res.json({
+                success: true,
+                ...pluginStore.enableCommunitySources()
+            });
+        } catch (error) {
+            logger.error(`Failed to enable community plugin sources: ${error.message}`);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * POST /api/plugin-store/sources - Add a community registry source.
+     */
+    app.post('/api/plugin-store/sources', limiter, (req, res) => {
+        try {
+            const sourceState = pluginStore.addCommunitySource(req.body || {});
+            res.json({
+                success: true,
+                ...sourceState
+            });
+        } catch (error) {
+            logger.error(`Failed to add plugin store source: ${error.message}`);
+            res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * DELETE /api/plugin-store/sources/:id - Remove a community registry source.
+     */
+    app.delete('/api/plugin-store/sources/:id', limiter, (req, res) => {
+        try {
+            const sourceState = pluginStore.removeCommunitySource(req.params.id);
+            res.json({
+                success: true,
+                ...sourceState
+            });
+        } catch (error) {
+            logger.error(`Failed to remove plugin store source: ${error.message}`);
+            res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
+    /**
+     * POST /api/plugin-store/:sourceId/:pluginId/install - Install from a registry source.
+     */
+    app.post('/api/plugin-store/:sourceId/:pluginId/install', limiter, async (req, res) => {
+        try {
+            const plugin = await pluginStore.installPlugin(req.params.sourceId, req.params.pluginId);
+
+            if (io) {
+                io.emit('plugins:changed', { action: 'installed', pluginId: plugin.id });
+            }
+
+            res.json({
+                success: true,
+                message: `Plugin ${plugin.id} installed`,
+                plugin
+            });
+        } catch (error) {
+            logger.error(`Failed to install plugin from store: ${error.message}`);
+            res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
     /**
      * GET /api/plugins - Liste aller Plugins
      * Query parameters:
@@ -66,7 +195,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     if (fs.existsSync(manifestPath)) {
                         try {
                             const manifestData = fs.readFileSync(manifestPath, 'utf8');
-                            const manifest = JSON.parse(manifestData);
+                            const manifest = parseJsonText(manifestData);
 
                             // Skip plugins that are marked as disabled in plugin.json
                             if (manifest.disabled === true) {
@@ -255,7 +384,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
 
             // Manifest validieren
             const manifestData = fs.readFileSync(manifestPath, 'utf8');
-            const manifest = JSON.parse(manifestData);
+            const manifest = parseJsonText(manifestData);
 
             if (!manifest.id || !manifest.name || !manifest.entry) {
                 // Cleanup

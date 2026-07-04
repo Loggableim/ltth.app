@@ -32,8 +32,8 @@
     "gcce": "Motor de Comandos de Chat Global",
     "thermal_printer": "Impresora TÃ©rmica",
     "config_import": "Importar ConfiguraciÃ³n",
-    "plugin_manager": "Gestor de Plugins",
-    "plugins": "Gestor de Plugins",
+    "plugin_manager": "Plugin Store",
+    "plugins": "Plugin Store",
     "automations": "Automatizaciones",
     "overlays": "Superposiciones",
     "effects": "Efectos Interactivos",
@@ -253,7 +253,7 @@
     "enabling_plugin": "Activando...",
     "plugin_enabled_success": "Â¡Plugin activado! Redirigiendo...",
     "plugin_enabled_error": "Error al activar el plugin. Por favor, intÃ©ntalo de nuevo.",
-    "go_to_plugin_manager": "Ir al Gestor de Plugins",
+    "go_to_plugin_manager": "Ir al Plugin Store",
     "rate_limit": "Demasiadas solicitudes. Por favor, espere un momento.",
     "plugin_load_failed_title": "Error al Cargar el Plugin",
     "plugin_load_failed_heading": "âš ï¸ Error al Cargar el Plugin",
@@ -337,7 +337,7 @@
     "play_mode_description_queue_per_gift": "Los mismos tipos de regalos esperan, diferentes regalos pueden reproducirse simultÃ¡neamente."
   },
   "plugins": {
-    "title": "Gestor de Plugins",
+    "title": "Plugin Store",
     "installed": "Instalados",
     "available": "Disponibles",
     "enabled": "Habilitados",

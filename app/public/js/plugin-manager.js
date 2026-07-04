@@ -12,11 +12,32 @@ async function checkPluginsAndUpdateUI() {
 class PluginManager {
     constructor() {
         this.plugins = [];
+        this.storePlugins = [];
+        this.storeSources = [];
+        this.storeErrors = [];
+        this.storeNotices = [];
+        this.communityEnabled = false;
         this.filteredPlugins = [];
+        this.filteredStorePlugins = [];
         this.currentFilter = 'all';
         this.currentSort = 'name';
         this.searchQuery = '';
         this.compactMode = false;
+        this.currentTab = 'store';
+        this.currentStoreMode = 'store';
+        this.currentStoreCategory = 'all';
+        this.selectedStorePlugin = null;
+        this.storeCategories = [
+            { id: 'all', label: 'All' },
+            { id: 'featured', label: 'Featured' },
+            { id: 'overlays', label: 'Overlays' },
+            { id: 'audio', label: 'Audio & TTS' },
+            { id: 'games', label: 'Games' },
+            { id: 'automation', label: 'Automation' },
+            { id: 'integrations', label: 'Integrations' },
+            { id: 'utilities', label: 'Utilities' },
+            { id: 'open-beta', label: 'Open Beta' }
+        ];
         this.devStatusFilters = {
             'stable': true,
             'working-beta': true,
@@ -32,6 +53,9 @@ class PluginManager {
         const uploadBtn = document.getElementById('upload-plugin-btn');
         const fileInput = document.getElementById('plugin-file-input');
         const reloadBtn = document.getElementById('reload-plugins-btn');
+        const modeBtns = document.querySelectorAll('.plugin-mode-btn, .plugin-tab-btn');
+        const enableCommunityBtn = document.getElementById('enable-community-store-btn');
+        const addCommunityBtn = document.getElementById('add-community-source-btn');
 
         if (uploadBtn) {
             uploadBtn.addEventListener('click', () => {
@@ -49,6 +73,26 @@ class PluginManager {
             reloadBtn.addEventListener('click', () => {
                 this.reloadAllPlugins();
             });
+        }
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.setStoreMode(btn.getAttribute('data-plugin-mode') || btn.getAttribute('data-plugin-tab'));
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                this.closeStorePluginDetail();
+            }
+        });
+
+        if (enableCommunityBtn) {
+            enableCommunityBtn.addEventListener('click', () => this.enableCommunitySources());
+        }
+
+        if (addCommunityBtn) {
+            addCommunityBtn.addEventListener('click', () => this.addCommunitySource());
         }
 
         // Search functionality
@@ -128,9 +172,16 @@ class PluginManager {
 
         // Note: Plugin loading is now triggered by navigation.js handleViewChange()
         // when switching to the plugins view
+        this.updateStoreModeControls();
+        this.renderStoreCategoryChips();
     }
 
     applyFiltersAndSort() {
+        if (this.currentStoreMode !== 'installed') {
+            this.applyStoreFiltersAndSort();
+            return;
+        }
+
         // Apply search filter
         let filtered = this.plugins.filter(plugin => {
             if (this.searchQuery) {
@@ -179,6 +230,69 @@ class PluginManager {
         this.renderPlugins();
     }
 
+    applyStoreFiltersAndSort() {
+        if (this.currentStoreMode === 'sources') {
+            this.filteredStorePlugins = [];
+            this.renderStoreShell();
+            return;
+        }
+
+        let filtered = this.getStorePluginsForCurrentMode().filter(plugin => {
+            if (this.searchQuery) {
+                const searchStr = `${plugin.name} ${plugin.description} ${plugin.id} ${plugin.author} ${plugin.category} ${plugin.sourceName}`.toLowerCase();
+                if (!searchStr.includes(this.searchQuery)) {
+                    return false;
+                }
+            }
+
+            if (this.currentStoreMode === 'store' && this.currentStoreCategory !== 'all') {
+                return this.storePluginMatchesCategory(plugin, this.currentStoreCategory);
+            }
+
+            return true;
+        });
+
+        filtered.sort((a, b) => {
+            switch (this.currentSort) {
+                case 'status':
+                    return (b.installed ? 1 : 0) - (a.installed ? 1 : 0);
+                case 'type':
+                    return (a.category || '').localeCompare(b.category || '');
+                case 'author':
+                    return (a.author || '').localeCompare(b.author || '');
+                case 'name':
+                default:
+                    return a.name.localeCompare(b.name);
+            }
+        });
+
+        this.filteredStorePlugins = filtered;
+        this.renderStoreShell();
+    }
+
+    setTab(tab) {
+        this.setStoreMode(tab === 'store' ? 'store' : 'installed');
+    }
+
+    setStoreMode(mode) {
+        const nextMode = ['store', 'installed', 'updates', 'sources'].includes(mode) ? mode : 'store';
+        this.currentStoreMode = nextMode;
+        this.currentTab = nextMode;
+
+        document.querySelectorAll('.plugin-mode-btn, .plugin-tab-btn').forEach(btn => {
+            const btnMode = btn.getAttribute('data-plugin-mode') || btn.getAttribute('data-plugin-tab');
+            const isActive = btnMode === this.currentStoreMode;
+            btn.classList.toggle('active', isActive);
+            btn.style.background = isActive ? 'var(--color-active-bg)' : 'var(--color-bg-secondary)';
+            btn.style.borderColor = isActive ? 'var(--color-active-border)' : 'var(--color-border)';
+            btn.style.color = isActive ? 'var(--color-accent-primary)' : 'var(--color-text-muted)';
+        });
+
+        this.updateStoreModeControls();
+
+        this.applyFiltersAndSort();
+    }
+
     /**
      * Lädt alle Plugins vom Server
      */
@@ -191,6 +305,7 @@ class PluginManager {
             if (data.success) {
                 this.plugins = data.plugins;
                 this.updateStats();
+                await this.loadStorePlugins(false);
                 this.applyFiltersAndSort();
             } else {
                 const errorMsg = window.i18n ? window.i18n.t('plugins.load_error', { error: data.error }) : 'Error loading plugins: ' + data.error;
@@ -201,6 +316,169 @@ class PluginManager {
             const errorMsg = window.i18n ? window.i18n.t('plugins.load_error', { error: error.message }) : 'Error loading plugins: ' + error.message;
             this.showError(errorMsg);
         }
+    }
+
+    async loadStorePlugins(showErrors = true) {
+        try {
+            const locale = window.i18n?.currentLocale || localStorage.getItem('app_locale') || 'en';
+            const response = await fetch(`/api/plugin-store?locale=${encodeURIComponent(locale)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.storePlugins = data.plugins || [];
+                this.storeSources = data.sources || [];
+                this.storeErrors = data.errors || [];
+                this.storeNotices = data.notices || [];
+                this.communityEnabled = data.communityEnabled === true;
+                this.updateCommunityPanel();
+            } else if (showErrors) {
+                this.showError(data.error || 'Plugin store could not be loaded');
+            }
+        } catch (error) {
+            console.error('Error loading plugin store:', error);
+            if (showErrors) {
+                this.showError('Error loading plugin store: ' + error.message);
+            }
+        }
+    }
+
+    updateCommunityPanel() {
+        const disabledPanel = document.getElementById('plugin-community-disabled');
+        const enabledPanel = document.getElementById('plugin-community-enabled');
+
+        if (disabledPanel) {
+            disabledPanel.style.display = this.communityEnabled ? 'none' : 'flex';
+        }
+
+        if (enabledPanel) {
+            enabledPanel.style.display = this.communityEnabled ? 'block' : 'none';
+        }
+
+        this.renderSourcesPanel();
+    }
+
+    updateStoreModeControls() {
+        const installedMode = this.currentStoreMode === 'installed';
+        const sourcesMode = this.currentStoreMode === 'sources';
+        const storeMode = this.currentStoreMode === 'store';
+
+        ['upload-plugin-btn', 'reload-plugins-btn', 'compact-mode-toggle'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.style.display = installedMode ? '' : 'none';
+        });
+
+        document.querySelectorAll('.plugin-filter-btn').forEach(btn => {
+            btn.style.display = installedMode ? '' : 'none';
+        });
+
+        document.querySelectorAll('.dev-status-filter').forEach(input => {
+            const label = input.closest('label');
+            if (label) label.style.display = installedMode ? 'flex' : 'none';
+        });
+
+        const devStatusLabel = Array.from(document.querySelectorAll('span'))
+            .find(span => span.textContent && span.textContent.trim() === 'Dev Status:');
+        if (devStatusLabel && devStatusLabel.parentElement) {
+            devStatusLabel.parentElement.style.display = installedMode ? 'flex' : 'none';
+        }
+
+        const categoryChips = document.getElementById('plugin-store-category-chips');
+        if (categoryChips) {
+            categoryChips.style.display = storeMode ? 'flex' : 'none';
+        }
+
+        const sourcesPanel = document.getElementById('plugin-store-sources-panel');
+        if (sourcesPanel) {
+            sourcesPanel.style.display = sourcesMode ? 'block' : 'none';
+        }
+
+        const pluginsContainer = document.getElementById('plugins-container');
+        if (pluginsContainer) {
+            pluginsContainer.style.display = sourcesMode ? 'none' : '';
+        }
+    }
+
+    getStorePluginsForCurrentMode() {
+        if (this.currentStoreMode === 'updates') {
+            return this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable);
+        }
+        return this.storePlugins;
+    }
+
+    storePluginMatchesCategory(plugin, category) {
+        const categoryText = `${plugin.category || ''} ${plugin.type || ''}`.toLowerCase();
+        const id = String(plugin.id || '').toLowerCase();
+        const badges = Array.isArray(plugin.badges) ? plugin.badges : [];
+
+        if (category === 'featured') return this.isFeaturedStorePlugin(plugin);
+        if (category === 'open-beta') return plugin.channel === 'open-beta' || badges.includes('open-beta');
+        if (category === 'audio') return /audio|tts|sound|music|stt|voice/.test(`${categoryText} ${id}`);
+        if (category === 'games') return /game|quiz|battle|story|tier|leaderboard/.test(`${categoryText} ${id}`);
+        if (category === 'automation') return /automation|timer|milestone|goal|event|bot/.test(`${categoryText} ${id}`);
+        if (category === 'integrations') return /integration|bridge|api|osc|minecraft|vdoninja|openshock|connect/.test(`${categoryText} ${id}`);
+        if (category === 'overlays') return /overlay|hud|emoji|rain|firework|flame|ticker|spotlight|avatar|head/.test(`${categoryText} ${id}`);
+        if (category === 'utilities') {
+            return !['audio', 'games', 'automation', 'integrations', 'overlays', 'open-beta']
+                .some(otherCategory => this.storePluginMatchesCategory(plugin, otherCategory));
+        }
+        return true;
+    }
+
+    isFeaturedStorePlugin(plugin) {
+        const id = String(plugin.id || '').toLowerCase();
+        return plugin.installed || ['chatango', 'goals', 'lastevent-spotlight', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain'].includes(id);
+    }
+
+    renderStoreCategoryChips() {
+        const container = document.getElementById('plugin-store-category-chips');
+        if (!container) return;
+
+        container.innerHTML = this.storeCategories.map(category => {
+            const active = category.id === this.currentStoreCategory;
+            return `
+                <button class="plugin-store-category-chip" data-store-category="${category.id}" style="padding: 0.55rem 0.85rem; border-radius: 999px; border: 1px solid ${active ? 'var(--color-active-border)' : 'var(--color-border)'}; background: ${active ? 'var(--color-active-bg)' : 'var(--color-bg-secondary)'}; color: ${active ? 'var(--color-accent-primary)' : 'var(--color-text-muted)'}; font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
+                    ${this.escapeHtml(category.label)}
+                </button>
+            `;
+        }).join('');
+
+        container.querySelectorAll('[data-store-category]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.currentStoreCategory = btn.getAttribute('data-store-category') || 'all';
+                this.applyStoreFiltersAndSort();
+            });
+        });
+    }
+
+    renderSourcesPanel() {
+        const sourceList = document.getElementById('plugin-store-source-list');
+        const errorBox = document.getElementById('plugin-store-source-errors');
+
+        if (errorBox) {
+            if (this.storeErrors.length > 0) {
+                errorBox.style.display = 'block';
+                errorBox.innerHTML = this.storeErrors.map(error => `
+                    <div style="padding: 0.75rem 1rem; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12); border-radius: 8px; color: #fbbf24; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        ${this.escapeHtml(error.message || error.error || 'A store source could not be loaded.')}
+                    </div>
+                `).join('');
+            } else {
+                errorBox.style.display = 'none';
+                errorBox.innerHTML = '';
+            }
+        }
+
+        if (!sourceList) return;
+
+        const sources = this.storeSources || [];
+        sourceList.innerHTML = sources.length === 0
+            ? '<div style="color: var(--color-text-muted); font-size: 0.9rem;">No community sources added yet.</div>'
+            : sources.map(source => `
+                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 0.85rem; background: var(--color-bg-secondary);">
+                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px;">${this.escapeHtml(source.name || source.id)}</div>
+                    <div style="font-size: 0.78rem; color: var(--color-text-muted); font-family: monospace; overflow-wrap: anywhere;">${this.escapeHtml(source.url || '')}</div>
+                </div>
+            `).join('');
     }
 
     /**
@@ -226,6 +504,11 @@ class PluginManager {
     renderPlugins() {
         const container = document.getElementById('plugins-container');
         if (!container) return;
+
+        if (this.currentStoreMode !== 'installed') {
+            this.renderStoreShell();
+            return;
+        }
 
         if (this.filteredPlugins.length === 0) {
             const message = this.searchQuery || this.currentFilter !== 'all'
@@ -255,13 +538,391 @@ class PluginManager {
         }
     }
 
+    renderStoreShell() {
+        const container = document.getElementById('plugins-container');
+        if (!container) return;
+
+        this.updateStoreModeControls();
+        this.renderStoreCategoryChips();
+        if (this.currentStoreMode === 'sources') {
+            this.renderSourcesPanel();
+            return;
+        }
+
+        container.className = '';
+
+        const errorsHtml = this.storeErrors.length > 0 && this.currentStoreMode === 'store'
+            ? `<div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12); border-radius: 8px; color: #fbbf24; font-size: 0.9rem;">Some community store sources could not be loaded. Check Sources for details.</div>`
+            : '';
+        const headerHtml = this.renderStoreHeader();
+        const showFeatured = this.currentStoreMode === 'store' && !this.searchQuery && this.currentStoreCategory === 'all';
+        const featuredPlugins = showFeatured ? this.getFeaturedStorePlugins() : [];
+        const featuredKeys = new Set(featuredPlugins.map(plugin => `${plugin.sourceId}:${plugin.id}`));
+        const gridPlugins = showFeatured
+            ? this.filteredStorePlugins.filter(plugin => !featuredKeys.has(`${plugin.sourceId}:${plugin.id}`))
+            : this.filteredStorePlugins;
+        const featuredHtml = showFeatured ? this.renderFeaturedStoreRow(featuredPlugins) : '';
+
+        if (this.filteredStorePlugins.length === 0) {
+            container.innerHTML = headerHtml + errorsHtml + `
+                <div class="text-center text-gray-400 py-12" style="border: 1px dashed var(--color-border); border-radius: 12px; background: var(--color-bg-card);">
+                    <i data-lucide="${this.currentStoreMode === 'updates' ? 'check-circle' : 'shopping-bag'}" style="width: 56px; height: 56px; margin: 0 auto 1rem; color: #60a5fa;"></i>
+                    <p class="text-lg">${this.currentStoreMode === 'updates' ? 'All plugins are up to date' : 'No plugins match this search'}</p>
+                    <p class="text-sm mt-2">${this.currentStoreMode === 'updates' ? 'Installed plugins do not have available store updates.' : 'Try another search term or category.'}</p>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
+        container.innerHTML = headerHtml + errorsHtml + featuredHtml + `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; align-items: stretch;">
+                ${gridPlugins.map(plugin => this.renderStorePlugin(plugin)).join('')}
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        this.bindStoreCardEvents(container);
+    }
+
+    renderStorePlugins() {
+        this.renderStoreShell();
+    }
+
+    renderStoreHeader() {
+        const total = this.storePlugins.length;
+        const installed = this.storePlugins.filter(plugin => plugin.installed).length;
+        const updates = this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable).length;
+        const title = this.currentStoreMode === 'updates' ? 'Plugin Updates' : 'Official LTTH Plugin Store';
+        const subtitle = this.currentStoreMode === 'updates'
+            ? 'Updates available from configured plugin sources.'
+            : 'Browse official LTTH plugins. Community repos stay hidden until you enable them in Sources.';
+
+        return `
+            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; color: var(--color-text-primary); font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">
+                        <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : 'shopping-bag'}" style="width: 20px; height: 20px; color: var(--color-accent-primary);"></i>
+                        ${title}
+                    </div>
+                    <div style="color: var(--color-text-muted); font-size: 0.9rem;">${subtitle}</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    ${this.renderStoreBadge(`${total} plugins`, 'package')}
+                    ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
+                    ${this.renderStoreBadge(`${updates} updates`, 'download')}
+                    ${this.renderStoreBadge(this.communityEnabled ? 'Community on' : 'Community off', 'users')}
+                </div>
+            </div>
+        `;
+    }
+
+    getFeaturedStorePlugins() {
+        return this.storePlugins.filter(plugin => this.isFeaturedStorePlugin(plugin)).slice(0, 4);
+    }
+
+    renderFeaturedStoreRow(featured = this.getFeaturedStorePlugins()) {
+        if (featured.length === 0) return '';
+
+        return `
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--color-text-primary); font-weight: 700; margin-bottom: 0.75rem;">
+                    <i data-lucide="sparkles" style="width: 18px; height: 18px; color: #fbbf24;"></i>
+                    Featured LTTH plugins
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem;">
+                    ${featured.map(plugin => this.renderStorePlugin(plugin, true)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderStorePlugin(plugin, compact = false) {
+        const action = this.getStorePluginAction(plugin);
+        const pricing = this.getStorePluginPricing(plugin);
+        const badgeHtml = this.renderStorePluginBadges(plugin);
+        const category = this.getStorePluginCategoryLabel(plugin);
+        const iconText = this.getStorePluginInitials(plugin);
+        const accent = this.getStorePluginAccent(plugin);
+
+        return `
+            <button type="button" class="plugin-store-card" data-store-card="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" style="text-align: left; width: 100%; min-height: ${compact ? '170px' : '220px'}; display: flex; flex-direction: column; gap: 0.85rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; padding: ${compact ? '0.9rem' : '1rem'}; cursor: pointer; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+                <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                    <div style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 12px; background: ${accent.background}; border: 1px solid ${accent.border}; display: flex; align-items: center; justify-content: center; color: ${accent.color}; font-weight: 800; font-size: 1rem;">
+                        ${this.escapeHtml(iconText)}
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="color: var(--color-text-primary); font-weight: 800; font-size: 1rem; line-height: 1.2; margin-bottom: 0.35rem; overflow-wrap: anywhere;">${this.escapeHtml(plugin.name || plugin.id)}</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${badgeHtml}</div>
+                    </div>
+                </div>
+                <div style="color: var(--color-text-muted); font-size: 0.88rem; line-height: 1.35; min-height: 2.4rem; overflow: hidden;">${this.escapeHtml(plugin.description || 'No description available')}</div>
+                <div style="margin-top: auto; display: flex; justify-content: space-between; gap: 0.75rem; align-items: end;">
+                    <div style="min-width: 0; color: var(--color-text-muted); font-size: 0.78rem;">
+                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px;"><i data-lucide="folder" style="width: 13px; height: 13px;"></i><span>${this.escapeHtml(category)}</span></div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
+                            <span style="font-family: monospace;">v${this.escapeHtml(plugin.version || '0.0.0')}</span>
+                            <span style="color: ${pricing.type === 'free' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${this.escapeHtml(pricing.label)}</span>
+                        </div>
+                    </div>
+                    <span data-store-action="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" style="display: inline-flex; align-items: center; gap: 6px; min-width: 94px; justify-content: center; padding: 0.55rem 0.7rem; border-radius: 8px; border: 1px solid ${action.disabled ? 'var(--color-border)' : 'rgba(16, 185, 129, 0.45)'}; background: ${action.disabled ? 'var(--color-bg-secondary)' : 'rgba(16, 185, 129, 0.16)'}; color: ${action.disabled ? 'var(--color-text-muted)' : '#34d399'}; font-size: 0.82rem; font-weight: 700;">
+                        <i data-lucide="${action.icon}" style="width: 15px; height: 15px;"></i>
+                        ${action.label}
+                    </span>
+                </div>
+            </button>
+        `;
+    }
+
+    bindStoreCardEvents(container) {
+        container.querySelectorAll('[data-store-card]').forEach(card => {
+            card.addEventListener('click', () => {
+                this.openStorePluginDetail(card.getAttribute('data-source-id'), card.getAttribute('data-plugin-id'));
+            });
+        });
+
+        container.querySelectorAll('[data-store-action]').forEach(action => {
+            action.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const plugin = this.findStorePlugin(action.getAttribute('data-source-id'), action.getAttribute('data-plugin-id'));
+                if (plugin) this.handleStorePluginAction(plugin);
+            });
+        });
+    }
+
+    findStorePlugin(sourceId, pluginId) {
+        return this.storePlugins.find(plugin => String(plugin.sourceId) === String(sourceId) && String(plugin.id) === String(pluginId));
+    }
+
+    getStorePluginAction(plugin) {
+        if (!plugin.packageUrl) {
+            if (plugin.catalogOnly === true) {
+                return { label: 'Catalog Only', icon: 'info', disabled: true };
+            }
+            return { label: 'Package missing', icon: 'package-x', disabled: true };
+        }
+        if (this.getStorePluginPricing(plugin).type === 'paid' && !plugin.owned) {
+            return { label: 'Buy', icon: 'shopping-cart', disabled: true };
+        }
+        if (plugin.installed && plugin.updateAvailable) {
+            return { label: 'Update', icon: 'download', disabled: false };
+        }
+        if (plugin.installed) {
+            return { label: 'Manage', icon: 'settings', disabled: false };
+        }
+        return { label: 'Install', icon: 'plus', disabled: false };
+    }
+
+    async handleStorePluginAction(plugin) {
+        if (!plugin.packageUrl) {
+            this.openStorePluginDetail(plugin.sourceId, plugin.id);
+            return;
+        }
+
+        if (this.getStorePluginPricing(plugin).type === 'paid' && !plugin.owned) {
+            this.openStorePluginDetail(plugin.sourceId, plugin.id);
+            return;
+        }
+
+        if (plugin.installed && !plugin.updateAvailable) {
+            this.currentStoreMode = 'installed';
+            this.setStoreMode('installed');
+            const searchInput = document.getElementById('plugin-search');
+            this.searchQuery = String(plugin.id || '').toLowerCase();
+            if (searchInput) searchInput.value = this.searchQuery;
+            this.applyFiltersAndSort();
+            return;
+        }
+
+        await this.installStorePlugin(plugin.sourceId, plugin.id);
+    }
+
+    getStorePluginPricing(plugin) {
+        const pricing = plugin.pricing || {};
+        if (pricing.type === 'paid') {
+            const amount = Number.isFinite(pricing.amount) ? pricing.amount : 0;
+            const currency = pricing.currency || 'EUR';
+            return {
+                type: 'paid',
+                amount,
+                currency,
+                label: amount > 0 ? `${(amount / 100).toFixed(2)} ${currency}` : `Paid ${currency}`
+            };
+        }
+
+        return {
+            type: 'free',
+            amount: 0,
+            currency: pricing.currency || 'EUR',
+            label: 'Free'
+        };
+    }
+
+    renderStoreBadge(label, icon) {
+        return `
+            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 0.4rem 0.65rem; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-muted); font-size: 0.78rem; white-space: nowrap;">
+                <i data-lucide="${icon}" style="width: 13px; height: 13px;"></i>
+                ${this.escapeHtml(label)}
+            </span>
+        `;
+    }
+
+    renderStorePluginBadges(plugin) {
+        const badges = [];
+        const rawBadges = Array.isArray(plugin.badges) ? plugin.badges : [];
+
+        badges.push(plugin.official
+            ? '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(59, 130, 246, 0.14); color: #60a5fa; font-size: 0.7rem;">Official</span>'
+            : '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Community</span>');
+
+        if (plugin.channel === 'open-beta' || rawBadges.includes('open-beta')) {
+            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Open Beta</span>');
+        }
+
+        if (plugin.installed) {
+            badges.push(`<span style="padding: 3px 8px; border-radius: 999px; background: rgba(34, 197, 94, 0.14); color: #22c55e; font-size: 0.7rem;">${plugin.updateAvailable ? 'Update' : 'Installed'}</span>`);
+        }
+
+        return badges.join('');
+    }
+
+    getStorePluginCategoryLabel(plugin) {
+        const category = String(plugin.category || plugin.type || 'utilities').toLowerCase();
+        const match = this.storeCategories.find(item => item.id !== 'all' && this.storePluginMatchesCategory(plugin, item.id));
+        if (match && match.id !== 'utilities') return match.label;
+        return category.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    getStorePluginInitials(plugin) {
+        const name = String(plugin.name || plugin.id || 'LT').trim();
+        const words = name.split(/\s+/).filter(Boolean);
+        if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+        return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
+    }
+
+    getStorePluginAccent(plugin) {
+        const category = this.getStorePluginCategoryLabel(plugin).toLowerCase();
+        if (category.includes('audio')) return { background: 'rgba(16, 185, 129, 0.14)', border: 'rgba(16, 185, 129, 0.35)', color: '#34d399' };
+        if (category.includes('game')) return { background: 'rgba(244, 114, 182, 0.14)', border: 'rgba(244, 114, 182, 0.35)', color: '#f472b6' };
+        if (category.includes('integration')) return { background: 'rgba(96, 165, 250, 0.14)', border: 'rgba(96, 165, 250, 0.35)', color: '#60a5fa' };
+        if (category.includes('overlay')) return { background: 'rgba(251, 191, 36, 0.14)', border: 'rgba(251, 191, 36, 0.35)', color: '#fbbf24' };
+        return { background: 'rgba(148, 163, 184, 0.14)', border: 'rgba(148, 163, 184, 0.35)', color: '#cbd5e1' };
+    }
+
+    openStorePluginDetail(sourceId, pluginId) {
+        const plugin = this.findStorePlugin(sourceId, pluginId);
+        if (!plugin) return;
+
+        this.selectedStorePlugin = plugin;
+        this.renderStorePluginDetail(plugin);
+    }
+
+    closeStorePluginDetail() {
+        const drawer = document.getElementById('plugin-store-detail-drawer');
+        if (!drawer) return;
+        drawer.style.display = 'none';
+        drawer.setAttribute('aria-hidden', 'true');
+        drawer.innerHTML = '';
+        this.selectedStorePlugin = null;
+    }
+
+    renderStorePluginDetail(plugin) {
+        const drawer = document.getElementById('plugin-store-detail-drawer');
+        if (!drawer) return;
+
+        const action = this.getStorePluginAction(plugin);
+        const pricing = this.getStorePluginPricing(plugin);
+        const category = this.getStorePluginCategoryLabel(plugin);
+        const badges = this.renderStorePluginBadges(plugin);
+        const screenshots = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
+            ? plugin.screenshots.map(src => `<img src="${this.escapeHtml(src)}" alt="" style="width: 100%; border-radius: 8px; border: 1px solid var(--color-border);">`).join('')
+            : '<div style="height: 120px; border: 1px dashed var(--color-border); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: 0.9rem;">No screenshots yet</div>';
+
+        drawer.style.display = 'block';
+        drawer.setAttribute('aria-hidden', 'false');
+        drawer.innerHTML = `
+            <div data-store-drawer-backdrop style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 1200;"></div>
+            <aside role="dialog" aria-modal="true" aria-label="${this.escapeHtml(plugin.name || plugin.id)} details" style="position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: var(--color-bg-primary); border-left: 1px solid var(--color-border); z-index: 1201; padding: 1.25rem; overflow-y: auto; box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);">
+                <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1rem;">
+                    <div>
+                        <div style="color: var(--color-text-primary); font-weight: 800; font-size: 1.35rem; margin-bottom: 0.45rem;">${this.escapeHtml(plugin.name || plugin.id)}</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${badges}</div>
+                    </div>
+                    <button type="button" data-store-drawer-close class="btn btn-ghost" style="padding: 0.55rem;">
+                        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </div>
+                <p style="color: var(--color-text-muted); line-height: 1.5; margin: 0 0 1rem;">${this.escapeHtml(plugin.description || 'No description available')}</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                    ${this.renderStoreDetailField('Version', `v${plugin.version || '0.0.0'}`)}
+                    ${this.renderStoreDetailField('Installed', plugin.installedVersion || (plugin.installed ? 'Yes' : 'No'))}
+                    ${this.renderStoreDetailField('Category', category)}
+                    ${this.renderStoreDetailField('Source', plugin.sourceName || plugin.sourceId || 'LTTH')}
+                    ${this.renderStoreDetailField('Author', plugin.author || 'Unknown')}
+                    ${this.renderStoreDetailField('Price', pricing.label)}
+                    ${this.renderStoreDetailField('Compatibility', plugin.minLtthVersion ? `LTTH ${plugin.minLtthVersion}+` : 'Current LTTH')}
+                </div>
+                ${plugin.channel === 'open-beta' ? '<div style="padding: 0.75rem; border-radius: 8px; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); color: #fbbf24; font-size: 0.9rem; margin-bottom: 1rem;">Open Beta: this plugin may change faster than stable plugins.</div>' : ''}
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 0.6rem;">Screenshots</div>
+                    <div style="display: grid; gap: 0.75rem;">${screenshots}</div>
+                </div>
+                <button type="button" data-store-drawer-action class="btn btn-primary" style="width: 100%; justify-content: center;" ${action.disabled ? 'disabled' : ''}>
+                    <i data-lucide="${action.icon}"></i>
+                    ${action.label}
+                </button>
+                ${!plugin.packageUrl ? '<div style="color: var(--color-text-muted); font-size: 0.82rem; margin-top: 0.6rem;">This store entry does not provide an install package yet.</div>' : ''}
+                ${pricing.type === 'paid' ? '<div style="color: var(--color-text-muted); font-size: 0.82rem; margin-top: 0.6rem;">Paid plugin checkout is reserved for a later store release.</div>' : ''}
+            </aside>
+        `;
+
+        drawer.querySelector('[data-store-drawer-backdrop]')?.addEventListener('click', () => this.closeStorePluginDetail());
+        drawer.querySelector('[data-store-drawer-close]')?.addEventListener('click', () => this.closeStorePluginDetail());
+        drawer.querySelector('[data-store-drawer-action]')?.addEventListener('click', () => this.handleStorePluginAction(plugin));
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    renderStoreDetailField(label, value) {
+        return `
+            <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 0.7rem; background: var(--color-bg-card); min-width: 0;">
+                <div style="color: var(--color-text-muted); font-size: 0.72rem; text-transform: uppercase; margin-bottom: 0.25rem;">${this.escapeHtml(label)}</div>
+                <div style="color: var(--color-text-primary); font-size: 0.88rem; overflow-wrap: anywhere;">${this.escapeHtml(value)}</div>
+            </div>
+        `;
+    }
+
+    renderInstalledHeader() {
+        return `
+            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; color: var(--color-text-primary); font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">
+                        <i data-lucide="hard-drive" style="width: 20px; height: 20px; color: var(--color-accent-primary);"></i>
+                        Installed Plugins
+                    </div>
+                    <div style="color: var(--color-text-muted); font-size: 0.9rem;">Manage local plugins, reload development work, upload ZIP packages, and review plugin status.</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    ${this.renderStoreBadge(`${this.plugins.length} total`, 'package')}
+                    ${this.renderStoreBadge(`${this.plugins.filter(plugin => plugin.enabled).length} active`, 'check-circle')}
+                    ${this.renderStoreBadge(`${this.plugins.filter(plugin => !plugin.enabled).length} inactive`, 'pause-circle')}
+                </div>
+            </div>
+        `;
+    }
+
     /**
      * Renders plugins in normal card view
      */
     renderPluginsNormal() {
         const container = document.getElementById('plugins-container');
         container.className = 'space-y-4';
-        container.innerHTML = this.filteredPlugins.map(plugin => this.renderPlugin(plugin)).join('');
+        container.innerHTML = this.renderInstalledHeader() + this.filteredPlugins.map(plugin => this.renderPlugin(plugin)).join('');
 
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
@@ -297,7 +958,7 @@ class PluginManager {
         const container = document.getElementById('plugins-container');
         container.className = '';
         
-        const tableHTML = `
+        const tableHTML = this.renderInstalledHeader() + `
             <table class="plugin-compact-table">
                 <thead>
                     <tr>
@@ -734,6 +1395,102 @@ class PluginManager {
         } catch (error) {
             console.error('Error reloading plugins:', error);
             this.showError('Fehler beim Neuladen: ' + error.message);
+        }
+    }
+
+    async installStorePlugin(sourceId, pluginId) {
+        try {
+            const plugin = this.storePlugins.find(item => item.sourceId === sourceId && item.id === pluginId);
+            if (plugin && plugin.community) {
+                const confirmMsg = `Install community plugin "${plugin.name}" from "${plugin.sourceName}"?`;
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+            }
+
+            this.showInfo('Installing plugin...');
+            const response = await fetch(`/api/plugin-store/${encodeURIComponent(sourceId)}/${encodeURIComponent(pluginId)}/install`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.showSuccess(`Plugin "${data.plugin.name}" installed`);
+                await this.loadPlugins();
+                await this.loadStorePlugins(false);
+                this.applyFiltersAndSort();
+                if (typeof checkPluginsAndUpdateUI === 'function') {
+                    await checkPluginsAndUpdateUI();
+                }
+            } else {
+                this.showError('Install failed: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error installing plugin:', error);
+            this.showError('Install failed: ' + error.message);
+        }
+    }
+
+    async enableCommunitySources() {
+        const confirmMsg = 'Enable community plugin sources? Only add registries you trust.';
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/plugin-store/community/enable', {
+                method: 'POST'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.communityEnabled = data.communityEnabled === true;
+                this.storeSources = data.sources || [];
+                this.updateCommunityPanel();
+                this.applyFiltersAndSort();
+                this.showSuccess('Community plugin sources enabled');
+            } else {
+                this.showError('Could not enable community sources: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error enabling community sources:', error);
+            this.showError('Could not enable community sources: ' + error.message);
+        }
+    }
+
+    async addCommunitySource() {
+        const idInput = document.getElementById('community-source-id');
+        const nameInput = document.getElementById('community-source-name');
+        const urlInput = document.getElementById('community-source-url');
+
+        const payload = {
+            id: idInput ? idInput.value.trim() : '',
+            name: nameInput ? nameInput.value.trim() : '',
+            url: urlInput ? urlInput.value.trim() : ''
+        };
+
+        try {
+            const response = await fetch('/api/plugin-store/sources', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                this.storeSources = data.sources || [];
+                if (idInput) idInput.value = '';
+                if (nameInput) nameInput.value = '';
+                if (urlInput) urlInput.value = '';
+                await this.loadStorePlugins(false);
+                this.applyFiltersAndSort();
+                this.showSuccess('Community source added');
+            } else {
+                this.showError('Could not add source: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error adding community source:', error);
+            this.showError('Could not add source: ' + error.message);
         }
     }
 

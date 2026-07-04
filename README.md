@@ -38,7 +38,7 @@ This repository contains the complete static website for **PupCid's Little TikTo
 - ⚡ **Event Automation (Flows)** - "If-Then" automation without programming
 - 🎥 **OBS Integration** - Full-HD overlay & WebSocket v5 scene control
 - 🎮 **VRChat OSC Support** - Avatar control via OSC protocol
-- 🔌 **Plugin System** - 7+ pre-installed plugins, create your own with Plugin API
+- 🔌 **Plugin Store** - core plugins pre-installed, official LTTH plugins installable on demand, community repos behind opt-in
 - 💾 **100% Local** - No cloud services, no login required, fully transparent
 
 ## 🎨 Branding
@@ -98,7 +98,7 @@ ltth.app/
 - ✅ OBS Integration via WebSocket v5
 - ✅ VRChat OSC Integration for avatar control
 - ✅ Multi-Profile System for different streaming setups
-- ✅ Plugin System with 7+ pre-installed plugins
+- ✅ Plugin Store with official LTTH registry support and opt-in community repositories
 
 ### Website Features
 - ✅ Beta status notice with GitHub issue links
