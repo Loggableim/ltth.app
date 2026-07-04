@@ -178,53 +178,10 @@ describe('Goals firework finale integration', () => {
     expect(fireworksPlugin.triggerFinale).toHaveBeenCalledTimes(1);
   });
 
-  test('prefers fireworks-dev and forwards bossfight finale settings when a goal is reached', () => {
+  test('turns goal progress milestones into stable firework triggers before the finale', () => {
     const sqlite = new Database(':memory:');
-    const stableFireworks = { triggerFinale: jest.fn() };
-    const devFireworks = { triggerFinale: jest.fn(), triggerFirework: jest.fn() };
-    const api = createApi(sqlite, new Map([
-      ['fireworks', stableFireworks],
-      ['fireworks-dev', devFireworks]
-    ]));
-    const plugin = new GoalsPlugin(api);
-
-    plugin.db.initialize();
-    const goal = plugin.db.createGoal({
-      id: 'goal_dev_bossfight',
-      name: 'Boss Goal',
-      goal_type: 'coin',
-      current_value: 0,
-      target_value: 10,
-      firework_enabled: 1,
-      firework_intensity: 6,
-      firework_duration: 9000,
-      firework_theme: 'celestial-titan',
-      firework_encounter_mode: 'raid',
-      firework_quality_profile: 'ultra',
-      firework_hud_label: 'Boss Goal'
-    });
-
-    const machine = plugin.stateMachineManager.getMachine(goal.id);
-    machine.initialize(goal);
-    plugin.setupStateMachineListeners(machine);
-
-    machine.updateValue(10, false);
-
-    expect(devFireworks.triggerFinale).toHaveBeenCalledWith(6, 9000, true, expect.objectContaining({
-      theme: 'celestial-titan',
-      encounterMode: 'raid',
-      qualityProfile: 'ultra',
-      ultimateTier: 'goal-finale',
-      hudLabel: 'Boss Goal Complete',
-      screenFxPreset: 'goal-finale'
-    }));
-    expect(stableFireworks.triggerFinale).not.toHaveBeenCalled();
-  });
-
-  test('turns goal progress milestones into bossfight charge-up attacks before the finale', () => {
-    const sqlite = new Database(':memory:');
-    const devFireworks = { triggerFinale: jest.fn(), triggerFirework: jest.fn() };
-    const api = createApi(sqlite, new Map([['fireworks-dev', devFireworks]]));
+    const fireworksPlugin = { triggerFinale: jest.fn(), triggerFirework: jest.fn() };
+    const api = createApi(sqlite, new Map([['fireworks', fireworksPlugin]]));
     const plugin = new GoalsPlugin(api);
 
     plugin.db.initialize();
@@ -236,8 +193,6 @@ describe('Goals firework finale integration', () => {
       target_value: 100,
       firework_enabled: 1,
       firework_intensity: 5,
-      firework_theme: 'neon-reactor',
-      firework_quality_profile: 'high',
       firework_progress_enabled: 1,
       firework_progress_milestones: '25,50,75'
     });
@@ -248,18 +203,20 @@ describe('Goals firework finale integration', () => {
 
     plugin.eventHandlers.setGoalValue(goal.id, 60);
 
-    expect(devFireworks.triggerFirework).toHaveBeenCalledTimes(2);
-    expect(devFireworks.triggerFirework).toHaveBeenNthCalledWith(1, expect.objectContaining({
+    expect(fireworksPlugin.triggerFirework).toHaveBeenCalledTimes(2);
+    expect(fireworksPlugin.triggerFirework).toHaveBeenNthCalledWith(1, expect.objectContaining({
       type: 'goal-progress',
-      theme: 'neon-reactor',
-      hudLabel: 'Charge Goal 25%'
+      shape: 'star',
+      reason: 'goal-progress',
+      bypassEnabled: true
     }));
-    expect(devFireworks.triggerFirework).toHaveBeenNthCalledWith(2, expect.objectContaining({
+    expect(fireworksPlugin.triggerFirework).toHaveBeenNthCalledWith(2, expect.objectContaining({
       type: 'goal-progress',
-      theme: 'neon-reactor',
-      hudLabel: 'Charge Goal 50%'
+      shape: 'star',
+      reason: 'goal-progress',
+      bypassEnabled: true
     }));
-    expect(devFireworks.triggerFinale).not.toHaveBeenCalled();
+    expect(fireworksPlugin.triggerFinale).not.toHaveBeenCalled();
   });
 
   test('keeps firework duration and intensity controls hidden until the checkbox is enabled', () => {
@@ -270,9 +227,6 @@ describe('Goals firework finale integration', () => {
     expect(uiHtml).toContain('id="goal-firework-options" style="display: none;"');
     expect(uiHtml).toContain('id="goal-firework-intensity"');
     expect(uiHtml).toContain('id="goal-firework-duration"');
-    expect(uiHtml).toContain('id="goal-firework-theme"');
-    expect(uiHtml).toContain('id="goal-firework-encounter"');
-    expect(uiHtml).toContain('id="goal-firework-quality"');
     expect(uiHtml).toContain('id="goal-firework-progress-enabled"');
     expect(uiHtml).toContain('id="goal-firework-progress-milestones"');
 
@@ -280,9 +234,6 @@ describe('Goals firework finale integration', () => {
     expect(uiJs).toContain('firework_enabled');
     expect(uiJs).toContain('firework_intensity');
     expect(uiJs).toContain('firework_duration');
-    expect(uiJs).toContain('firework_theme');
-    expect(uiJs).toContain('firework_encounter_mode');
-    expect(uiJs).toContain('firework_quality_profile');
     expect(uiJs).toContain('firework_progress_enabled');
     expect(uiJs).toContain('firework_progress_milestones');
   });

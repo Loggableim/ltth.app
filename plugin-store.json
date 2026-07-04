@@ -204,7 +204,7 @@
         "en": "Fireworks Superplugin (Stable)"
       },
       "description": {
-        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL/WebGPU rendering with Canvas 2D fallback for maximum compatibility."
+        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, interactive triggers, validated runtime settings, and streamer-safe backpressure for low-FPS or high-load OBS sessions."
       },
       "version": "2.0.0",
       "author": "Pup Cid",
@@ -213,27 +213,6 @@
       "badges": [],
       "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-2.0.0.zip",
       "sha256": "24cae3dc9cb1d040e3c425cf1d37b1257e7f6961f1c38bc30abce72ae24e67fa",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      }
-    },
-    {
-      "id": "fireworks-dev",
-      "name": {
-        "en": "Fireworks Dev Bossfight"
-      },
-      "description": {
-        "en": "Experimental bossfight-style fireworks overlay with WebGL2 scene themes, HUD gamification, and adaptive high-end effects."
-      },
-      "version": "2.0.0",
-      "author": "Pup Cid",
-      "category": "plugin",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/fireworks-dev-2.0.0.zip",
-      "sha256": "c6bed2bf2c9e8553ef5ee773d7cdeaf8d8d03a4acecdf8de60209987eb70fb67",
       "pricing": {
         "type": "free",
         "amount": 0,

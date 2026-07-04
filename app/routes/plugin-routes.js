@@ -247,25 +247,6 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 }
             }
 
-            const stableFireworks = allPlugins.find((plugin) => plugin.id === 'fireworks');
-            const devFireworks = allPlugins.find((plugin) => plugin.id === 'fireworks-dev');
-            const stableFireworksEnabled = stableFireworks?.enabled === true;
-            const devFireworksEnabled = devFireworks?.enabled === true;
-
-            if (devFireworks) {
-                devFireworks.conflictWith = stableFireworksEnabled ? 'fireworks' : null;
-                devFireworks.unavailableReason = stableFireworksEnabled && !devFireworks.enabled
-                    ? 'Stable fireworks is active. Disable it before enabling fireworks-dev.'
-                    : null;
-            }
-
-            if (stableFireworks) {
-                stableFireworks.conflictWith = devFireworksEnabled ? 'fireworks-dev' : null;
-                stableFireworks.unavailableReason = devFireworksEnabled && !stableFireworks.enabled
-                    ? 'fireworks-dev is active. Disable it before enabling stable fireworks.'
-                    : null;
-            }
-
             res.json({
                 success: true,
                 plugins: allPlugins

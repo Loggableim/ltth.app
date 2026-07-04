@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Fireworks Stability Pass**: Added validated configuration handling, sanitized trigger/finale/gift-mapping payloads, and centralized backpressure for safer OBS streaming during gift spam or low-FPS conditions.
+
+### Changed
+
+- **Fireworks Plugin**: Removed the obsolete `fireworks-dev` Bossfight variant from the app. Stable `fireworks` is now the maintained Fireworks plugin.
 
 ## [1.3.8] - 2026-07-03
 

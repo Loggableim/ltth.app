@@ -1,6 +1,6 @@
 # Snapshot Status
 
-Last reviewed: 2026-06-20
+Last reviewed: 2026-07-05
 
 ## Scope
 
@@ -71,7 +71,6 @@ The snapshot currently contains 36 plugin manifests:
 - config-import
 - data-source
 - fireworks
-- fireworks-dev
 - flame-overlay
 - game-engine
 - gcce
@@ -89,6 +88,7 @@ The snapshot currently contains 36 plugin manifests:
 - sidekick
 - soundboard
 - streamalchemy
+- stt-ticker
 - talking-heads
 - thermal-printer
 - toptier
