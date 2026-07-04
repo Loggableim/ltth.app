@@ -559,6 +559,35 @@ describe('Game Engine GCCE Integration', () => {
       }
     });
 
+    test('should assign player objects correctly when Connect4 challenge is accepted by viewer with streamerRole player2', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4,
+          streamerRole: 'player2'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(103, {
+        sessionId: 103,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(103, 'viewer456');
+
+      const game = plugin.activeSessions.get(103);
+      expect(game).toBeDefined();
+      expect(game.player1.username).toBe('viewer123');
+      expect(game.player2.username).toBe('viewer456');
+      expect(game.player1.role).toBe('viewer');
+      expect(game.player2.role).toBe('viewer');
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(103, 'viewer456', 'viewer');
+    });
+
     test('should ignore malformed challenge payload without gameType', () => {
       plugin.db = {
         getGameConfig: jest.fn(),
