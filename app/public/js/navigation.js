@@ -344,6 +344,12 @@
             item.style.setProperty('--sidebar-icon-accent', buildAccentColor(key));
             item.classList.add('sidebar-quick-icon-colored');
         });
+
+        document.querySelectorAll('.shortcut-card').forEach(item => {
+            const key = item.dataset.plugin || item.dataset.view || item.textContent || 'shortcut';
+            item.style.setProperty('--sidebar-icon-accent', buildAccentColor(key));
+            item.classList.add('shortcut-card-colored');
+        });
     }
 
     function toggleCategory(category, categoryId) {
