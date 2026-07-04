@@ -58,7 +58,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         });
 
         test('should have render method', () => {
-            expect(webglCode).toContain('render()');
+            expect(webglCode).toMatch(/render\s*\(/);
         });
 
         test('should have resize and destroy methods', () => {
@@ -104,7 +104,7 @@ describe('Fireworks WebGL Instanced Rendering', () => {
         test('should have renderWebGL method', () => {
             expect(engineCode).toContain('renderWebGL()');
             expect(engineCode).toContain('this.webglEngine.updateParticles');
-            expect(engineCode).toContain('this.webglEngine.render()');
+            expect(engineCode).toContain('this.webglEngine.render(this.width, this.height)');
         });
 
         test('should have renderCanvas method', () => {
