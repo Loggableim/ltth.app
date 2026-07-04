@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STT Ticker - Master</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #1d2135;
+      --panel-soft: #262b42;
+      --text: #ecf0ff;
+      --text-dim: #9aa1bf;
+      --accent: #4caf50;
+      --accent-2: #64b5f6;
+      --line: #2f3550;
+      --danger: #f44336;
+      --shadow: rgba(0,0,0,0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background: rgba(26, 31, 50, 0.95);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 10px var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #8effa1;
+    }
+
+    .sub {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #3a425f;
+      color: var(--text);
+    }
+
+    .btn:hover {
+      background: #454d6d;
+    }
+
+    .btn.accent {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn.accent:hover {
+      background: #2f9d44;
+    }
+
+    .btn.warn {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .tabs {
+      margin-top: 72px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 4px;
+      padding: 10px 10px 0;
+    }
+
+    .tab-btn {
+      border: 0;
+      border-radius: 8px 8px 0 0;
+      background: var(--panel-soft);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      cursor: pointer;
+      position: relative;
+      top: 1px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-2);
+      color: #0a0e18;
+    }
+
+    .frame-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 112px;
+      bottom: 0;
+      padding: 10px;
+      background: var(--bg);
+    }
+
+    .frame-shell {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #2d3551;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #171d33;
+      display: none;
+    }
+
+    .frame-shell.active {
+      display: block;
+    }
+
+    .frame-shell iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+    }
+
+    .hint {
+      color: var(--text-dim);
+      font-size: 11px;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <h1>STT Ticker</h1>
+      <span class="sub">Master Workspace (Admin + Audio Capture)</span>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/overlay/stt-ticker?design=dual-language&amp;position=bottom-center&amp;maxLines=2&amp;fontSize=36px" target="_blank">Open Overlay</a>
+      <a class="btn" href="/stt-ticker/ui" target="_blank">Nur Admin</a>
+      <a class="btn" href="/stt-ticker/capture" target="_blank">Nur Capture</a>
+      <a class="btn accent" id="refreshBtn">Aktualisieren</a>
+      <a class="btn warn" id="statusBtn">Status</a>
+      <span class="hint" id="statusText">Bitte Capture starten in Master-Karte.</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="ui">Admin</button>
+    <button class="tab-btn" data-tab="capture">Capture</button>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="frame-shell active" data-view="ui">
+      <iframe src="/stt-ticker/ui" title="STT Ticker Admin"></iframe>
+    </div>
+    <div class="frame-shell" data-view="capture">
+      <iframe src="/stt-ticker/capture" title="STT Ticker Capture"></iframe>
+    </div>
+  </div>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const frames = Array.from(document.querySelectorAll('.frame-shell'));
+    const statusText = document.getElementById('statusText');
+
+    const setActiveTab = (tabName) => {
+      tabs.forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+      });
+      frames.forEach((frame) => {
+        frame.classList.toggle('active', frame.dataset.view === tabName);
+      });
+
+      const next = new URLSearchParams(window.location.search);
+      next.set('tab', tabName);
+      const nextUrl = `${window.location.pathname}?${next.toString()}`;
+      window.history.replaceState({}, '', nextUrl);
+    };
+
+    tabs.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setActiveTab(btn.dataset.tab);
+      });
+    });
+
+    const statusBtn = document.getElementById('statusBtn');
+    statusBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      try {
+        const response = await fetch('/api/stt-ticker/status');
+        const data = await response.json();
+        if (!data.success) {
+          statusText.textContent = 'Status konnte nicht geladen werden';
+          return;
+        }
+        const cfg = data.status || {};
+        const asr = cfg.asr || {};
+        const trans = cfg.translation || {};
+        statusText.textContent = `Status: enabled=${cfg.enabled ? 'on' : 'off'} | asr=${asr.provider || 'auto'} | translation=${trans.enabled ? 'on' : 'off'}`;
+      } catch (error) {
+        statusText.textContent = 'Status Error: ' + error.message;
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      frames.forEach((frame) => {
+        const iframe = frame.querySelector('iframe');
+        if (iframe && frame.classList.contains('active')) {
+          iframe.src = iframe.src;
+        }
+      });
+      statusText.textContent = 'Aktive Ansicht neu geladen';
+    });
+
+    const startTab = new URLSearchParams(window.location.search).get('tab') || 'ui';
+    setActiveTab(startTab === 'capture' ? 'capture' : 'ui');
+  </script>
+</body>
+</html>
