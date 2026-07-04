@@ -75,7 +75,15 @@ let config = {
     // FPS Optimization
     fps_optimization_enabled: true,
     fps_sensitivity: 0.8, // 0-1, higher = more aggressive
-    target_fps: 60,
+    target_fps: 30,
+    adaptive_resolution_enabled: true,
+    adaptive_resolution_min_fps: 25,
+    adaptive_resolution_target_fps: 30,
+    adaptive_resolution_max_scale: 1,
+    adaptive_resolution_min_scale: 0.6,
+    adaptive_resolution_step_down: 0.08,
+    adaptive_resolution_step_up: 0.04,
+    adaptive_resolution_cooldown_ms: 1500,
     
     // SuperFan Burst
     superfan_burst_enabled: true,
@@ -237,6 +245,8 @@ let fpsUpdateTime = performance.now();
 let fpsHistory = [];
 const FPS_HISTORY_SIZE = 60;
 const COLOR_UPDATE_THROTTLE_MS = 100; // Throttle non-rainbow color updates for performance
+let adaptiveRenderScale = 1;
+let lastAdaptiveResolutionUpdate = 0;
 
 // Freeze detection and failsafe
 let freezeDetectionEnabled = true; // Can be disabled for debugging
@@ -266,6 +276,7 @@ let rainbowHueOffset = 0;
 
 // Performance state
 let performanceMode = 'normal'; // 'normal', 'reduced', 'minimal'
+let adaptivePerformanceTier = 'normal'; // 'normal', 'reduced', 'minimal'
 
 // Toaster mode state
 let toasterModeActive = false;
@@ -655,6 +666,147 @@ function syncVisualModeState() {
     document.body.dataset.toasterMode = config.toaster_mode ? 'true' : 'false';
 }
 
+function clampRenderScale(value) {
+    return clamp(value, config.adaptive_resolution_min_scale || 0.6, config.adaptive_resolution_max_scale || 1);
+}
+
+function getAdaptiveRenderScale() {
+    return adaptiveRenderScale;
+}
+
+function setAdaptiveRenderScale(nextScale, force = false) {
+    const minScale = config.adaptive_resolution_min_scale || 0.6;
+    const maxScale = config.adaptive_resolution_max_scale || 1;
+    const clamped = clamp(nextScale, minScale, maxScale);
+
+    if (!force && Math.abs(clamped - adaptiveRenderScale) < 0.01) {
+        return adaptiveRenderScale;
+    }
+
+    adaptiveRenderScale = clamped;
+    document.body?.style?.setProperty('--webgpu-emoji-rain-render-scale', adaptiveRenderScale.toFixed(3));
+    return adaptiveRenderScale;
+}
+
+function quantizeForAdaptiveRender(value) {
+    const scale = getAdaptiveRenderScale();
+    if (!Number.isFinite(value) || scale >= 0.995) {
+        return value;
+    }
+
+    return Math.round(value * scale) / scale;
+}
+
+function updateAdaptiveResolution(currentFPSValue) {
+    if (!config.adaptive_resolution_enabled) {
+        setAdaptiveRenderScale(1);
+        return;
+    }
+
+    const now = performance.now();
+    if (now - lastAdaptiveResolutionUpdate < (config.adaptive_resolution_cooldown_ms || 1500)) {
+        return;
+    }
+
+    const targetFPS = config.adaptive_resolution_target_fps || 30;
+    const minFPS = config.adaptive_resolution_min_fps || 25;
+    const minScale = config.adaptive_resolution_min_scale || 0.6;
+    const maxScale = config.adaptive_resolution_max_scale || 1;
+    const downwardThreshold = targetFPS;
+    const upwardThreshold = Math.max(targetFPS + 3, targetFPS * 1.1);
+
+    if (currentFPSValue < minFPS) {
+        setAdaptiveRenderScale(Math.max(minScale, adaptiveRenderScale - (config.adaptive_resolution_step_down || 0.08)));
+        lastAdaptiveResolutionUpdate = now;
+        applyAdaptivePerformanceTier('minimal');
+        return;
+    }
+
+    if (currentFPSValue < downwardThreshold) {
+        setAdaptiveRenderScale(Math.max(minScale, adaptiveRenderScale - (config.adaptive_resolution_step_down || 0.08)));
+        lastAdaptiveResolutionUpdate = now;
+        applyAdaptivePerformanceTier(getAdaptivePerformanceTier(currentFPSValue));
+        return;
+    }
+
+    if (currentFPSValue > upwardThreshold && adaptiveRenderScale < maxScale) {
+        setAdaptiveRenderScale(Math.min(maxScale, adaptiveRenderScale + (config.adaptive_resolution_step_up || 0.04)));
+        lastAdaptiveResolutionUpdate = now;
+        applyAdaptivePerformanceTier(getAdaptivePerformanceTier(currentFPSValue));
+        return;
+    }
+
+    if (currentFPSValue >= targetFPS && adaptiveRenderScale !== maxScale) {
+        setAdaptiveRenderScale(Math.min(maxScale, adaptiveRenderScale + (config.adaptive_resolution_step_up || 0.04)));
+        lastAdaptiveResolutionUpdate = now;
+        applyAdaptivePerformanceTier(getAdaptivePerformanceTier(currentFPSValue));
+    }
+}
+
+function getAdaptivePerformanceTier(currentFPSValue) {
+    const targetFPS = config.adaptive_resolution_target_fps || 30;
+    const minFPS = config.adaptive_resolution_min_fps || 25;
+
+    if (currentFPSValue < minFPS || adaptiveRenderScale <= (config.adaptive_resolution_min_scale || 0.6) + 0.01) {
+        return 'minimal';
+    }
+
+    if (currentFPSValue < targetFPS || adaptiveRenderScale < 0.9) {
+        return 'reduced';
+    }
+
+    return 'normal';
+}
+
+function applyAdaptivePerformanceTier(nextTier) {
+    if (!nextTier || nextTier === adaptivePerformanceTier) {
+        return;
+    }
+
+    adaptivePerformanceTier = nextTier;
+    if (document.body) {
+        document.body.dataset.adaptivePerformanceTier = nextTier;
+    }
+
+    const isReduced = nextTier === 'reduced' || nextTier === 'minimal';
+    const isMinimal = nextTier === 'minimal';
+
+    config.enable_glow = !isReduced;
+    config.enable_particles = !isMinimal;
+    config.enable_depth = !isReduced;
+
+    if (isReduced) {
+        config.rate_limit_emojis_per_second = Math.min(config.rate_limit_emojis_per_second || 24, 18);
+        config.max_emojis_on_screen = Math.min(config.max_emojis_on_screen, isMinimal ? 36 : 48);
+        config.gift_max_emojis = Math.min(config.gift_max_emojis, isMinimal ? 18 : 24);
+        config.like_max_emojis = Math.min(config.like_max_emojis, isMinimal ? 4 : 6);
+    }
+
+    if (isMinimal) {
+        config.wind_enabled = false;
+        config.rainbow_enabled = false;
+        config.color_mode = 'off';
+        config.heart_balloon_profile_every = Math.max(8, config.heart_balloon_profile_every || 5);
+        config.heart_balloon_max_hearts = Math.min(config.heart_balloon_max_hearts || 16, 10);
+        config.heart_balloon_wind_strength = Math.min(config.heart_balloon_wind_strength || 0.45, 0.2);
+        config.heart_balloon_pop_y = Math.min(config.heart_balloon_pop_y || 0.5, 0.42);
+        config.gift_ball_max_count = Math.min(config.gift_ball_max_count || 24, 10);
+    }
+}
+
+function getDampedSpawnCount(baseCount, kind = 'default') {
+    const safeBase = Math.max(1, Math.floor(Number(baseCount) || 1));
+    let multiplier = 1;
+
+    if (adaptivePerformanceTier === 'reduced') {
+        multiplier = kind === 'gift' ? 0.8 : 0.7;
+    } else if (adaptivePerformanceTier === 'minimal') {
+        multiplier = kind === 'gift' ? 0.5 : 0.45;
+    }
+
+    return Math.max(1, Math.floor(safeBase * multiplier));
+}
+
 function determineSpawnKind(data = {}, isBurst = false) {
     const reason = String(data.reason || data.source || '').toLowerCase();
     const mode = String(data.mode || data.type || '').toLowerCase();
@@ -843,6 +995,22 @@ function getVisualStageProfile(spawnKind, size, isBurst) {
         profile.pulseScale = 1.05;
     }
 
+    if (adaptivePerformanceTier === 'reduced') {
+        profile.glowBlur = 0;
+        profile.shadowBlur = Math.min(profile.shadowBlur, 6);
+        profile.trailCount = Math.max(0, Math.floor(profile.trailCount * 0.4));
+        profile.trailRadius = Math.max(0, Math.floor(profile.trailRadius * 0.5));
+        profile.brightness = Math.min(profile.brightness, 1.04);
+    } else if (adaptivePerformanceTier === 'minimal') {
+        profile.glowBlur = 0;
+        profile.shadowBlur = 0;
+        profile.trailCount = 0;
+        profile.trailRadius = 0;
+        profile.blur = 0;
+        profile.brightness = Math.min(profile.brightness, 0.98);
+        profile.saturation = Math.min(profile.saturation, 1);
+    }
+
     return profile;
 }
 
@@ -901,9 +1069,9 @@ function ensureHeartBalloonStyles() {
             user-select: none;
             transform-origin: center bottom;
             will-change: transform, opacity;
-            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.24));
         }
         .heart-balloon-bubble {
+            position: relative;
             width: 100%;
             height: 100%;
             display: flex;
@@ -913,15 +1081,19 @@ function ensureHeartBalloonStyles() {
             font-family: "Segoe UI Symbol", "Apple Color Emoji", sans-serif;
             font-weight: 800;
             line-height: 1;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.26), 0 0 18px color-mix(in srgb, var(--heart-color, #ff4d8d) 55%, transparent);
+            text-shadow: 0 3px 10px rgba(0,0,0,0.24), 0 0 12px rgba(255,255,255,0.22);
+            filter: none;
         }
         .heart-balloon-bubble::after {
             content: "";
             position: absolute;
-            inset: 16% 18% 52% 30%;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.42);
-            transform: rotate(-25deg);
+            inset: 10% 14%;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 34% 28%, rgba(255,255,255,0.54), rgba(255,255,255,0.18) 22%, transparent 48%),
+                radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--heart-color, #ff4d8d) 88%, white 12%), var(--heart-color, #ff4d8d) 58%, color-mix(in srgb, var(--heart-color, #ff4d8d) 62%, black 38%) 100%);
+            clip-path: path('M 50 88 C 12 63 7 36 25 22 C 35 14 47 14 50 24 C 53 14 65 14 75 22 C 93 36 88 63 50 88 Z');
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.1);
             pointer-events: none;
         }
         .heart-balloon-profile {
@@ -1139,7 +1311,7 @@ function spawnHeartBalloons(data) {
 
     const requestedCount = parseInt(data.count || 1, 10);
     const safeCount = Number.isFinite(requestedCount) ? requestedCount : 1;
-    const count = Math.max(1, Math.min(safeCount, config.heart_balloon_max_hearts || 24));
+    const count = Math.max(1, Math.min(getDampedSpawnCount(safeCount, 'heart'), config.heart_balloon_max_hearts || 24));
 
     for (let i = 0; i < count; i++) {
         setTimeout(() => {
@@ -1206,7 +1378,7 @@ function spreadGiftBallX(baseX, index, count) {
 }
 
 function spawnGiftBalls(data) {
-    const count = getGiftBallDropCount(data);
+    const count = getDampedSpawnCount(getGiftBallDropCount(data), 'gift');
     const baseX = typeof data.x === 'number' ? data.x : Math.random();
     const baseY = typeof data.y === 'number' ? data.y : null;
 
@@ -1312,8 +1484,10 @@ function updateHeartBalloonElement(balloon, currentTime) {
     const bob = Math.sin(elapsed * 0.006 + balloon.phase) * 5;
     const rotate = Math.sin(elapsed * 0.002 + balloon.phase) * 7;
     const scale = balloon.useProfilePicture ? 0.92 : 1;
+    const renderX = quantizeForAdaptiveRender(balloon.x + sway);
+    const renderY = quantizeForAdaptiveRender(balloon.y + bob);
 
-    balloon.element.style.transform = `translate3d(${balloon.x + sway}px, ${balloon.y + bob}px, 0) translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
+    balloon.element.style.transform = `translate3d(${renderX}px, ${renderY}px, 0) translate(-50%, -50%) rotate(${rotate}deg) scale(${scale})`;
 }
 
 function updateHeartBalloons(currentTime, deltaTime) {
@@ -1474,6 +1648,7 @@ function updateLoop(currentTime) {
         if (config.fps_optimization_enabled) {
             checkAndOptimizeFPS();
         }
+        updateAdaptiveResolution(currentFPS);
     }
 
     // Run physics engine step
@@ -1519,8 +1694,8 @@ function updateLoop(currentTime) {
 
             // Update DOM element
             if (emoji.element) {
-                const px = emoji.body.position.x;
-                const py = emoji.body.position.y;
+                const px = quantizeForAdaptiveRender(emoji.body.position.x);
+                const py = quantizeForAdaptiveRender(emoji.body.position.y);
                 const rotation = emoji.body.angle + emoji.rotation;
                 emoji.rotation += config.emoji_rotation_speed;
                 const scale = Math.max(0.72, (emoji.stageScale || 1) * (emoji.impactScale || 1));
@@ -1599,6 +1774,7 @@ function checkAndOptimizeFPS() {
         // Disable expensive effects
         if (config.pixel_enabled) config.pixel_enabled = false;
         if (config.rainbow_enabled && config.color_mode !== 'off') config.rainbow_enabled = false;
+        updateAdaptiveResolution(avgFPS);
         
     } else if (avgFPS < fpsThreshold * 0.7 && performanceMode === 'reduced') {
         // Switch to minimal performance mode
@@ -1612,6 +1788,7 @@ function checkAndOptimizeFPS() {
         config.wind_enabled = false;
         config.rainbow_enabled = false;
         config.color_mode = 'off';
+        updateAdaptiveResolution(avgFPS);
         
     } else if (avgFPS > config.target_fps * 0.95 && performanceMode !== 'normal') {
         // Restore normal performance mode
@@ -1620,6 +1797,7 @@ function checkAndOptimizeFPS() {
         
         // Reload config to restore settings
         loadConfig();
+        updateAdaptiveResolution(avgFPS);
     }
 }
 
