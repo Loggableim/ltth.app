@@ -169,6 +169,34 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('Q:${this.fireworks.length}');
         });
     });
+
+    describe('OBS-Safe Adaptive Quality', () => {
+        let webglCode;
+
+        beforeAll(() => {
+            const webglPath = path.join(__dirname, '../plugins/fireworks/gpu/webgl-particle-engine.js');
+            webglCode = fs.readFileSync(webglPath, 'utf8');
+        });
+
+        test('WebGL upload only sends active particle data', () => {
+            expect(webglCode).toContain('this.activeUploadView = null');
+            expect(webglCode).toContain('this.lastUploadFloatCount = 0');
+            expect(webglCode).toContain('getActiveUploadView()');
+            expect(webglCode).toContain('gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.getActiveUploadView())');
+        });
+
+        test('Texture atlas uploads are queued outside peak rendering', () => {
+            expect(webglCode).toContain('this.pendingAtlasUploads = []');
+            expect(webglCode).toContain('queueImageUpload(key, image)');
+            expect(webglCode).toContain('processAtlasUploads');
+            expect(webglCode).toContain('this.maxAtlasUploadsPerFrame');
+        });
+
+        test('Fireworks engine uses queued atlas uploads for gift and avatar images', () => {
+            expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, giftImg)');
+            expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, avatarImg)');
+        });
+    });
     
     describe('Code Quality', () => {
         test('File is valid JavaScript', () => {

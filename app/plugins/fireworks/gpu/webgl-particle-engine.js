@@ -32,6 +32,11 @@ class WebGLParticleEngine {
         this.preserveDrawingBuffer = options.preserveDrawingBuffer !== undefined ? options.preserveDrawingBuffer : true;
         this.desynchronized = options.desynchronized !== undefined ? options.desynchronized : true;
         this.alphaPreservingBlend = options.alphaPreservingBlend !== undefined ? options.alphaPreservingBlend : true;
+        this.activeUploadView = null;
+        this.lastUploadFloatCount = 0;
+        this.pendingAtlasUploads = [];
+        this.pendingAtlasKeys = new Set();
+        this.maxAtlasUploadsPerFrame = options.maxAtlasUploadsPerFrame || 1;
 
         // ── Texture Atlas ──────────────────────────────────────────────
         this.atlasSize = 1024;
@@ -468,6 +473,31 @@ class WebGLParticleEngine {
         );
     }
 
+    queueImageUpload(key, image) {
+        if (!key || !image) return -1;
+
+        const slot = this.allocateSlot(key);
+        if (slot < 0) return -1;
+
+        if (!this.pendingAtlasKeys.has(key)) {
+            this.pendingAtlasUploads.push({ key, slot, image });
+            this.pendingAtlasKeys.add(key);
+        }
+
+        return slot;
+    }
+
+    processAtlasUploads() {
+        if (!this.initialized || this.pendingAtlasUploads.length === 0) return;
+
+        const uploadCount = Math.min(this.maxAtlasUploadsPerFrame, this.pendingAtlasUploads.length);
+        for (let i = 0; i < uploadCount; i++) {
+            const upload = this.pendingAtlasUploads.shift();
+            this.pendingAtlasKeys.delete(upload.key);
+            this.uploadImageToSlot(upload.slot, upload.image);
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // SHADER COMPILATION
     // ════════════════════════════════════════════════════════════════════
@@ -501,6 +531,7 @@ class WebGLParticleEngine {
         if (!this.initialized) return;
         const activeCount = particleSystem.fillGPUBuffer(this.particleData);
         this.particleCount = activeCount;
+        this.lastUploadFloatCount = 0;
     }
 
     /**
@@ -541,6 +572,16 @@ class WebGLParticleEngine {
         }
 
         this.particleCount = index;
+        this.lastUploadFloatCount = 0;
+    }
+
+    getActiveUploadView() {
+        const floatCount = this.particleCount * this.FLOATS_PER_PARTICLE;
+        if (this.lastUploadFloatCount !== floatCount || !this.activeUploadView) {
+            this.activeUploadView = this.particleData.subarray(0, floatCount);
+            this.lastUploadFloatCount = floatCount;
+        }
+        return this.activeUploadView;
     }
 
     /**
@@ -595,6 +636,7 @@ class WebGLParticleEngine {
         if (!this.initialized || this.particleCount === 0) return;
 
         const gl = this.gl;
+        this.processAtlasUploads();
 
         // Clear canvas with transparent background
         gl.clearColor(0, 0, 0, 0);
@@ -615,7 +657,7 @@ class WebGLParticleEngine {
 
         // Upload particle data to GPU
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.particles);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.particleData.subarray(0, this.particleCount * this.FLOATS_PER_PARTICLE));
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.getActiveUploadView());
 
         // Bind VAO and draw
         gl.bindVertexArray(this.vao);

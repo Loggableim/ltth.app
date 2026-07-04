@@ -42,14 +42,20 @@ const CONFIG = {
     rocketSpeed: -12,
     rocketAcceleration: -0.08,
     trailLength: 20,
+    baseTrailLength: 20,
     trailFadeAlpha: 10,
     trailFadeSpeed: 0.02,
     sparkleChance: 0.15,
     secondaryExplosionChance: 0.1,
+    baseSecondaryExplosionChance: 0.1,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     resolution: 1.0, // Legacy - Canvas resolution multiplier (0.5 = half res, 1.0 = full res)
     resolutionPreset: '1080p', // Resolution preset: 360p, 540p, 720p, 1080p, 1440p, 4k
     orientation: 'landscape', // 'landscape' or 'portrait'
+    adaptiveRenderScaleEnabled: true,
+    minRenderScale: 0.75,
+    renderScaleStep: 0.15,
+    renderScaleRecoveryFpsMargin: 6,
     giftPopupPosition: 'bottom', // 'top', 'middle', 'bottom', 'none', or {x, y} coordinates
     giftPopupEnabled: true, // Whether to show gift popup at all
     despawnFadeDuration: 1.5, // Duration in seconds for rocket despawn fade effect (when rockets are removed due to overload)
@@ -483,6 +489,7 @@ class Firework {
             shape: 'burst',
             colors: CONFIG.colorPalettes.classic,
             intensity: 1.0,
+            adaptiveParticleSizeScale: 1.0,
             giftImage: null,
             userAvatar: null,
             avatarParticleChance: 0.3,
@@ -496,6 +503,7 @@ class Firework {
         };
         
         Object.assign(this, defaults, args);
+        this.adaptiveParticleSizeScale = Math.max(0.6, Math.min(1.0, this.adaptiveParticleSizeScale || 1.0));
         
         // State management
         this.particles = [];
@@ -532,7 +540,7 @@ class Firework {
             // If user avatar is available, use it as the rocket head
             const rocketType = this.userAvatar ? 'image' : 'circle';
             const rocketImage = this.userAvatar;
-            const rocketSize = this.userAvatar ? 8 + this.intensity : 3 + this.intensity;
+            const rocketSize = (this.userAvatar ? 8 + this.intensity : 3 + this.intensity) * this.adaptiveParticleSizeScale;
             
             this.rocket = new Particle({
                 x: this.x,
@@ -695,7 +703,7 @@ class Firework {
                 y: explosionY,
                 vx: vel.vx,
                 vy: vel.vy,
-                size: isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4),
+                size: (isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4)) * this.adaptiveParticleSizeScale,
                 hue: hue,
                 saturation: isSparkle ? 100 : 90,
                 brightness: isSparkle ? 100 : 95,
@@ -725,7 +733,7 @@ class Firework {
                 y: explosionY,
                 vx: vel.vx,
                 vy: vel.vy,
-                size: isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4),
+                size: (isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4)) * this.adaptiveParticleSizeScale,
                 hue: hue,
                 saturation: isSparkle ? 100 : 90,
                 brightness: isSparkle ? 100 : 95,
@@ -1647,6 +1655,8 @@ class FireworksEngine {
             resolution: CONFIG.resolution,
             resolutionPreset: CONFIG.resolutionPreset,
             orientation: CONFIG.orientation,
+            adaptiveRenderScaleEnabled: CONFIG.adaptiveRenderScaleEnabled,
+            minRenderScale: CONFIG.minRenderScale,
             targetFps: CONFIG.targetFps,
             minFps: CONFIG.minFps,
             giftPopupPosition: CONFIG.giftPopupPosition
@@ -1676,6 +1686,12 @@ class FireworksEngine {
         
         this.width = 0;
         this.height = 0;
+        this.baseWidth = 0;
+        this.baseHeight = 0;
+        this.renderScale = 1.0;
+        this.targetRenderScale = 1.0;
+        this.qualityScale = 1.0;
+        this.lastRenderScaleChange = 0;
     }
 
     async init() {
@@ -1767,12 +1783,23 @@ class FireworksEngine {
         const orientation = this.config.orientation || 'landscape';
         const targetResolution = this.getResolutionFromPreset(resolutionPreset, orientation);
         
-        // Apply target resolution
-        this.canvas.width = targetResolution.width;
-        this.canvas.height = targetResolution.height;
-        
-        this.width = targetResolution.width;
-        this.height = targetResolution.height;
+        this.baseWidth = targetResolution.width;
+        this.baseHeight = targetResolution.height;
+        this.applyRenderScale();
+    }
+
+    applyRenderScale() {
+        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1.0 : this.renderScale;
+        const width = Math.max(320, Math.round(this.baseWidth * scale));
+        const height = Math.max(180, Math.round(this.baseHeight * scale));
+
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+
+        this.width = width;
+        this.height = height;
         
         // Resize WebGL engine if active
         if (this.webglEngine && this.useWebGL) {
@@ -1785,7 +1812,7 @@ class FireworksEngine {
             this.trailCanvas.height = this.height;
         }
         
-        if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (${resolutionPreset}, ${orientation})`);
+        if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (base ${this.baseWidth}x${this.baseHeight}, scale ${scale.toFixed(2)})`);
     }
     
     // Optimization #6: Initialize layer splitting for performance
@@ -2132,9 +2159,8 @@ class FireworksEngine {
             // Upload gift image to texture atlas if WebGL is active
             if (giftImg && this.useWebGL && this.webglEngine) {
                 const key = 'gift:' + giftImage;
-                const slot = this.webglEngine.allocateSlot(key);
+                const slot = this.webglEngine.queueImageUpload(key, giftImg);
                 if (slot >= 0) {
-                    this.webglEngine.uploadImageToSlot(slot, giftImg);
                     giftTextureIndex = slot;
                 }
             }
@@ -2144,9 +2170,8 @@ class FireworksEngine {
             // Upload avatar image to texture atlas if WebGL is active
             if (avatarImg && this.useWebGL && this.webglEngine) {
                 const key = 'avatar:' + userAvatar;
-                const slot = this.webglEngine.allocateSlot(key);
+                const slot = this.webglEngine.queueImageUpload(key, avatarImg);
                 if (slot >= 0) {
-                    this.webglEngine.uploadImageToSlot(slot, avatarImg);
                     // Use avatar texture index if no gift image
                     if (!giftTextureIndex) {
                         giftTextureIndex = slot;
@@ -2172,6 +2197,7 @@ class FireworksEngine {
             skipRocket: skipRockets, // Pass flag to Firework class
             instantExplode: instantExplode, // Explode immediately without any delay
             engineFps: this.fps, // Pass current FPS for performance-based decisions
+            adaptiveParticleSizeScale: this.getAdaptiveParticleSizeScale(),
             giftTextureIndex: giftTextureIndex // Texture Atlas slot for gift/avatar
         });
         
@@ -2627,17 +2653,9 @@ class FireworksEngine {
             const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
             
             // Adaptive Trail-Length based on FPS (Enhanced)
-            if (avgFps > 50) {
-                CONFIG.trailLength = 20; // Full quality
-            } else if (avgFps > 40) {
-                CONFIG.trailLength = 12; // Good performance
-            } else if (avgFps > 30) {
-                CONFIG.trailLength = 8; // Medium performance
-            } else if (avgFps > 25) {
-                CONFIG.trailLength = 5; // Low performance
-            } else {
-                CONFIG.trailLength = 3; // Minimal performance
-            }
+            this.updateAdaptiveRenderScale(avgFps);
+            this.updateAdaptiveQuality(avgFps);
+            this.adjustSecondaryEffectsForLoad();
             
             // Adaptive performance mode
             // Bug #2 Fix: Removed duplicate targetFps declaration - already declared earlier in this method
@@ -2698,6 +2716,60 @@ class FireworksEngine {
         
         // Render all particles in a single draw call
         this.webglEngine.render();
+    }
+
+    updateAdaptiveRenderScale(avgFps) {
+        if (this.config.adaptiveRenderScaleEnabled === false) {
+            if (this.renderScale !== 1.0) {
+                this.renderScale = 1.0;
+                this.applyRenderScale();
+            }
+            return;
+        }
+
+        const now = performance.now();
+        if (now - this.lastRenderScaleChange < 1500) return;
+
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+        const minScale = this.config.minRenderScale || CONFIG.minRenderScale;
+        const step = CONFIG.renderScaleStep;
+        let nextScale = this.renderScale;
+
+        if (avgFps < desiredFps * 0.75 && this.renderScale > minScale) {
+            nextScale = Math.max(minScale, this.renderScale - step);
+        } else if (avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin && this.renderScale < 1.0) {
+            nextScale = Math.min(1.0, this.renderScale + step);
+        }
+
+        nextScale = Math.round(nextScale * 100) / 100;
+        if (nextScale !== this.renderScale) {
+            this.renderScale = nextScale;
+            this.lastRenderScaleChange = now;
+            this.applyRenderScale();
+        }
+    }
+
+    updateAdaptiveQuality(avgFps) {
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+
+        if (avgFps >= desiredFps * 0.9) {
+            this.qualityScale = 1.0;
+        } else if (avgFps >= desiredFps * 0.75) {
+            this.qualityScale = 0.85;
+        } else if (avgFps >= this.minTargetFps) {
+            this.qualityScale = 0.75;
+        } else {
+            this.qualityScale = 0.65;
+        }
+    }
+
+    getAdaptiveParticleSizeScale() {
+        return this.qualityScale;
+    }
+
+    adjustSecondaryEffectsForLoad() {
+        CONFIG.secondaryExplosionChance = CONFIG.baseSecondaryExplosionChance * this.qualityScale;
+        CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale));
     }
     
     /**
@@ -2786,11 +2858,11 @@ class FireworksEngine {
             case 'minimal':
                 // Extreme reduction for very low FPS
                 CONFIG.maxParticlesPerExplosion = 50;
-                CONFIG.trailLength = 5;
+                CONFIG.baseTrailLength = 5;
                 CONFIG.sparkleChance = 0.05;
-                CONFIG.secondaryExplosionChance = 0;
-                this.config.glowEnabled = false;
-                this.config.trailsEnabled = false;
+                CONFIG.baseSecondaryExplosionChance = 0.03;
+                this.config.glowEnabled = true;
+                this.config.trailsEnabled = true;
                 
                 // Bug #3 Fix: Fixed despawn logic - iterate in reverse and check properly
                 const maxFireworksMinimal = 5;
@@ -2840,9 +2912,9 @@ class FireworksEngine {
             case 'reduced':
                 // Moderate reduction for low FPS
                 CONFIG.maxParticlesPerExplosion = 100;
-                CONFIG.trailLength = 10;
+                CONFIG.baseTrailLength = 10;
                 CONFIG.sparkleChance = 0.08;
-                CONFIG.secondaryExplosionChance = 0.05;
+                CONFIG.baseSecondaryExplosionChance = 0.05;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
                 
@@ -2887,13 +2959,14 @@ class FireworksEngine {
             case 'normal':
                 // Full quality
                 CONFIG.maxParticlesPerExplosion = 200;
-                CONFIG.trailLength = 20;
+                CONFIG.baseTrailLength = 20;
                 CONFIG.sparkleChance = 0.15;
-                CONFIG.secondaryExplosionChance = 0.1;
+                CONFIG.baseSecondaryExplosionChance = 0.1;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
                 break;
         }
+        this.adjustSecondaryEffectsForLoad();
     }
     
     showFreezeWarning() {

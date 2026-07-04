@@ -152,8 +152,27 @@ describe('Fireworks Performance Optimizations', () => {
         test('should adaptively adjust trail length based on FPS', () => {
             // Verify adaptive trail length
             expect(engineCode).toContain('Adaptive Trail-Length based on FPS');
-            expect(engineCode).toMatch(/avgFps > 50[\s\S]*?CONFIG\.trailLength = 20/);
-            expect(engineCode).toMatch(/avgFps > 25[\s\S]*?CONFIG\.trailLength = 5/);
+            expect(engineCode).toContain('updateAdaptiveQuality(avgFps)');
+            expect(engineCode).toContain('CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale))');
+        });
+
+        test('should adapt internal render scale without changing OBS source size', () => {
+            expect(engineCode).toContain('adaptiveRenderScaleEnabled: true');
+            expect(engineCode).toContain('this.baseWidth = 0');
+            expect(engineCode).toContain('this.renderScale = 1.0');
+            expect(engineCode).toContain('updateAdaptiveRenderScale(avgFps)');
+            expect(engineCode).toContain('applyRenderScale()');
+            expect(engineCode).toContain('this.canvas.style.width = \'100%\'');
+            expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
+        });
+
+        test('should degrade quality before dropping fireworks features', () => {
+            expect(engineCode).toContain('this.qualityScale = 1.0');
+            expect(engineCode).toContain('updateAdaptiveQuality(avgFps)');
+            expect(engineCode).toContain('getAdaptiveParticleSizeScale()');
+            expect(engineCode).toContain('adjustSecondaryEffectsForLoad()');
+            expect(engineCode).toContain('CONFIG.secondaryExplosionChance = CONFIG.baseSecondaryExplosionChance * this.qualityScale');
+            expect(engineCode).toContain('CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale))');
         });
     });
 });
