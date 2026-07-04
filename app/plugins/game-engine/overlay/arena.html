@@ -213,6 +213,11 @@
       border-color: rgba(250, 204, 21, 0.34);
     }
 
+    #arena-info-rotator[data-info-kind="command"] {
+      background: rgba(12, 32, 28, 0.48);
+      border-color: rgba(34, 197, 94, 0.38);
+    }
+
     #arena-info-rotator[data-info-kind="beta"] {
       background: rgba(127, 29, 29, 0.48);
       border-color: rgba(248, 113, 113, 0.52);
@@ -957,6 +962,9 @@
     const MAX_FOOD_RENDER_LOW = 52;
     const DEFAULT_RENDER_SCALE = 0.75;
     const DEFAULT_STATE_INTERVAL_MS = 33;
+    const MIN_ADAPTIVE_RENDER_SCALE = 0.55;
+    const ADAPTIVE_RENDER_SCALE_STEP = 0.05;
+    const ADAPTIVE_RENDER_RESIZE_INTERVAL_MS = 900;
     const SMOOTHING_EXTRAPOLATION_MS = 70;
     const webgpuAvailable = !!navigator.gpu;
 
@@ -974,6 +982,7 @@
         largeBallTransparencyStartMass: 55,
         largeBallMinOpacity: 0.42,
         renderScale: DEFAULT_RENDER_SCALE,
+        adaptiveResolutionEnabled: true,
         targetFps: 60,
         maxRenderPlayers: 60,
         rendererMode: 'auto',
@@ -989,8 +998,13 @@
         topOverlayShowCount: true,
         topOverlayShowLeaderboard: true,
         topOverlayLeaderboardRows: 3,
+        topOverlayShowCommandHints: true,
         infoRotatorPlacement: 'in-hud',
         infoRotatorLanguageMode: 'de-en',
+        chatStrategyEnabled: true,
+        chatStrategyDurationMs: 45000,
+        chatStrategyCooldownMs: 8000,
+        chatTargetCommandEnabled: true,
         tickRateMs: DEFAULT_STATE_INTERVAL_MS,
         stateEmitIntervalMs: DEFAULT_STATE_INTERVAL_MS,
         likeLifeValue: 1,
@@ -1025,6 +1039,8 @@
     const giftCatalogByName = new Map();
     const failedInfoImageUrls = new Set();
     let renderEngine = null;
+    let adaptiveRenderScale = 1;
+    let lastAdaptiveResizeAt = 0;
     const renderStats = {
       dpr: 1,
       quality: 1,
@@ -1037,6 +1053,8 @@
       fps: 60,
       targetFps: 60,
       renderScale: DEFAULT_RENDER_SCALE,
+      effectiveRenderScale: DEFAULT_RENDER_SCALE,
+      adaptiveRenderScale: 1,
       renderer: 'canvas2d-optimized',
       webgpuAvailable,
       stateRateMs: DEFAULT_STATE_INTERVAL_MS,
@@ -1208,6 +1226,17 @@
       return clampNumber(state.config?.renderScale, 0.35, 1.25, DEFAULT_RENDER_SCALE);
     }
 
+    function getEffectiveRenderScale() {
+      const configuredScale = getRenderScale();
+      if (state.config?.adaptiveResolutionEnabled === false) return configuredScale;
+      return clampNumber(
+        configuredScale * adaptiveRenderScale,
+        configuredScale * MIN_ADAPTIVE_RENDER_SCALE,
+        configuredScale,
+        configuredScale
+      );
+    }
+
     function getTargetFps() {
       return clampNumber(state.config?.targetFps, 24, 60, 60);
     }
@@ -1253,6 +1282,8 @@
       renderStats.webgpuAvailable = webgpuAvailable;
       renderStats.targetFps = getTargetFps();
       renderStats.renderScale = getRenderScale();
+      renderStats.adaptiveRenderScale = adaptiveRenderScale;
+      renderStats.effectiveRenderScale = getEffectiveRenderScale();
       renderStats.stateRateMs = getInterpolationInterval();
       if (engineSnapshot) {
         renderStats.renderer = engineSnapshot.renderer;
@@ -1266,9 +1297,9 @@
       }
     }
 
-    function resize() {
+    function resize(updateLayout = true) {
       const baseDpr = Math.max(1, window.devicePixelRatio || 1);
-      const dpr = Math.max(0.35, Math.min(MAX_RENDER_DPR, baseDpr * getRenderScale()));
+      const dpr = Math.max(0.35, Math.min(MAX_RENDER_DPR, baseDpr * getEffectiveRenderScale()));
       updateRendererStats();
       renderStats.dpr = dpr;
       canvas.width = Math.round(window.innerWidth * dpr);
@@ -1278,7 +1309,9 @@
       canvas.style.width = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      applyArenaViewportLayout();
+      if (updateLayout) {
+        applyArenaViewportLayout();
+      }
       orbSpriteCache.clear();
       foodSpriteCache.clear();
       avatarSpriteCache.clear();
@@ -1722,6 +1755,27 @@
       });
     }
 
+    function getArenaCommandHints(config) {
+      if (config?.chatStrategyEnabled === false || config?.topOverlayShowCommandHints === false) {
+        return [];
+      }
+      const hints = [
+        '!arena hunt - Angriff',
+        '!arena flee - Überleben',
+        '!arena farm - Sammeln'
+      ];
+      if (config?.chatTargetCommandEnabled !== false) {
+        hints.push('!arena target Name - Ziel markieren');
+      }
+      hints.push('!arena role tactician - KI-Rolle wählen');
+      return hints.map(text => ({
+        kind: 'command',
+        label: 'Chat Command',
+        text,
+        iconText: 'CMD'
+      }));
+    }
+
     function buildInfoRotatorMessages() {
       const config = state.config || {};
       const normalizedCustomMessages = Array.isArray(config.infoRotatorMessages)
@@ -1770,6 +1824,7 @@
 
       return [
         ...buildLocalizedInfoMessages(config),
+        ...getArenaCommandHints(config),
         ...customMessages,
         ...giftMessages
       ].filter(Boolean);
@@ -2101,7 +2156,7 @@
         backgroundAlpha: 0,
         antialias: true,
         autoDensity: true,
-        resolution: Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getRenderScale())),
+        resolution: Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getEffectiveRenderScale())),
         preference: preferWebGpu ? 'webgpu' : 'webgl'
       });
 
@@ -2249,7 +2304,7 @@
         pixiReady: true,
         rapierReady: !!collisionWorld,
         resize() {
-          app.renderer.resolution = Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getRenderScale()));
+          app.renderer.resolution = Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getEffectiveRenderScale()));
           app.renderer.resize(window.innerWidth, window.innerHeight);
           updatePixiPlayfieldMask();
           canvas.style.display = 'none';
@@ -3031,6 +3086,41 @@
       ctx.restore();
     }
 
+    function strategyLabelForPlayer(player) {
+      if (!player || (!player.strategy && !player.targetUsername && !player.activeRole)) return '';
+      if (player.targetUsername) return 'TARGET';
+      if (player.activeRole) return String(player.activeRole).toUpperCase();
+      const strategy = String(player.strategy || '').toLowerCase();
+      if (strategy === 'hunt' || strategy === 'attack') return 'HUNT';
+      if (strategy === 'flee') return 'FLEE';
+      if (strategy === 'farm') return 'FARM';
+      if (strategy === 'role') return String(player.activeRole || 'ROLE').toUpperCase();
+      return '';
+    }
+
+    function drawStrategyLabel(player, point) {
+      if (renderStats.quality < 0.74 || state.players.length > 48 || point.radius < 13) return;
+      const label = strategyLabelForPlayer(player);
+      if (!label) return;
+      const fontSize = Math.max(9, Math.min(13, point.radius * 0.34));
+      const y = point.y - point.radius - fontSize - 7;
+      ctx.save();
+      ctx.font = `800 ${fontSize}px Segoe UI, Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const width = ctx.measureText(label).width + 12;
+      ctx.fillStyle = 'rgba(6, 78, 59, 0.78)';
+      ctx.strokeStyle = 'rgba(167, 243, 208, 0.72)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(point.x - width / 2, y - fontSize / 2 - 3, width, fontSize + 6, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#d1fae5';
+      ctx.fillText(label, point.x, y);
+      ctx.restore();
+    }
+
     function drawPlayer(player, now) {
       const point = project(player);
       const visualAlpha = playerVisualAlpha(player);
@@ -3072,6 +3162,7 @@
         ctx.strokeText(name, point.x, point.y + point.radius + 4);
         ctx.fillText(name, point.x, point.y + point.radius + 4);
       }
+      drawStrategyLabel(player, point);
     }
 
     function pushEffect(effect) {
@@ -3209,6 +3300,35 @@
       } else if (renderStats.avgFrameMs < targetFrameMs * 1.12) {
         renderStats.quality = Math.min(1, renderStats.quality + 0.06);
       }
+      updateAdaptiveRenderScale(now);
+    }
+
+    function updateAdaptiveRenderScale(now) {
+      if (state.config?.adaptiveResolutionEnabled === false) {
+        if (adaptiveRenderScale !== 1) {
+          adaptiveRenderScale = 1;
+          resize(false);
+        }
+        return;
+      }
+
+      const targetFps = getTargetFps();
+      const targetFrameMs = 1000 / Math.max(targetFps, 24);
+      const fpsFloorFrameMs = 1000 / 24;
+      let nextScale = adaptiveRenderScale;
+
+      if (renderStats.avgFrameMs > fpsFloorFrameMs || renderStats.avgFrameMs > targetFrameMs * 1.32) {
+        nextScale = Math.max(MIN_ADAPTIVE_RENDER_SCALE, adaptiveRenderScale - ADAPTIVE_RENDER_SCALE_STEP);
+      } else if (renderStats.avgFrameMs < targetFrameMs * 0.92 && renderStats.quality > 0.82) {
+        nextScale = Math.min(1, adaptiveRenderScale + ADAPTIVE_RENDER_SCALE_STEP * 0.5);
+      }
+
+      nextScale = Math.round(nextScale * 1000) / 1000;
+      if (nextScale !== adaptiveRenderScale && now - lastAdaptiveResizeAt >= ADAPTIVE_RENDER_RESIZE_INTERVAL_MS) {
+        adaptiveRenderScale = nextScale;
+        lastAdaptiveResizeAt = now;
+        resize(false);
+      }
     }
 
     function draw(now = performance.now()) {
@@ -3234,13 +3354,16 @@
     }
 
     function applyState(nextState) {
-      const previousRenderScale = getRenderScale();
+      const previousRenderScale = getEffectiveRenderScale();
       state = Object.assign({}, state, nextState || {});
+      if (state.config?.adaptiveResolutionEnabled === false) {
+        adaptiveRenderScale = 1;
+      }
       if (nextState && Array.isArray(nextState.players)) {
         reconcilePlayers(nextState.players);
       }
       updateRendererStats();
-      if (previousRenderScale !== getRenderScale()) {
+      if (previousRenderScale !== getEffectiveRenderScale()) {
         resize();
       }
       updateHud();

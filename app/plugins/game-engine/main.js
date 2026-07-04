@@ -3470,6 +3470,17 @@ class GameEnginePlugin {
           category: 'Games',
           handler: async (args, context) => await this.handlePlinkoCommand(args, context)
         },
+        {
+          name: 'arena',
+          description: 'Set your Live Arena strategy',
+          syntax: '/arena <hunt|flee|farm|target|role|status>',
+          permission: 'all',
+          enabled: true,
+          minArgs: 1,
+          maxArgs: 3,
+          category: 'Games',
+          handler: async (args, context) => await this.handleArenaCommand(args, context)
+        },
       ];
 
       // Register slot machine chat commands (stored in game_slot_config, not game_triggers)
@@ -4370,6 +4381,18 @@ class GameEnginePlugin {
     const userRoles = { isModerator, isSubscriber, teamMemberLevel };
     const c4ChatCommand = this.getConnect4StartCommandName();
 
+    const arenaMatch = message.match(/^!arena\s+(.+)$/i);
+    if (arenaMatch) {
+      this.handleArenaCommand(arenaMatch[1].trim().split(/\s+/), {
+        username: viewerNickname,
+        userId: viewerId,
+        nickname: viewerNickname,
+        rawData: data,
+        profilePictureUrl
+      });
+      return;
+    }
+
     // Check for wheel chat commands (custom commands per wheel)
     // These can be with or without / prefix
     const cleanCommand = this.normalizeChatCommandName(message);
@@ -4478,6 +4501,18 @@ class GameEnginePlugin {
         this.handlePlinkoChatCommand(viewerId, viewerNickname, data, plinkoSlashMatch[1]);
         return;
       }
+
+      const arenaSlashMatch = message.match(/^\/arena\s+(.+)$/i);
+      if (arenaSlashMatch && !this.gcceCommandsRegistered) {
+        this.handleArenaCommand(arenaSlashMatch[1].trim().split(/\s+/), {
+          username: viewerNickname,
+          userId: viewerId,
+          nickname: viewerNickname,
+          rawData: data,
+          profilePictureUrl
+        });
+        return;
+      }
     }
 
     // Check for Connect4 moves (simple patterns for non-GCCE mode)
@@ -4508,6 +4543,53 @@ class GameEnginePlugin {
     }).catch(error => {
       this.logger.error(`Plinko command error: ${error.message}`);
     });
+  }
+
+  async handleArenaCommand(args, context = {}) {
+    try {
+      if (!this.arenaGame) {
+        return {
+          success: false,
+          message: 'Live Arena is not available.',
+          displayOverlay: true
+        };
+      }
+
+      const userId = context.userId || context.username;
+      const nickname = context.nickname || context.username || userId;
+      const rawData = context.rawData || {};
+      const result = this.arenaGame.handleChatStrategy({
+        ...rawData,
+        uniqueId: userId,
+        userId,
+        username: userId,
+        nickname,
+        profilePictureUrl: context.profilePictureUrl || rawData.profilePictureUrl || ''
+      }, args);
+
+      return {
+        success: result.success,
+        message: result.message || result.error || this._arenaCommandMessage(result),
+        displayOverlay: true,
+        result
+      };
+    } catch (error) {
+      this.logger.error(`Error in handleArenaCommand: ${error.message}`);
+      return {
+        success: false,
+        error: 'An error occurred',
+        message: 'Failed to update Arena strategy'
+      };
+    }
+  }
+
+  _arenaCommandMessage(result) {
+    if (!result || !result.success) return 'Arena command failed.';
+    if (result.status && result.message) return result.message;
+    if (result.targetUsername) return `Arena target set: ${result.targetUsername}`;
+    if (result.activeRole) return `Arena role set: ${result.activeRole}`;
+    if (result.strategy) return `Arena strategy set: ${result.strategy}`;
+    return 'Arena strategy updated.';
   }
 
   /**

@@ -130,6 +130,166 @@ describe('ArenaGame', () => {
     expect(decision.vector.x).toBeGreaterThan(0);
   });
 
+  it('lets chat strategy hunt bias an otherwise cautious player toward prey', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+    const hunter = movementPlayer(arena, config, 'cautious_hunter', 26, {
+      x: 320,
+      y: 300,
+      lives: 120,
+      personality: {
+        id: 'cautious',
+        label: 'Cautious',
+        aggression: 0.55,
+        fear: 1.55,
+        intelligence: 1,
+        weaponFocus: 1,
+        foodFocus: 1.2,
+        randomness: 0.2,
+        commitment: 1,
+        riskTolerance: 0.55
+      }
+    });
+    const prey = movementPlayer(arena, config, 'near_prey', 22, {
+      x: 470,
+      y: 300,
+      lives: 90
+    });
+
+    arena.players.set(hunter.username, hunter);
+    arena.players.set(prey.username, prey);
+    arena.setPlayerStrategy({ uniqueId: hunter.username, nickname: hunter.nickname }, 'hunt');
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(hunter, config);
+
+    expect(decision.mode).toBe('hunt-player');
+    expect(decision.target.username).toBe('near_prey');
+    expect(hunter.strategyOverride).toBe('hunt');
+  });
+
+  it('lets chat strategy flee prefer a reachable weapon while threatened', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => 1000, random: () => 0.5 });
+    const config = arena.getConfig();
+    const runner = movementPlayer(arena, config, 'strategy_runner', 22, {
+      x: 360,
+      y: 300,
+      lives: 80
+    });
+    const threat = movementPlayer(arena, config, 'strategy_threat', 42, {
+      x: 520,
+      y: 300,
+      lives: 220
+    });
+
+    arena.players.set(runner.username, runner);
+    arena.players.set(threat.username, threat);
+    arena.weaponPickups.set('safe_weapon', {
+      id: 'safe_weapon',
+      type: 'shield',
+      tier: 'pickup',
+      power: 2,
+      durationMs: 9000,
+      x: 260,
+      y: 300,
+      radius: config.weaponPickupRadius,
+      spawnedAt: 1000,
+      expiresAt: 20000
+    });
+    arena.setPlayerStrategy({ uniqueId: runner.username, nickname: runner.nickname }, 'flee');
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(runner, config);
+
+    expect(decision.mode).toBe('evade-weapon');
+    expect(decision.target.id).toBe('safe_weapon');
+  });
+
+  it('lets chat strategy farm prefer food when not in immediate danger', () => {
+    const { arena } = createArena({ maxWeaponPickups: 0 }, { now: () => 1000, random: () => 0.5 });
+    const config = arena.getConfig();
+    const player = movementPlayer(arena, config, 'arena_farmer', 45, {
+      x: 300,
+      y: 300,
+      lives: 180
+    });
+    const prey = movementPlayer(arena, config, 'arena_prey', 28, {
+      x: 430,
+      y: 300,
+      lives: 120
+    });
+
+    arena.players.set(player.username, player);
+    arena.players.set(prey.username, prey);
+    arena.food.set('food_strategy', {
+      id: 'food_strategy',
+      x: 330,
+      y: 300,
+      value: 4,
+      radius: config.foodRadius,
+      spawnedAt: 1000,
+      expiresAt: 20000
+    });
+    arena.setPlayerStrategy({ uniqueId: player.username, nickname: player.nickname }, 'farm');
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(player, config);
+
+    expect(decision.mode).toBe('hunt-food');
+    expect(decision.target.id).toBe('food_strategy');
+  });
+
+  it('lets chat target bias movement toward the named target', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => 1000, random: () => 0.5 });
+    const config = arena.getConfig();
+    const player = movementPlayer(arena, config, 'target_picker', 70, {
+      x: 300,
+      y: 300,
+      lives: 320
+    });
+    const normalPrey = movementPlayer(arena, config, 'normal_prey', 26, {
+      x: 390,
+      y: 300,
+      lives: 110
+    });
+    const marked = movementPlayer(arena, config, 'Marked Viewer', 25, {
+      x: 520,
+      y: 300,
+      lives: 105
+    });
+
+    arena.players.set(player.username, player);
+    arena.players.set(normalPrey.username, normalPrey);
+    arena.players.set(marked.username, marked);
+    arena.setPlayerTarget({ uniqueId: player.username, nickname: player.nickname }, 'marked');
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(player, config);
+
+    expect(decision.mode).toBe('hunt-player');
+    expect(decision.target.username).toBe('Marked Viewer');
+  });
+
+  it('expires chat strategy and enforces per-player command cooldown', () => {
+    let now = 1000;
+    const { arena } = createArena({
+      chatStrategyDurationMs: 1000,
+      chatStrategyCooldownMs: 8000
+    }, { now: () => now, random: () => 0.5 });
+
+    arena.handleActivity({ uniqueId: 'cooldown_player', nickname: 'Cooldown' }, 'chat');
+    const first = arena.handleChatStrategy({ uniqueId: 'cooldown_player', nickname: 'Cooldown' }, ['hunt']);
+    const second = arena.handleChatStrategy({ uniqueId: 'cooldown_player', nickname: 'Cooldown' }, ['farm']);
+
+    expect(first.success).toBe(true);
+    expect(second).toEqual(expect.objectContaining({ success: false, cooldown: true }));
+
+    now = 2100;
+    arena.chooseBehavior(arena.players.get('cooldown_player'), arena.getConfig());
+
+    expect(arena.players.get('cooldown_player').strategyOverride).toBe(null);
+  });
+
   it('sends threatened unarmed players toward reachable weapons when the route is safe enough', () => {
     const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { now: () => 1000, random: () => 0.5 });
     const config = arena.getConfig();
@@ -6856,6 +7016,30 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain('Zum Spawnen');
   });
 
+  it('renders arena chat command hints in the existing info rotator', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain('topOverlayShowCommandHints');
+    expect(overlay).toContain('function getArenaCommandHints');
+    expect(overlay).toContain('!arena hunt - Angriff');
+    expect(overlay).toContain('!arena flee - Überleben');
+    expect(overlay).toContain('!arena farm - Sammeln');
+    expect(overlay).toContain('!arena target Name - Ziel markieren');
+    expect(overlay).toContain('!arena role tactician - KI-Rolle wählen');
+    expect(overlay).toContain("kind: 'command'");
+    expect(overlay).toContain('data-info-kind="command"');
+  });
+
+  it('draws active arena strategy labels only when player strategy data exists', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain('function strategyLabelForPlayer');
+    expect(overlay).toContain('drawStrategyLabel(player, point)');
+    expect(overlay).toContain('player.strategy');
+    expect(overlay).toContain('TARGET');
+    expect(overlay).toContain('state.players.length > 48');
+  });
+
   it('loads PixiJS and Rapier through a hybrid arena renderer with Canvas fallback', () => {
     const overlay = readOverlay();
 
@@ -6866,6 +7050,23 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain('createRapierCollisionWorld');
     expect(overlay).toContain('CanvasArenaRenderer');
     expect(overlay).toContain('renderer: renderEngine.name');
+  });
+
+  it('adapts internal arena render resolution when FPS drops without changing OBS layout size', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain('adaptiveResolutionEnabled');
+    expect(overlay).toContain('adaptiveRenderScale');
+    expect(overlay).toContain('MIN_ADAPTIVE_RENDER_SCALE');
+    expect(overlay).toContain('function getEffectiveRenderScale()');
+    expect(overlay).toContain('function updateAdaptiveRenderScale(now)');
+    expect(overlay).toContain('targetFps, 24');
+    expect(overlay).toContain('resize(false)');
+    expect(overlay).toContain('canvas.style.width = `${window.innerWidth}px`;');
+    expect(overlay).toContain('canvas.style.height = `${window.innerHeight}px`;');
+    expect(overlay).toContain('renderStats.adaptiveRenderScale');
+    expect(overlay).toContain('renderStats.effectiveRenderScale');
+    expect(overlay).toContain('app.renderer.resolution = Math.max(0.35, Math.min(MAX_RENDER_DPR, (window.devicePixelRatio || 1) * getEffectiveRenderScale()))');
   });
 });
 
@@ -7058,6 +7259,32 @@ describe('Arena admin and backend integration contract', () => {
     expect(ui).toContain("setArenaField('arena-large-ball-transparency-mode'");
     expect(ui).toContain("setArenaField('arena-large-ball-transparency-start-mass'");
     expect(ui).toContain("setArenaField('arena-large-ball-min-opacity'");
+  });
+
+  it('adds admin controls for arena chat strategy commands', () => {
+    const ui = readUi();
+
+    expect(ui).toContain('Arena Chat-Steuerung');
+    expect(ui).toContain('id="arena-chat-strategy-enabled"');
+    expect(ui).toContain('id="arena-chat-command-prefix"');
+    expect(ui).toContain('id="arena-chat-strategy-duration"');
+    expect(ui).toContain('id="arena-chat-strategy-cooldown"');
+    expect(ui).toContain('id="arena-chat-target-enabled"');
+    expect(ui).toContain('id="arena-show-command-hints"');
+    expect(ui).toContain('chatStrategyEnabled');
+    expect(ui).toContain('chatStrategyDurationMs');
+    expect(ui).toContain('chatStrategyCooldownMs');
+    expect(ui).toContain('chatTargetCommandEnabled');
+    expect(ui).toContain('topOverlayShowCommandHints');
+  });
+
+  it('registers and dispatches the arena GCCE chat command', () => {
+    const mainSource = readBackendSource('main.js');
+
+    expect(mainSource).toContain("name: 'arena'");
+    expect(mainSource).toContain('handleArenaCommand');
+    expect(mainSource).toContain("message.match(/^!arena\\s+(.+)$/i)");
+    expect(mainSource).toContain('this.arenaGame.handleChatStrategy');
   });
 
   it('declares and serves PixiJS and Rapier vendor assets locally', () => {
