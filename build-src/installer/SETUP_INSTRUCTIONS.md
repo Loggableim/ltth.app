@@ -27,7 +27,7 @@ Follow these steps to create a working LTTH installer:
 Make sure these files exist:
 
 ```
-pupcidslittletiktoolhelper_desktop/
+ltth.app/
 ├── build-src/
 │   ├── installer/
 │   │   ├── ltth-installer.nsi          ← Main installer script (READY)
@@ -306,7 +306,7 @@ Before releasing the installer:
 **Questions?**
 - Read: `build-src/installer/README.md` (detailed docs)
 - Check: Migration guide at `migration-guides/01_NSIS_INSTALLER_GUIDE.md`
-- Issues: https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop/issues
+- Issues: https://github.com/Loggableim/ltth.app/issues
 
 ---
 

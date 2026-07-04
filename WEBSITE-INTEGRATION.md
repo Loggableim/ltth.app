@@ -1,6 +1,6 @@
 # Website Integration Documentation
 
-This document describes the integration between ltth.app (the website) and pupcidslittletiktokhelper (the tool).
+This document describes the integration between ltth.app (the website) and ltth.app (the tool).
 
 ## Overview
 
@@ -8,7 +8,7 @@ The ltth.app website serves as the main landing page and documentation hub for P
 
 ## Tool Repository
 
-**GitHub Repository**: https://github.com/Loggableim/pupcidslittletiktokhelper
+**GitHub Repository**: https://github.com/Loggableim/ltth.app
 
 The tool repository contains:
 - Main application code in `/app` directory
@@ -23,7 +23,7 @@ The tool repository contains:
 
 The download link on the website points to:
 ```
-https://github.com/Loggableim/pupcidslittletiktokhelper/archive/refs/heads/main.zip
+https://github.com/Loggableim/ltth.app/archive/refs/heads/main.zip
 ```
 
 This ensures users always get the latest version of the tool.
@@ -38,7 +38,7 @@ This ensures users always get the latest version of the tool.
 
 2. **changelog.html** / **changelog-en.html**
    - Displays latest changes from the tool
-   - Links to full changelog on GitHub: https://github.com/Loggableim/pupcidslittletiktokhelper/blob/main/app/CHANGELOG.md
+- Links to full changelog on GitHub: https://github.com/Loggableim/ltth.app/blob/main/app/CHANGELOG.md
 
 3. **support.html** / **support-en.html**
    - Links to GitHub Issues for bug reports, feedback, and feature requests
@@ -73,16 +73,16 @@ This ensures users always get the latest version of the tool.
 
 ### User Resources
 
-- **Bug Reports**: https://github.com/Loggableim/pupcidslittletiktokhelper/issues
-- **Feature Requests**: https://github.com/Loggableim/pupcidslittletiktokhelper/issues
+- **Bug Reports**: https://github.com/Loggableim/ltth.app/issues
+- **Feature Requests**: https://github.com/Loggableim/ltth.app/issues
 - **Discord Community**: https://discord.gg/qazznedY8g
-- **Tool Download**: https://github.com/Loggableim/pupcidslittletiktokhelper/archive/refs/heads/main.zip
+- **Tool Download**: https://github.com/Loggableim/ltth.app/archive/refs/heads/main.zip
 
 ### Repository Information
 
-- **Tool Repository**: https://github.com/Loggableim/pupcidslittletiktokhelper
+- **Tool Repository**: https://github.com/Loggableim/ltth.app
 - **Website Repository**: https://github.com/Loggableim/ltth.app
-- **Changelog**: https://github.com/Loggableim/pupcidslittletiktokhelper/blob/main/app/CHANGELOG.md
+- **Changelog**: https://github.com/Loggableim/ltth.app/blob/main/app/CHANGELOG.md
 
 ## Updating the Website
 
@@ -176,4 +176,4 @@ When you need to update the website:
 
 - **Developer Email**: loggableim@gmail.com
 - **Discord**: https://discord.gg/qazznedY8g
-- **GitHub Issues**: https://github.com/Loggableim/pupcidslittletiktokhelper/issues
+- **GitHub Issues**: https://github.com/Loggableim/ltth.app/issues

@@ -247,7 +247,7 @@ class ChangelogAgent {
     this.log('info', 'Generating changelogs');
     
     // Detect repository name from git config
-    let repoName = 'Loggableim/pupcidslittletiktoolhelper_desktop';
+    let repoName = 'Loggableim/ltth.app';
     try {
       const remoteUrl = await this.gitOps.git('config --get remote.origin.url');
       const match = remoteUrl.match(/github\.com[:/](.+?)(?:\.git)?$/);

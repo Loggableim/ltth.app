@@ -44,9 +44,9 @@ This plugin provides a user-friendly interface to:
 1. **Close the old installation** if it's running (important to avoid database lock issues)
 2. Open the plugin from the dashboard (Plugins → Config Import)
 3. Enter the full path to your old installation directory:
-   - Windows: `C:\old-path\pupcidslittletiktokhelper` (or the main folder containing an app/ subdirectory)
-   - macOS: `/Users/username/old-path/pupcidslittletiktokhelper`
-   - Linux: `/home/username/old-path/pupcidslittletiktokhelper`
+- Windows: `C:\old-path\ltth.app` (or the main folder containing an app/ subdirectory)
+- macOS: `/Users/username/old-path/ltth.app`
+- Linux: `/home/username/old-path/ltth.app`
 4. Optional: Enter a custom name for the imported profile (e.g., "my-old-config")
 5. Click "Validate Path" to check if configuration files exist
 6. Review the found files (including plugin data)
@@ -362,5 +362,5 @@ CC BY-NC 4.0 License - Part of Pup Cid's Little TikTool Helper
 ## Support
 
 For issues or questions:
-- GitHub Issues: [Create an issue](https://github.com/Loggableim/pupcidslittletiktokhelper/issues)
+- GitHub Issues: [Create an issue](https://github.com/Loggableim/ltth.app/issues)
 - Email: loggableim@gmail.com

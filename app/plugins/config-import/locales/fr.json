@@ -1,9 +1,9 @@
-{
+﻿{
   "config-import": {
     "title": "Import Configuration",
     "description": "Import your settings from an old installation",
     "selectPath": "Select old installation path",
-    "pathPlaceholder": "e.g. C:\\old-installation\\pupcidslittletiktokhelper",
+    "pathPlaceholder": "e.g. C:\\old-installation\\ltth.app",
     "profileName": "Profile Name (optional)",
     "profileNamePlaceholder": "e.g. imported-config (leave empty for auto-generated name)",
     "profileNameHelp": "This name will be used for the imported profile. If a profile with this name already exists, a timestamp will be added automatically.",
@@ -37,3 +37,4 @@
     }
   }
 }
+

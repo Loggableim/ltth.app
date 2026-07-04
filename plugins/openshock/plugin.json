@@ -3,7 +3,7 @@
   "name": "OpenShock Integration",
   "version": "1.0.0",
   "description": "Vollständige OpenShock API-Integration für TikTok Live Events mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professionellem Overlay",
-  "author": "pupcidslittletiktokhelper Team",
+  "author": "ltth.app Team",
   "entry": "main.js",
   "enabled": true,
   "type": "integration",

@@ -593,7 +593,7 @@ Before distributing the installer:
 ## 📧 Support
 
 For issues or questions:
-- GitHub: https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop
+- GitHub: https://github.com/Loggableim/ltth.app
 - Email: pupcid@ltth.app
 - Website: https://ltth.app
 

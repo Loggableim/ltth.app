@@ -120,7 +120,15 @@ class QuizShowPlugin {
             seasonAutomationDay: 1, // 0-6 for weekly, 1-28 for monthly
             setupWizardCompleted: false,
             setupWizardStep: 'questions',
-            healthOverlayTestMode: false
+            healthOverlayTestMode: false,
+            // LLM On-the-fly question generation
+            llmEnabled: false,
+            llmProvider: 'openai', // 'openai' or 'ollama'
+            llmApiKey: '',
+            llmModel: 'gpt-5-mini',
+            llmBaseUrl: '',
+            llmLanguage: 'de',
+            llmDifficulty: 2
         };
 
         // Current game state
@@ -707,6 +715,14 @@ class QuizShowPlugin {
             if (!hasQuestionDisplayType) {
                 this.api.log('Adding question_display_type column to leaderboard_display_config...', 'info');
                 this.db.exec("ALTER TABLE leaderboard_display_config ADD COLUMN question_display_type TEXT DEFAULT 'season' CHECK(question_display_type IN ('round', 'season', 'both'))");
+            }
+
+            // Add language column to questions table if it doesn't exist
+            const hasLanguageColumn = columns.some(col => col.name === 'language');
+            if (!hasLanguageColumn) {
+                this.api.log('Adding language column to questions table...', 'info');
+                this.db.exec("ALTER TABLE questions ADD COLUMN language TEXT DEFAULT 'de'");
+                this.api.log('Language column migration completed', 'info');
             }
         } catch (error) {
             this.api.log('Error during schema migration: ' + error.message, 'warn');
@@ -1566,6 +1582,19 @@ class QuizShowPlugin {
                 res.json({ success: true, config: this.config });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
+            }
+        });
+
+        // Test LLM connection
+        this.api.registerRoute('post', '/api/quiz-show/llm-test', async (req, res) => {
+            try {
+                const { provider, apiKey, model, baseUrl } = req.body;
+                const LLMQuizService = require('./llm-service');
+                const service = new LLMQuizService({ provider, apiKey, model, baseUrl });
+                const result = await service.testConnection();
+                res.json(result);
+            } catch (error) {
+                res.json({ success: false, error: error.message });
             }
         });
 
@@ -2462,7 +2491,7 @@ class QuizShowPlugin {
         // Generate question package with OpenAI
         this.api.registerRoute('post', '/api/quiz-show/packages/generate', async (req, res) => {
             try {
-                const { category, packageSize, packageName } = req.body;
+                const { category, packageSize, packageName, language } = req.body;
 
                 if (!category) {
                     return res.status(400).json({ success: false, error: 'Kategorie erforderlich' });
@@ -2485,7 +2514,7 @@ class QuizShowPlugin {
                 const service = new OpenAIQuizService(config.api_key, config.model);
                 
                 const size = packageSize || 10;
-                const questions = await service.generateQuestions(category, size, existingQuestions);
+                const questions = await service.generateQuestions(category, size, existingQuestions, language);
 
                 if (questions.length === 0) {
                     return res.status(500).json({ success: false, error: 'Keine Fragen generiert' });
@@ -2547,7 +2576,7 @@ class QuizShowPlugin {
         // Batch generate multiple question packages with OpenAI
         this.api.registerRoute('post', '/api/quiz-show/packages/batch-generate', async (req, res) => {
             try {
-                const { categories, packageSize } = req.body;
+                const { categories, packageSize, language } = req.body;
 
                 if (!categories || !Array.isArray(categories) || categories.length === 0) {
                     return res.status(400).json({ success: false, error: 'Kategorien erforderlich (Array)' });
@@ -2572,7 +2601,7 @@ class QuizShowPlugin {
                 });
 
                 // Process categories in background
-                this.processBatchGeneration(categories, size, service);
+                this.processBatchGeneration(categories, size, service, language);
             } catch (error) {
                 this.api.log('Error starting batch generation: ' + error.message, 'error');
                 res.status(500).json({ success: false, error: error.message });
@@ -3874,13 +3903,54 @@ class QuizShowPlugin {
 
         // Check if we have any available questions
         if (availableQuestions.length === 0) {
-            // No questions available - emit error to HUD
-            this.api.emit('quiz-show:error', { 
-                message: 'Neue Fragen notwendig',
-                type: 'no_questions_available'
-            });
-            
-            throw new Error('Alle verfügbaren Fragen wurden heute bereits gestellt. Bitte fügen Sie neue Fragen hinzu.');
+            // Try on-the-fly LLM generation if enabled
+            if (this.config.llmEnabled) {
+                try {
+                    this.api.log('No questions available - generating on-the-fly via LLM...', 'info');
+                    const generatedQuestion = await this.generateQuestionOnTheFly();
+                    if (generatedQuestion) {
+                        // Insert into database
+                        const insertResult = this.db.prepare(`
+                            INSERT INTO questions (question, answers, correct, category, difficulty, info, language)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        `).run(
+                            generatedQuestion.question,
+                            JSON.stringify(generatedQuestion.answers),
+                            generatedQuestion.correct,
+                            generatedQuestion.category,
+                            generatedQuestion.difficulty,
+                            generatedQuestion.info,
+                            generatedQuestion.language
+                        );
+                        generatedQuestion.id = insertResult.lastInsertRowid;
+
+                        // Add category if it doesn't exist
+                        this.db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)').run(generatedQuestion.category);
+
+                        // Use this question directly
+                        questions.push({
+                            ...generatedQuestion,
+                            answers: generatedQuestion.answers
+                        });
+                        availableQuestions.push(generatedQuestion);
+
+                        this.api.log(`On-the-fly question generated: "${generatedQuestion.question}" (ID: ${generatedQuestion.id})`, 'info');
+                    }
+                } catch (llmError) {
+                    this.api.log('On-the-fly LLM generation failed: ' + llmError.message, 'error');
+                }
+            }
+
+            // If still no questions available after LLM attempt
+            if (availableQuestions.length === 0) {
+                // No questions available - emit error to HUD
+                this.api.emit('quiz-show:error', { 
+                    message: 'Neue Fragen notwendig',
+                    type: 'no_questions_available'
+                });
+                
+                throw new Error('Alle verfügbaren Fragen wurden heute bereits gestellt. Bitte fügen Sie neue Fragen hinzu.');
+            }
         }
 
         // Select question from available ones with difficulty progression and repetition avoidance
@@ -3989,6 +4059,54 @@ class QuizShowPlugin {
         this.broadcastGameState();
 
         this.api.log(`Round started with question: ${selectedQuestion.question}`, 'info');
+    }
+
+    /**
+     * Generate a single question on-the-fly using the configured LLM provider
+     * @returns {Promise<Object|null>} Generated question object or null
+     */
+    async generateQuestionOnTheFly() {
+        try {
+            const LLMQuizService = require('./llm-service');
+            const service = new LLMQuizService({
+                provider: this.config.llmProvider,
+                apiKey: this.config.llmApiKey,
+                model: this.config.llmModel,
+                baseUrl: this.config.llmBaseUrl
+            });
+
+            // Determine category: use category filter if set, otherwise pick a random existing category
+            let category = 'Allgemein';
+            if (this.config.categoryFilter && !this.isCategoryFilterAll(this.config.categoryFilter)) {
+                const categories = Array.isArray(this.config.categoryFilter) ? this.config.categoryFilter : [this.config.categoryFilter];
+                category = categories[Math.floor(Math.random() * categories.length)];
+            } else {
+                const existingCategories = this.db.prepare('SELECT name FROM categories').all();
+                if (existingCategories.length > 0) {
+                    category = existingCategories[Math.floor(Math.random() * existingCategories.length)].name;
+                }
+            }
+
+            // Get existing questions in this category to avoid duplicates
+            const existingQuestions = this.db.prepare(
+                'SELECT question FROM questions WHERE category = ?'
+            ).all(category).map(q => q.question);
+
+            const language = this.config.llmLanguage || 'de';
+            const difficulty = this.config.llmDifficulty || 2;
+
+            const question = await service.generateSingleQuestion({
+                category,
+                difficulty,
+                language,
+                existingQuestions
+            });
+
+            return question;
+        } catch (error) {
+            this.api.log('Error in generateQuestionOnTheFly: ' + error.message, 'error');
+            return null;
+        }
     }
 
     /**
@@ -5367,7 +5485,7 @@ class QuizShowPlugin {
      * @param {number} size - Number of questions per package
      * @param {Object} service - OpenAI service instance
      */
-    async processBatchGeneration(categories, size, service) {
+    async processBatchGeneration(categories, size, service, language = 'de') {
         let successCount = 0;
         let failedCategories = [];
         
@@ -5395,7 +5513,7 @@ class QuizShowPlugin {
                 `).all(category).map(q => q.question);
 
                 // Generate questions using OpenAI
-                const questions = await service.generateQuestions(category, size, existingQuestions);
+                const questions = await service.generateQuestions(category, size, existingQuestions, language);
 
                 if (questions.length === 0) {
                     this.api.log(`No questions generated for category: ${category}`, 'warn');

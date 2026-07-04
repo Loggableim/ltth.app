@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![Version](https://img.shields.io/badge/version-1.0.3-blue)](https://github.com/yourusername/pupcidslittletiktokhelper)
-[![Status](https://img.shields.io/badge/status-active-success)](https://github.com/yourusername/pupcidslittletiktokhelper)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue)](https://github.com/Loggableim/ltth.app)
+[![Status](https://img.shields.io/badge/status-active-success)](https://github.com/Loggableim/ltth.app)
 
 ---
 
@@ -241,8 +241,8 @@ npm --version
 ### 2. Repository klonen
 
 ```bash
-git clone https://github.com/yourusername/pupcidslittletiktokhelper.git
-cd pupcidslittletiktokhelper
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 ```
 
 ### 3. Dependencies installieren
@@ -337,8 +337,8 @@ Automatisches Update-Management:
 ### Hilfe bekommen
 
 - **📧 E-Mail:** [loggableim@gmail.com](mailto:loggableim@gmail.com)
-- **🐛 Bug-Reports:** [GitHub Issues](https://github.com/yourusername/pupcidslittletiktokhelper/issues)
-- **💬 Diskussionen:** [GitHub Discussions](https://github.com/yourusername/pupcidslittletiktokhelper/discussions)
+- **🐛 Bug-Reports:** [GitHub Issues](https://github.com/Loggableim/ltth.app/issues)
+- **💬 Diskussionen:** [GitHub Discussions](https://github.com/Loggableim/ltth.app/discussions)
 - **📖 Dokumentation:** Dieses Wiki
 
 ### Feature-Requests
@@ -370,8 +370,8 @@ Wir freuen uns über Contributions! So kannst du beitragen:
 ```bash
 # Repository forken auf GitHub
 # Dann klonen:
-git clone https://github.com/dein-username/pupcidslittletiktokhelper.git
-cd pupcidslittletiktokhelper
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 ```
 
 ### 2. Feature-Branch erstellen

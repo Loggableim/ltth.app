@@ -686,7 +686,7 @@ See [SIGNING.md](SIGNING.md) for details.
 - [COMPATIBILITY_UPDATE_2025.md](COMPATIBILITY_UPDATE_2025.md) - Compatibility info
 
 **Contact:**
-- GitHub: https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop
+- GitHub: https://github.com/Loggableim/ltth.app
 - Email: pupcid@ltth.app
 - Website: https://ltth.app
 

@@ -222,6 +222,23 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(onboardingPost).toBeTruthy();
   });
 
+  test('first-run onboarding exposes an easy copy flow for the OBS overlay URL', async () => {
+    const { dom } = bootMusicBotUi();
+    doms.push(dom);
+    const overlayCopy = dom.window.document.getElementById('overlay-copy');
+
+    expect(overlayCopy).not.toBeNull();
+
+    overlayCopy.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+
+    expect(dom.window.navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+    const [copiedUrl] = dom.window.navigator.clipboard.writeText.mock.calls[0];
+    expect(copiedUrl).toContain('/plugins/music-bot/overlay.html');
+    expect(copiedUrl).toMatch(/\?.*design=.*theme=.*position=.*/);
+    expect(overlayCopy.textContent).toContain('Kopiert');
+  });
+
   test('status payload exposes onboarding completion state', () => {
     const { plugin } = createPluginWithQueue([]);
     plugin.queueManager = {
@@ -282,3 +299,4 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(css).not.toContain('var(--color-accent)');
   });
 });
+

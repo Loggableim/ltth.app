@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="multicam.title">Multi-Cam Switcher - Admin Panel</title>
+    <title>Multi-Cam Switcher - Geschenkekatalog</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
-        // Apply saved theme immediately to prevent flash
         (function() {
             const savedTheme = localStorage.getItem('dashboard-theme');
             if (savedTheme && savedTheme !== 'night') {
@@ -18,11 +17,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -32,26 +27,18 @@
             font-size: 14px;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: var(--color-text-primary);
-        }
-
+        h1 { font-size: 24px; margin-bottom: 20px; color: var(--color-text-primary); }
         h2 {
-            font-size: 18px;
-            margin-top: 30px;
-            margin-bottom: 15px;
+            font-size: 18px; margin-top: 30px; margin-bottom: 15px;
             color: var(--color-text-primary);
             border-bottom: 2px solid var(--color-border);
             padding-bottom: 5px;
         }
+        h3 { font-size: 15px; margin-bottom: 10px; color: var(--color-text-secondary); }
 
+        /* Status Bar */
         .status-bar {
             background: var(--color-bg-secondary);
             border-radius: 8px;
@@ -60,41 +47,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
+            flex-wrap: wrap;
             gap: 10px;
         }
-
+        .status-indicator { display: flex; align-items: center; gap: 10px; }
         .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
+            width: 12px; height: 12px; border-radius: 50%;
             background: var(--color-accent-danger);
             box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
         }
-
         .status-dot.connected {
             background: var(--color-accent-success);
             box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
         }
+        .status-text { font-size: 14px; font-weight: 500; }
+        .current-scene { font-size: 14px; color: var(--color-text-secondary); }
+        .current-scene strong { color: var(--color-text-primary); }
 
-        .status-text {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .current-scene {
-            font-size: 14px;
-            color: var(--color-text-secondary);
-        }
-
-        .current-scene strong {
-            color: var(--color-text-primary);
-        }
-
+        /* Control Group */
         .control-group {
             background: var(--color-bg-secondary);
             border-radius: 8px;
@@ -102,12 +72,8 @@
             margin-bottom: 15px;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
+        /* Buttons */
+        .button-group { display: flex; gap: 10px; flex-wrap: wrap; }
         button {
             background: var(--color-bg-tertiary);
             color: var(--color-text-primary);
@@ -118,356 +84,398 @@
             font-size: 14px;
             transition: all 0.2s;
         }
-
-        button:hover {
-            background: var(--color-bg-hover);
-            border-color: var(--color-accent-primary);
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button.primary {
-            background: var(--color-accent-primary);
-            border-color: var(--color-accent-primary);
-        }
-
-        button.primary:hover {
-            filter: brightness(1.1);
-        }
-
-        button.danger {
-            background: var(--color-accent-danger);
-            border-color: var(--color-accent-danger);
-        }
-
-        button.danger:hover {
-            filter: brightness(1.1);
-        }
-
-        button.success {
-            background: var(--color-accent-success);
-            border-color: var(--color-accent-success);
-        }
-
-        button.success:hover {
-            filter: brightness(1.1);
-        }
+        button:hover { background: var(--color-bg-hover); border-color: var(--color-accent-primary); }
+        button:active { transform: scale(0.98); }
+        button.primary { background: var(--color-accent-primary); border-color: var(--color-accent-primary); }
+        button.primary:hover { filter: brightness(1.1); }
+        button.danger { background: var(--color-accent-danger); border-color: var(--color-accent-danger); }
+        button.danger:hover { filter: brightness(1.1); }
+        button.success { background: var(--color-accent-success); border-color: var(--color-accent-success); }
+        button.success:hover { filter: brightness(1.1); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
         select {
             background: var(--color-bg-tertiary);
             color: var(--color-text-primary);
             border: 1px solid var(--color-border);
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             width: 100%;
-            max-width: 300px;
         }
 
-        .scene-selector {
+        /* ===== GIFT CATALOG GRID ===== */
+        .gift-catalog-controls {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
-            margin-bottom: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: var(--color-bg-primary);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
         }
+        .gift-catalog-controls .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .gift-catalog-controls label { font-size: 13px; color: var(--color-text-secondary); white-space: nowrap; }
+        .gift-catalog-controls select { width: auto; min-width: 140px; }
+        .gift-catalog-controls .stats {
+            margin-left: auto;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+        .gift-catalog-controls .stats strong { color: var(--color-accent-primary); }
 
-        .hot-buttons {
+        .gift-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
         }
 
-        .hot-button {
-            padding: 15px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .log-container {
+        .gift-card {
             background: var(--color-bg-primary);
             border: 1px solid var(--color-border);
-            border-radius: 6px;
-            padding: 15px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid var(--color-bg-secondary);
-        }
-
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .log-time {
-            color: var(--color-text-muted);
-            margin-right: 10px;
-        }
-
-        .log-user {
-            color: var(--color-accent-primary);
-            margin-right: 10px;
-        }
-
-        .log-action {
-            color: var(--color-accent-warning);
-            margin-right: 10px;
-        }
-
-        .log-target {
-            color: var(--color-accent-success);
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .setting-item {
+            border-radius: 10px;
+            padding: 12px;
+            transition: all 0.2s;
+            position: relative;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
+        }
+        .gift-card:hover {
+            border-color: var(--color-accent-primary);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .gift-card.mapped {
+            border-color: var(--color-accent-success);
+            background: var(--color-bg-secondary);
+        }
+        .gift-card.mapped::before {
+            content: '✓';
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            color: var(--color-accent-success);
+            font-weight: bold;
+            font-size: 16px;
         }
 
-        .setting-item label {
-            font-size: 13px;
-            color: var(--color-text-secondary);
-        }
-
-        .setting-item input[type="number"],
-        .setting-item input[type="text"] {
-            background: var(--color-bg-tertiary);
-            color: var(--color-text-primary);
-            border: 1px solid var(--color-border);
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .setting-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .locked-banner {
-            background: var(--color-accent-danger);
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .locked-banner.active {
-            display: block;
-        }
-
-        .gift-mapping-item {
-            background: var(--color-bg-primary);
-            border: 1px solid var(--color-border);
+        .gift-card .gift-image {
+            width: 100%;
+            height: 100px;
+            object-fit: contain;
             border-radius: 6px;
-            padding: 10px;
+            background: var(--color-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .gift-card .gift-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .gift-card .gift-image .no-image {
+            font-size: 32px;
+            opacity: 0.3;
+        }
+
+        .gift-card .gift-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .gift-mapping-info {
-            display: flex;
-            gap: 15px;
-            align-items: center;
+        .gift-card .gift-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             flex: 1;
         }
-
-        .gift-mapping-info span {
-            font-size: 13px;
-        }
-
-        .gift-name {
+        .gift-card .gift-coins {
+            font-size: 12px;
             color: var(--color-accent-warning);
-            font-weight: 600;
+            font-weight: 500;
+            white-space: nowrap;
+            margin-left: 6px;
         }
 
-        .scene-target {
-            color: var(--color-accent-success);
+        .gift-card .gift-scene-select {
+            margin-top: 4px;
+        }
+        .gift-card .gift-scene-select select {
+            font-size: 12px;
+            padding: 5px 8px;
+        }
+        .gift-card .gift-scene-select select.mapped-option {
+            border-color: var(--color-accent-success);
         }
 
-        .coins-info {
-            color: var(--color-text-secondary);
+        .gift-card .gift-coins-input {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-
-        .remove-mapping-btn {
-            background: var(--color-accent-danger);
-            border-color: var(--color-accent-danger);
-            padding: 6px 12px;
+        .gift-card .gift-coins-input label {
+            font-size: 11px;
+            color: var(--color-text-muted);
+        }
+        .gift-card .gift-coins-input input {
+            width: 60px;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            padding: 4px 6px;
+            border-radius: 4px;
             font-size: 12px;
         }
 
-        .remove-mapping-btn:hover {
-            background: #dd0000;
+        /* Tier Headers */
+        .tier-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 12px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .tier-header .tier-icon { font-size: 20px; }
+        .tier-header .tier-count {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--color-text-muted);
+            margin-left: auto;
+        }
+        .tier-header.tier-small {
+            background: rgba(100, 100, 100, 0.15);
+            color: var(--color-text-secondary);
+        }
+        .tier-header.tier-medium {
+            background: rgba(0, 200, 255, 0.1);
+            color: var(--color-accent-primary);
+        }
+        .tier-header.tier-large {
+            background: rgba(255, 200, 0, 0.1);
+            color: var(--color-accent-warning);
+        }
+        .tier-header.tier-whale {
+            background: rgba(255, 50, 50, 0.1);
+            color: var(--color-accent-danger);
         }
 
-        .gift-mappings-empty {
-            color: #666;
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-muted);
+        }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 10px; }
+        .empty-state p { font-size: 14px; }
+
+        /* Loading */
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-muted);
+        }
+        .loading-spinner::after {
+            content: '';
+            display: block;
+            width: 30px;
+            height: 30px;
+            margin: 10px auto;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Save bar */
+        .save-bar {
+            position: sticky;
+            bottom: 0;
+            background: var(--color-bg-secondary);
+            border-top: 2px solid var(--color-accent-primary);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            border-radius: 8px 8px 0 0;
+            margin-top: 20px;
+            z-index: 10;
+        }
+        .save-bar .save-info {
             font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+        .save-bar .save-info strong {
+            color: var(--color-accent-primary);
+        }
+        .save-bar .save-status {
+            font-size: 13px;
+            color: var(--color-accent-success);
+        }
+        .save-bar .save-status.error {
+            color: var(--color-accent-danger);
+        }
+
+        /* Scene Switcher (compact) */
+        .scene-switcher-compact {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .scene-switcher-compact select { width: auto; min-width: 180px; }
+        .hot-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .hot-button {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Log */
+        .log-container {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid var(--color-bg-secondary); }
+        .log-entry:last-child { border-bottom: none; }
+        .log-time { color: var(--color-text-muted); margin-right: 8px; }
+        .log-user { color: var(--color-accent-primary); margin-right: 8px; }
+        .log-action { color: var(--color-accent-warning); margin-right: 8px; }
+        .log-target { color: var(--color-accent-success); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .gift-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .gift-card .gift-image { height: 80px; }
+            .status-bar { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 data-i18n="multicam.title">🎥 Multi-Cam Switcher</h1>
+        <h1>🎥 Multi-Cam Switcher — Geschenkekatalog</h1>
 
-        <div class="locked-banner" id="lockedBanner">
-            <span data-i18n="multicam.safety_lock">⚠️ SAFETY LOCK ACTIVE - Too many rapid switches detected. Waiting 60 seconds...</span>
-        </div>
-
+        <!-- Status Bar -->
         <div class="status-bar">
             <div class="status-indicator">
                 <div class="status-dot" id="statusDot"></div>
-                <span class="status-text" id="statusText" data-i18n="multicam.status.disconnected">Disconnected</span>
+                <span class="status-text" id="statusText">Getrennt</span>
             </div>
             <div class="current-scene" id="currentScene">
-                <span data-i18n="multicam.current_scene">Current Scene:</span> <strong>-</strong>
+                Aktuelle Szene: <strong>-</strong>
             </div>
-        </div>
-
-        <div class="control-group">
-            <h2 data-i18n="multicam.connection.title">OBS Connection</h2>
-            <div class="settings-grid" style="margin-bottom: 15px;">
-                <div class="setting-item">
-                    <label for="obs-host" data-i18n="multicam.connection.host">Host</label>
-                    <input type="text" id="obs-host" value="127.0.0.1" placeholder="127.0.0.1">
-                </div>
-                <div class="setting-item">
-                    <label for="obs-port" data-i18n="multicam.connection.port">Port</label>
-                    <input type="number" id="obs-port" value="4455" placeholder="4455">
-                </div>
-                <div class="setting-item">
-                    <label for="obs-password" data-i18n="multicam.connection.password">Password</label>
-                    <input type="password" id="obs-password" value="" placeholder="Optional">
-                </div>
-            </div>
-            
-            <h3 style="font-size: 15px; margin-top: 20px; margin-bottom: 10px; color: var(--color-text-secondary);" data-i18n="multicam.connection.auto_connect_settings">Auto-Connect Settings</h3>
-            <div class="settings-grid" style="margin-bottom: 15px;">
-                <div class="setting-item">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="obs-connect-on-start">
-                        <span data-i18n="multicam.connection.connect_on_start">Connect on Start</span>
-                    </label>
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.connect_on_start_desc">Automatically connect to OBS when plugin initializes</small>
-                </div>
-                <div class="setting-item">
-                    <label for="obs-connect-delay-ms" data-i18n="multicam.connection.connect_delay_ms">Connection Delay (ms)</label>
-                    <input type="number" id="obs-connect-delay-ms" value="2000" min="0" step="100" placeholder="2000">
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.connect_delay_ms_desc">Delay before connecting on start</small>
-                </div>
-                <div class="setting-item">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="obs-auto-reconnect-enabled">
-                        <span data-i18n="multicam.connection.auto_reconnect_enabled">Enable Auto-Reconnect</span>
-                    </label>
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.auto_reconnect_enabled_desc">Automatically reconnect if connection is lost</small>
-                </div>
-                <div class="setting-item">
-                    <label for="obs-max-reconnect-minutes" data-i18n="multicam.connection.max_reconnect_minutes">Max Reconnect Duration (min)</label>
-                    <input type="number" id="obs-max-reconnect-minutes" value="30" min="1" placeholder="30">
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.max_reconnect_minutes_desc">Stop reconnecting after this many minutes</small>
-                </div>
-            </div>
-
-            <h3 style="font-size: 15px; margin-top: 20px; margin-bottom: 10px; color: var(--color-text-secondary);" data-i18n="multicam.connection.health_check_settings">Health Check Settings</h3>
-            <div class="settings-grid" style="margin-bottom: 15px;">
-                <div class="setting-item">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" id="obs-health-check-enabled">
-                        <span data-i18n="multicam.connection.health_check_enabled">Enable Health Check</span>
-                    </label>
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.health_check_enabled_desc">Periodically verify OBS connection is healthy</small>
-                </div>
-                <div class="setting-item">
-                    <label for="obs-health-check-interval-ms" data-i18n="multicam.connection.health_check_interval_ms">Health Check Interval (ms)</label>
-                    <input type="number" id="obs-health-check-interval-ms" value="30000" min="5000" step="1000" placeholder="30000">
-                    <small style="color: var(--color-text-muted); font-size: 12px;" data-i18n="multicam.connection.health_check_interval_ms_desc">Time between health checks</small>
-                </div>
-            </div>
-
             <div class="button-group">
-                <button class="success" id="obs-connect-btn" data-i18n="multicam.connection.connect">Connect OBS</button>
-                <button class="danger" id="obs-disconnect-btn" data-i18n="multicam.connection.disconnect">Disconnect OBS</button>
-                <button id="obs-save-settings-btn" data-i18n="multicam.connection.save_settings">Save Settings</button>
+                <button class="success" id="obs-connect-btn">OBS verbinden</button>
+                <button class="danger" id="obs-disconnect-btn">Trennen</button>
             </div>
         </div>
 
+        <!-- Scene Switcher + Hot Buttons -->
         <div class="control-group">
-            <h2 data-i18n="multicam.switcher.title">Scene Switcher</h2>
-            <div class="scene-selector">
+            <h2>Szenen-Switcher</h2>
+            <div class="scene-switcher-compact">
                 <select id="sceneSelect">
-                    <option value="" data-i18n="multicam.switcher.select_scene">Select Scene...</option>
+                    <option value="">Szene wählen...</option>
                 </select>
-                <button class="primary" id="switch-scene-btn" data-i18n="multicam.switcher.switch">Switch</button>
+                <button class="primary" id="switch-scene-btn">Wechseln</button>
             </div>
+            <h3 style="margin-top: 15px;">Schnellzugriff</h3>
+            <div class="hot-buttons" id="hotButtons"></div>
         </div>
 
+        <!-- ===== GESCHENKEKATALOG ===== -->
         <div class="control-group">
-            <h2 data-i18n="multicam.hot_buttons.title">Hot Buttons</h2>
-            <div class="hot-buttons" id="hotButtons">
-                <!-- Dynamically loaded -->
-            </div>
-        </div>
+            <h2>🎁 Geschenkekatalog — Kamerazuordnung</h2>
+            <p style="color: var(--color-text-muted); font-size: 13px; margin-bottom: 15px;">
+                Wähle für jedes Geschenk die OBS-Szene (Kamera), die automatisch geschaltet werden soll.
+                Geschenke ohne Zuordnung werden ignoriert. Änderungen werden mit "Speichern" übernommen.
+            </p>
 
-        <div class="control-group">
-            <h2 data-i18n="multicam.gift_mapping.title">Gift to Scene Mapping</h2>
-            <div style="margin-bottom: 15px;">
-                <p style="color: #aaa; font-size: 13px; margin-bottom: 10px;" data-i18n="multicam.gift_mapping.description">
-                    Select a gift and assign it to an OBS scene. When users send this gift, the scene will automatically switch.
-                </p>
-                <div class="settings-grid" style="margin-bottom: 15px;">
-                    <div class="setting-item">
-                        <label for="gift-select" data-i18n="multicam.gift_mapping.select_gift">Select Gift</label>
-                        <select id="gift-select">
-                            <option value="" data-i18n="multicam.gift_mapping.loading">Loading gifts...</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label for="gift-scene-select" data-i18n="multicam.gift_mapping.select_scene">Target Scene</label>
-                        <select id="gift-scene-select">
-                            <option value="" data-i18n="multicam.gift_mapping.select_scene_placeholder">Select Scene...</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label for="gift-min-coins" data-i18n="multicam.gift_mapping.min_coins">Min Coins (optional)</label>
-                        <input type="number" id="gift-min-coins" value="1" min="0" placeholder="0">
-                    </div>
+            <!-- Filter / Controls -->
+            <div class="gift-catalog-controls">
+                <div class="filter-group">
+                    <label for="filter-tier">Filter:</label>
+                    <select id="filter-tier">
+                        <option value="all">Alle Geschenke</option>
+                        <option value="mapped">Nur zugeordnete</option>
+                        <option value="unmapped">Nur nicht zugeordnete</option>
+                        <option value="small">Klein (1-99 Coins)</option>
+                        <option value="medium">Mittel (100-999 Coins)</option>
+                        <option value="large">Groß (1000-9999 Coins)</option>
+                        <option value="whale">Whale (10.000+ Coins)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-scene">Kamera:</label>
+                    <select id="filter-scene">
+                        <option value="all">Alle Kameras</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-gifts">Sortierung:</label>
+                    <select id="sort-gifts">
+                        <option value="coins-desc">Coins (absteigend)</option>
+                        <option value="coins-asc">Coins (aufsteigend)</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="mapped">Zugeordnete zuerst</option>
+                    </select>
+                </div>
+                <div class="stats" id="catalogStats">
+                    <span id="mappedCount">0</span> / <span id="totalCount">0</span> zugeordnet
+                </div>
+                <button id="refreshCatalogBtn" title="Geschenkekatalog neu laden" style="padding: 6px 12px; font-size: 13px;">🔄</button>
+            </div>
+
+            <!-- Gift Grid Container -->
+            <div id="giftGridContainer">
+                <div class="loading-spinner">Lade Geschenkekatalog...</div>
+            </div>
+
+            <!-- Save Bar -->
+            <div class="save-bar" id="saveBar">
+                <div class="save-info">
+                    <span id="changeCount">0</span> Änderungen — <strong id="mappedDisplay">0</strong> Geschenke zugeordnet
                 </div>
                 <div class="button-group">
-                    <button class="primary" id="add-gift-mapping-btn" data-i18n="multicam.gift_mapping.add">Add Mapping</button>
-                    <button id="refresh-gifts-btn" data-i18n="multicam.gift_mapping.refresh_gifts">Refresh Gifts</button>
-                </div>
-            </div>
-            <div id="gift-mappings-list" style="margin-top: 15px;">
-                <h3 style="font-size: 14px; color: #aaa; margin-bottom: 10px;" data-i18n="multicam.gift_mapping.current_mappings">Current Mappings:</h3>
-                <div id="gift-mappings-container" style="display: grid; gap: 10px;">
-                    <!-- Gift mappings will be loaded here -->
+                    <span class="save-status" id="saveStatus"></span>
+                    <button class="primary" id="saveMappingsBtn">💾 Zuordnungen speichern</button>
+                    <button id="resetMappingsBtn">↺ Zurücksetzen</button>
                 </div>
             </div>
         </div>
 
+        <!-- Activity Log -->
         <div class="control-group">
-            <h2 data-i18n="multicam.log.title">Activity Log</h2>
+            <h2>Aktivitäts-Log</h2>
             <div class="log-container" id="logContainer">
                 <div class="log-entry">
                     <span class="log-time">--:--:--</span>
-                    <span data-i18n="multicam.log.waiting">Waiting for events...</span>
+                    <span>Warte auf Events...</span>
                 </div>
             </div>
         </div>

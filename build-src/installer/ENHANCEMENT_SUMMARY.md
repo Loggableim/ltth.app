@@ -330,7 +330,7 @@ Before releasing installer:
 - **Compatibility:** See COMPATIBILITY_UPDATE_2025.md
 
 ### Contact
-- **GitHub:** https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop
+- **GitHub:** https://github.com/Loggableim/ltth.app
 - **Email:** pupcid@ltth.app
 - **Website:** https://ltth.app
 

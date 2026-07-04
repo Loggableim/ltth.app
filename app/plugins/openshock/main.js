@@ -13,7 +13,7 @@
  * - Import/Export von Mappings & Patterns
  *
  * @version 1.0.0
- * @author pupcidslittletiktokhelper Team
+ * @author ltth.app Team
  */
 
 const path = require('path');

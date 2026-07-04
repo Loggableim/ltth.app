@@ -22,13 +22,13 @@ class MockPluginAPI {
                 
                 switch (platform) {
                     case 'win32':
-                        baseDir = path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'pupcidslittletiktokhelper');
+                        baseDir = path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'ltth.app');
                         break;
                     case 'darwin':
-                        baseDir = path.join(homeDir, 'Library', 'Application Support', 'pupcidslittletiktokhelper');
+                        baseDir = path.join(homeDir, 'Library', 'Application Support', 'ltth.app');
                         break;
                     default:
-                        baseDir = path.join(homeDir, '.local', 'share', 'pupcidslittletiktokhelper');
+                        baseDir = path.join(homeDir, '.local', 'share', 'ltth.app');
                 }
                 
                 // Match actual ConfigPathManager: includes 'data' subdirectory
@@ -71,7 +71,7 @@ function testPluginDataStorage() {
     console.log(`  Plugin data dir: ${pluginDataDir}`);
     
     // Check it's not in common app directory patterns
-    const appDirPatterns = ['pupcidslittletiktokhelper_desktop', '/app/', '\\app\\'];
+    const appDirPatterns = ['/app/', '\\app\\'];
     const isOutsideApp = !appDirPatterns.some(pattern => pluginDataDir.includes(pattern));
     if (isOutsideApp) {
         console.log('  ✅ PASS: Data directory is outside app directory');

@@ -25,21 +25,21 @@ console.log('Platform:', os.platform());
 // Verify platform-specific default
 switch (os.platform()) {
     case 'win32':
-        if (defaultConfigDir.includes('AppData\\Local\\pupcidslittletiktokhelper')) {
+        if (defaultConfigDir.includes('AppData\\Local\\ltth.app')) {
             console.log('✅ Windows default path is correct');
         } else {
             console.log('❌ Windows default path is incorrect');
         }
         break;
     case 'darwin':
-        if (defaultConfigDir.includes('Library/Application Support/pupcidslittletiktokhelper')) {
+        if (defaultConfigDir.includes('Library/Application Support/ltth.app')) {
             console.log('✅ macOS default path is correct');
         } else {
             console.log('❌ macOS default path is incorrect');
         }
         break;
     case 'linux':
-        if (defaultConfigDir.includes('.local/share/pupcidslittletiktokhelper')) {
+        if (defaultConfigDir.includes('.local/share/ltth.app')) {
             console.log('✅ Linux default path is correct');
         } else {
             console.log('❌ Linux default path is incorrect');

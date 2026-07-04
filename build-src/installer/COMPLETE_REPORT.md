@@ -429,7 +429,7 @@ Der NSIS Installer ist jetzt:
 - **sign-file.bat** - Code-Signing-Helper
 
 ### Kontakt / Contact
-- **GitHub:** https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop
+- **GitHub:** https://github.com/Loggableim/ltth.app
 - **Email:** pupcid@ltth.app
 - **Website:** https://ltth.app
 

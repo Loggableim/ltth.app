@@ -1,10 +1,10 @@
-# Entwickler-Leitfaden
+﻿# Entwickler-Leitfaden
 
-[← Architektur](Architektur) | [→ Plugin-Dokumentation](Plugin-Dokumentation)
+[â† Architektur](Architektur) | [â†’ Plugin-Dokumentation](Plugin-Dokumentation)
 
 ---
 
-## 📑 Inhaltsverzeichnis
+## ðŸ“‘ Inhaltsverzeichnis
 
 1. [Entwicklungsumgebung](#entwicklungsumgebung)
 2. [Code-Style & Standards](#code-style--standards)
@@ -21,7 +21,7 @@
 
 ---
 
-## 💻 Entwicklungsumgebung
+## ðŸ’» Entwicklungsumgebung
 
 ### Empfohlene Tools
 
@@ -52,17 +52,17 @@
 
 Speichere in `.vscode/extensions.json`.
 
-### Projekt-Setup für Entwicklung
+### Projekt-Setup fÃ¼r Entwicklung
 
 ```bash
 # Repository klonen
-git clone https://github.com/yourusername/pupcidslittletiktokhelper.git
-cd pupcidslittletiktokhelper
+git clone https://github.com/Loggableim/ltth.app.git
+cd ltth.app
 
 # Dependencies installieren
 npm install
 
-# Optional: Nodemon für Auto-Restart installieren
+# Optional: Nodemon fÃ¼r Auto-Restart installieren
 npm install -g nodemon
 
 # Server im Dev-Modus starten (mit Auto-Restart)
@@ -83,7 +83,7 @@ npm run dev
 }
 ```
 
-### Umgebungsvariablen für Development
+### Umgebungsvariablen fÃ¼r Development
 
 ```bash
 # .env.example (nicht committen!)
@@ -94,7 +94,7 @@ PORT=3000
 
 ---
 
-## 📝 Code-Style & Standards
+## ðŸ“ Code-Style & Standards
 
 ### JavaScript-Konventionen
 
@@ -128,11 +128,11 @@ class MyClass {
 
 **3. Kommentare:**
 ```javascript
-// Einzeilige Kommentare für kurze Erklärungen
+// Einzeilige Kommentare fÃ¼r kurze ErklÃ¤rungen
 const port = 3000; // Server-Port
 
 /**
- * Mehrzeilige JSDoc-Kommentare für Funktionen/Klassen
+ * Mehrzeilige JSDoc-Kommentare fÃ¼r Funktionen/Klassen
  *
  * @param {string} username - TikTok-Username
  * @param {Object} options - Optionen
@@ -154,11 +154,11 @@ const message = 'Hello ' + username + ', you have ' + coins + ' coins';
 
 **5. Arrow-Functions:**
 ```javascript
-// Bevorzuge Arrow-Functions für Callbacks
+// Bevorzuge Arrow-Functions fÃ¼r Callbacks
 array.map(item => item.name);
 array.filter(item => item.active);
 
-// Traditionelle Functions für Klassen-Methoden
+// Traditionelle Functions fÃ¼r Klassen-Methoden
 class MyClass {
     myMethod() {
         // this-Context erhalten
@@ -168,7 +168,7 @@ class MyClass {
 
 **6. Async/Await:**
 ```javascript
-// Bevorzuge async/await über Promises
+// Bevorzuge async/await Ã¼ber Promises
 async function fetchData() {
     try {
         const response = await axios.get(url);
@@ -192,20 +192,20 @@ function fetchData() {
 
 ### Wichtige Regeln
 
-✅ **Do:**
-- Code dokumentieren (JSDoc für public API)
+âœ… **Do:**
+- Code dokumentieren (JSDoc fÃ¼r public API)
 - Bestehende Patterns verwenden
 - Error-Handling implementieren
 - Logger verwenden statt `console.log`
 - Config-Validierung mit Defaults
-- Atomic File-Writes (`.tmp` → `rename`)
+- Atomic File-Writes (`.tmp` â†’ `rename`)
 
-❌ **Don't:**
+âŒ **Don't:**
 - Bestehende Features entfernen (nur erweitern!)
 - Breaking Changes ohne Diskussion
 - Hardcoded Secrets committen
 - `console.log` in Production-Code
-- Synchrone File-I/O (außer DB)
+- Synchrone File-I/O (auÃŸer DB)
 - Magic Numbers (nutze Konstanten)
 
 ### Code-Beispiel (Best Practice)
@@ -251,13 +251,13 @@ async function handleGiftEvent(giftData) {
 
 ---
 
-## 🌿 Git-Workflow & Branching
+## ðŸŒ¿ Git-Workflow & Branching
 
 ### Branch-Strategie
 
 **Main Branch:**
 - `main` - Production-ready Code
-- Geschützt, nur via Pull Request
+- GeschÃ¼tzt, nur via Pull Request
 
 **Development Branch:**
 - `develop` - Development-Branch (optional)
@@ -295,20 +295,20 @@ git commit -m "Add: My new feature"
 git push origin feature/my-new-feature
 ```
 
-**2. Pull Request öffnen:**
+**2. Pull Request Ã¶ffnen:**
 - Auf GitHub: "Compare & Pull Request"
-- Beschreibung ausfüllen (siehe unten)
+- Beschreibung ausfÃ¼llen (siehe unten)
 - Reviewer zuweisen (falls Team)
 
 **3. Code Review:**
-- Änderungen von Reviewer umsetzen
+- Ã„nderungen von Reviewer umsetzen
 - Pushen (automatisch im PR aktualisiert)
 
 **4. Merge:**
 - Nach Approval: "Squash and Merge" oder "Merge"
-- Branch löschen (automatisch)
+- Branch lÃ¶schen (automatisch)
 
-**5. Lokal aufräumen:**
+**5. Lokal aufrÃ¤umen:**
 ```bash
 git checkout main
 git pull origin main
@@ -317,16 +317,16 @@ git branch -d feature/my-new-feature
 
 ---
 
-## 📝 Commit-Konventionen
+## ðŸ“ Commit-Konventionen
 
 ### Commit-Message-Format
 
 ```
 <Type>: <Kurzbeschreibung> (max 72 Zeichen)
 
-<Optionaler Body: Ausführliche Beschreibung>
-- Was wurde geändert?
-- Warum wurde es geändert?
+<Optionaler Body: AusfÃ¼hrliche Beschreibung>
+- Was wurde geÃ¤ndert?
+- Warum wurde es geÃ¤ndert?
 - Wie wurde es implementiert?
 
 <Optionaler Footer>
@@ -338,13 +338,13 @@ git branch -d feature/my-new-feature
 
 | Type | Beschreibung | Beispiel |
 |------|--------------|----------|
-| `Add` | Neue Features hinzugefügt | `Add: Multi-language support` |
+| `Add` | Neue Features hinzugefÃ¼gt | `Add: Multi-language support` |
 | `Update` | Bestehende Features erweitert | `Update: TTS with 20 new voices` |
 | `Fix` | Bug-Fixes | `Fix: TTS queue overflow` |
-| `Refactor` | Code-Refactoring (keine Funktionsänderung) | `Refactor: Database module` |
+| `Refactor` | Code-Refactoring (keine FunktionsÃ¤nderung) | `Refactor: Database module` |
 | `Docs` | Dokumentation | `Docs: Update API reference` |
-| `Test` | Tests hinzugefügt/geändert | `Test: Add unit tests for flows` |
-| `Chore` | Build/CI-Änderungen | `Chore: Update dependencies` |
+| `Test` | Tests hinzugefÃ¼gt/geÃ¤ndert | `Test: Add unit tests for flows` |
+| `Chore` | Build/CI-Ã„nderungen | `Chore: Update dependencies` |
 | `Style` | Code-Formatierung | `Style: Fix indentation` |
 | `Perf` | Performance-Verbesserungen | `Perf: Optimize database queries` |
 
@@ -376,11 +376,11 @@ git commit -m "asdfasdf"  # Sinnlos
 
 ### Atomic Commits
 
-**Regel:** Ein Commit = Eine logische Änderung
+**Regel:** Ein Commit = Eine logische Ã„nderung
 
 **Gut:**
 ```bash
-# Commit 1: Feature hinzufügen
+# Commit 1: Feature hinzufÃ¼gen
 git commit -m "Add: Google TTS support"
 
 # Commit 2: Dokumentation aktualisieren
@@ -395,37 +395,37 @@ git commit -m "Add Google TTS and update docs and fix bug and refactor"
 
 ---
 
-## 🔀 Pull-Request-Prozess
+## ðŸ”€ Pull-Request-Prozess
 
 ### Pull-Request-Template
 
 ```markdown
 ## Beschreibung
-Kurze Beschreibung der Änderungen.
+Kurze Beschreibung der Ã„nderungen.
 
-## Typ der Änderung
+## Typ der Ã„nderung
 - [ ] Bugfix (non-breaking change)
 - [ ] Neues Feature (non-breaking change)
 - [ ] Breaking Change (fix/feature mit Breaking Changes)
 - [ ] Dokumentation
 
-## Änderungen im Detail
-- Änderung 1
-- Änderung 2
-- Änderung 3
+## Ã„nderungen im Detail
+- Ã„nderung 1
+- Ã„nderung 2
+- Ã„nderung 3
 
 ## Tests
 Wie wurde getestet?
-- [ ] Manuelle Tests durchgeführt
+- [ ] Manuelle Tests durchgefÃ¼hrt
 - [ ] Alle bestehenden Tests laufen durch
-- [ ] Neue Tests hinzugefügt
+- [ ] Neue Tests hinzugefÃ¼gt
 
-## Screenshots (falls UI-Änderungen)
+## Screenshots (falls UI-Ã„nderungen)
 ![Screenshot](url)
 
 ## Checkliste
 - [ ] Code folgt dem Projekt-Style
-- [ ] Selbst-Review durchgeführt
+- [ ] Selbst-Review durchgefÃ¼hrt
 - [ ] Kommentare in komplexem Code
 - [ ] Dokumentation aktualisiert
 - [ ] Keine Warnings generiert
@@ -437,29 +437,29 @@ Closes #123
 
 ### Review-Kriterien
 
-**Code-Qualität:**
-- ✅ Code ist lesbar und gut dokumentiert
-- ✅ Keine offensichtlichen Bugs
-- ✅ Error-Handling vorhanden
-- ✅ Logging konsistent
+**Code-QualitÃ¤t:**
+- âœ… Code ist lesbar und gut dokumentiert
+- âœ… Keine offensichtlichen Bugs
+- âœ… Error-Handling vorhanden
+- âœ… Logging konsistent
 
-**Funktionalität:**
-- ✅ Feature funktioniert wie beschrieben
-- ✅ Keine Breaking Changes (oder dokumentiert)
-- ✅ Edge-Cases berücksichtigt
+**FunktionalitÃ¤t:**
+- âœ… Feature funktioniert wie beschrieben
+- âœ… Keine Breaking Changes (oder dokumentiert)
+- âœ… Edge-Cases berÃ¼cksichtigt
 
 **Tests:**
-- ✅ Manuell getestet
-- ✅ Bestehende Features nicht gebrochen
+- âœ… Manuell getestet
+- âœ… Bestehende Features nicht gebrochen
 
 **Dokumentation:**
-- ✅ README/Wiki aktualisiert
-- ✅ CHANGELOG aktualisiert
-- ✅ Code-Kommentare vorhanden
+- âœ… README/Wiki aktualisiert
+- âœ… CHANGELOG aktualisiert
+- âœ… Code-Kommentare vorhanden
 
 ---
 
-## 🧪 Testing
+## ðŸ§ª Testing
 
 ### Manuelles Testen
 
@@ -495,7 +495,7 @@ Closes #123
 - [ ] Flow-Erstellung funktioniert
 - [ ] Flow-Test funktioniert
 - [ ] Flow wird bei echten Events getriggert
-- [ ] Actions werden korrekt ausgeführt
+- [ ] Actions werden korrekt ausgefÃ¼hrt
 
 **Plugins:**
 - [ ] Plugin kann aktiviert/deaktiviert werden
@@ -543,7 +543,7 @@ Erstelle `postman_collection.json`:
 
 ---
 
-## 🐛 Debugging
+## ðŸ› Debugging
 
 ### Node.js Debugger
 
@@ -573,22 +573,22 @@ Erstelle `postman_collection.json`:
 
 **Debugging starten:**
 - F5 in VS Code
-- Oder: Run → Start Debugging
+- Oder: Run â†’ Start Debugging
 
 ### Chrome DevTools (Frontend)
 
 **Dashboard debuggen:**
-1. Dashboard öffnen: `http://localhost:3000`
-2. F12 → Developer Tools öffnen
+1. Dashboard Ã¶ffnen: `http://localhost:3000`
+2. F12 â†’ Developer Tools Ã¶ffnen
 3. Console-Tab: Log-Ausgaben
 4. Network-Tab: HTTP-Requests/WebSocket
 5. Sources-Tab: Breakpoints setzen
 
 **Overlay debuggen:**
-1. Overlay in Browser öffnen: `http://localhost:3000/overlay.html`
-2. F12 → Developer Tools
-3. Console → Fehler prüfen
-4. Network → Socket.io-Verbindung prüfen
+1. Overlay in Browser Ã¶ffnen: `http://localhost:3000/overlay.html`
+2. F12 â†’ Developer Tools
+3. Console â†’ Fehler prÃ¼fen
+4. Network â†’ Socket.io-Verbindung prÃ¼fen
 
 ### Logging-Levels
 
@@ -608,14 +608,14 @@ LOG_LEVEL=debug npm start
 **Log-Dateien:**
 ```
 logs/
-├── combined.log       # Alle Logs
-├── error.log          # Nur Errors
-└── app-YYYY-MM-DD.log # Daily Rotate (30 Tage)
+â”œâ”€â”€ combined.log       # Alle Logs
+â”œâ”€â”€ error.log          # Nur Errors
+â””â”€â”€ app-YYYY-MM-DD.log # Daily Rotate (30 Tage)
 ```
 
 ---
 
-## 📊 Logging
+## ðŸ“Š Logging
 
 ### Logger verwenden
 
@@ -645,10 +645,10 @@ logger.debug(`Flow ${flowId} triggered`);
 
 **Niemals `console.log` verwenden!**
 ```javascript
-// ❌ Schlecht
+// âŒ Schlecht
 console.log('User connected');
 
-// ✅ Gut
+// âœ… Gut
 logger.info('User connected');
 ```
 
@@ -666,11 +666,11 @@ logger.info('Gift received', {
 
 ---
 
-## 🚨 Error-Handling
+## ðŸš¨ Error-Handling
 
-### Try-Catch für Async-Operationen
+### Try-Catch fÃ¼r Async-Operationen
 
-**Regel:** Alle `async`-Funktionen müssen Try-Catch haben.
+**Regel:** Alle `async`-Funktionen mÃ¼ssen Try-Catch haben.
 
 ```javascript
 async function myAsyncFunction() {
@@ -713,7 +713,7 @@ process.on('SIGINT', async () => {
         await tiktok.disconnect();
     }
 
-    // Server schließen
+    // Server schlieÃŸen
     server.close(() => {
         logger.info('Server closed');
         process.exit(0);
@@ -723,21 +723,21 @@ process.on('SIGINT', async () => {
 
 ---
 
-## ⚡ Performance-Best-Practices
+## âš¡ Performance-Best-Practices
 
 ### 1. Datenbank-Optimierung
 
 **Nutze Prepared Statements:**
 ```javascript
-// ✅ Gut
+// âœ… Gut
 const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
 const user = stmt.get(userId);
 
-// ❌ Schlecht (SQL-Injection-Risiko)
+// âŒ Schlecht (SQL-Injection-Risiko)
 const user = db.prepare(`SELECT * FROM users WHERE id = ${userId}`).get();
 ```
 
-**Nutze Transactions für Bulk-Inserts:**
+**Nutze Transactions fÃ¼r Bulk-Inserts:**
 ```javascript
 const insertMany = db.transaction((items) => {
     const stmt = db.prepare('INSERT INTO items (name) VALUES (?)');
@@ -749,18 +749,18 @@ insertMany(items); // Viel schneller als einzelne Inserts
 
 ### 2. Socket.io-Optimierung
 
-**Nutze Rooms für gezielte Broadcasts:**
+**Nutze Rooms fÃ¼r gezielte Broadcasts:**
 ```javascript
-// ❌ Schlecht: Broadcast an alle
+// âŒ Schlecht: Broadcast an alle
 io.emit('goal:update', data);
 
-// ✅ Gut: Nur an interessierte Clients
+// âœ… Gut: Nur an interessierte Clients
 io.to('goal:likes').emit('goal:update', data);
 ```
 
 ### 3. Caching
 
-**In-Memory-Cache für häufige Abfragen:**
+**In-Memory-Cache fÃ¼r hÃ¤ufige Abfragen:**
 ```javascript
 const cache = new Map();
 
@@ -777,7 +777,7 @@ function getGiftCatalog() {
 
 ---
 
-## 🔒 Sicherheitsrichtlinien
+## ðŸ”’ Sicherheitsrichtlinien
 
 ### 1. Input-Validierung
 
@@ -823,7 +823,7 @@ element.innerHTML = escapeHtml(userInput);
 const apiKey = process.env.GOOGLE_API_KEY || '';
 ```
 
-**Prüfe `.gitignore`:**
+**PrÃ¼fe `.gitignore`:**
 ```
 user_configs/
 user_data/
@@ -834,7 +834,7 @@ logs/
 
 ---
 
-## 📚 Dokumentation
+## ðŸ“š Dokumentation
 
 ### Code-Dokumentation (JSDoc)
 
@@ -846,7 +846,7 @@ logs/
  * @param {Object} [options={}] - Optionen
  * @param {boolean} [options.processInitialData=true] - Initial-Daten verarbeiten
  * @returns {Promise<boolean>} - true bei Erfolg, false bei Fehler
- * @throws {Error} - Wenn Username ungültig
+ * @throws {Error} - Wenn Username ungÃ¼ltig
  * @example
  * await connectToTikTok('user123');
  */
@@ -867,11 +867,11 @@ async function connectToTikTok(username, options = {}) {
 ## [1.0.3] - 2025-11-12
 
 ### Added
-- OSC-Bridge Plugin für VRChat-Integration
+- OSC-Bridge Plugin fÃ¼r VRChat-Integration
 - Multi-Cam Switcher mit Macro-System
 
 ### Changed
-- TTS-Plugin: 20 neue Stimmen hinzugefügt
+- TTS-Plugin: 20 neue Stimmen hinzugefÃ¼gt
 - Flow-Engine: Performance-Verbesserungen
 
 ### Fixed
@@ -881,7 +881,7 @@ async function connectToTikTok(username, options = {}) {
 
 ---
 
-## 🔗 Weitere Ressourcen
+## ðŸ”— Weitere Ressourcen
 
 - **[[Plugin-Dokumentation]]** - Plugin erstellen
 - **[[API-Reference]]** - API-Endpunkte
@@ -889,8 +889,9 @@ async function connectToTikTok(username, options = {}) {
 
 ---
 
-[← Architektur](Architektur) | [→ Plugin-Dokumentation](Plugin-Dokumentation)
+[â† Architektur](Architektur) | [â†’ Plugin-Dokumentation](Plugin-Dokumentation)
 
 ---
 
 *Letzte Aktualisierung: 2025-11-11*
+

@@ -1,11 +1,12 @@
-import json, sys
+import json, sys, os
 
 def load(path):
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-en=load(r'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\app\locales\en.json')
-fr=load(r'C:\Users\logga\Documents\ltth_codex\ltth_desktop2-main\app\locales\fr.json')
+base_dir = os.path.dirname(__file__)
+en=load(os.path.join(base_dir, 'en.json'))
+fr=load(os.path.join(base_dir, 'fr.json'))
 
 # recursive compare
 identical=[]

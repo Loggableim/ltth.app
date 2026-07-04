@@ -14,8 +14,23 @@
       "emoji_size": "Taille des Émojis",
       "custom_emojis": "Émojis Personnalisés",
       "save": "Enregistrer les Paramètres",
-      "max_count_per_event": "Max Count Per Event",
-      "max_intensity": "Max Intensity"
+      "max_count_per_event": "Max par Événement",
+      "max_intensity": "Intensité Maximale"
+    },
+    "rate_limit": {
+      "title": "Limitation de Débit (Optionnel)",
+      "description": "Limite le nombre d'émojis par seconde et met en file d'attente les émojis excédentaires",
+      "enabled": "Activer la Limitation",
+      "emojis_per_second": "Max d'Émojis par Seconde",
+      "help": "Utile lors de nombreux événements simultanés (ex. vagues de J'aime) pour maintenir les performances",
+      "queue_info": "Les émojis dépassant la limite sont mis en file d'attente et traités progressivement"
+    },
+    "anti_spam": {
+      "title": "Anti-Spam et Sécurité",
+      "global_max_triggers": "Max Déclencheurs par 30s",
+      "user_cooldown": "Temps de Recharge Utilisateur (ms)",
+      "global_cooldown": "Temps de Recharge Global (ms)",
+      "emoji_blocklist": "Émojis Bloqués"
     },
     "toaster_mode": {
       "title": "Mode Grille-Pain (PCs Bas de Gamme)",
@@ -31,6 +46,87 @@
       "burst": "Intensité de Rafale: Réduite",
       "tip": "Utilisez le Mode Grille-Pain si votre PC ralentit pendant le streaming ou si l'utilisation du CPU est trop élevée."
     },
+    "commands": {
+      "title": "Commandes de Chat (GCCE)",
+      "description": "Commandes de chat disponibles pour les spectateurs",
+      "rain": "/rain [preset] - Déclencher une pluie d'émojis",
+      "emoji": "/emoji <emoji> [count] [intensity] - Générer un émoji spécifique",
+      "beans": "/beans - Effet de rafale SuperFan (abonnés uniquement)",
+      "storm": "/storm [emoji] - Tempête d'émojis intense (VIP uniquement)",
+      "rainstop": "/rainstop - Arrêter toute pluie (modérateurs uniquement)"
+    },
+    "gift_balls": {
+      "title": "Balles Cadeaux",
+      "enable": "Afficher les cadeaux comme des balles rebondissantes",
+      "enable_help": "Lors d'événements cadeaux, une balle ronde avec l'image du catalogue de cadeaux tombe sur la pluie d'émojis.",
+      "min_size": "Taille min. de balle (px)",
+      "min_size_help": "Taille pour les cadeaux très bon marché (échelle par défaut)",
+      "max_size": "Taille max. de balle (px)",
+      "max_size_help": "Limite supérieure pour les cadeaux coûteux (échelle par défaut)",
+      "price_reference": "Référence de prix",
+      "price_reference_help": "Au-dessus de ce prix de cadeau, la taille maximale est atteinte",
+      "min_despawn": "Disparition min. (ms)",
+      "max_despawn": "Disparition max. (ms)",
+      "despawn_per_coin": "Disparition par pièce (ms)",
+      "despawn_per_coin_help": "Le prix prolonge le temps visible jusqu'au maximum",
+      "despawn_multiplier": "Multiplicateur de disparition",
+      "despawn_multiplier_help": "Contrôle général pour toutes les durées des balles cadeaux",
+      "base_count": "Gouttes de base",
+      "base_count_help": "Nombre d'images de cadeau pour les cadeaux individuels",
+      "series_divisor": "Série par goutte supplémentaire",
+      "series_divisor_help": "Chaque niveau de série de cette taille produit une image de cadeau supplémentaire",
+      "max_count": "Max. gouttes de cadeau",
+      "max_count_help": "Limite supérieure pour les gros cadeaux combinés",
+      "tier_title": "Niveaux de prix (taille de balle selon le prix du cadeau)",
+      "tier_enable": "Activer les niveaux de prix",
+      "tier_enable_help": "Niveaux : 1-30 / 31-100 / 101-500 / 501-1000 / 1001-5000 / >5000 pièces. Lorsqu'activé, la balle est générée à la taille en pixels configurée pour le niveau correspondant (l'échelle par défaut est ignorée).",
+      "tier_1": "Niveau 1 : 1-30 pièces (px)",
+      "tier_1_help": "ex. roses, petits cœurs",
+      "tier_2": "Niveau 2 : 31-100 pièces (px)",
+      "tier_2_help": "ex. cadeaux TikTok standard",
+      "tier_3": "Niveau 3 : 101-500 pièces (px)",
+      "tier_4": "Niveau 4 : 501-1000 pièces (px)",
+      "tier_5": "Niveau 5 : 1001-5000 pièces (px)",
+      "tier_5_help": "Cadeaux baleine",
+      "tier_6": "Niveau 6 : >5000 pièces (px)",
+      "tier_6_help": "Taille maximale (peut remplir tout l'écran)"
+    },
+    "presets": {
+      "title": "Préréglages",
+      "add": "Ajouter un Préréglage",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "trigger": "Déclencheur",
+      "name": "Nom",
+      "emoji": "Émoji",
+      "count": "Nombre",
+      "intensity": "Intensité",
+      "duration": "Durée (ms)",
+      "burst": "Mode Rafale",
+      "spawn_area": "Zone d'Apparition"
+    },
+    "user_mappings": {
+      "title": "Mappages Utilisateur",
+      "username": "Nom d'Utilisateur",
+      "emoji": "Émoji",
+      "search": "Rechercher",
+      "import": "Importer",
+      "export": "Exporter",
+      "add": "Ajouter un Mappage",
+      "delete": "Supprimer",
+      "bulk_import": "Import en Masse (JSON)",
+      "merge": "Fusionner avec existant"
+    },
+    "uploads": {
+      "title": "Images Téléversées",
+      "upload": "Téléverser une Image",
+      "filename": "Nom de Fichier",
+      "size": "Taille",
+      "created": "Créé",
+      "delete": "Supprimer",
+      "max_size": "Max 5 Mo par fichier",
+      "allowed_types": "PNG, JPG, GIF, WebP, SVG"
+    },
     "overlay": {
       "title": "Overlay",
       "url": "URL de l'Overlay",
@@ -39,90 +135,30 @@
       "open": "Ouvrir l'Overlay",
       "test": "Tester la Pluie",
       "pause": "Pause",
-      "resume": "Resume",
-      "clear": "Clear",
-      "theme": "Theme",
-      "opacity": "Opacity",
-      "speed": "Speed",
-      "bounding_box": "Bounding Box"
+      "resume": "Reprendre",
+      "clear": "Effacer",
+      "theme": "Thème",
+      "opacity": "Opacité",
+      "speed": "Vitesse",
+      "bounding_box": "Boîte Englobante"
+    },
+    "debug": {
+      "title": "Débogage et Télémétrie",
+      "enabled": "Mode Débogage",
+      "metrics": "Métriques",
+      "total_triggers": "Déclencheurs Totaux",
+      "command_triggers": "Déclencheurs de Commandes",
+      "event_triggers": "Déclencheurs d'Événements",
+      "flow_triggers": "Déclencheurs de Flux",
+      "dropped_events": "Événements Ignorés",
+      "avg_count": "Nombre Moyen",
+      "avg_intensity": "Intensité Moyenne",
+      "reset_metrics": "Réinitialiser les Métriques"
     },
     "preview": {
       "title": "Aperçu",
       "start": "Démarrer l'Aperçu",
       "stop": "Arrêter l'Aperçu"
-    },
-    "rate_limit": {
-      "title": "Rate Limiting (Optional)",
-      "description": "Limits the number of emojis per second and queues excess emojis",
-      "enabled": "Enable Rate Limiting",
-      "emojis_per_second": "Max Emojis per Second",
-      "help": "Useful during many simultaneous events (e.g. like waves) to maintain performance",
-      "queue_info": "Emojis exceeding the limit are queued and processed gradually"
-    },
-    "anti_spam": {
-      "title": "Anti-Spam & Safety",
-      "global_max_triggers": "Max Triggers Per 30s",
-      "user_cooldown": "User Cooldown (ms)",
-      "global_cooldown": "Global Cooldown (ms)",
-      "emoji_blocklist": "Blocked Emojis"
-    },
-    "commands": {
-      "title": "Chat Commands (GCCE)",
-      "description": "Available chat commands for viewers",
-      "rain": "/rain [preset] - Trigger emoji rain",
-      "emoji": "/emoji <emoji> [count] [intensity] - Spawn specific emoji",
-      "beans": "/beans - SuperFan burst effect (subscribers only)",
-      "storm": "/storm [emoji] - Heavy emoji storm (VIP only)",
-      "rainstop": "/rainstop - Stop all rain (moderator only)"
-    },
-    "presets": {
-      "title": "Presets",
-      "add": "Add Preset",
-      "edit": "Edit",
-      "delete": "Delete",
-      "trigger": "Trigger",
-      "name": "Name",
-      "emoji": "Emoji",
-      "count": "Count",
-      "intensity": "Intensity",
-      "duration": "Duration (ms)",
-      "burst": "Burst Mode",
-      "spawn_area": "Spawn Area"
-    },
-    "user_mappings": {
-      "title": "User Mappings",
-      "username": "Username",
-      "emoji": "Emoji",
-      "search": "Search",
-      "import": "Import",
-      "export": "Export",
-      "add": "Add Mapping",
-      "delete": "Delete",
-      "bulk_import": "Bulk Import (JSON)",
-      "merge": "Merge with existing"
-    },
-    "uploads": {
-      "title": "Uploaded Images",
-      "upload": "Upload Image",
-      "filename": "Filename",
-      "size": "Size",
-      "created": "Created",
-      "delete": "Delete",
-      "max_size": "Max 5MB per file",
-      "allowed_types": "PNG, JPG, GIF, WebP, SVG"
-    },
-    "debug": {
-      "title": "Debug & Telemetry",
-      "enabled": "Debug Mode",
-      "metrics": "Metrics",
-      "total_triggers": "Total Triggers",
-      "command_triggers": "Command Triggers",
-      "event_triggers": "Event Triggers",
-      "flow_triggers": "Flow Triggers",
-      "dropped_events": "Dropped Events",
-      "avg_count": "Avg Count",
-      "avg_intensity": "Avg Intensity",
-      "reset_metrics": "Reset Metrics"
     }
   }
 }

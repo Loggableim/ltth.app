@@ -89,8 +89,8 @@ describe('ConfigRepair', () => {
   test('rewrites copied config-root paths inside profile settings', () => {
     harness = makeHarness();
     const dbPath = path.join(harness.userConfigsDir, 'streamer.db');
-    const oldRawPath = 'C:\\Users\\proki\\AppData\\Local\\pupcidslittletiktokhelper\\uploads\\sound.mp3';
-    const oldJsonPath = '{"path":"C:\\\\Users\\\\proki\\\\AppData\\\\Local\\\\pupcidslittletiktokhelper\\\\uploads\\\\anim.gif"}';
+    const oldRawPath = 'C:\\Users\\proki\\AppData\\Local\\ltth.app\\uploads\\sound.mp3';
+    const oldJsonPath = '{"path":"C:\\\\Users\\\\proki\\\\AppData\\\\Local\\\\ltth.app\\\\uploads\\\\anim.gif"}';
 
     createProfileDb(dbPath, {
       raw_path: oldRawPath,

@@ -169,7 +169,7 @@ Node.js wird in `runtime/node/` installiert und benötigt keine Admin-Rechte.
 
 **Datei-Struktur:**
 ```
-LTTH_Desktop/
+ltth.app/
 ├── launcher.exe
 ├── runtime/
 │   ├── node/
