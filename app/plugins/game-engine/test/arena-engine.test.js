@@ -331,6 +331,106 @@ describe('ArenaGame', () => {
     expect(decision.vector.x).toBeLessThan(0);
   });
 
+  it('serializes explicit AI states for readable arena strategy feedback', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+    const small = movementPlayer(arena, config, 'state_survivor', 14, {
+      x: 360,
+      y: 300,
+      lives: 60
+    });
+    const large = movementPlayer(arena, config, 'state_predator', 42, {
+      x: 500,
+      y: 300,
+      vx: -1,
+      vy: 0,
+      lives: 200
+    });
+
+    arena.players.set(small.username, small);
+    arena.players.set(large.username, large);
+    arena.aiSpatialIndex = null;
+
+    const decision = arena.chooseBehavior(small, config);
+    const serialized = arena._serializePlayer(small, config);
+
+    expect(decision.mode).toBe('flee');
+    expect(decision.state).toBe('retreating');
+    expect(serialized.ai.state).toBe('retreating');
+    expect(serialized.ai.stateLabel).toBe('RETREAT');
+  });
+
+  it('maps existing AI intents to tactical gameplay states', () => {
+    const { arena } = createArena();
+    const config = arena.getConfig();
+    const player = movementPlayer(arena, config, 'state_mapper', 40, { lives: 180 });
+    const target = movementPlayer(arena, config, 'state_target', 18, { x: 430, y: 300, lives: 80 });
+    const context = arena._buildAiContext(player, config);
+
+    expect(arena._classifyAiState(player, { mode: 'wander', intent: 'wander' }, context, config)).toBe('scouting');
+    expect(arena._classifyAiState(player, { mode: 'hunt-food', intent: 'feed' }, context, config)).toBe('farming');
+    expect(arena._classifyAiState(player, { mode: 'hunt-weapon', intent: 'arm' }, context, config)).toBe('arming');
+    expect(arena._classifyAiState(player, { mode: 'hunt-player', intent: 'attack', target }, context, config)).toBe('dueling');
+    expect(arena._classifyAiState(player, { mode: 'pressure-player', intent: 'pressure', target }, context, config)).toBe('dominating');
+    expect(arena._classifyAiState(player, {
+      mode: 'hunt-food',
+      intent: 'feed',
+      metadata: { reason: 'recovery-food' }
+    }, context, config)).toBe('recovering');
+  });
+
+  it('keeps AI states stable briefly while allowing urgent retreats to interrupt', () => {
+    let now = 1000;
+    const { arena } = createArena({}, { now: () => now });
+    const config = arena.getConfig();
+    const player = movementPlayer(arena, config, 'stateful_player', 40, { lives: 180 });
+    const context = { now, personality: player.personality, sizeProfile: arena._sizeBehaviorProfile(player, config), threat: null };
+
+    const farming = arena._resolveAiState(player, 'farming', { mode: 'hunt-food' }, context, config);
+    expect(farming.state).toBe('farming');
+    expect(farming.enteredAt).toBe(1000);
+
+    now = 1300;
+    const shortSwitch = arena._resolveAiState(player, 'dueling', { mode: 'hunt-player' }, {
+      ...context,
+      now
+    }, config);
+    expect(shortSwitch.state).toBe('farming');
+    expect(shortSwitch.rawState).toBe('dueling');
+    expect(shortSwitch.enteredAt).toBe(1000);
+
+    const urgentRetreat = arena._resolveAiState(player, 'retreating', { mode: 'flee' }, {
+      ...context,
+      now,
+      threat: { target: { username: 'danger' } }
+    }, config);
+    expect(urgentRetreat.state).toBe('retreating');
+    expect(urgentRetreat.previousState).toBe('farming');
+    expect(urgentRetreat.enteredAt).toBe(1300);
+  });
+
+  it('serializes AI state transition metadata for overlay and debugging', () => {
+    const { arena } = createArena({}, { now: () => 5000 });
+    const config = arena.getConfig();
+    const player = movementPlayer(arena, config, 'state_meta', 40, { lives: 180 });
+    player.aiStateMemory = {
+      state: 'arming',
+      rawState: 'arming',
+      previousState: 'scouting',
+      enteredAt: 4200,
+      updatedAt: 5000
+    };
+
+    const serialized = arena._serializePlayer(player, config);
+
+    expect(serialized.ai.state).toBe('arming');
+    expect(serialized.ai.stateLabel).toBe('ARM');
+    expect(serialized.ai.previousState).toBe('scouting');
+    expect(serialized.ai.rawState).toBe('arming');
+    expect(serialized.ai.stateEnteredAt).toBe(4200);
+    expect(serialized.ai.stateUpdatedAt).toBe(5000);
+  });
+
   it('spawns a viewer ball automatically on live activity', () => {
     const { arena, io } = createArena();
 
@@ -7034,8 +7134,11 @@ describe('Arena overlay rendering contract', () => {
     const overlay = readOverlay();
 
     expect(overlay).toContain('function strategyLabelForPlayer');
+    expect(overlay).toContain('function aiStateLabelForPlayer');
     expect(overlay).toContain('drawStrategyLabel(player, point)');
     expect(overlay).toContain('player.strategy');
+    expect(overlay).toContain('player.ai');
+    expect(overlay).toContain('DOMINATE');
     expect(overlay).toContain('TARGET');
     expect(overlay).toContain('state.players.length > 48');
   });

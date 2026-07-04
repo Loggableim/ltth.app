@@ -480,6 +480,8 @@ const DEFAULT_CONFIG = {
   }
 };
 
+const AI_STATE_MIN_DURATION_MS = 900;
+
 class ArenaGame {
   constructor(api, db, logger, options = {}) {
     this.api = api;
@@ -1735,15 +1737,24 @@ class ArenaGame {
     const sizeProfile = context.sizeProfile || this._sizeBehaviorProfile(player, config);
     const steeringPlan = this._buildSteeringPlan(player, intent, context);
     const steeringVector = this._smoothCommittedSteeringVector(player, steeringPlan.vector, intent, context, targetKey);
+    const rawAiState = this._classifyAiState(player, intent, context, config);
+    const aiStateMemory = this._resolveAiState(player, rawAiState, intent, context, config);
+    const aiState = aiStateMemory.state;
     const decision = this._storeBehaviorDecision(player, {
       mode: intent.mode,
       intent: intent.intent,
       target: intent.target,
       vector: steeringVector,
       score: intent.score,
+      state: aiState,
       metadata: {
         ...this._aiMetadata(),
         ...(intent.metadata || {}),
+        aiState,
+        aiStateRaw: aiStateMemory.rawState,
+        aiStatePrevious: aiStateMemory.previousState,
+        aiStateEnteredAt: aiStateMemory.enteredAt,
+        aiStateUpdatedAt: aiStateMemory.updatedAt,
         sizeClass: sizeProfile.sizeClass,
         sizeRole: sizeProfile.role,
         steering: steeringPlan.weights
@@ -1757,12 +1768,114 @@ class ArenaGame {
       vector: steeringVector,
       score: Number(decision.score) || 0,
       metadata: decision.metadata || {},
+      state: aiState,
+      rawState: aiStateMemory.rawState,
+      previousState: aiStateMemory.previousState,
+      stateEnteredAt: aiStateMemory.enteredAt,
+      stateUpdatedAt: aiStateMemory.updatedAt,
       weaponType: player.weapon && player.weapon.type ? player.weapon.type : null,
       lockedUntil: now + memoryMs * lockScale,
       updatedAt: now
     };
 
     return decision;
+  }
+
+  _classifyAiState(player, intent = {}, context = null, config = this.getConfig()) {
+    const mode = String(intent && intent.mode ? intent.mode : '').toLowerCase();
+    const action = String(intent && intent.intent ? intent.intent : mode).toLowerCase();
+    const metadata = intent && intent.metadata ? intent.metadata : {};
+    const personality = context && context.personality ? context.personality : this._personalityTraits(player);
+    const survivalNeed = this._survivalNeed(player, config, personality);
+    const sizeProfile = context && context.sizeProfile ? context.sizeProfile : this._sizeBehaviorProfile(player, config);
+    const hasThreat = Boolean(context && context.threat);
+
+    if (mode === 'flee' || action === 'flee') return 'retreating';
+    if (metadata.reason === 'recovery-food' || survivalNeed >= 0.82) return 'recovering';
+    if (mode === 'evade-weapon' || action === 'evade-arm' || mode === 'hunt-weapon' || action === 'arm') {
+      return hasThreat && mode === 'evade-weapon' && survivalNeed >= 0.86 ? 'retreating' : 'arming';
+    }
+    if (mode === 'hunt-player' || action === 'attack' || action === 'target') return 'dueling';
+    if (mode === 'pressure-player' || action === 'pressure') return 'dominating';
+    if (mode === 'hunt-food' || action === 'feed') return 'farming';
+    if ((sizeProfile.sizeClass === 'large' || sizeProfile.sizeClass === 'giant') && !hasThreat && survivalNeed < 0.55) {
+      return 'dominating';
+    }
+    return 'scouting';
+  }
+
+  _resolveAiState(player, rawState, intent = {}, context = null, config = this.getConfig()) {
+    const now = context && Number.isFinite(context.now) ? context.now : this.now();
+    const nextState = this._normalizeAiState(rawState);
+    const previous = player && player.aiStateMemory ? player.aiStateMemory : null;
+    const previousState = previous && previous.state ? this._normalizeAiState(previous.state) : null;
+    const enteredAt = previous && Number.isFinite(previous.enteredAt) ? previous.enteredAt : now;
+    const elapsedMs = Math.max(0, now - enteredAt);
+    const minDurationMs = Number(config.aiStateMinDurationMs) || AI_STATE_MIN_DURATION_MS;
+    const urgentInterrupt = this._aiStatePriority(nextState) >= 75 &&
+      this._aiStatePriority(nextState) > this._aiStatePriority(previousState);
+    const canInterrupt = !previousState ||
+      previousState === nextState ||
+      elapsedMs >= minDurationMs ||
+      urgentInterrupt;
+    const state = canInterrupt ? nextState : previousState;
+    const changed = !previousState || state !== previousState;
+    const memory = {
+      state,
+      rawState: nextState,
+      previousState: changed ? previousState : previous && previous.previousState ? previous.previousState : null,
+      enteredAt: changed ? now : enteredAt,
+      updatedAt: now,
+      mode: intent && intent.mode ? intent.mode : null,
+      intent: intent && intent.intent ? intent.intent : null
+    };
+
+    if (player) {
+      player.aiStateMemory = memory;
+    }
+    return memory;
+  }
+
+  _normalizeAiState(state) {
+    const normalized = String(state || '').toLowerCase();
+    if ([
+      'scouting',
+      'farming',
+      'arming',
+      'dueling',
+      'retreating',
+      'recovering',
+      'dominating'
+    ].includes(normalized)) {
+      return normalized;
+    }
+    return 'scouting';
+  }
+
+  _aiStatePriority(state) {
+    const priority = {
+      scouting: 10,
+      farming: 20,
+      dominating: 30,
+      dueling: 45,
+      arming: 55,
+      recovering: 75,
+      retreating: 100
+    };
+    return priority[this._normalizeAiState(state)] || 0;
+  }
+
+  _aiStateLabel(state) {
+    const labels = {
+      scouting: 'SCOUT',
+      farming: 'FARM',
+      arming: 'ARM',
+      dueling: 'DUEL',
+      retreating: 'RETREAT',
+      recovering: 'RECOVER',
+      dominating: 'DOMINATE'
+    };
+    return labels[String(state || '').toLowerCase()] || 'SCOUT';
   }
 
   _smoothCommittedSteeringVector(player, vector, intent, context, targetKey) {
@@ -2100,6 +2213,7 @@ class ArenaGame {
   _serializeAiState(player, config = this.getConfig()) {
     const intent = player.aiIntent || null;
     const memory = player.behaviorMemory || null;
+    const stateMemory = player.aiStateMemory || null;
     const metadata = intent && intent.metadata ? intent.metadata : {};
     const sizeProfile = this._sizeBehaviorProfile(player, config);
     const targetKey = intent && intent.targetKey
@@ -2109,9 +2223,40 @@ class ArenaGame {
         : memory && memory.targetId
           ? `entity:${memory.targetId}`
           : null;
+    const state = intent && intent.state
+      ? intent.state
+      : metadata.aiState
+        ? metadata.aiState
+        : stateMemory && stateMemory.state
+          ? stateMemory.state
+          : memory && memory.state
+          ? memory.state
+          : 'scouting';
+    const rawState = intent && intent.rawState
+      ? intent.rawState
+      : metadata.aiStateRaw
+        ? metadata.aiStateRaw
+        : stateMemory && stateMemory.rawState
+          ? stateMemory.rawState
+          : state;
+    const previousState = intent && Object.prototype.hasOwnProperty.call(intent, 'previousState')
+      ? intent.previousState
+      : metadata.aiStatePrevious || (stateMemory && stateMemory.previousState) || null;
+    const stateEnteredAt = intent && intent.stateEnteredAt
+      ? intent.stateEnteredAt
+      : metadata.aiStateEnteredAt || (stateMemory && stateMemory.enteredAt) || null;
+    const stateUpdatedAt = intent && intent.stateUpdatedAt
+      ? intent.stateUpdatedAt
+      : metadata.aiStateUpdatedAt || (stateMemory && stateMemory.updatedAt) || null;
 
     return {
       role: this._aiRole(player, config),
+      state,
+      stateLabel: this._aiStateLabel(state),
+      rawState,
+      previousState,
+      stateEnteredAt,
+      stateUpdatedAt,
       mode: intent && intent.mode ? intent.mode : memory && memory.mode ? memory.mode : 'idle',
       intent: intent && intent.intent ? intent.intent : memory && memory.intent ? memory.intent : 'idle',
       targetKey,
@@ -3237,6 +3382,7 @@ class ArenaGame {
   _resetAiIntentForWeaponChange(player) {
     if (!player) return;
     player.aiIntent = null;
+    player.aiStateMemory = null;
   }
 
   _resolvePlayerCollisions(config) {
@@ -3388,6 +3534,7 @@ class ArenaGame {
     player.vy = away.y;
     player.energy = this._clamp((Number(player.energy) || 0) + 12, 0, config.maxEnergy);
     player.aiIntent = null;
+    player.aiStateMemory = null;
 
     this.io.emit('arena:spawn-protection', {
       username: player.username,
@@ -4078,6 +4225,7 @@ class ArenaGame {
       effects: {},
       personality,
       behaviorMemory: null,
+      aiStateMemory: null,
       wanderVector: null,
       spawnedAt: Number(spawnOptions.spawnedAt) || now,
       spawnProtectedUntil: spawnOptions.spawnProtection
@@ -6267,6 +6415,7 @@ class ArenaGame {
     player.behaviorMemory = {
       mode: decision.mode,
       intent: decision.intent || decision.mode,
+      state: decision.state || (decision.metadata && decision.metadata.aiState) || null,
       targetUsername,
       targetId,
       score: Number(decision.score) || 0,

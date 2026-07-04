@@ -3087,7 +3087,10 @@
     }
 
     function strategyLabelForPlayer(player) {
-      if (!player || (!player.strategy && !player.targetUsername && !player.activeRole)) return '';
+      if (!player) return '';
+      if (!player.strategy && !player.targetUsername && !player.activeRole) {
+        return aiStateLabelForPlayer(player);
+      }
       if (player.targetUsername) return 'TARGET';
       if (player.activeRole) return String(player.activeRole).toUpperCase();
       const strategy = String(player.strategy || '').toLowerCase();
@@ -3096,6 +3099,20 @@
       if (strategy === 'farm') return 'FARM';
       if (strategy === 'role') return String(player.activeRole || 'ROLE').toUpperCase();
       return '';
+    }
+
+    function aiStateLabelForPlayer(player) {
+      const stateName = String(player && player.ai && player.ai.state ? player.ai.state : '').toLowerCase();
+      const labels = {
+        scouting: 'SCOUT',
+        farming: 'FARM',
+        arming: 'ARM',
+        dueling: 'DUEL',
+        retreating: 'RETREAT',
+        recovering: 'RECOVER',
+        dominating: 'DOMINATE'
+      };
+      return labels[stateName] || '';
     }
 
     function drawStrategyLabel(player, point) {
