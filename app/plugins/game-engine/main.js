@@ -1186,6 +1186,11 @@ class GameEnginePlugin {
       return;
     }
 
+    if (!challenge.challengerUsername) {
+      this.logger.warn(`Challenge ${sessionId} missing challengerUsername`);
+      return;
+    }
+
     const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
     const opponent = opponentUsername || 'streamer';
     const challengerUsername = challenge.challengerUsername;

@@ -600,6 +600,18 @@ describe('Game Engine GCCE Integration', () => {
       }).not.toThrow();
     });
 
+    test('should ignore malformed challenge payload without challengerUsername', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(101, { gameType: 'connect4' }, 'streamer');
+      }).not.toThrow();
+    });
+
     test('should forward opponentUsername from socket event to acceptChallenge', () => {
       let connectionHandler;
       let acceptChallengeHandler;
