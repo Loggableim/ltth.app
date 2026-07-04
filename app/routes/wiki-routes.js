@@ -94,6 +94,15 @@ const WIKI_STRUCTURE = {
                 { id: 'developer-guide', title: 'Developer Guide', icon: 'book', file: 'Entwickler-Leitfaden.md' },
                 { id: 'api-reference', title: 'API Reference', icon: 'server', file: 'API-Reference.md' }
             ]
+        },
+        {
+            id: 'legal',
+            title: 'Legal',
+            icon: 'shield-check',
+            pages: [
+                { id: 'terms-of-service', title: 'Terms of Service', icon: 'gavel', file: 'Terms-of-Service.md' },
+                { id: 'privacy-policy', title: 'Privacy Policy', icon: 'shield', file: 'Privacy-Policy.md' }
+            ]
         }
     ]
 };
@@ -178,7 +187,7 @@ async function getWikiPackageVersion() {
     return wikiPackageVersion;
 }
 
-const MOJIBAKE_RUN_PATTERN = /[ÃÂâð][\u0080-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]*/g;
+const MOJIBAKE_RUN_PATTERN = /[\u00C3\u00C2\u00E2\u00F0][\u0080-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]*/g;
 
 function getWindows1252Byte(char) {
     const codePoint = char.codePointAt(0);
@@ -216,6 +225,19 @@ function repairMojibake(value) {
         repaired = next;
     }
 
+    // Some archived wiki pages already contain replacement characters, which
+    // cannot be byte-decoded anymore. Repair the known language labels that
+    // drive heading IDs and in-page language navigation.
+    repaired = repaired
+        .replace(/Espa\uFFFDol/g, 'Español')
+        .replace(/espa\uFFFDol/g, 'español')
+        .replace(/Fran\uFFFDais/g, 'Français')
+        .replace(/fran\uFFFDais/g, 'français')
+        .replace(/Selecci\uFFFDn/g, 'Selección')
+        .replace(/selecci\uFFFDn/g, 'selección')
+        .replace(/S\uFFFDlection/g, 'Sélection')
+        .replace(/s\uFFFDlection/g, 'sélection');
+
     return repaired;
 }
 
@@ -229,8 +251,8 @@ function stripMarkdownInline(value) {
 function slugifyHeading(value) {
     return repairMojibake(stripMarkdownInline(value))
         .replace(/&amp;/g, 'and')
-        .replace(/ß/g, 'ss')
-        .replace(/ẞ/g, 'ss')
+        .replace(/\u00DF/g, 'ss')
+        .replace(/\u1E9E/g, 'ss')
         .normalize('NFKD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()

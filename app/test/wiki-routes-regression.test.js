@@ -16,10 +16,10 @@ describe('Wiki route regressions', () => {
       .expect(200);
 
     expect(response.body.languageAnchor).toBe('espanol');
-    expect(response.body.html).toContain('für professionelles');
+    expect(response.body.html).toContain('f\u00fcr professionelles');
     expect(response.body.html).toContain('id="espanol"');
-    expect(response.body.html).toContain('Español');
-    expect(response.body.html).not.toMatch(/(?:Ã.|Â.|â€|âœ|âš|ðŸ|�)/);
+    expect(response.body.html).toContain('Espa\u00f1ol');
+    expect(response.body.html).not.toMatch(/(?:\u00C3.|\u00C2.|\u00E2\u20AC|\u00E2\u0153|\u00E2\u0161|\u00F0\u0178|\uFFFD)/);
   });
 
   test('normalizes markdown wiki link anchors to rendered heading ids', async () => {
@@ -28,8 +28,8 @@ describe('Wiki route regressions', () => {
       .expect(200);
 
     expect(response.body.html).toContain('href="#wiki:plugin-list::espanol"');
-    expect(response.body.html).not.toContain('href="#wiki:plugin-list::español"');
-    expect(response.body.html).not.toContain('href="#wiki:plugin-list::espaÃ');
+    expect(response.body.html).not.toContain(`href="#wiki:plugin-list::espa\u00f1ol`);
+    expect(response.body.html).not.toContain(`href="#wiki:plugin-list::espa\u00C3`);
   });
 
   test('navigation exposes current snapshot documentation', async () => {

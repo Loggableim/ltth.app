@@ -543,6 +543,7 @@ class Firework {
             adaptiveParticleSizeScale: 1.0,
             giftImage: null,
             userAvatar: null,
+            requestedParticleCount: null,
             avatarParticleChance: 0.3,
             useImages: false,
             tier: 'medium',
@@ -719,7 +720,10 @@ class Firework {
             baseParticles *= 0.75; // 25% reduction when FPS < 45
         }
         
-        const particleCount = Math.floor(baseParticles * this.intensity * tierMult * comboMult);
+        let particleCount = Math.floor(baseParticles * this.intensity * tierMult * comboMult);
+        if (Number.isFinite(this.requestedParticleCount) && this.requestedParticleCount > 0) {
+            particleCount = Math.min(particleCount, Math.floor(this.requestedParticleCount));
+        }
         
         // Get velocities from shape generator
         const generator = ShapeGenerators[this.shape] || ShapeGenerators.burst;
@@ -2177,6 +2181,7 @@ class FireworksEngine {
             particleCount = 50,
             giftImage = null,
             userAvatar = null,
+            requestedParticleCount = null,
             avatarParticleChance = 0.3,
             tier = 'medium',
             username = null,
@@ -2339,6 +2344,7 @@ class FireworksEngine {
             intensity: adjustedIntensity, // Use adjusted intensity for particle count reduction
             giftImage: giftImg,
             userAvatar: avatarImg,
+            requestedParticleCount: Number.isFinite(requestedParticleCount) ? requestedParticleCount : null,
             avatarParticleChance: avatarParticleChance,
             useImages: !!(giftImg || avatarImg),
             tier: tier,

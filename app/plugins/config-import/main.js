@@ -17,6 +17,12 @@ const os = require('os');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
 const { MAX_BACKUP_SIZE_BYTES } = require('../../modules/backup/validators');
+const legacyDiscoveryPath = require.resolve('../../modules/legacy-config-discovery');
+delete require.cache[legacyDiscoveryPath];
+const {
+    discoverLegacyConfigCandidates,
+    scanImportPath
+} = require(legacyDiscoveryPath);
 
 const TOKEN_TTL_MS = 60000;          // One-time download tokens expire after 60 s
 const TOKEN_CLEANUP_TTL_MS = 120000; // Remove stale tokens after 120 s
@@ -47,6 +53,30 @@ class ConfigImportPlugin {
         // Serve UI
         this.api.registerRoute('GET', '/config-import/ui', (req, res) => {
             res.sendFile(path.join(__dirname, 'ui.html'));
+        });
+
+        // Discover likely legacy config sources for the guided import step
+        this.api.registerRoute('GET', '/api/config-import/discover', async (req, res) => {
+            try {
+                const appDir = path.join(__dirname, '..', '..');
+                const workspaceRoot = path.join(appDir, '..');
+                const candidates = discoverLegacyConfigCandidates({
+                    appDir,
+                    workspaceRoot,
+                    configPathManager: this.getConfigPathManager()
+                });
+
+                res.json({
+                    success: true,
+                    candidates
+                });
+            } catch (error) {
+                this.api.log(`Legacy discovery error: ${error.message}`, 'error');
+                res.status(500).json({
+                    success: false,
+                    error: error.message
+                });
+            }
         });
 
         // Legacy: Validate path endpoint
@@ -625,44 +655,12 @@ class ConfigImportPlugin {
      */
     validateImportPath(importPath) {
         try {
-            // Check if path exists
-            if (!fs.existsSync(importPath)) {
-                return {
-                    valid: false,
-                    error: 'Path does not exist'
-                };
-            }
+            const result = scanImportPath(importPath);
 
-            // Check if it's a directory
-            const stats = fs.statSync(importPath);
-            if (!stats.isDirectory()) {
+            if (!result.valid) {
                 return {
                     valid: false,
-                    error: 'Path is not a directory'
-                };
-            }
-
-            // Try to validate the path directly first
-            let result = this.scanPathForConfigs(importPath);
-            
-            // If no config found in root, search for app/ subdirectory
-            if (!result.hasConfig) {
-                const appPath = path.join(importPath, 'app');
-                if (fs.existsSync(appPath) && fs.statSync(appPath).isDirectory()) {
-                    this.api.log('No config in root, checking app/ subdirectory', 'info');
-                    const appResult = this.scanPathForConfigs(appPath);
-                    if (appResult.hasConfig) {
-                        result = appResult;
-                        result.actualPath = appPath;
-                        result.detectedSubdirectory = 'app';
-                    }
-                }
-            }
-            
-            if (!result.hasConfig) {
-                return {
-                    valid: false,
-                    error: 'No configuration files found in the specified path'
+                    error: result.error || 'No configuration files found in the specified path'
                 };
             }
             
@@ -842,6 +840,19 @@ class ConfigImportPlugin {
                         if (file.endsWith('-wal') || file.endsWith('-shm')) {
                             continue;
                         }
+
+                        const srcStats = fs.statSync(srcPath);
+                        if (srcStats.isDirectory()) {
+                            try {
+                                const copied = this.copyDirectoryContents(srcPath, destPath);
+                                otherCount += copied;
+                                addLog(`Imported directory ${file} (${copied} files)`, 'info');
+                            } catch (error) {
+                                results.errors.push(`Failed to copy directory ${file}: ${error.message}`);
+                                addLog(`Failed to copy directory ${file}: ${error.message}`, 'error');
+                            }
+                            continue;
+                        }
                         
                         // Handle database files specially
                         if (file.endsWith('.db')) {
@@ -878,9 +889,13 @@ class ConfigImportPlugin {
                                 copyResult.warnings.forEach(w => addLog(`Warning for ${file}: ${w}`, 'warn'));
                             }
                         } else {
-                            // Copy non-database files normally
+                            // Copy non-database files without overwriting current profile state
                             try {
-                                fs.copyFileSync(srcPath, destPath);
+                                const copyResult = this.copyRegularFile(srcPath, destPath);
+                                if (copyResult.renamed) {
+                                    addLog(`File ${file} already exists, imported as ${path.basename(copyResult.destPath)}`, 'warn');
+                                    results.warnings.push(`File ${file} already exists, imported as ${path.basename(copyResult.destPath)}`);
+                                }
                                 otherCount++;
                             } catch (error) {
                                 results.errors.push(`Failed to copy ${file}: ${error.message}`);
@@ -967,7 +982,12 @@ class ConfigImportPlugin {
                                 
                                 if (file.endsWith('.db')) {
                                     // Handle database files
-                                    const copyResult = this.safeCopyDatabase(srcPath, destPath);
+                                    const finalDestPath = this.getUniqueDestinationPath(destPath);
+                                    if (finalDestPath !== destPath) {
+                                        addLog(`Plugin database ${pluginDir.name}/${file} already exists, importing as ${path.basename(finalDestPath)}`, 'warn');
+                                        results.warnings.push(`Plugin database ${pluginDir.name}/${file} already exists, imported as ${path.basename(finalDestPath)}`);
+                                    }
+                                    const copyResult = this.safeCopyDatabase(srcPath, finalDestPath);
                                     
                                     if (copyResult.success) {
                                         pluginDbCount += copyResult.filesCopied;
@@ -982,10 +1002,14 @@ class ConfigImportPlugin {
                                         copyResult.warnings.forEach(w => addLog(`Warning for ${pluginDir.name}/${file}: ${w}`, 'warn'));
                                     }
                                 } else {
-                                    // Copy non-database files normally
+                                    // Copy non-database files without overwriting existing plugin data
                                     try {
                                         if (fs.statSync(srcPath).isFile()) {
-                                            fs.copyFileSync(srcPath, destPath);
+                                            const copyResult = this.copyRegularFile(srcPath, destPath);
+                                            if (copyResult.renamed) {
+                                                addLog(`Plugin file ${pluginDir.name}/${file} already exists, imported as ${path.basename(copyResult.destPath)}`, 'warn');
+                                                results.warnings.push(`Plugin file ${pluginDir.name}/${file} already exists, imported as ${path.basename(copyResult.destPath)}`);
+                                            }
                                             pluginOtherCount++;
                                         }
                                     } catch (error) {
@@ -1107,6 +1131,67 @@ class ConfigImportPlugin {
                 logs: [{ message: `Fatal error: ${error.message}`, level: 'error', timestamp: new Date().toISOString() }]
             };
         }
+    }
+
+    /**
+     * Return a stable timestamp suffix for imported conflict files.
+     */
+    getImportTimestampSuffix() {
+        return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    }
+
+    /**
+     * Resolve a destination path that does not overwrite an existing file.
+     * Also checks SQLite sidecar names when the destination is a database.
+     */
+    getUniqueDestinationPath(destPath) {
+        const destDir = path.dirname(destPath);
+        const ext = path.extname(destPath);
+        const baseName = path.basename(destPath, ext);
+        const hasConflict = candidate => (
+            fs.existsSync(candidate) ||
+            fs.existsSync(`${candidate}-wal`) ||
+            fs.existsSync(`${candidate}-shm`)
+        );
+
+        if (!hasConflict(destPath)) {
+            return destPath;
+        }
+
+        const timestamp = this.getImportTimestampSuffix();
+        let counter = 0;
+        let candidate;
+        do {
+            const suffix = counter === 0 ? `imported-${timestamp}` : `imported-${timestamp}-${counter}`;
+            candidate = path.join(destDir, `${baseName}-${suffix}${ext}`);
+            counter++;
+        } while (hasConflict(candidate));
+
+        return candidate;
+    }
+
+    /**
+     * Copy a regular file while preserving timestamps and avoiding overwrites.
+     */
+    copyRegularFile(srcPath, destPath) {
+        const finalDestPath = this.getUniqueDestinationPath(destPath);
+        const destDir = path.dirname(finalDestPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        const stats = fs.statSync(srcPath);
+        try {
+            fs.copyFileSync(srcPath, finalDestPath, fs.constants.COPYFILE_FICLONE);
+        } catch {
+            fs.copyFileSync(srcPath, finalDestPath);
+        }
+        fs.utimesSync(finalDestPath, stats.atime, stats.mtime);
+
+        return {
+            destPath: finalDestPath,
+            renamed: finalDestPath !== destPath
+        };
     }
 
     /**
@@ -1333,11 +1418,7 @@ class ConfigImportPlugin {
                     if (entry.name.endsWith('.db-shm')) {
                         try {
                             // Try to copy, but don't fail if locked
-                            const stats = fs.statSync(srcPath);
-                            
-                            // Don't use COPYFILE_FICLONE for SHM files as it may fail on NTFS
-                            fs.copyFileSync(srcPath, destPath);
-                            fs.utimesSync(destPath, stats.atime, stats.mtime);
+                            this.copyRegularFile(srcPath, destPath);
                             fileCount++;
                         } catch (shmError) {
                             // SHM files can be locked on Windows - this is expected and non-critical
@@ -1347,20 +1428,7 @@ class ConfigImportPlugin {
                         continue;
                     }
                     
-                    // Get stats before copying for efficiency
-                    const stats = fs.statSync(srcPath);
-                    
-                    // Copy file - try with CoW optimization on supported filesystems
-                    try {
-                        fs.copyFileSync(srcPath, destPath, fs.constants.COPYFILE_FICLONE);
-                    } catch (cowError) {
-                        // If CoW fails (e.g., on NTFS), fall back to regular copy
-                        fs.copyFileSync(srcPath, destPath);
-                    }
-                    
-                    // Preserve modification time
-                    fs.utimesSync(destPath, stats.atime, stats.mtime);
-                    
+                    this.copyRegularFile(srcPath, destPath);
                     fileCount++;
                 } catch (copyError) {
                     // Log error but continue with other files

@@ -1,8 +1,8 @@
-﻿# Streamer-Profile System - Benutzerhandbuch
+# Streamer-Profile System - Benutzerhandbuch
 
-## Ãœbersicht
+## Übersicht
 
-Das Streamer-Profile System ermÃ¶glicht es mehreren Streamern, dieselbe LTTH-Installation zu nutzen, wobei jeder Streamer seine eigenen komplett unabhÃ¤ngigen Einstellungen und Daten hat.
+Das Streamer-Profile System ermöglicht es mehreren Streamern, dieselbe LTTH-Installation zu nutzen, wobei jeder Streamer seine eigenen komplett unabhängigen Einstellungen und Daten hat.
 
 ## Wichtige Konzepte
 
@@ -10,13 +10,13 @@ Das Streamer-Profile System ermÃ¶glicht es mehreren Streamern, dieselbe LTTH-I
 
 - **Streamer-Profil** (User Profile): Die Konfiguration und Datenbank eines Streamers
   - Jeder Streamer hat eine eigene `.db` Datei
-  - EnthÃ¤lt: Einstellungen, API-Keys, Viewer-XP-Daten, etc.
+  - Enthält: Einstellungen, API-Keys, Viewer-XP-Daten, etc.
   - Beispiel: `streamer1.db`, `streamer2.db`
 
 - **Viewer-Profil**: Die XP/Level-Daten eines einzelnen Zuschauers
   - Gespeichert in der `viewer_profiles` Tabelle
   - Ist Teil des Streamer-Profils
-  - Ein Viewer "alice" bei Streamer1 ist komplett unabhÃ¤ngig von "alice" bei Streamer2
+  - Ein Viewer "alice" bei Streamer1 ist komplett unabhängig von "alice" bei Streamer2
 
 ## Wie das System funktioniert
 
@@ -24,23 +24,23 @@ Das Streamer-Profile System ermÃ¶glicht es mehreren Streamern, dieselbe LTTH-I
 
 ```
 Streamer-Profil "streamer1":
-â”œâ”€â”€ Datei: user_configs/streamer1.db
-â”œâ”€â”€ Viewer XP:
-â”‚   â”œâ”€â”€ alice: Level 5, 1200 XP
-â”‚   â”œâ”€â”€ bob: Level 3, 600 XP
-â”‚   â””â”€â”€ charlie: Level 8, 3000 XP
-â””â”€â”€ Einstellungen: API-Keys, Plugin-Configs, etc.
+├── Datei: user_configs/streamer1.db
+├── Viewer XP:
+│   ├── alice: Level 5, 1200 XP
+│   ├── bob: Level 3, 600 XP
+│   └── charlie: Level 8, 3000 XP
+└── Einstellungen: API-Keys, Plugin-Configs, etc.
 
 Streamer-Profil "streamer2":
-â”œâ”€â”€ Datei: user_configs/streamer2.db
-â”œâ”€â”€ Viewer XP:
-â”‚   â”œâ”€â”€ alice: Level 2, 200 XP  â† UnabhÃ¤ngig von "alice" bei streamer1!
-â”‚   â”œâ”€â”€ dave: Level 10, 5000 XP
-â”‚   â””â”€â”€ eve: Level 1, 50 XP
-â””â”€â”€ Einstellungen: Eigene API-Keys, eigene Configs, etc.
+├── Datei: user_configs/streamer2.db
+├── Viewer XP:
+│   ├── alice: Level 2, 200 XP  ← Unabhängig von "alice" bei streamer1!
+│   ├── dave: Level 10, 5000 XP
+│   └── eve: Level 1, 50 XP
+└── Einstellungen: Eigene API-Keys, eigene Configs, etc.
 ```
 
-### Speicherort (Ã¼berlebt Updates!)
+### Speicherort (überlebt Updates!)
 
 Die Profile werden in einem systemweiten Verzeichnis gespeichert:
 
@@ -48,11 +48,11 @@ Die Profile werden in einem systemweiten Verzeichnis gespeichert:
 - **macOS**: `~/Library/Application Support/ltth.app/user_configs/`
 - **Linux**: `~/.local/share/ltth.app/user_configs/`
 
-**Wichtig**: Dieses Verzeichnis ist AUSSERHALB des Anwendungsordners und Ã¼berlebt daher alle Updates!
+**Wichtig**: Dieses Verzeichnis ist AUSSERHALB des Anwendungsordners und überlebt daher alle Updates!
 
 ## Profil wechseln
 
-### âš ï¸ WICHTIG: Neustart erforderlich!
+### ⚠️ WICHTIG: Neustart erforderlich!
 
 Wenn Sie das Profil wechseln, passiert folgendes:
 
@@ -60,18 +60,18 @@ Wenn Sie das Profil wechseln, passiert folgendes:
 2. **Schritt 2**: Anwendung muss neu gestartet werden
 3. **Schritt 3**: Beim Neustart wird die Datenbank des neuen Profils geladen
 
-**Warum ist ein Neustart nÃ¶tig?**
+**Warum ist ein Neustart nötig?**
 - Die Datenbank wird beim Start der Anwendung geladen
 - Alle Module (Plugins, TikTok-Connector, etc.) verwenden diese Datenbank
-- Ein "Hot-Swap" kÃ¶nnte zu Datenverlust fÃ¼hren
+- Ein "Hot-Swap" könnte zu Datenverlust führen
 - Neustart ist die sichere Methode
 
-### ðŸš€ Automatischer Neustart (Optional)
+### 🚀 Automatischer Neustart (Optional)
 
-Sie kÃ¶nnen den Neustart nach einem Profilwechsel automatisieren:
+Sie können den Neustart nach einem Profilwechsel automatisieren:
 
-1. Ã–ffnen Sie die Browser-Konsole (F12)
-2. FÃ¼hren Sie folgenden Befehl aus:
+1. Öffnen Sie die Browser-Konsole (F12)
+2. Führen Sie folgenden Befehl aus:
    ```javascript
    localStorage.setItem('profile_autoRestart', 'true')
    ```
@@ -84,26 +84,26 @@ localStorage.removeItem('profile_autoRestart')
 
 **So funktioniert es**:
 - Nach dem Profilwechsel erscheint ein Countdown (5 Sekunden)
-- Sie kÃ¶nnen den Countdown abbrechen, falls nÃ¶tig
+- Sie können den Countdown abbrechen, falls nötig
 - Oder Sie warten einfach, und die Anwendung startet automatisch neu
 
-### Profilwechsel Schritt-fÃ¼r-Schritt
+### Profilwechsel Schritt-für-Schritt
 
 ```
 1. Aktuelles Profil: streamer1
-   â””â”€â”€ Dashboard zeigt: Viewer XP Daten von streamer1
+   └── Dashboard zeigt: Viewer XP Daten von streamer1
 
 2. Profil wechseln zu: streamer2
-   â””â”€â”€ System speichert: "NÃ¤chstes Profil = streamer2"
-   â””â”€â”€ Warnung: "Neustart erforderlich"
-   â””â”€â”€ WICHTIG: Datenbank ist noch streamer1!
+   └── System speichert: "Nächstes Profil = streamer2"
+   └── Warnung: "Neustart erforderlich"
+   └── WICHTIG: Datenbank ist noch streamer1!
 
 3. Anwendung neu starten
-   â””â”€â”€ System lÃ¤dt: user_configs/streamer2.db
-   â””â”€â”€ Dashboard zeigt: Viewer XP Daten von streamer2 âœ“
+   └── System lädt: user_configs/streamer2.db
+   └── Dashboard zeigt: Viewer XP Daten von streamer2 ✓
 ```
 
-## HÃ¤ufige Probleme und LÃ¶sungen
+## Häufige Probleme und Lösungen
 
 ### Problem 1: "Viewer XP wird zwischen Profilen geteilt"
 
@@ -111,10 +111,10 @@ localStorage.removeItem('profile_autoRestart')
 
 **Ursache**: Profil wurde gewechselt, aber Anwendung nicht neu gestartet
 
-**LÃ¶sung**:
-1. PrÃ¼fen Sie, welches Profil aktiv geladen ist (im Header sichtbar)
+**Lösung**:
+1. Prüfen Sie, welches Profil aktiv geladen ist (im Header sichtbar)
 2. Starten Sie die Anwendung neu
-3. ÃœberprÃ¼fen Sie, ob das richtige Profil geladen wurde
+3. Überprüfen Sie, ob das richtige Profil geladen wurde
 
 ### Problem 2: "Viewer XP geht nach Update verloren"
 
@@ -122,43 +122,43 @@ localStorage.removeItem('profile_autoRestart')
 
 **Ursache**: Daten waren in alten Versionen im App-Verzeichnis gespeichert
 
-**LÃ¶sung**:
-1. PrÃ¼fen Sie den Speicherort: `user_configs/` Verzeichnis
-2. Wenn alte Daten vorhanden: Migration durchfÃ¼hren
+**Lösung**:
+1. Prüfen Sie den Speicherort: `user_configs/` Verzeichnis
+2. Wenn alte Daten vorhanden: Migration durchführen
 3. In neueren Versionen automatisch im richtigen Verzeichnis
 
-**Migration prÃ¼fen**:
+**Migration prüfen**:
 ```
-Alte Version: app/database.db (wird bei Update gelÃ¶scht) âŒ
-Neue Version: user_configs/<profil>.db (Ã¼berlebt Updates) âœ“
+Alte Version: app/database.db (wird bei Update gelöscht) ❌
+Neue Version: user_configs/<profil>.db (überlebt Updates) ✓
 ```
 
 ### Problem 3: "Ich sehe nicht, welches Profil geladen ist"
 
 **Symptom**: Unsicherheit, ob richtiges Profil aktiv ist
 
-**LÃ¶sung**:
+**Lösung**:
 1. Schauen Sie in den Header der Anwendung
 2. Dort sollte das aktuelle Profil angezeigt werden
 3. Bei Profilwechsel ohne Neustart: Warnung-Badge sichtbar
 
 ## Best Practices
 
-### FÃ¼r einzelne Streamer
+### Für einzelne Streamer
 
 1. **Erstellen Sie ein Profil mit Ihrem Streamer-Namen**
 2. **Nutzen Sie dieses Profil konsistent**
-3. **Sichern Sie Ihr Profil regelmÃ¤ÃŸig** (Backup-Funktion)
+3. **Sichern Sie Ihr Profil regelmäßig** (Backup-Funktion)
 
-### FÃ¼r geteilte Installationen
+### Für geteilte Installationen
 
 1. **Jeder Streamer bekommt sein eigenes Profil**
-2. **Profil wechseln â†’ Neustart â†’ Weiterarbeiten**
+2. **Profil wechseln → Neustart → Weiterarbeiten**
 3. **Nicht vergessen**: Nach Profilwechsel IMMER neu starten!
 
 ### Vor Updates
 
-1. **Backup erstellen** Ã¼ber Admin-Panel
+1. **Backup erstellen** über Admin-Panel
 2. **Profil-Verzeichnis notieren**: `user_configs/`
 3. **Nach Update**: Daten sollten automatisch vorhanden sein
 
@@ -168,28 +168,28 @@ Neue Version: user_configs/<profil>.db (Ã¼berlebt Updates) âœ“
 
 ```
 user_configs/
-â”œâ”€â”€ .active_profile        â† Name des aktiven Profils
-â”œâ”€â”€ streamer1.db           â† Komplette Datenbank von Streamer1
-â”œâ”€â”€ streamer1.db-wal       â† SQLite Log-Datei
-â”œâ”€â”€ streamer1.db-shm       â† SQLite Shared Memory
-â”œâ”€â”€ streamer2.db           â† Komplette Datenbank von Streamer2
-â”œâ”€â”€ streamer2.db-wal
-â””â”€â”€ streamer2.db-shm
+├── .active_profile        ← Name des aktiven Profils
+├── streamer1.db           ← Komplette Datenbank von Streamer1
+├── streamer1.db-wal       ← SQLite Log-Datei
+├── streamer1.db-shm       ← SQLite Shared Memory
+├── streamer2.db           ← Komplette Datenbank von Streamer2
+├── streamer2.db-wal
+└── streamer2.db-shm
 ```
 
 ### Was ist in einer Profil-Datenbank?
 
-Jede `.db` Datei enthÃ¤lt:
+Jede `.db` Datei enthält:
 
-- âœ“ Viewer XP Daten (`viewer_profiles` Tabelle)
-- âœ“ XP Transaktionen (`xp_transactions`)
-- âœ“ Badges und Level
-- âœ“ TÃ¤gliche AktivitÃ¤t und Streaks
-- âœ“ Plugin-Einstellungen
-- âœ“ API-Keys
-- âœ“ TikTok-Verbindungsdaten
-- âœ“ Alert-Konfigurationen
-- âœ“ Alle anderen Einstellungen
+- ✓ Viewer XP Daten (`viewer_profiles` Tabelle)
+- ✓ XP Transaktionen (`xp_transactions`)
+- ✓ Badges und Level
+- ✓ Tägliche Aktivität und Streaks
+- ✓ Plugin-Einstellungen
+- ✓ API-Keys
+- ✓ TikTok-Verbindungsdaten
+- ✓ Alert-Konfigurationen
+- ✓ Alle anderen Einstellungen
 
 **Alles in EINER Datei = Einfaches Backup!**
 
@@ -201,7 +201,7 @@ In anderen Systemen gibt es oft eine `streamer_id` Spalte in jeder Tabelle:
 -- Andere Systeme:
 CREATE TABLE viewer_profiles (
     username TEXT,
-    streamer_id TEXT,  â† ZusÃ¤tzliche Spalte
+    streamer_id TEXT,  ← Zusätzliche Spalte
     xp INTEGER,
     ...
 );
@@ -220,58 +220,57 @@ CREATE TABLE viewer_profiles (
 ```
 
 **Vorteile**:
-- âœ“ Einfachere Queries (keine JOIN auf streamer_id nÃ¶tig)
-- âœ“ Bessere Performance (kleinere Indizes)
-- âœ“ Klare Trennung (physisch separate Dateien)
-- âœ“ Einfaches Backup (eine Datei = ein Profil)
-- âœ“ Kein Risiko von Datenlecks zwischen Profilen
+- ✓ Einfachere Queries (keine JOIN auf streamer_id nötig)
+- ✓ Bessere Performance (kleinere Indizes)
+- ✓ Klare Trennung (physisch separate Dateien)
+- ✓ Einfaches Backup (eine Datei = ein Profil)
+- ✓ Kein Risiko von Datenlecks zwischen Profilen
 
 ## API-Endpunkte
 
-FÃ¼r Entwickler und Admin-Tools:
+Für Entwickler und Admin-Tools:
 
 ```
 GET  /api/profiles              # Liste aller Profile
 GET  /api/profiles/active       # Aktuell aktives Profil
 POST /api/profiles              # Neues Profil erstellen
 POST /api/profiles/switch       # Profil wechseln (erfordert Neustart!)
-DELETE /api/profiles/:username  # Profil lÃ¶schen
+DELETE /api/profiles/:username  # Profil löschen
 POST /api/profiles/:username/backup  # Profil-Backup erstellen
 ```
 
 ## Zusammenfassung
 
-### âœ… Ja, Daten sind isoliert!
+### ✅ Ja, Daten sind isoliert!
 
 - Jedes Streamer-Profil = eigene `.db` Datei
-- Viewer XP komplett unabhÃ¤ngig zwischen Profilen
+- Viewer XP komplett unabhängig zwischen Profilen
 - Keine gemeinsamen Daten
 
-### âœ… Ja, Daten Ã¼berleben Updates!
+### ✅ Ja, Daten überleben Updates!
 
-- Speicherort auÃŸerhalb des App-Verzeichnisses
+- Speicherort außerhalb des App-Verzeichnisses
 - System-weites `user_configs/` Verzeichnis
 - Migration von alten Versionen automatisch
 
-### âš ï¸ Wichtig zu beachten
+### ⚠️ Wichtig zu beachten
 
 - **Profil wechseln = Neustart erforderlich**
 - **Nicht vergessen**: Immer richtig neu starten
-- **Bei Problemen**: Profil im Header Ã¼berprÃ¼fen
+- **Bei Problemen**: Profil im Header überprüfen
 
 ## Hilfe und Support
 
 Bei Problemen:
 
-1. **PrÃ¼fen Sie den Speicherort**: Sind die `.db` Dateien im `user_configs/` Verzeichnis?
-2. **PrÃ¼fen Sie das aktive Profil**: Steht im Header das richtige Profil?
+1. **Prüfen Sie den Speicherort**: Sind die `.db` Dateien im `user_configs/` Verzeichnis?
+2. **Prüfen Sie das aktive Profil**: Steht im Header das richtige Profil?
 3. **Nach Profilwechsel**: Haben Sie die Anwendung neu gestartet?
 4. **Backup-Check**: Existiert Ihr Profil noch in `user_configs/`?
 
 ## Version
 
-Dieser Guide gilt fÃ¼r LTTH Version 1.2.1 und hÃ¶her.
+Dieser Guide gilt für LTTH Version 1.2.1 und höher.
 
-Ã„ltere Versionen hatten mÃ¶glicherweise Daten im App-Verzeichnis gespeichert. 
+Ältere Versionen hatten möglicherweise Daten im App-Verzeichnis gespeichert.
 Diese sollten bei der ersten Verwendung der neuen Version automatisch migriert werden.
-

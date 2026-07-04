@@ -1,31 +1,31 @@
-const socket = io();
+﻿const socket = io();
 let config = {};
 
 // Load configuration on page load
 async function loadConfig() {
-    console.log('🔄 [EMOJI RAIN UI] Loading configuration...');
+    console.log('?? [EMOJI RAIN UI] Loading configuration...');
     try {
         const response = await fetch('/api/webgpu-emoji-rain/config');
-        console.log('📥 [EMOJI RAIN UI] Response status:', response.status);
+        console.log('?? [EMOJI RAIN UI] Response status:', response.status);
 
         const data = await response.json();
-        console.log('📦 [EMOJI RAIN UI] Response data:', JSON.stringify(data, null, 2));
+        console.log('?? [EMOJI RAIN UI] Response data:', JSON.stringify(data, null, 2));
 
         if (data.success) {
             config = data.config;
-            console.log('✅ [EMOJI RAIN UI] Config loaded successfully:', JSON.stringify(config, null, 2));
-            console.log('🔍 [EMOJI RAIN UI] Config type:', typeof config);
-            console.log('🔍 [EMOJI RAIN UI] Config.enabled:', config.enabled);
-            console.log('🔍 [EMOJI RAIN UI] Config.emoji_set:', config.emoji_set);
-            console.log('🔍 [EMOJI RAIN UI] Config.emoji_set type:', typeof config.emoji_set, Array.isArray(config.emoji_set));
+            console.log('? [EMOJI RAIN UI] Config loaded successfully:', JSON.stringify(config, null, 2));
+            console.log('?? [EMOJI RAIN UI] Config type:', typeof config);
+            console.log('?? [EMOJI RAIN UI] Config.enabled:', config.enabled);
+            console.log('?? [EMOJI RAIN UI] Config.emoji_set:', config.emoji_set);
+            console.log('?? [EMOJI RAIN UI] Config.emoji_set type:', typeof config.emoji_set, Array.isArray(config.emoji_set));
             updateUI();
         } else {
-            console.error('❌ [EMOJI RAIN UI] Config load failed:', data.error);
+            console.error('? [EMOJI RAIN UI] Config load failed:', data.error);
             showNotification('Fehler: ' + (data.error || 'Unknown error'), true);
         }
     } catch (error) {
-        console.error('❌ [EMOJI RAIN UI] Exception during config load:', error);
-        console.error('❌ [EMOJI RAIN UI] Error stack:', error.stack);
+        console.error('? [EMOJI RAIN UI] Exception during config load:', error);
+        console.error('? [EMOJI RAIN UI] Error stack:', error.stack);
         showNotification('Fehler beim Laden der Konfiguration', true);
     }
 }
@@ -206,11 +206,11 @@ function applyResolutionPreset() {
 
 // Update UI with loaded config
 function updateUI() {
-    console.log('🎨 [EMOJI RAIN UI] Updating UI with config...');
+    console.log('?? [EMOJI RAIN UI] Updating UI with config...');
 
     try {
         // Main toggle
-        console.log('🎨 [EMOJI RAIN UI] Setting enabled toggle:', config.enabled);
+        console.log('?? [EMOJI RAIN UI] Setting enabled toggle:', config.enabled);
         document.getElementById('enabled-toggle').checked = config.enabled;
         updateEnabledStatus();
 
@@ -218,11 +218,11 @@ function updateUI() {
         document.getElementById('visual_mode').value = config.visual_mode || 'premium_stage';
 
         // Toaster mode
-        console.log('🎨 [EMOJI RAIN UI] Setting toaster mode:', config.toaster_mode);
+        console.log('?? [EMOJI RAIN UI] Setting toaster mode:', config.toaster_mode);
         document.getElementById('toaster_mode').checked = config.toaster_mode || false;
 
         // OBS HUD settings
-        console.log('🎨 [EMOJI RAIN UI] Setting OBS HUD settings...');
+        console.log('?? [EMOJI RAIN UI] Setting OBS HUD settings...');
         document.getElementById('obs_hud_enabled').checked = config.obs_hud_enabled !== false;
         document.getElementById('obs_hud_width').value = config.obs_hud_width || 1920;
         document.getElementById('obs_hud_height').value = config.obs_hud_height || 1080;
@@ -242,45 +242,45 @@ function updateUI() {
             }
         }
         document.getElementById('obs_hud_preset').value = detectedPreset;
-        console.log('🎨 [EMOJI RAIN UI] Detected resolution preset:', detectedPreset);
+        console.log('?? [EMOJI RAIN UI] Detected resolution preset:', detectedPreset);
 
         // Emoji set
-        console.log('🎨 [EMOJI RAIN UI] Setting emoji set...');
-        console.log('🎨 [EMOJI RAIN UI] config.emoji_set:', config.emoji_set);
+        console.log('?? [EMOJI RAIN UI] Setting emoji set...');
+        console.log('?? [EMOJI RAIN UI] config.emoji_set:', config.emoji_set);
 
         if (!config.emoji_set) {
-            console.error('❌ [EMOJI RAIN UI] emoji_set is undefined or null!');
-            config.emoji_set = ["💧","💙","💚","💜","❤️","🩵","✨","🌟","🔥","🎉"];
+            console.error('? [EMOJI RAIN UI] emoji_set is undefined or null!');
+            config.emoji_set = ["??","??","??","??","??","??","?","??","??","??"];
         }
 
         if (!Array.isArray(config.emoji_set)) {
-            console.error('❌ [EMOJI RAIN UI] emoji_set is not an array:', typeof config.emoji_set);
-            console.error('❌ [EMOJI RAIN UI] emoji_set value:', config.emoji_set);
-            config.emoji_set = ["💧","💙","💚","💜","❤️","🩵","✨","🌟","🔥","🎉"];
+            console.error('? [EMOJI RAIN UI] emoji_set is not an array:', typeof config.emoji_set);
+            console.error('? [EMOJI RAIN UI] emoji_set value:', config.emoji_set);
+            config.emoji_set = ["??","??","??","??","??","??","?","??","??","??"];
         }
 
         document.getElementById('emoji_set').value = config.emoji_set.join(',');
-        console.log('🎨 [EMOJI RAIN UI] Emoji set value set to:', document.getElementById('emoji_set').value);
+        console.log('?? [EMOJI RAIN UI] Emoji set value set to:', document.getElementById('emoji_set').value);
         updateEmojiPreview();
 
         // Custom images
-        console.log('🎨 [EMOJI RAIN UI] Setting custom images...');
+        console.log('?? [EMOJI RAIN UI] Setting custom images...');
         document.getElementById('use_custom_images').checked = config.use_custom_images || false;
         document.getElementById('image_urls').value = (config.image_urls || []).join('\n');
 
         // Effect
-        console.log('🎨 [EMOJI RAIN UI] Setting effect...');
+        console.log('?? [EMOJI RAIN UI] Setting effect...');
         document.getElementById('effect').value = config.effect || 'bounce';
 
         // Physics
-        console.log('🎨 [EMOJI RAIN UI] Setting physics...');
+        console.log('?? [EMOJI RAIN UI] Setting physics...');
         setRangeValue('physics_gravity_y', config.physics_gravity_y);
         setRangeValue('physics_air', config.physics_air);
         setRangeValue('physics_friction', config.physics_friction);
         setRangeValue('physics_restitution', config.physics_restitution);
 
         // Appearance
-        console.log('🎨 [EMOJI RAIN UI] Setting appearance...');
+        console.log('?? [EMOJI RAIN UI] Setting appearance...');
         document.getElementById('emoji_min_size_px').value = config.emoji_min_size_px;
         document.getElementById('emoji_max_size_px').value = config.emoji_max_size_px;
         setRangeValue('emoji_rotation_speed', config.emoji_rotation_speed);
@@ -289,12 +289,12 @@ function updateUI() {
         document.getElementById('max_emojis_on_screen').value = config.max_emojis_on_screen;
 
         // Rate limiting
-        console.log('🎨 [EMOJI RAIN UI] Setting rate limiting...');
+        console.log('?? [EMOJI RAIN UI] Setting rate limiting...');
         document.getElementById('rate_limit_enabled').checked = config.rate_limit_enabled || false;
         document.getElementById('rate_limit_emojis_per_second').value = config.rate_limit_emojis_per_second !== undefined ? config.rate_limit_emojis_per_second : 30;
 
         // Scaling rules
-        console.log('🎨 [EMOJI RAIN UI] Setting scaling rules...');
+        console.log('?? [EMOJI RAIN UI] Setting scaling rules...');
         document.getElementById('like_count_divisor').value = config.like_count_divisor;
         document.getElementById('like_min_emojis').value = config.like_min_emojis;
         document.getElementById('like_max_emojis').value = config.like_max_emojis;
@@ -303,7 +303,7 @@ function updateUI() {
         document.getElementById('gift_max_emojis').value = config.gift_max_emojis;
 
         // Geschenk-Kugeln
-        console.log('🎨 [EMOJI RAIN UI] Setting gift ball configuration...');
+        console.log('?? [EMOJI RAIN UI] Setting gift ball configuration...');
         document.getElementById('gift_balls_enabled').checked = config.gift_balls_enabled === true;
         document.getElementById('gift_ball_min_size_px').value = config.gift_ball_min_size_px || 44;
         document.getElementById('gift_ball_max_size_px').value = config.gift_ball_max_size_px || 128;
@@ -317,7 +317,7 @@ function updateUI() {
         document.getElementById('gift_ball_max_count').value = config.gift_ball_max_count || 24;
 
         // Gift ball price-tier sizing
-        console.log('🎨 [EMOJI RAIN UI] Setting gift ball tier sizing...');
+        console.log('?? [EMOJI RAIN UI] Setting gift ball tier sizing...');
         document.getElementById('gift_ball_tier_thresholds_enabled').checked = config.gift_ball_tier_thresholds_enabled === true;
         document.getElementById('gift_ball_tier_size_1').value = config.gift_ball_tier_size_1 ?? 44;
         document.getElementById('gift_ball_tier_size_2').value = config.gift_ball_tier_size_2 ?? 80;
@@ -327,7 +327,7 @@ function updateUI() {
         document.getElementById('gift_ball_tier_size_6').value = config.gift_ball_tier_size_6 ?? 5000;
 
         // Herzballons
-        console.log('ðŸŽ¨ [EMOJI RAIN UI] Setting Herzballons configuration...');
+        console.log('🎨 [EMOJI RAIN UI] Setting Herzballons configuration...');
         document.getElementById('heart_balloons_enabled').checked = config.heart_balloons_enabled !== false;
         document.getElementById('heart_balloon_like_divisor').value = config.heart_balloon_like_divisor || 1;
         document.getElementById('heart_balloon_min_hearts').value = config.heart_balloon_min_hearts || 1;
@@ -338,7 +338,7 @@ function updateUI() {
         document.getElementById('heart_balloon_test_count').value = config.heart_balloon_test_count || 8;
 
         // Sticker rain configuration
-        console.log('🎨 [EMOJI RAIN UI] Setting sticker rain configuration...');
+        console.log('?? [EMOJI RAIN UI] Setting sticker rain configuration...');
         document.getElementById('sticker_enabled').checked = config.sticker_enabled !== false;
         document.getElementById('sticker_base_count').value = config.sticker_base_count || 5;
         document.getElementById('sticker_fan_level_multiplier').value = config.sticker_fan_level_multiplier || 3;
@@ -348,48 +348,48 @@ function updateUI() {
         document.getElementById('sticker_superfan_burst_enabled').checked = config.sticker_superfan_burst_enabled !== false;
 
         // Wind simulation
-        console.log('🎨 [EMOJI RAIN UI] Setting wind simulation...');
+        console.log('?? [EMOJI RAIN UI] Setting wind simulation...');
         document.getElementById('wind_enabled').checked = config.wind_enabled || false;
         setRangeValue('wind_strength', config.wind_strength !== undefined ? config.wind_strength : 50);
         document.getElementById('wind_direction').value = config.wind_direction || 'auto';
 
         // Bounce physics
-        console.log('🎨 [EMOJI RAIN UI] Setting bounce physics...');
+        console.log('?? [EMOJI RAIN UI] Setting bounce physics...');
         document.getElementById('floor_enabled').checked = config.floor_enabled !== false;
         setRangeValue('bounce_height', config.bounce_height !== undefined ? config.bounce_height : 0.6);
         setRangeValue('bounce_damping', config.bounce_damping !== undefined ? config.bounce_damping : 0.1);
 
         // Color theme
-        console.log('🎨 [EMOJI RAIN UI] Setting color theme...');
+        console.log('?? [EMOJI RAIN UI] Setting color theme...');
         document.getElementById('color_mode').value = config.color_mode || 'off';
         setRangeValue('color_intensity', config.color_intensity !== undefined ? config.color_intensity : 0.5);
 
         // Rainbow mode
-        console.log('🎨 [EMOJI RAIN UI] Setting rainbow mode...');
+        console.log('?? [EMOJI RAIN UI] Setting rainbow mode...');
         document.getElementById('rainbow_enabled').checked = config.rainbow_enabled || false;
         setRangeValue('rainbow_speed', config.rainbow_speed !== undefined ? config.rainbow_speed : 1.0);
 
         // Pixel mode
-        console.log('🎨 [EMOJI RAIN UI] Setting pixel mode...');
+        console.log('?? [EMOJI RAIN UI] Setting pixel mode...');
         document.getElementById('pixel_enabled').checked = config.pixel_enabled || false;
         setRangeValue('pixel_size', config.pixel_size !== undefined ? config.pixel_size : 4);
 
         // SuperFan burst
-        console.log('🎨 [EMOJI RAIN UI] Setting SuperFan burst...');
+        console.log('?? [EMOJI RAIN UI] Setting SuperFan burst...');
         document.getElementById('superfan_burst_enabled').checked = config.superfan_burst_enabled !== false;
         setRangeValue('superfan_burst_intensity', config.superfan_burst_intensity !== undefined ? config.superfan_burst_intensity : 3.0);
         document.getElementById('superfan_burst_duration').value = config.superfan_burst_duration || 2000;
 
         // FPS optimization
-        console.log('🎨 [EMOJI RAIN UI] Setting FPS optimization...');
+        console.log('?? [EMOJI RAIN UI] Setting FPS optimization...');
         document.getElementById('fps_optimization_enabled').checked = config.fps_optimization_enabled !== false;
         setRangeValue('fps_sensitivity', config.fps_sensitivity !== undefined ? config.fps_sensitivity : 0.8);
         document.getElementById('target_fps_optimization').value = config.target_fps || 60;
 
-        console.log('✅ [EMOJI RAIN UI] UI update completed successfully');
+        console.log('? [EMOJI RAIN UI] UI update completed successfully');
     } catch (error) {
-        console.error('❌ [EMOJI RAIN UI] Error updating UI:', error);
-        console.error('❌ [EMOJI RAIN UI] Error stack:', error.stack);
+        console.error('? [EMOJI RAIN UI] Error updating UI:', error);
+        console.error('? [EMOJI RAIN UI] Error stack:', error.stack);
         showNotification('Fehler beim Aktualisieren der UI', true);
     }
 }
@@ -400,7 +400,7 @@ function setRangeValue(id, value) {
     
     // Check if elements exist before accessing them
     if (!input) {
-        console.warn(`⚠️ [EMOJI RAIN UI] Element with id "${id}" not found`);
+        console.warn(`?? [EMOJI RAIN UI] Element with id "${id}" not found`);
         return;
     }
     
@@ -409,7 +409,7 @@ function setRangeValue(id, value) {
     if (valueDisplay) {
         valueDisplay.textContent = value;
     } else {
-        console.warn(`⚠️ [EMOJI RAIN UI] Value display element "${id}_value" not found`);
+        console.warn(`?? [EMOJI RAIN UI] Value display element "${id}_value" not found`);
     }
 }
 
@@ -546,7 +546,7 @@ let testEmojiRainInProgress = false;
 async function testEmojiRain() {
     // Prevent rapid clicks by checking if a test is already in progress
     if (testEmojiRainInProgress) {
-        showNotification('Bitte warten, Test läuft bereits...', true);
+        showNotification('Bitte warten, Test l�uft bereits...', true);
         return;
     }
 
@@ -719,7 +719,7 @@ async function uploadImages() {
     const files = fileInput.files;
 
     if (files.length === 0) {
-        showNotification('Bitte wähle mindestens eine Datei aus', true);
+        showNotification('Bitte w�hle mindestens eine Datei aus', true);
         return;
     }
 
@@ -806,8 +806,8 @@ async function loadUploadedImages() {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
                 deleteBtn.setAttribute('data-filename', img.filename);
-                deleteBtn.title = 'Löschen';
-                deleteBtn.textContent = '×';
+                deleteBtn.title = 'L�schen';
+                deleteBtn.textContent = '�';
 
                 item.appendChild(imgEl);
                 item.appendChild(deleteBtn);
@@ -830,7 +830,7 @@ async function loadUploadedImages() {
 
 // Delete image
 async function deleteImage(filename) {
-    if (!confirm(`Bild "${filename}" wirklich löschen?`)) {
+    if (!confirm(`Bild "${filename}" wirklich l�schen?`)) {
         return;
     }
 
@@ -842,7 +842,7 @@ async function deleteImage(filename) {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Bild gelöscht!');
+            showNotification('Bild gel�scht!');
 
             // Remove URL from textarea
             const currentUrls = document.getElementById('image_urls').value.split('\n');
@@ -853,10 +853,10 @@ async function deleteImage(filename) {
             // Reload image list
             await loadUploadedImages();
         } else {
-            showNotification('Fehler beim Löschen: ' + data.error, true);
+            showNotification('Fehler beim L�schen: ' + data.error, true);
         }
     } catch (error) {
-        showNotification('Netzwerkfehler beim Löschen', true);
+        showNotification('Netzwerkfehler beim L�schen', true);
         console.error(error);
     }
 }
@@ -922,7 +922,7 @@ function renderUserEmojiMappings() {
         const emojiSpan = document.createElement('span');
         // Check if using profile picture marker
         if (emoji === '{{profilePicture}}') {
-            emojiSpan.textContent = '🖼️ Profilbild';
+            emojiSpan.textContent = '??? Profilbild';
             emojiSpan.style.fontSize = '1em';
             emojiSpan.style.fontStyle = 'italic';
         } else {
@@ -935,7 +935,7 @@ function renderUserEmojiMappings() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'danger';
-        deleteBtn.textContent = '🗑️ Löschen';
+        deleteBtn.textContent = '??? L�schen';
         deleteBtn.style.padding = '5px 10px';
         deleteBtn.style.fontSize = '0.9em';
         deleteBtn.addEventListener('click', () => deleteUserMapping(username));
@@ -972,7 +972,7 @@ async function addUserMapping() {
 
 // Delete user emoji mapping
 async function deleteUserMapping(username) {
-    if (!confirm(`Zuordnung für "${username}" wirklich löschen?`)) {
+    if (!confirm(`Zuordnung f�r "${username}" wirklich l�schen?`)) {
         return;
     }
 
@@ -1030,13 +1030,13 @@ function updatePerformanceDisplay(fps, activeEmojis, mode) {
 
 // Initialize everything when DOM is ready
 function initializeEmojiRainUI() {
-    console.log('🚀 [EMOJI RAIN UI] Initializing Emoji Rain UI...');
+    console.log('?? [EMOJI RAIN UI] Initializing Emoji Rain UI...');
 
     loadConfig();
     loadUploadedImages();
     loadUserEmojiMappings();
 
-    console.log('✅ [EMOJI RAIN UI] Initialization started');
+    console.log('? [EMOJI RAIN UI] Initialization started');
 
     // ========== EVENT LISTENERS (CSP-compliant) ==========
 
@@ -1079,7 +1079,7 @@ function initializeEmojiRainUI() {
             emojiInput.placeholder = 'Profilbild wird verwendet';
         } else {
             emojiInput.disabled = false;
-            emojiInput.placeholder = '🌟';
+            emojiInput.placeholder = '??';
         }
     });
 

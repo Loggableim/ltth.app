@@ -1,4 +1,4 @@
-﻿const fs = require('fs').promises;
+const fs = require('fs').promises;
 const path = require('path');
 
 // Import modular components
@@ -44,7 +44,7 @@ class ParameterPresetManager {
             parameters,
             createdAt: Date.now()
         };
-        
+
         this.presets.set(id, preset);
         await this.persistPresets();
         return preset;
@@ -74,19 +74,19 @@ class ParameterPresetManager {
  * Limits OSC message rate to prevent overload
  */
 /**
- * OSC-Bridge Plugin fÃ¼r VRChat-Integration
+ * OSC-Bridge Plugin für VRChat-Integration
  *
- * Permanente OSC-BrÃ¼cke zwischen TikTok-Events und VRChat-Avataren.
- * UnterstÃ¼tzt bidirektionale Kommunikation mit konfigurierbaren Parametern.
+ * Permanente OSC-Brücke zwischen TikTok-Events und VRChat-Avataren.
+ * Unterstützt bidirektionale Kommunikation mit konfigurierbaren Parametern.
  *
  * Features:
  * - Dauerhaft aktiv (kein Auto-Shutdown)
  * - VRChat-Standard-Parameter (/avatar/parameters/*, /world/*)
  * - Sicherheit: Nur lokale IPs erlaubt
- * - VollstÃ¤ndiges Logging mit oscBridge.log
- * - Event-Bus-Integration fÃ¼r eingehende OSC-Signale
- * - Flow-System-Integration fÃ¼r automatische Trigger
- * - Message Batching & Queuing fÃ¼r bessere Performance
+ * - Vollständiges Logging mit oscBridge.log
+ * - Event-Bus-Integration für eingehende OSC-Signale
+ * - Flow-System-Integration für automatische Trigger
+ * - Message Batching & Queuing für bessere Performance
  * - OSCQuery Auto-Discovery
  * - Live Parameter Monitoring
  * - PhysBones Control
@@ -160,10 +160,10 @@ class OSCBridgePlugin {
         this.presetManager = new ParameterPresetManager(api);
         this.animazingPalIntentHandler = null;
         this.animazingPalBridgeRegistered = false;
-        
+
         // Modular components (initialized later)
         this.oscQueryClient = null; // OSCQueryClient instance
-        this.avatarStateStore = null; // AvatarStateStore instance  
+        this.avatarStateStore = null; // AvatarStateStore instance
         this.expressionController = null; // ExpressionController instance
         this.physBonesController = null; // PhysBonesController instance
 
@@ -198,19 +198,19 @@ class OSCBridgePlugin {
             // Config laden
             this.config = normalizeConfig(await this.api.getConfig('config') || this.getDefaultConfig());
 
-            // Early-init OSCQueryClient if enabled â€” prevents race condition with auto-detect endpoint
+            // Early-init OSCQueryClient if enabled — prevents race condition with auto-detect endpoint
             if (this.config.oscQuery?.enabled) {
                 const host = this.config.oscQuery.host || '127.0.0.1';
                 const port = this.config.oscQuery.port || 9001;
                 this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
-                this.logger.info(`ðŸ“¡ OSCQuery client pre-initialized: ${host}:${port}`);
+                this.logger.info(`📡 OSCQuery client pre-initialized: ${host}:${port}`);
             }
 
             // Initialize modular components
             this.avatarStateStore = new AvatarStateStore(this.api);
             this.expressionController = new ExpressionController(this.api, this);
             this.physBonesController = new PhysBonesController(this.api, this, this.avatarStateStore);
-            
+
             // Initialize Preset Manager
             await this.presetManager.loadPresets();
 
@@ -218,7 +218,7 @@ class OSCBridgePlugin {
             if (this.config.liveMonitoring?.enabled) {
                 this.avatarStateStore.startCleanup();
             }
-            
+
             // Start ExpressionController cleanup
             this.expressionController.startCleanup();
 
@@ -228,7 +228,7 @@ class OSCBridgePlugin {
             // Socket.IO Events registrieren
             this.registerSocketEvents();
 
-            // TikTok Gift Event registrieren fÃ¼r Gift-Mappings
+            // TikTok Gift Event registrieren für Gift-Mappings
             this.registerTikTokGiftHandler();
 
             // AnimazingPal intent bridge
@@ -242,7 +242,7 @@ class OSCBridgePlugin {
                 await this.start();
             }
 
-            this.logger.info('ðŸ“¡ OSC-Bridge Plugin initialized with enhanced modular features');
+            this.logger.info('📡 OSC-Bridge Plugin initialized with enhanced modular features');
 
             return true;
         } catch (error) {
@@ -540,15 +540,15 @@ class OSCBridgePlugin {
 
         this.api.registerRoute('post', '/api/osc/gift-mappings', async (req, res) => {
             const { mappings } = req.body;
-            
+
             if (!Array.isArray(mappings)) {
                 return res.status(400).json({ success: false, error: 'Mappings must be an array' });
             }
 
             this.config.giftMappings = mappings;
             await this.api.setConfig('config', this.config);
-            
-            this.logger.info(`âœ… Updated ${mappings.length} gift mappings`);
+
+            this.logger.info(`✅ Updated ${mappings.length} gift mappings`);
             res.json({ success: true, mappings });
         });
 
@@ -563,15 +563,15 @@ class OSCBridgePlugin {
 
         this.api.registerRoute('post', '/api/osc/avatars', async (req, res) => {
             const { avatars } = req.body;
-            
+
             if (!Array.isArray(avatars)) {
                 return res.status(400).json({ success: false, error: 'Avatars must be an array' });
             }
 
             this.config.avatars = avatars;
             await this.api.setConfig('config', this.config);
-            
-            this.logger.info(`âœ… Updated ${avatars.length} avatars`);
+
+            this.logger.info(`✅ Updated ${avatars.length} avatars`);
             res.json({ success: true, avatars });
         });
 
@@ -586,7 +586,7 @@ class OSCBridgePlugin {
 
         this.api.registerRoute('post', '/api/osc/commands', async (req, res) => {
             const { commands } = req.body;
-            
+
             if (!Array.isArray(commands)) {
                 return res.status(400).json({ success: false, error: 'Commands must be an array' });
             }
@@ -597,12 +597,12 @@ class OSCBridgePlugin {
 
             this.config.chatCommands.commands = commands;
             await this.api.setConfig('config', this.config);
-            
+
             // Re-register GCCE commands with updated config
             this.unregisterGCCECommands();
             this.registerGCCECommands();
-            
-            this.logger.info(`âœ… Updated ${commands.length} chat commands`);
+
+            this.logger.info(`✅ Updated ${commands.length} chat commands`);
             res.json({ success: true, commands });
         });
 
@@ -908,7 +908,7 @@ class OSCBridgePlugin {
         this.api.registerRoute('get', '/api/osc/oscquery/parameters', (req, res) => {
             const { pattern } = req.query;
             if (this.oscQueryClient) {
-                const params = pattern 
+                const params = pattern
                     ? this.oscQueryClient.getParametersByPattern(pattern)
                     : this.oscQueryClient.getAllParameters();
                 res.json({ success: true, parameters: params });
@@ -923,10 +923,10 @@ class OSCBridgePlugin {
                 if (!this.oscQueryClient) {
                     return res.json({ success: false, error: 'OSCQuery not initialized' });
                 }
-                
+
                 // Try to get current avatar ID from /avatar/change parameter
                 const avatarChangeParam = await this.getCurrentAvatarId();
-                
+
                 if (avatarChangeParam) {
                     res.json({
                         success: true,
@@ -950,9 +950,9 @@ class OSCBridgePlugin {
                 if (!this.oscQueryClient) {
                     return res.json({ success: false, error: 'OSCQuery not initialized', actions: [] });
                 }
-                
+
                 const availableActions = this.getAvailableActions();
-                
+
                 res.json({
                     success: true,
                     actions: availableActions,
@@ -971,7 +971,7 @@ class OSCBridgePlugin {
                     const host = this.config.oscQuery.host || '127.0.0.1';
                     const port = this.config.oscQuery.port || 9001;
                     this.oscQueryClient = new OSCQueryClient(host, port, this.logger);
-                    this.logger.info('ðŸ“¡ OSCQuery client on-demand initialized for auto-detect');
+                    this.logger.info('📡 OSCQuery client on-demand initialized for auto-detect');
                 }
 
                 if (!this.oscQueryClient) {
@@ -992,7 +992,7 @@ class OSCBridgePlugin {
                         this.config.oscQuery.port = scanResult.port;
                         this.config.oscQuery.enabled = true;
                         await this.api.setConfig('config', this.config);
-                        this.logger.info(`ðŸ“¡ Auto-scan found VRChat OSCQuery on port ${scanResult.port}`);
+                        this.logger.info(`📡 Auto-scan found VRChat OSCQuery on port ${scanResult.port}`);
                     }
                 }
 
@@ -1008,18 +1008,18 @@ class OSCBridgePlugin {
                         diagnostics
                     });
                 }
-                
+
                 // Trigger discovery
                 await this.autoDiscoverOSCQuery();
-                
+
                 // Give VRChat a moment to populate the avatar parameter after discovery
                 // Then retry up to 3 times with 1 second delays if not found
                 this.logger.info('Waiting for avatar parameter to be available...');
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 // Get current avatar with retry logic (3 retries, 1 second delay each)
                 const avatarId = await this.getCurrentAvatarId({ retries: 3, retryDelay: 1000 });
-                
+
                 if (!avatarId) {
                     return res.json({
                         success: false,
@@ -1027,13 +1027,13 @@ class OSCBridgePlugin {
                         diagnostics: this.buildOSCQueryDiagnostics()
                     });
                 }
-                
+
                 // Get available actions
                 const availableActions = this.getAvailableActions();
-                
+
                 // Check if avatar already exists in config
                 const existingAvatar = this.config.avatars?.find(a => a.avatarId === avatarId);
-                
+
                 if (!existingAvatar) {
                     // Auto-add avatar to list with timestamp as name
                     const newAvatar = {
@@ -1044,17 +1044,17 @@ class OSCBridgePlugin {
                         availableActions: availableActions,
                         detectedAt: Date.now()
                     };
-                    
+
                     if (!this.config.avatars) {
                         this.config.avatars = [];
                     }
-                    
+
                     this.config.avatars.push(newAvatar);
                     await this.api.setConfig('config', this.config);
-                    
-                    this.logger.info(`âœ… Auto-detected and added new avatar: ${avatarId}`);
+
+                    this.logger.info(`✅ Auto-detected and added new avatar: ${avatarId}`);
                 }
-                
+
                 res.json({
                     success: true,
                     avatarId: avatarId,
@@ -1062,7 +1062,7 @@ class OSCBridgePlugin {
                     isNew: !existingAvatar,
                     parameterCount: this.oscQueryClient.parameters.size
                 });
-                
+
             } catch (error) {
                 this.logger.error('Auto-detect avatar failed:', error);
                 res.status(500).json({ success: false, error: error.message });
@@ -1076,7 +1076,7 @@ class OSCBridgePlugin {
             const messageRate = running && uptime > 0 ? (this.stats.messagesSent / (uptime / 1000)) : 0;
             const memUsage = process.memoryUsage();
             const configValidation = validateConfig(normalizeConfig(this.config || this.getDefaultConfig()));
-            
+
             res.json({
                 success: true,
                 status: running ? 'healthy' : 'stopped',
@@ -1106,7 +1106,7 @@ class OSCBridgePlugin {
                 exportedAt: new Date().toISOString(),
                 presets: presets
             };
-            
+
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Content-Disposition', `attachment; filename="osc-presets-${Date.now()}.json"`);
             res.json(exportData);
@@ -1115,14 +1115,14 @@ class OSCBridgePlugin {
         this.api.registerRoute('post', '/api/osc/presets/import', async (req, res) => {
             try {
                 const { presets } = req.body;
-                
+
                 if (!presets || !Array.isArray(presets)) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        error: 'Invalid import data: presets array required' 
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Invalid import data: presets array required'
                     });
                 }
-                
+
                 let imported = 0;
                 for (const preset of presets) {
                     if (preset.name && preset.parameters) {
@@ -1134,9 +1134,9 @@ class OSCBridgePlugin {
                         imported++;
                     }
                 }
-                
-                res.json({ 
-                    success: true, 
+
+                res.json({
+                    success: true,
                     imported: imported,
                     total: presets.length
                 });
@@ -1158,34 +1158,34 @@ class OSCBridgePlugin {
                 if (!this.config.favorites) {
                     this.config.favorites = { avatars: [], maxFavorites: 10 };
                 }
-                
+
                 const { avatarId } = req.params;
                 const maxFavorites = this.config.favorites.maxFavorites || 10;
-                
+
                 // Check if already in favorites
                 if (this.config.favorites.avatars.includes(avatarId)) {
-                    return res.json({ 
-                        success: false, 
-                        error: 'Avatar already in favorites' 
+                    return res.json({
+                        success: false,
+                        error: 'Avatar already in favorites'
                     });
                 }
-                
+
                 // Check max favorites limit
                 if (this.config.favorites.avatars.length >= maxFavorites) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        error: `Maximum ${maxFavorites} favorites reached` 
+                    return res.status(400).json({
+                        success: false,
+                        error: `Maximum ${maxFavorites} favorites reached`
                     });
                 }
-                
+
                 // Add to favorites
                 this.config.favorites.avatars.push(avatarId);
                 await this.api.setConfig('config', this.config);
-                
-                this.logger.info(`â­ Added avatar ${avatarId} to favorites`);
-                res.json({ 
-                    success: true, 
-                    favorites: this.config.favorites.avatars 
+
+                this.logger.info(`⭐ Added avatar ${avatarId} to favorites`);
+                res.json({
+                    success: true,
+                    favorites: this.config.favorites.avatars
                 });
             } catch (error) {
                 this.logger.error('Add to favorites failed:', error);
@@ -1198,25 +1198,25 @@ class OSCBridgePlugin {
                 if (!this.config.favorites) {
                     this.config.favorites = { avatars: [], maxFavorites: 10 };
                 }
-                
+
                 const { avatarId } = req.params;
                 const index = this.config.favorites.avatars.indexOf(avatarId);
-                
+
                 if (index === -1) {
-                    return res.json({ 
-                        success: false, 
-                        error: 'Avatar not in favorites' 
+                    return res.json({
+                        success: false,
+                        error: 'Avatar not in favorites'
                     });
                 }
-                
+
                 // Remove from favorites
                 this.config.favorites.avatars.splice(index, 1);
                 await this.api.setConfig('config', this.config);
-                
-                this.logger.info(`âŒ Removed avatar ${avatarId} from favorites`);
-                res.json({ 
-                    success: true, 
-                    favorites: this.config.favorites.avatars 
+
+                this.logger.info(`❌ Removed avatar ${avatarId} from favorites`);
+                res.json({
+                    success: true,
+                    favorites: this.config.favorites.avatars
                 });
             } catch (error) {
                 this.logger.error('Remove from favorites failed:', error);
@@ -1415,11 +1415,11 @@ class OSCBridgePlugin {
                     oscCfg.port || 9001,
                     this.logger
                 );
-                this.logger.info('ðŸ“¡ OSCQuery client re-initialized after config update');
+                this.logger.info('📡 OSCQuery client re-initialized after config update');
             } else if (!oscCfg?.enabled && this.oscQueryClient) {
                 this.oscQueryClient.disconnect();
                 this.oscQueryClient = null;
-                this.logger.info('ðŸ“¡ OSCQuery client removed (disabled in config)');
+                this.logger.info('📡 OSCQuery client removed (disabled in config)');
             }
 
             await this.api.setConfig('config', this.config);
@@ -1427,7 +1427,7 @@ class OSCBridgePlugin {
             if (wasRunning && this.config.enabled) {
                 await this.start();
             } else if (!this.config.enabled && wasRunning) {
-                this.logger.info('ðŸ“¡ OSC-Bridge disabled');
+                this.logger.info('📡 OSC-Bridge disabled');
             } else if (this.config.enabled && !wasRunning) {
                 await this.start();
             }
@@ -1469,7 +1469,7 @@ class OSCBridgePlugin {
 
         try {
             this.send(address, value);
-            this.logger.info(`ðŸ“¡ OSC Test signal sent: ${address} = ${value}`);
+            this.logger.info(`📡 OSC Test signal sent: ${address} = ${value}`);
 
             return {
                 success: true,
@@ -1554,7 +1554,7 @@ class OSCBridgePlugin {
         return this.send('/avatar/parameters/GGLSwim', swimming ? 1 : 0);
     }
 
-    // Expose fÃ¼r Flow-System
+    // Expose für Flow-System
     getOSCBridge() {
         return this;
     }
@@ -1567,7 +1567,7 @@ class OSCBridgePlugin {
             this.api.registerTikTokEvent('gift', (giftData) => {
                 this.handleGiftEvent(giftData);
             });
-            this.logger.info('âœ… TikTok gift event handler registered for OSC-Bridge');
+            this.logger.info('✅ TikTok gift event handler registered for OSC-Bridge');
 
             // Register chat event handler for chatbox mirroring
             this.api.registerTikTokEvent('chat', (chatData) => {
@@ -1575,7 +1575,7 @@ class OSCBridgePlugin {
                     this.mirrorTikTokChatToChatbox(chatData.comment, chatData.uniqueId);
                 }
             });
-            this.logger.info('âœ… TikTok chat event handler registered for chatbox mirroring');
+            this.logger.info('✅ TikTok chat event handler registered for chatbox mirroring');
         } catch (error) {
             this.logger.error('Failed to register TikTok event handlers. TikTok integration may not be available:', error);
         }
@@ -1605,7 +1605,7 @@ class OSCBridgePlugin {
         // Find matching gift mapping - use flexible matching
         // Priority: 1) Exact ID match, 2) Name match (case-insensitive)
         let mapping = null;
-        
+
         // First try ID match (most reliable)
         if (giftId) {
             // Convert to number for comparison, handling both string and number inputs
@@ -1619,11 +1619,11 @@ class OSCBridgePlugin {
                 });
             }
         }
-        
+
         // Then try name match (case-insensitive)
         if (!mapping && giftName) {
             const lowerGiftName = giftName.toLowerCase();
-            mapping = this.config.giftMappings.find(m => 
+            mapping = this.config.giftMappings.find(m =>
                 m.giftName && m.giftName.toLowerCase() === lowerGiftName
             );
         }
@@ -1633,7 +1633,7 @@ class OSCBridgePlugin {
             return; // No mapping for this gift
         }
 
-        this.logger.info(`ðŸŽ Gift mapping triggered: ${giftName} (${giftId}) â†’ ${mapping.action}`);
+        this.logger.info(`🎁 Gift mapping triggered: ${giftName} (${giftId}) → ${mapping.action}`);
         this.logToFile('GIFT', `Gift ${giftName} (${giftId}) triggered action ${mapping.action}`);
 
         try {
@@ -1717,11 +1717,11 @@ class OSCBridgePlugin {
             const address = '/avatar/change';
             this.send(address, avatarId);
 
-            const logMsg = avatarName 
+            const logMsg = avatarName
                 ? `Avatar switched to: ${avatarName} (${avatarId})`
                 : `Avatar switched to: ${avatarId}`;
-            
-            this.logger.info(`ðŸ‘¤ ${logMsg}`);
+
+            this.logger.info(`👤 ${logMsg}`);
             this.logToFile('AVATAR', logMsg);
 
             this.api.emit('osc:avatar-switched', {
@@ -1758,7 +1758,7 @@ class OSCBridgePlugin {
 
         // Get commands from config, falling back to defaults
         const configCommands = this.config.chatCommands?.commands || this.getDefaultCommands();
-        
+
         // Filter only enabled commands and build GCCE command objects
         const commands = configCommands
             .filter(cmd => cmd.enabled)
@@ -1799,8 +1799,8 @@ class OSCBridgePlugin {
                 category: 'VRChat',
                 minArgs: 1,
                 handler: async (args, context) => await this.handlePredefinedCommand(
-                    { action: 'avatar', actionType: 'predefined' }, 
-                    args, 
+                    { action: 'avatar', actionType: 'predefined' },
+                    args,
                     context
                 )
             });
@@ -1812,13 +1812,13 @@ class OSCBridgePlugin {
         }
 
         const result = gcce.registerCommandsForPlugin('osc-bridge', commands);
-        
+
         if (result.registered.length > 0) {
-            this.logger.info(`âœ… Registered ${result.registered.length} OSC-Bridge commands with GCCE: ${result.registered.join(', ')}`);
+            this.logger.info(`✅ Registered ${result.registered.length} OSC-Bridge commands with GCCE: ${result.registered.join(', ')}`);
         }
-        
+
         if (result.failed.length > 0) {
-            this.logger.warn(`âš ï¸ Failed to register ${result.failed.length} commands: ${result.failed.join(', ')}`);
+            this.logger.warn(`⚠️ Failed to register ${result.failed.length} commands: ${result.failed.join(', ')}`);
         }
     }
 
@@ -1908,42 +1908,42 @@ class OSCBridgePlugin {
         switch (action) {
             case 'wave':
                 this.wave(params.duration || 2000);
-                this.logger.info(`ðŸ‘‹ Wave triggered by ${context.username} via GCCE`);
-                return { success: true, message: 'ðŸ‘‹ Wave animation triggered!' };
-            
+                this.logger.info(`👋 Wave triggered by ${context.username} via GCCE`);
+                return { success: true, message: '👋 Wave animation triggered!' };
+
             case 'celebrate':
                 this.celebrate(params.duration || 3000);
-                this.logger.info(`ðŸŽ‰ Celebrate triggered by ${context.username} via GCCE`);
-                return { success: true, message: 'ðŸŽ‰ Celebrate animation triggered!' };
-            
+                this.logger.info(`🎉 Celebrate triggered by ${context.username} via GCCE`);
+                return { success: true, message: '🎉 Celebrate animation triggered!' };
+
             case 'dance':
                 this.dance(params.duration || 5000);
-                this.logger.info(`ðŸ’ƒ Dance triggered by ${context.username} via GCCE`);
-                return { success: true, message: 'ðŸ’ƒ Dance animation triggered!' };
-            
+                this.logger.info(`💃 Dance triggered by ${context.username} via GCCE`);
+                return { success: true, message: '💃 Dance animation triggered!' };
+
             case 'hearts':
                 this.hearts(params.duration || 2000);
-                this.logger.info(`â¤ï¸ Hearts triggered by ${context.username} via GCCE`);
-                return { success: true, message: 'â¤ï¸ Hearts effect triggered!' };
-            
+                this.logger.info(`❤️ Hearts triggered by ${context.username} via GCCE`);
+                return { success: true, message: '❤️ Hearts effect triggered!' };
+
             case 'confetti':
                 this.confetti(params.duration || 3000);
-                this.logger.info(`ðŸŽŠ Confetti triggered by ${context.username} via GCCE`);
-                return { success: true, message: 'ðŸŽŠ Confetti effect triggered!' };
-            
+                this.logger.info(`🎊 Confetti triggered by ${context.username} via GCCE`);
+                return { success: true, message: '🎊 Confetti effect triggered!' };
+
             case 'emote':
                 const slotNumber = parseInt(args[0]);
                 if (isNaN(slotNumber) || slotNumber < 0 || slotNumber > 7) {
-                    return { 
-                        success: false, 
+                    return {
+                        success: false,
                         error: 'Invalid emote slot',
-                        message: 'Please specify an emote slot between 0 and 7. Usage: /emote <0-7>' 
+                        message: 'Please specify an emote slot between 0 and 7. Usage: /emote <0-7>'
                     };
                 }
                 this.triggerEmote(slotNumber, params.duration || 2000);
-                this.logger.info(`ðŸ˜€ Emote ${slotNumber} triggered by ${context.username} via GCCE`);
-                return { success: true, message: `ðŸ˜€ Emote slot ${slotNumber} triggered!` };
-            
+                this.logger.info(`😀 Emote ${slotNumber} triggered by ${context.username} via GCCE`);
+                return { success: true, message: `😀 Emote slot ${slotNumber} triggered!` };
+
             case 'avatar':
                 // Avatar switching via chat command
                 const avatarName = args.join(' '); // Support multi-word avatar names
@@ -1957,7 +1957,7 @@ class OSCBridgePlugin {
 
                 // Find avatar by name
                 const avatars = this.config.avatars || [];
-                const avatar = avatars.find(a => 
+                const avatar = avatars.find(a =>
                     a.name.toLowerCase() === avatarName.toLowerCase()
                 );
 
@@ -1966,7 +1966,7 @@ class OSCBridgePlugin {
                     return {
                         success: false,
                         error: 'Avatar not found',
-                        message: availableNames 
+                        message: availableNames
                             ? `Avatar '${avatarName}' not found. Available avatars: ${availableNames}`
                             : `Avatar '${avatarName}' not found. No avatars configured.`
                     };
@@ -1985,12 +1985,12 @@ class OSCBridgePlugin {
                 // Switch avatar
                 this.switchAvatar(avatar.avatarId, avatar.name);
                 this.updateAvatarSwitchCooldown(context.username);
-                this.logger.info(`ðŸ‘¤ Avatar switched to '${avatar.name}' by ${context.username} via GCCE`);
-                return { 
-                    success: true, 
-                    message: `ðŸ‘¤ Switched to avatar: ${avatar.name}` 
+                this.logger.info(`👤 Avatar switched to '${avatar.name}' by ${context.username} via GCCE`);
+                return {
+                    success: true,
+                    message: `👤 Switched to avatar: ${avatar.name}`
                 };
-            
+
             default:
                 return { success: false, error: `Unknown action: ${action}` };
         }
@@ -2014,7 +2014,7 @@ class OSCBridgePlugin {
 
         // Send the OSC message
         this.send(oscAddress, oscValue);
-        this.logger.info(`ðŸŽ¯ Custom command '${cmd.name}' triggered by ${context.username} via GCCE - sent ${oscAddress} = ${oscValue}`);
+        this.logger.info(`🎯 Custom command '${cmd.name}' triggered by ${context.username} via GCCE - sent ${oscAddress} = ${oscValue}`);
 
         // Auto-reset if duration is set
         if (duration > 0) {
@@ -2023,9 +2023,9 @@ class OSCBridgePlugin {
             }, duration);
         }
 
-        return { 
-            success: true, 
-            message: `âœ… Custom command '${cmd.name}' triggered!` 
+        return {
+            success: true,
+            message: `✅ Custom command '${cmd.name}' triggered!`
         };
     }
 
@@ -2035,10 +2035,10 @@ class OSCBridgePlugin {
      */
     checkOSCConnectionRequired() {
         if (this.config.chatCommands?.requireOSCConnection && !this.isRunning) {
-            return { 
-                success: false, 
+            return {
+                success: false,
                 error: 'OSC-Bridge is not connected',
-                message: 'VRChat OSC is not connected. Please start the bridge first.' 
+                message: 'VRChat OSC is not connected. Please start the bridge first.'
             };
         }
         return null;
@@ -2095,7 +2095,7 @@ class OSCBridgePlugin {
             this.avatarSwitchCooldowns.global = now;
         } else if (cooldownType === 'perUser') {
             this.avatarSwitchCooldowns.perUser.set(username, now);
-            
+
             // Cleanup old entries (older than 1 hour)
             const oneHourAgo = now - (60 * 60 * 1000);
             for (const [user, timestamp] of this.avatarSwitchCooldowns.perUser.entries()) {
@@ -2118,36 +2118,36 @@ class OSCBridgePlugin {
             }
 
             const result = await this.oscQueryClient.discover();
-            this.logger.info(`âœ… OSCQuery discovered ${result.parameters.length} parameters`);
-            
+            this.logger.info(`✅ OSCQuery discovered ${result.parameters.length} parameters`);
+
             // Auto-discover PhysBones if enabled
             if (this.config.physBones?.enabled && this.physBonesController) {
                 await this.physBonesController.autoDiscover(this.oscQueryClient);
             }
-            
+
             if (this.config.oscQuery?.autoSubscribe) {
                 this.oscQueryClient.subscribe((update) => {
                     this.api.emit('osc:oscquery-update', update);
-                    
+
                     // Update avatar state store with parameter updates
                     if (this.avatarStateStore && update.path && update.value !== undefined) {
                         this.avatarStateStore.updateParameter(update.path, update.value);
                     }
                 });
-                
+
                 // Watch for avatar changes
                 this.oscQueryClient.startAvatarWatcher(5000, (avatarInfo) => {
-                    this.logger.info(`ðŸ‘¤ Avatar changed: ${avatarInfo.id}`);
-                    
+                    this.logger.info(`👤 Avatar changed: ${avatarInfo.id}`);
+
                     if (this.avatarStateStore) {
                         this.avatarStateStore.setCurrentAvatar(avatarInfo.id);
                     }
-                    
+
                     if (this.physBonesController) {
                         // Pass both avatarId and avatarName (null if not available)
                         this.physBonesController.onAvatarChanged(avatarInfo.id, null);
                     }
-                    
+
                     // Re-discover parameters for new avatar
                     this.autoDiscoverOSCQuery();
                 });
@@ -2170,7 +2170,7 @@ class OSCBridgePlugin {
         if (this.physBonesController) {
             return this.physBonesController.triggerAnimation(boneName, animation, params);
         }
-        
+
         // Fallback to old implementation
         const basePath = `/avatar/physbones/${boneName}`;
         const duration = params.duration || 1000;
@@ -2186,7 +2186,7 @@ class OSCBridgePlugin {
                     this.send(`${basePath}/Angle`, 0);
                     return;
                 }
-                
+
                 const value = Math.sin((elapsed / 100) * Math.PI) * amplitude;
                 this.send(`${basePath}/Angle`, value);
             }, 16); // 60fps
@@ -2204,7 +2204,7 @@ class OSCBridgePlugin {
             }, duration);
         }
 
-        this.logger.info(`ðŸ¦´ PhysBone animation: ${boneName} - ${animation}`);
+        this.logger.info(`🦴 PhysBone animation: ${boneName} - ${animation}`);
     }
 
     /**
@@ -2228,8 +2228,8 @@ class OSCBridgePlugin {
             // Send message to chatbox
             // VRChat chatbox takes string and boolean (true = send immediately)
             this.send(this.VRCHAT_PARAMS.CHATBOX_INPUT, message, true);
-            
-            this.logger.info(`ðŸ’¬ Sent to VRChat chatbox: ${message}`);
+
+            this.logger.info(`💬 Sent to VRChat chatbox: ${message}`);
             return true;
         } catch (error) {
             this.logger.error('Chatbox send error:', error);
@@ -2268,7 +2268,7 @@ class OSCBridgePlugin {
 
         this.api.on('animazingpal:vrchat-intent', this.animazingPalIntentHandler);
         this.animazingPalBridgeRegistered = true;
-        this.logger.info('✅ AnimazingPal VRChat intent bridge registered');
+        this.logger.info('? AnimazingPal VRChat intent bridge registered');
     }
 
     handleAnimazingPalIntent(intent) {
@@ -2372,7 +2372,7 @@ class OSCBridgePlugin {
         if (this.expressionController) {
             return this.expressionController.triggerExpression('Emote', slot, hold);
         }
-        
+
         // Fallback to old implementation
         if (slot < 0 || slot > 7) {
             this.logger.warn(`Invalid expression slot: ${slot}. Must be 0-7.`);
@@ -2381,8 +2381,8 @@ class OSCBridgePlugin {
 
         const address = `/avatar/parameters/EmoteSlot${slot}`;
         this.send(address, hold ? 1 : 0);
-        
-        this.logger.info(`ðŸ˜€ Expression slot ${slot} triggered (hold: ${hold})`);
+
+        this.logger.info(`😀 Expression slot ${slot} triggered (hold: ${hold})`);
         return true;
     }
 
@@ -2393,7 +2393,7 @@ class OSCBridgePlugin {
         if (this.expressionController) {
             return await this.expressionController.playCombo(combo);
         }
-        
+
         // Fallback to old implementation
         for (const step of combo) {
             this.triggerExpression(step.slot, true);
@@ -2411,7 +2411,7 @@ class OSCBridgePlugin {
      */
     async getCurrentAvatarId(options = {}) {
         const { retries = 0, retryDelay = 1000 } = options;
-        
+
         try {
             if (!this.oscQueryClient) {
                 this.logger.debug('OSCQuery client not initialized for avatar ID retrieval');
@@ -2430,13 +2430,13 @@ class OSCBridgePlugin {
                 const response = await axios.get(`${this.oscQueryClient.baseUrl}/avatar/change`, {
                     timeout: 5000
                 });
-                
+
                 if (response.data && response.data.VALUE) {
-                    this.logger.info(`âœ… Avatar ID detected: ${response.data.VALUE}`);
+                    this.logger.info(`✅ Avatar ID detected: ${response.data.VALUE}`);
                     // Cache it
-                    this.oscQueryClient.avatarInfo = { 
-                        id: response.data.VALUE, 
-                        changedAt: Date.now() 
+                    this.oscQueryClient.avatarInfo = {
+                        id: response.data.VALUE,
+                        changedAt: Date.now()
                     };
                     return response.data.VALUE;
                 }
@@ -2450,9 +2450,9 @@ class OSCBridgePlugin {
                 if (avatarChangeParam && avatarChangeParam.value) {
                     this.logger.info(`[OK] Avatar ID from parameters: ${avatarChangeParam.value}`);
                     // Cache it
-                    this.oscQueryClient.avatarInfo = { 
-                        id: avatarChangeParam.value, 
-                        changedAt: Date.now() 
+                    this.oscQueryClient.avatarInfo = {
+                        id: avatarChangeParam.value,
+                        changedAt: Date.now()
                     };
                     return avatarChangeParam.value;
                 }
@@ -2528,12 +2528,12 @@ class OSCBridgePlugin {
         // Get custom parameters (everything under /avatar/parameters/ that's not standard or GoGo Loco)
         const allParams = this.oscQueryClient.getAllParameters();
         const standardPaths = new Set([...Object.values(standardParams), ...Object.values(gogoLocoParams)]);
-        
+
         for (const param of allParams) {
-            if (param.path.startsWith('/avatar/parameters/') && 
+            if (param.path.startsWith('/avatar/parameters/') &&
                 !standardPaths.has(param.path) &&
                 !param.path.match(/EmoteSlot[0-7]$/)) {
-                
+
                 actions.custom.push({
                     name: param.path.split('/').pop(),
                     path: param.path,
@@ -2549,7 +2549,7 @@ class OSCBridgePlugin {
             // VRChat physbones can be under /avatar/parameters/ with specific suffixes
             if (param.path.includes('/physbones/') || param.path.match(/_IsGrabbed|_IsPosed|_Angle|_Stretch$/)) {
                 let boneName = null;
-                
+
                 if (param.path.includes('/physbones/')) {
                     boneName = param.path.split('/physbones/')[1]?.split('/')[0];
                 } else {
@@ -2559,7 +2559,7 @@ class OSCBridgePlugin {
                         boneName = match[1];
                     }
                 }
-                
+
                 if (boneName && !actions.physbones.find(b => b.name === boneName)) {
                     actions.physbones.push({
                         name: boneName,
@@ -2580,11 +2580,11 @@ class OSCBridgePlugin {
         if (this.avatarStateStore) {
             this.avatarStateStore.destroy();
         }
-        
+
         if (this.expressionController) {
             this.expressionController.destroy();
         }
-        
+
         if (this.physBonesController) {
             this.physBonesController.destroy();
         }
@@ -2610,7 +2610,7 @@ class OSCBridgePlugin {
 
         await this.stop();
 
-        this.logger.info('ðŸ“¡ OSC-Bridge Plugin destroyed');
+        this.logger.info('📡 OSC-Bridge Plugin destroyed');
     }
 }
 

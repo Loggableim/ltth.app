@@ -852,6 +852,7 @@ class FireworksPlugin {
             username: username,
             coins: effectiveCoins,
             combo: this.comboState.get(userId) || 1,
+            requestedParticleCount: particleCount,
             reason: 'gift'
         });
     }
@@ -1119,6 +1120,7 @@ class FireworksPlugin {
             giftId: options.giftId || null,
             giftImage: options.giftImage || null,
             userAvatar: options.userAvatar || null,
+            requestedParticleCount: options.requestedParticleCount || null,
             tier: options.tier || 'medium',
             username: options.username || null,
             coins: options.coins || 0,

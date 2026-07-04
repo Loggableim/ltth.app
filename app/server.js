@@ -58,6 +58,7 @@ const { GoalManager } = require('./modules/goals');
 const ConfigPathManager = require('./modules/config-path-manager');
 const UserProfileManager = require('./modules/user-profiles');
 const ConfigRepair = require('./modules/config-repair');
+const { discoverLegacyConfigCandidates } = require('./modules/legacy-config-discovery');
 const { shouldAutoReconnectOnStartup } = require('./modules/tiktok-auto-reconnect-policy');
 // PERFORMANCE OPTIMIZATION: VDONinjaManager is loaded via plugin system, removed direct import
 // const VDONinjaManager = require('./modules/vdoninja'); // PATCH: VDO.Ninja Integration
@@ -1079,6 +1080,14 @@ app.get('/favicon.ico', (req, res) => {
     res.status(204).end();
 });
 
+app.get('/terms-of-service', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'terms-of-service.html'));
+});
+
+app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'privacy-policy.html'));
+});
+
 // ========== TIKTOK CONNECTION ROUTES ==========
 
 app.post('/api/connect', authLimiter, async (req, res) => {
@@ -2012,6 +2021,15 @@ app.get('/api/profiles/migration-status', apiLimiter, (req, res) => {
     try {
         const oldDbPath = path.join(__dirname, 'database.db');
         const oldDbExists = fs.existsSync(oldDbPath);
+        const legacyConfigCandidates = discoverLegacyConfigCandidates({
+            appDir: __dirname,
+            workspaceRoot: path.join(__dirname, '..'),
+            configPathManager
+        });
+        const configImportPlugin = pluginLoader && typeof pluginLoader.getPlugin === 'function'
+            ? pluginLoader.getPlugin('config-import')
+            : null;
+        const configImportEnabled = Boolean(configImportPlugin);
         
         // Check for old data in plugin directories
         const orphanedData = [];
@@ -2032,8 +2050,12 @@ app.get('/api/profiles/migration-status', apiLimiter, (req, res) => {
         const status = {
             oldDatabaseExists: oldDbExists,
             oldDatabasePath: oldDbPath,
-            migrationNeeded: oldDbExists,
+            migrationNeeded: oldDbExists || legacyConfigCandidates.length > 0,
             orphanedData,
+            legacyConfigCandidates,
+            legacyConfigCandidateCount: legacyConfigCandidates.length,
+            configImportEnabled,
+            configImportUrl: '/config-import/ui',
             configLocation: configPathManager.getConfigDir(),
             userConfigsLocation: configPathManager.getUserConfigsDir()
         };

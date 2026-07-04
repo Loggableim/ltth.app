@@ -1,6 +1,6 @@
-﻿# Getting Started / Erste Schritte / Primeros Pasos / DÃ©marrage
+# Getting Started / Erste Schritte / Primeros Pasos / Démarrage
 
-[â† Home](Home) | [â†’ Installation & Setup](Installation-&-Setup)
+[← Home](Home) | [→ Installation & Setup](Installation-&-Setup)
 
 ---
 
@@ -8,14 +8,14 @@
 
 - [🇬🇧 English](#english)
 - [🇩🇪 Deutsch](#deutsch)
-- [🇪🇸 Español](#español)
-- [🇫🇷 Français](#français)
+- [🇪🇸 Español](#espanol)
+- [🇫🇷 Français](#francais)
 
 ---
 
 ## 🇬🇧 English
 
-### ðŸ“‘ Table of Contents
+### 📑 Table of Contents
 
 1. [Overview](#overview-english)
 2. [Quick Start (5 Minutes)](#quick-start-5-minutes-english)
@@ -27,21 +27,21 @@
 
 ---
 
-### ðŸŽ¯ Overview {#overview-english}
+### 🎯 Overview {#overview-english}
 
 This guide will help you get started with **Little TikTool Helper v1.2.1** in **5-10 minutes**.
 
 **What you will achieve:**
 
-âœ… Tool installed and running  
-âœ… Connected to TikTok LIVE  
-âœ… First overlays set up in OBS  
-âœ… Basic plugins activated  
-âœ… Ready for your first stream
+✅ Tool installed and running
+✅ Connected to TikTok LIVE
+✅ First overlays set up in OBS
+✅ Basic plugins activated
+✅ Ready for your first stream
 
 ---
 
-### âš¡ Quick Start (5 Minutes) {#quick-start-5-minutes-english}
+### ⚡ Quick Start (5 Minutes) {#quick-start-5-minutes-english}
 
 #### Step 1: Installation (2 minutes)
 
@@ -107,28 +107,28 @@ npm start
 3. Send a test gift (e.g. Rose)
 4. Dashboard should display the gift
 
-**âœ… Done!** You are now connected to TikTok LIVE.
+**✅ Done!** You are now connected to TikTok LIVE.
 
 ---
 
-### ðŸŽ¬ First Stream {#first-stream-english}
+### 🎬 First Stream {#first-stream-english}
 
 #### 1. Basic Settings
 
 **Enable TTS:**
-1. Dashboard â†’ **TTS** (Sidebar)
+1. Dashboard → **TTS** (Sidebar)
 2. Enable **"Auto-TTS for Chat"**
 3. Select voice (e.g. "en_us_001 - Female")
 4. Click **Test**
 
 **Enable Alerts:**
-1. Dashboard â†’ **Alerts** (Sidebar)
+1. Dashboard → **Alerts** (Sidebar)
 2. Enable **Gift Alert**
 3. Select sound (optional)
 4. Click **Test Alert**
 
 **Set up Goals:**
-1. Dashboard â†’ **Goals** (Sidebar)
+1. Dashboard → **Goals** (Sidebar)
 2. Configure **Goal 1** (e.g. "1000 Likes")
 3. Type: **Likes**
 4. Target: **1000**
@@ -138,21 +138,21 @@ npm start
 
 **Main Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/overlay
+Browser Source → URL: http://localhost:3000/overlay
 Width: 1920
 Height: 1080
 ```
 
 **Goal Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/goals/goal1
+Browser Source → URL: http://localhost:3000/goals/goal1
 Width: 600
 Height: 100
 ```
 
 **Leaderboard Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/leaderboard/overlay
+Browser Source → URL: http://localhost:3000/leaderboard/overlay
 Width: 400
 Height: 600
 ```
@@ -161,12 +161,12 @@ Height: 600
 
 1. **Start OBS** - Overlays should be visible
 2. **Start TikTok LIVE** - On your phone
-3. **Connect LTTH** - Dashboard â†’ Connect
-4. **Start streaming!** ðŸŽ‰
+3. **Connect LTTH** - Dashboard → Connect
+4. **Start streaming!** 🎉
 
 ---
 
-### ðŸ”Œ Enable Plugins {#enable-plugins-english}
+### 🔌 Enable Plugins {#enable-plugins-english}
 
 #### Recommended Plugins for Beginners
 
@@ -180,28 +180,28 @@ Height: 600
 
 **3. Leaderboard** (Recommended)
 ```
-Dashboard â†’ Plugins â†’ Leaderboard â†’ Enable
+Dashboard → Plugins → Leaderboard → Enable
 ```
 - Shows top gifters
 - Real-time updates
 
 **4. LastEvent Spotlight** (Recommended)
 ```
-Dashboard â†’ Plugins â†’ LastEvent Spotlight â†’ Enable
+Dashboard → Plugins → LastEvent Spotlight → Enable
 ```
 - Shows last follower, gifter, etc.
 - Overlay for each event type
 
 **5. Soundboard** (Optional)
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
+Dashboard → Plugins → Soundboard → Enable
 ```
 - Gift-specific sounds
 - MyInstants integration
 
 #### Enable a Plugin
 
-1. Dashboard â†’ **Plugins** (Sidebar)
+1. Dashboard → **Plugins** (Sidebar)
 2. Find plugin in list
 3. Click **Enable** button
 4. Configure plugin (if UI available)
@@ -210,7 +210,7 @@ See **[Plugin List](Plugin-Liste.md#english)** for all 31 available plugins.
 
 ---
 
-### ðŸŽ¨ OBS Setup {#obs-setup-english}
+### 🎨 OBS Setup {#obs-setup-english}
 
 #### Install OBS Studio
 
@@ -220,7 +220,7 @@ See **[Plugin List](Plugin-Liste.md#english)** for all 31 available plugins.
 
 #### Enable OBS WebSocket (for Multi-Cam plugin)
 
-1. OBS â†’ **Tools** â†’ **WebSocket Server Settings**
+1. OBS → **Tools** → **WebSocket Server Settings**
 2. Enable **"Enable WebSocket server"**
 3. Port: **4455** (default)
 4. Set password (optional)
@@ -228,61 +228,61 @@ See **[Plugin List](Plugin-Liste.md#english)** for all 31 available plugins.
 
 **In LTTH:**
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Configure
+Dashboard → Plugins → Multi-Cam Switcher → Configure
 OBS WebSocket:
   Host: localhost
   Port: 4455
   Password: (your password)
-â†’ Connect
+→ Connect
 ```
 
 ---
 
-### ðŸ’¡ Common First Steps {#common-first-steps-english}
+### 💡 Common First Steps {#common-first-steps-english}
 
 #### Have Chat Messages Read Aloud
 
 **Automatically:**
 ```
-Dashboard â†’ TTS â†’ Enable Auto-TTS for Chat
+Dashboard → TTS → Enable Auto-TTS for Chat
 ```
 
 **Blacklist (don't read certain words):**
 ```
-Dashboard â†’ TTS â†’ Blacklist
-â†’ Add words (e.g. "spam", "bad word")
+Dashboard → TTS → Blacklist
+→ Add words (e.g. "spam", "bad word")
 ```
 
 #### Connect Gifts with Sounds
 
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
-â†’ Configure
-â†’ Gift Mappings
-â†’ Rose â†’ Select sound
-â†’ Save
+Dashboard → Plugins → Soundboard → Enable
+→ Configure
+→ Gift Mappings
+→ Rose → Select sound
+→ Save
 ```
 
 #### Switch Camera via Chat
 
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Enable
-â†’ Configure
-â†’ Connect OBS
-â†’ Enable chat commands
+Dashboard → Plugins → Multi-Cam Switcher → Enable
+→ Configure
+→ Connect OBS
+→ Enable chat commands
 
 In chat: !cam 1 (or !cam 2, !cam 3, etc.)
 ```
 
 ---
 
-### ðŸŽ“ Next Steps {#next-steps-english}
+### 🎓 Next Steps {#next-steps-english}
 
 #### Explore Advanced Features
 
 **1. Flow System (Event Automation):**
 ```
-Dashboard â†’ Flows â†’ Create new flow
+Dashboard → Flows → Create new flow
 Example:
   Trigger: Gift = "Rose"
   Actions:
@@ -296,9 +296,9 @@ Example:
 
 **3. Viewer XP System:**
 ```
-Dashboard â†’ Plugins â†’ Viewer XP System â†’ Enable
-â†’ Configure XP rewards
-â†’ Add leaderboard overlay
+Dashboard → Plugins → Viewer XP System → Enable
+→ Configure XP rewards
+→ Add leaderboard overlay
 ```
 
 #### Read Documentation
@@ -309,7 +309,7 @@ Dashboard â†’ Plugins â†’ Viewer XP System â†’ Enable
 
 ---
 
-### ðŸŽ‰ Good Luck with Your Stream!
+### 🎉 Good Luck with Your Stream!
 
 You are now ready for your first professional TikTok LIVE stream with Little TikTool Helper!
 
@@ -321,44 +321,44 @@ You are now ready for your first professional TikTok LIVE stream with Little Tik
 
 ---
 
-[â† Home](Home#english) | [â†’ Installation & Setup](Installation-&-Setup#english)
+[← Home](Home#english) | [→ Installation & Setup](Installation-&-Setup#english)
 
 ---
 
-*Last updated: 2025-12-11*  
+*Last updated: 2025-12-11*
 *Version: 1.2.1*
 
 ---
 
 ## 🇩🇪 Deutsch
 
-### ðŸ“‘ Inhaltsverzeichnis
+### 📑 Inhaltsverzeichnis
 
-1. [Ãœbersicht](#Ã¼bersicht-deutsch)
+1. [Übersicht](#übersicht-deutsch)
 2. [Schnellstart (5 Minuten)](#schnellstart-5-minuten-deutsch)
 3. [Erster Stream](#erster-stream-deutsch)
 4. [Plugins aktivieren](#plugins-aktivieren-deutsch)
 5. [OBS einrichten](#obs-einrichten-deutsch)
-6. [HÃ¤ufige erste Schritte](#hÃ¤ufige-erste-schritte-deutsch)
-7. [NÃ¤chste Schritte](#nÃ¤chste-schritte-deutsch)
+6. [Häufige erste Schritte](#häufige-erste-schritte-deutsch)
+7. [Nächste Schritte](#nächste-schritte-deutsch)
 
 ---
 
-### ðŸŽ¯ Ãœbersicht {#Ã¼bersicht-deutsch}
+### 🎯 Übersicht {#übersicht-deutsch}
 
-Dieser Guide fÃ¼hrt dich in **5-10 Minuten** durch die wichtigsten Schritte, um mit **Little TikTool Helper v1.2.1** zu starten.
+Dieser Guide führt dich in **5-10 Minuten** durch die wichtigsten Schritte, um mit **Little TikTool Helper v1.2.1** zu starten.
 
 **Was du erreichen wirst:**
 
-âœ… Tool installiert und gestartet  
-âœ… Mit TikTok LIVE verbunden  
-âœ… Erste Overlays in OBS eingerichtet  
-âœ… Grundlegende Plugins aktiviert  
-âœ… Bereit fÃ¼r deinen ersten Stream
+✅ Tool installiert und gestartet
+✅ Mit TikTok LIVE verbunden
+✅ Erste Overlays in OBS eingerichtet
+✅ Grundlegende Plugins aktiviert
+✅ Bereit für deinen ersten Stream
 
 ---
 
-### âš¡ Schnellstart (5 Minuten) {#schnellstart-5-minuten-deutsch}
+### ⚡ Schnellstart (5 Minuten) {#schnellstart-5-minuten-deutsch}
 
 #### Schritt 1: Installation (2 Minuten)
 
@@ -393,11 +393,11 @@ npm install
 npm start
 ```
 
-#### Schritt 2: Dashboard Ã¶ffnen (30 Sekunden)
+#### Schritt 2: Dashboard öffnen (30 Sekunden)
 
-**Desktop App:** Ã–ffnet sich automatisch
+**Desktop App:** Öffnet sich automatisch
 
-**Standalone:** Browser Ã¶ffnen auf `http://localhost:3000`
+**Standalone:** Browser öffnen auf `http://localhost:3000`
 
 #### Schritt 3: TikTok verbinden (1 Minute)
 
@@ -413,131 +413,131 @@ npm start
    - Klicke **"Connect"**
 
 3. **Warte auf Verbindung:**
-   - Status sollte auf **"Connected" (grÃ¼n)** wechseln
+   - Status sollte auf **"Connected" (grün)** wechseln
    - Live-Events erscheinen im Event-Log
 
 #### Schritt 4: Test (30 Sekunden)
 
 **Test-Gift senden:**
-1. Ã–ffne TikTok auf deinem Handy
+1. Öffne TikTok auf deinem Handy
 2. Gehe zu deinem LIVE-Stream
 3. Sende ein Test-Gift (z.B. Rose)
 4. Dashboard sollte das Gift anzeigen
 
-**âœ… Fertig!** Du bist jetzt mit TikTok LIVE verbunden.
+**✅ Fertig!** Du bist jetzt mit TikTok LIVE verbunden.
 
 ---
 
-### ðŸŽ¬ Erster Stream {#erster-stream-deutsch}
+### 🎬 Erster Stream {#erster-stream-deutsch}
 
 #### 1. Grundlegende Einstellungen
 
 **TTS aktivieren:**
-1. Dashboard â†’ **TTS** (Sidebar)
-2. **"Auto-TTS fÃ¼r Chat"** aktivieren
-3. Stimme auswÃ¤hlen (z.B. "en_us_001 - Female")
+1. Dashboard → **TTS** (Sidebar)
+2. **"Auto-TTS für Chat"** aktivieren
+3. Stimme auswählen (z.B. "en_us_001 - Female")
 4. **Test** klicken
 
 **Alerts aktivieren:**
-1. Dashboard â†’ **Alerts** (Sidebar)
+1. Dashboard → **Alerts** (Sidebar)
 2. **Gift-Alert** aktivieren
-3. Sound auswÃ¤hlen (optional)
+3. Sound auswählen (optional)
 4. **Test Alert** klicken
 
 **Goals einrichten:**
-1. Dashboard â†’ **Goals** (Sidebar)
+1. Dashboard → **Goals** (Sidebar)
 2. **Goal 1** konfigurieren (z.B. "1000 Likes")
 3. Typ: **Likes**
 4. Ziel: **1000**
 5. **Speichern**
 
-#### 2. OBS-Overlays hinzufÃ¼gen
+#### 2. OBS-Overlays hinzufügen
 
 **Main Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/overlay
+Browser Source → URL: http://localhost:3000/overlay
 Breite: 1920
-HÃ¶he: 1080
+Höhe: 1080
 ```
 
 **Goal Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/goals/goal1
+Browser Source → URL: http://localhost:3000/goals/goal1
 Breite: 600
-HÃ¶he: 100
+Höhe: 100
 ```
 
 **Leaderboard Overlay:**
 ```
-Browser Source â†’ URL: http://localhost:3000/leaderboard/overlay
+Browser Source → URL: http://localhost:3000/leaderboard/overlay
 Breite: 400
-HÃ¶he: 600
+Höhe: 600
 ```
 
 #### 3. Stream starten
 
 1. **OBS starten** - Overlays sollten sichtbar sein
 2. **TikTok LIVE starten** - Auf deinem Handy
-3. **LTTH verbinden** - Dashboard â†’ Connect
-4. **Stream starten!** ðŸŽ‰
+3. **LTTH verbinden** - Dashboard → Connect
+4. **Stream starten!** 🎉
 
 ---
 
-### ðŸ”Œ Plugins aktivieren {#plugins-aktivieren-deutsch}
+### 🔌 Plugins aktivieren {#plugins-aktivieren-deutsch}
 
-#### Empfohlene Plugins fÃ¼r AnfÃ¤nger
+#### Empfohlene Plugins für Anfänger
 
 **1. TTS v2.0** (Auto-aktiviert)
-- Text-to-Speech fÃ¼r Chat-Nachrichten
+- Text-to-Speech für Chat-Nachrichten
 - 75+ kostenlose Stimmen
 
 **2. Live Goals** (Auto-aktiviert)
-- Progress-Bars fÃ¼r Likes, Coins, Follower
-- OBS-Overlays verfÃ¼gbar
+- Progress-Bars für Likes, Coins, Follower
+- OBS-Overlays verfügbar
 
 **3. Leaderboard** (Empfohlen)
 ```
-Dashboard â†’ Plugins â†’ Leaderboard â†’ Enable
+Dashboard → Plugins → Leaderboard → Enable
 ```
 - Zeigt Top-Gifter an
 - Real-time Updates
 
 **4. LastEvent Spotlight** (Empfohlen)
 ```
-Dashboard â†’ Plugins â†’ LastEvent Spotlight â†’ Enable
+Dashboard → Plugins → LastEvent Spotlight → Enable
 ```
 - Zeigt letzten Follower, Gifter, etc.
-- Overlay fÃ¼r jeden Event-Typ
+- Overlay für jeden Event-Typ
 
 **5. Soundboard** (Optional)
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
+Dashboard → Plugins → Soundboard → Enable
 ```
 - Gift-spezifische Sounds
 - MyInstants-Integration
 
 #### Plugin aktivieren
 
-1. Dashboard â†’ **Plugins** (Sidebar)
+1. Dashboard → **Plugins** (Sidebar)
 2. Plugin in Liste finden
 3. **Enable**-Button klicken
 4. Plugin konfigurieren (falls UI vorhanden)
 
-Siehe **[Plugin-Liste](Plugin-Liste.md#deutsch)** fÃ¼r alle 31 verfÃ¼gbaren Plugins.
+Siehe **[Plugin-Liste](Plugin-Liste.md#deutsch)** für alle 31 verfügbaren Plugins.
 
 ---
 
-### ðŸŽ¨ OBS einrichten {#obs-einrichten-deutsch}
+### 🎨 OBS einrichten {#obs-einrichten-deutsch}
 
 #### OBS Studio installieren
 
 1. Download: [obsproject.com](https://obsproject.com/)
-2. Version **29.0 oder hÃ¶her** empfohlen
-3. Standard-Installation durchfÃ¼hren
+2. Version **29.0 oder höher** empfohlen
+3. Standard-Installation durchführen
 
-#### OBS WebSocket aktivieren (fÃ¼r Multi-Cam Plugin)
+#### OBS WebSocket aktivieren (für Multi-Cam Plugin)
 
-1. OBS â†’ **Tools** â†’ **WebSocket Server Settings**
+1. OBS → **Tools** → **WebSocket Server Settings**
 2. **"Enable WebSocket server"** aktivieren
 3. Port: **4455** (Standard)
 4. Passwort setzen (optional)
@@ -545,65 +545,65 @@ Siehe **[Plugin-Liste](Plugin-Liste.md#deutsch)** fÃ¼r alle 31 verfÃ¼gbaren 
 
 **Im LTTH:**
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Configure
+Dashboard → Plugins → Multi-Cam Switcher → Configure
 OBS WebSocket:
   Host: localhost
   Port: 4455
   Password: (dein Passwort)
-â†’ Connect
+→ Connect
 ```
 
 ---
 
-### ðŸ’¡ HÃ¤ufige erste Schritte {#hÃ¤ufige-erste-schritte-deutsch}
+### 💡 Häufige erste Schritte {#häufige-erste-schritte-deutsch}
 
 #### Chat-Nachrichten vorlesen lassen
 
 **Automatisch:**
 ```
-Dashboard â†’ TTS â†’ Auto-TTS fÃ¼r Chat aktivieren
+Dashboard → TTS → Auto-TTS für Chat aktivieren
 ```
 
-**Blacklist (bestimmte WÃ¶rter nicht vorlesen):**
+**Blacklist (bestimmte Wörter nicht vorlesen):**
 ```
-Dashboard â†’ TTS â†’ Blacklist
-â†’ WÃ¶rter hinzufÃ¼gen (z.B. "spam", "bad word")
+Dashboard → TTS → Blacklist
+→ Wörter hinzufügen (z.B. "spam", "bad word")
 ```
 
 #### Gifts mit Sounds verbinden
 
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
-â†’ Configure
-â†’ Gift-Mappings
-â†’ Rose â†’ Sound auswÃ¤hlen
-â†’ Speichern
+Dashboard → Plugins → Soundboard → Enable
+→ Configure
+→ Gift-Mappings
+→ Rose → Sound auswählen
+→ Speichern
 ```
 
 #### Kamera per Chat wechseln
 
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Enable
-â†’ Configure
-â†’ OBS verbinden
-â†’ Chat-Commands aktivieren
+Dashboard → Plugins → Multi-Cam Switcher → Enable
+→ Configure
+→ OBS verbinden
+→ Chat-Commands aktivieren
 
 Im Chat: !cam 1 (oder !cam 2, !cam 3, etc.)
 ```
 
 ---
 
-### ðŸŽ“ NÃ¤chste Schritte {#nÃ¤chste-schritte-deutsch}
+### 🎓 Nächste Schritte {#nächste-schritte-deutsch}
 
 #### Erweiterte Features erkunden
 
 **1. Flow-System (Event-Automation):**
 ```
-Dashboard â†’ Flows â†’ Neuen Flow erstellen
+Dashboard → Flows → Neuen Flow erstellen
 Beispiel:
   Trigger: Gift = "Rose"
   Actions:
-    1. TTS: "Danke {username} fÃ¼r die Rose!"
+    1. TTS: "Danke {username} für die Rose!"
     2. OBS: Szene wechseln zu "Cam2"
     3. OSC: Wave-Geste in VRChat
 ```
@@ -613,24 +613,24 @@ Beispiel:
 
 **3. Viewer XP-System:**
 ```
-Dashboard â†’ Plugins â†’ Viewer XP System â†’ Enable
-â†’ XP-Rewards konfigurieren
-â†’ Leaderboard-Overlay hinzufÃ¼gen
+Dashboard → Plugins → Viewer XP System → Enable
+→ XP-Rewards konfigurieren
+→ Leaderboard-Overlay hinzufügen
 ```
 
 #### Dokumentation lesen
 
 - **[Plugin-Liste](Plugin-Liste.md#deutsch)** - Alle 36 Plugins im Detail
 - **[Konfiguration](Konfiguration.md#deutsch)** - Erweiterte Einstellungen
-- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#deutsch)** - HÃ¤ufige Probleme lÃ¶sen
+- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#deutsch)** - Häufige Probleme lösen
 
 ---
 
-### ðŸŽ‰ Viel Erfolg mit deinem Stream!
+### 🎉 Viel Erfolg mit deinem Stream!
 
-Du bist jetzt bereit fÃ¼r deinen ersten professionellen TikTok LIVE-Stream mit Little TikTool Helper!
+Du bist jetzt bereit für deinen ersten professionellen TikTok LIVE-Stream mit Little TikTool Helper!
 
-**Tipps fÃ¼r den Start:**
+**Tipps für den Start:**
 - Teste alles **vor** dem ersten Live-Stream
 - Verwende **Test-Alerts** und **Test-TTS**
 - Starte mit wenigen Plugins und erweitere nach und nach
@@ -638,54 +638,54 @@ Du bist jetzt bereit fÃ¼r deinen ersten professionellen TikTok LIVE-Stream mit
 
 ---
 
-[â† Home](Home#deutsch) | [â†’ Installation & Setup](Installation-&-Setup#deutsch)
+[← Home](Home#deutsch) | [→ Installation & Setup](Installation-&-Setup#deutsch)
 
 ---
 
-*Letzte Aktualisierung: 2025-12-11*  
+*Letzte Aktualisierung: 2025-12-11*
 *Version: 1.2.1*
 
 ---
 
 ## 🇪🇸 Español
 
-### ðŸ“‘ Tabla de Contenidos
+### 📑 Tabla de Contenidos
 
-1. [DescripciÃ³n General](#descripciÃ³n-general-espaÃ±ol)
-2. [Inicio RÃ¡pido (5 Minutos)](#inicio-rÃ¡pido-5-minutos-espaÃ±ol)
-3. [Primera TransmisiÃ³n](#primera-transmisiÃ³n-espaÃ±ol)
-4. [Activar Plugins](#activar-plugins-espaÃ±ol)
-5. [ConfiguraciÃ³n de OBS](#configuraciÃ³n-de-obs-espaÃ±ol)
-6. [Primeros Pasos Comunes](#primeros-pasos-comunes-espaÃ±ol)
-7. [PrÃ³ximos Pasos](#prÃ³ximos-pasos-espaÃ±ol)
-
----
-
-### ðŸŽ¯ DescripciÃ³n General {#descripciÃ³n-general-espaÃ±ol}
-
-Esta guÃ­a te ayudarÃ¡ a comenzar con **Little TikTool Helper v1.2.1** en **5-10 minutos**.
-
-**Lo que lograrÃ¡s:**
-
-âœ… Herramienta instalada y funcionando  
-âœ… Conectado a TikTok LIVE  
-âœ… Primeros overlays configurados en OBS  
-âœ… Plugins bÃ¡sicos activados  
-âœ… Listo para tu primera transmisiÃ³n
+1. [Descripción General](#descripción-general-español)
+2. [Inicio Rápido (5 Minutos)](#inicio-rápido-5-minutos-español)
+3. [Primera Transmisión](#primera-transmisión-español)
+4. [Activar Plugins](#activar-plugins-español)
+5. [Configuración de OBS](#configuración-de-obs-español)
+6. [Primeros Pasos Comunes](#primeros-pasos-comunes-español)
+7. [Próximos Pasos](#próximos-pasos-español)
 
 ---
 
-### âš¡ Inicio RÃ¡pido (5 Minutos) {#inicio-rÃ¡pido-5-minutos-espaÃ±ol}
+### 🎯 Descripción General {#descripción-general-español}
 
-#### Paso 1: InstalaciÃ³n (2 minutos)
+Esta guía te ayudará a comenzar con **Little TikTool Helper v1.2.1** en **5-10 minutos**.
+
+**Lo que lograrás:**
+
+✅ Herramienta instalada y funcionando
+✅ Conectado a TikTok LIVE
+✅ Primeros overlays configurados en OBS
+✅ Plugins básicos activados
+✅ Listo para tu primera transmisión
+
+---
+
+### ⚡ Inicio Rápido (5 Minutos) {#inicio-rápido-5-minutos-español}
+
+#### Paso 1: Instalación (2 minutos)
 
 **Requisitos Previos:**
 - Node.js 18.0.0+ instalado ([Descargar](https://nodejs.org/))
 - Git instalado (opcional, [Descargar](https://git-scm.com/))
 
-**InstalaciÃ³n:**
+**Instalación:**
 
-**OpciÃ³n A - AplicaciÃ³n de Escritorio (Recomendado):**
+**Opción A - Aplicación de Escritorio (Recomendado):**
 ```bash
 # Clonar repositorio
 git clone https://github.com/Loggableim/ltth.app.git
@@ -698,7 +698,7 @@ npm install
 npm start
 ```
 
-**OpciÃ³n B - Servidor Independiente:**
+**Opción B - Servidor Independiente:**
 ```bash
 # Ir a la carpeta app
 cd app
@@ -712,7 +712,7 @@ npm start
 
 #### Paso 2: Abrir Dashboard (30 segundos)
 
-**App de Escritorio:** Se abre automÃ¡ticamente
+**App de Escritorio:** Se abre automáticamente
 
 **Independiente:** Abrir navegador en `http://localhost:3000`
 
@@ -729,40 +729,40 @@ npm start
    - Ingresar tu **clave API de Eulerstream**
    - Hacer clic en **"Connect"**
 
-3. **Esperar conexiÃ³n:**
-   - El estado deberÃ­a cambiar a **"Connected" (verde)**
+3. **Esperar conexión:**
+   - El estado debería cambiar a **"Connected" (verde)**
    - Los eventos en vivo aparecen en el registro de eventos
 
 #### Paso 4: Prueba (30 segundos)
 
 **Enviar regalo de prueba:**
-1. Abrir TikTok en tu telÃ©fono
-2. Ir a tu transmisiÃ³n LIVE
+1. Abrir TikTok en tu teléfono
+2. Ir a tu transmisión LIVE
 3. Enviar un regalo de prueba (p. ej., Rosa)
-4. El dashboard deberÃ­a mostrar el regalo
+4. El dashboard debería mostrar el regalo
 
-**âœ… Â¡Listo!** Ahora estÃ¡s conectado a TikTok LIVE.
+**✅ ¡Listo!** Ahora estás conectado a TikTok LIVE.
 
 ---
 
-### ðŸŽ¬ Primera TransmisiÃ³n {#primera-transmisiÃ³n-espaÃ±ol}
+### 🎬 Primera Transmisión {#primera-transmisión-español}
 
-#### 1. ConfiguraciÃ³n BÃ¡sica
+#### 1. Configuración Básica
 
 **Activar TTS:**
-1. Dashboard â†’ **TTS** (Barra lateral)
+1. Dashboard → **TTS** (Barra lateral)
 2. Activar **"Auto-TTS for Chat"**
 3. Seleccionar voz (p. ej., "en_us_001 - Female")
 4. Hacer clic en **Test**
 
 **Activar Alertas:**
-1. Dashboard â†’ **Alerts** (Barra lateral)
+1. Dashboard → **Alerts** (Barra lateral)
 2. Activar **Gift Alert**
 3. Seleccionar sonido (opcional)
 4. Hacer clic en **Test Alert**
 
 **Configurar Objetivos:**
-1. Dashboard â†’ **Goals** (Barra lateral)
+1. Dashboard → **Goals** (Barra lateral)
 2. Configurar **Goal 1** (p. ej., "1000 Me gusta")
 3. Tipo: **Likes**
 4. Objetivo: **1000**
@@ -772,41 +772,41 @@ npm start
 
 **Overlay Principal:**
 ```
-Browser Source â†’ URL: http://localhost:3000/overlay
+Browser Source → URL: http://localhost:3000/overlay
 Ancho: 1920
 Alto: 1080
 ```
 
 **Overlay de Objetivo:**
 ```
-Browser Source â†’ URL: http://localhost:3000/goals/goal1
+Browser Source → URL: http://localhost:3000/goals/goal1
 Ancho: 600
 Alto: 100
 ```
 
 **Overlay de Leaderboard:**
 ```
-Browser Source â†’ URL: http://localhost:3000/leaderboard/overlay
+Browser Source → URL: http://localhost:3000/leaderboard/overlay
 Ancho: 400
 Alto: 600
 ```
 
-#### 3. Iniciar TransmisiÃ³n
+#### 3. Iniciar Transmisión
 
-1. **Iniciar OBS** - Los overlays deberÃ­an ser visibles
-2. **Iniciar TikTok LIVE** - En tu telÃ©fono
-3. **Conectar LTTH** - Dashboard â†’ Connect
-4. **Â¡Iniciar transmisiÃ³n!** ðŸŽ‰
+1. **Iniciar OBS** - Los overlays deberían ser visibles
+2. **Iniciar TikTok LIVE** - En tu teléfono
+3. **Conectar LTTH** - Dashboard → Connect
+4. **¡Iniciar transmisión!** 🎉
 
 ---
 
-### ðŸ”Œ Activar Plugins {#activar-plugins-espaÃ±ol}
+### 🔌 Activar Plugins {#activar-plugins-español}
 
 #### Plugins Recomendados para Principiantes
 
 **1. TTS v2.0** (Auto-activado)
 - Text-to-Speech para mensajes de chat
-- MÃ¡s de 75 voces gratis
+- Más de 75 voces gratis
 
 **2. Live Goals** (Auto-activado)
 - Barras de progreso para me gusta, monedas, seguidores
@@ -814,113 +814,113 @@ Alto: 600
 
 **3. Leaderboard** (Recomendado)
 ```
-Dashboard â†’ Plugins â†’ Leaderboard â†’ Enable
+Dashboard → Plugins → Leaderboard → Enable
 ```
 - Muestra los mejores donadores
 - Actualizaciones en tiempo real
 
 **4. LastEvent Spotlight** (Recomendado)
 ```
-Dashboard â†’ Plugins â†’ LastEvent Spotlight â†’ Enable
+Dashboard → Plugins → LastEvent Spotlight → Enable
 ```
-- Muestra el Ãºltimo seguidor, donador, etc.
+- Muestra el último seguidor, donador, etc.
 - Overlay para cada tipo de evento
 
 **5. Soundboard** (Opcional)
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
+Dashboard → Plugins → Soundboard → Enable
 ```
-- Sonidos especÃ­ficos para regalos
-- IntegraciÃ³n con MyInstants
+- Sonidos específicos para regalos
+- Integración con MyInstants
 
 #### Activar un Plugin
 
-1. Dashboard â†’ **Plugins** (Barra lateral)
+1. Dashboard → **Plugins** (Barra lateral)
 2. Encontrar plugin en la lista
-3. Hacer clic en el botÃ³n **Enable**
+3. Hacer clic en el botón **Enable**
 4. Configurar plugin (si hay UI disponible)
 
-Ver **[Lista de Plugins](Plugin-Liste.md#espaÃ±ol)** para todos los 36 Plugins disponibles.
+Ver **[Lista de Plugins](Plugin-Liste.md#español)** para todos los 36 Plugins disponibles.
 
 ---
 
-### ðŸŽ¨ ConfiguraciÃ³n de OBS {#configuraciÃ³n-de-obs-espaÃ±ol}
+### 🎨 Configuración de OBS {#configuración-de-obs-español}
 
 #### Instalar OBS Studio
 
 1. Descargar: [obsproject.com](https://obsproject.com/)
-2. VersiÃ³n **29.0 o superior** recomendada
-3. Realizar instalaciÃ³n estÃ¡ndar
+2. Versión **29.0 o superior** recomendada
+3. Realizar instalación estándar
 
 #### Activar OBS WebSocket (para plugin Multi-Cam)
 
-1. OBS â†’ **Tools** â†’ **WebSocket Server Settings**
+1. OBS → **Tools** → **WebSocket Server Settings**
 2. Activar **"Enable WebSocket server"**
 3. Puerto: **4455** (predeterminado)
-4. Establecer contraseÃ±a (opcional)
+4. Establecer contraseña (opcional)
 5. Hacer clic en **OK**
 
 **En LTTH:**
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Configure
+Dashboard → Plugins → Multi-Cam Switcher → Configure
 OBS WebSocket:
   Host: localhost
   Port: 4455
-  Password: (tu contraseÃ±a)
-â†’ Connect
+  Password: (tu contraseña)
+→ Connect
 ```
 
 ---
 
-### ðŸ’¡ Primeros Pasos Comunes {#primeros-pasos-comunes-espaÃ±ol}
+### 💡 Primeros Pasos Comunes {#primeros-pasos-comunes-español}
 
 #### Leer Mensajes de Chat en Voz Alta
 
-**AutomÃ¡ticamente:**
+**Automáticamente:**
 ```
-Dashboard â†’ TTS â†’ Activar Auto-TTS for Chat
+Dashboard → TTS → Activar Auto-TTS for Chat
 ```
 
 **Lista Negra (no leer ciertas palabras):**
 ```
-Dashboard â†’ TTS â†’ Blacklist
-â†’ Agregar palabras (p. ej., "spam", "palabra prohibida")
+Dashboard → TTS → Blacklist
+→ Agregar palabras (p. ej., "spam", "palabra prohibida")
 ```
 
 #### Conectar Regalos con Sonidos
 
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
-â†’ Configure
-â†’ Gift Mappings
-â†’ Rose â†’ Seleccionar sonido
-â†’ Save
+Dashboard → Plugins → Soundboard → Enable
+→ Configure
+→ Gift Mappings
+→ Rose → Seleccionar sonido
+→ Save
 ```
 
-#### Cambiar CÃ¡mara por Chat
+#### Cambiar Cámara por Chat
 
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Enable
-â†’ Configure
-â†’ Conectar OBS
-â†’ Activar comandos de chat
+Dashboard → Plugins → Multi-Cam Switcher → Enable
+→ Configure
+→ Conectar OBS
+→ Activar comandos de chat
 
 En el chat: !cam 1 (o !cam 2, !cam 3, etc.)
 ```
 
 ---
 
-### ðŸŽ“ PrÃ³ximos Pasos {#prÃ³ximos-pasos-espaÃ±ol}
+### 🎓 Próximos Pasos {#próximos-pasos-español}
 
 #### Explorar Funciones Avanzadas
 
-**1. Sistema de Flows (AutomatizaciÃ³n de Eventos):**
+**1. Sistema de Flows (Automatización de Eventos):**
 ```
-Dashboard â†’ Flows â†’ Crear nuevo flow
+Dashboard → Flows → Crear nuevo flow
 Ejemplo:
   Activador: Regalo = "Rose"
   Acciones:
-    1. TTS: "Â¡Gracias {username} por la Rosa!"
+    1. TTS: "¡Gracias {username} por la Rosa!"
     2. OBS: Cambiar escena a "Cam2"
     3. OSC: Gesto de saludo en VRChat
 ```
@@ -930,88 +930,88 @@ Ejemplo:
 
 **3. Sistema de XP de Espectadores:**
 ```
-Dashboard â†’ Plugins â†’ Viewer XP System â†’ Enable
-â†’ Configurar recompensas de XP
-â†’ Agregar overlay de leaderboard
+Dashboard → Plugins → Viewer XP System → Enable
+→ Configurar recompensas de XP
+→ Agregar overlay de leaderboard
 ```
 
-#### Leer DocumentaciÃ³n
+#### Leer Documentación
 
-- **[Lista de Plugins](Plugin-Liste.md#espaÃ±ol)** - Todos los 36 Plugins en detalle
-- **[ConfiguraciÃ³n](Konfiguration.md#espaÃ±ol)** - ConfiguraciÃ³n avanzada
-- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#espaÃ±ol)** - Resolver problemas comunes
+- **[Lista de Plugins](Plugin-Liste.md#español)** - Todos los 36 Plugins en detalle
+- **[Configuración](Konfiguration.md#español)** - Configuración avanzada
+- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#español)** - Resolver problemas comunes
 
 ---
 
-### ðŸŽ‰ Â¡Buena Suerte con Tu TransmisiÃ³n!
+### 🎉 ¡Buena Suerte con Tu Transmisión!
 
-Â¡Ahora estÃ¡s listo para tu primera transmisiÃ³n profesional de TikTok LIVE con Little TikTool Helper!
+¡Ahora estás listo para tu primera transmisión profesional de TikTok LIVE con Little TikTool Helper!
 
 **Consejos para Comenzar:**
-- Prueba todo **antes** de tu primera transmisiÃ³n en vivo
+- Prueba todo **antes** de tu primera transmisión en vivo
 - Usa **Test Alerts** y **Test TTS**
 - Comienza con pocos plugins y expande gradualmente
-- Lee **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#espaÃ±ol)** si tienes problemas
+- Lee **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#español)** si tienes problemas
 
 ---
 
-[â† Home](Home#espaÃ±ol) | [â†’ Installation & Setup](Installation-&-Setup#espaÃ±ol)
+[← Home](Home#español) | [→ Installation & Setup](Installation-&-Setup#español)
 
 ---
 
-*Ãšltima actualizaciÃ³n: 2025-12-11*  
-*VersiÃ³n: 1.2.1*
+*Última actualización: 2025-12-11*
+*Versión: 1.2.1*
 
 ---
 
 ## 🇫🇷 Français
 
-### ðŸ“‘ Table des MatiÃ¨res
+### 📑 Table des Matières
 
-1. [AperÃ§u](#aperÃ§u-franÃ§ais)
-2. [DÃ©marrage Rapide (5 Minutes)](#dÃ©marrage-rapide-5-minutes-franÃ§ais)
-3. [PremiÃ¨re Diffusion](#premiÃ¨re-diffusion-franÃ§ais)
-4. [Activer les Plugins](#activer-les-plugins-franÃ§ais)
-5. [Configuration OBS](#configuration-obs-franÃ§ais)
-6. [Premiers Pas Courants](#premiers-pas-courants-franÃ§ais)
-7. [Prochaines Ã‰tapes](#prochaines-Ã©tapes-franÃ§ais)
-
----
-
-### ðŸŽ¯ AperÃ§u {#aperÃ§u-franÃ§ais}
-
-Ce guide vous aidera Ã  dÃ©marrer avec **Little TikTool Helper v1.2.1** en **5-10 minutes**.
-
-**Ce que vous rÃ©aliserez :**
-
-âœ… Outil installÃ© et fonctionnel  
-âœ… ConnectÃ© Ã  TikTok LIVE  
-âœ… Premiers overlays configurÃ©s dans OBS  
-âœ… Plugins de base activÃ©s  
-âœ… PrÃªt pour votre premiÃ¨re diffusion
+1. [Aperçu](#aperçu-français)
+2. [Démarrage Rapide (5 Minutes)](#démarrage-rapide-5-minutes-français)
+3. [Première Diffusion](#première-diffusion-français)
+4. [Activer les Plugins](#activer-les-plugins-français)
+5. [Configuration OBS](#configuration-obs-français)
+6. [Premiers Pas Courants](#premiers-pas-courants-français)
+7. [Prochaines Étapes](#prochaines-étapes-français)
 
 ---
 
-### âš¡ DÃ©marrage Rapide (5 Minutes) {#dÃ©marrage-rapide-5-minutes-franÃ§ais}
+### 🎯 Aperçu {#aperçu-français}
 
-#### Ã‰tape 1 : Installation (2 minutes)
+Ce guide vous aidera à démarrer avec **Little TikTool Helper v1.2.1** en **5-10 minutes**.
 
-**PrÃ©requis :**
-- Node.js 18.0.0+ installÃ© ([TÃ©lÃ©charger](https://nodejs.org/))
-- Git installÃ© (facultatif, [TÃ©lÃ©charger](https://git-scm.com/))
+**Ce que vous réaliserez :**
+
+✅ Outil installé et fonctionnel
+✅ Connecté à TikTok LIVE
+✅ Premiers overlays configurés dans OBS
+✅ Plugins de base activés
+✅ Prêt pour votre première diffusion
+
+---
+
+### ⚡ Démarrage Rapide (5 Minutes) {#démarrage-rapide-5-minutes-français}
+
+#### Étape 1 : Installation (2 minutes)
+
+**Prérequis :**
+- Node.js 18.0.0+ installé ([Télécharger](https://nodejs.org/))
+- Git installé (facultatif, [Télécharger](https://git-scm.com/))
 
 **Installation :**
 
-**Option A - Application de Bureau (RecommandÃ©) :**
+**Option A - Application de Bureau (Recommandé) :**
 ```bash
-# Cloner le dÃ©pÃ´t
+# Cloner le dépôt
 git clone https://github.com/Loggableim/ltth.app.git
 cd ltth.app
 
-# Installer les dÃ©pendances
+# Installer les dépendances
 npm install
 
-# DÃ©marrer l'app de bureau
+# Démarrer l'app de bureau
 npm start
 ```
 
@@ -1020,66 +1020,66 @@ npm start
 # Aller dans le dossier app
 cd app
 
-# Installer les dÃ©pendances
+# Installer les dépendances
 npm install
 
-# DÃ©marrer le serveur
+# Démarrer le serveur
 npm start
 ```
 
-#### Ã‰tape 2 : Ouvrir le Dashboard (30 secondes)
+#### Étape 2 : Ouvrir le Dashboard (30 secondes)
 
 **App de Bureau :** S'ouvre automatiquement
 
 **Autonome :** Ouvrir le navigateur sur `http://localhost:3000`
 
-#### Ã‰tape 3 : Se Connecter Ã  TikTok (1 minute)
+#### Étape 3 : Se Connecter à TikTok (1 minute)
 
-1. **Obtenir la clÃ© API Eulerstream :**
+1. **Obtenir la clé API Eulerstream :**
    - Aller sur [Eulerstream](https://eulerstream.com/)
    - S'inscrire (gratuit)
-   - Copier votre clÃ© API
+   - Copier votre clé API
 
 2. **Dans le Dashboard :**
    - Cliquer sur **"Connect to TikTok LIVE"**
    - Entrer votre **nom d'utilisateur TikTok**
-   - Entrer votre **clÃ© API Eulerstream**
+   - Entrer votre **clé API Eulerstream**
    - Cliquer sur **"Connect"**
 
 3. **Attendre la connexion :**
-   - Le statut devrait passer Ã  **"Connected" (vert)**
-   - Les Ã©vÃ©nements en direct apparaissent dans le journal d'Ã©vÃ©nements
+   - Le statut devrait passer à **"Connected" (vert)**
+   - Les événements en direct apparaissent dans le journal d'événements
 
-#### Ã‰tape 4 : Test (30 secondes)
+#### Étape 4 : Test (30 secondes)
 
 **Envoyer un cadeau de test :**
-1. Ouvrir TikTok sur votre tÃ©lÃ©phone
+1. Ouvrir TikTok sur votre téléphone
 2. Aller sur votre diffusion LIVE
 3. Envoyer un cadeau de test (p. ex., Rose)
 4. Le dashboard devrait afficher le cadeau
 
-**âœ… TerminÃ© !** Vous Ãªtes maintenant connectÃ© Ã  TikTok LIVE.
+**✅ Terminé !** Vous êtes maintenant connecté à TikTok LIVE.
 
 ---
 
-### ðŸŽ¬ PremiÃ¨re Diffusion {#premiÃ¨re-diffusion-franÃ§ais}
+### 🎬 Première Diffusion {#première-diffusion-français}
 
 #### 1. Configuration de Base
 
 **Activer TTS :**
-1. Dashboard â†’ **TTS** (Barre latÃ©rale)
+1. Dashboard → **TTS** (Barre latérale)
 2. Activer **"Auto-TTS for Chat"**
-3. SÃ©lectionner une voix (p. ex., "en_us_001 - Female")
+3. Sélectionner une voix (p. ex., "en_us_001 - Female")
 4. Cliquer sur **Test**
 
 **Activer les Alertes :**
-1. Dashboard â†’ **Alerts** (Barre latÃ©rale)
+1. Dashboard → **Alerts** (Barre latérale)
 2. Activer **Gift Alert**
-3. SÃ©lectionner un son (facultatif)
+3. Sélectionner un son (facultatif)
 4. Cliquer sur **Test Alert**
 
 **Configurer les Objectifs :**
-1. Dashboard â†’ **Goals** (Barre latÃ©rale)
+1. Dashboard → **Goals** (Barre latérale)
 2. Configurer **Goal 1** (p. ex., "1000 J'aime")
 3. Type : **Likes**
 4. Objectif : **1000**
@@ -1089,192 +1089,192 @@ npm start
 
 **Overlay Principal :**
 ```
-Browser Source â†’ URL: http://localhost:3000/overlay
+Browser Source → URL: http://localhost:3000/overlay
 Largeur: 1920
 Hauteur: 1080
 ```
 
 **Overlay d'Objectif :**
 ```
-Browser Source â†’ URL: http://localhost:3000/goals/goal1
+Browser Source → URL: http://localhost:3000/goals/goal1
 Largeur: 600
 Hauteur: 100
 ```
 
 **Overlay de Leaderboard :**
 ```
-Browser Source â†’ URL: http://localhost:3000/leaderboard/overlay
+Browser Source → URL: http://localhost:3000/leaderboard/overlay
 Largeur: 400
 Hauteur: 600
 ```
 
-#### 3. DÃ©marrer la Diffusion
+#### 3. Démarrer la Diffusion
 
-1. **DÃ©marrer OBS** - Les overlays devraient Ãªtre visibles
-2. **DÃ©marrer TikTok LIVE** - Sur votre tÃ©lÃ©phone
-3. **Connecter LTTH** - Dashboard â†’ Connect
-4. **DÃ©marrer la diffusion !** ðŸŽ‰
+1. **Démarrer OBS** - Les overlays devraient être visibles
+2. **Démarrer TikTok LIVE** - Sur votre téléphone
+3. **Connecter LTTH** - Dashboard → Connect
+4. **Démarrer la diffusion !** 🎉
 
 ---
 
-### ðŸ”Œ Activer les Plugins {#activer-les-plugins-franÃ§ais}
+### 🔌 Activer les Plugins {#activer-les-plugins-français}
 
-#### Plugins RecommandÃ©s pour DÃ©butants
+#### Plugins Recommandés pour Débutants
 
-**1. TTS v2.0** (Auto-activÃ©)
-- SynthÃ¨se vocale pour les messages de chat
+**1. TTS v2.0** (Auto-activé)
+- Synthèse vocale pour les messages de chat
 - Plus de 75 voix gratuites
 
-**2. Live Goals** (Auto-activÃ©)
-- Barres de progression pour j'aime, piÃ¨ces, abonnÃ©s
+**2. Live Goals** (Auto-activé)
+- Barres de progression pour j'aime, pièces, abonnés
 - Overlays OBS disponibles
 
-**3. Leaderboard** (RecommandÃ©)
+**3. Leaderboard** (Recommandé)
 ```
-Dashboard â†’ Plugins â†’ Leaderboard â†’ Enable
+Dashboard → Plugins → Leaderboard → Enable
 ```
 - Affiche les meilleurs donateurs
-- Mises Ã  jour en temps rÃ©el
+- Mises à jour en temps réel
 
-**4. LastEvent Spotlight** (RecommandÃ©)
+**4. LastEvent Spotlight** (Recommandé)
 ```
-Dashboard â†’ Plugins â†’ LastEvent Spotlight â†’ Enable
+Dashboard → Plugins → LastEvent Spotlight → Enable
 ```
-- Affiche le dernier abonnÃ©, donateur, etc.
-- Overlay pour chaque type d'Ã©vÃ©nement
+- Affiche le dernier abonné, donateur, etc.
+- Overlay pour chaque type d'événement
 
 **5. Soundboard** (Facultatif)
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
+Dashboard → Plugins → Soundboard → Enable
 ```
-- Sons spÃ©cifiques aux cadeaux
-- IntÃ©gration MyInstants
+- Sons spécifiques aux cadeaux
+- Intégration MyInstants
 
 #### Activer un Plugin
 
-1. Dashboard â†’ **Plugins** (Barre latÃ©rale)
+1. Dashboard → **Plugins** (Barre latérale)
 2. Trouver le plugin dans la liste
 3. Cliquer sur le bouton **Enable**
 4. Configurer le plugin (si UI disponible)
 
-Voir **[Liste des Plugins](Plugin-Liste.md#franÃ§ais)** pour tous les 36 Plugins disponibles.
+Voir **[Liste des Plugins](Plugin-Liste.md#français)** pour tous les 36 Plugins disponibles.
 
 ---
 
-### ðŸŽ¨ Configuration OBS {#configuration-obs-franÃ§ais}
+### 🎨 Configuration OBS {#configuration-obs-français}
 
 #### Installer OBS Studio
 
-1. TÃ©lÃ©charger : [obsproject.com](https://obsproject.com/)
-2. Version **29.0 ou supÃ©rieure** recommandÃ©e
+1. Télécharger : [obsproject.com](https://obsproject.com/)
+2. Version **29.0 ou supérieure** recommandée
 3. Effectuer l'installation standard
 
 #### Activer OBS WebSocket (pour plugin Multi-Cam)
 
-1. OBS â†’ **Tools** â†’ **WebSocket Server Settings**
+1. OBS → **Tools** → **WebSocket Server Settings**
 2. Activer **"Enable WebSocket server"**
-3. Port : **4455** (par dÃ©faut)
-4. DÃ©finir un mot de passe (facultatif)
+3. Port : **4455** (par défaut)
+4. Définir un mot de passe (facultatif)
 5. Cliquer sur **OK**
 
 **Dans LTTH :**
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Configure
+Dashboard → Plugins → Multi-Cam Switcher → Configure
 OBS WebSocket:
   Host: localhost
   Port: 4455
   Password: (votre mot de passe)
-â†’ Connect
+→ Connect
 ```
 
 ---
 
-### ðŸ’¡ Premiers Pas Courants {#premiers-pas-courants-franÃ§ais}
+### 💡 Premiers Pas Courants {#premiers-pas-courants-français}
 
 #### Faire Lire les Messages du Chat
 
 **Automatiquement :**
 ```
-Dashboard â†’ TTS â†’ Activer Auto-TTS for Chat
+Dashboard → TTS → Activer Auto-TTS for Chat
 ```
 
 **Liste Noire (ne pas lire certains mots) :**
 ```
-Dashboard â†’ TTS â†’ Blacklist
-â†’ Ajouter des mots (p. ex., "spam", "mot interdit")
+Dashboard → TTS → Blacklist
+→ Ajouter des mots (p. ex., "spam", "mot interdit")
 ```
 
 #### Connecter des Cadeaux avec des Sons
 
 ```
-Dashboard â†’ Plugins â†’ Soundboard â†’ Enable
-â†’ Configure
-â†’ Gift Mappings
-â†’ Rose â†’ SÃ©lectionner un son
-â†’ Save
+Dashboard → Plugins → Soundboard → Enable
+→ Configure
+→ Gift Mappings
+→ Rose → Sélectionner un son
+→ Save
 ```
 
-#### Changer de CamÃ©ra par Chat
+#### Changer de Caméra par Chat
 
 ```
-Dashboard â†’ Plugins â†’ Multi-Cam Switcher â†’ Enable
-â†’ Configure
-â†’ Connecter OBS
-â†’ Activer les commandes de chat
+Dashboard → Plugins → Multi-Cam Switcher → Enable
+→ Configure
+→ Connecter OBS
+→ Activer les commandes de chat
 
 Dans le chat: !cam 1 (ou !cam 2, !cam 3, etc.)
 ```
 
 ---
 
-### ðŸŽ“ Prochaines Ã‰tapes {#prochaines-Ã©tapes-franÃ§ais}
+### 🎓 Prochaines Étapes {#prochaines-étapes-français}
 
-#### Explorer les FonctionnalitÃ©s AvancÃ©es
+#### Explorer les Fonctionnalités Avancées
 
-**1. SystÃ¨me de Flows (Automatisation d'Ã‰vÃ©nements) :**
+**1. Système de Flows (Automatisation d'Événements) :**
 ```
-Dashboard â†’ Flows â†’ CrÃ©er un nouveau flow
+Dashboard → Flows → Créer un nouveau flow
 Exemple:
-  DÃ©clencheur: Cadeau = "Rose"
+  Déclencheur: Cadeau = "Rose"
   Actions:
     1. TTS: "Merci {username} pour la Rose !"
-    2. OBS: Changer de scÃ¨ne vers "Cam2"
+    2. OBS: Changer de scène vers "Cam2"
     3. OSC: Geste de salut dans VRChat
 ```
 
 **2. Activer les Plugins WebGPU :**
-- **WebGPU Emoji Rain** - Effet emoji accÃ©lÃ©rÃ© par GPU
+- **WebGPU Emoji Rain** - Effet emoji accéléré par GPU
 
-**3. SystÃ¨me XP des Spectateurs :**
+**3. Système XP des Spectateurs :**
 ```
-Dashboard â†’ Plugins â†’ Viewer XP System â†’ Enable
-â†’ Configurer les rÃ©compenses XP
-â†’ Ajouter un overlay de leaderboard
+Dashboard → Plugins → Viewer XP System → Enable
+→ Configurer les récompenses XP
+→ Ajouter un overlay de leaderboard
 ```
 
 #### Lire la Documentation
 
-- **[Liste des Plugins](Plugin-Liste.md#franÃ§ais)** - Tous les 36 Plugins en dÃ©tail
-- **[Configuration](Konfiguration.md#franÃ§ais)** - ParamÃ¨tres avancÃ©s
-- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#franÃ§ais)** - RÃ©soudre les problÃ¨mes courants
+- **[Liste des Plugins](Plugin-Liste.md#français)** - Tous les 36 Plugins en détail
+- **[Configuration](Konfiguration.md#français)** - Paramètres avancés
+- **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#français)** - Résoudre les problèmes courants
 
 ---
 
-### ðŸŽ‰ Bonne Chance avec Votre Diffusion !
+### 🎉 Bonne Chance avec Votre Diffusion !
 
-Vous Ãªtes maintenant prÃªt pour votre premiÃ¨re diffusion professionnelle TikTok LIVE avec Little TikTool Helper !
+Vous êtes maintenant prêt pour votre première diffusion professionnelle TikTok LIVE avec Little TikTool Helper !
 
-**Conseils pour DÃ©buter :**
-- Testez tout **avant** votre premiÃ¨re diffusion en direct
+**Conseils pour Débuter :**
+- Testez tout **avant** votre première diffusion en direct
 - Utilisez **Test Alerts** et **Test TTS**
-- Commencez avec peu de plugins et dÃ©veloppez progressivement
-- Lisez **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#franÃ§ais)** si vous avez des problÃ¨mes
+- Commencez avec peu de plugins et développez progressivement
+- Lisez **[FAQ & Troubleshooting](FAQ-&-Troubleshooting.md#français)** si vous avez des problèmes
 
 ---
 
-[â† Home](Home#franÃ§ais) | [â†’ Installation & Setup](Installation-&-Setup#franÃ§ais)
+[← Home](Home#français) | [→ Installation & Setup](Installation-&-Setup#français)
 
 ---
 
-*DerniÃ¨re mise Ã  jour : 2025-12-11*  
+*Dernière mise à jour : 2025-12-11*
 *Version : 1.2.1*

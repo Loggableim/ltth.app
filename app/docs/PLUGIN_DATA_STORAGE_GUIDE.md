@@ -1,4 +1,4 @@
-﻿# Plugin Data Storage Guide
+# Plugin Data Storage Guide
 
 ## Overview
 
@@ -6,7 +6,7 @@ This guide explains how plugins should handle data storage to ensure all user da
 
 ## Critical Rule: Never Store Data in the Application Directory
 
-**âš ï¸ IMPORTANT**: Never store plugin data in the application directory (`__dirname`, `plugins/your-plugin/data`, etc.). This data will be **lost during application updates**.
+**⚠️ IMPORTANT**: Never store plugin data in the application directory (`__dirname`, `plugins/your-plugin/data`, etc.). This data will be **lost during application updates**.
 
 ## Using Persistent Storage
 
@@ -19,7 +19,7 @@ class MyPlugin {
     constructor(api) {
         this.api = api;
         
-        // âœ… CORRECT: Use persistent storage in user profile
+        // ✅ CORRECT: Use persistent storage in user profile
         const pluginDataDir = api.getPluginDataDir();
         this.uploadDir = path.join(pluginDataDir, 'uploads');
         this.configFile = path.join(pluginDataDir, 'custom-config.json');
@@ -35,7 +35,7 @@ class MyPlugin {
         }
         
         // Log the storage location for debugging
-        this.api.log(`ðŸ“‚ Using persistent storage: ${this.api.getPluginDataDir()}`, 'info');
+        this.api.log(`📂 Using persistent storage: ${this.api.getPluginDataDir()}`, 'info');
     }
 }
 ```
@@ -43,11 +43,11 @@ class MyPlugin {
 ### What NOT to Do
 
 ```javascript
-// âŒ WRONG: Storing in plugin directory (lost on update!)
+// ❌ WRONG: Storing in plugin directory (lost on update!)
 this.uploadDir = path.join(__dirname, 'uploads');
 this.dataFile = path.join(__dirname, 'data', 'users.json');
 
-// âŒ WRONG: Storing in app directory (lost on update!)
+// ❌ WRONG: Storing in app directory (lost on update!)
 this.cacheDir = path.join(__dirname, '..', '..', 'data', 'cache');
 ```
 
@@ -58,7 +58,7 @@ this.cacheDir = path.join(__dirname, '..', '..', 'data', 'cache');
 For most configuration data, use the database which is already stored in the user profile:
 
 ```javascript
-// âœ… Store configuration in database (automatically persisted)
+// ✅ Store configuration in database (automatically persisted)
 this.api.setConfig('apiKey', userApiKey);
 this.api.setConfig('settings', { enabled: true, volume: 80 });
 
@@ -112,7 +112,7 @@ class MyPlugin {
             const oldFiles = fs.readdirSync(oldUploadDir).filter(f => f !== '.gitkeep');
             
             if (oldFiles.length > 0) {
-                this.api.log(`ðŸ“¦ Migrating ${oldFiles.length} files to user profile...`, 'info');
+                this.api.log(`📦 Migrating ${oldFiles.length} files to user profile...`, 'info');
                 
                 // Ensure new directory exists
                 if (!fs.existsSync(newUploadDir)) {
@@ -129,8 +129,8 @@ class MyPlugin {
                     }
                 }
                 
-                this.api.log(`âœ… Migration complete. Files moved to: ${newUploadDir}`, 'info');
-                this.api.log('ðŸ’¡ Old files are kept for safety. You can manually delete them after verifying.', 'info');
+                this.api.log(`✅ Migration complete. Files moved to: ${newUploadDir}`, 'info');
+                this.api.log('💡 Old files are kept for safety. You can manually delete them after verifying.', 'info');
             }
         }
     }
@@ -150,10 +150,10 @@ The `ConfigPathManager` automatically selects the appropriate location based on 
 ### 1. Always Use PluginAPI Methods
 
 ```javascript
-// âœ… CORRECT: Use PluginAPI helper
+// ✅ CORRECT: Use PluginAPI helper
 const dataDir = this.api.getPluginDataDir();
 
-// âŒ WRONG: Construct path manually
+// ❌ WRONG: Construct path manually
 const dataDir = path.join(__dirname, '..', '..', 'user_data', 'plugins', this.pluginId);
 ```
 
@@ -179,11 +179,11 @@ async init() {
 ### 3. Use Database for Simple Configuration
 
 ```javascript
-// âœ… CORRECT: Small config in database
+// ✅ CORRECT: Small config in database
 this.api.setConfig('apiKey', 'secret-key-123');
 this.api.setConfig('volume', 80);
 
-// âŒ WRONG: Creating files for simple config
+// ❌ WRONG: Creating files for simple config
 fs.writeFileSync(path.join(dataDir, 'api-key.txt'), 'secret-key-123');
 ```
 
@@ -192,8 +192,8 @@ fs.writeFileSync(path.join(dataDir, 'api-key.txt'), 'secret-key-123');
 ```javascript
 async init() {
     const dataDir = this.api.getPluginDataDir();
-    this.api.log(`ðŸ“‚ Plugin data directory: ${dataDir}`, 'info');
-    this.api.log(`ðŸ“‚ Uploads: ${this.uploadDir}`, 'debug');
+    this.api.log(`📂 Plugin data directory: ${dataDir}`, 'info');
+    this.api.log(`📂 Uploads: ${this.uploadDir}`, 'debug');
 }
 ```
 

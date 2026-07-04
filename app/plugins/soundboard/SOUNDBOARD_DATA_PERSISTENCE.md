@@ -55,10 +55,10 @@ All animation settings for these events are also persisted.
 ## Migration and Updates
 
 When you update the application:
-1. âœ… **The database file is NOT touched** - it remains in the persistent config directory
-2. âœ… **All gift sounds are preserved** - stored in `gift_sounds` table
-3. âœ… **All event sounds are preserved** - stored in `settings` table
-4. âœ… **All settings are preserved** - stored in `settings` table
+1. ✅ **The database file is NOT touched** - it remains in the persistent config directory
+2. ✅ **All gift sounds are preserved** - stored in `gift_sounds` table
+3. ✅ **All event sounds are preserved** - stored in `settings` table
+4. ✅ **All settings are preserved** - stored in `settings` table
 
 ## Volume Controls
 
@@ -128,7 +128,7 @@ This should **not** happen. If it does:
 ### Where is my data actually stored?
 Check the application logs on startup. They will show:
 ```
-ðŸ“‚ [ConfigPathManager] Settings stored at: <path>
+📂 [ConfigPathManager] Settings stored at: <path>
 ```
 
 ### Can I backup my soundboard settings?

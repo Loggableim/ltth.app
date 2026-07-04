@@ -42,13 +42,13 @@ app/
 
 The download page provides:
 - Direct download link to `ltth_latest.zip`
-- Current version information (placeholder: 1.1.1)
+- Current version information (from `app/package.json`, e.g. 1.3.9)
 - Information about automatic updates
 - Links to archive and documentation
 
 ## Launcher Integration
 
-The future Rust launcher will:
+The existing Go-based launcher in this snapshot will:
 
 1. **Check for Updates**
    - Fetch the file size of `https://ltth.app/app/ltth_latest.zip`
@@ -80,8 +80,8 @@ When a new version is released:
 - **Simple URL:** Users always use the same download link
 - **Launcher-Friendly:** Size-based update detection is fast and reliable
 - **Archive Access:** Previous versions available for rollback/compatibility
-- **CI/CD Ready:** Easy to automate with standard build tools
-- **No API Required:** Static files only, works on GitHub Pages
+- **CI/CD Ready:** Easy to automate with standard build tooling
+- **No API Required:** Update checks use file availability and static metadata
 
 ## File Size Update Detection
 

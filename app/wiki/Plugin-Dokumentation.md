@@ -1,27 +1,27 @@
-﻿# Plugin-Dokumentation
+# Plugin-Dokumentation
 
-[â† Entwickler-Leitfaden](Entwickler-Leitfaden) | [â†’ API-Reference](API-Reference)
+[← Entwickler-Leitfaden](Entwickler-Leitfaden) | [→ API-Reference](API-Reference)
 
 ---
 
-## ðŸ“‘ Inhaltsverzeichnis
+## 📑 Inhaltsverzeichnis
 
-1. [Ãœbersicht](#Ã¼bersicht)
+1. [Übersicht](#übersicht)
 2. [Plugin-Struktur](#plugin-struktur)
 3. [Plugin-API](#plugin-api)
 4. [Lifecycle-Hooks](#lifecycle-hooks)
 5. [Beispiel-Plugin erstellen](#beispiel-plugin-erstellen)
-6. [VerfÃ¼gbare Plugins](#verfÃ¼gbare-plugins)
+6. [Verfügbare Plugins](#verfügbare-plugins)
 7. [Plugin hochladen](#plugin-hochladen)
-8. [Plugin deaktivieren/lÃ¶schen](#plugin-deaktivierenlÃ¶schen)
+8. [Plugin deaktivieren/löschen](#plugin-deaktivierenlöschen)
 9. [Best Practices](#best-practices)
 10. [Troubleshooting](#troubleshooting)
 
 ---
 
-## ðŸ” Ãœbersicht
+## 🔍 Übersicht
 
-Das Plugin-System ermÃ¶glicht es, die FunktionalitÃ¤t des TikTool Helpers zu erweitern, ohne den Core-Code zu modifizieren. Plugins kÃ¶nnen:
+Das Plugin-System ermöglicht es, die Funktionalität des TikTool Helpers zu erweitern, ohne den Core-Code zu modifizieren. Plugins können:
 
 - **Express-Routes** registrieren (REST-API-Endpunkte)
 - **Socket.io-Events** abonnieren und emittieren
@@ -32,36 +32,36 @@ Das Plugin-System ermÃ¶glicht es, die FunktionalitÃ¤t des TikTool Helpers zu
 
 ### Features
 
-âœ… **Hot-Loading** - Plugins ohne Server-Neustart laden/deaktivieren
-âœ… **ZIP-Upload** - Plugins via Web-UI hochladen
-âœ… **Plugin-API** - Einfache Integration mit Core-System
-âœ… **Isolation** - Plugins kÃ¶nnen sich nicht gegenseitig stÃ¶ren
-âœ… **Config-Management** - Plugin-spezifische Einstellungen
+✅ **Hot-Loading** - Plugins ohne Server-Neustart laden/deaktivieren
+✅ **ZIP-Upload** - Plugins via Web-UI hochladen
+✅ **Plugin-API** - Einfache Integration mit Core-System
+✅ **Isolation** - Plugins können sich nicht gegenseitig stören
+✅ **Config-Management** - Plugin-spezifische Einstellungen
 
 ---
 
-## ðŸ“ Plugin-Struktur
+## 📁 Plugin-Struktur
 
 ### Minimales Plugin
 
 ```
 plugins/my-plugin/
-â”œâ”€â”€ plugin.json       # Metadata (Pflicht)
-â””â”€â”€ main.js           # Plugin-Klasse (Pflicht)
+├── plugin.json       # Metadata (Pflicht)
+└── main.js           # Plugin-Klasse (Pflicht)
 ```
 
-### VollstÃ¤ndiges Plugin
+### Vollständiges Plugin
 
 ```
 plugins/my-plugin/
-â”œâ”€â”€ plugin.json       # Metadata
-â”œâ”€â”€ main.js           # Plugin-Klasse
-â”œâ”€â”€ ui.html           # Optional: Admin-UI
-â”œâ”€â”€ assets/           # Optional: Statische Assets
-â”‚   â”œâ”€â”€ style.css
-â”‚   â”œâ”€â”€ script.js
-â”‚   â””â”€â”€ icon.png
-â””â”€â”€ README.md         # Optional: Dokumentation
+├── plugin.json       # Metadata
+├── main.js           # Plugin-Klasse
+├── ui.html           # Optional: Admin-UI
+├── assets/           # Optional: Statische Assets
+│   ├── style.css
+│   ├── script.js
+│   └── icon.png
+└── README.md         # Optional: Dokumentation
 ```
 
 ### plugin.json
@@ -96,7 +96,7 @@ plugins/my-plugin/
 | `enabled` | Boolean | Initial aktiviert? |
 | `type` | String | Plugin-Typ ("utility", "overlay", "integration") |
 | `dependencies` | Array | NPM-Dependencies (informativ) |
-| `permissions` | Array | BenÃ¶tigte Permissions |
+| `permissions` | Array | Benötigte Permissions |
 
 **Plugin-Types:**
 - `utility` - Utility-Plugins (Allgemein)
@@ -133,9 +133,9 @@ module.exports = MyPlugin;
 
 ---
 
-## ðŸ”Œ Plugin-API
+## 🔌 Plugin-API
 
-Die `PluginAPI`-Klasse wird beim Plugin-Constructor Ã¼bergeben und bietet Zugriff auf das Core-System.
+Die `PluginAPI`-Klasse wird beim Plugin-Constructor übergeben und bietet Zugriff auf das Core-System.
 
 ### API-Methoden
 
@@ -234,7 +234,7 @@ this.api.registerTikTokEvent('gift', async (data) => {
 
 #### 4. getConfig(key)
 
-LÃ¤dt Plugin-Config aus Datenbank.
+Lädt Plugin-Config aus Datenbank.
 
 **Parameter:**
 - `key` (String) - Config-Key
@@ -313,7 +313,7 @@ this.api.log('Debug info', 'debug');
 
 #### 8. getSocketIO()
 
-Gibt Socket.io-Instanz zurÃ¼ck (fÃ¼r erweiterte Nutzung).
+Gibt Socket.io-Instanz zurück (für erweiterte Nutzung).
 
 **Returns:** `Socket.io`-Server-Instanz
 
@@ -325,7 +325,7 @@ io.to('room123').emit('event', data); // Room-spezifischer Broadcast
 
 #### 9. getDatabase()
 
-Gibt Datenbank-Instanz zurÃ¼ck (fÃ¼r direkten Zugriff).
+Gibt Datenbank-Instanz zurück (für direkten Zugriff).
 
 **Returns:** `Database`-Instanz
 
@@ -337,7 +337,7 @@ const result = db.prepare('SELECT * FROM events WHERE type = ?').all('gift');
 
 ---
 
-## ðŸ”„ Lifecycle-Hooks
+## 🔄 Lifecycle-Hooks
 
 ### 1. constructor(api)
 
@@ -412,7 +412,7 @@ async destroy() {
         clearInterval(this.timer);
     }
 
-    // Externe Verbindungen schlieÃŸen
+    // Externe Verbindungen schließen
     if (this.connection) {
         await this.connection.disconnect();
     }
@@ -426,7 +426,7 @@ async destroy() {
 
 ---
 
-## ðŸ› ï¸ Beispiel-Plugin erstellen
+## 🛠️ Beispiel-Plugin erstellen
 
 ### Schritt 1: Verzeichnis erstellen
 
@@ -442,7 +442,7 @@ cd gift-counter
 {
   "id": "gift-counter",
   "name": "Gift Counter",
-  "description": "ZÃ¤hlt empfangene Gifts und zeigt Top-Gift an",
+  "description": "Zählt empfangene Gifts und zeigt Top-Gift an",
   "version": "1.0.0",
   "author": "Dein Name",
   "entry": "main.js",
@@ -458,7 +458,7 @@ cd gift-counter
 ```javascript
 /**
  * Gift Counter Plugin
- * ZÃ¤hlt alle empfangenen Gifts und zeigt das hÃ¤ufigste Gift an
+ * Zählt alle empfangenen Gifts und zeigt das häufigste Gift an
  */
 class GiftCounterPlugin {
     constructor(api) {
@@ -561,7 +561,7 @@ class GiftCounterPlugin {
             const giftName = data.giftName;
             const count = data.count || 1;
 
-            // Count erhÃ¶hen
+            // Count erhöhen
             this.giftCounts[giftName] = (this.giftCounts[giftName] || 0) + count;
             this.totalGifts += count;
 
@@ -696,11 +696,11 @@ npm start
 ```
 
 **Manuell (via Dashboard):**
-1. Dashboard Ã¶ffnen
-2. Plugins â†’ "Reload Plugins"
+1. Dashboard öffnen
+2. Plugins → "Reload Plugins"
 3. Plugin sollte erscheinen
 
-**Ãœber API:**
+**Über API:**
 ```bash
 POST http://localhost:3000/api/plugins/gift-counter/reload
 ```
@@ -724,57 +724,57 @@ http://localhost:3000/plugins/gift-counter/ui.html
 
 ---
 
-## ðŸ“¦ VerfÃ¼gbare Plugins
+## 📦 Verfügbare Plugins
 
-**Little TikTool Helper v1.2.1** enthÃ¤lt **31 integrierte Plugins**. 
+**Little TikTool Helper v1.2.1** enthält **31 integrierte Plugins**.
 
-### VollstÃ¤ndige Plugin-Liste
+### Vollständige Plugin-Liste
 
-FÃ¼r eine detaillierte Ãœbersicht aller Plugins mit Features, Status, Endpoints und Konfigurationsoptionen siehe:
+Für eine detaillierte Übersicht aller Plugins mit Features, Status, Endpoints und Konfigurationsoptionen siehe:
 
-âž¡ï¸ **[Plugin-Liste](Plugin-Liste.md)** - Komplette Liste aller 35 Plugins
+➡️ **[Plugin-Liste](Plugin-Liste.md)** - Komplette Liste aller 35 Plugins
 
 ### Plugin-Kategorien
 
 | Status | Anzahl | Plugins |
 |--------|--------|---------|
-| ðŸ”´ **Early Beta** | 5 | Advanced Timer, Chatango, GCCE HUD, Stream Alchemy, WebGPU Emoji Rain |
-| ðŸŸ¡ **Beta** | 10 | Minecraft Connect, Thermal Printer, Quiz Show, Viewer XP, Leaderboard, OpenShock, Multi-Cam, Gift Milestone, VDO.Ninja, GCCE |
-| ðŸŸ¢ **Alpha** | 8 | Weather Control, Emoji Rain v2.0, Soundboard, ClarityHUD, LastEvent Spotlight, TTS v2.0, Live Goals |
-| ðŸ”µ **Final** | 7 | OSC-Bridge, Config Import, Fireworks, API Bridge, CoinBattle, Flame Overlay, HybridShock |
+| 🔴 **Early Beta** | 5 | Advanced Timer, Chatango, GCCE HUD, Stream Alchemy, WebGPU Emoji Rain |
+| 🟡 **Beta** | 10 | Minecraft Connect, Thermal Printer, Quiz Show, Viewer XP, Leaderboard, OpenShock, Multi-Cam, Gift Milestone, VDO.Ninja, GCCE |
+| 🟢 **Alpha** | 8 | Weather Control, Emoji Rain v2.0, Soundboard, ClarityHUD, LastEvent Spotlight, TTS v2.0, Live Goals |
+| 🔵 **Final** | 7 | OSC-Bridge, Config Import, Fireworks, API Bridge, CoinBattle, Flame Overlay, HybridShock |
 
 ### Wichtige Plugins (Highlights)
 
 **TTS v2.0** (`plugins/tts/`)
 - Enterprise-Grade TTS mit 75+ TikTok-Stimmen
 - Multi-Engine-Support, Language-Detection
-- Status: ðŸŸ¢ Alpha
+- Status: 🟢 Alpha
 
 **WebGPU Emoji Rain** (`plugins/webgpu-emoji-rain/`)
 - GPU-beschleunigter Emoji-Effekt
 - 10x schneller als Canvas-Version
-- Status: ðŸ”´ Early Beta
+- Status: 🔴 Early Beta
 
 **Global Chat Command Engine** (`plugins/gcce/`)
 - Universaler Command-Interpreter
 - Permission-System, Rate-Limiting
-- Status: ðŸŸ¡ Beta
+- Status: 🟡 Beta
 
 **Viewer XP System** (`plugins/viewer-xp/`)
 - Gamification mit Levels, Badges, Streaks
-- Persistent Storage Ã¼ber Streams hinweg
-- Status: ðŸŸ¡ Beta
+- Persistent Storage über Streams hinweg
+- Status: 🟡 Beta
 
 **OSC-Bridge** (`plugins/osc-bridge/`)
 - VRChat-Integration
 - Bidirektionale OSC-Kommunikation
-- Status: ðŸ”µ Final
+- Status: 🔵 Final
 
-Siehe **[Plugin-Liste](Plugin-Liste.md)** fÃ¼r alle Details zu jedem Plugin.
+Siehe **[Plugin-Liste](Plugin-Liste.md)** für alle Details zu jedem Plugin.
 
 ---
 
-## ðŸ“¤ Plugin hochladen
+## 📤 Plugin hochladen
 
 ### Via Web-UI
 
@@ -784,14 +784,14 @@ Siehe **[Plugin-Liste](Plugin-Liste.md)** fÃ¼r alle Details zu jedem Plugin.
    zip -r gift-counter.zip gift-counter/
    ```
 
-2. **Dashboard Ã¶ffnen:**
+2. **Dashboard öffnen:**
    ```
    http://localhost:3000
    ```
 
 3. **Plugin-Manager:**
-   - Plugins â†’ "Upload Plugin"
-   - ZIP-Datei auswÃ¤hlen
+   - Plugins → "Upload Plugin"
+   - ZIP-Datei auswählen
    - Upload
 
 4. **Plugin aktivieren:**
@@ -807,12 +807,12 @@ curl -X POST http://localhost:3000/api/plugins/upload \
 
 ---
 
-## âŒ Plugin deaktivieren/lÃ¶schen
+## ❌ Plugin deaktivieren/löschen
 
 ### Deaktivieren
 
 **Via Dashboard:**
-- Plugins â†’ Plugin auswÃ¤hlen â†’ "Disable"
+- Plugins → Plugin auswählen → "Disable"
 
 **Via API:**
 ```bash
@@ -822,12 +822,12 @@ POST http://localhost:3000/api/plugins/gift-counter/disable
 **Effekt:**
 - `destroy()` wird aufgerufen
 - Plugin bleibt auf Festplatte
-- `plugin.json` â†’ `enabled: false`
+- `plugin.json` → `enabled: false`
 
-### LÃ¶schen
+### Löschen
 
 **Via Dashboard:**
-- Plugins â†’ Plugin auswÃ¤hlen â†’ "Delete"
+- Plugins → Plugin auswählen → "Delete"
 
 **Via API:**
 ```bash
@@ -835,12 +835,12 @@ DELETE http://localhost:3000/api/plugins/gift-counter
 ```
 
 **Effekt:**
-- Plugin-Verzeichnis wird gelÃ¶scht
+- Plugin-Verzeichnis wird gelöscht
 - Config bleibt in Datenbank (kann manuell entfernt werden)
 
 ---
 
-## âœ… Best Practices
+## ✅ Best Practices
 
 ### 1. Error-Handling
 
@@ -876,7 +876,7 @@ async destroy() {
     // Timers stoppen
     if (this.timer) clearInterval(this.timer);
 
-    // Verbindungen schlieÃŸen
+    // Verbindungen schließen
     if (this.connection) await this.connection.close();
 
     // Daten speichern
@@ -896,7 +896,7 @@ this.api.log('Debug info', 'debug');  // Debug (nur im Dev-Mode)
 
 ### 5. Rate-Limiting
 
-**Bei hÃ¤ufigen Events:**
+**Bei häufigen Events:**
 ```javascript
 registerTikTokEvents() {
     let lastUpdate = 0;
@@ -913,56 +913,56 @@ registerTikTokEvents() {
 
 ---
 
-## ðŸ› Troubleshooting
+## 🐛 Troubleshooting
 
-### Plugin lÃ¤dt nicht
+### Plugin lädt nicht
 
 **Symptome:** Plugin erscheint nicht in Liste
 
-**LÃ¶sungen:**
-1. **plugin.json prÃ¼fen:** Syntax-Fehler?
+**Lösungen:**
+1. **plugin.json prüfen:** Syntax-Fehler?
 2. **Enabled-Status:** `"enabled": true`?
-3. **Server-Logs prÃ¼fen:** `logs/combined.log`
+3. **Server-Logs prüfen:** `logs/combined.log`
 4. **Permissions:** Verzeichnis lesbar?
 
 ### Plugin crasht Server
 
 **Symptome:** Server startet nicht / crasht beim Plugin-Laden
 
-**LÃ¶sungen:**
-1. **Plugin deaktivieren:** Manuell in `plugin.json` â†’ `"enabled": false`
-2. **Error in init():** Try-Catch hinzufÃ¼gen
-3. **Dependencies fehlen:** `npm install` prÃ¼fen
+**Lösungen:**
+1. **Plugin deaktivieren:** Manuell in `plugin.json` → `"enabled": false`
+2. **Error in init():** Try-Catch hinzufügen
+3. **Dependencies fehlen:** `npm install` prüfen
 
 ### Config wird nicht gespeichert
 
 **Symptome:** Config geht nach Neustart verloren
 
-**LÃ¶sungen:**
+**Lösungen:**
 1. **setConfig() nutzen:** `this.api.setConfig('key', value)`
 2. **In destroy() speichern:** Letzte Daten sichern
-3. **Datenbank prÃ¼fen:** `SELECT * FROM settings WHERE key LIKE 'plugin:my-plugin:%'`
+3. **Datenbank prüfen:** `SELECT * FROM settings WHERE key LIKE 'plugin:my-plugin:%'`
 
 ### Events werden nicht empfangen
 
 **Symptome:** TikTok-Events kommen nicht an
 
-**LÃ¶sungen:**
+**Lösungen:**
 1. **registerTikTokEvent() vor init()-Ende aufrufen**
 2. **Callback async:** `async (data) => {}`
-3. **TikTok verbunden:** Status prÃ¼fen
+3. **TikTok verbunden:** Status prüfen
 
 ---
 
-## ðŸ”— Weitere Ressourcen
+## 🔗 Weitere Ressourcen
 
-- **[API-Reference](API-Reference.md)** - VollstÃ¤ndige API-Dokumentation
+- **[API-Reference](API-Reference.md)** - Vollständige API-Dokumentation
 - **[Entwickler-Leitfaden](Entwickler-Leitfaden.md)** - Code-Standards
 - **[Architektur](Architektur.md)** - System-Architektur verstehen
 
 ---
 
-[â† Entwickler-Leitfaden](Entwickler-Leitfaden) | [â†’ API-Reference](API-Reference)
+[← Entwickler-Leitfaden](Entwickler-Leitfaden) | [→ API-Reference](API-Reference)
 
 ---
 

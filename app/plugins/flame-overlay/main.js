@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TikTok Flame Overlay Plugin
  * 
  * WebGL-based flame border overlay for TikTok livestreams
@@ -220,7 +220,7 @@ class FlameOverlayPlugin {
     }
 
     async init() {
-        this.api.log('🔥 [FLAME OVERLAY] Initializing TikTok Flame Overlay Plugin...', 'info');
+        this.api.log('?? [FLAME OVERLAY] Initializing TikTok Flame Overlay Plugin...', 'info');
 
         // Load configuration
         this.loadConfig();
@@ -234,7 +234,7 @@ class FlameOverlayPlugin {
         // Register flow actions
         this.registerFlowActions();
 
-        this.api.log('✅ [FLAME OVERLAY] Plugin initialized successfully', 'info');
+        this.api.log('? [FLAME OVERLAY] Plugin initialized successfully', 'info');
         this.logRoutes();
     }
 
@@ -454,7 +454,7 @@ class FlameOverlayPlugin {
                 const gifts = source();
                 if (Array.isArray(gifts)) return gifts;
             } catch (error) {
-                this.api.log(`âš ï¸ [FLAME OVERLAY] Gift catalog source failed: ${error.message}`, 'debug');
+                this.api.log(`⚠️ [FLAME OVERLAY] Gift catalog source failed: ${error.message}`, 'debug');
             }
         }
 
@@ -873,7 +873,7 @@ class FlameOverlayPlugin {
             try {
                 res.json({ success: true, config: this.getRuntimeConfig() });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error getting config: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error getting config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -897,7 +897,7 @@ class FlameOverlayPlugin {
                 
                 res.json({ success: true, message: 'Configuration updated' });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error updating config: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error updating config: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -921,7 +921,7 @@ class FlameOverlayPlugin {
             try {
                 res.json({ success: true, gifts: this.getGiftCatalog() });
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Error loading gift catalog: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Error loading gift catalog: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -932,7 +932,7 @@ class FlameOverlayPlugin {
                 const presets = this.getStoredPresets();
                 res.json({ success: true, presets });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error loading presets: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error loading presets: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -957,7 +957,7 @@ class FlameOverlayPlugin {
 
                 res.json({ success: true, message: `Preset "${presetName.value}" saved` });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error saving preset: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error saving preset: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1041,7 +1041,7 @@ class FlameOverlayPlugin {
                     ...this.formatTriggerResult(result)
                 });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Trigger error: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Trigger error: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1066,7 +1066,7 @@ class FlameOverlayPlugin {
                 }
                 res.json(result);
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Feature test error: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Feature test error: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1077,7 +1077,7 @@ class FlameOverlayPlugin {
                 this.clearActiveTriggers();
                 res.json({ success: true, message: 'Active triggers cleared' });
             } catch (error) {
-                this.api.log(`âŒ [FLAME OVERLAY] Clear trigger error: ${error.message}`, 'error');
+                this.api.log(`❌ [FLAME OVERLAY] Clear trigger error: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1113,7 +1113,7 @@ class FlameOverlayPlugin {
                 }
                 res.json({ success: true, message: 'Trigger rules saved' });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error saving triggers: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error saving triggers: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1153,10 +1153,10 @@ class FlameOverlayPlugin {
                     return res.status(500).json({ success: false, error: 'Failed to save preset configuration' });
                 }
                 const name = presetName.value;
-                this.api.log(`🎮 [FLAME OVERLAY] Preset '${name}' activated`, 'info');
+                this.api.log(`?? [FLAME OVERLAY] Preset '${name}' activated`, 'info');
                 res.json({ success: true, message: `Preset '${presetName.value}' activated`, config: this.config });
             } catch (error) {
-                this.api.log(`❌ [FLAME OVERLAY] Error activating preset: ${error.message}`, 'error');
+                this.api.log(`? [FLAME OVERLAY] Error activating preset: ${error.message}`, 'error');
                 res.status(500).json({ success: false, error: error.message });
             }
         });
@@ -1190,7 +1190,7 @@ class FlameOverlayPlugin {
             return this.handleTikTokEvent('subscribe', data);
         });
 
-        this.api.log('🎮 [FLAME OVERLAY] TikTok event handlers registered', 'info');
+        this.api.log('?? [FLAME OVERLAY] TikTok event handlers registered', 'info');
     }
 
     handleTikTokEvent(event, data = {}, options = {}) {
@@ -1402,7 +1402,7 @@ class FlameOverlayPlugin {
                 }
             }
         } catch (e) {
-            this.api.log(`⚠️ [FLAME OVERLAY] Invalid condition: ${condition}`, 'warn');
+            this.api.log(`?? [FLAME OVERLAY] Invalid condition: ${condition}`, 'warn');
         }
 
         return false;
@@ -1565,17 +1565,17 @@ class FlameOverlayPlugin {
                 socket.emit('flow:flame-overlay:trigger:result', result);
             }
             data = payload || {};
-            this.api.log(`🔥 [FLAME OVERLAY] Flow triggered: ${data.burstType || 'intensity-boost'}`, 'debug');
+            this.api.log(`?? [FLAME OVERLAY] Flow triggered: ${data.burstType || 'intensity-boost'}`, 'debug');
         });
         
-        this.api.log('🔥 [FLAME OVERLAY] Flow actions registered', 'info');
+        this.api.log('?? [FLAME OVERLAY] Flow actions registered', 'info');
     }
 
     /**
      * Log registered routes
      */
     logRoutes() {
-        this.api.log('📍 [FLAME OVERLAY] Routes registered:', 'info');
+        this.api.log('?? [FLAME OVERLAY] Routes registered:', 'info');
         this.api.log('   - GET  /flame-overlay/ui', 'info');
         this.api.log('   - GET  /flame-overlay/overlay', 'info');
         this.api.log('   - GET  /api/flame-overlay/config', 'info');
@@ -1600,7 +1600,7 @@ class FlameOverlayPlugin {
      */
     async destroy() {
         this.clearActiveTriggers();
-        this.api.log('🔥 [FLAME OVERLAY] Plugin destroyed', 'info');
+        this.api.log('?? [FLAME OVERLAY] Plugin destroyed', 'info');
     }
 }
 

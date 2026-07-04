@@ -1,4 +1,4 @@
-﻿const {
+const {
   ConversationCoordinator
 } = require('../plugins/sidekick/backend/conversation-coordinator');
 
@@ -112,15 +112,15 @@ describe('Sidekick conversation coordinator', () => {
       hostContextCooldownMs: 6000
     });
 
-    coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 1000 });
-    expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 5000 })).toEqual(expect.objectContaining({
+    coordinator.shouldAcceptHostSpeech('Kannst du mich hören?', { now: 1000 });
+    expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hören?', { now: 5000 })).toEqual(expect.objectContaining({
       accept: false,
       reason: 'active_pause'
     }));
     const originalRandom = Math.random;
     Math.random = () => 0;
     try {
-      expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hÃ¶ren?', { now: 12000 })).toEqual(expect.objectContaining({
+      expect(coordinator.shouldAcceptHostSpeech('Kannst du mich hören?', { now: 12000 })).toEqual(expect.objectContaining({
         accept: true,
         reason: 'accepted'
       }));

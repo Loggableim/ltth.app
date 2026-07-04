@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | ltth.app</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --link: #60a5fa;
+            --rule: #334155;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: radial-gradient(circle at top, #1e293b, #0f172a 45%, #020617 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .card {
+            width: min(880px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--rule);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+        }
+        h1 { margin-top: 0; }
+        h2 { margin-top: 1.5rem; }
+        a { color: var(--link); }
+        ul { line-height: 1.7; }
+        .muted { color: var(--muted); }
+        .updated { margin-bottom: 1.5rem; color: var(--muted); }
+        .pill {
+            display: inline-block;
+            font-size: 0.82rem;
+            border: 1px solid var(--rule);
+            border-radius: 999px;
+            padding: 0.25rem 0.75rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.6rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="pill">Last updated: 2026-07-04</div>
+        <h1>Privacy Policy</h1>
+        <p class="updated">ltth.app is primarily a local streaming helper with data processed on your machine.</p>
+
+        <h2>1) Data We Collect</h2>
+        <ul>
+            <li>Stream-related settings and local config files.</li>
+            <li>Plugin settings and event logs generated during your usage.</li>
+            <li>Optional logs, backups and sync files.</li>
+        </ul>
+
+        <h2>2) Optional Cloud Sync</h2>
+        <p>
+            If enabled, user-controlled folder sync is used (for example OneDrive/Google Drive/Dropbox-style folders).
+            We sync only the files your chosen path contains. Your sync provider is configured by you.
+        </p>
+
+        <h2>3) Third-Party Services</h2>
+        <ul>
+            <li>Some integrations depend on TikTok-related endpoints and plugin providers.</li>
+            <li>Credentials/session material is handled only as required by each integration.</li>
+            <li>External services may process data under their own privacy policies.</li>
+        </ul>
+
+        <h2>4) Cookies and Analytics</h2>
+        <p>No ad-tracking framework is bundled for website-style analytics in normal use.</p>
+
+        <h2>5) Your Rights</h2>
+        <p>
+            You can remove local data by deleting local profiles, logs, and backups from your app directories.
+            If you enabled sync, remove synced copies from your sync location as needed.
+        </p>
+
+        <h2>6) Contact</h2>
+        <p>
+            Privacy questions: <a href="mailto:loggableim@gmail.com">loggableim@gmail.com</a><br>
+            Issues: <a href="https://github.com/Loggableim/ltth.app/issues">GitHub Issues</a>
+        </p>
+    </main>
+</body>
+</html>

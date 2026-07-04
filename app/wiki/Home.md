@@ -1,4 +1,4 @@
-﻿# ðŸ  Home / Startseite / Inicio / Accueil
+# 🏠 Home / Startseite / Inicio / Accueil
 
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
@@ -11,8 +11,8 @@
 
 - [🇬🇧 English](#english)
 - [🇩🇪 Deutsch](#deutsch)
-- [🇪🇸 Español](#español)
-- [🇫🇷 Français](#français)
+- [🇪🇸 Español](#espanol)
+- [🇫🇷 Français](#francais)
 
 ---
 
@@ -28,20 +28,20 @@ This is a free, open-source tool for professional TikTok LIVE streaming with com
 - [Plugin List](Plugin-Liste.md#english)
 - [FAQ](FAQ-&-Troubleshooting.md#english)
 
-### ðŸŽ¯ About the Project
+### 🎯 About the Project
 
 **PupCid's Little TikTool Helper** is a professional open-source tool for TikTok-compatible LIVE streaming with extensive features for content creators. The tool provides complete integration of TikTok LIVE events into OBS Studio with overlays, alerts, text-to-speech, soundboard, and event automation.
 
-### âœ¨ Key Features
+### ✨ Key Features
 
-- **ðŸ”’ 100% Local** - No cloud services, no login required
-- **ðŸŽ¨ Professional Overlays** - Full-HD browser sources for OBS Studio
-- **ðŸ”Œ Modular Plugin System** - Easily extensible through plugins
-- **ðŸŒ Multi-Language** - German and English user interface
-- **âš¡ Real-time Updates** - WebSocket-based live communication
-- **ðŸŽ­ Event Automation** - If-then rules without code
+- **🔒 100% Local** - No cloud services, no login required
+- **🎨 Professional Overlays** - Full-HD browser sources for OBS Studio
+- **🔌 Modular Plugin System** - Easily extensible through plugins
+- **🌍 Multi-Language** - German and English user interface
+- **⚡ Real-time Updates** - WebSocket-based live communication
+- **🎭 Event Automation** - If-then rules without code
 
-### ðŸŽ¤ Who is this tool for?
+### 🎤 Who is this tool for?
 
 - **TikTok LIVE Streamers** - Professional overlays and alerts
 - **Content Creators** - Event automation and interactivity
@@ -49,71 +49,71 @@ This is a free, open-source tool for professional TikTok LIVE streaming with com
 - **Multi-Guest Streamers** - VDO.Ninja integration for interviews
 - **Developers** - Modular plugin system for extension
 
-### ðŸš€ Main Features
+### 🚀 Main Features
 
 #### 1. TikTok LIVE Integration
 
 Real-time connection to TikTok LIVE streams with all events:
 
-- âœ… **Gifts** - Gifts with coins, combo tracking, gift catalog
-- âœ… **Chat** - Messages with profile pictures and badges
-- âœ… **Follows** - New followers with follow-role tracking
-- âœ… **Shares** - Stream shares with user information
-- âœ… **Likes** - Like events with like counts
-- âœ… **Subscriptions** - Subscribers with tier levels
+- ✅ **Gifts** - Gifts with coins, combo tracking, gift catalog
+- ✅ **Chat** - Messages with profile pictures and badges
+- ✅ **Follows** - New followers with follow-role tracking
+- ✅ **Shares** - Stream shares with user information
+- ✅ **Likes** - Like events with like counts
+- ✅ **Subscriptions** - Subscribers with tier levels
 
 #### 2. Text-to-Speech (TTS)
 
 Professional TTS system with 100+ voices:
 
-- ðŸŽ™ï¸ **75+ TikTok Voices** - Free, no API keys required
-- ðŸŽ™ï¸ **30+ Google Cloud Voices** - Optional with API key
-- ðŸ‘¤ **User Voice Mappings** - Users get their own voices assigned
-- ðŸ“ **Auto-TTS for Chat** - Automatic reading of chat messages
-- ðŸš« **Blacklist Filter** - Exclude words/users
-- ðŸŽšï¸ **Volume & Speed** - Adjust volume and speed
+- 🎙️ **75+ TikTok Voices** - Free, no API keys required
+- 🎙️ **30+ Google Cloud Voices** - Optional with API key
+- 👤 **User Voice Mappings** - Users get their own voices assigned
+- 📝 **Auto-TTS for Chat** - Automatic reading of chat messages
+- 🚫 **Blacklist Filter** - Exclude words/users
+- 🎚️ **Volume & Speed** - Adjust volume and speed
 
 #### 3. Alert System
 
 Customizable alerts for all TikTok events:
 
-- ðŸ”Š **Sound + Text + Animation** - Fully configurable alerts
-- ðŸ–¼ï¸ **Images & GIFs** - Custom alert graphics
-- â±ï¸ **Duration Control** - Set alert display duration
-- ðŸŽ¨ **Custom Templates** - Placeholders like `{username}`, `{giftName}`, `{coins}`
-- ðŸ§ª **Test Mode** - Test alerts before the stream
+- 🔊 **Sound + Text + Animation** - Fully configurable alerts
+- 🖼️ **Images & GIFs** - Custom alert graphics
+- ⏱️ **Duration Control** - Set alert display duration
+- 🎨 **Custom Templates** - Placeholders like `{username}`, `{giftName}`, `{coins}`
+- 🧪 **Test Mode** - Test alerts before the stream
 
 #### 4. Soundboard
 
 100,000+ sounds with gift mapping:
 
-- ðŸ” **MyInstants Integration** - Access to huge sound library
-- ðŸŽ **Gift-to-Sound Mapping** - Rose â†’ Sound A, Lion â†’ Sound B
-- ðŸŽµ **Event Sounds** - Sounds for Follow, Subscribe, Share
-- âš¡ **Like Threshold System** - Trigger sounds at X likes
-- ðŸ“¦ **Custom Upload** - Upload your own MP3s
-- â­ **Favorites & Trending** - Organize sounds
+- 🔍 **MyInstants Integration** - Access to huge sound library
+- 🎁 **Gift-to-Sound Mapping** - Rose → Sound A, Lion → Sound B
+- 🎵 **Event Sounds** - Sounds for Follow, Subscribe, Share
+- ⚡ **Like Threshold System** - Trigger sounds at X likes
+- 📦 **Custom Upload** - Upload your own MP3s
+- ⭐ **Favorites & Trending** - Organize sounds
 
 #### 5. Goals & Progress Bars
 
 4 separate goals with browser source overlays:
 
-- ðŸ“Š **Likes Goal** - Like goal with progress bar
-- ðŸ‘¥ **Followers Goal** - Follower goal with tracking
-- ðŸ’Ž **Subscriptions Goal** - Subscriber goal
-- ðŸª™ **Coins Goal** - Coin goal (donations)
-- ðŸŽ¨ **Custom Styles** - Customize colors, gradients, labels
-- âž• **Add/Set/Increment** - Flexible mode selection
+- 📊 **Likes Goal** - Like goal with progress bar
+- 👥 **Followers Goal** - Follower goal with tracking
+- 💎 **Subscriptions Goal** - Subscriber goal
+- 🪙 **Coins Goal** - Coin goal (donations)
+- 🎨 **Custom Styles** - Customize colors, gradients, labels
+- ➕ **Add/Set/Increment** - Flexible mode selection
 
 #### 6. Event Automation (Flows)
 
 "If-then" automations without code:
 
-- ðŸ”— **Triggers** - Gift, Chat, Follow, Subscribe, Share, Like
-- âš™ï¸ **Conditions** - Conditions with operators (==, !=, >=, <=, contains)
-- âš¡ **Actions** - TTS, Alert, OBS Scene, OSC, HTTP Request, Delay
-- ðŸ§© **Multi-Step** - Multiple actions in sequence
-- âœ… **Test Mode** - Test flows before the stream
+- 🔗 **Triggers** - Gift, Chat, Follow, Subscribe, Share, Like
+- ⚙️ **Conditions** - Conditions with operators (==, !=, >=, <=, contains)
+- ⚡ **Actions** - TTS, Alert, OBS Scene, OSC, HTTP Request, Delay
+- 🧩 **Multi-Step** - Multiple actions in sequence
+- ✅ **Test Mode** - Test flows before the stream
 
 **Example Flow:**
 ```
@@ -124,7 +124,7 @@ Actions:
   3. OSC: Wave gesture in VRChat
 ```
 
-### ðŸ’» Technology Stack
+### 💻 Technology Stack
 
 | Category | Technology | Version |
 |----------|------------|---------|
@@ -139,7 +139,7 @@ Actions:
 | **Frontend** | Bootstrap 5 | 5.3 |
 | **Icons** | Font Awesome | 6.x |
 
-### âš¡ Quick Start
+### ⚡ Quick Start
 
 1. Install Node.js 18-23
 2. Clone repository: `git clone https://github.com/Loggableim/ltth.app.git`
@@ -149,15 +149,15 @@ Actions:
 6. Open dashboard: `http://localhost:3000/dashboard.html`
 6. Connect to TikTok LIVE with your username
 
-**Done!** ðŸŽ‰ All events are now displayed live.
+**Done!** 🎉 All events are now displayed live.
 
-### ðŸ“„ License
+### 📄 License
 
 This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
 
 ---
 
-*Last updated: 2026-04-28*  
+*Last updated: 2026-04-28*
 *Version: 1.3.3*
 
 ---
@@ -166,7 +166,7 @@ This project is licensed under the **Creative Commons Attribution-NonCommercial 
 
 Willkommen bei **PupCid's Little TikTool Helper**!
 
-Dies ist ein kostenloses Open-Source-Tool fÃ¼r professionelles TikTok LIVE-Streaming mit umfangreichen Features fÃ¼r Content-Creator.
+Dies ist ein kostenloses Open-Source-Tool für professionelles TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator.
 
 ### Schnellzugriff
 - [Erste Schritte](Getting-Started.md#deutsch)
@@ -174,103 +174,103 @@ Dies ist ein kostenloses Open-Source-Tool fÃ¼r professionelles TikTok LIVE-Str
 - [Plugin-Liste](Plugin-Liste.md#deutsch)
 - [FAQ](FAQ-&-Troubleshooting.md#deutsch)
 
-### ðŸŽ¯ Ãœber das Projekt
+### 🎯 Über das Projekt
 
-**PupCid's Little TikTool Helper** ist ein professionelles Open-Source-Tool fÃ¼r TikTok-kompatibles LIVE-Streaming mit umfangreichen Features fÃ¼r Content-Creator. Das Tool bietet eine vollstÃ¤ndige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.
+**PupCid's Little TikTool Helper** ist ein professionelles Open-Source-Tool für TikTok-kompatibles LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.
 
-### âœ¨ Besonderheiten
+### ✨ Besonderheiten
 
-- **ðŸ”’ 100% Lokal** - Keine Cloud-Services, keine Login-Daten erforderlich
-- **ðŸŽ¨ Professionelle Overlays** - Full-HD Browser Sources fÃ¼r OBS Studio
-- **ðŸ”Œ Modulares Plugin-System** - Einfach erweiterbar durch Plugins
-- **ðŸŒ Multi-Sprachen** - Deutsche und englische BenutzeroberflÃ¤che
-- **âš¡ Echtzeit-Updates** - WebSocket-basierte Live-Kommunikation
-- **ðŸŽ­ Event-Automation** - Wenn-Dann-Regeln ohne Code
+- **🔒 100% Lokal** - Keine Cloud-Services, keine Login-Daten erforderlich
+- **🎨 Professionelle Overlays** - Full-HD Browser Sources für OBS Studio
+- **🔌 Modulares Plugin-System** - Einfach erweiterbar durch Plugins
+- **🌍 Multi-Sprachen** - Deutsche und englische Benutzeroberfläche
+- **⚡ Echtzeit-Updates** - WebSocket-basierte Live-Kommunikation
+- **🎭 Event-Automation** - Wenn-Dann-Regeln ohne Code
 
-### ðŸŽ¤ FÃ¼r wen ist das Tool geeignet?
+### 🎤 Für wen ist das Tool geeignet?
 
 - **TikTok LIVE Streamer** - Professionelle Overlays und Alerts
-- **Content Creator** - Event-Automatisierung und InteraktivitÃ¤t
-- **VRChat Streamer** - OSC-Integration fÃ¼r Avatar-Steuerung
-- **Multi-Guest Streamer** - VDO.Ninja Integration fÃ¼r Interviews
+- **Content Creator** - Event-Automatisierung und Interaktivität
+- **VRChat Streamer** - OSC-Integration für Avatar-Steuerung
+- **Multi-Guest Streamer** - VDO.Ninja Integration für Interviews
 - **Entwickler** - Modulares Plugin-System zum Erweitern
 
-### ðŸš€ Hauptfunktionen
+### 🚀 Hauptfunktionen
 
 #### 1. TikTok LIVE Integration
 
 Echtzeit-Verbindung zu TikTok LIVE-Streams mit allen Events:
 
-- âœ… **Gifts** - Geschenke mit Coins, Combo-Tracking, Gift-Katalog
-- âœ… **Chat** - Nachrichten mit Profilbildern und Badges
-- âœ… **Follows** - Neue Follower mit Follow-Role-Tracking
-- âœ… **Shares** - Stream-Shares mit Nutzerinformationen
-- âœ… **Likes** - Like-Events mit Like-Counts
-- âœ… **Subscriptions** - Subscriber mit Tier-Levels
+- ✅ **Gifts** - Geschenke mit Coins, Combo-Tracking, Gift-Katalog
+- ✅ **Chat** - Nachrichten mit Profilbildern und Badges
+- ✅ **Follows** - Neue Follower mit Follow-Role-Tracking
+- ✅ **Shares** - Stream-Shares mit Nutzerinformationen
+- ✅ **Likes** - Like-Events mit Like-Counts
+- ✅ **Subscriptions** - Subscriber mit Tier-Levels
 
 #### 2. Text-to-Speech (TTS)
 
 Professionelles TTS-System mit 100+ Stimmen:
 
-- ðŸŽ™ï¸ **75+ TikTok-Stimmen** - Kostenlos, keine API-Keys erforderlich
-- ðŸŽ™ï¸ **30+ Google Cloud-Stimmen** - Optional mit API-Key
-- ðŸ‘¤ **User-Voice-Mappings** - Nutzer bekommen eigene Stimmen zugewiesen
-- ðŸ“ **Auto-TTS fÃ¼r Chat** - Automatisches Vorlesen von Chat-Nachrichten
-- ðŸš« **Blacklist-Filter** - WÃ¶rter/Nutzer ausschlieÃŸen
-- ðŸŽšï¸ **Volume & Speed** - LautstÃ¤rke und Geschwindigkeit anpassen
+- 🎙️ **75+ TikTok-Stimmen** - Kostenlos, keine API-Keys erforderlich
+- 🎙️ **30+ Google Cloud-Stimmen** - Optional mit API-Key
+- 👤 **User-Voice-Mappings** - Nutzer bekommen eigene Stimmen zugewiesen
+- 📝 **Auto-TTS für Chat** - Automatisches Vorlesen von Chat-Nachrichten
+- 🚫 **Blacklist-Filter** - Wörter/Nutzer ausschließen
+- 🎚️ **Volume & Speed** - Lautstärke und Geschwindigkeit anpassen
 
 #### 3. Alert-System
 
-Anpassbare Alerts fÃ¼r alle TikTok-Events:
+Anpassbare Alerts für alle TikTok-Events:
 
-- ðŸ”Š **Sound + Text + Animation** - VollstÃ¤ndig konfigurierbare Alerts
-- ðŸ–¼ï¸ **Bilder & GIFs** - Custom Alert-Graphics
-- â±ï¸ **Dauer-Kontrolle** - Alert-Display-Dauer einstellen
-- ðŸŽ¨ **Custom Templates** - Platzhalter wie `{username}`, `{giftName}`, `{coins}`
-- ðŸ§ª **Test-Modus** - Alerts vor dem Stream testen
+- 🔊 **Sound + Text + Animation** - Vollständig konfigurierbare Alerts
+- 🖼️ **Bilder & GIFs** - Custom Alert-Graphics
+- ⏱️ **Dauer-Kontrolle** - Alert-Display-Dauer einstellen
+- 🎨 **Custom Templates** - Platzhalter wie `{username}`, `{giftName}`, `{coins}`
+- 🧪 **Test-Modus** - Alerts vor dem Stream testen
 
 #### 4. Soundboard
 
 100.000+ Sounds mit Gift-Mapping:
 
-- ðŸ” **MyInstants-Integration** - Zugriff auf riesige Sound-Library
-- ðŸŽ **Gift-zu-Sound-Mapping** - Rose â†’ Sound A, Lion â†’ Sound B
-- ðŸŽµ **Event-Sounds** - Sounds fÃ¼r Follow, Subscribe, Share
-- âš¡ **Like-Threshold-System** - Sounds ab X Likes triggern
-- ðŸ“¦ **Custom Upload** - Eigene MP3s hochladen
-- â­ **Favorites & Trending** - Sounds organisieren
+- 🔍 **MyInstants-Integration** - Zugriff auf riesige Sound-Library
+- 🎁 **Gift-zu-Sound-Mapping** - Rose → Sound A, Lion → Sound B
+- 🎵 **Event-Sounds** - Sounds für Follow, Subscribe, Share
+- ⚡ **Like-Threshold-System** - Sounds ab X Likes triggern
+- 📦 **Custom Upload** - Eigene MP3s hochladen
+- ⭐ **Favorites & Trending** - Sounds organisieren
 
 #### 5. Goals & Progress Bars
 
 4 separate Goals mit Browser-Source-Overlays:
 
-- ðŸ“Š **Likes Goal** - Like-Ziel mit Progress-Bar
-- ðŸ‘¥ **Followers Goal** - Follower-Ziel mit Tracking
-- ðŸ’Ž **Subscriptions Goal** - Subscriber-Ziel
-- ðŸª™ **Coins Goal** - Coin-Ziel (Donations)
-- ðŸŽ¨ **Custom Styles** - Farben, Gradient, Labels anpassen
-- âž• **Add/Set/Increment** - Flexible Modus-Auswahl
+- 📊 **Likes Goal** - Like-Ziel mit Progress-Bar
+- 👥 **Followers Goal** - Follower-Ziel mit Tracking
+- 💎 **Subscriptions Goal** - Subscriber-Ziel
+- 🪙 **Coins Goal** - Coin-Ziel (Donations)
+- 🎨 **Custom Styles** - Farben, Gradient, Labels anpassen
+- ➕ **Add/Set/Increment** - Flexible Modus-Auswahl
 
 #### 6. Event-Automation (Flows)
 
 "Wenn-Dann"-Automatisierungen ohne Code:
 
-- ðŸ”— **Trigger** - Gift, Chat, Follow, Subscribe, Share, Like
-- âš™ï¸ **Conditions** - Bedingungen mit Operatoren (==, !=, >=, <=, contains)
-- âš¡ **Actions** - TTS, Alert, OBS-Szene, OSC, HTTP-Request, Delay
-- ðŸ§© **Multi-Step** - Mehrere Actions hintereinander
-- âœ… **Test-Modus** - Flows vor dem Stream testen
+- 🔗 **Trigger** - Gift, Chat, Follow, Subscribe, Share, Like
+- ⚙️ **Conditions** - Bedingungen mit Operatoren (==, !=, >=, <=, contains)
+- ⚡ **Actions** - TTS, Alert, OBS-Szene, OSC, HTTP-Request, Delay
+- 🧩 **Multi-Step** - Mehrere Actions hintereinander
+- ✅ **Test-Modus** - Flows vor dem Stream testen
 
 **Beispiel-Flow:**
 ```
 Trigger: Gift == "Rose"
 Actions:
-  1. TTS: "Danke {username} fÃ¼r die Rose!"
+  1. TTS: "Danke {username} für die Rose!"
   2. OBS-Szene wechseln zu "Cam2"
   3. OSC: Wave-Geste in VRChat
 ```
 
-### ðŸ’» Technologie-Stack
+### 💻 Technologie-Stack
 
 | Kategorie | Technologie | Version |
 |-----------|-------------|---------|
@@ -285,153 +285,153 @@ Actions:
 | **Frontend** | Bootstrap 5 | 5.3 |
 | **Icons** | Font Awesome | 6.x |
 
-### âš¡ Quick Start
+### ⚡ Quick Start
 
 1. Node.js 18-23 installieren
 2. Repository klonen: `git clone https://github.com/Loggableim/ltth.app.git`
 3. In den Runtime-Ordner wechseln: `cd app`
 4. Dependencies installieren: `npm install`
 5. Server starten: `npm start`
-6. Dashboard Ã¶ffnen: `http://localhost:3000/dashboard.html`
+6. Dashboard öffnen: `http://localhost:3000/dashboard.html`
 6. Mit TikTok LIVE verbinden (Username eingeben)
 
-**Fertig!** ðŸŽ‰ Alle Events werden jetzt live angezeigt.
+**Fertig!** 🎉 Alle Events werden jetzt live angezeigt.
 
-### ðŸ“„ Lizenz
+### 📄 Lizenz
 
 Dieses Projekt ist unter der **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** Lizenz lizenziert.
 
 ---
 
-*Letzte Aktualisierung: 2026-04-28*  
+*Letzte Aktualisierung: 2026-04-28*
 *Version: 1.3.3*
 
 ---
 
 ## 🇪🇸 Español
 
-Â¡Bienvenido a **PupCid's Little TikTool Helper**!
+¡Bienvenido a **PupCid's Little TikTool Helper**!
 
-Esta es una herramienta gratuita y de cÃ³digo abierto para transmisiones profesionales en TikTok LIVE con caracterÃ­sticas completas para creadores de contenido.
+Esta es una herramienta gratuita y de código abierto para transmisiones profesionales en TikTok LIVE con características completas para creadores de contenido.
 
-### Enlaces RÃ¡pidos
-- [Primeros Pasos](Getting-Started.md#espaÃ±ol)
-- [InstalaciÃ³n](Installation-&-Setup.md#espaÃ±ol)
-- [Lista de Plugins](Plugin-Liste.md#espaÃ±ol)
-- [FAQ](FAQ-&-Troubleshooting.md#espaÃ±ol)
+### Enlaces Rápidos
+- [Primeros Pasos](Getting-Started.md#español)
+- [Instalación](Installation-&-Setup.md#español)
+- [Lista de Plugins](Plugin-Liste.md#español)
+- [FAQ](FAQ-&-Troubleshooting.md#español)
 
-### ðŸŽ¯ Sobre el Proyecto
+### 🎯 Sobre el Proyecto
 
-**PupCid's Little TikTool Helper** es una herramienta profesional de cÃ³digo abierto para transmisiones LIVE compatibles con TikTok con caracterÃ­sticas extensas para creadores de contenido. La herramienta proporciona integraciÃ³n completa de eventos LIVE de TikTok en OBS Studio con overlays, alertas, text-to-speech, soundboard y automatizaciÃ³n de eventos.
+**PupCid's Little TikTool Helper** es una herramienta profesional de código abierto para transmisiones LIVE compatibles con TikTok con características extensas para creadores de contenido. La herramienta proporciona integración completa de eventos LIVE de TikTok en OBS Studio con overlays, alertas, text-to-speech, soundboard y automatización de eventos.
 
-### âœ¨ CaracterÃ­sticas Clave
+### ✨ Características Clave
 
-- **ðŸ”’ 100% Local** - Sin servicios en la nube, sin inicio de sesiÃ³n requerido
-- **ðŸŽ¨ Overlays Profesionales** - Fuentes de navegador Full-HD para OBS Studio
-- **ðŸ”Œ Sistema de Plugins Modular** - FÃ¡cilmente extensible a travÃ©s de plugins
-- **ðŸŒ Multi-idioma** - Interfaz de usuario en alemÃ¡n e inglÃ©s
-- **âš¡ Actualizaciones en Tiempo Real** - ComunicaciÃ³n en vivo basada en WebSocket
-- **ðŸŽ­ AutomatizaciÃ³n de Eventos** - Reglas "si-entonces" sin cÃ³digo
+- **🔒 100% Local** - Sin servicios en la nube, sin inicio de sesión requerido
+- **🎨 Overlays Profesionales** - Fuentes de navegador Full-HD para OBS Studio
+- **🔌 Sistema de Plugins Modular** - Fácilmente extensible a través de plugins
+- **🌍 Multi-idioma** - Interfaz de usuario en alemán e inglés
+- **⚡ Actualizaciones en Tiempo Real** - Comunicación en vivo basada en WebSocket
+- **🎭 Automatización de Eventos** - Reglas "si-entonces" sin código
 
-### ðŸŽ¤ Â¿Para quiÃ©n es esta herramienta?
+### 🎤 ¿Para quién es esta herramienta?
 
 - **Streamers de TikTok LIVE** - Overlays y alertas profesionales
-- **Creadores de Contenido** - AutomatizaciÃ³n de eventos e interactividad
-- **Streamers de VRChat** - IntegraciÃ³n OSC para control de avatar
-- **Streamers Multi-invitados** - IntegraciÃ³n VDO.Ninja para entrevistas
-- **Desarrolladores** - Sistema de plugins modular para extensiÃ³n
+- **Creadores de Contenido** - Automatización de eventos e interactividad
+- **Streamers de VRChat** - Integración OSC para control de avatar
+- **Streamers Multi-invitados** - Integración VDO.Ninja para entrevistas
+- **Desarrolladores** - Sistema de plugins modular para extensión
 
-### ðŸš€ Funciones Principales
+### 🚀 Funciones Principales
 
-#### 1. IntegraciÃ³n TikTok LIVE
+#### 1. Integración TikTok LIVE
 
-ConexiÃ³n en tiempo real a transmisiones LIVE de TikTok con todos los eventos:
+Conexión en tiempo real a transmisiones LIVE de TikTok con todos los eventos:
 
-- âœ… **Regalos** - Regalos con monedas, seguimiento de combos, catÃ¡logo de regalos
-- âœ… **Chat** - Mensajes con fotos de perfil e insignias
-- âœ… **Seguidores** - Nuevos seguidores con seguimiento de roles
-- âœ… **Compartidos** - Compartidos de transmisiÃ³n con informaciÃ³n del usuario
-- âœ… **Me gusta** - Eventos de me gusta con conteo
-- âœ… **Suscripciones** - Suscriptores con niveles
+- ✅ **Regalos** - Regalos con monedas, seguimiento de combos, catálogo de regalos
+- ✅ **Chat** - Mensajes con fotos de perfil e insignias
+- ✅ **Seguidores** - Nuevos seguidores con seguimiento de roles
+- ✅ **Compartidos** - Compartidos de transmisión con información del usuario
+- ✅ **Me gusta** - Eventos de me gusta con conteo
+- ✅ **Suscripciones** - Suscriptores con niveles
 
 #### 2. Text-to-Speech (TTS)
 
-Sistema TTS profesional con mÃ¡s de 100 voces:
+Sistema TTS profesional con más de 100 voces:
 
-- ðŸŽ™ï¸ **75+ Voces de TikTok** - Gratis, no se requieren claves API
-- ðŸŽ™ï¸ **30+ Voces de Google Cloud** - Opcional con clave API
-- ðŸ‘¤ **Mapeo de Voces de Usuario** - Los usuarios obtienen sus propias voces asignadas
-- ðŸ“ **Auto-TTS para Chat** - Lectura automÃ¡tica de mensajes de chat
-- ðŸš« **Filtro de Lista Negra** - Excluir palabras/usuarios
-- ðŸŽšï¸ **Volumen y Velocidad** - Ajustar volumen y velocidad
+- 🎙️ **75+ Voces de TikTok** - Gratis, no se requieren claves API
+- 🎙️ **30+ Voces de Google Cloud** - Opcional con clave API
+- 👤 **Mapeo de Voces de Usuario** - Los usuarios obtienen sus propias voces asignadas
+- 📝 **Auto-TTS para Chat** - Lectura automática de mensajes de chat
+- 🚫 **Filtro de Lista Negra** - Excluir palabras/usuarios
+- 🎚️ **Volumen y Velocidad** - Ajustar volumen y velocidad
 
 #### 3. Sistema de Alertas
 
 Alertas personalizables para todos los eventos de TikTok:
 
-- ðŸ”Š **Sonido + Texto + AnimaciÃ³n** - Alertas completamente configurables
-- ðŸ–¼ï¸ **ImÃ¡genes y GIFs** - GrÃ¡ficos de alerta personalizados
-- â±ï¸ **Control de DuraciÃ³n** - Establecer duraciÃ³n de visualizaciÃ³n de alerta
-- ðŸŽ¨ **Plantillas Personalizadas** - Marcadores como `{username}`, `{giftName}`, `{coins}`
-- ðŸ§ª **Modo de Prueba** - Probar alertas antes de la transmisiÃ³n
+- 🔊 **Sonido + Texto + Animación** - Alertas completamente configurables
+- 🖼️ **Imágenes y GIFs** - Gráficos de alerta personalizados
+- ⏱️ **Control de Duración** - Establecer duración de visualización de alerta
+- 🎨 **Plantillas Personalizadas** - Marcadores como `{username}`, `{giftName}`, `{coins}`
+- 🧪 **Modo de Prueba** - Probar alertas antes de la transmisión
 
 #### 4. Soundboard
 
-MÃ¡s de 100,000 sonidos con mapeo de regalos:
+Más de 100,000 sonidos con mapeo de regalos:
 
-- ðŸ” **IntegraciÃ³n MyInstants** - Acceso a una enorme biblioteca de sonidos
-- ðŸŽ **Mapeo de Regalo-a-Sonido** - Rosa â†’ Sonido A, LeÃ³n â†’ Sonido B
-- ðŸŽµ **Sonidos de Eventos** - Sonidos para Follow, Subscribe, Share
-- âš¡ **Sistema de Umbral de Me gusta** - Activar sonidos en X me gusta
-- ðŸ“¦ **Carga Personalizada** - Subir tus propios MP3s
-- â­ **Favoritos y Tendencias** - Organizar sonidos
+- 🔍 **Integración MyInstants** - Acceso a una enorme biblioteca de sonidos
+- 🎁 **Mapeo de Regalo-a-Sonido** - Rosa → Sonido A, León → Sonido B
+- 🎵 **Sonidos de Eventos** - Sonidos para Follow, Subscribe, Share
+- ⚡ **Sistema de Umbral de Me gusta** - Activar sonidos en X me gusta
+- 📦 **Carga Personalizada** - Subir tus propios MP3s
+- ⭐ **Favoritos y Tendencias** - Organizar sonidos
 
 #### 5. Objetivos y Barras de Progreso
 
 4 objetivos separados con overlays de fuente de navegador:
 
-- ðŸ“Š **Objetivo de Me gusta** - Objetivo de me gusta con barra de progreso
-- ðŸ‘¥ **Objetivo de Seguidores** - Objetivo de seguidores con seguimiento
-- ðŸ’Ž **Objetivo de Suscripciones** - Objetivo de suscriptores
-- ðŸª™ **Objetivo de Monedas** - Objetivo de monedas (donaciones)
-- ðŸŽ¨ **Estilos Personalizados** - Personalizar colores, gradientes, etiquetas
-- âž• **Agregar/Establecer/Incrementar** - SelecciÃ³n de modo flexible
+- 📊 **Objetivo de Me gusta** - Objetivo de me gusta con barra de progreso
+- 👥 **Objetivo de Seguidores** - Objetivo de seguidores con seguimiento
+- 💎 **Objetivo de Suscripciones** - Objetivo de suscriptores
+- 🪙 **Objetivo de Monedas** - Objetivo de monedas (donaciones)
+- 🎨 **Estilos Personalizados** - Personalizar colores, gradientes, etiquetas
+- ➕ **Agregar/Establecer/Incrementar** - Selección de modo flexible
 
-#### 6. AutomatizaciÃ³n de Eventos (Flows)
+#### 6. Automatización de Eventos (Flows)
 
-Automatizaciones "si-entonces" sin cÃ³digo:
+Automatizaciones "si-entonces" sin código:
 
-- ðŸ”— **Activadores** - Regalo, Chat, Seguir, Suscribir, Compartir, Me gusta
-- âš™ï¸ **Condiciones** - Condiciones con operadores (==, !=, >=, <=, contains)
-- âš¡ **Acciones** - TTS, Alerta, Escena OBS, OSC, Solicitud HTTP, Retraso
-- ðŸ§© **Multi-Paso** - MÃºltiples acciones en secuencia
-- âœ… **Modo de Prueba** - Probar flows antes de la transmisiÃ³n
+- 🔗 **Activadores** - Regalo, Chat, Seguir, Suscribir, Compartir, Me gusta
+- ⚙️ **Condiciones** - Condiciones con operadores (==, !=, >=, <=, contains)
+- ⚡ **Acciones** - TTS, Alerta, Escena OBS, OSC, Solicitud HTTP, Retraso
+- 🧩 **Multi-Paso** - Múltiples acciones en secuencia
+- ✅ **Modo de Prueba** - Probar flows antes de la transmisión
 
 **Ejemplo de Flow:**
 ```
 Activador: Regalo == "Rose"
 Acciones:
-  1. TTS: "Â¡Gracias {username} por la Rosa!"
+  1. TTS: "¡Gracias {username} por la Rosa!"
   2. Escena OBS: Cambiar a "Cam2"
   3. OSC: Gesto de saludo en VRChat
 ```
 
-### ðŸ’» Stack TecnolÃ³gico
+### 💻 Stack Tecnológico
 
-| CategorÃ­a | TecnologÃ­a | VersiÃ³n |
+| Categoría | Tecnología | Versión |
 |-----------|------------|---------|
 | **Backend** | Node.js | >=18.0.0 <25.0.0 |
 | **Framework Web** | Express | ^4.18.2 |
 | **Tiempo Real** | Socket.io | ^4.6.1 |
 | **Base de Datos** | SQLite (better-sqlite3) | ^11.9.0 |
 | **API TikTok** | Eulerstream SDK / Adaptador TikFinity | adaptadores de app |
-| **IntegraciÃ³n OBS** | obs-websocket-js | ^5.0.6 |
+| **Integración OBS** | obs-websocket-js | ^5.0.6 |
 | **Protocolo OSC** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |
 | **Frontend** | Bootstrap 5 | 5.3 |
 | **Iconos** | Font Awesome | 6.x |
 
-### âš¡ Inicio RÃ¡pido
+### ⚡ Inicio Rápido
 
 1. Instalar Node.js 18-23
 2. Clonar repositorio: `git clone https://github.com/Loggableim/ltth.app.git`
@@ -441,16 +441,16 @@ Acciones:
 6. Abrir dashboard: `http://localhost:3000/dashboard.html`
 6. Conectar a TikTok LIVE con tu nombre de usuario
 
-**Â¡Listo!** ðŸŽ‰ Todos los eventos se muestran ahora en vivo.
+**¡Listo!** 🎉 Todos los eventos se muestran ahora en vivo.
 
-### ðŸ“„ Licencia
+### 📄 Licencia
 
-Este proyecto estÃ¡ licenciado bajo la licencia **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**.
+Este proyecto está licenciado bajo la licencia **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**.
 
 ---
 
-*Ãšltima actualizaciÃ³n: 2026-04-28*  
-*VersiÃ³n: 1.3.3*
+*Última actualización: 2026-04-28*
+*Versión: 1.3.3*
 
 ---
 
@@ -458,142 +458,142 @@ Este proyecto estÃ¡ licenciado bajo la licencia **Creative Commons Attribution
 
 Bienvenue sur **PupCid's Little TikTool Helper** !
 
-Il s'agit d'un outil gratuit et open source pour le streaming professionnel TikTok LIVE avec des fonctionnalitÃ©s complÃ¨tes pour les crÃ©ateurs de contenu.
+Il s'agit d'un outil gratuit et open source pour le streaming professionnel TikTok LIVE avec des fonctionnalités complètes pour les créateurs de contenu.
 
 ### Liens Rapides
-- [DÃ©marrage](Getting-Started.md#franÃ§ais)
-- [Installation](Installation-&-Setup.md#franÃ§ais)
-- [Liste des Plugins](Plugin-Liste.md#franÃ§ais)
-- [FAQ](FAQ-&-Troubleshooting.md#franÃ§ais)
+- [Démarrage](Getting-Started.md#français)
+- [Installation](Installation-&-Setup.md#français)
+- [Liste des Plugins](Plugin-Liste.md#français)
+- [FAQ](FAQ-&-Troubleshooting.md#français)
 
-### ðŸŽ¯ Ã€ Propos du Projet
+### 🎯 À Propos du Projet
 
-**PupCid's Little TikTool Helper** est un outil professionnel open source pour le streaming LIVE compatible TikTok avec des fonctionnalitÃ©s Ã©tendues pour les crÃ©ateurs de contenu. L'outil fournit une intÃ©gration complÃ¨te des Ã©vÃ©nements LIVE TikTok dans OBS Studio avec overlays, alertes, synthÃ¨se vocale, soundboard et automatisation d'Ã©vÃ©nements.
+**PupCid's Little TikTool Helper** est un outil professionnel open source pour le streaming LIVE compatible TikTok avec des fonctionnalités étendues pour les créateurs de contenu. L'outil fournit une intégration complète des événements LIVE TikTok dans OBS Studio avec overlays, alertes, synthèse vocale, soundboard et automatisation d'événements.
 
-### âœ¨ CaractÃ©ristiques ClÃ©s
+### ✨ Caractéristiques Clés
 
-- **ðŸ”’ 100% Local** - Pas de services cloud, pas de connexion requise
-- **ðŸŽ¨ Overlays Professionnels** - Sources de navigateur Full-HD pour OBS Studio
-- **ðŸ”Œ SystÃ¨me de Plugins Modulaire** - Facilement extensible via des plugins
-- **ðŸŒ Multi-langue** - Interface utilisateur en allemand et anglais
-- **âš¡ Mises Ã  Jour en Temps RÃ©el** - Communication en direct basÃ©e sur WebSocket
-- **ðŸŽ­ Automatisation d'Ã‰vÃ©nements** - RÃ¨gles "si-alors" sans code
+- **🔒 100% Local** - Pas de services cloud, pas de connexion requise
+- **🎨 Overlays Professionnels** - Sources de navigateur Full-HD pour OBS Studio
+- **🔌 Système de Plugins Modulaire** - Facilement extensible via des plugins
+- **🌍 Multi-langue** - Interface utilisateur en allemand et anglais
+- **⚡ Mises à Jour en Temps Réel** - Communication en direct basée sur WebSocket
+- **🎭 Automatisation d'Événements** - Règles "si-alors" sans code
 
-### ðŸŽ¤ Pour qui est cet outil ?
+### 🎤 Pour qui est cet outil ?
 
 - **Streamers TikTok LIVE** - Overlays et alertes professionnels
-- **CrÃ©ateurs de Contenu** - Automatisation d'Ã©vÃ©nements et interactivitÃ©
-- **Streamers VRChat** - IntÃ©gration OSC pour le contrÃ´le d'avatar
-- **Streamers Multi-invitÃ©s** - IntÃ©gration VDO.Ninja pour les interviews
-- **DÃ©veloppeurs** - SystÃ¨me de plugins modulaire pour extension
+- **Créateurs de Contenu** - Automatisation d'événements et interactivité
+- **Streamers VRChat** - Intégration OSC pour le contrôle d'avatar
+- **Streamers Multi-invités** - Intégration VDO.Ninja pour les interviews
+- **Développeurs** - Système de plugins modulaire pour extension
 
-### ðŸš€ Fonctions Principales
+### 🚀 Fonctions Principales
 
-#### 1. IntÃ©gration TikTok LIVE
+#### 1. Intégration TikTok LIVE
 
-Connexion en temps rÃ©el aux streams LIVE TikTok avec tous les Ã©vÃ©nements :
+Connexion en temps réel aux streams LIVE TikTok avec tous les événements :
 
-- âœ… **Cadeaux** - Cadeaux avec piÃ¨ces, suivi des combos, catalogue de cadeaux
-- âœ… **Chat** - Messages avec photos de profil et badges
-- âœ… **Abonnements** - Nouveaux abonnÃ©s avec suivi des rÃ´les
-- âœ… **Partages** - Partages de stream avec informations utilisateur
-- âœ… **J'aime** - Ã‰vÃ©nements de j'aime avec comptage
-- âœ… **Souscriptions** - Souscripteurs avec niveaux
+- ✅ **Cadeaux** - Cadeaux avec pièces, suivi des combos, catalogue de cadeaux
+- ✅ **Chat** - Messages avec photos de profil et badges
+- ✅ **Abonnements** - Nouveaux abonnés avec suivi des rôles
+- ✅ **Partages** - Partages de stream avec informations utilisateur
+- ✅ **J'aime** - Événements de j'aime avec comptage
+- ✅ **Souscriptions** - Souscripteurs avec niveaux
 
-#### 2. SynthÃ¨se Vocale (TTS)
+#### 2. Synthèse Vocale (TTS)
 
-SystÃ¨me TTS professionnel avec plus de 100 voix :
+Système TTS professionnel avec plus de 100 voix :
 
-- ðŸŽ™ï¸ **75+ Voix TikTok** - Gratuit, pas de clÃ©s API requises
-- ðŸŽ™ï¸ **30+ Voix Google Cloud** - Optionnel avec clÃ© API
-- ðŸ‘¤ **Mappages de Voix Utilisateur** - Les utilisateurs obtiennent leurs propres voix assignÃ©es
-- ðŸ“ **Auto-TTS pour Chat** - Lecture automatique des messages de chat
-- ðŸš« **Filtre de Liste Noire** - Exclure mots/utilisateurs
-- ðŸŽšï¸ **Volume et Vitesse** - Ajuster le volume et la vitesse
+- 🎙️ **75+ Voix TikTok** - Gratuit, pas de clés API requises
+- 🎙️ **30+ Voix Google Cloud** - Optionnel avec clé API
+- 👤 **Mappages de Voix Utilisateur** - Les utilisateurs obtiennent leurs propres voix assignées
+- 📝 **Auto-TTS pour Chat** - Lecture automatique des messages de chat
+- 🚫 **Filtre de Liste Noire** - Exclure mots/utilisateurs
+- 🎚️ **Volume et Vitesse** - Ajuster le volume et la vitesse
 
-#### 3. SystÃ¨me d'Alertes
+#### 3. Système d'Alertes
 
-Alertes personnalisables pour tous les Ã©vÃ©nements TikTok :
+Alertes personnalisables pour tous les événements TikTok :
 
-- ðŸ”Š **Son + Texte + Animation** - Alertes entiÃ¨rement configurables
-- ðŸ–¼ï¸ **Images et GIFs** - Graphiques d'alerte personnalisÃ©s
-- â±ï¸ **ContrÃ´le de DurÃ©e** - DÃ©finir la durÃ©e d'affichage des alertes
-- ðŸŽ¨ **ModÃ¨les PersonnalisÃ©s** - Balises comme `{username}`, `{giftName}`, `{coins}`
-- ðŸ§ª **Mode Test** - Tester les alertes avant le stream
+- 🔊 **Son + Texte + Animation** - Alertes entièrement configurables
+- 🖼️ **Images et GIFs** - Graphiques d'alerte personnalisés
+- ⏱️ **Contrôle de Durée** - Définir la durée d'affichage des alertes
+- 🎨 **Modèles Personnalisés** - Balises comme `{username}`, `{giftName}`, `{coins}`
+- 🧪 **Mode Test** - Tester les alertes avant le stream
 
 #### 4. Soundboard
 
 Plus de 100 000 sons avec mappage de cadeaux :
 
-- ðŸ” **IntÃ©gration MyInstants** - AccÃ¨s Ã  une Ã©norme bibliothÃ¨que de sons
-- ðŸŽ **Mappage Cadeau-vers-Son** - Rose â†’ Son A, Lion â†’ Son B
-- ðŸŽµ **Sons d'Ã‰vÃ©nements** - Sons pour Follow, Subscribe, Share
-- âš¡ **SystÃ¨me de Seuil de J'aime** - DÃ©clencher des sons Ã  X j'aime
-- ðŸ“¦ **TÃ©lÃ©chargement PersonnalisÃ©** - TÃ©lÃ©charger vos propres MP3
-- â­ **Favoris et Tendances** - Organiser les sons
+- 🔍 **Intégration MyInstants** - Accès à une énorme bibliothèque de sons
+- 🎁 **Mappage Cadeau-vers-Son** - Rose → Son A, Lion → Son B
+- 🎵 **Sons d'Événements** - Sons pour Follow, Subscribe, Share
+- ⚡ **Système de Seuil de J'aime** - Déclencher des sons à X j'aime
+- 📦 **Téléchargement Personnalisé** - Télécharger vos propres MP3
+- ⭐ **Favoris et Tendances** - Organiser les sons
 
 #### 5. Objectifs et Barres de Progression
 
-4 objectifs sÃ©parÃ©s avec overlays de source de navigateur :
+4 objectifs séparés avec overlays de source de navigateur :
 
-- ðŸ“Š **Objectif de J'aime** - Objectif de j'aime avec barre de progression
-- ðŸ‘¥ **Objectif d'AbonnÃ©s** - Objectif d'abonnÃ©s avec suivi
-- ðŸ’Ž **Objectif de Souscriptions** - Objectif de souscripteurs
-- ðŸª™ **Objectif de PiÃ¨ces** - Objectif de piÃ¨ces (dons)
-- ðŸŽ¨ **Styles PersonnalisÃ©s** - Personnaliser couleurs, dÃ©gradÃ©s, Ã©tiquettes
-- âž• **Ajouter/DÃ©finir/IncrÃ©menter** - SÃ©lection de mode flexible
+- 📊 **Objectif de J'aime** - Objectif de j'aime avec barre de progression
+- 👥 **Objectif d'Abonnés** - Objectif d'abonnés avec suivi
+- 💎 **Objectif de Souscriptions** - Objectif de souscripteurs
+- 🪙 **Objectif de Pièces** - Objectif de pièces (dons)
+- 🎨 **Styles Personnalisés** - Personnaliser couleurs, dégradés, étiquettes
+- ➕ **Ajouter/Définir/Incrémenter** - Sélection de mode flexible
 
-#### 6. Automatisation d'Ã‰vÃ©nements (Flows)
+#### 6. Automatisation d'Événements (Flows)
 
 Automatisations "si-alors" sans code :
 
-- ðŸ”— **DÃ©clencheurs** - Cadeau, Chat, Follow, Subscribe, Share, Like
-- âš™ï¸ **Conditions** - Conditions avec opÃ©rateurs (==, !=, >=, <=, contains)
-- âš¡ **Actions** - TTS, Alerte, ScÃ¨ne OBS, OSC, RequÃªte HTTP, DÃ©lai
-- ðŸ§© **Multi-Ã‰tapes** - Plusieurs actions en sÃ©quence
-- âœ… **Mode Test** - Tester les flows avant le stream
+- 🔗 **Déclencheurs** - Cadeau, Chat, Follow, Subscribe, Share, Like
+- ⚙️ **Conditions** - Conditions avec opérateurs (==, !=, >=, <=, contains)
+- ⚡ **Actions** - TTS, Alerte, Scène OBS, OSC, Requête HTTP, Délai
+- 🧩 **Multi-Étapes** - Plusieurs actions en séquence
+- ✅ **Mode Test** - Tester les flows avant le stream
 
 **Exemple de Flow :**
 ```
-DÃ©clencheur : Cadeau == "Rose"
+Déclencheur : Cadeau == "Rose"
 Actions :
   1. TTS : "Merci {username} pour la Rose !"
-  2. ScÃ¨ne OBS : Passer Ã  "Cam2"
+  2. Scène OBS : Passer à "Cam2"
   3. OSC : Geste de salut dans VRChat
 ```
 
-### ðŸ’» Stack Technologique
+### 💻 Stack Technologique
 
-| CatÃ©gorie | Technologie | Version |
+| Catégorie | Technologie | Version |
 |-----------|-------------|---------|
 | **Backend** | Node.js | >=18.0.0 <25.0.0 |
 | **Framework Web** | Express | ^4.18.2 |
-| **Temps RÃ©el** | Socket.io | ^4.6.1 |
-| **Base de DonnÃ©es** | SQLite (better-sqlite3) | ^11.9.0 |
+| **Temps Réel** | Socket.io | ^4.6.1 |
+| **Base de Données** | SQLite (better-sqlite3) | ^11.9.0 |
 | **API TikTok** | SDK Eulerstream / Adaptateur TikFinity | adaptateurs app |
-| **IntÃ©gration OBS** | obs-websocket-js | ^5.0.6 |
+| **Intégration OBS** | obs-websocket-js | ^5.0.6 |
 | **Protocole OSC** | osc | ^2.4.5 |
 | **Logging** | winston | ^3.18.3 |
 | **Frontend** | Bootstrap 5 | 5.3 |
-| **IcÃ´nes** | Font Awesome | 6.x |
+| **Icônes** | Font Awesome | 6.x |
 
-### âš¡ DÃ©marrage Rapide
+### ⚡ Démarrage Rapide
 
 1. Installer Node.js 18-23
-2. Cloner le dÃ©pÃ´t : `git clone https://github.com/Loggableim/ltth.app.git`
+2. Cloner le dépôt : `git clone https://github.com/Loggableim/ltth.app.git`
 3. Aller dans le dossier runtime : `cd app`
-4. Installer les dÃ©pendances : `npm install`
-5. DÃ©marrer le serveur : `npm start`
+4. Installer les dépendances : `npm install`
+5. Démarrer le serveur : `npm start`
 6. Ouvrir le dashboard : `http://localhost:3000/dashboard.html`
-6. Se connecter Ã  TikTok LIVE avec votre nom d'utilisateur
+6. Se connecter à TikTok LIVE avec votre nom d'utilisateur
 
-**TerminÃ© !** ðŸŽ‰ Tous les Ã©vÃ©nements sont maintenant affichÃ©s en direct.
+**Terminé !** 🎉 Tous les événements sont maintenant affichés en direct.
 
-### ðŸ“„ Licence
+### 📄 Licence
 
 Ce projet est sous licence **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**.
 
 ---
 
-*DerniÃ¨re mise Ã  jour : 2026-04-28*  
+*Dernière mise à jour : 2026-04-28*
 *Version : 1.3.3*

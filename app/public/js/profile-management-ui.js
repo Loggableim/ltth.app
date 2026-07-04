@@ -251,6 +251,10 @@
             </div>
         `;
 
+        const legacyCandidates = Array.isArray(data.legacyConfigCandidates)
+            ? data.legacyConfigCandidates
+            : [];
+
         // Check for old database
         if (data.oldDatabaseExists) {
             html += `
@@ -269,7 +273,37 @@
             html += `
                 <div class="migration-info-card success">
                     <h4><i data-lucide="check-circle"></i> No Old Database</h4>
-                    <p>No old database file found. Your data is already in the correct location.</p>
+                    <p>No root-level legacy database file found.</p>
+                </div>
+            `;
+        }
+
+        if (legacyCandidates.length > 0) {
+            html += `
+                <div class="migration-info-card warning">
+                    <h4><i data-lucide="folder-search"></i> Legacy Configs Found</h4>
+                    <p>Older configuration folders were found outside the current storage location. Review and import them before deleting old installs.</p>
+                    <div class="legacy-config-candidates">
+                        ${legacyCandidates.map((candidate, index) => `
+                            <div class="legacy-config-candidate">
+                                <p><strong>${escapeHtml(candidate.label || `Legacy source ${index + 1}`)}</strong></p>
+                                <p class="code-block">${escapeHtml(candidate.actualPath || candidate.importPath)}</p>
+                                <p class="text-sm">${escapeHtml(candidate.summary || `${candidate.fileCount || 0} files detected`)}</p>
+                                ${candidate.latestModified ? `<p class="text-xs text-gray-500">Last changed: ${escapeHtml(new Date(candidate.latestModified).toLocaleString())}</p>` : ''}
+                                <button class="btn btn-warning legacy-import-open-btn" data-import-path="${escapeHtml(candidate.importPath || candidate.actualPath)}">
+                                    <i data-lucide="download"></i>
+                                    Open Import Step
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else if (!data.oldDatabaseExists) {
+            html += `
+                <div class="migration-info-card success">
+                    <h4><i data-lucide="check-circle"></i> No Legacy Config Folders</h4>
+                    <p>No old config folders were detected in the known LTTH locations.</p>
                 </div>
             `;
         }
@@ -297,6 +331,35 @@
         html += '</div>';
 
         resultsContainer.innerHTML = html;
+
+        resultsContainer.querySelectorAll('.legacy-import-open-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const importPath = button.getAttribute('data-import-path');
+                if (!importPath) return;
+
+                button.disabled = true;
+                try {
+                    if (!data.configImportEnabled) {
+                        const enableResponse = await fetch('/api/plugins/config-import/enable', { method: 'POST' });
+                        const enableResult = await enableResponse.json().catch(() => ({}));
+                        if (!enableResponse.ok || !enableResult.success) {
+                            throw new Error(enableResult.error || 'Could not enable the Config Import plugin');
+                        }
+                        data.configImportEnabled = true;
+                    }
+
+                    const importUrl = `/config-import/ui?tab=legacy&legacyPath=${encodeURIComponent(importPath)}&autoScan=1`;
+                    const opened = window.open(importUrl, '_blank', 'noopener,noreferrer');
+                    if (!opened) {
+                        window.location.href = importUrl;
+                    }
+                } catch (error) {
+                    showMigrationError(error.message);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+        });
 
         // Re-create icons
         if (typeof lucide !== 'undefined') {
