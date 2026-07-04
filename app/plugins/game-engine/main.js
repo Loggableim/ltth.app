@@ -1254,10 +1254,10 @@ class GameEnginePlugin {
       color: config.player2Color,
       nickname: opponentIsStreamer ? 'Streamer' : opponent
     } : {
-      username: opponent,
+      username: opponentIsStreamer ? challengerUsername : opponent,
       role: 'viewer',
       color: config.player2Color,
-      nickname: opponent
+      nickname: opponentIsStreamer ? challengerNickname : opponent
     };
 
     const game = new Connect4Game(sessionId, player1, player2, this.logger);
