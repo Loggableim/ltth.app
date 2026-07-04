@@ -766,11 +766,11 @@ func (l *Launcher) getDefaultConfigDir() string {
 		if localAppData == "" {
 			localAppData = filepath.Join(homeDir, "AppData", "Local")
 		}
-		return filepath.Join(localAppData, "pupcidslittletiktokhelper")
+		return filepath.Join(localAppData, "ltth.app")
 	case "darwin":
-		return filepath.Join(homeDir, "Library", "Application Support", "pupcidslittletiktokhelper")
+		return filepath.Join(homeDir, "Library", "Application Support", "ltth.app")
 	default:
-		return filepath.Join(homeDir, ".local", "share", "pupcidslittletiktokhelper")
+		return filepath.Join(homeDir, ".local", "share", "ltth.app")
 	}
 }
 

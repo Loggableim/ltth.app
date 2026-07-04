@@ -1,4 +1,4 @@
-# Soundboard Data Persistence
+﻿# Soundboard Data Persistence
 
 ## Overview
 
@@ -10,17 +10,17 @@ Soundboard data is stored in the persistent user configuration directory managed
 
 ### Windows
 ```
-%LOCALAPPDATA%\pupcidslittletiktokhelper\user_configs\<username>.db
+%LOCALAPPDATA%\ltth.app\user_configs\<username>.db
 ```
 
 ### macOS
 ```
-~/Library/Application Support/pupcidslittletiktokhelper/user_configs/<username>.db
+~/Library/Application Support/ltth.app/user_configs/<username>.db
 ```
 
 ### Linux
 ```
-~/.local/share/pupcidslittletiktokhelper/user_configs/<username>.db
+~/.local/share/ltth.app/user_configs/<username>.db
 ```
 
 This location is **outside the application directory** and is **not affected by application updates**.
@@ -55,10 +55,10 @@ All animation settings for these events are also persisted.
 ## Migration and Updates
 
 When you update the application:
-1. ✅ **The database file is NOT touched** - it remains in the persistent config directory
-2. ✅ **All gift sounds are preserved** - stored in `gift_sounds` table
-3. ✅ **All event sounds are preserved** - stored in `settings` table
-4. ✅ **All settings are preserved** - stored in `settings` table
+1. âœ… **The database file is NOT touched** - it remains in the persistent config directory
+2. âœ… **All gift sounds are preserved** - stored in `gift_sounds` table
+3. âœ… **All event sounds are preserved** - stored in `settings` table
+4. âœ… **All settings are preserved** - stored in `settings` table
 
 ## Volume Controls
 
@@ -128,17 +128,18 @@ This should **not** happen. If it does:
 ### Where is my data actually stored?
 Check the application logs on startup. They will show:
 ```
-📂 [ConfigPathManager] Settings stored at: <path>
+ðŸ“‚ [ConfigPathManager] Settings stored at: <path>
 ```
 
 ### Can I backup my soundboard settings?
 Yes! Simply copy the database file:
-- Windows: `%LOCALAPPDATA%\pupcidslittletiktokhelper\user_configs\<username>.db`
-- macOS: `~/Library/Application Support/pupcidslittletiktokhelper/user_configs/<username>.db`
-- Linux: `~/.local/share/pupcidslittletiktokhelper/user_configs/<username>.db`
+- Windows: `%LOCALAPPDATA%\ltth.app\user_configs\<username>.db`
+- macOS: `~/Library/Application Support/ltth.app/user_configs/<username>.db`
+- Linux: `~/.local/share/ltth.app/user_configs/<username>.db`
 
 ## Summary
 
 **All soundboard data is persistent** - both gift sounds AND event sounds (follow/subscribe/share/like) are stored in the same database file, which is located outside the application directory and survives updates.
 
 The distinction between gift sounds and event sounds is only in how they are stored (separate table vs settings table), but both are equally persistent and survive updates.
+

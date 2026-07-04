@@ -517,7 +517,7 @@ class MultiCamPlugin {
                     throw new Error('Database not available');
                 }
 
-                const stmt = db.prepare('SELECT id, name, diamond_count as coins FROM gift_catalog ORDER BY diamond_count DESC');
+                const stmt = db.prepare('SELECT id, name, image_url, diamond_count as coins FROM gift_catalog ORDER BY diamond_count DESC');
                 const gifts = stmt.all();
 
                 res.json({
@@ -531,6 +531,68 @@ class MultiCamPlugin {
                     error: error.message,
                     gifts: []
                 });
+            }
+        });
+
+        // GET /api/multicam/gift-mappings — liefert alle Gift-Mappings mit Bild-Infos
+        this.api.registerRoute('GET', '/api/multicam/gift-mappings', async (req, res) => {
+            try {
+                const db = this.api.getDatabase();
+                if (!db) {
+                    throw new Error('Database not available');
+                }
+
+                const stmt = db.prepare('SELECT id, name, image_url, diamond_count as coins FROM gift_catalog ORDER BY diamond_count DESC');
+                const allGifts = stmt.all() || [];
+                const mappings = this.config.mapping?.gifts || {};
+
+                // Jedes Gift mit Mapping-Status anreichern
+                const enriched = allGifts.map(gift => ({
+                    ...gift,
+                    mapped: !!mappings[gift.name],
+                    mapping: mappings[gift.name] || null
+                }));
+
+                res.json({
+                    success: true,
+                    gifts: enriched,
+                    mappings: mappings
+                });
+            } catch (error) {
+                this.api.log(`Multi-Cam: Failed to get gift mappings: ${error.message}`, 'error');
+                res.status(500).json({
+                    success: false,
+                    error: error.message,
+                    gifts: [],
+                    mappings: {}
+                });
+            }
+        });
+
+        // POST /api/multicam/gift-mappings/bulk — mehrere Mappings auf einmal setzen
+        this.api.registerRoute('POST', '/api/multicam/gift-mappings/bulk', async (req, res) => {
+            try {
+                const { mappings } = req.body;
+                if (!mappings || typeof mappings !== 'object') {
+                    return res.status(400).json({ success: false, error: 'Invalid mappings payload' });
+                }
+
+                // Bestehende Gift-Mappings ersetzen
+                this.config.mapping = this.config.mapping || {};
+                this.config.mapping.gifts = mappings;
+                this.api.setConfig('config', this.config);
+                this._giftMappingKeysCache = null;
+
+                this.api.log(`Multi-Cam: Bulk updated ${Object.keys(mappings).length} gift mappings`, 'info');
+                this.api.emit('multicam:config-update', this.config);
+
+                res.json({
+                    success: true,
+                    mappings: this.config.mapping.gifts
+                });
+            } catch (error) {
+                this.api.log(`Multi-Cam: Failed to bulk update mappings: ${error.message}`, 'error');
+                res.status(500).json({ success: false, error: error.message });
             }
         });
     }

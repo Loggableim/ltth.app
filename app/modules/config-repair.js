@@ -254,8 +254,8 @@ class ConfigRepair {
         const currentEscaped = currentConfigDir.replace(/\\/g, '\\\\');
 
         return value
-            .replace(/[A-Za-z]:\\Users\\[^\\]+\\AppData\\Local\\pupcidslittletiktokhelper/gi, () => currentConfigDir)
-            .replace(/[A-Za-z]:\\\\Users\\\\[^\\]+\\\\AppData\\\\Local\\\\pupcidslittletiktokhelper/gi, () => currentEscaped);
+            .replace(/[A-Za-z]:\\Users\\[^\\]+\\AppData\\Local\\ltth.app/gi, () => currentConfigDir)
+            .replace(/[A-Za-z]:\\\\Users\\\\[^\\]+\\\\AppData\\\\Local\\\\ltth.app/gi, () => currentEscaped);
     }
 
     quarantineBrokenProfile(profile, error) {

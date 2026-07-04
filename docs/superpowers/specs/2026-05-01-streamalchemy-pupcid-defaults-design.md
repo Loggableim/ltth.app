@@ -1,4 +1,4 @@
-# StreamAlchemy PupCid Defaults Design
+﻿# StreamAlchemy PupCid Defaults Design
 
 Date: 2026-05-01
 
@@ -8,7 +8,7 @@ The requested change is global default tuning for the TikTok visual effects over
 
 Observed profile sample:
 
-- Source: `%LOCALAPPDATA%/pupcidslittletiktokhelper/user_configs/pupcid.db`
+- Source: `%LOCALAPPDATA%/ltth.app/user_configs/pupcid.db`
 - Range: 2026-04-13 16:22:42 through 2026-04-30 02:08:32
 - Raw gift events: 267
 - Expanded gift units: 552
@@ -86,3 +86,4 @@ npx jest test/streamalchemy-relaunch-routes.test.js --runInBand
 Existing profiles with stored StreamAlchemy config may keep their stored thresholds until reset or manually updated, because this change is global default behavior and must not overwrite user data. New profiles and code paths that use defaults will use the PupCid-tuned thresholds.
 
 No Git commit will be made in this workspace because the snapshot is not a Git checkout.
+

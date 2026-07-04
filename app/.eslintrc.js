@@ -1,5 +1,5 @@
 /**
- * ESLint configuration for ltth_desktop2/app.
+ * ESLint configuration for ltth.app.
  *
  * Focused rules:
  *   - Enforce structured logging (no raw console.*) in the targeted application

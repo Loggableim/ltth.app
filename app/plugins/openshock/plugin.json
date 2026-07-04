@@ -3,7 +3,7 @@
   "name": "OpenShock & PiShock Integration",
   "version": "1.1.0",
   "description": "Vollständige Shock-Device-Integration für TikTok Live Events – unterstützt OpenShock und PiShock. Mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professionellem Overlay",
-  "author": "pupcidslittletiktokhelper Team",
+  "author": "ltth.app Team",
   "entry": "main.js",
   "enabled": true,
   "type": "integration",

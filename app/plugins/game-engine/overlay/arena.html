@@ -3363,6 +3363,15 @@
         if (data) applyState(data);
       })
       .catch(() => {});
+    // Periodisches Polling als Fallback für OBS/Umgebungen ohne Socket.IO
+    setInterval(() => {
+      fetch('/api/game-engine/arena/state')
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (data) applyState(data);
+        })
+        .catch(() => {});
+    }, 2000);
     loadArenaGiftCatalogImages().then(() => updateInfoRotator());
 
     window.addEventListener('resize', resize);

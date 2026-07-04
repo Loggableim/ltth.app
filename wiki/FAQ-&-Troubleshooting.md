@@ -843,7 +843,7 @@ Breakpoints setzen → Step-Through-Debugging.
 ### Hilfe bekommen
 
 **1. GitHub Issues:**
-[github.com/yourusername/pupcidslittletiktokhelper/issues](https://github.com/yourusername/pupcidslittletiktokhelper/issues)
+[github.com/Loggableim/ltth.app/issues](https://github.com/Loggableim/ltth.app/issues)
 
 **2. E-Mail:**
 [loggableim@gmail.com](mailto:loggableim@gmail.com)

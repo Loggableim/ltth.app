@@ -382,7 +382,9 @@ class MusicBotPlugin extends EventEmitter {
     const output = Array.isArray(target) ? [...target] : { ...target };
     Object.keys(source).forEach((key) => {
       const sourceVal = source[key];
-      if (sourceVal && typeof sourceVal === 'object' && !Array.isArray(sourceVal)) {
+      if (Array.isArray(sourceVal)) {
+        output[key] = [...sourceVal];
+      } else if (sourceVal && typeof sourceVal === 'object') {
         output[key] = this._mergeDeep(target[key] || {}, sourceVal);
       } else {
         output[key] = sourceVal;

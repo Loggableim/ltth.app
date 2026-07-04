@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # Example Release Workflow for LTTH
 # This script demonstrates the complete release process
 
@@ -11,12 +11,12 @@ echo ""
 
 # Configuration
 VERSION="1.2.5"
-BUILD_SOURCE="/path/to/pupcidslittletiktokhelper/build"
+BUILD_SOURCE="/path/to/ltth.app/build"
 
 echo "Step 1: Prepare new release directory"
 echo "---------------------------------------"
 mkdir -p "new_patch/ltth_${VERSION}"
-echo "✓ Created new_patch/ltth_${VERSION}/"
+echo "âœ“ Created new_patch/ltth_${VERSION}/"
 echo ""
 
 echo "Step 2: Copy build artifacts"
@@ -36,12 +36,12 @@ echo "---------------------------------------"
 echo "python3 scripts/release_from_new_patch.py"
 echo ""
 echo "The script will:"
-echo "  ✓ Find version ${VERSION} (highest in new_patch/)"
-echo "  ✓ Validate files exist"
-echo "  ✓ Archive current version"
-echo "  ✓ Deploy new version"
-echo "  ✓ Update metadata files"
-echo "  ✓ Move to released_patches/"
+echo "  âœ“ Find version ${VERSION} (highest in new_patch/)"
+echo "  âœ“ Validate files exist"
+echo "  âœ“ Archive current version"
+echo "  âœ“ Deploy new version"
+echo "  âœ“ Update metadata files"
+echo "  âœ“ Move to released_patches/"
 echo ""
 
 echo "Step 4: Verify deployment"
@@ -71,3 +71,4 @@ echo ""
 echo "========================================"
 echo "Release workflow complete!"
 echo "========================================"
+

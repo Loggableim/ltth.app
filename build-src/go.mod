@@ -1,4 +1,4 @@
-module github.com/Loggableim/pupcidslittletiktokhelper
+module github.com/Loggableim/ltth.app
 
 go 1.24.10
 

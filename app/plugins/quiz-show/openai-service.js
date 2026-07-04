@@ -13,7 +13,7 @@ class OpenAIQuizService {
      * @param {Array} existingQuestions - Array of existing questions to avoid duplicates
      * @returns {Promise<Array>} Array of generated questions
      */
-    async generateQuestions(category, count = 10, existingQuestions = []) {
+    async generateQuestions(category, count = 10, existingQuestions = [], language = 'de') {
         try {
             // Calculate difficulty distribution
             // 50% easy (difficulty 1), rest split between medium (2), hard (3), expert (4)
@@ -35,7 +35,7 @@ class OpenAIQuizService {
                 typeof q === 'string' ? q : q.question
             ).filter(Boolean);
 
-            const prompt = this.buildPrompt(category, count, difficultyDistribution, existingQuestionTexts);
+            const prompt = this.buildPrompt(category, count, difficultyDistribution, existingQuestionTexts, language);
 
             const response = await this.client.chat.completions.create({
                 model: this.model,
@@ -155,17 +155,34 @@ class OpenAIQuizService {
         console.log('Adjusted difficulty distribution:', currentDistribution);
     }
 
-    buildPrompt(category, count, difficultyDistribution, existingQuestions) {
+    buildPrompt(category, count, difficultyDistribution, existingQuestions, language = 'de') {
         const existingQuestionsText = existingQuestions.length > 0
             ? `\n\nVERMEIDE diese bereits existierenden Fragen:\n${existingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
             : '';
+
+        const languageNames = {
+            de: 'DEUTSCHER',
+            en: 'ENGLISH',
+            es: 'SPANISH',
+            fr: 'FRENCH',
+            it: 'ITALIAN',
+            pt: 'PORTUGUESE',
+            nl: 'DUTCH',
+            pl: 'POLISH',
+            ru: 'RUSSIAN',
+            tr: 'TURKISH',
+            ja: 'JAPANESE',
+            zh: 'CHINESE',
+            ar: 'ARABIC'
+        };
+        const langName = languageNames[language] || 'DEUTSCHER';
 
         return `Erstelle ${count} Multiple-Choice-Fragen für die Kategorie "${category}".
 
 WICHTIGE ANFORDERUNGEN:
 1. Jede Frage muss EXAKT 4 Antwortmöglichkeiten haben (A, B, C, D)
 2. Nur EINE Antwort ist korrekt
-3. Die Fragen müssen in DEUTSCHER Sprache sein
+3. Die Fragen müssen in ${langName} Sprache sein
 4. Schwierigkeitsverteilung - STRIKTE EINHALTUNG ERFORDERLICH:
    - GENAU ${difficultyDistribution[1]} Fragen mit difficulty: 1 (Einfach - Allgemeinwissen, das die meisten kennen)
    - GENAU ${difficultyDistribution[2]} Fragen mit difficulty: 2 (Mittel - erfordert etwas Nachdenken)

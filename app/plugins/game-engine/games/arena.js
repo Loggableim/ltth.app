@@ -493,7 +493,6 @@ class ArenaGame {
     this.foodPool = [];
     this.weaponPickups = new Map();
     this.mines = new Map();
-    this.recentGiftEvents = new Map();
     this.foodIdCounter = 0;
     this.weaponPickupIdCounter = 0;
     this.mineIdCounter = 0;
@@ -589,7 +588,6 @@ class ArenaGame {
     this.foodPool.length = 0;
     this.weaponPickups.clear();
     this.mines.clear();
-    this.recentGiftEvents.clear();
     this.logger.info('Arena game destroyed');
   }
 
@@ -689,13 +687,7 @@ class ArenaGame {
 
     const giftName = (data && data.giftName ? String(data.giftName) : 'Gift').trim();
     const giftId = data && data.giftId !== undefined && data.giftId !== null ? String(data.giftId).trim() : '';
-    const dedupKey = `${viewer.username}:${giftName}:${giftId || 'no-id'}`;
     const now = this.now();
-    const lastGiftAt = this.recentGiftEvents.get(dedupKey);
-    if (lastGiftAt && now - lastGiftAt < 1000) {
-      return { success: false, error: 'Duplicate gift ignored' };
-    }
-    this.recentGiftEvents.set(dedupKey, now);
 
     this._cleanupRespawnCooldowns(config);
     const existingUsername = this._resolvePlayerUsername(viewer);
@@ -1101,6 +1093,9 @@ class ArenaGame {
     const distance = this._distance(player, threat);
     const absorbThreat = this._playerAbsorbContext(threat, player, config);
     const weaponThreat = this._weaponAttackContext(threat, player, config);
+    // If player can absorb the threat (e.g. with chainsaw/dash), no retreat needed
+    const playerAbsorb = this._playerAbsorbContext(player, threat, config);
+    if (playerAbsorb.canAbsorb) return false;
     const weaponThreatRange = weaponThreat.range > 0
       ? weaponThreat.range + (Number(threat.radius) || 0) + (Number(player.radius) || 0) * 0.4
       : 0;
@@ -4421,6 +4416,9 @@ class ArenaGame {
       const massRatio = other.mass / Math.max(player.mass, 1);
       const absorbThreat = this._playerAbsorbContext(other, player, config);
       const weaponThreat = this._weaponAttackContext(other, player, config);
+      // If player can absorb the other (e.g. with chainsaw/dash), don't treat as threat
+      const playerAbsorb = this._playerAbsorbContext(player, other, config);
+      if (playerAbsorb.canAbsorb) continue;
       if (!absorbThreat.canAbsorb && !weaponThreat.canAttack) continue;
       if (!weaponThreat.canAttack && other.mass <= player.mass * fleeMassRatio) continue;
 

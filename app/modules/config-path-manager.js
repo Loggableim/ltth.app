@@ -7,14 +7,14 @@ const os = require('os');
  * 
  * Ensures user configurations are stored outside the application directory
  * to survive updates. Supports:
- * - Windows: %LOCALAPPDATA%/pupcidslittletiktokhelper
- * - macOS: ~/Library/Application Support/pupcidslittletiktokhelper
- * - Linux: ~/.local/share/pupcidslittletiktokhelper
+ * - Windows: %LOCALAPPDATA%/ltth.app
+ * - macOS: ~/Library/Application Support/ltth.app
+ * - Linux: ~/.local/share/ltth.app
  * - Custom path: User-defined location (e.g., cloud sync folder)
  */
 class ConfigPathManager {
     constructor() {
-        this.APP_NAME = 'pupcidslittletiktokhelper';
+        this.APP_NAME = 'ltth.app';
         this.customConfigPath = null;
         this.settingsFile = null;
         
@@ -81,16 +81,16 @@ class ConfigPathManager {
 
         switch (platform) {
             case 'win32':
-                // Windows: %LOCALAPPDATA%\pupcidslittletiktokhelper
+                // Windows: %LOCALAPPDATA%\ltth.app
                 return path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), this.APP_NAME);
             
             case 'darwin':
-                // macOS: ~/Library/Application Support/pupcidslittletiktokhelper
+                // macOS: ~/Library/Application Support/ltth.app
                 return path.join(homeDir, 'Library', 'Application Support', this.APP_NAME);
             
             case 'linux':
             default:
-                // Linux: ~/.local/share/pupcidslittletiktokhelper
+                // Linux: ~/.local/share/ltth.app
                 return path.join(homeDir, '.local', 'share', this.APP_NAME);
         }
     }

@@ -502,5 +502,5 @@ CC-BY-NC-4.0 - See LICENSE file in repository root
 ## Support
 
 For issues, feature requests, or questions:
-- GitHub Issues: [pupcidslittletiktoolhelper_desktop/issues](https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop/issues)
+- GitHub Issues: [ltth.app/issues](https://github.com/Loggableim/ltth.app/issues)
 - Documentation: [OSC_PLUGIN_MASSIVANALYSE.md](../../OSC_PLUGIN_MASSIVANALYSE.md)

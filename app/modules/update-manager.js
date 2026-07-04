@@ -12,7 +12,7 @@ const path = require('path');
 class UpdateManager {
   constructor(logger) {
     this.logger = logger;
-    this.githubRepo = 'Loggableim/pupcidslittletiktokhelper';
+    this.githubRepo = 'Loggableim/ltth.app';
     this.projectRoot = path.join(__dirname, '..');
     this.currentVersion = this.getCurrentVersion();
     this.backupDir = path.join(this.projectRoot, '.backups');

@@ -81,6 +81,13 @@
         addListener('saveSettingsBtn', 'click', saveSettings);
         addListener('triggerSlotMachineBtn', 'click', triggerSlotMachine);
 
+        // LLM Settings
+        addListener('testLlmConnectionBtn', 'click', testLlmConnection);
+        const llmProviderSelect = document.getElementById('llmProvider');
+        if (llmProviderSelect) {
+            llmProviderSelect.addEventListener('change', toggleLlmFields);
+        }
+
         // Leaderboard
         addListener('exportLeaderboardBtn', 'click', exportLeaderboard);
         addListener('importLeaderboardBtn', 'click', () => {
@@ -555,7 +562,15 @@
             slotMachineEnabled: document.getElementById('slotMachineEnabled').checked,
             slotMachineSpinDuration: parseFloat(document.getElementById('slotMachineSpinDuration').value),
             slotMachineSpinSpeed: parseInt(document.getElementById('slotMachineSpinSpeed').value),
-            slotMachineAutoStart: document.getElementById('slotMachineAutoStart').checked
+            slotMachineAutoStart: document.getElementById('slotMachineAutoStart').checked,
+            // LLM On-the-fly Settings
+            llmEnabled: document.getElementById('llmEnabled').checked,
+            llmProvider: document.getElementById('llmProvider').value,
+            llmApiKey: document.getElementById('llmApiKey').value,
+            llmModel: document.getElementById('llmModel').value,
+            llmBaseUrl: document.getElementById('llmBaseUrl').value,
+            llmLanguage: document.getElementById('llmLanguage').value,
+            llmDifficulty: parseInt(document.getElementById('llmDifficulty').value)
         };
 
         try {
@@ -839,6 +854,16 @@
         document.getElementById('slotMachineSpinDuration').value = config.slotMachineSpinDuration || 3.0;
         document.getElementById('slotMachineSpinSpeed').value = config.slotMachineSpinSpeed || 100;
         document.getElementById('slotMachineAutoStart').checked = config.slotMachineAutoStart || false;
+
+        // LLM On-the-fly Settings
+        document.getElementById('llmEnabled').checked = config.llmEnabled || false;
+        document.getElementById('llmProvider').value = config.llmProvider || 'openai';
+        document.getElementById('llmApiKey').value = config.llmApiKey || '';
+        document.getElementById('llmModel').value = config.llmModel || 'gpt-5-mini';
+        document.getElementById('llmBaseUrl').value = config.llmBaseUrl || '';
+        document.getElementById('llmLanguage').value = config.llmLanguage || 'de';
+        document.getElementById('llmDifficulty').value = config.llmDifficulty || 2;
+        toggleLlmFields(); // Show/hide API key and base URL based on provider
         
         // Load AI settings from state
         loadAISettings();
@@ -867,6 +892,54 @@
         } catch (error) {
             console.error('Error loading AI settings:', error);
         }
+    }
+
+    // LLM Provider toggle: show/hide API key and base URL fields
+    function toggleLlmFields() {
+        const provider = document.getElementById('llmProvider').value;
+        const apiKeyGroup = document.getElementById('llmApiKeyGroup');
+        const baseUrlGroup = document.getElementById('llmBaseUrlGroup');
+        if (provider === 'ollama') {
+            if (apiKeyGroup) apiKeyGroup.style.display = 'none';
+            if (baseUrlGroup) baseUrlGroup.style.display = 'block';
+        } else {
+            if (apiKeyGroup) apiKeyGroup.style.display = 'block';
+            if (baseUrlGroup) baseUrlGroup.style.display = 'none';
+        }
+    }
+
+    // LLM connection test
+    async function testLlmConnection() {
+        const provider = document.getElementById('llmProvider').value;
+        const apiKey = document.getElementById('llmApiKey').value;
+        const model = document.getElementById('llmModel').value;
+        const baseUrl = document.getElementById('llmBaseUrl').value;
+        const resultDiv = document.getElementById('llmTestResult');
+
+        resultDiv.classList.remove('hidden', 'success-message', 'error-message');
+        resultDiv.textContent = 'Teste Verbindung...';
+        resultDiv.className = 'message';
+
+        try {
+            const response = await fetch('/api/quiz-show/llm-test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider, apiKey, model, baseUrl })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                resultDiv.textContent = '✓ Verbindung erfolgreich! Das Modell ist erreichbar.';
+                resultDiv.className = 'message success-message';
+            } else {
+                resultDiv.textContent = '✗ Verbindung fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler');
+                resultDiv.className = 'message error-message';
+            }
+        } catch (error) {
+            resultDiv.textContent = '✗ Netzwerkfehler: ' + error.message;
+            resultDiv.className = 'message error-message';
+        }
+        resultDiv.classList.remove('hidden');
     }
 
     function updateQuestionsList() {
@@ -1802,6 +1875,7 @@
         const category = document.getElementById('packageCategory').value.trim();
         const packageSize = parseInt(document.getElementById('packageSize').value);
         const packageName = document.getElementById('packageName').value.trim();
+        const language = document.getElementById('packageLanguage').value;
 
         if (!category) {
             showMessage('Bitte geben Sie eine Kategorie ein', 'error', 'generateMessage');
@@ -1829,7 +1903,8 @@
                 body: JSON.stringify({
                     category,
                     packageSize,
-                    packageName: packageName || undefined
+                    packageName: packageName || undefined,
+                    language
                 })
             });
 
@@ -3356,6 +3431,7 @@
                 }
                 
                 const packageSize = batchPackageSize ? parseInt(batchPackageSize.value) : 10;
+                const batchLanguage = document.getElementById('batchPackageLanguage').value;
                 
                 // Disable button
                 if (batchGenerateBtn) {
@@ -3377,7 +3453,7 @@
                 const response = await fetch('/api/quiz-show/packages/batch-generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ categories, packageSize })
+                    body: JSON.stringify({ categories, packageSize, language: batchLanguage })
                 });
                 
                 const data = await response.json();

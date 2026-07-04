@@ -51,16 +51,17 @@ class UserDatabase {
     
     switch (process.platform) {
       case 'win32':
-        configDir = path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'pupcidslittletiktokhelper');
+        configDir = path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'ltth.app');
         break;
       case 'darwin':
-        configDir = path.join(homeDir, 'Library', 'Application Support', 'pupcidslittletiktokhelper');
+        configDir = path.join(homeDir, 'Library', 'Application Support', 'ltth.app');
         break;
       default:
-        configDir = path.join(homeDir, '.local', 'share', 'pupcidslittletiktokhelper');
+        configDir = path.join(homeDir, '.local', 'share', 'ltth.app');
     }
-    
-    return path.join(configDir, 'users.db');
+
+    const currentDbPath = path.join(configDir, 'users.db');
+    return currentDbPath;
   }
 
   /**

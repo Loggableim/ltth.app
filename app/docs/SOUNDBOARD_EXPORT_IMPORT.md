@@ -204,4 +204,4 @@ Possible improvements for future versions:
 For issues or questions, please refer to:
 - Main documentation: `/app/plugins/soundboard/README.md`
 - Plugin documentation: `/app/wiki/Plugin-Dokumentation.md`
-- GitHub Issues: https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop/issues
+- GitHub Issues: https://github.com/Loggableim/ltth.app/issues

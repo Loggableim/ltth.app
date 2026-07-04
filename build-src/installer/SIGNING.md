@@ -325,7 +325,7 @@ For issues with:
 
 **LTTH Installer:**
 - Email: loggableim@gmail.com
-- GitHub: https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop
+- GitHub: https://github.com/Loggableim/ltth.app
 
 **Certum SimplySign:**
 - Support: https://www.certum.eu/en/contact/

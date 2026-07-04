@@ -16,7 +16,7 @@ This document provides practical examples of integrating the Changelog Generatio
 
 ```bash
 # Navigate to repository root
-cd /path/to/pupcidslittletiktoolhelper_desktop
+cd /path/to/ltth.app
 
 # Generate changelog comparing last tag with current HEAD
 node app/modules/changelog-agent/changelog-cli.js --dry-run

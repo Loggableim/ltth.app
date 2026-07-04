@@ -29,6 +29,19 @@ const UnifiedQueueManager = require('./backend/unified-queue');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const net = require('net');
+
+const AVATAR_PROXY_ALLOWED_HOST_SUFFIXES = [
+  'tiktokcdn.com',
+  'tiktokcdn-us.com',
+  'bytegoofy.com',
+  'tiktok.com',
+  'muscdn.com',
+  'tiktokv.com'
+];
+const AVATAR_PROXY_BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '::ffff:127.0.0.1']);
+const AVATAR_PROXY_MAX_BYTES = 2 * 1024 * 1024;
+const AVATAR_PROXY_TIMEOUT_MS = 5000;
 
 class GameEnginePlugin {
   constructor(api) {
@@ -256,6 +269,44 @@ class GameEnginePlugin {
   _sanitizeWheelAudioType(audioType) {
     const validTypes = new Set(['spinning', 'prize1', 'prize2', 'prize3', 'lost']);
     return validTypes.has(audioType) ? audioType : null;
+  }
+
+  _isPrivateIpAddress(hostname) {
+    const ipVersion = net.isIP(hostname);
+    if (!ipVersion) return false;
+
+    if (ipVersion === 4) {
+      const parts = hostname.split('.').map((part) => Number(part));
+      const [first, second] = parts;
+      return first === 127 || first === 0 || first === 10 || first === 169 && second === 254 || first === 192 && second === 168 || first === 172 && second >= 16 && second <= 31;
+    }
+
+    if (ipVersion === 6) {
+      const normalized = hostname.toLowerCase();
+      if (normalized === '::1' || normalized === '::ffff:127.0.0.1') {
+        return true;
+      }
+      if (normalized.startsWith('fc') || normalized.startsWith('fd') || normalized.startsWith('fe80')) {
+        return true;
+      }
+      if (normalized.startsWith('::ffff:')) {
+        const embedded = normalized.replace(/^::ffff:/, '');
+        return this._isPrivateIpAddress(embedded);
+      }
+      return false;
+    }
+
+    return false;
+  }
+
+  _isDisallowedAvatarHost(hostname) {
+    const normalizedHost = String(hostname || '').toLowerCase();
+    if (!normalizedHost) return true;
+    if (AVATAR_PROXY_BLOCKED_HOSTS.has(normalizedHost)) return true;
+    if (this._isPrivateIpAddress(normalizedHost)) return true;
+    return !AVATAR_PROXY_ALLOWED_HOST_SUFFIXES.some((suffix) => {
+      return normalizedHost === suffix || normalizedHost.endsWith(`.${suffix}`);
+    });
   }
 
   _isDrawReason(reason) {
@@ -1355,12 +1406,16 @@ class GameEnginePlugin {
       try {
         const rawUrl = String(req.query?.url || '').trim();
         const parsed = new URL(rawUrl);
+        const host = String(parsed.hostname || '').toLowerCase();
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
           return res.status(400).json({ error: 'Invalid avatar URL' });
         }
+        if (this._isDisallowedAvatarHost(host)) {
+          return res.status(403).json({ error: 'Avatar host is not allowed' });
+        }
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), AVATAR_PROXY_TIMEOUT_MS);
         let upstream;
         try {
           upstream = await fetch(parsed.toString(), {
@@ -1383,7 +1438,7 @@ class GameEnginePlugin {
         }
 
         const bytes = Buffer.from(await upstream.arrayBuffer());
-        if (bytes.length > 2 * 1024 * 1024) {
+        if (bytes.length > AVATAR_PROXY_MAX_BYTES) {
           return res.status(413).json({ error: 'Avatar image too large' });
         }
 
@@ -3234,10 +3289,14 @@ class GameEnginePlugin {
   registerTikTokEvents() {
     // Listen for gifts that trigger games
     this.api.registerTikTokEvent('gift', (data) => {
+      if (data && data.repeatEnd !== false && this._isDuplicateGiftEvent(data)) {
+        return;
+      }
+
       if (this.arenaGame) {
         this.arenaGame.handleGift(data);
       }
-      this.handleGiftTrigger(data);
+      this.handleGiftTrigger(data, { skipDedup: true });
     });
 
     this.api.registerTikTokEvent('chat', (data) => {
@@ -3649,10 +3708,25 @@ class GameEnginePlugin {
     return String(giftId).trim();
   }
 
+  _isDuplicateGiftEvent(data) {
+    const { uniqueId, giftName, giftId } = data;
+    const dedupKey = `${uniqueId || ''}_${giftName || ''}_${giftId || 'noId'}`;
+    const now = Date.now();
+    const lastEventTime = this.recentGiftEvents.get(dedupKey);
+
+    if (lastEventTime && (now - lastEventTime) < this.GIFT_DEDUP_WINDOW_MS) {
+      this.logger.warn(`[GIFT DEDUP] Duplicate gift event blocked: ${giftName} from ${uniqueId} (${now - lastEventTime}ms since last event)`);
+      return true;
+    }
+
+    this.recentGiftEvents.set(dedupKey, now);
+    return false;
+  }
+
   /**
    * Handle gift trigger
    */
-  handleGiftTrigger(data) {
+  handleGiftTrigger(data, options = {}) {
     const { uniqueId, giftName, giftId, nickname, giftPictureUrl, profilePictureUrl = '', repeatEnd, repeatCount } = data;
     
     // Enhanced gift event logging for debugging
@@ -3665,15 +3739,8 @@ class GameEnginePlugin {
       this.logger.debug(`[GIFT TRIGGER] Gift ${giftName} (ID: ${giftId}) is part of a streak, waiting for repeatEnd`);
       return;
     }
-    
-    // Deduplication check: Prevent same user + gift from being processed multiple times
-    // within a short timeframe (e.g., due to network issues, duplicate events, or rapid clicks)
-    const dedupKey = `${uniqueId}_${giftName}_${giftId || 'noId'}`;
-    const now = Date.now();
-    const lastEventTime = this.recentGiftEvents.get(dedupKey);
-    
-    if (lastEventTime && (now - lastEventTime) < this.GIFT_DEDUP_WINDOW_MS) {
-      this.logger.warn(`[GIFT DEDUP] Duplicate gift event blocked: ${giftName} from ${uniqueId} (${now - lastEventTime}ms since last event)`);
+
+    if (!options.skipDedup && this._isDuplicateGiftEvent(data)) {
       return;
     }
     
@@ -3687,9 +3754,6 @@ class GameEnginePlugin {
     // Check for Wheel (Glücksrad) gift triggers across ALL wheels
     const matchingWheel = this.wheelGame.findWheelByGiftTrigger(giftIdStr || giftName);
     if (matchingWheel) {
-      // Record this gift event AFTER verifying it matches a trigger
-      this.recentGiftEvents.set(dedupKey, now);
-      
       this.logger.info(`[WHEEL TRIGGER] Gift ${giftName} (ID: ${giftId}) matched Wheel "${matchingWheel.name}" (ID: ${matchingWheel.id}) - triggering ${effectiveCount}x spin(s)`);
       // Each handleWheelGiftTrigger call enqueues into the wheel's own queue system (triggerSpin),
       // so rapid calls are safe - the queue absorbs the load.
@@ -3705,7 +3769,6 @@ class GameEnginePlugin {
     const matchingPlinkoBoard = this.plinkoGame.findBoardByGiftTrigger(giftIdStr) ||
                                 this.plinkoGame.findBoardByGiftTrigger(giftName);
     if (matchingPlinkoBoard) {
-      this.recentGiftEvents.set(dedupKey, now);
       this.logger.info(`[PLINKO TRIGGER] Gift ${giftName} (ID: ${giftId}) matched Plinko board "${matchingPlinkoBoard.name}" (ID: ${matchingPlinkoBoard.id}) - triggering ${effectiveCount}x`);
       for (let i = 0; i < effectiveCount; i++) {
         // Pass matchingPlinkoBoard.id so handlePlinkoGiftTrigger uses the correct board's config
@@ -3720,7 +3783,6 @@ class GameEnginePlugin {
       const matchingSlotMachine = this.slotGame.findMachineByGiftTrigger(giftIdStr || giftName) ||
                                   this.slotGame.findMachineByGiftTrigger(giftName);
       if (matchingSlotMachine) {
-        this.recentGiftEvents.set(dedupKey, now);
         const giftMapping = (matchingSlotMachine.giftMappings || {})[giftIdStr] ||
                             (matchingSlotMachine.giftMappings || {})[giftName] ||
                             {};
@@ -3760,9 +3822,6 @@ class GameEnginePlugin {
       return;
     }
     
-    // Record this gift event AFTER verifying it matches a trigger
-    this.recentGiftEvents.set(dedupKey, now);
-
     // Handle Plinko differently - it doesn't need queuing
     if (matchingTrigger.game_type === 'plinko') {
       this.logger.info(`[GIFT TRIGGER] Plinko trigger matched for gift "${giftName}" - triggering ${effectiveCount}x`);

@@ -50,10 +50,26 @@
                     const attr = el.getAttribute('data-i18n-attr');
                     el.setAttribute(attr, value);
                 } else if (el.children.length > 0) {
-                    // Element has child elements (e.g. SVG icons) — only replace trailing text
-                    const last = el.lastChild;
-                    if (last && last.nodeType === Node.TEXT_NODE) {
-                        last.textContent = value;
+                    const textNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+                    const meaningfulTextNodes = textNodes.filter(node => node.textContent.trim().length > 0);
+                    const childrenWithText = Array.from(el.children).filter(child => {
+                        return (child.textContent || '').trim().length > 0;
+                    });
+                    const translatableChildren = childrenWithText.filter(child => child.hasAttribute && (child.hasAttribute('data-i18n') || child.hasAttribute('data-i18n-alt')));
+
+                    if (meaningfulTextNodes.length > 0) {
+                        if (translatableChildren.length === 0) {
+                            childrenWithText.forEach(child => {
+                                child.textContent = '';
+                            });
+                        }
+                        meaningfulTextNodes.forEach((node, index) => {
+                            node.textContent = index === 0 ? value : '';
+                        });
+                    } else if (textNodes.length > 0) {
+                        textNodes[textNodes.length - 1].textContent = value;
+                    } else {
+                        el.textContent = value;
                     }
                 } else {
                     el.textContent = value;

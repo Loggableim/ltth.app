@@ -463,7 +463,7 @@ Severity: Critical/High/Medium/Low
 ## 📞 Support
 
 For testing issues or questions:
-- **GitHub Issues:** https://github.com/Loggableim/pupcidslittletiktoolhelper_desktop/issues
+- **GitHub Issues:** https://github.com/Loggableim/ltth.app/issues
 - **Email:** pupcid@ltth.app
 - **Documentation:** See ADVANCED_FEATURES.md
 

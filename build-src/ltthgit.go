@@ -22,7 +22,7 @@ var assets embed.FS
 
 const (
 	repoOwner = "Loggableim"
-	repoName  = "pupcidslittletiktokhelper"
+	repoName  = "ltth.app"
 	repoBranch = "main"
 )
 
@@ -176,7 +176,7 @@ func (cl *CloudLauncher) extractZip(zipPath, destDir string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		// Skip the root directory (e.g., "pupcidslittletiktokhelper-main/")
+		// Skip the root directory (e.g., "ltth.app-main/")
 		// Extract directly to destDir
 		fpath := f.Name
 		
@@ -361,7 +361,7 @@ func (cl *CloudLauncher) run() error {
 func main() {
 	fmt.Println("================================================")
 	fmt.Println("  LTTH Cloud Launcher")
-	fmt.Println("  https://github.com/Loggableim/pupcidslittletiktokhelper")
+	fmt.Println("  https://github.com/Loggableim/ltth.app")
 	fmt.Println("================================================")
 	fmt.Println()
 	

@@ -43,6 +43,25 @@ screenshots/
 
 ## How to Generate Screenshots
 
+### 1b) Automatic CI capture
+
+There is an automated GitHub Action at `.github/workflows/website-screenshots.yml` that can:
+
+- run on schedule (`cron`) every day at 04:00 UTC
+- run manually (`workflow_dispatch`)
+- capture both EN and DE screenshots in one run
+- upload captured files as workflow artifacts
+
+Manual workflow trigger fields:
+
+```bash
+languages: en,de
+auto_commit: false
+```
+
+Set `auto_commit: true` to let the workflow push updated screenshot PNGs back to
+the repository in the same branch that triggered the run.
+
 ### 1. Install Dependencies
 
 ```bash
@@ -60,9 +79,25 @@ This will:
 - Render it at **1280×800** viewport
 - Save the result to `screenshots/features/<name>.png`
 
+To capture the live website pages that are intended for CI scheduling:
+
+```bash
+node scripts/capture-live-screenshots.js
+```
+
+Useful environment overrides:
+
+```bash
+SCREENSHOT_LANGS=en,de
+SCREENSHOT_BASE_URL=https://ltth.app
+SCREENSHOT_VIEWPORT_WIDTH=1280
+SCREENSHOT_VIEWPORT_HEIGHT=800
+```
+
 ### 3. Verify Output
 
-After capture, all 20 feature screenshots will be in `screenshots/features/`.
+After capture, all feature screenshots in `FEATURE_PAGES` (currently 18 files) are
+in `screenshots/features/` (EN) and `screenshots/de/features/` (DE).
 The feature pages in `features/*.html` reference these via `<img src="/screenshots/features/<name>.png">`.
 
 ---

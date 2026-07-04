@@ -293,7 +293,7 @@
                                   Bitte konfigurieren Sie zuerst Ihren OpenAI API-Schlüssel im Haupteinstellungspanel.
                             </div>
 
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
                                 <div class="form-group">
                                     <label for="packageCategory">Kategorie *</label>
                                     <input 
@@ -325,6 +325,25 @@
                                         class="form-control" 
                                         placeholder="Automatisch generiert"
                                     >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="packageLanguage">Sprache</label>
+                                    <select id="packageLanguage" class="form-control">
+                                        <option value="de">Deutsch</option>
+                                        <option value="en">English</option>
+                                        <option value="es">Español</option>
+                                        <option value="fr">Français</option>
+                                        <option value="it">Italiano</option>
+                                        <option value="pt">Português</option>
+                                        <option value="nl">Nederlands</option>
+                                        <option value="pl">Polski</option>
+                                        <option value="ru">Русский</option>
+                                        <option value="tr">Türkçe</option>
+                                        <option value="ja">日本語</option>
+                                        <option value="zh">中文</option>
+                                        <option value="ar">العربية</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -389,6 +408,25 @@
                                     value="10"
                                     style="max-width: 200px;"
                                 >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="batchPackageLanguage">Sprache</label>
+                                <select id="batchPackageLanguage" class="form-control" style="max-width: 200px;">
+                                    <option value="de">Deutsch</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="it">Italiano</option>
+                                    <option value="pt">Português</option>
+                                    <option value="nl">Nederlands</option>
+                                    <option value="pl">Polski</option>
+                                    <option value="ru">Русский</option>
+                                    <option value="tr">Türkçe</option>
+                                    <option value="ja">日本語</option>
+                                    <option value="zh">中文</option>
+                                    <option value="ar">العربية</option>
+                                </select>
                             </div>
 
                             <div class="info-box" style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
@@ -877,6 +915,86 @@
                                  Slot Machine Manuell Testen
                             </button>
                             <div class="help-text small">Testet die Slot Machine Animation im Overlay (unabhängig vom Quiz)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LLM On-the-fly Question Generation Settings -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2> KI-Fragen-Generierung (On-the-Fly)</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="help-text" style="margin-bottom: 20px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 4px;">
+                            <strong> On-the-Fly Generierung:</strong> Wenn keine Fragen mehr im Pool verfügbar sind, generiert die KI automatisch eine neue Frage, speichert sie in der Datenbank und zeigt sie sofort an. So läuft das Quiz endlos weiter.
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="llmEnabled">
+                                <span>On-the-Fly Generierung aktivieren</span>
+                            </label>
+                            <div class="help-text small">Generiert automatisch neue Fragen per KI, wenn der Fragenpool leer ist</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>KI-Provider:</label>
+                            <select id="llmProvider" class="form-control">
+                                <option value="openai">OpenAI (API-Key erforderlich)</option>
+                                <option value="ollama">Ollama (Lokal, kein API-Key nötig)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="llmApiKeyGroup">
+                            <label for="llmApiKey">API-Key:</label>
+                            <input type="password" id="llmApiKey" class="form-control" placeholder="sk-... oder leer lassen für Ollama">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="llmModel">Modell:</label>
+                            <input type="text" id="llmModel" class="form-control" placeholder="z.B. gpt-5-mini, llama3.2, mistral">
+                            <div class="help-text small">OpenAI: gpt-5-mini, gpt-4o-mini | Ollama: llama3.2, mistral, qwen2.5</div>
+                        </div>
+
+                        <div class="form-group" id="llmBaseUrlGroup">
+                            <label for="llmBaseUrl">Base URL (optional):</label>
+                            <input type="text" id="llmBaseUrl" class="form-control" placeholder="http://localhost:11434/v1 (Ollama Standard)">
+                            <div class="help-text small">Nur für Ollama oder benutzerdefinierte Endpoints. OpenAI-URL nicht ändern.</div>
+                        </div>
+
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label for="llmLanguage">Sprache der Fragen:</label>
+                                <select id="llmLanguage" class="form-control">
+                                    <option value="de">Deutsch</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="it">Italiano</option>
+                                    <option value="pt">Português</option>
+                                    <option value="nl">Nederlands</option>
+                                    <option value="pl">Polski</option>
+                                    <option value="ru">Русский</option>
+                                    <option value="tr">Türkçe</option>
+                                    <option value="ja">日本語</option>
+                                    <option value="zh">中文</option>
+                                    <option value="ar">العربية</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="llmDifficulty">Schwierigkeitsgrad:</label>
+                                <select id="llmDifficulty" class="form-control">
+                                    <option value="1"> Leicht</option>
+                                    <option value="2" selected> Mittel</option>
+                                    <option value="3"> Schwer</option>
+                                    <option value="4"> Experte</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 15px;">
+                            <button id="testLlmConnectionBtn" class="btn btn-secondary"> Verbindung testen</button>
+                            <div id="llmTestResult" class="message hidden" style="margin-top: 10px;"></div>
                         </div>
                     </div>
                 </div>

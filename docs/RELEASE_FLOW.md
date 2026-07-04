@@ -1,10 +1,10 @@
-# LTTH Release Flow Documentation
+﻿# LTTH Release Flow Documentation
 
 This document describes the complete release workflow for PupCid's Little TikTool Helper (LTTH), including how to prepare, execute, and verify releases using the automated release system.
 
 ## Overview
 
-The LTTH release system automates the process of deploying new versions from the build repository (`pupcidslittletiktokhelper`) to the website repository (`ltth.app`), ensuring that:
+The LTTH release system automates the process of deploying new versions from the build repository (`ltth.app`) to the website repository (`ltth.app`), ensuring that:
 
 - The Cloud-Installer always downloads the latest version from a fixed URL
 - Old versions are properly archived
@@ -17,28 +17,28 @@ The LTTH release system automates the process of deploying new versions from the
 
 ```
 ltth.app/
-├── app/
-│   ├── ltth_latest.zip           # Latest version (downloaded by Cloud-Installer)
-│   ├── CURRENT_VERSION.txt       # Current version number (e.g., "1.2.3")
-│   ├── CURRENT_RELEASE.json      # Release metadata (version, date, notes)
-│   └── archive/
-│       ├── .gitkeep
-│       ├── ltth_1.1.0.zip       # Archived older versions
-│       └── ltth_1.1.1.zip
-├── new_patch/
-│   └── ltth_1.2.3/              # New version prepared for release
-│       ├── ltth_1.2.3.zip       # Build artifact from build repo
-│       └── changelog.txt        # Release notes for this version
-├── released_patches/
-│   └── ltth_1.2.2/              # Successfully released patches (archived)
-│       ├── ltth_1.2.2.zip
-│       └── changelog.txt
-├── downloads/
-│   └── index.html               # Download page (reads CURRENT_RELEASE.json)
-├── scripts/
-│   └── release_from_new_patch.py # Automated release script
-└── docs/
-    └── RELEASE_FLOW.md          # This document
+â”œâ”€â”€ app/
+â”‚   â”œâ”€â”€ ltth_latest.zip           # Latest version (downloaded by Cloud-Installer)
+â”‚   â”œâ”€â”€ CURRENT_VERSION.txt       # Current version number (e.g., "1.2.3")
+â”‚   â”œâ”€â”€ CURRENT_RELEASE.json      # Release metadata (version, date, notes)
+â”‚   â””â”€â”€ archive/
+â”‚       â”œâ”€â”€ .gitkeep
+â”‚       â”œâ”€â”€ ltth_1.1.0.zip       # Archived older versions
+â”‚       â””â”€â”€ ltth_1.1.1.zip
+â”œâ”€â”€ new_patch/
+â”‚   â””â”€â”€ ltth_1.2.3/              # New version prepared for release
+â”‚       â”œâ”€â”€ ltth_1.2.3.zip       # Build artifact from build repo
+â”‚       â””â”€â”€ changelog.txt        # Release notes for this version
+â”œâ”€â”€ released_patches/
+â”‚   â””â”€â”€ ltth_1.2.2/              # Successfully released patches (archived)
+â”‚       â”œâ”€â”€ ltth_1.2.2.zip
+â”‚       â””â”€â”€ changelog.txt
+â”œâ”€â”€ downloads/
+â”‚   â””â”€â”€ index.html               # Download page (reads CURRENT_RELEASE.json)
+â”œâ”€â”€ scripts/
+â”‚   â””â”€â”€ release_from_new_patch.py # Automated release script
+â””â”€â”€ docs/
+    â””â”€â”€ RELEASE_FLOW.md          # This document
 ```
 
 ### Key Files
@@ -51,9 +51,9 @@ ltth.app/
 
 ## Release Process
 
-### Step 1: Prepare Build in pupcidslittletiktokhelper
+### Step 1: Prepare Build in ltth.app
 
-In the separate build repository (`pupcidslittletiktokhelper`):
+In the separate build repository (`ltth.app`):
 
 1. Complete development work for the new version
 2. Run the build process to generate the application package
@@ -94,9 +94,9 @@ cp /path/to/build/changelog.txt new_patch/ltth_1.2.3/
 **Expected structure:**
 ```
 new_patch/
-└── ltth_1.2.3/
-    ├── ltth_1.2.3.zip       # Build artifact (15-20 MB typically)
-    └── changelog.txt        # Release notes
+â””â”€â”€ ltth_1.2.3/
+    â”œâ”€â”€ ltth_1.2.3.zip       # Build artifact (15-20 MB typically)
+    â””â”€â”€ changelog.txt        # Release notes
 ```
 
 ### Step 3: Run the Release Script
@@ -149,33 +149,33 @@ chmod +x scripts/release_from_new_patch.py
 LTTH Release Automation
 ======================================================================
 
-📦 Step 1: Finding highest version in new_patch/
-✅ Found new version: 1.2.3
+ðŸ“¦ Step 1: Finding highest version in new_patch/
+âœ… Found new version: 1.2.3
    Path: /path/to/ltth.app/new_patch/ltth_1.2.3
 
-🔍 Step 2: Validating patch files
-✅ Patch validation passed
+ðŸ” Step 2: Validating patch files
+âœ… Patch validation passed
    ZIP: ltth_1.2.3.zip (18.5 MB)
    Changelog: changelog.txt
 
-📋 Step 3: Checking current deployed version
+ðŸ“‹ Step 3: Checking current deployed version
    Current version: 1.2.2
 
-📦 Step 4: Archiving current version
-✅ Archived current version: ltth_1.2.2.zip
+ðŸ“¦ Step 4: Archiving current version
+âœ… Archived current version: ltth_1.2.2.zip
 
-🚀 Step 5: Deploying new version
-✅ Deployed new version: ltth_latest.zip (18.5 MB)
+ðŸš€ Step 5: Deploying new version
+âœ… Deployed new version: ltth_latest.zip (18.5 MB)
 
-📝 Step 6: Updating metadata files
-✅ Updated CURRENT_VERSION.txt: 1.2.3
-✅ Updated CURRENT_RELEASE.json
+ðŸ“ Step 6: Updating metadata files
+âœ… Updated CURRENT_VERSION.txt: 1.2.3
+âœ… Updated CURRENT_RELEASE.json
 
-🧹 Step 7: Moving patch to released_patches/
-✅ Moved patch to released_patches/ltth_1.2.3
+ðŸ§¹ Step 7: Moving patch to released_patches/
+âœ… Moved patch to released_patches/ltth_1.2.3
 
 ======================================================================
-✅ SUCCESS: Released version 1.2.3
+âœ… SUCCESS: Released version 1.2.3
 ======================================================================
 
 Next steps:
@@ -243,14 +243,14 @@ After GitHub Pages deployment completes, verify:
 
 LTTH uses Semantic Versioning (SemVer) with the format `MAJOR.MINOR.PATCH`:
 
-- **MAJOR**: Breaking changes or major new features (e.g., `1.x.x` → `2.0.0`)
-- **MINOR**: New features, backward compatible (e.g., `1.2.x` → `1.3.0`)
-- **PATCH**: Bug fixes, minor improvements (e.g., `1.2.3` → `1.2.4`)
+- **MAJOR**: Breaking changes or major new features (e.g., `1.x.x` â†’ `2.0.0`)
+- **MINOR**: New features, backward compatible (e.g., `1.2.x` â†’ `1.3.0`)
+- **PATCH**: Bug fixes, minor improvements (e.g., `1.2.3` â†’ `1.2.4`)
 
 **Examples:**
-- `1.2.3` → `1.2.4`: Bug fix release
-- `1.2.3` → `1.3.0`: New features added
-- `1.2.3` → `2.0.0`: Major overhaul or breaking changes
+- `1.2.3` â†’ `1.2.4`: Bug fix release
+- `1.2.3` â†’ `1.3.0`: New features added
+- `1.2.3` â†’ `2.0.0`: Major overhaul or breaking changes
 
 ### Multiple Versions in new_patch/
 
@@ -263,9 +263,9 @@ If multiple version directories exist in `new_patch/`, the script will:
 **Example:**
 ```
 new_patch/
-├── ltth_1.2.3/    # Will be ignored
-├── ltth_1.3.0/    # Will be ignored
-└── ltth_2.0.0/    # This will be selected (highest)
+â”œâ”€â”€ ltth_1.2.3/    # Will be ignored
+â”œâ”€â”€ ltth_1.3.0/    # Will be ignored
+â””â”€â”€ ltth_2.0.0/    # This will be selected (highest)
 ```
 
 To release multiple versions sequentially:
@@ -356,10 +356,10 @@ The download page updates automatically via JavaScript. Manual HTML edits are no
 ### Script Validation
 
 The script performs extensive validation:
-- ✅ Directory naming (must match `ltth_X.Y.Z` pattern)
-- ✅ SemVer parsing (must be valid semantic version)
-- ✅ File existence (ZIP and changelog must exist)
-- ✅ Archive consistency (prevents duplicate versions with different content)
+- âœ… Directory naming (must match `ltth_X.Y.Z` pattern)
+- âœ… SemVer parsing (must be valid semantic version)
+- âœ… File existence (ZIP and changelog must exist)
+- âœ… Archive consistency (prevents duplicate versions with different content)
 
 ## Advanced Usage
 
@@ -473,3 +473,4 @@ For issues with the release system:
 
 - **2025-12-07**: Initial release flow documentation
 - **Future**: Will be updated as the system evolves
+
