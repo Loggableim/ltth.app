@@ -581,4 +581,6 @@ class ResponseEngine {
   }
 }
 
-module.exports = { ResponseEngine, Relevance };
+module.exports = ResponseEngine;
+module.exports.ResponseEngine = ResponseEngine;
+module.exports.Relevance = Relevance;

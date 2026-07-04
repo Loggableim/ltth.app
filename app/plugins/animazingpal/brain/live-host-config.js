@@ -275,11 +275,11 @@ function normalizeLiveHostConfig(input = {}, legacy = {}) {
   configured.response.hostLongFormWordLimit = Math.round(clamp(configured.response.hostLongFormWordLimit, 1, 500, defaults.response.hostLongFormWordLimit));
   configured.response.sidekickName = safeString(configured.response.sidekickName, 80, defaults.response.sidekickName);
   configured.response.chatProbability = clamp(configured.response.chatProbability, 0, 1, defaults.response.chatProbability);
-  if (configured.response.maxResponsesPerMinute <= 4) {
-    configured.response.maxResponsesPerMinute = defaults.response.maxResponsesPerMinute;
-  }
   if (configured.response.chatProbability <= 0.1) {
     configured.response.chatProbability = defaults.response.chatProbability;
+  }
+  if (configured.response.maxResponsesPerMinute <= 4) {
+    configured.response.maxResponsesPerMinute = defaults.response.maxResponsesPerMinute;
   }
   configured.response.maxSentences = Math.round(clamp(configured.response.maxSentences, 1, 10, defaults.response.maxSentences));
   configured.response.maxCharacters = Math.round(clamp(configured.response.maxCharacters, 20, 4000, 500));

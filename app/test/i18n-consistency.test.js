@@ -5,7 +5,8 @@ const appRoot = path.join(__dirname, '..');
 const locales = ['en', 'de', 'es', 'fr'];
 
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw.replace(/^\uFEFF/, ''));
 }
 
 function isObject(value) {

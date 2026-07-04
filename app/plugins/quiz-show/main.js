@@ -1559,7 +1559,9 @@ class QuizShowPlugin {
                     hasOpenAIKey,
                     gameState: {
                         ...this.gameState,
-                        answers: Array.from(this.gameState.answers.entries()),
+                        answers: this.gameState?.answers && typeof this.gameState.answers.entries === 'function'
+                          ? Array.from(this.gameState.answers.entries())
+                          : [],
                         eliminatedUsers: Array.from(this.gameState.eliminatedUsers)
                     },
                     stats: this.stats
@@ -3477,8 +3479,8 @@ class QuizShowPlugin {
 
         let time = this.config.lastManStandingInitialTime || 30;
 
-        if (currentRound >= decrementFrom) {
-            const decrementRounds = currentRound - decrementFrom + 1;
+        if (currentRound >= decrementFrom - 1) {
+            const decrementRounds = Math.floor((currentRound - (decrementFrom - 1)) / 2) + 1;
             time -= decrementRounds * decrement;
             time = Math.max(time, minTime);
         }
@@ -3525,7 +3527,9 @@ class QuizShowPlugin {
 
         // Get user data for survivors (username, profilePictureUrl)
         const survivorsData = survivors.map(userId => {
-            const answerData = this.gameState.answers.get(userId);
+            const answerData = this.gameState.answers && typeof this.gameState.answers.get === 'function'
+              ? this.gameState.answers.get(userId)
+              : null;
             return {
                 userId,
                 username: answerData?.username || userId,
@@ -4216,14 +4220,23 @@ class QuizShowPlugin {
 
         // Calculate results
         const results = this.calculateResults();
+        const resultCorrectAnswer = results?.correctAnswer || {};
+        const correctAnswerIndex = Number.isInteger(resultCorrectAnswer.index) ? resultCorrectAnswer.index : -1;
+        const correctAnswerText = typeof resultCorrectAnswer.text === 'string' ? resultCorrectAnswer.text : '';
+        const currentQuestion = this.gameState?.currentQuestion || null;
+        const questionInfo = currentQuestion && typeof currentQuestion.info === 'string' ? currentQuestion.info : null;
+        const correctAnswerLetter = Number.isInteger(correctAnswerIndex) && correctAnswerIndex >= 0 && correctAnswerIndex <= 3
+          ? String.fromCharCode(65 + correctAnswerIndex)
+          : '?';
+        const totalAnswers = Number.isInteger(this.gameState?.answers?.size) ? this.gameState.answers.size : 0;
 
         // Elimination mode - eliminate users with wrong answers
-        if (this.config.gameMode === 'elimination') {
-            const correctAnswerIndex = this.gameState.currentQuestion.correct;
-            const correctAnswerText = this.gameState.currentQuestion.answers[correctAnswerIndex];
-            
-            for (const [userId, answerData] of this.gameState.answers.entries()) {
-                if (!this.isAnswerCorrect(answerData.answer, correctAnswerIndex, correctAnswerText)) {
+        if (this.config.gameMode === 'elimination' && correctAnswerIndex >= 0) {
+            const answerEntries = this.gameState?.answers && typeof this.gameState.answers.entries === 'function'
+              ? Array.from(this.gameState.answers.entries())
+              : [];
+            for (const [userId, answerData] of answerEntries) {
+                if (!this.isAnswerCorrect(answerData?.answer, correctAnswerIndex, correctAnswerText)) {
                     this.gameState.eliminatedUsers.add(userId);
                 }
             }
@@ -4231,7 +4244,7 @@ class QuizShowPlugin {
 
         // Update statistics
         this.stats.totalRounds++;
-        this.stats.totalAnswers += this.gameState.answers.size;
+        this.stats.totalAnswers += totalAnswers;
         this.stats.totalCorrectAnswers += results.correctUsers.length;
 
         await this.saveConfig();
@@ -4239,17 +4252,13 @@ class QuizShowPlugin {
         // Play round end sound
         this.playSound('round_end');
 
-        // Get the correct answer letter
-        const correctAnswerLetter = String.fromCharCode(65 + this.gameState.currentQuestion.correct); // A, B, C, D
-        const correctAnswerText = this.gameState.currentQuestion.answers[this.gameState.currentQuestion.correct];
-        
         // TTS announcement for correct answer and info text if enabled
         if (this.config.ttsEnabled && !suppressTTS) {
-            let ttsText = `Die richtige Antwort ist ${correctAnswerLetter}: ${correctAnswerText}.`;
-            
+            let ttsText = `Die richtige Antwort ist ${correctAnswerLetter}: ${correctAnswerText || 'unbekannt'}.`;
+
             // Add info text if available
-            if (this.gameState.currentQuestion.info) {
-                ttsText += ` ${this.gameState.currentQuestion.info}`;
+            if (questionInfo) {
+                ttsText += ` ${questionInfo}`;
             }
             
             // Parse voice format: "engine:voiceId" or "default"
@@ -4282,16 +4291,21 @@ class QuizShowPlugin {
 
         // Broadcast results
         this.api.emit('quiz-show:round-ended', {
-            question: this.gameState.currentQuestion,
-            correctAnswer: this.gameState.currentQuestion.correct,
+            question: currentQuestion,
+            correctAnswer: correctAnswerIndex,
             correctAnswerLetter: correctAnswerLetter,
             correctAnswerText: correctAnswerText,
-            info: this.gameState.currentQuestion.info,
+            info: questionInfo,
             answerDisplayDuration: this.getAnswerDisplayDuration(), // Send to overlay - minimum 6 seconds
             results,
             stats: this.stats,
-            eliminatedUsers: Array.from(this.gameState.eliminatedUsers),
-            votersPerAnswer: this.gameState.votersPerAnswer, // Include voter data for icon display
+            eliminatedUsers: Array.from(this.gameState.eliminatedUsers || new Set()),
+            votersPerAnswer: this.gameState.votersPerAnswer || {
+                0: [],
+                1: [],
+                2: [],
+                3: []
+            },
             voterIconsConfig: {
                 enabled: this.config.voterIconsEnabled,
                 size: this.config.voterIconSize,
@@ -4302,7 +4316,7 @@ class QuizShowPlugin {
             }
         });
 
-        this.api.log(`Round ended. Correct answers: ${results.correctUsers.length}/${this.gameState.answers.size}`, 'info');
+        this.api.log(`Round ended. Correct answers: ${results.correctUsers.length}/${totalAnswers}`, 'info');
 
         // Track if leaderboard will be shown (need to check for data availability)
         let willShowLeaderboard = false;
@@ -4684,18 +4698,34 @@ class QuizShowPlugin {
     }
 
     calculateResults() {
-        const correctAnswerIndex = this.gameState.currentQuestion.correct;
-        const correctAnswerText = this.gameState.currentQuestion.answers[correctAnswerIndex];
+        const currentQuestion = this.gameState?.currentQuestion || {};
+        const currentQuestionAnswers = Array.isArray(currentQuestion.answers) ? currentQuestion.answers : [];
+        const rawCorrectAnswerIndex = Number(currentQuestion.correct);
+        const isValidCorrectAnswerIndex = Number.isInteger(rawCorrectAnswerIndex)
+          && rawCorrectAnswerIndex >= 0
+          && rawCorrectAnswerIndex < currentQuestionAnswers.length;
+        const correctAnswerIndex = isValidCorrectAnswerIndex ? rawCorrectAnswerIndex : -1;
+        const correctAnswerText = isValidCorrectAnswerIndex ? currentQuestionAnswers[correctAnswerIndex] || '' : '';
 
         const correctUsers = [];
-        const answers = Array.from(this.gameState.answers.entries());
+        const rawAnswers = this.gameState?.answers;
+        const answersEntries = rawAnswers && typeof rawAnswers.entries === 'function'
+          ? Array.from(rawAnswers.entries())
+          : [];
 
         // Sort by timestamp
-        answers.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        answersEntries.sort((a, b) => {
+            const aTs = Number(a?.[1]?.timestamp);
+            const bTs = Number(b?.[1]?.timestamp);
+            if (!Number.isFinite(aTs) && !Number.isFinite(bTs)) return 0;
+            if (!Number.isFinite(aTs)) return 1;
+            if (!Number.isFinite(bTs)) return -1;
+            return aTs - bTs;
+        });
 
         // Find correct answers
-        for (const [userId, answerData] of answers) {
-            if (this.isAnswerCorrect(answerData.answer, correctAnswerIndex, correctAnswerText)) {
+        for (const [userId, answerData] of answersEntries) {
+            if (this.isAnswerCorrect(answerData?.answer, correctAnswerIndex, correctAnswerText)) {
                 correctUsers.push({
                     userId,
                     username: answerData.username,
@@ -4721,23 +4751,23 @@ class QuizShowPlugin {
                 }
             }
 
-            for (const [userId, answerData] of answers) {
+            for (const [userId, answerData] of answersEntries) {
                 if (!correctUsers.some(user => user.userId === userId)) {
                     this.applyAnswerProgress({
                         userId,
-                        username: answerData.username,
-                        answer: answerData.answer
+                        username: answerData?.username,
+                        answer: answerData?.answer
                     }, false, 0, false);
                 }
             }
 
             this.gameState.pointsAwardedForRound = true;
         } else if (correctUsers.length === 0 && !this.gameState.pointsAwardedForRound) {
-            for (const [userId, answerData] of answers) {
+            for (const [userId, answerData] of answersEntries) {
                 this.applyAnswerProgress({
                     userId,
-                    username: answerData.username,
-                    answer: answerData.answer
+                    username: answerData?.username,
+                    answer: answerData?.answer
                 }, false, 0, false);
             }
             this.gameState.pointsAwardedForRound = true;
@@ -4745,7 +4775,7 @@ class QuizShowPlugin {
 
         return {
             correctUsers,
-            totalAnswers: this.gameState.answers.size,
+            totalAnswers: Array.isArray(answersEntries) ? answersEntries.length : 0,
             correctAnswer: {
                 index: correctAnswerIndex,
                 text: correctAnswerText
@@ -4779,16 +4809,19 @@ class QuizShowPlugin {
     }
 
     isAnswerCorrect(answer, correctIndex, correctText) {
-        const normalized = answer.toLowerCase().trim();
+        const normalized = String(answer ?? '').toLowerCase().trim();
+        const normalizedCorrectText = String(correctText ?? '').toLowerCase().trim();
+        const rawIndex = Number(correctIndex);
+        const index = Number.isFinite(rawIndex) && String(correctIndex).trim() !== '' ? Math.trunc(rawIndex) : -1;
 
         // Check letter (A, B, C, D)
         const letters = ['a', 'b', 'c', 'd'];
-        if (normalized === letters[correctIndex]) {
+        if (index >= 0 && index <= 3 && normalized === letters[index]) {
             return true;
         }
 
         // Check full text match
-        if (normalized === correctText.toLowerCase().trim()) {
+        if (normalizedCorrectText && normalized === normalizedCorrectText) {
             return true;
         }
 
@@ -4876,8 +4909,18 @@ class QuizShowPlugin {
             return;
         }
 
+        if (!Array.isArray(this.gameState?.currentQuestion?.answers)) {
+            return;
+        }
+
+        const answerMap = this.gameState.answers && typeof this.gameState.answers.has === 'function'
+          && typeof this.gameState.answers.set === 'function'
+            ? this.gameState.answers
+            : new Map();
+        this.gameState.answers = answerMap;
+
         // Check if user already answered
-        if (this.gameState.answers.has(userId)) {
+        if (answerMap.has(userId)) {
             return;
         }
 
@@ -4908,7 +4951,9 @@ class QuizShowPlugin {
         const isLetter = validLetters.includes(cleanAnswer) && (matchedPrefix || this.config.allowPlainLetters);
         
         // Check if full text answers are allowed and match
-        const isFullText = this.config.allowFullText && this.gameState.currentQuestion.answers.some(
+        const currentQuestionAnswers = this.gameState.currentQuestion.answers;
+
+        const isFullText = this.config.allowFullText && currentQuestionAnswers.some(
             ans => ans.toLowerCase().trim() === normalized
         );
 
@@ -4923,12 +4968,13 @@ class QuizShowPlugin {
             answerIndex = validLetters.indexOf(cleanAnswer);
         } else {
             // Find index of matching answer text
-            answerIndex = this.gameState.currentQuestion.answers.findIndex(
+            answerIndex = currentQuestionAnswers.findIndex(
                 ans => ans.toLowerCase().trim() === normalized
             );
         }
 
         // Record answer with profile picture
+        this.gameState.answers = answerMap;
         this.gameState.answers.set(userId, {
             answer: message,
             username,
@@ -4949,7 +4995,7 @@ class QuizShowPlugin {
         // Fastest Finger mode - end round immediately on first correct answer
         if (this.config.gameMode === 'fastestFinger') {
             const correctAnswerIndex = this.gameState.currentQuestion.correct;
-            const correctAnswerText = this.gameState.currentQuestion.answers[correctAnswerIndex];
+                const correctAnswerText = currentQuestionAnswers[correctAnswerIndex];
             
             if (this.isAnswerCorrect(message, correctAnswerIndex, correctAnswerText)) {
                 // Correct answer - end round immediately
@@ -4960,7 +5006,7 @@ class QuizShowPlugin {
         // Marathon mode - check for streak
         if (this.config.gameMode === 'marathon') {
             const correctAnswerIndex = this.gameState.currentQuestion.correct;
-            const correctAnswerText = this.gameState.currentQuestion.answers[correctAnswerIndex];
+                    const correctAnswerText = currentQuestionAnswers[correctAnswerIndex];
             
             if (this.isAnswerCorrect(message, correctAnswerIndex, correctAnswerText)) {
                 if (!this.gameState.marathonPlayerId) {
@@ -4993,7 +5039,7 @@ class QuizShowPlugin {
         this.api.emit('quiz-show:answer-received', {
             userId,
             username,
-            totalAnswers: this.gameState.answers.size
+            totalAnswers: Number.isInteger(this.gameState?.answers?.size) ? this.gameState.answers.size : 0
         });
     }
 
@@ -5146,13 +5192,13 @@ class QuizShowPlugin {
             totalRounds: this.config.totalRounds,
             showRoundNumber: this.config.showRoundNumber,
             currentQuestion: {
-                question: this.gameState.currentQuestion.question,
-                answers: this.gameState.currentQuestion.answers,
+                question: this.gameState.currentQuestion?.question || null,
+                answers: this.gameState.currentQuestion?.answers || [],
                 // Don't send correct answer to overlay yet
             },
             timeRemaining: this.gameState.timeRemaining,
             totalTime: this.config.roundDuration,
-            answerCount: this.gameState.answers.size,
+            answerCount: Number.isInteger(this.gameState?.answers?.size) ? this.gameState.answers.size : 0,
             jokersUsed: this.gameState.jokersUsed,
             jokerEvents: this.gameState.jokerEvents,
             hiddenAnswers: this.gameState.hiddenAnswers,

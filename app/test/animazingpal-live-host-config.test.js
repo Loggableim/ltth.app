@@ -20,7 +20,7 @@ describe('AnimazingPal live host configuration', () => {
       }),
       response: expect.objectContaining({
         decisionMode: 'auto', minDecisionScore: 0.55,
-        maxResponsesPerMinute: 4, chatProbability: 0.1, maxSentences: 2
+        maxResponsesPerMinute: 18, chatProbability: 0.45, maxSentences: 2
       }),
       tts: expect.objectContaining({
         enabled: true, engine: 'fishaudio', voiceId: '', streaming: true,
@@ -75,9 +75,9 @@ describe('AnimazingPal live host configuration', () => {
   test('safe-live preset supplies editable defaults for every live subsystem', () => {
     const configured = applyLiveHostPreset(buildLiveHostDefaults(), 'safe-live');
 
-    expect(configured.response.maxResponsesPerMinute).toBe(4);
+    expect(configured.response.maxResponsesPerMinute).toBe(18);
     expect(configured.response.decisionMode).toBe('auto');
-    expect(configured.response.chatProbability).toBe(0.1);
+    expect(configured.response.chatProbability).toBe(0.45);
     expect(configured.response.maxSentences).toBe(2);
     expect(configured.response.queueWarnRatio).toBe(0.8);
     expect(configured.tts.probeStaleMs).toBe(300000);
@@ -152,7 +152,7 @@ describe('AnimazingPal live host configuration', () => {
     }));
     expect(configured.source.username).toBe('saved-stream');
     expect(configured).toEqual(expect.objectContaining({ enabled: true, provider: 'ollama' }));
-    expect(configured.response.maxResponsesPerMinute).toBe(4);
+    expect(configured.response.maxResponsesPerMinute).toBe(18);
     expect(configured.events.subscribe).toEqual(expect.objectContaining({ enabled: true, templateEnabled: false }));
     expect(configured.tts).toEqual(expect.objectContaining({ enabled: true, fallbackBehavior: 'silent' }));
     expect(configured.privacy.includeContactFields).toBe(false);
@@ -218,7 +218,7 @@ describe('AnimazingPal live host configuration', () => {
     });
 
     expect(configured.response.maxResponsesPerMinute).toBe(120);
-    expect(configured.response.chatProbability).toBe(0);
+    expect(configured.response.chatProbability).toBe(0.45);
     expect(configured.response.maxSentences).toBe(1);
     expect(configured.providers.ollama.timeoutMs).toBe(1000);
     expect(configured.providers.ollama.maxRetries).toBe(10);

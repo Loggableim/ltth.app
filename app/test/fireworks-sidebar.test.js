@@ -15,6 +15,11 @@ describe('Fireworks Plugin Sidebar Integration', () => {
   let enLocale;
   let deLocale;
 
+  function readLocale(filePath) {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
+  }
+
   beforeAll(() => {
     // Load dashboard HTML
     const dashboardPath = path.join(__dirname, '..', 'public', 'dashboard.html');
@@ -23,8 +28,8 @@ describe('Fireworks Plugin Sidebar Integration', () => {
     // Load locale files
     const enLocalePath = path.join(__dirname, '..', 'locales', 'en.json');
     const deLocalePath = path.join(__dirname, '..', 'locales', 'de.json');
-    enLocale = JSON.parse(fs.readFileSync(enLocalePath, 'utf8'));
-    deLocale = JSON.parse(fs.readFileSync(deLocalePath, 'utf8'));
+    enLocale = readLocale(enLocalePath);
+    deLocale = readLocale(deLocalePath);
   });
 
   describe('Sidebar Menu Entry', () => {

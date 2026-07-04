@@ -21,13 +21,7 @@ describe('AnimazingPal Persona System', function() {
     } catch (err) {
       console.log('Could not load modules, skipping tests:', err.message);
     }
-
-    it('returns an english follow fallback when language is set to en', async function() {
-      const response = await brainEngine.processFollow('carol', { nickname: 'Carol', language: 'en' });
-
-      assert.ok(response, 'Should return a fallback follow response');
-      assert.strictEqual(response.text, 'Thanks for following, Carol!');
-    });
+  });
 
   describe('Persona Tone Settings', function() {
     it('should have valid tone settings structure', function() {
@@ -75,8 +69,6 @@ describe('AnimazingPal Persona System', function() {
         assert.ok(memoryBehavior.maxContextMemories > 0);
       });
     });
-  });
-
   });
 
   beforeEach(function() {
@@ -222,6 +214,15 @@ describe('AnimazingPal Persona System', function() {
     beforeEach(async function() {
       brainEngine = new BrainEngine(mockApi);
       await brainEngine.initialize();
+      brainEngine.configure({ enabled: true });
+      brainEngine.gptBrain = null;
+    });
+
+    it('returns an english follow fallback when language is set to en', async function() {
+      const response = await brainEngine.processFollow('carol', { nickname: 'Carol', language: 'en' });
+
+      assert.ok(response, 'Should return a fallback follow response');
+      assert.strictEqual(response.text, 'Thanks for following, Carol!');
     });
 
     it('should load active persona with parsed fields', async function() {
@@ -301,7 +302,7 @@ describe('AnimazingPal Persona System', function() {
       const response = await brainEngine.processFollow('alice', { nickname: 'Alice' });
 
       assert.ok(response, 'Should return a fallback follow response');
-      assert.strictEqual(response.text, 'Danke für den Follow, Alice!');
+      assert.strictEqual(response.text, 'Danke f\u00fcr den Follow, Alice!');
       assert.strictEqual(response.emotion, 'happy');
     });
 
@@ -315,7 +316,7 @@ describe('AnimazingPal Persona System', function() {
       const response = await brainEngine.processFollow('bob', { nickname: 'Bob' });
 
       assert.ok(response, 'Should return fallback follow response on generation failure');
-      assert.strictEqual(response.text, 'Danke für den Follow, Bob!');
+      assert.strictEqual(response.text, 'Danke f\u00fcr den Follow, Bob!');
     });
   });
 

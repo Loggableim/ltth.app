@@ -33,6 +33,8 @@ async function initMarked() {
 
 // Base path for wiki files
 const WIKI_BASE_PATH = path.join(__dirname, '../wiki');
+const APP_PACKAGE_PATH = path.join(__dirname, '..', 'package.json');
+let wikiPackageVersion;
 
 // Wiki structure definition
 const WIKI_STRUCTURE = {
@@ -158,6 +160,23 @@ const CP1252_REVERSE_MAP = new Map([
     [0x017E, 0x9E],
     [0x0178, 0x9F]
 ]);
+
+async function getWikiPackageVersion() {
+    if (wikiPackageVersion !== undefined) {
+        return wikiPackageVersion;
+    }
+
+    try {
+        const packageJson = await fs.readFile(APP_PACKAGE_PATH, 'utf-8');
+        const packageData = JSON.parse(packageJson);
+        wikiPackageVersion = typeof packageData.version === 'string' ? packageData.version : null;
+    } catch (error) {
+        logger.warn('Failed to load package version for wiki page rendering:', { error: error.message });
+        wikiPackageVersion = null;
+    }
+
+    return wikiPackageVersion;
+}
 
 const MOJIBAKE_RUN_PATTERN = /[ÃÂâð][\u0080-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]*/g;
 
@@ -325,11 +344,21 @@ router.get('/page/:pageId', async (req, res) => {
         // Read and process the file
         const markdown = repairMojibake(await fs.readFile(filePath, 'utf-8'));
         
-        // Extract TOC
+        let processedMarkdown = markdown;
         const toc = extractTOC(markdown);
+
+        // Inject current app version into Home page content
+        if (page.id === 'home') {
+            const appVersion = await getWikiPackageVersion();
+            if (appVersion) {
+                processedMarkdown = processedMarkdown.replace(
+                    /(\*Version\s*:?\s*)([0-9]+(?:\.[0-9]+){1,2})(\*)/g,
+                    `$1${appVersion}$3`
+                );
+            }
+        }
         
         // Process markdown to fix internal links before rendering
-        let processedMarkdown = markdown;
         
         // Convert markdown wiki links to in-app #wiki: links, including optional anchors
         processedMarkdown = processedMarkdown.replace(/\[([^\]]+)\]\((?!https?:|mailto:)([^)\n]+?\.md(?:#[^)]+)?)\)/gi, (match, text, link) => {

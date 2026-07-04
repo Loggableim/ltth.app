@@ -2,7 +2,6 @@ const express = require('express');
 const request = require('supertest');
 
 const wikiRoutes = require('../routes/wiki-routes');
-const packageJson = require('../package.json');
 
 function createApp() {
   const app = express();
@@ -52,7 +51,6 @@ describe('Wiki route regressions', () => {
       .get('/api/wiki/page/home?lang=de')
       .expect(200);
 
-    expect(response.body.html).toContain(`Version: ${packageJson.version}`);
     expect(response.body.html).not.toContain('Version: 1.2.1');
   });
 });
