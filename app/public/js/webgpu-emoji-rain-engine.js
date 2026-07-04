@@ -1969,6 +1969,15 @@ function spawnEmoji(emoji, x, y, size, username = null, profilePictureUrl = null
         img.src = imageUrl;
         img.style.width = size + 'px';
         img.style.height = size + 'px';
+        img.addEventListener('error', () => {
+            console.warn(`⚠️ [CUSTOM IMAGE] Failed to load custom image: ${imageUrl}`);
+            img.style.display = 'none';
+            element.textContent = '✨';
+            element.style.fontSize = size + 'px';
+            element.style.width = `${size}px`;
+            element.style.height = `${size}px`;
+            element.style.textAlign = 'center';
+        });
         element.appendChild(img);
     } else {
         element.textContent = emoji;
