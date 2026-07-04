@@ -140,45 +140,45 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>?? STT Ticker</h1>
-    <p class="subtitle">Live-Untertitel-Overlay f�r Hearing-Impaired Zuschauer</p>
+<div class="container">
+    <h1>STT Ticker</h1>
+    <p class="subtitle">Live-Untertitel-Overlay für gehörlose und schwerhörige Zuschauer</p>
 
     <!-- Tabs -->
     <div class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="tab-status">?? Status & Capture</button>
-      <button class="tab-btn" data-tab="tab-overlay">??? Overlay</button>
-      <button class="tab-btn" data-tab="tab-asr">??? ASR & Sprache</button>
-      <button class="tab-btn" data-tab="tab-translation">?? �bersetzung</button>
-      <button class="tab-btn" data-tab="tab-multilang">?? Multi-Language</button>
+      <button class="tab-btn active" data-tab="tab-status">Status & Capture</button>
+      <button class="tab-btn" data-tab="tab-overlay">Overlay</button>
+      <button class="tab-btn" data-tab="tab-asr">ASR & Sprache</button>
+      <button class="tab-btn" data-tab="tab-translation">Übersetzung</button>
+      <button class="tab-btn" data-tab="tab-multilang">Multi-Language</button>
     </div>
 
     <!-- ==================== TAB 1: Status & Capture ==================== -->
     <div id="tab-status" class="tab-content active">
       <div class="card">
-        <div class="card-title">?? Status</div>
+        <div class="card-title">Status</div>
         <div class="grid-4">
-          <div class="stat"><div class="stat-value" id="stat-enabled">�</div><div class="stat-label">Enabled</div></div>
-          <div class="stat"><div class="stat-value" id="stat-provider">�</div><div class="stat-label">?? ASR Provider</div></div>
-          <div class="stat"><div class="stat-value" id="stat-translation">�</div><div class="stat-label">Translation</div></div>
+          <div class="stat"><div class="stat-value" id="stat-enabled">-</div><div class="stat-label">Enabled</div></div>
+          <div class="stat"><div class="stat-value" id="stat-provider">-</div><div class="stat-label">ASR Provider</div></div>
+          <div class="stat"><div class="stat-value" id="stat-translation">-</div><div class="stat-label">Translation</div></div>
           <div class="stat"><div class="stat-value" id="stat-segments">0</div><div class="stat-label">Buffer Segments</div></div>
         </div>
         <div id="provider-hint" style="margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;"></div>
         <div class="btn-row">
-          <button id="btn-clear-buffer" class="btn btn-danger btn-sm">?? Buffer leeren</button>
-          <button id="btn-refresh-status" class="btn btn-secondary btn-sm">?? Status aktualisieren</button>
+          <button id="btn-clear-buffer" class="btn btn-danger btn-sm">Buffer leeren</button>
+          <button id="btn-refresh-status" class="btn btn-secondary btn-sm">Status aktualisieren</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">?? Audio-Capture</div>
-        <p class="help-text">L�uft in <strong>eigenem Tab</strong> (zuverl�ssiger Mikrofon-Zugriff). Kann minimiert werden.</p>
+        <div class="card-title">Audio-Capture</div>
+        <p class="help-text">Läuft in <strong>eigenem Tab</strong> (zuverlässiger Mikrofon-Zugriff). Kann minimiert werden.</p>
         <div class="btn-row">
-          <a id="capture-link" class="external-link" href="/stt-ticker?tab=capture" target="_blank">?? Capture-Tab �ffnen</a>
+          <a id="capture-link" class="external-link" href="/stt-ticker?tab=capture" target="_blank">Capture-Tab öffnen</a>
         </div>
         <ol class="help-text" style="padding-left:16px;margin-top:6px;">
-          <li>Capture-Tab �ffnen ? <strong>? Capture starten</strong> klicken</li>
-          <li>Mikrofon erlauben ? Audio geht an ASR ? Transkripte im Overlay</li>
+          <li>Capture-Tab öffnen, dann <strong>Capture starten</strong> klicken</li>
+          <li>Mikrofon erlauben, dann Audio geht an ASR und Transkripte im Overlay erscheinen</li>
         </ol>
       </div>
     </div>
@@ -186,8 +186,8 @@
     <!-- ==================== TAB 2: Overlay ==================== -->
     <div id="tab-overlay" class="tab-content">
       <div class="card">
-        <div class="card-title">??? Overlay (OBS Browser Source)</div>
-        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzuf�gen:</p>
+        <div class="card-title">Overlay (OBS Browser Source)</div>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufügen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -202,7 +202,7 @@
               <option value="compact">Compact (Klein)</option>
               <option value="cinematic">Cinematic (Film)</option>
               <option value="scrolling">Scrolling (Laufband)</option>
-              <option value="fliessend">Flie�end (Liste)</option>
+              <option value="fliessend">Fließend (Liste)</option>
               <option value="starwars">Star Wars (Crawl)</option>
               <option value="ticker3">3-Zeilen Ticker</option>
               <option value="karaoke">Karaoke (Wort-Highlight)</option>
@@ -231,7 +231,7 @@
         </div>
         <div class="btn-row">
           <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
-          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">?? Overlay �ffnen</a>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay öffnen</a>
         </div>
       </div>
     </div>
@@ -240,36 +240,36 @@
     <div id="tab-asr" class="tab-content">
       <!-- API Keys (kompakt) -->
       <div class="card">
-        <div class="card-title">?? API Keys</div>
+        <div class="card-title">API Keys</div>
         <div class="key-section">
           <div class="key-header">
-            <span>??</span>
+            <span>DG</span>
             <strong>Deepgram API-Key</strong>
             <span id="deepgram-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
           </div>
           <div class="inline-flex">
             <input type="password" id="asr-deepgramApiKey" placeholder="z.B. 1234567890abcdef..." style="flex:1;min-width:200px;font-family:monospace;">
-            <button id="btn-test-deepgram" class="btn btn-secondary btn-sm">?? Test</button>
+            <button id="btn-test-deepgram" class="btn btn-secondary btn-sm">Test</button>
             <span id="deepgram-test-status" style="font-size:11px;"></span>
           </div>
-          <p class="help-text">?? <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a> (Free-Tier: $200)</p>
+          <p class="help-text">Deepgram: <a href="https://console.deepgram.com" target="_blank" style="color:#64B5F6;">console.deepgram.com</a> (Free-Tier: $200)</p>
         </div>
         <div class="key-section">
           <div class="key-header">
-            <span>???</span>
+            <span>EL</span>
             <strong>ElevenLabs API-Key (Speech-to-Text)</strong>
             <span id="elevenlabs-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
           </div>
           <div class="inline-flex">
             <input type="password" id="asr-elevenlabsApiKey" placeholder="sk_..." style="flex:1;min-width:200px;font-family:monospace;">
-            <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm">?? Test</button>
+            <button id="btn-test-elevenlabs" class="btn btn-secondary btn-sm">Test</button>
             <span id="elevenlabs-test-status" style="font-size:11px;"></span>
           </div>
-          <p class="help-text">?? <a href="https://elevenlabs.io/docs/quickstart" target="_blank" style="color:#64B5F6;">elevenlabs.io</a> � Lokale ASR-Nutzung</p>
+          <p class="help-text">ElevenLabs: <a href="https://elevenlabs.io/docs/quickstart" target="_blank" style="color:#64B5F6;">elevenlabs.io</a> - lokale ASR-Nutzung</p>
         </div>
         <div class="key-section">
           <div class="key-header">
-            <span>??</span>
+            <span>FI</span>
             <strong>Fish.audio API-Key (ASR)</strong>
             <span id="fishaudio-key-status-badge" class="badge badge-gray">nicht gesetzt</span>
           </div>
@@ -277,18 +277,18 @@
             <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
           </div>
-          <p class="help-text">?? �berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+          <p class="help-text">Überschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
         </div>
       </div>
 
       <!-- ASR Provider + Sprache -->
       <div class="card">
-        <div class="card-title">??? ASR-Provider & Sprache</div>
+        <div class="card-title">ASR-Provider & Sprache</div>
         <div class="grid-2">
           <div>
             <label>ASR-Provider</label>
             <select id="asr-provider">
-              <option value="auto">?? Auto � Deepgram/ElevenLabs wenn Key da, sonst Fish.audio</option>
+              <option value="auto">Auto - Deepgram/ElevenLabs wenn Key da, sonst Fish.audio</option>
               <option value="deepgram">Deepgram (~$0.26/h)</option>
               <option value="elevenlabs">ElevenLabs (Speech-to-Text)</option>
               <option value="fish.audio">Fish.audio (~$1.50/h)</option>
@@ -297,7 +297,7 @@
           <div>
             <label>STT-Modell</label>
             <select id="asr-model-select">
-              <option value="">� Modell w�hlen �</option>
+              <option value="">Modell wählen</option>
             </select>
           </div>
         </div>
@@ -313,39 +313,20 @@
         <div class="grid-2">
           <div>
             <label>Default-Sprache (Auto-Modus)</label>
-            <select id="asr-languageDefault">
-              <option value="de">???? Deutsch</option>
-              <option value="en">???? English</option>
-              <option value="es">???? Espa�ol</option>
-              <option value="fr">???? Fran�ais</option>
-              <option value="it">???? Italiano</option>
-              <option value="pt">???? Portugu�s</option>
-              <option value="nl">???? Nederlands</option>
-              <option value="pl">???? Polski</option>
-              <option value="ru">???? ???????</option>
-              <option value="ja">???? ???</option>
-            </select>
+            <select id="asr-languageDefault"></select>
           </div>
           <div>
             <label>Feste Sprache (Fixed-Modus)</label>
-            <select id="asr-languageFixed">
-              <option value="de">???? Deutsch</option>
-              <option value="en">???? English</option>
-              <option value="es">???? Espa�ol</option>
-              <option value="fr">???? Fran�ais</option>
-              <option value="it">???? Italiano</option>
-              <option value="pt">???? Portugu�s</option>
-              <option value="nl">???? Nederlands</option>
-            </select>
+            <select id="asr-languageFixed"></select>
           </div>
         </div>
-        <p class="help-text">??? Halluzinations-Schutz aktiv: Auto-Modus filtert CJK/Thai automatisch.</p>
+        <p class="help-text">Halluzinations-Schutz aktiv: Auto-Modus filtert CJK/Thai automatisch.</p>
       </div>
 
       <!-- VAD -->
       <div class="card">
-        <div class="card-title">?? VAD (Stille-Erkennung)</div>
-        <p class="help-text">Audio unterhalb der Schwelle wird <strong>gar nicht erst hochgeladen</strong> � spart Tokens.</p>
+        <div class="card-title">VAD (Stille-Erkennung)</div>
+        <p class="help-text">Audio unterhalb der Schwelle wird <strong>gar nicht erst hochgeladen</strong> - spart Tokens.</p>
         <div class="inline-flex" style="margin-bottom:6px;">
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
             <input type="checkbox" id="vad-enabled"> VAD aktiv
@@ -359,37 +340,37 @@
           <span id="vad-rmsThreshold-value" style="color:#4CAF50;font-size:14px;font-weight:700;min-width:40px;">0.012</span>
         </div>
         <div class="btn-row">
-          <button id="btn-save-asr" class="btn btn-primary btn-sm">?? ASR-Settings speichern</button>
+          <button id="btn-save-asr" class="btn btn-primary btn-sm">ASR-Settings speichern</button>
           <span id="asr-status" style="font-size:12px;"></span>
         </div>
       </div>
     </div>
 
-    <!-- ==================== TAB 4: �bersetzung ==================== -->
+    <!-- ==================== TAB 4: Übersetzung ==================== -->
     <div id="tab-translation" class="tab-content">
       <div class="card">
-        <div class="card-title">?? �bersetzung (Ollama Cloud)</div>
+        <div class="card-title">Übersetzung (Ollama Cloud)</div>
         <div class="inline-flex" style="margin-bottom:8px;">
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
-            <input type="checkbox" id="translation-enabled"> �bersetzung aktivieren
+            <input type="checkbox" id="translation-enabled"> Übersetzung aktivieren
           </label>
           <span id="translation-key-status" style="font-size:11px;color:#4CAF50;"></span>
         </div>
         <div class="key-section">
           <div class="key-header">
-            <span>??</span>
+            <span>OL</span>
             <strong>Ollama Cloud API Key</strong>
           </div>
           <input type="password" id="translation-apiKey" placeholder="ollama-key-..." style="font-family:monospace;">
-          <p class="help-text">? Wird persistent gespeichert. Leer lassen = aktueller Key bleibt.</p>
+          <p class="help-text">Wird persistent gespeichert. Leer lassen = aktueller Key bleibt.</p>
         </div>
         <div class="grid-2">
           <div>
             <label>Modell</label>
-            <select id="translation-model"><option value="">� Modelle laden... �</option></select>
+            <select id="translation-model"><option value="">Modelle laden...</option></select>
           </div>
           <div>
-            <label>�bersetzungs-Farbe</label>
+            <label>Übersetzungs-Farbe</label>
             <input type="color" id="translation-color" value="#ffd700">
           </div>
           <div>
@@ -397,12 +378,12 @@
             <select id="translation-sourceLanguage"></select>
           </div>
           <div>
-            <label>Zielsprache (�bersetzung)</label>
+            <label>Zielsprache (Übersetzung)</label>
             <select id="translation-targetLanguage"></select>
           </div>
         </div>
         <div class="btn-row">
-          <button id="btn-save-translation" class="btn btn-primary btn-sm">?? �bersetzung speichern</button>
+          <button id="btn-save-translation" class="btn btn-primary btn-sm">Übersetzung speichern</button>
           <button id="btn-clear-cache" class="btn btn-secondary btn-sm">Cache leeren</button>
           <span id="translation-status" style="font-size:12px;"></span>
         </div>
@@ -412,74 +393,19 @@
     <!-- ==================== TAB 5: Multi-Language ==================== -->
     <div id="tab-multilang" class="tab-content">
       <div class="card">
-        <div class="card-title">?? Multi-Language Output (N Zeilen)</div>
-        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = �bersetzungen.<br>
-        <strong>Voraussetzung:</strong> �bersetzung muss im Tab "?? �bersetzung" aktiviert sein.</p>
+        <div class="card-title">Multi-Language Output (N Zeilen)</div>
+        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Übersetzungen.<br>
+        <strong>Voraussetzung:</strong> Übersetzung muss im Tab "Übersetzung" aktiviert sein.</p>
 
         <div class="grid-2" style="margin-top:10px;">
           <div>
             <label>Default-Sprache (Original, Zeile 1)</label>
-            <select id="ml-default-lang">
-              <option value="de">???? Deutsch</option>
-              <option value="en">???? English</option>
-              <option value="es">???? Espa�ol</option>
-              <option value="fr">???? Fran�ais</option>
-              <option value="it">???? Italiano</option>
-              <option value="pt">???? Portugu�s</option>
-              <option value="nl">???? Nederlands</option>
-              <option value="pl">???? Polski</option>
-              <option value="ru">???? ???????</option>
-              <option value="ja">???? ???</option>
-              <option value="ko">???? ???</option>
-              <option value="zh">???? ??</option>
-              <option value="ar">???? ???????</option>
-              <option value="tr">???? T�rk�e</option>
-              <option value="sv">???? Svenska</option>
-              <option value="da">???? Dansk</option>
-              <option value="fi">???? Suomi</option>
-              <option value="no">???? Norsk</option>
-              <option value="cs">???? Ce�tina</option>
-              <option value="hu">???? Magyar</option>
-              <option value="ro">???? Rom�na</option>
-              <option value="uk">???? ??????????</option>
-              <option value="el">???? ????????</option>
-              <option value="he">???? ?????</option>
-              <option value="th">???? ???</option>
-              <option value="vi">???? Ti?ng Vi?t</option>
-            </select>
+            <select id="ml-default-lang"></select>
           </div>
           <div>
-            <label>Sprache hinzuf�gen</label>
+            <label>Sprache hinzufügen</label>
             <div class="inline-flex">
-              <select id="ml-add-lang" style="flex:1;">
-                <option value="">� Sprache w�hlen �</option>
-                <option value="en">???? English</option>
-                <option value="de">???? Deutsch</option>
-                <option value="es">???? Espa�ol</option>
-                <option value="fr">???? Fran�ais</option>
-                <option value="it">???? Italiano</option>
-                <option value="pt">???? Portugu�s</option>
-                <option value="nl">???? Nederlands</option>
-                <option value="pl">???? Polski</option>
-                <option value="ru">???? ???????</option>
-                <option value="ja">???? ???</option>
-                <option value="ko">???? ???</option>
-                <option value="zh">???? ??</option>
-                <option value="ar">???? ???????</option>
-                <option value="tr">???? T�rk�e</option>
-                <option value="sv">???? Svenska</option>
-                <option value="da">???? Dansk</option>
-                <option value="fi">???? Suomi</option>
-                <option value="no">???? Norsk</option>
-                <option value="cs">???? Ce�tina</option>
-                <option value="hu">???? Magyar</option>
-                <option value="ro">???? Rom�na</option>
-                <option value="uk">???? ??????????</option>
-                <option value="el">???? ????????</option>
-                <option value="he">???? ?????</option>
-                <option value="th">???? ???</option>
-                <option value="vi">???? Ti?ng Vi?t</option>
-              </select>
+              <select id="ml-add-lang" style="flex:1;"></select>
               <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
             </div>
           </div>
@@ -489,7 +415,7 @@
           <div id="lang-tags" class="lang-tag-list"></div>
         </div>
         <div class="btn-row">
-          <button id="btn-save-ml" class="btn btn-primary btn-sm">?? Multi-Language speichern</button>
+          <button id="btn-save-ml" class="btn btn-primary btn-sm">Multi-Language speichern</button>
           <span id="ml-status" style="font-size:12px;"></span>
         </div>
       </div>
@@ -517,7 +443,7 @@
         if (!data.success) return;
         const s = data.status;
 
-        document.getElementById('stat-enabled').textContent = s.enabled ? '? Active' : '?? Disabled';
+        document.getElementById('stat-enabled').textContent = s.enabled ? 'Active' : 'Disabled';
         document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
 
         const asr = s.asr || {};
@@ -527,36 +453,36 @@
         const elKeyBadgeEl = document.getElementById('elevenlabs-key-status-badge');
         const fishKeyBadgeEl = document.getElementById('fishaudio-key-status-badge');
         if (asr.provider === 'deepgram') {
-          providerEl.textContent = '? Deepgram';
+          providerEl.textContent = 'Deepgram';
           providerEl.style.color = '#4CAF50';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '?? <strong>Deepgram aktiv</strong> � ~$0.26/h, Modell: ' + (asr.deepgramModel || 'nova-2');
+            providerHintEl.innerHTML = '<strong>Deepgram aktiv</strong> - ca. $0.26/h, Modell: ' + (asr.deepgramModel || 'nova-2');
           }
         } else if (asr.provider === 'elevenlabs') {
-          providerEl.textContent = '? ElevenLabs';
+          providerEl.textContent = 'ElevenLabs';
           providerEl.style.color = '#4CAF50';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(76, 175, 80, 0.1)';
             providerHintEl.style.color = '#4CAF50';
-            providerHintEl.innerHTML = '?? <strong>ElevenLabs aktiv</strong> � Modell: ' + (asr.elevenlabsModel || 'scribe_v2');
+            providerHintEl.innerHTML = '<strong>ElevenLabs aktiv</strong> - Modell: ' + (asr.elevenlabsModel || 'scribe_v2');
           }
         } else if (asr.provider === 'fish.audio') {
-          providerEl.textContent = '?? Fish.audio';
+          providerEl.textContent = 'Fish.audio';
           providerEl.style.color = '#FFC107';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
             providerHintEl.style.color = '#FFC107';
-            providerHintEl.innerHTML = '?? <strong>Fish.audio aktiv</strong> � Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
+            providerHintEl.innerHTML = '<strong>Fish.audio aktiv</strong> - Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
           }
         } else {
-          providerEl.textContent = '? ' + (asr.provider || 'unbekannt');
+          providerEl.textContent = asr.provider || 'unbekannt';
           providerEl.style.color = '#f44336';
         }
         if (keyBadgeEl) {
           if (asr.deepgramConfigured) {
-            keyBadgeEl.textContent = '? gesetzt';
+            keyBadgeEl.textContent = 'gesetzt';
             keyBadgeEl.className = 'badge badge-green';
           } else {
             keyBadgeEl.textContent = 'nicht gesetzt';
@@ -565,7 +491,7 @@
         }
         if (elKeyBadgeEl) {
           if (asr.elevenlabsConfigured) {
-            elKeyBadgeEl.textContent = '? gesetzt';
+            elKeyBadgeEl.textContent = 'gesetzt';
             elKeyBadgeEl.className = 'badge badge-green';
           } else {
             elKeyBadgeEl.textContent = 'nicht gesetzt';
@@ -574,7 +500,7 @@
         }
         if (fishKeyBadgeEl) {
           if (asr.fishaudioConfigured) {
-            fishKeyBadgeEl.textContent = '? gesetzt';
+            fishKeyBadgeEl.textContent = 'gesetzt';
             fishKeyBadgeEl.className = 'badge badge-green';
           } else {
             fishKeyBadgeEl.textContent = 'nicht gesetzt';
@@ -583,7 +509,7 @@
         }
 
         const trans = s.translation || {};
-        document.getElementById('stat-translation').textContent = trans.enabled ? '? ' + trans.model : '?? Off';
+        document.getElementById('stat-translation').textContent = trans.enabled ? (trans.model || 'An') : 'Off';
         document.getElementById('stat-translation').style.color = trans.enabled ? '#4CAF50' : '#666';
 
         const buf = s.buffer || {};
@@ -619,9 +545,58 @@
       }
     }
 
+    const LANGUAGE_OPTIONS = [
+      ['de', 'Deutsch'],
+      ['en', 'English'],
+      ['es', 'Español'],
+      ['fr', 'Français'],
+      ['it', 'Italiano'],
+      ['pt', 'Português'],
+      ['nl', 'Nederlands'],
+      ['pl', 'Polski'],
+      ['ru', 'Русский'],
+      ['ja', '日本語'],
+      ['ko', '한국어'],
+      ['zh', '中文'],
+      ['ar', 'العربية'],
+      ['tr', 'Türkçe'],
+      ['sv', 'Svenska'],
+      ['da', 'Dansk'],
+      ['fi', 'Suomi'],
+      ['no', 'Norsk'],
+      ['cs', 'Čeština'],
+      ['hu', 'Magyar'],
+      ['ro', 'Română'],
+      ['uk', 'Українська'],
+      ['el', 'Ελληνικά'],
+      ['he', 'עברית'],
+      ['th', 'ไทย'],
+      ['vi', 'Tiếng Việt']
+    ];
+
+    function populateLanguageSelect(selectId, selectedValue, includeEmpty = false) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const currentValue = selectedValue || select.value || '';
+      select.innerHTML = '';
+      if (includeEmpty) {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Sprache wählen...';
+        select.appendChild(placeholder);
+      }
+      for (const [code, label] of LANGUAGE_OPTIONS) {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = label;
+        if (code === currentValue) opt.selected = true;
+        select.appendChild(opt);
+      }
+      if (currentValue && !select.value) select.value = currentValue;
+    }
+
     function populateAsrConfig(cfg) {
       const asr = cfg.asr || {};
-      const dual = cfg.dualLanguage || {};
       const vad = cfg.vad || {};
 
       const mode = asr.languageMode || 'auto';
@@ -630,15 +605,13 @@
       if (modeAuto) modeAuto.checked = (mode === 'auto');
       if (modeFixed) modeFixed.checked = (mode === 'fixed');
 
-      const defaultEl = document.getElementById('asr-languageDefault');
-      if (defaultEl && asr.languageDefault) defaultEl.value = asr.languageDefault;
-      const fixedEl = document.getElementById('asr-languageFixed');
-      if (fixedEl && asr.languageFixed) fixedEl.value = asr.languageFixed;
+      populateLanguageSelect('asr-languageDefault', asr.languageDefault || 'de');
+      populateLanguageSelect('asr-languageFixed', asr.languageFixed || 'de');
 
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // STT-Modell-Dropdown bef�llen (wird von loadAsrModels() gemacht)
+      // STT-Modell-Dropdown befüllen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
       const modelSelect = document.getElementById('asr-model-select');
       if (modelSelect) {
@@ -681,7 +654,7 @@
       }
     }
 
-    // L�dt Deepgram + ElevenLabs Modelle und bef�llt das STT-Modell-Dropdown
+    // Lädt Deepgram + ElevenLabs Modelle und befüllt das STT-Modell-Dropdown
     async function loadAsrModels() {
       const dgModels = [], elModels = [];
       try {
@@ -721,7 +694,7 @@
           select.appendChild(opt);
         }
       } else {
-        select.innerHTML = '<option value="">� ' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + ' �</option>';
+        select.innerHTML = '<option value="">' + (provider === 'fish.audio' ? 'Keine Auswahl' : 'Keine Modelle') + '</option>';
       }
     }
 
@@ -741,8 +714,8 @@
 
     function populateMultiLang(cfg) {
       const ml = cfg.multiLanguage || {};
-      const defaultEl = document.getElementById('ml-default-lang');
-      if (defaultEl && ml.defaultLanguage) defaultEl.value = ml.defaultLanguage;
+      populateLanguageSelect('ml-default-lang', ml.defaultLanguage || 'de');
+      populateLanguageSelect('ml-add-lang', '', true);
       if (ml.outputLanguages) {
         renderLangTags(ml.outputLanguages);
       }
@@ -750,13 +723,32 @@
 
     // ===== Multi-Language Tags =====
     const LANG_NAMES = {
-      'de':'???? DE','en':'???? EN','es':'???? ES','fr':'???? FR',
-      'it':'???? IT','pt':'???? PT','nl':'???? NL','pl':'???? PL',
-      'ru':'???? RU','ja':'???? JA','ko':'???? KO','zh':'???? ZH',
-      'ar':'???? AR','tr':'???? TR','sv':'???? SV','da':'???? DA',
-      'fi':'???? FI','no':'???? NO','cs':'???? CS','hu':'???? HU',
-      'ro':'???? RO','uk':'???? UK','el':'???? EL','he':'???? HE',
-      'th':'???? TH','vi':'???? VI'
+      'de': 'Deutsch',
+      'en': 'English',
+      'es': 'Español',
+      'fr': 'Français',
+      'it': 'Italiano',
+      'pt': 'Português',
+      'nl': 'Nederlands',
+      'pl': 'Polski',
+      'ru': 'Русский',
+      'ja': '日本語',
+      'ko': '한국어',
+      'zh': '中文',
+      'ar': 'العربية',
+      'tr': 'Türkçe',
+      'sv': 'Svenska',
+      'da': 'Dansk',
+      'fi': 'Suomi',
+      'no': 'Norsk',
+      'cs': 'Čeština',
+      'hu': 'Magyar',
+      'ro': 'Română',
+      'uk': 'Українська',
+      'el': 'Ελληνικά',
+      'he': 'עברית',
+      'th': 'ไทย',
+      'vi': 'Tiếng Việt'
     };
     let currentOutputLangs = ['en'];
 
@@ -767,7 +759,7 @@
       for (const lang of currentOutputLangs) {
         const tag = document.createElement('span');
         tag.className = 'lang-tag';
-        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">�</span>';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
         tag.addEventListener('click', () => {
           currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
           renderLangTags(currentOutputLangs);
@@ -793,14 +785,14 @@
           body: JSON.stringify({ translation })
         });
         const data = await res.json();
-        showToast(data.success ? '? Config saved' : '? ' + (data.error || 'Error'), data.success ? 'success' : 'error');
+      showToast(data.success ? 'Config gespeichert' : (data.error || 'Fehler'), data.success ? 'success' : 'error');
         if (data.success && translation.apiKey !== '__KEEP__') {
           document.getElementById('translation-apiKey').value = '__KEEP__';
           apiKeyFieldMarkDirty();
         }
         refreshStatus();
       } catch (e) {
-        showToast('? ' + e.message, 'error');
+        showToast(e.message, 'error');
       }
     }
 
@@ -858,7 +850,7 @@
       const design = document.getElementById('design-select')?.value;
 
       const statusEl = document.getElementById('asr-status');
-      statusEl.textContent = '? Speichere�';
+      statusEl.textContent = 'Speichere...';
       statusEl.style.color = '#FFC107';
 
       try {
@@ -869,16 +861,16 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = '? ASR-Settings gespeichert';
+          statusEl.textContent = 'ASR-Settings gespeichert';
           statusEl.style.color = '#4CAF50';
           setTimeout(() => { statusEl.textContent = ''; }, 3000);
           refreshStatus();
         } else {
-          statusEl.textContent = '? ' + (data.error || 'Fehler');
+          statusEl.textContent = data.error || 'Fehler';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = '? ' + e.message;
+        statusEl.textContent = e.message;
         statusEl.style.color = '#f44336';
       }
     }
@@ -900,13 +892,13 @@
 
     async function clearBuffer() {
       await fetch('/api/stt-ticker/clear', { method: 'POST' });
-      showToast('?? Buffer cleared', 'success');
+      showToast('Buffer geleert', 'success');
       refreshStatus();
     }
 
     async function clearTranslationCache() {
       await fetch('/api/stt-ticker/translator/clear-cache', { method: 'POST' });
-      document.getElementById('translation-status').textContent = '? Cache cleared';
+      document.getElementById('translation-status').textContent = 'Cache geleert';
       setTimeout(() => { document.getElementById('translation-status').textContent = ''; }, 3000);
     }
 
@@ -978,13 +970,13 @@
         });
         const data = await res.json();
         if (data.success) {
-          document.getElementById('ml-status').textContent = '? Gespeichert';
+          document.getElementById('ml-status').textContent = 'Gespeichert';
           setTimeout(() => { document.getElementById('ml-status').textContent = ''; }, 2000);
         } else {
-          document.getElementById('ml-status').textContent = '? ' + (data.error || 'Fehler');
+          document.getElementById('ml-status').textContent = data.error || 'Fehler';
         }
       } catch (e) {
-        document.getElementById('ml-status').textContent = '? ' + e.message;
+        document.getElementById('ml-status').textContent = e.message;
       }
     }
 
@@ -1017,11 +1009,11 @@
       const keyField = document.getElementById('asr-deepgramApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
       if (!keyToTest) {
-        statusEl.textContent = '? Kein Key zum Testen';
+        statusEl.textContent = 'Kein Key zum Testen';
         statusEl.style.color = '#f44336';
         return;
       }
-      statusEl.textContent = '? Teste...';
+      statusEl.textContent = 'Teste...';
       statusEl.style.color = '#FFC107';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
@@ -1031,14 +1023,14 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = '? Key g�ltig!';
+          statusEl.textContent = 'Key gültig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = '? ' + (data.message || data.error || 'Ung�ltig');
+          statusEl.textContent = data.message || data.error || 'Ungültig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = '? ' + e.message;
+        statusEl.textContent = e.message;
         statusEl.style.color = '#f44336';
       }
     });
@@ -1048,11 +1040,11 @@
       const keyField = document.getElementById('asr-elevenlabsApiKey');
       const keyToTest = (keyField && keyField.value && keyField.value !== '__KEEP__') ? keyField.value : '';
       if (!keyToTest) {
-        statusEl.textContent = '? Kein Key zum Testen';
+        statusEl.textContent = 'Kein Key zum Testen';
         statusEl.style.color = '#f44336';
         return;
       }
-      statusEl.textContent = '? Teste...';
+      statusEl.textContent = 'Teste...';
       statusEl.style.color = '#FFC107';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
@@ -1062,14 +1054,14 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = '? Key g�ltig!';
+          statusEl.textContent = 'Key gültig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = '? ' + (data.message || data.error || 'Ung�ltig');
+          statusEl.textContent = data.message || data.error || 'Ungültig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
-        statusEl.textContent = '? ' + e.message;
+        statusEl.textContent = e.message;
         statusEl.style.color = '#f44336';
       }
     });
@@ -1082,7 +1074,7 @@
       const lang = document.getElementById('ml-add-lang').value;
       if (!lang) return;
       if (currentOutputLangs.includes(lang)) {
-        document.getElementById('ml-status').textContent = '?? Bereits vorhanden';
+        document.getElementById('ml-status').textContent = 'Bereits vorhanden';
         return;
       }
       currentOutputLangs.push(lang);

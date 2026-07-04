@@ -380,7 +380,7 @@
 <body>
   <div class="container">
     <h1>
-      ðŸ¤– Sidekick
+      🤖 Sidekick
       <span id="status-badge" class="badge badge-success">Active</span>
     </h1>
     <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit AnimazingPal + Fish.audio Delegation</p>
@@ -397,7 +397,7 @@
     <div id="tab-status" class="tab-content active">
       <div class="grid">
         <div class="card">
-          <h3>ðŸ”Œ Verbindungen</h3>
+          <h3>🔌 Verbindungen</h3>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="animaze-status-indicator"></span>
             <span>AnimazingPal: <span id="animaze-status-text">Disconnected</span></span>
@@ -415,11 +415,11 @@
         </div>
 
         <div class="card">
-          <h3>ðŸŽ¤ Steuerung</h3>
+          <h3>🎤 Steuerung</h3>
           <div class="inline-row" style="margin-top: 15px;">
-            <button id="btn-mute" class="btn-warning">ðŸ”‡ Mute</button>
-            <button id="btn-unmute" class="btn-primary">ðŸ”Š Unmute</button>
-            <button id="btn-reset" class="btn-danger">ðŸ”„ Reset Session</button>
+            <button id="btn-mute" class="btn-warning">🔇 Mute</button>
+            <button id="btn-unmute" class="btn-primary">🔊 Unmute</button>
+            <button id="btn-reset" class="btn-danger">🔄 Reset Session</button>
           </div>
           <div style="margin-top: 15px;">
             <label for="test-message">Test-Nachricht:</label>
@@ -432,10 +432,10 @@
       </div>
 
       <div class="card" id="host-asr-panel">
-        <h3>ðŸŽ™ï¸ Host-Mic / Fish ASR</h3>
+        <h3>🎙️ Host-Mic / Fish ASR</h3>
         <p class="help-text" style="margin-bottom: 15px;">
-          HÃ¶rt auf ein echtes Host-Mikrofon, sendet kurze Sprachsegmente an Fish.audio ASR und gibt erkannte Host-Sprache an die Sidekick-Konversation weiter.
-          WÃ¤hle nicht den CABLE-/Loopback-Ausgang, sonst kann Feedback entstehen.
+          Hört auf ein echtes Host-Mikrofon, sendet kurze Sprachsegmente an Fish.audio ASR und gibt erkannte Host-Sprache an die Sidekick-Konversation weiter.
+          Wähle nicht den CABLE-/Loopback-Ausgang, sonst kann Feedback entstehen.
         </p>
         <div class="grid">
           <div>
@@ -445,20 +445,20 @@
               </label>
             </div>
             <div class="inline-row">
-              <button id="btn-asr-permission" class="btn-primary">Mikrofon erlauben / GerÃ¤te laden</button>
+              <button id="btn-asr-permission" class="btn-primary">Mikrofon erlauben / Geräte laden</button>
               <button id="btn-asr-refresh" class="btn-secondary">Status aktualisieren</button>
               <button id="btn-asr-test" class="btn-warning">Test-Aufnahme starten</button>
             </div>
             <div class="form-group" style="margin-top: 15px;">
-              <label for="host-asr-device">Audio-EingabegerÃ¤t</label>
+              <label for="host-asr-device">Audio-Eingabegerät</label>
               <select id="host-asr-device">
-                <option value="">GerÃ¤te laden...</option>
+                <option value="">Geräte laden...</option>
               </select>
             </div>
             <div id="host-asr-device-warning" class="asr-warning" style="display: none;"></div>
             <div class="form-group" style="margin-top: 10px;">
               <label for="host-asr-unsafe-override">
-                <input type="checkbox" id="host-asr-unsafe-override"> Ich verstehe: dieses GerÃ¤t kann Loopback/Feedback verursachen
+                <input type="checkbox" id="host-asr-unsafe-override"> Ich verstehe: dieses Gerät kann Loopback/Feedback verursachen
               </label>
             </div>
           </div>
@@ -494,7 +494,7 @@
             <p>Recorder: <strong id="host-asr-recorder-status">Idle</strong></p>
           </div>
           <div>
-            <p>Requests: <strong id="host-asr-requests">0</strong> Â· Transkribiert: <strong id="host-asr-transcribed">0</strong> Â· Delegiert: <strong id="host-asr-delegated">0</strong></p>
+            <p>Requests: <strong id="host-asr-requests">0</strong> · Transkribiert: <strong id="host-asr-transcribed">0</strong> · Delegiert: <strong id="host-asr-delegated">0</strong></p>
             <p>Letzte Latenz: <strong id="host-asr-latency">-</strong></p>
             <div class="inline-row">
               <span>Level</span>
@@ -505,7 +505,7 @@
         <div style="margin-top: 15px;">
           <p>Letztes Transcript: <strong id="host-asr-last-transcript">-</strong></p>
           <p>Letzte Host-Entscheidung: <strong id="host-asr-last-decision">-</strong></p>
-          <p>Letzte Host-Entscheidungs-GrÃ¼nde: <strong id="host-asr-last-decision-reason">-</strong></p>
+          <p>Letzte Host-Entscheidungs-Gründe: <strong id="host-asr-last-decision-reason">-</strong></p>
           <p>Letzter Host-Score: <strong id="host-asr-last-decision-score">-</strong></p>
           <p>Letzter Fehler: <strong id="host-asr-last-error" class="asr-muted">-</strong></p>
         </div>
@@ -535,7 +535,7 @@
       </div>
 
       <div class="card">
-        <h3>ðŸ“Š Session Statistiken</h3>
+        <h3>📊 Session Statistiken</h3>
         <div class="grid">
           <div>
             <p>Laufzeit: <strong id="session-duration">0:00:00</strong></p>
@@ -554,7 +554,7 @@
     <div id="tab-settings" class="tab-content">
       <div class="card">
         <h3>Sprachausgabe</h3>
-        <p style="color: #aaa; margin-bottom: 15px;">AnimazingPal + Fish.audio. Stimme, PersÃ¶nlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
+        <p style="color: #aaa; margin-bottom: 15px;">AnimazingPal + Fish.audio. Stimme, Persönlichkeit, Viewer-Profile, Audio-Routing und Avatar-Lipsync werden zentral in AnimazingPal konfiguriert.</p>
         <div class="form-group">
           <label for="output-username">Name der Assistenz</label>
           <input type="text" id="output-username" value="Sidekick" maxlength="64">
@@ -562,7 +562,7 @@
       </div>
 
       <div class="card">
-        <h3>ðŸ’¬ Chat Einstellungen</h3>
+        <h3>💬 Chat Einstellungen</h3>
         <div class="grid">
           <div class="form-group">
             <label for="comment-enabled">
@@ -588,7 +588,7 @@
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="respond-greetings"> Auf GrÃ¼ÃŸe antworten
+            <input type="checkbox" id="respond-greetings"> Auf Grüße antworten
           </label>
         </div>
         <div class="form-group">
@@ -599,7 +599,7 @@
       </div>
 
       <div class="card">
-        <h3>ðŸ‘‹ Join Greetings</h3>
+        <h3>👋 Join Greetings</h3>
         <div class="form-group">
           <label>
             <input type="checkbox" id="joins-enabled"> Join Greetings aktiviert
@@ -618,7 +618,7 @@
       </div>
 
       <div class="card">
-        <h3>ðŸ“¦ Outbox Batching</h3>
+        <h3>📦 Outbox Batching</h3>
         <div class="grid">
           <div class="form-group">
             <label for="batch-window">Batch Window (Sek)</label>
@@ -634,7 +634,7 @@
           </div>
           <div class="form-group">
             <label for="batch-separator">Separator</label>
-            <input type="text" id="batch-separator" value=" â€¢ ">
+            <input type="text" id="batch-separator" value=" • ">
           </div>
         </div>
       </div>
@@ -666,13 +666,13 @@
         </div>
       </div>
 
-      <button id="btn-save-settings" class="btn-primary">ðŸ’¾ Einstellungen speichern</button>
+      <button id="btn-save-settings" class="btn-primary">💾 Einstellungen speichern</button>
     </div>
 
     <!-- Memory Tab -->
     <div id="tab-memory" class="tab-content">
       <div class="card">
-        <h3>ðŸ§  Memory Statistiken</h3>
+        <h3>🧠 Memory Statistiken</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="memory-users">0</div>
@@ -688,19 +688,19 @@
           </div>
         </div>
         <div style="margin-top: 15px;">
-          <button id="btn-clear-memory" class="btn-danger">ðŸ—‘ï¸ Memory lÃ¶schen</button>
+          <button id="btn-clear-memory" class="btn-danger">🗑️ Memory löschen</button>
         </div>
       </div>
 
       <div class="card">
-        <h3>ðŸ† Top User (Engagement)</h3>
+        <h3>🏆 Top User (Engagement)</h3>
         <div class="user-list" id="top-users">
           <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3>ðŸ” User Suche</h3>
+        <h3>🔍 User Suche</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
           <input type="text" id="search-user" placeholder="Nickname oder ID suchen...">
           <button id="btn-search" class="btn-primary">Suchen</button>
@@ -714,7 +714,7 @@
     <!-- Analytics Tab -->
     <div id="tab-analytics" class="tab-content">
       <div class="card">
-        <h3>ðŸ“ˆ Live Rates (pro Minute)</h3>
+        <h3>📈 Live Rates (pro Minute)</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="rate-chats">0</div>
@@ -769,17 +769,17 @@
       </div>
 
       <div class="card">
-        <h3>ðŸŽ¯ Top Gifter</h3>
+        <h3>🎯 Top Gifter</h3>
         <div class="user-list" id="top-gifters">
           <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3>ðŸ“Š Event History</h3>
+        <h3>📊 Event History</h3>
         <div class="chart-container">
           <div class="chart-placeholder">
-            Chart-Visualisierung (in zukÃ¼nftiger Version)
+            Chart-Visualisierung (in zukünftiger Version)
           </div>
         </div>
       </div>
@@ -788,7 +788,7 @@
     <!-- Events Tab -->
     <div id="tab-events" class="tab-content">
       <div class="card">
-        <h3>ðŸ“œ Event Log</h3>
+        <h3>📜 Event Log</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
           <select id="event-filter">
             <option value="">Alle Events</option>
@@ -800,7 +800,7 @@
             <option value="join">Join</option>
             <option value="like">Like</option>
           </select>
-          <button id="btn-refresh-events" class="btn-secondary">ðŸ”„ Aktualisieren</button>
+          <button id="btn-refresh-events" class="btn-secondary">🔄 Aktualisieren</button>
         </div>
         <div class="event-log" id="event-log">
           <p style="color: #666; text-align: center;">Lade Events...</p>
@@ -808,10 +808,10 @@
       </div>
 
       <div class="card">
-        <h3>ðŸ” Deduper Status</h3>
+        <h3>🔍 Deduper Status</h3>
         <div class="grid">
           <div>
-            <p>GrÃ¶ÃŸe: <strong id="deduper-size">0</strong> EintrÃ¤ge</p>
+            <p>Größe: <strong id="deduper-size">0</strong> Einträge</p>
             <p>Total Checks: <strong id="deduper-checks">0</strong></p>
           </div>
           <div>
@@ -1006,7 +1006,7 @@
       item.appendChild(label);
       item.appendChild(document.createTextNode(` ${check.detail || ''}`));
       if (check.action) {
-        item.appendChild(document.createTextNode(` â€” ${check.action}`));
+        item.appendChild(document.createTextNode(` — ${check.action}`));
       }
       list.appendChild(item);
     }
@@ -1016,7 +1016,7 @@
       const option = getSelectedAsrDeviceOption();
       if (option?.dataset?.unsafe === 'true') {
         warning.style.display = 'block';
-        warning.textContent = 'Warnung: Dieses GerÃ¤t klingt nach CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. FÃ¼r Host-ASR bitte ein echtes Mikrofon wÃ¤hlen oder die Risiko-BestÃ¤tigung aktivieren.';
+        warning.textContent = 'Warnung: Dieses Gerät klingt nach CABLE/VB-Audio/Loopback/Stereo Mix/Output/Speaker/Monitor. Für Host-ASR bitte ein echtes Mikrofon wählen oder die Risiko-Bestätigung aktivieren.';
       } else {
         warning.style.display = 'none';
         warning.textContent = '';
@@ -1053,8 +1053,8 @@
     async function refreshAsrDevices() {
       const select = document.getElementById('host-asr-device');
       if (!navigator.mediaDevices?.enumerateDevices) {
-        select.innerHTML = '<option value="">MediaDevices nicht verfÃ¼gbar</option>';
-        setAsrError('Browser unterstÃ¼tzt enumerateDevices nicht oder die Seite ist nicht sicher geladen.');
+        select.innerHTML = '<option value="">MediaDevices nicht verfügbar</option>';
+        setAsrError('Browser unterstützt enumerateDevices nicht oder die Seite ist nicht sicher geladen.');
         return;
       }
 
@@ -1072,7 +1072,7 @@
       audioInputs.forEach((device, index) => {
         const option = document.createElement('option');
         option.value = device.deviceId;
-        option.textContent = device.label || `Mikrofon ${index + 1} (Berechtigung nÃ¶tig fÃ¼r Namen)`;
+        option.textContent = device.label || `Mikrofon ${index + 1} (Berechtigung nötig für Namen)`;
         option.dataset.unsafe = isUnsafeAudioInputDevice(device) ? 'true' : 'false';
         select.appendChild(option);
       });
@@ -1086,11 +1086,11 @@
 
     async function requestAsrPermission() {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setAsrError('Browser unterstÃ¼tzt getUserMedia nicht oder Mikrofonzugriff ist blockiert.');
+        setAsrError('Browser unterstützt getUserMedia nicht oder Mikrofonzugriff ist blockiert.');
         return null;
       }
       if (selectedAsrDeviceIsBlocked()) {
-        setAsrError('Unsicheres EingabegerÃ¤t blockiert. Bitte echtes Mikrofon wÃ¤hlen oder Risiko-BestÃ¤tigung aktivieren.');
+        setAsrError('Unsicheres Eingabegerät blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
         return null;
       }
 
@@ -1101,7 +1101,7 @@
         await refreshAsrDevices();
         if (selectedAsrDeviceIsBlocked()) {
           stopHostAsrStream({ cancelRecorder: true });
-          setAsrError('Unsicheres EingabegerÃ¤t nach Berechtigung erkannt und blockiert. Bitte echtes Mikrofon wÃ¤hlen oder Risiko-BestÃ¤tigung aktivieren.');
+          setAsrError('Unsicheres Eingabegerät nach Berechtigung erkannt und blockiert. Bitte echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.');
           setAsrRecorderStatus('Unsafe device blocked', 'asr-error');
           return null;
         }
@@ -1190,7 +1190,7 @@
         document.getElementById('host-asr-enabled').checked = false;
         saveHostAsrSettings();
         setAsrRecorderStatus('Stopped: unsafe input', 'asr-error');
-        setAsrError('ASR wurde gestoppt, weil das ausgewÃ¤hlte EingabegerÃ¤t ohne Risiko-BestÃ¤tigung als unsicher erkannt wurde.');
+        setAsrError('ASR wurde gestoppt, weil das ausgewählte Eingabegerät ohne Risiko-Bestätigung als unsicher erkannt wurde.');
       }
     }
 
@@ -1242,12 +1242,12 @@
       if (!hostAsrStream || hostAsrUploading) return;
       if (hostAsrRecorder && hostAsrRecorder.state !== 'inactive') return;
       if (typeof MediaRecorder === 'undefined') {
-        setAsrError('MediaRecorder wird von diesem Browser nicht unterstÃ¼tzt.');
+        setAsrError('MediaRecorder wird von diesem Browser nicht unterstützt.');
         return;
       }
       const mimeType = getSupportedAsrMimeType();
       if (!mimeType) {
-        setAsrError('Kein unterstÃ¼tztes Aufnahmeformat gefunden (webm/ogg/mp4).');
+        setAsrError('Kein unterstütztes Aufnahmeformat gefunden (webm/ogg/mp4).');
         return;
       }
 
@@ -1332,7 +1332,7 @@
         return;
       }
       if (hostAsrRecorder?.state === 'recording') {
-        setAsrError('Automatische ASR-Aufnahme lÃ¤uft gerade. Bitte kurz warten, bis das Sprachsegment fertig ist.');
+        setAsrError('Automatische ASR-Aufnahme läuft gerade. Bitte kurz warten, bis das Sprachsegment fertig ist.');
         return;
       }
 
@@ -1447,8 +1447,8 @@
           id: 'ui.microphone.device',
           status: 'error',
           label: 'Mikrofon',
-          detail: 'Das gewÃ¤hlte EingabegerÃ¤t sieht nach Loopback/Monitor aus und ist blockiert.',
-          action: 'Echtes Mikrofon wÃ¤hlen oder Risiko-BestÃ¤tigung aktivieren.'
+          detail: 'Das gewählte Eingabegerät sieht nach Loopback/Monitor aus und ist blockiert.',
+          action: 'Echtes Mikrofon wählen oder Risiko-Bestätigung aktivieren.'
         });
       } else if (listeningEnabled && unsafeBlocked && unsafeOverride) {
         checks.push({
@@ -1456,7 +1456,7 @@
           status: 'warn',
           label: 'Mikrofon',
           detail: 'Unsichere Mikrofon-Override ist aktiv.',
-          action: 'Wenn mÃ¶glich echtes Mikrofon verwenden.'
+          action: 'Wenn möglich echtes Mikrofon verwenden.'
         });
       }
 
@@ -1472,7 +1472,7 @@
       } else {
         const item = document.createElement('li');
         item.className = 'asr-ok';
-        item.textContent = 'Alle Host-AbhÃ¤ngigkeiten sind bereit.';
+        item.textContent = 'Alle Host-Abhängigkeiten sind bereit.';
         list.appendChild(item);
       }
     }
@@ -1570,7 +1570,7 @@
       document.getElementById('batch-window').value = config.outbox?.windowSeconds || 8;
       document.getElementById('batch-max-items').value = config.outbox?.maxItems || 8;
       document.getElementById('batch-max-chars').value = config.outbox?.maxChars || 320;
-      document.getElementById('batch-separator').value = config.outbox?.separator || ' â€¢ ';
+      document.getElementById('batch-separator').value = config.outbox?.separator || ' • ';
 
       document.getElementById('host-asr-language').value = config.asr?.language || '';
       document.getElementById('host-asr-max-bytes').value = config.asr?.maxAudioBytes || 8388608;
@@ -1682,7 +1682,7 @@
               <div>
                 <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
                 <div class="user-stats">
-                  ðŸ’¬ ${user.messages?.length || 0} | ðŸŽ ${user.gifts || 0} | ðŸ‘ ${user.likes || 0}
+                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👍 ${user.likes || 0}
                 </div>
               </div>
               <span class="badge badge-success">${Math.round(user.score || 0)}</span>
@@ -1743,9 +1743,9 @@
               <div class="user-item">
                 <div>
                   <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
-                  <div class="user-stats">ðŸŽ ${user.gift || 0} Gifts | ðŸ’Ž ${user.diamonds || 0} Diamonds</div>
+                  <div class="user-stats">🎁 ${user.gift || 0} Gifts | 💎 ${user.diamonds || 0} Diamonds</div>
                 </div>
-                <span class="badge badge-danger">${user.diamonds || 0} ðŸ’Ž</span>
+                <span class="badge badge-danger">${user.diamonds || 0} 💎</span>
               </div>
             `).join('');
           }
@@ -1791,7 +1791,7 @@
               <div>
                 <span class="user-nickname">${user.nickname || user.uid}</span>
                 <div class="user-stats">
-                  ðŸ’¬ ${user.messages?.length || 0} | ðŸŽ ${user.gifts || 0} | ðŸ‘¥ ${user.joins || 0}
+                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👥 ${user.joins || 0}
                 </div>
               </div>
             </div>
@@ -1834,7 +1834,7 @@
     });
     
     document.getElementById('btn-reset').addEventListener('click', async () => {
-      if (confirm('Session wirklich zurÃ¼cksetzen?')) {
+      if (confirm('Session wirklich zurücksetzen?')) {
         await fetch('/api/sidekick/reset', { method: 'POST' });
         fetchStatus();
       }
@@ -1880,7 +1880,7 @@
     document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
     
     document.getElementById('btn-clear-memory').addEventListener('click', async () => {
-      if (confirm('Memory wirklich lÃ¶schen?')) {
+      if (confirm('Memory wirklich löschen?')) {
         await fetch('/api/sidekick/memory/clear', { method: 'POST' });
         fetchMemoryStats();
         fetchTopUsers();
@@ -1910,7 +1910,7 @@
       if (hostAsrSettings.enabled) {
         startAsrListening();
       }
-    }).catch(err => setAsrError(`GerÃ¤teliste konnte nicht geladen werden: ${err.message}`));
+    }).catch(err => setAsrError(`Geräteliste konnte nicht geladen werden: ${err.message}`));
     fetchStatus();
     fetchConfig();
     fetchAsrStatus();

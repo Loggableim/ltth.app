@@ -689,7 +689,7 @@ function renderViewerbaseRecentMemories(entries) {
         <div class="flex justify-between items-start gap-3">
           <div>
             <div class="font-bold">${escapeHtml(entry.memory_type || 'general')}</div>
-            <div class="text-xs text-gray-400">${escapeHtml(createdAt)}${entry.source_user ? ` • @${escapeHtml(entry.source_user)}` : ''}</div>
+            <div class="text-xs text-gray-400">${escapeHtml(createdAt)}${entry.source_user ? ` · @${escapeHtml(entry.source_user)}` : ''}</div>
           </div>
           <div class="text-sm text-gray-300">${Number(entry.importance || 0).toFixed(2)}</div>
         </div>
@@ -793,22 +793,22 @@ function updatePlatformSectionTitles() {
   const platformKey = getPlatformKey();
   const titles = {
     animaze: {
-      emotes: '😀 Emotes',
-      specialActions: '⭐ Spezialaktionen',
-      poses: '🧘 Posen',
-      idles: '💤 Idle Animationen'
+      emotes: 'Emotes',
+      specialActions: 'Spezialaktionen',
+      poses: 'Posen',
+      idles: 'Idle Animationen'
     },
     'vtube-studio': {
-      emotes: '🔑 Hotkeys',
-      specialActions: '🎭 Modelle',
-      poses: '🧩 Aktionen',
-      idles: '⚠️ Nicht unterstützt'
+      emotes: 'Hotkeys',
+      specialActions: 'Modelle',
+      poses: 'Aktionen',
+      idles: 'Nicht unterstützt'
     },
     vseeface: {
-      emotes: '✨ Expressions',
-      specialActions: '🎛️ Motions',
-      poses: '🔄 Reset',
-      idles: '⚠️ Nicht unterstützt'
+      emotes: 'Expressions',
+      specialActions: 'Motions',
+      poses: 'Reset',
+      idles: 'Nicht unterstützt'
     }
   };
   const titleSet = titles[platformKey] || titles.animaze;
@@ -1102,7 +1102,7 @@ async function toggleConnection() {
       showToast(`Verbindung fehlgeschlagen: ${data.error || 'Unbekannter Fehler'}`, 'error');
     } else if (!isConnected && !data.isConnected) {
       const platformLabel = getPlatformDefinition().label || 'das Ziel';
-      showToast(`Verbindung zu ${platformLabel} fehlgeschlagen. Prüfe ob die App läuft und die API aktiv ist.`, 'error');
+      showToast(`Verbindung zu ${platformLabel} fehlgeschlagen. Prüfe, ob die App läuft und die API aktiv ist.`, 'error');
     }
     
     fetchStatus();
@@ -1682,7 +1682,7 @@ function populateGiftMappingForm() {
   if (!giftSelect || !typeSelect || !valueSelect) return;
 
   const selectedGift = giftSelect.value;
-  giftSelect.innerHTML = '<option value="">Gift aus Katalog wÃ¤hlen...</option>';
+  giftSelect.innerHTML = '<option value="">Gift aus Katalog wählen...</option>';
   giftCatalog.forEach(gift => {
     const option = document.createElement('option');
     option.value = gift.id || gift.name;
@@ -1693,7 +1693,7 @@ function populateGiftMappingForm() {
   if ([...giftSelect.options].some(option => option.value === selectedGift)) giftSelect.value = selectedGift;
 
   const selectedValue = valueSelect.value;
-  valueSelect.innerHTML = '<option value="">AuswÃ¤hlen...</option>';
+  valueSelect.innerHTML = '<option value="">Auswählen...</option>';
   getGiftMappingActionOptions(typeSelect.value || 'emote').forEach(item => {
     if (item.value === null || item.value === undefined || item.value === '') return;
     const option = document.createElement('option');
@@ -1712,11 +1712,11 @@ function addGiftMapping() {
   const giftId = giftSelect?.value || '';
   const giftName = selectedGift?.dataset?.giftName || selectedGift?.textContent?.replace(/\s+\(#.*$/, '').trim() || giftId;
   if (!giftId && !giftName) {
-    showToast('Bitte ein Gift aus dem Katalog auswÃ¤hlen', 'error');
+    showToast('Bitte ein Gift aus dem Katalog auswählen', 'error');
     return;
   }
   if (!actionType || !rawActionValue) {
-    showToast('Bitte Aktionstyp und Aktion auswÃ¤hlen', 'error');
+    showToast('Bitte Aktionstyp und Aktion auswählen', 'error');
     return;
   }
 
@@ -1915,7 +1915,7 @@ function displayMemories(memories) {
         <div class="flex justify-between items-start mb-2">
           <div class="flex-1">
             ${memory.source_user ? `<div class="text-sm font-bold text-blue-400">👤 ${memory.source_user}</div>` : ''}
-            <div class="text-sm text-gray-500">${date} • ${memory.memory_type || 'general'}</div>
+            <div class="text-sm text-gray-500">${date} · ${memory.memory_type || 'general'}</div>
           </div>
           <div class="${importanceColor} font-bold">
             ${(memory.importance || 0).toFixed(2)}
@@ -2124,12 +2124,12 @@ async function testBrainConnection() {
     const result = await response.json();
     
     if (result.success) {
-      showToast('✅ Verbindung erfolgreich!');
+      showToast('Verbindung erfolgreich!');
     } else {
-      showToast('❌ Verbindung fehlgeschlagen: ' + result.error, 'error');
+      showToast('Verbindung fehlgeschlagen: ' + result.error, 'error');
     }
   } catch (error) {
-    showToast('❌ Verbindung fehlgeschlagen: ' + error.message, 'error');
+    showToast('Verbindung fehlgeschlagen: ' + error.message, 'error');
   }
 }
 
@@ -2165,8 +2165,8 @@ function updatePersonaList() {
         ${persona.is_custom ? '<span class="text-xs bg-blue-600 text-white px-2 py-1 rounded ml-1">Custom</span>' : ''}
       </div>
       <div class="flex gap-2">
-        <button class="btn btn-secondary btn-sm" onclick="editPersona('${persona.name}')">✏️</button>
-        ${persona.is_custom ? `<button class="btn btn-danger btn-sm" onclick="deletePersona('${persona.name}')">🗑️</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="editPersona('${persona.name}')">Bearbeiten</button>
+        ${persona.is_custom ? `<button class="btn btn-danger btn-sm" onclick="deletePersona('${persona.name}')">Löschen</button>` : ''}
       </div>
     `;
     personaList.appendChild(item);
@@ -2403,7 +2403,7 @@ async function testLogicMatrix() {
   try {
     eventData = JSON.parse(eventDataText);
   } catch (error) {
-    showToast('Ungültiges JSON Format', 'error');
+    showToast('Ungültiges JSON-Format', 'error');
     return;
   }
 

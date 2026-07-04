@@ -1,4 +1,4 @@
-const { franc } = require('franc-min');
+﻿const { franc } = require('franc-min');
 
 /**
  * Language Detector
@@ -259,9 +259,9 @@ class LanguageDetector {
             'rus': /[\u0400-\u04FF]/, // Cyrillic script
             'ukr': /[\u0400-\u04FF]/, // Cyrillic script
             'deu': /[äöüÄÖÜß]/, // German umlauts
-            'fra': /[àâäæçéèêëïîôùûüÿœ]/, // French accents
-            'spa': /[áéíóúñ¿¡]/, // Spanish accents
-            'por': /[ãõáéíóúâêôç]/ // Portuguese accents
+            'fra': /[àâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ]/, // French accents
+            'spa': /[áéíñóúüÁÉÍÑÓÚÜ]/, // Spanish accents
+            'por': /[áâãàçéêíóôõúüÁÂÃÀÇÉÊÍÓÔÕÚÜ]/ // Portuguese accents
         };
 
         const pattern = charPatterns[detectedCode];
@@ -292,16 +292,16 @@ class LanguageDetector {
             'fr': 'Français',
             'it': 'Italiano',
             'pt': 'Português',
-            'ja': '日本語',
-            'ko': '한국어',
-            'zh': '中文',
-            'ru': 'Русский',
-            'ar': 'العربية',
+            'ja': '???',
+            'ko': '???',
+            'zh': '??',
+            'ru': '???????',
+            'ar': '???????',
             'tr': 'Türkçe',
             'nl': 'Nederlands',
             'pl': 'Polski',
-            'th': 'ภาษาไทย',
-            'vi': 'Tiếng Việt',
+            'th': '???????',
+            'vi': 'Ti?ng Vi?t',
             'id': 'Bahasa Indonesia'
         };
 

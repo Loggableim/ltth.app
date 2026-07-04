@@ -323,9 +323,9 @@ function isHostDirectResponseRequest(text) {
 
   }
 
-  return /\b(antworte|antworten|reagier|reagiere|reaktion|sag|erzÃƒÂ¤hl|erzaehl|sprich|rede|kommentier|kommentiere|reply|answer|respond|say|tell|comment)\b/i.test(clean)
+  return /\b(antworte|antworten|reagier|reagiere|reaktion|sag|erzähl|erzaehl|sprich|rede|kommentier|kommentiere|reply|answer|respond|say|tell|comment)\b/i.test(clean)
 
-    || /\b(wenn du (das|diese frage|mich) hÃƒÂ¶rst|wenn du (das|diese frage|mich) hoerst|can you hear me|if you hear this)\b/i.test(clean)
+    || /\b(wenn du (das|diese frage|mich) hörst|wenn du (das|diese frage|mich) hoerst|can you hear me|if you hear this)\b/i.test(clean)
 
     || /\b(jetzt|bitte|please)\s+(antworte|antworten|reagier|reagiere|reply|answer|respond)\b/i.test(clean);
 
@@ -685,12 +685,12 @@ class AnimazingPalPlugin {
     this._registerLiveHostSpeechPlaybackBridge();
 
     // AnimazingPal listens to TikTok events from the shared EventEmitter.
-    // It does NOT manage the TikTok connection Ã¢â‚¬â€ that is handled by the main app.
+    // It does NOT manage the TikTok connection - that is handled by the main app.
     const source = this.config.brain?.liveHost?.source;
     if (this.config.brain?.liveHost?.enabled && source?.autoConnect && source.username) {
       this.api.log('AnimazingPal will listen to TikTok events from the existing connection (no separate connect)', 'info');
     }
-    // Do NOT call this.startLiveHostSourceWatchdog() Ã¢â‚¬â€ it would reconnect and steal the connection
+    // Do NOT call this.startLiveHostSourceWatchdog() - it would reconnect and steal the connection
 
     // Auto-connect to avatar platform if enabled
     const activePlatformProfile = this.getPlatformProfile();
@@ -1016,7 +1016,7 @@ class AnimazingPalPlugin {
 
           actionType: 'emote',        // Default: Emote triggern
 
-          actionValue: null,          // User wÃƒÂ¤hlt selbst
+          actionValue: null,          // User wählt selbst
 
           chatMessage: null,
 
@@ -2483,7 +2483,7 @@ class AnimazingPalPlugin {
 
       like: { enabled: false, actionType: null, actionValue: null, chatMessage: null, threshold: 10 },
 
-      gift: { actionType: 'emote', actionValue: null, chatMessage: 'Wow, danke {username} fÃƒÂ¼r {giftName}!' },
+      gift: { actionType: 'emote', actionValue: null, chatMessage: 'Wow, danke {username} für {giftName}!' },
 
       chat: { enabled: false, actionType: null, actionValue: null, chatMessage: null }
 
@@ -4787,7 +4787,7 @@ class AnimazingPalPlugin {
 
         if (this.brainEngine && this.config.brain?.enabled) {
 
-          this.brainEngine.storeMemory(`Stream gestartet fÃƒÂ¼r ${streamerId}`, {
+          this.brainEngine.storeMemory(`Stream gestartet für ${streamerId}`, {
 
             type: 'stream_start',
 
@@ -8835,7 +8835,7 @@ class AnimazingPalPlugin {
 
       liveHost.tts.enabled
 
-        ? (ttsInitialized ? `TTS-Plugin ist bereit (${ttsEngine}).` : 'TTS-Plugin ist nicht verfÃƒÂ¼gbar oder nicht initialisiert.')
+        ? (ttsInitialized ? `TTS-Plugin ist bereit (${ttsEngine}).` : 'TTS-Plugin ist nicht verfügbar oder nicht initialisiert.')
 
         : 'LiveHost-TTS ist deaktiviert.',
 
@@ -8863,7 +8863,7 @@ class AnimazingPalPlugin {
 
           : `Letzte TTS-Probe fehlgeschlagen: ${lastTtsProbe.error || 'unbekannt'}.`))
 
-        : 'Noch keine TTS-Probe in dieser Laufzeit ausgefuehrt.',
+        : 'Noch keine TTS-Probe in dieser Laufzeit ausgeführt.',
 
       lastTtsProbe?.success && !ttsProbeIsStale ? null : 'Im Fish.audio-Bereich Sprachtest oder TTS-Probe ausfuehren.'
 
@@ -8881,15 +8881,15 @@ class AnimazingPalPlugin {
 
     if (!queueInfo) {
 
-      add('tts.queue', 'warn', 'TTS Queue', 'Queue-Status nicht verfuegbar; Backpressure kann nicht bewertet werden.', 'TTS-Plugin Queue-Diagnose pruefen oder TTS-Probe ausfuehren.');
+      add('tts.queue', 'warn', 'TTS Queue', 'Queue-Status nicht verfügbar; Backpressure kann nicht bewertet werden.', 'TTS-Plugin Queue-Diagnose prüfen oder TTS-Probe ausführen.');
 
     } else if (queueSize >= queueMaxSize * queueWarnRatio) {
 
-      add('tts.queue', 'warn', 'TTS Queue', `Queue wirkt ÃƒÂ¼berfÃƒÂ¼llt: ${queueInfo.size}/${queueInfo.maxSize}.`, 'Queue leeren oder Antwortlimit senken.');
+      add('tts.queue', 'warn', 'TTS Queue', `Queue wirkt überfüllt: ${queueInfo.size}/${queueInfo.maxSize}.`, 'Queue leeren oder Antwortlimit senken.');
 
     } else {
 
-      add('tts.queue', 'ok', 'TTS Queue', queueInfo ? `Queue: ${queueInfo.size || 0}/${queueInfo.maxSize || 100}.` : 'Queue-Status nicht verfÃƒÂ¼gbar, TTS-Plugin antwortet aber.');
+      add('tts.queue', 'ok', 'TTS Queue', queueInfo ? `Queue: ${queueInfo.size || 0}/${queueInfo.maxSize || 100}.` : 'Queue-Status nicht verfügbar, TTS-Plugin antwortet aber.');
 
     }
 
@@ -8954,9 +8954,9 @@ class AnimazingPalPlugin {
 
         ? `Ausgabe gesetzt: ${animazeOutputDeviceLabel}.`
 
-        : 'Kein explizites Animaze-Ausgabegerät gesetzt; Browser/Windows-Default wird genutzt.',
+        : 'Kein explizites Animaze-Ausgabeger?t gesetzt; Browser/Windows-Default wird genutzt.',
 
-      hasOutputDevice ? null : 'CABLE Input im Animaze-Routing auswählen.'
+      hasOutputDevice ? null : 'CABLE Input im Animaze-Routing ausw?hlen.'
 
     );
 
@@ -8968,7 +8968,7 @@ class AnimazingPalPlugin {
 
         outputDeviceAvailable ? 'ok' : 'error',
 
-        'Animaze-Ausgabe-Gerät',
+        'Animaze-Ausgabe-Ger?t',
 
         outputDeviceAvailable
 
@@ -8976,7 +8976,7 @@ class AnimazingPalPlugin {
 
           : `Das gespeicherte Animaze-Ausgabe-Device ist im Browser nicht verfügbar (${animazeOutputDeviceLabel}). Audio würde auf Standardausgabe fallen und Animaze nicht erreichen.`,
 
-        outputDeviceAvailable ? null : 'In der Standalone-UI Animaze-Ausgabe erneut freigeben und CABLE Input prüfen.'
+        outputDeviceAvailable ? null : 'In der Standalone-UI Animaze-Ausgabe erneut freigeben und CABLE Input pr?fen.'
 
       );
 
@@ -8992,7 +8992,7 @@ class AnimazingPalPlugin {
 
       hasOutputDevice && !sinkSupported
 
-        ? 'Browser kann das konfigurierte Animaze-Ausgabegerät nicht direkt ansteuern.'
+        ? 'Browser kann das konfigurierte Animaze-Ausgabeger?t nicht direkt ansteuern.'
 
         : (audioUnlocked ? 'Audio ist freigeschaltet.' : 'Audio ist noch nicht per User-Klick freigeschaltet.'),
 
@@ -9000,7 +9000,7 @@ class AnimazingPalPlugin {
 
         ? 'Windows-Standardausgabe auf CABLE Input setzen oder Browser mit setSinkId verwenden.'
 
-        : (audioUnlocked ? null : 'In der Standalone-UI auf „Audio aktivieren“ klicken.')
+        : (audioUnlocked ? null : 'In der Standalone-UI auf ?Audio aktivieren? klicken.')
 
     );
 
@@ -9024,7 +9024,7 @@ class AnimazingPalPlugin {
 
       playbackHasError || playbackNeedsRoutingProof
 
-        ? 'Audiogerät erneut freigeben, Sprachtest ausführen und Preflight wiederholen.'
+        ? 'Audioger?t erneut freigeben, Sprachtest ausf?hren und Preflight wiederholen.'
 
         : null
 
@@ -9082,7 +9082,7 @@ class AnimazingPalPlugin {
 
           : `Letzter Motion-Test fehlgeschlagen: ${lastMovementTest.error || 'unbekannt'}.`)
 
-        : 'Noch kein Animaze-Bewegungstest in dieser Laufzeit ausgefuehrt.',
+        : 'Noch kein Animaze-Bewegungstest in dieser Laufzeit ausgeführt.',
 
       lastMovementTest?.success && !movementProbeIsStale ? null : 'Im Diagnosebereich "Animaze Bewegung testen" ausfuehren und Avatar sichtbar pruefen.'
 
@@ -9104,7 +9104,7 @@ class AnimazingPalPlugin {
 
         : 'Automatische Idle-Motion ist deaktiviert; der Avatar kann ohne Events statisch wirken.',
 
-      liveHost.idleMotion?.enabled ? null : 'Idle-Motion aktivieren oder Event-Aktionen hÃƒÂ¤ufiger triggern.'
+      liveHost.idleMotion?.enabled ? null : 'Idle-Motion aktivieren oder Event-Aktionen häufiger triggern.'
 
     );
 
@@ -9122,9 +9122,9 @@ class AnimazingPalPlugin {
 
       'TikTok Quelle',
 
-      sourceUsername ? `Read-only Quelle: @${sourceUsername}.` : 'Kein ÃƒÂ¶ffentlicher TikTok-LIVE-Kanal konfiguriert.',
+      sourceUsername ? `Read-only Quelle: @${sourceUsername}.` : 'Kein öffentlicher TikTok-LIVE-Kanal konfiguriert.',
 
-      sourceUsername ? null : 'Ãƒâ€“ffentlichen LIVE-Kanal eintragen und lesend verbinden.'
+      sourceUsername ? null : 'Öffentlichen LIVE-Kanal eintragen und lesend verbinden.'
 
     );
 
@@ -9138,7 +9138,7 @@ class AnimazingPalPlugin {
 
       liveHost.source?.readOnly !== false ? 'Quelle ist read-only; es werden keine Aktionen an TikTok gesendet.' : 'Read-only Schutz ist nicht aktiv.',
 
-      liveHost.source?.readOnly !== false ? null : 'Read-only fÃƒÂ¼r fremde TikTok-LIVEs aktivieren.'
+      liveHost.source?.readOnly !== false ? null : 'Read-only für fremde TikTok-LIVEs aktivieren.'
 
     );
 
@@ -9220,7 +9220,7 @@ class AnimazingPalPlugin {
 
       `${runtime.responseSlotsUsedLastMinute}/${liveHost.response?.maxResponsesPerMinute || 10} Antwortslots in der letzten Minute genutzt.`,
 
-      runtime.responseSlotsUsedLastMinute < Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10) ? null : 'Kurz warten oder Antworten/Minute erhÃƒÂ¶hen.'
+      runtime.responseSlotsUsedLastMinute < Math.max(1, Number(liveHost.response?.maxResponsesPerMinute) || 10) ? null : 'Kurz warten oder Antworten/Minute erhöhen.'
 
     );
 
@@ -9248,11 +9248,11 @@ class AnimazingPalPlugin {
 
         ? `Host hat ${processedEvents} Events verarbeitet, aber noch keine Antwort gesprochen. Letzter Grund: ${runtime.diagnostics?.lastEventResult?.reason || 'unbekannt'}.`
 
-        : `Antwortfluss: ${respondedEvents} gesprochen, ${skippedEvents} ÃƒÂ¼bersprungen, ${processedEvents} verarbeitet.`,
+        : `Antwortfluss: ${respondedEvents} gesprochen, ${skippedEvents} übersprungen, ${processedEvents} verarbeitet.`,
 
       responseStarved
 
-        ? 'Decision-Schwelle, Event-Aktivierung, Templates, Brain-Kanal und Rate-Limits prÃƒÂ¼fen.'
+        ? 'Decision-Schwelle, Event-Aktivierung, Templates, Brain-Kanal und Rate-Limits prüfen.'
 
         : null
 
@@ -9411,7 +9411,7 @@ class AnimazingPalPlugin {
 
       }
 
-      if (/\b(danke|thanks|hilfe|help|erklÃƒÂ¤r|erklaer|explain|meinung|opinion)\b/i.test(lowered)) {
+      if (/\b(danke|thanks|hilfe|help|erklär|erklaer|explain|meinung|opinion)\b/i.test(lowered)) {
 
         score += 0.15;
 
@@ -9891,7 +9891,7 @@ class AnimazingPalPlugin {
       const displayName = String(data.nickname || username || '').trim() || username;
       const fallbackTemplate = speechLanguage === 'en'
         ? `Thanks for following, ${displayName}!`
-        : `Danke für den Follow, ${displayName}!`;
+        : `Danke f?r den Follow, ${displayName}!`;
       const fallbackMessage = this._formatLiveHostMessage(fallbackTemplate);
 
       if (fallbackMessage) {
@@ -14773,7 +14773,7 @@ function findViewerAddressedByGreeting(text, names = []) {
     return directMatch ? directMatch[0] : null;
   }
 
-  const directAddressPattern = new RegExp(`(?:^|[^\\p{L}\\p{N}_])(?:${namesPattern})(?:\\s*[,;:]|\\s+(?:antworte|antworten|reagier|reagiere|sag|erzaehl|erzÃƒÆ’Ã‚Â¤hl|kommentier|kommentiere|sprich|rede|gehts|geht|bitte|please|kannst|kann|du\\s+|du\\s+als|kann\\s+du)\\b)`, 'iu');
+  const directAddressPattern = new RegExp(`(?:^|[^\\p{L}\\p{N}_])(?:${namesPattern})(?:\\s*[,;:]|\\s+(?:antworte|antworten|reagier|reagiere|sag|erzaehl|erzähl|kommentier|kommentiere|sprich|rede|gehts|geht|bitte|please|kannst|kann|du\\s+|du\\s+als|kann\\s+du)\\b)`, 'iu');
   if (directAddressPattern.test(clean)) {
     const directMatch = clean.match(new RegExp(namesPattern, 'iu'));
     return directMatch ? directMatch[0] : null;

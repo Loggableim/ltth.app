@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -151,7 +151,7 @@
           Ziel: <span id="activePlatformName">Animaze</span>
         </div>
         <button class="btn btn-primary" id="connectBtn">Verbinden</button>
-        <button class="btn btn-secondary" data-action="refresh">🔄 Aktualisieren</button>
+        <button class="btn btn-secondary" data-action="refresh">Aktualisieren</button>
       </div>
     </div>
 
@@ -174,7 +174,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Connection Info -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">🔌 Verbindung</h2>
+          <h2 class="text-xl font-bold mb-4">Verbindung</h2>
           <div class="space-y-3">
             <div class="flex justify-between">
               <span class="text-gray-400">Status:</span>
@@ -193,12 +193,12 @@
               <span id="emoteCount">0</span>
             </div>
           </div>
-          <button class="btn btn-primary w-full mt-4" data-action="test-connection">🧪 Verbindung testen</button>
+          <button class="btn btn-primary w-full mt-4" data-action="test-connection">Verbindung testen</button>
         </div>
 
         <!-- Current Avatar -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">👤 Aktueller Avatar</h2>
+          <h2 class="text-xl font-bold mb-4">Aktueller Avatar</h2>
           <div id="currentAvatarInfo" class="text-gray-400">
             Keine Avatar-Informationen verfügbar
           </div>
@@ -206,14 +206,14 @@
 
         <!-- Quick Actions -->
         <div class="card col-span-1 md:col-span-2">
-          <h2 class="text-xl font-bold mb-4">⚡ Schnellaktionen</h2>
+          <h2 class="text-xl font-bold mb-4">Schnellaktionen</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button class="grid-item text-center" data-action="calibrate">
               <div class="text-2xl mb-2">🎯</div>
               <div>Tracker kalibrieren</div>
             </button>
             <button class="grid-item text-center" data-action="broadcast-start">
-              <div class="text-2xl mb-2">📹</div>
+              <div class="text-2xl mb-2">📣</div>
               <div>Broadcast starten</div>
             </button>
             <button class="grid-item text-center" data-action="broadcast-stop">
@@ -234,7 +234,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Emotes -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="emotesSectionTitle">😀 Emotes</h2>
+          <h2 class="text-xl font-bold mb-4" id="emotesSectionTitle">Emotes</h2>
           <div id="emotesList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2">Keine Emotes verfügbar</p>
           </div>
@@ -242,7 +242,7 @@
 
         <!-- Special Actions -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="specialActionsSectionTitle">⭐ Spezialaktionen</h2>
+          <h2 class="text-xl font-bold mb-4" id="specialActionsSectionTitle">Spezialaktionen</h2>
           <div id="specialActionsList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2">Keine Spezialaktionen verfügbar</p>
           </div>
@@ -250,7 +250,7 @@
 
         <!-- Poses -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="posesSectionTitle">🧘 Posen</h2>
+          <h2 class="text-xl font-bold mb-4" id="posesSectionTitle">Posen</h2>
           <div id="posesList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2">Keine Posen verfügbar</p>
           </div>
@@ -258,7 +258,7 @@
 
         <!-- Idle Animations -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4" id="idlesSectionTitle">💤 Idle Animationen</h2>
+          <h2 class="text-xl font-bold mb-4" id="idlesSectionTitle">Idle Animationen</h2>
           <div id="idlesList" class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
             <p class="text-gray-400 col-span-2">Keine Idle Animationen verfügbar</p>
           </div>
@@ -270,15 +270,15 @@
     <div id="tab-gifts" class="tab-content hidden">
       <div class="card">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">🎁 Gift Mappings</h2>
+          <h2 class="text-xl font-bold">Gift Mappings</h2>
           <button class="btn btn-success" data-action="add-gift-mapping">+ Mapping hinzufügen</button>
         </div>
-        <p class="text-gray-400 mb-4">Verknüpfe TikTok Geschenke mit Animaze Aktionen</p>
+        <p class="text-gray-400 mb-4">Verknüpfe TikTok-Geschenke mit Animaze-Aktionen</p>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 rounded-lg border border-gray-700 bg-gray-900/60 p-3">
           <label class="block md:col-span-2">
             <span class="text-gray-400 text-sm">Gift aus Katalog</span>
             <select class="select" id="giftMappingGift">
-              <option value="">Gift aus Katalog wÃ¤hlen...</option>
+              <option value="">Gift aus Katalog wählen...</option>
             </select>
           </label>
           <label class="block">
@@ -293,7 +293,7 @@
           <label class="block">
             <span class="text-gray-400 text-sm">Aktion</span>
             <select class="select" id="giftMappingActionValue">
-              <option value="">AuswÃ¤hlen...</option>
+              <option value="">Auswählen...</option>
             </select>
           </label>
         </div>
@@ -308,7 +308,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Follow Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">👋 Follow Event</h2>
+          <h2 class="text-xl font-bold mb-4">Follow Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="followEnabled">
@@ -347,7 +347,7 @@
 
         <!-- Share Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">📤 Share Event</h2>
+          <h2 class="text-xl font-bold mb-4">Share Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="shareEnabled">
@@ -386,7 +386,7 @@
 
         <!-- Subscribe Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">⭐ Subscribe Event</h2>
+          <h2 class="text-xl font-bold mb-4">? Subscribe Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="subscribeEnabled">
@@ -425,7 +425,7 @@
 
         <!-- Like Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">❤️ Like Event</h2>
+          <h2 class="text-xl font-bold mb-4">Like Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="likeEnabled">
@@ -464,7 +464,7 @@
 
         <!-- Gift Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">🎁 Gift Event</h2>
+          <h2 class="text-xl font-bold mb-4">Gift Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="giftEnabled">
@@ -503,7 +503,7 @@
 
         <!-- Chat Event -->
         <div class="card">
-          <h2 class="text-xl font-bold mb-4">💬 Chat Event</h2>
+          <h2 class="text-xl font-bold mb-4">Chat Event</h2>
           <div class="space-y-3">
             <label class="flex items-center gap-2">
               <input type="checkbox" id="chatEnabled">
@@ -545,7 +545,7 @@
     <!-- Tab Content: Logic Matrix -->
     <div id="tab-logicmatrix" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">🎯 Logic Matrix - Event-Driven Actions</h2>
+        <h2 class="text-xl font-bold mb-4">Logic Matrix - Event-Driven Actions</h2>
         <p class="text-gray-400 mb-6">
           Definiere fortgeschrittene Regeln, die auf TikTok-Events reagieren. Die Logic Matrix erlaubt komplexe Bedingungen und Aktionen basierend auf Event-Daten.
         </p>
@@ -553,7 +553,7 @@
         <!-- Logic Matrix Rules List -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">📋 Konfigurierte Regeln</h3>
+            <h3 class="text-lg font-bold">Konfigurierte Regeln</h3>
             <button class="btn btn-success" id="addRuleBtn">+ Regel hinzufügen</button>
           </div>
           <div id="logicMatrixRules" class="space-y-3">
@@ -563,7 +563,7 @@
 
         <!-- Test Logic Matrix -->
         <div class="border-t border-gray-700 pt-6">
-          <h3 class="text-lg font-bold mb-4">🧪 Logic Matrix testen</h3>
+          <h3 class="text-lg font-bold mb-4">Logic Matrix testen</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="text-gray-400 text-sm">Event-Typ</label>
@@ -582,7 +582,7 @@
               <textarea class="input" id="testEventData" rows="4" placeholder='{"username": "TestUser", "giftName": "Rose", "giftId": 5655}'></textarea>
             </div>
           </div>
-          <button class="btn btn-primary mt-4" id="testLogicMatrixBtn">🔍 Testen</button>
+          <button class="btn btn-primary mt-4" id="testLogicMatrixBtn">Testen</button>
           <div id="testLogicMatrixResults" class="mt-4 hidden">
             <h4 class="font-bold mb-2">Ergebnisse:</h4>
             <div class="bg-gray-800 rounded-lg p-4">
@@ -596,11 +596,11 @@
     <!-- Tab Content: Personalities -->
     <div id="tab-personalities" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">🎭 Persönlichkeiten & Einstellungen</h2>
+        <h2 class="text-xl font-bold mb-4">Persönlichkeiten & Einstellungen</h2>
         
         <!-- Persona Management -->
         <div class="mb-6 pb-6 border-b border-gray-700">
-          <h3 class="text-lg font-bold mb-4">👤 Persona Verwaltung</h3>
+          <h3 class="text-lg font-bold mb-4">Persona Verwaltung</h3>
           <div class="flex gap-3 mb-4">
             <select id="personaSelector" class="select flex-1">
               <option value="">Persona auswählen...</option>
@@ -611,8 +611,8 @@
               <option value="anime_fan">Anime Fan</option>
             </select>
             <button class="btn btn-success" id="createPersonaBtn">+ Erstellen</button>
-            <button class="btn btn-primary" id="editPersonaBtn">✏️ Bearbeiten</button>
-            <button class="btn btn-danger" id="deletePersonaBtn">🗑️ Löschen</button>
+            <button class="btn btn-primary" id="editPersonaBtn">Bearbeiten</button>
+            <button class="btn btn-danger" id="deletePersonaBtn">Löschen</button>
           </div>
         </div>
         
@@ -630,7 +630,7 @@
         </div>
 
         <!-- Memory Customization -->
-        <h3 class="text-lg font-bold mt-6 mb-4">💭 Erinnerungs-Einstellungen</h3>
+        <h3 class="text-lg font-bold mt-6 mb-4">Erinnerungs-Einstellungen</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="text-gray-400 text-sm">Max. Kontext-Erinnerungen</label>
@@ -655,7 +655,7 @@
         </div>
 
         <!-- Auto-Response Settings -->
-        <h3 class="text-lg font-bold mt-6 mb-4">🤖 Auto-Response Einstellungen</h3>
+        <h3 class="text-lg font-bold mt-6 mb-4">Auto-Response Einstellungen</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label class="flex items-center gap-2">
             <input type="checkbox" id="autoRespondChat">
@@ -685,14 +685,14 @@
           </div>
         </div>
 
-        <button class="btn btn-primary mt-6" id="savePersonalityBtn">💾 Einstellungen speichern</button>
+        <button class="btn btn-primary mt-6" id="savePersonalityBtn">Einstellungen speichern</button>
       </div>
     </div>
 
     <!-- Tab Content: Memories -->
     <div id="tab-memories" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">🔍 Erinnerungs-Datenbank</h2>
+        <h2 class="text-xl font-bold mb-4">Erinnerungs-Datenbank</h2>
         
         <!-- Search Controls -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -702,16 +702,16 @@
           </select>
           <select class="select" id="memoryFilterImportance">
             <option value="">Alle Wichtigkeiten</option>
-            <option value="0.7">Sehr wichtig (≥0.7)</option>
-            <option value="0.5">Wichtig (≥0.5)</option>
-            <option value="0.3">Normal (≥0.3)</option>
+            <option value="0.7">Sehr wichtig (=0.7)</option>
+            <option value="0.5">Wichtig (=0.5)</option>
+            <option value="0.3">Normal (=0.3)</option>
           </select>
         </div>
         
         <div class="flex gap-3 mb-5">
-          <button class="btn btn-primary" id="memorySearchBtn">🔎 Suchen</button>
-          <button class="btn btn-secondary" id="memoryReloadBtn">🔄 Alle laden</button>
-          <button class="btn btn-danger" id="memoryArchiveBtn">📦 Alte archivieren</button>
+          <button class="btn btn-primary" id="memorySearchBtn">Suchen</button>
+          <button class="btn btn-secondary" id="memoryReloadBtn">Alle laden</button>
+          <button class="btn btn-danger" id="memoryArchiveBtn">Alte archivieren</button>
         </div>
 
         <!-- Memory Statistics -->
@@ -725,7 +725,7 @@
             <div class="text-2xl font-bold" id="memoryStatsUsers">-</div>
           </div>
           <div class="card bg-gray-800">
-            <div class="text-sm text-gray-400">Ø Wichtigkeit</div>
+            <div class="text-sm text-gray-400">⟡ Wichtigkeit</div>
             <div class="text-2xl font-bold" id="memoryStatsAvgImportance">-</div>
           </div>
           <div class="card bg-gray-800">
@@ -736,7 +736,7 @@
         
         <!-- Results -->
         <div id="memoryResults" class="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
-          <p class="text-gray-400">Keine Erinnerungen verfügbar. Klicke auf "Alle laden" um Erinnerungen anzuzeigen.</p>
+          <p class="text-gray-400">Keine Erinnerungen verfügbar. Klicke auf "Alle laden", um Erinnerungen anzuzeigen.</p>
         </div>
       </div>
     </div>
@@ -850,7 +850,7 @@
     <!-- Tab Content: Settings -->
     <div id="tab-settings" class="tab-content hidden">
       <div class="card">
-        <h2 class="text-xl font-bold mb-4">⚙️ Verbindungseinstellungen</h2>
+        <h2 class="text-xl font-bold mb-4">Verbindungseinstellungen</h2>
         <div class="mb-4">
           <label class="text-gray-400 text-sm">Plattform</label>
           <select class="select" id="settingsPlatform">
@@ -898,14 +898,14 @@
             <span>Ausführliches Logging</span>
           </label>
         </div>
-        <button class="btn btn-primary mt-4" data-action="save-settings">💾 Einstellungen speichern</button>
-        <button class="btn btn-success mt-4 ml-2" data-action="apply-stream-ready-preset">⚡ Stream Ready anwenden</button>
+        <button class="btn btn-primary mt-4" data-action="save-settings">Einstellungen speichern</button>
+        <button class="btn btn-success mt-4 ml-2" data-action="apply-stream-ready-preset">? Stream Ready anwenden</button>
         <p class="text-xs text-gray-500 mt-2">Aktiviert schnellere Reaktionen, aggressivere Auto-Responses und streamfreundliche Standardwerte.</p>
       </div>
 
       <div class="card mt-4">
-        <h2 class="text-xl font-bold mb-4">🌀 VRChat OSC Bridge</h2>
-        <p class="text-gray-400 mb-4">AnimazingPal sendet High-Level-Intents an OSC-Bridge, damit VRChat Chatbox, Emotes und Gesten live reagieren können.</p>
+        <h2 class="text-xl font-bold mb-4">VRChat OSC Bridge</h2>
+        <p class="text-gray-400 mb-4">AnimazingPal sendet High-Level-Intents an die OSC-Bridge, damit VRChat Chatbox, Emotes und Gesten live reagieren können.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label class="flex items-center gap-2">
             <input type="checkbox" id="vrchatBridgeEnabled">
@@ -936,7 +936,7 @@
       </div>
 
       <div class="card mt-4">
-        <h2 class="text-xl font-bold mb-4">🎛️ Override Behaviors</h2>
+        <h2 class="text-xl font-bold mb-4">Override Behaviors</h2>
         <p class="text-gray-400 mb-4">Aktiviere oder deaktiviere Avatar-Verhaltensweisen in Animaze</p>
         <div id="overridesList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <!-- Dynamisch generiert -->
