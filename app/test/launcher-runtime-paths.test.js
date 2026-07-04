@@ -26,6 +26,7 @@ describe('launcher runtime toolchain', () => {
 
     expect(sanitized.NODE_OPTIONS).toBeUndefined();
     expect(sanitized.NPM_CONFIG_NODE_OPTIONS).toBeUndefined();
-    expect(sanitized.Path.split(path.delimiter)[0]).toBe(path.dirname(process.execPath));
+    const pathKey = process.platform === 'win32' ? 'Path' : 'PATH';
+    expect(sanitized[pathKey].split(path.delimiter)[0]).toBe(path.dirname(process.execPath));
   });
 });
