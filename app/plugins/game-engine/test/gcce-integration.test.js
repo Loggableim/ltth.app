@@ -654,6 +654,37 @@ describe('Game Engine GCCE Integration', () => {
       expect(plugin.activeSessions.has(105)).toBe(false);
     });
 
+    test('should clear timeout when challenge is accepted by viewer opponent', () => {
+      jest.useFakeTimers();
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        getGameMedia: jest.fn(() => null),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      const timeoutHandle = setTimeout(() => {}, 10000);
+      const clearSpy = jest.spyOn(global, 'clearTimeout').mockImplementation(() => {});
+
+      plugin.pendingChallenges.set(108, {
+        sessionId: 108,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One',
+        timeout: timeoutHandle
+      });
+
+      plugin.acceptChallenge(108, 'viewer456');
+
+      expect(clearSpy).toHaveBeenCalledWith(timeoutHandle);
+      expect(plugin.pendingChallenges.has(108)).toBe(false);
+
+      clearSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
     test('should accept timeout challenge as streamer by default', () => {
       plugin.db = {
         getGameConfig: jest.fn(() => ({
