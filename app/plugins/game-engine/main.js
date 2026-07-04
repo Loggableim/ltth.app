@@ -1185,16 +1185,19 @@ class GameEnginePlugin {
       this.logger.warn(`Invalid challenge payload for session ${sessionId}`);
       return;
     }
-
-    if (!challenge.challengerUsername) {
-      this.logger.warn(`Challenge ${sessionId} missing challengerUsername`);
-      return;
-    }
-
-    const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
     const opponent = opponentUsername || 'streamer';
     const challengerUsername = challenge.challengerUsername;
     const challengerNickname = challenge.challengerNickname || challengerUsername;
+    const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
+
+    if (!challengerUsername) {
+      this.logger.warn(`Challenge ${sessionId} missing challengerUsername`);
+      return;
+    }
+    if (opponent !== 'streamer' && opponent === challengerUsername) {
+      this.logger.warn(`Challenge ${sessionId} rejected: opponent matches challenger (${opponent})`);
+      return;
+    }
 
     if (!config) {
       this.logger.warn(`Missing config for challenge game type ${challenge.gameType}`);

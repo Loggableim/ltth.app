@@ -612,6 +612,27 @@ describe('Game Engine GCCE Integration', () => {
       }).not.toThrow();
     });
 
+    test('should ignore challenge acceptance when opponent equals challenger', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(104, {
+          gameType: 'connect4',
+          challengerUsername: 'viewer123',
+          challengerNickname: 'Viewer One'
+        }, 'viewer123');
+      }).not.toThrow();
+
+      expect(plugin.db.addPlayer2).not.toHaveBeenCalled();
+      expect(plugin.activeSessions.has(104)).toBe(false);
+    });
+
     test('should forward opponentUsername from socket event to acceptChallenge', () => {
       let connectionHandler;
       let acceptChallengeHandler;
