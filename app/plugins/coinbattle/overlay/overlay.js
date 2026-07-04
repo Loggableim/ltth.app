@@ -90,6 +90,7 @@
           if (newTheme) {
             const dashboardThemeMap = {
               'aurora': 'dark',
+              'aurora-2': 'dark',
               'night': 'dark',
               'day': 'light',
               'contrast': 'dark',
@@ -112,6 +113,7 @@
         if (e.key === 'dashboard-theme' && e.newValue) {
           const dashboardThemeMap = {
             'aurora': 'dark',
+            'aurora-2': 'dark',
             'night': 'dark',
             'day': 'light',
             'contrast': 'dark',
@@ -149,6 +151,7 @@
       // Map dashboard themes to coinbattle overlay themes
       const dashboardThemeMap = {
         'aurora': 'dark',
+        'aurora-2': 'dark',
         'night': 'dark',
         'day': 'light',
         'contrast': 'dark',

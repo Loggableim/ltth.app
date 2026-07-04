@@ -22,6 +22,7 @@ class ThemeManager {
       // Map dashboard theme names to our internal names
       const dashboardThemeMap = {
         'aurora': 'dark',
+        'aurora-2': 'dark',
         'night': 'dark',
         'day': 'light',
         'contrast': 'dark',
@@ -55,6 +56,7 @@ class ThemeManager {
           if (newTheme) {
             const dashboardThemeMap = {
               'aurora': 'dark',
+              'aurora-2': 'dark',
               'night': 'dark',
               'day': 'light',
               'contrast': 'dark',

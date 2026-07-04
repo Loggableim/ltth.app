@@ -38,6 +38,33 @@ class ChatangoThemeAdapter {
                 cvbg: '08111F',   // Collapsed view background
                 cvfg: 'E2E8F0'    // Collapsed view font/icon color
             },
+            'aurora-2': {
+                // Aurora 2.0 theme - sharper glass with brighter cyan/purple accents
+                a: '050B16',      // Background color (near-black navy)
+                b: 100,           // Background opacity
+                c: 'D8E3F3',      // Title and icons color
+                d: 'F8FAFC',      // Group owner's msg, URL and background text color
+                e: '0C1526',      // Messages background color
+                f: 100,           // Messages background opacity
+                g: 'F8FAFC',      // Messages text color
+                h: '07131B',      // Input background color
+                i: 100,           // Input background opacity
+                j: 'F8FAFC',      // Input text color
+                k: '67E8F9',      // Date color (cyan)
+                l: '67E8F9',      // Border color
+                m: '67E8F9',      // Button color
+                n: '050B16',      // Button text color
+                o: 100,           // Button opacity
+                p: '10',          // Font size
+                q: '67E8F9',      // Main border color
+                r: 100,           // Main border visibility
+                s: 0,             // Rounded corners
+                t: 0,             // Messages sound toggle (off)
+                sbc: '94A3B8',    // Scrollbar color
+                sba: 100,         // Scrollbar opacity
+                cvbg: '050B16',   // Collapsed view background
+                cvfg: 'D8E3F3'    // Collapsed view font/icon color
+            },
             night: {
                 // Default night mode - green branding
                 a: '13A318',      // Background color (green)
