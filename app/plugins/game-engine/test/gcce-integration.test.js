@@ -534,6 +534,35 @@ describe('Game Engine GCCE Integration', () => {
         plugin.startGameFromChallenge(101, null, 'streamer');
       }).not.toThrow();
     });
+
+    test('should forward opponentUsername from socket event to acceptChallenge', () => {
+      let connectionHandler;
+      let acceptChallengeHandler;
+      const socketForConnection = {
+        on: jest.fn((event, callback) => {
+          if (event === 'game-engine:accept-challenge') {
+            acceptChallengeHandler = callback;
+          }
+        })
+      };
+
+      mockSocketIO.on.mockImplementation((event, handler) => {
+        if (event === 'connection') {
+          connectionHandler = handler;
+        }
+      });
+
+      const acceptSpy = jest.spyOn(plugin, 'acceptChallenge').mockImplementation(() => {});
+
+      plugin.registerSocketEvents();
+      connectionHandler(socketForConnection);
+      acceptChallengeHandler({
+        sessionId: 123,
+        opponentUsername: 'viewer456'
+      });
+
+      expect(acceptSpy).toHaveBeenCalledWith(123, 'viewer456');
+    });
   });
 
   describe('Manual Mode', () => {
