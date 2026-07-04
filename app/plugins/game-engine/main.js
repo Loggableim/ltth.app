@@ -1182,10 +1182,19 @@ class GameEnginePlugin {
    */
   startGameFromChallenge(sessionId, challenge, opponentUsername) {
     const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
+    const opponent = opponentUsername || 'streamer';
+
+    if (!config) {
+      this.logger.warn(`Missing config for challenge game type ${challenge.gameType}`);
+      return;
+    }
+
+    if (challenge.gameType === 'chess') {
+      return this.startChessGameFromChallenge(sessionId, challenge, opponent, config);
+    }
     
     // Determine roles
     const streamerRole = config.streamerRole || 'player2';
-    const challengerRole = streamerRole === 'player1' ? 'player2' : 'player1';
 
     // Keep stored session players aligned with the in-memory player numbers.
     if (streamerRole === 'player1') {
@@ -1197,8 +1206,8 @@ class GameEnginePlugin {
     } else {
       this.db.addPlayer2(
         sessionId,
-        opponentUsername,
-        opponentUsername === 'streamer' ? 'streamer' : 'viewer'
+        opponent,
+        opponent === 'streamer' ? 'streamer' : 'viewer'
       );
     }
 
@@ -1260,6 +1269,81 @@ class GameEnginePlugin {
     });
 
     this.logger.info(`Started ${challenge.gameType} game #${sessionId}: ${player1.username} vs ${player2.username}`);
+  }
+
+  /**
+   * Start a chess game from an accepted challenge
+   */
+  startChessGameFromChallenge(sessionId, challenge, opponentUsername, config) {
+    const challengerUsername = challenge.challengerUsername;
+    const challengerNickname = challenge.challengerNickname || challengerUsername;
+    const opponentIsStreamer = opponentUsername === 'streamer';
+
+    // Determine sides (white/black)
+    const streamerRole = config.streamerRole || 'random';
+    let streamerSide, viewerSide;
+    
+    if (streamerRole === 'random') {
+      streamerSide = Math.random() < 0.5 ? 'white' : 'black';
+      viewerSide = streamerSide === 'white' ? 'black' : 'white';
+    } else if (streamerRole === 'white' || streamerRole === 'black') {
+      streamerSide = streamerRole;
+      viewerSide = streamerRole === 'white' ? 'black' : 'white';
+    } else {
+      // Default to random if config contains unexpected value
+      streamerSide = Math.random() < 0.5 ? 'white' : 'black';
+      viewerSide = streamerSide === 'white' ? 'black' : 'white';
+    }
+
+    // Keep stored session players aligned with the in-memory player colors.
+    if (streamerSide === 'white') {
+      this.db.updateSession(sessionId, {
+        player1_username: 'streamer',
+        player1_role: 'streamer'
+      });
+      this.db.addPlayer2(sessionId, challengerUsername, 'viewer');
+    } else {
+      this.db.addPlayer2(
+        sessionId,
+        opponentUsername,
+        opponentIsStreamer ? 'streamer' : 'viewer'
+      );
+    }
+
+    const whitePlayer = streamerSide === 'white'
+      ? {
+          username: 'streamer',
+          role: 'streamer',
+          color: config.whiteColor,
+          nickname: 'Streamer',
+          side: 'white'
+        }
+      : {
+          username: challengerUsername,
+          role: 'viewer',
+          color: config.whiteColor,
+          nickname: challengerNickname,
+          side: 'white'
+        };
+
+    const blackPlayer = streamerSide === 'black'
+      ? {
+          username: 'streamer',
+          role: 'streamer',
+          color: config.blackColor,
+          nickname: 'Streamer',
+          side: 'black'
+        }
+      : {
+          username: challengerUsername,
+          role: 'viewer',
+          color: config.blackColor,
+          nickname: challengerNickname,
+          side: 'black'
+        };
+
+    const gameTimeControl = config.defaultTimeControl || '5+0';
+    return this._startChessMatch(sessionId, whitePlayer, blackPlayer, config, gameTimeControl, viewerSide);
   }
 
   /**
@@ -4831,7 +4915,13 @@ class GameEnginePlugin {
       side: 'black'
     };
 
-    // Create chess game instance
+    return this._startChessMatch(sessionId, whitePlayer, blackPlayer, config, gameTimeControl, viewerSide, 'chess');
+  }
+
+  /**
+   * Initialize and wire a chess game instance
+   */
+  _startChessMatch(sessionId, whitePlayer, blackPlayer, config, gameTimeControl, viewerSide = 'white', gameType = 'chess') {
     const game = new ChessGame(sessionId, whitePlayer, blackPlayer, gameTimeControl, this.logger);
     this.activeSessions.set(sessionId, game);
 
@@ -4947,11 +5037,11 @@ class GameEnginePlugin {
     game.timerInterval = timerInterval;
 
     // Check if should use unified overlay
-    const useUnified = this.unifiedQueue ? this.unifiedQueue.shouldUseUnifiedOverlay('chess') : false;
+    const useUnified = this.unifiedQueue ? this.unifiedQueue.shouldUseUnifiedOverlay(gameType) : false;
     
     // Emit game-switched event for unified overlay
     if (useUnified && this.unifiedQueue) {
-      this.unifiedQueue.switchGame('chess', sessionId, config);
+      this.unifiedQueue.switchGame(gameType, sessionId, config);
     }
 
     // Emit game started event (backwards compatibility)
@@ -4964,7 +5054,7 @@ class GameEnginePlugin {
       useUnified
     });
 
-    this.logger.info(`Started chess game #${sessionId}: ${whitePlayer.username} (white) vs ${blackPlayer.username} (black) - Time control: ${gameTimeControl}`);
+    this.logger.info(`Started chess game #${sessionId}: ${whitePlayer.username} (white) vs ${blackPlayer.username} (black) - Time control: ${gameTimeControl} - viewer side: ${viewerSide}`);
     return { success: true, started: true, sessionId };
   }
 

@@ -418,6 +418,40 @@ describe('Game Engine GCCE Integration', () => {
       expect(game.player1.username).toBe('streamer');
       expect(game.player2.username).toBe('viewer123');
     });
+
+    test('should start chess from challenge with deterministic white/black roles', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'white'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.startGameFromChallenge(99, {
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer Name'
+      }, 'streamer');
+
+      const game = plugin.activeSessions.get(99);
+
+      expect(plugin.db.updateSession).toHaveBeenCalledWith(99, expect.objectContaining({
+        player1_username: 'streamer',
+        player1_role: 'streamer'
+      }));
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(99, 'viewer123', 'viewer');
+      expect(game.whitePlayer.username).toBe('streamer');
+      expect(game.blackPlayer.username).toBe('viewer123');
+      expect(game.whitePlayer.side).toBe('white');
+      expect(game.blackPlayer.side).toBe('black');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
   });
 
   describe('Manual Mode', () => {
