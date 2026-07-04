@@ -5,318 +5,568 @@
 (function() {
     'use strict';
 
-    // State
-    let socket = null;
-    let availableActions = [];
-    let mappings = [];
-    let currentMapping = null;
-    let stats = {
-        totalEvents: 0,
-        totalActions: 0,
-        successfulActions: 0,
-        failedActions: 0
+    const state = {
+        socket: null,
+        dashboard: null,
+        config: {
+            ui: {
+                theme: 'aurora-2'
+            },
+            websocket: {
+                host: 'localhost',
+                port: 25560,
+                heartbeatInterval: 30000
+            },
+            limits: {
+                maxActionsPerMinute: 30,
+                commandCooldown: 1000,
+                maxQueueSize: 100
+            },
+            overlay: {
+                enabled: true,
+                showUsername: true,
+                showAction: true,
+                animationDuration: 3000
+            },
+            chat: {
+                enabled: false,
+                mode: 'relay',
+                filters: [],
+                relayTargets: []
+            },
+            giftBars: {
+                enabled: false,
+                goals: []
+            }
+        },
+        status: {
+            connectionStatus: 'Disconnected',
+            isConnected: false,
+            availableActions: [],
+            stats: {},
+            queueStatus: null
+        },
+        mappings: [],
+        events: [],
+        currentMapping: null,
+        currentTab: 'commands'
     };
 
-    // Initialize
     function init() {
-        console.log('[Minecraft Connect] Initializing dashboard...');
-        
-        // Connect to Socket.IO
+        bindEvents();
         connectSocket();
-        
-        // Set up event listeners
-        setupEventListeners();
-        
-        // Load initial data
-        loadStatus();
-        loadMappings();
-        loadSettings();
+        loadDashboard();
     }
 
-    // Connect to Socket.IO
+    function bindEvents() {
+        document.querySelectorAll('.mc-tab').forEach((tab) => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+
+        document.querySelectorAll('[data-theme-option]').forEach((button) => {
+            button.addEventListener('click', () => setTheme(button.dataset.themeOption));
+        });
+
+        document.getElementById('refreshDashboardBtn').addEventListener('click', loadDashboard);
+        document.getElementById('addCommandBtn').addEventListener('click', () => openMappingModal());
+        document.getElementById('modalClose').addEventListener('click', closeMappingModal);
+        document.getElementById('modalCancel').addEventListener('click', closeMappingModal);
+        document.getElementById('modalSave').addEventListener('click', saveMappingFromModal);
+        document.getElementById('addConditionBtn').addEventListener('click', () => addCondition());
+        document.getElementById('mappingAction').addEventListener('change', updateParametersForm);
+        document.getElementById('saveSetupBtn').addEventListener('click', saveSettings);
+        document.getElementById('saveChatBtn').addEventListener('click', saveSettings);
+        document.getElementById('saveGiftBarsBtn').addEventListener('click', saveSettings);
+        document.getElementById('addGiftGoalBtn').addEventListener('click', addGiftGoal);
+        document.getElementById('testActionBtn').addEventListener('click', testAction);
+    }
+
     function connectSocket() {
-        socket = io();
-        
-        socket.on('connect', () => {
-            console.log('[Minecraft Connect] Socket connected');
-            socket.emit('minecraft-connect:get-status');
-            socket.emit('minecraft-connect:get-mappings');
+        state.socket = io();
+
+        state.socket.on('connect', () => {
+            state.socket.emit('minecraft-connect:get-status');
+            state.socket.emit('minecraft-connect:get-mappings');
         });
 
-        socket.on('minecraft-connect:status-changed', (data) => {
-            updateStatus(data);
+        state.socket.on('minecraft-connect:status-changed', (data) => {
+            applyStatus(data);
         });
 
-        socket.on('minecraft-connect:actions-updated', (data) => {
-            availableActions = data.availableActions || [];
+        state.socket.on('minecraft-connect:actions-updated', (data) => {
+            state.status.availableActions = data.availableActions || [];
             renderActions();
             updateActionDropdown();
+            updateSummary();
         });
 
-        socket.on('minecraft-connect:event-log', (event) => {
-            addEventToLog(event);
+        state.socket.on('minecraft-connect:event-log', (event) => {
+            state.events.unshift(event);
+            if (state.events.length > 100) {
+                state.events = state.events.slice(0, 100);
+            }
+            renderChatFeed();
+            updateSummary();
         });
 
-        socket.on('minecraft-connect:mappings', (data) => {
-            mappings = data.mappings || [];
-            renderMappings();
+        state.socket.on('minecraft-connect:mappings', (data) => {
+            state.mappings = data.mappings || [];
+            renderCommands();
+            updateSummary();
         });
 
-        socket.on('minecraft-connect:action-result', (result) => {
+        state.socket.on('minecraft-connect:action-result', (result) => {
             console.log('[Minecraft Connect] Action result:', result);
         });
     }
 
-    // Set up event listeners
-    function setupEventListeners() {
-        // Tab switching
-        document.querySelectorAll('.mc-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                switchTab(tab.dataset.tab);
-            });
-        });
+    async function loadDashboard() {
+        try {
+            const response = await fetch('/api/minecraft-connect/dashboard');
+            const data = await response.json();
 
-        // Add mapping button
-        document.getElementById('addMappingBtn').addEventListener('click', () => {
-            openMappingModal();
-        });
+            if (data.success && data.dashboard) {
+                applyDashboard(data.dashboard);
+                return;
+            }
+        } catch (error) {
+            console.error('[Minecraft Connect] Failed to load dashboard:', error);
+        }
 
-        // Modal buttons
-        document.getElementById('modalClose').addEventListener('click', closeMappingModal);
-        document.getElementById('modalCancel').addEventListener('click', closeMappingModal);
-        document.getElementById('modalSave').addEventListener('click', saveMappingFromModal);
-
-        // Test action button
-        document.getElementById('testActionBtn').addEventListener('click', () => {
-            testAction();
-        });
-
-        // Clear events button
-        document.getElementById('clearEventsBtn').addEventListener('click', () => {
-            document.getElementById('eventsList').innerHTML = `
-                <div class="mc-empty-state">
-                    <p>No events yet.</p>
-                    <p class="mc-text-muted">Events will appear here when TikTok events trigger Minecraft actions.</p>
-                </div>
-            `;
-        });
-
-        // Save settings button
-        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
-
-        // Add condition button
-        document.getElementById('addConditionBtn').addEventListener('click', addCondition);
-
-        // Action select change
-        document.getElementById('mappingAction').addEventListener('change', updateParametersForm);
+        await Promise.all([loadStatus(), loadMappings(), loadEvents()]);
     }
 
-    // Switch tab
-    function switchTab(tabName) {
-        // Update tab buttons
-        document.querySelectorAll('.mc-tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-
-        // Update tab panels
-        document.querySelectorAll('.mc-tab-panel').forEach(panel => {
-            panel.classList.remove('active');
-        });
-        document.getElementById(`${tabName}-tab`).classList.add('active');
-    }
-
-    // Load status
     async function loadStatus() {
         try {
             const response = await fetch('/api/minecraft-connect/status');
             const data = await response.json();
-            
             if (data.success) {
-                updateStatus(data.status);
-                availableActions = data.status.availableActions || [];
-                renderActions();
-                updateActionDropdown();
+                applyStatus(data.status);
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to load status:', error);
         }
     }
 
-    // Update status display
-    function updateStatus(status) {
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        
-        statusDot.className = 'mc-status-dot';
-        
-        if (status.isConnected) {
-            statusDot.classList.add('connected');
-            statusText.textContent = 'Connected';
-        } else if (status.connectionStatus === 'Waiting') {
-            statusDot.classList.add('waiting');
-            statusText.textContent = 'Waiting for Minecraft';
-        } else {
-            statusText.textContent = 'Disconnected';
-        }
-
-        // Update stats
-        if (status.stats) {
-            stats = status.stats;
-            updateStatsDisplay();
-        }
-
-        // Update test button
-        const testBtn = document.getElementById('testActionBtn');
-        testBtn.disabled = !status.isConnected;
-    }
-
-    // Update stats display
-    function updateStatsDisplay() {
-        document.getElementById('statTotalEvents').textContent = stats.totalEvents || 0;
-        document.getElementById('statTotalActions').textContent = stats.totalActions || 0;
-        document.getElementById('statSuccessful').textContent = stats.successfulActions || 0;
-        document.getElementById('statFailed').textContent = stats.failedActions || 0;
-    }
-
-    // Load mappings
     async function loadMappings() {
         try {
             const response = await fetch('/api/minecraft-connect/mappings');
             const data = await response.json();
-            
             if (data.success) {
-                mappings = data.mappings || [];
-                renderMappings();
+                state.mappings = data.mappings || [];
+                renderCommands();
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to load mappings:', error);
         }
     }
 
-    // Render mappings
-    function renderMappings() {
+    async function loadEvents() {
+        try {
+            const response = await fetch('/api/minecraft-connect/events');
+            const data = await response.json();
+            if (data.success) {
+                state.events = data.events || [];
+                renderChatFeed();
+            }
+        } catch (error) {
+            console.error('[Minecraft Connect] Failed to load events:', error);
+        }
+    }
+
+    function applyDashboard(dashboard) {
+        state.dashboard = dashboard;
+        state.config = dashboard.config || state.config;
+        state.status = dashboard.status || state.status;
+        state.mappings = dashboard.mappings || [];
+        state.events = dashboard.events || [];
+        applyTheme(state.config.ui?.theme || 'aurora-2');
+        fillFormsFromConfig();
+        renderAll();
+    }
+
+    function applyStatus(status) {
+        state.status = {
+            ...state.status,
+            ...status
+        };
+        renderStatus();
+        updateSummary();
+    }
+
+    function renderAll() {
+        applyTheme(state.config.ui?.theme || 'aurora-2');
+        renderStatus();
+        renderSummary();
+        renderCommands();
+        renderActions();
+        renderChatSettings();
+        renderChatFeed();
+        renderGiftBars();
+        renderSetup();
+        updateActionDropdown();
+    }
+
+    function switchTab(tabName) {
+        state.currentTab = tabName;
+
+        document.querySelectorAll('.mc-tab').forEach((tab) => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+
+        document.querySelectorAll('.mc-tab-panel').forEach((panel) => {
+            panel.classList.remove('active');
+        });
+
+        const panel = document.getElementById(`${tabName}-tab`);
+        if (panel) {
+            panel.classList.add('active');
+        }
+    }
+
+    function applyTheme(theme) {
+        const value = theme === 'aurora' ? 'aurora' : 'aurora-2';
+        document.documentElement.dataset.theme = value;
+        state.config.ui = state.config.ui || {};
+        state.config.ui.theme = value;
+
+        document.querySelectorAll('[data-theme-option]').forEach((button) => {
+            button.classList.toggle('active', button.dataset.themeOption === value);
+        });
+    }
+
+    function setTheme(theme) {
+        applyTheme(theme);
+        saveSettings(true);
+    }
+
+    function renderStatus() {
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const connectionMeta = document.getElementById('connectionMeta');
+
+        if (!statusDot || !statusText) {
+            return;
+        }
+
+        statusDot.className = 'mc-status-dot';
+
+        if (state.status.isConnected) {
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Connected';
+        } else if (state.status.connectionStatus === 'Waiting') {
+            statusDot.classList.add('waiting');
+            statusText.textContent = 'Waiting for Minecraft';
+        } else {
+            statusText.textContent = state.status.connectionStatus || 'Disconnected';
+        }
+
+        if (connectionMeta) {
+            const queueSize = state.status.queueStatus?.queueSize || 0;
+            connectionMeta.textContent = `Queue ${queueSize} | Theme ${state.config.ui?.theme || 'aurora-2'}`;
+        }
+
+        const testBtn = document.getElementById('testActionBtn');
+        if (testBtn) {
+            testBtn.disabled = !state.status.isConnected;
+        }
+    }
+
+    function renderSummary() {
+        document.getElementById('statTotalEvents').textContent = state.status.stats?.totalEvents || 0;
+        document.getElementById('statTotalActions').textContent = state.status.stats?.totalActions || 0;
+        document.getElementById('statQueueSize').textContent = state.status.queueStatus?.queueSize || 0;
+        document.getElementById('statAvailableActions').textContent = state.status.availableActions?.length || 0;
+    }
+
+    function updateSummary() {
+        renderSummary();
+        renderStatus();
+    }
+
+    function fillFormsFromConfig() {
+        const config = state.config || {};
+
+        document.getElementById('wsHost').value = config.websocket?.host || 'localhost';
+        document.getElementById('wsPort').value = config.websocket?.port || 25560;
+        document.getElementById('wsHeartbeat').value = config.websocket?.heartbeatInterval || 30000;
+        document.getElementById('maxActionsPerMin').value = config.limits?.maxActionsPerMinute || 30;
+        document.getElementById('commandCooldown').value = config.limits?.commandCooldown || 1000;
+        document.getElementById('maxQueueSize').value = config.limits?.maxQueueSize || 100;
+        document.getElementById('overlayEnabled').checked = config.overlay?.enabled !== false;
+        document.getElementById('overlayShowUsername').checked = config.overlay?.showUsername !== false;
+        document.getElementById('overlayShowAction').checked = config.overlay?.showAction !== false;
+        document.getElementById('overlayDuration').value = config.overlay?.animationDuration || 3000;
+        document.getElementById('chatEnabled').checked = config.chat?.enabled === true;
+        document.getElementById('chatMode').value = config.chat?.mode || 'relay';
+        document.getElementById('chatRelayTargets').value = joinList(config.chat?.relayTargets);
+        document.getElementById('chatFilters').value = joinList(config.chat?.filters);
+        document.getElementById('giftBarsEnabled').checked = config.giftBars?.enabled === true;
+    }
+
+    function renderCommands() {
         const container = document.getElementById('mappingsList');
-        
-        if (mappings.length === 0) {
+        if (!container) {
+            return;
+        }
+
+        if (!state.mappings.length) {
             container.innerHTML = `
                 <div class="mc-empty-state">
-                    <p>No action mappings configured yet.</p>
-                    <p class="mc-text-muted">Click "Add Mapping" to create your first TikTok → Minecraft action mapping.</p>
+                    <p>No commands yet.</p>
+                    <p class="mc-text-muted">Click "Add command" to create your first TikTok to Minecraft mapping.</p>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = mappings.map(mapping => `
-            <div class="mc-mapping-card">
-                <div class="mc-mapping-header">
-                    <div class="mc-mapping-title">
-                        <span class="mc-mapping-badge ${mapping.trigger}">${mapping.trigger}</span>
-                        <span class="mc-mapping-arrow">→</span>
-                        <span>${mapping.action}</span>
+        container.innerHTML = state.mappings.map((mapping) => {
+            const conditions = (mapping.conditions || []).map((condition) => {
+                return `${escapeHtml(condition.field)} ${escapeHtml(condition.operator)} ${escapeHtml(String(condition.value))}`;
+            }).join(', ');
+
+            const params = Object.entries(mapping.params || {}).map(([key, value]) => {
+                return `<span class="mc-param-pill">${escapeHtml(key)}: ${escapeHtml(String(value))}</span>`;
+            }).join('');
+
+            return `
+                <article class="mc-command-card">
+                    <div class="mc-command-top">
+                        <div>
+                            <span class="mc-trigger-pill">${escapeHtml(mapping.trigger || 'trigger')}</span>
+                            <span class="mc-command-arrow">to</span>
+                            <strong>${escapeHtml(mapping.action || 'action')}</strong>
+                        </div>
+                        <div class="mc-command-actions">
+                            <button class="mc-btn mc-btn-secondary mc-btn-small" onclick="editMapping('${escapeAttr(mapping.id)}')">Edit</button>
+                            <button class="mc-btn mc-btn-danger mc-btn-small" onclick="deleteMapping('${escapeAttr(mapping.id)}')">Delete</button>
+                        </div>
                     </div>
-                    <div class="mc-mapping-actions">
-                        <button class="mc-btn mc-btn-secondary mc-btn-small" onclick="editMapping('${mapping.id}')">Edit</button>
-                        <button class="mc-btn mc-btn-danger mc-btn-small" onclick="deleteMapping('${mapping.id}')">Delete</button>
+                    <div class="mc-command-body">
+                        ${conditions ? `<p><span>Conditions:</span> ${conditions}</p>` : '<p class="mc-text-muted">No conditions</p>'}
+                        ${params ? `<div class="mc-param-row">${params}</div>` : '<p class="mc-text-muted">No parameters</p>'}
                     </div>
-                </div>
-                <div class="mc-mapping-body">
-                    ${renderMappingDetails(mapping)}
-                </div>
-            </div>
-        `).join('');
+                </article>
+            `;
+        }).join('');
     }
 
-    // Render mapping details
-    function renderMappingDetails(mapping) {
-        let html = '';
-        
-        if (mapping.conditions && mapping.conditions.length > 0) {
-            html += '<div class="mc-mapping-conditions">';
-            html += '<strong>Conditions:</strong> ';
-            html += mapping.conditions.map(c => 
-                `${c.field} ${c.operator} ${c.value}`
-            ).join(', ');
-            html += '</div>';
-        }
-
-        if (mapping.params && Object.keys(mapping.params).length > 0) {
-            html += '<div style="margin-top: 8px; font-size: 13px;">';
-            html += '<strong>Parameters:</strong> ';
-            html += Object.entries(mapping.params).map(([key, value]) => 
-                `${key}: ${JSON.stringify(value)}`
-            ).join(', ');
-            html += '</div>';
-        }
-
-        return html || '<span class="mc-text-muted">No additional configuration</span>';
-    }
-
-    // Render available actions
     function renderActions() {
         const container = document.getElementById('actionsList');
-        
-        if (availableActions.length === 0) {
+        if (!container) {
+            return;
+        }
+
+        if (!state.status.availableActions.length) {
             container.innerHTML = `
                 <div class="mc-empty-state">
                     <p>No Minecraft connection detected.</p>
-                    <p class="mc-text-muted">Install and run the TikStreamLink Fabric mod to see available actions.</p>
+                    <p class="mc-text-muted">Install and run the Fabric mod to see available actions.</p>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = availableActions.map(action => `
-            <div class="mc-action-card">
-                <div class="mc-action-name">${action.name}</div>
-                <div class="mc-action-params">
-                    ${(action.params || []).map(param => 
-                        `<span class="mc-param-badge">${param}</span>`
-                    ).join('')}
+        container.innerHTML = state.status.availableActions.map((action) => {
+            const params = (action.params || []).map((param) => `<span class="mc-param-pill">${escapeHtml(param)}</span>`).join('');
+            return `
+                <article class="mc-action-card">
+                    <strong>${escapeHtml(action.name)}</strong>
+                    <div class="mc-param-row">${params}</div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function renderChatSettings() {
+        const chatState = state.config.chat || {};
+        document.getElementById('chatEnabled').checked = chatState.enabled === true;
+        document.getElementById('chatMode').value = chatState.mode || 'relay';
+        document.getElementById('chatRelayTargets').value = joinList(chatState.relayTargets);
+        document.getElementById('chatFilters').value = joinList(chatState.filters);
+    }
+
+    function renderChatFeed() {
+        const container = document.getElementById('chatFeed');
+        if (!container) {
+            return;
+        }
+
+        const chatEvents = state.events.filter((event) => event.type === 'chat').slice(0, 12);
+        if (!chatEvents.length) {
+            container.innerHTML = `
+                <div class="mc-empty-state">
+                    <p>No chat yet.</p>
+                    <p class="mc-text-muted">Chat events will appear here when viewers send messages.</p>
                 </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = chatEvents.map((event) => {
+            const data = event.data || {};
+            const username = data.nickname || data.uniqueId || 'Viewer';
+            const message = data.comment || data.content || data.text || 'Message';
+            return `
+                <article class="mc-feed-item">
+                    <div>
+                        <strong>${escapeHtml(username)}</strong>
+                        <p>${escapeHtml(message)}</p>
+                    </div>
+                    <time>${new Date(event.timestamp || Date.now()).toLocaleTimeString()}</time>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function renderGiftBars() {
+        const goals = state.config.giftBars?.goals || [];
+        const list = document.getElementById('giftGoalsList');
+        const empty = document.getElementById('giftGoalsEmpty');
+        const preview = document.getElementById('giftBarPreview');
+        const enabledCheckbox = document.getElementById('giftBarsEnabled');
+
+        if (enabledCheckbox) {
+            enabledCheckbox.checked = state.config.giftBars?.enabled === true;
+        }
+
+        if (list) {
+            if (!goals.length) {
+                list.innerHTML = '';
+                if (empty) {
+                    empty.style.display = 'block';
+                }
+            } else {
+                if (empty) {
+                    empty.style.display = 'none';
+                }
+                list.innerHTML = goals.map((goal, index) => {
+                    return `
+                        <article class="mc-goal-card" data-goal-index="${index}">
+                            <div class="mc-goal-row">
+                                <label>Label</label>
+                                <input type="text" class="mc-input" data-goal-field="label" value="${escapeAttr(goal.label || '')}">
+                            </div>
+                            <div class="mc-goal-row">
+                                <label>Current</label>
+                                <input type="number" class="mc-input" data-goal-field="current" value="${escapeAttr(goal.current ?? 0)}">
+                            </div>
+                            <div class="mc-goal-row">
+                                <label>Target</label>
+                                <input type="number" class="mc-input" data-goal-field="target" value="${escapeAttr(goal.target ?? 100)}">
+                            </div>
+                            <div class="mc-goal-row">
+                                <label>Reward action</label>
+                                <input type="text" class="mc-input" data-goal-field="rewardAction" value="${escapeAttr(goal.rewardAction || '')}" placeholder="spawn_entity">
+                            </div>
+                            <label class="mc-checkbox-label">
+                                <input type="checkbox" data-goal-field="enabled" ${goal.enabled === false ? '' : 'checked'}>
+                                Enabled
+                            </label>
+                            <button class="mc-btn mc-btn-danger mc-btn-small" data-remove-goal="${index}">Remove goal</button>
+                        </article>
+                    `;
+                }).join('');
+
+                list.querySelectorAll('[data-remove-goal]').forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const index = parseInt(button.dataset.removeGoal, 10);
+                        state.config.giftBars.goals.splice(index, 1);
+                        renderGiftBars();
+                    });
+                });
+            }
+        }
+
+        if (preview) {
+            const firstGoal = goals.find((goal) => goal.enabled !== false);
+            if (!firstGoal) {
+                preview.innerHTML = `
+                    <div class="mc-empty-state">
+                        <p>No gift bar preview yet.</p>
+                        <p class="mc-text-muted">Create at least one goal to see a preview.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const current = Number(firstGoal.current || 0);
+            const target = Math.max(1, Number(firstGoal.target || 100));
+            const progress = Math.min(100, Math.round((current / target) * 100));
+
+            preview.innerHTML = `
+                <div class="mc-progress-shell">
+                    <div class="mc-progress-meta">
+                        <strong>${escapeHtml(firstGoal.label || 'Gift goal')}</strong>
+                        <span>${current} / ${target}</span>
+                    </div>
+                    <div class="mc-progress-track">
+                        <div class="mc-progress-fill" style="width: ${progress}%;"></div>
+                    </div>
+                    <p class="mc-text-muted">${escapeHtml(firstGoal.rewardAction || 'No reward action')}</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderSetup() {
+        const checklist = document.getElementById('setupChecklist');
+        if (!checklist) {
+            return;
+        }
+
+        const steps = [
+            { label: 'WebSocket bridge', done: state.status.connectionStatus && state.status.connectionStatus !== 'Disconnected' },
+            { label: 'Minecraft mod connection', done: !!state.status.isConnected },
+            { label: 'Commands configured', done: state.mappings.length > 0 },
+            { label: 'Aurora 2.0 selected', done: (state.config.ui?.theme || 'aurora-2') === 'aurora-2' }
+        ];
+
+        checklist.innerHTML = steps.map((step) => `
+            <div class="mc-check-item ${step.done ? 'done' : ''}">
+                <span></span>
+                <strong>${escapeHtml(step.label)}</strong>
             </div>
         `).join('');
     }
 
-    // Update action dropdown
     function updateActionDropdown() {
         const select = document.getElementById('mappingAction');
+        if (!select) {
+            return;
+        }
+
         const currentValue = select.value;
-        
-        select.innerHTML = '<option value="">Select action...</option>' +
-            availableActions.map(action => 
-                `<option value="${action.name}">${action.name}</option>`
-            ).join('');
-        
+        select.innerHTML = '<option value="">Select action...</option>' + state.status.availableActions.map((action) => {
+            return `<option value="${escapeAttr(action.name)}">${escapeHtml(action.name)}</option>`;
+        }).join('');
+
         if (currentValue) {
             select.value = currentValue;
         }
     }
 
-    // Open mapping modal
     function openMappingModal(mapping = null) {
-        currentMapping = mapping;
+        state.currentMapping = mapping;
         const modal = document.getElementById('mappingModal');
         const title = document.getElementById('modalTitle');
-        
+
         if (mapping) {
-            title.textContent = 'Edit Action Mapping';
+            title.textContent = 'Edit Command';
             fillMappingForm(mapping);
         } else {
-            title.textContent = 'Add Action Mapping';
+            title.textContent = 'Add Command';
             resetMappingForm();
         }
-        
+
         modal.classList.add('active');
     }
 
-    // Close mapping modal
     function closeMappingModal() {
         document.getElementById('mappingModal').classList.remove('active');
-        currentMapping = null;
+        state.currentMapping = null;
     }
 
-    // Reset mapping form
     function resetMappingForm() {
         document.getElementById('mappingTrigger').value = '';
         document.getElementById('mappingAction').value = '';
@@ -326,44 +576,35 @@
         document.getElementById('parametersGroup').style.display = 'none';
     }
 
-    // Fill mapping form
     function fillMappingForm(mapping) {
         document.getElementById('mappingTrigger').value = mapping.trigger || '';
         document.getElementById('mappingAction').value = mapping.action || '';
         document.getElementById('mappingEnabled').checked = mapping.enabled !== false;
-        
-        // Fill conditions
+
         const conditionsList = document.getElementById('conditionsList');
         conditionsList.innerHTML = '';
-        if (mapping.conditions) {
-            mapping.conditions.forEach(condition => {
-                addCondition(condition);
-            });
-        }
-        
-        // Update parameters form
+        (mapping.conditions || []).forEach((condition) => addCondition(condition));
+
         updateParametersForm();
-        
-        // Fill parameters
+
         if (mapping.params) {
-            for (const [key, value] of Object.entries(mapping.params)) {
-                const input = document.querySelector(`[data-param="${key}"]`);
+            Object.entries(mapping.params).forEach(([key, value]) => {
+                const input = document.querySelector(`[data-param="${cssAttr(key)}"]`);
                 if (input) {
                     input.value = value;
                 }
-            }
+            });
         }
     }
 
-    // Add condition
     function addCondition(condition = null) {
         const container = document.getElementById('conditionsList');
-        const conditionId = Date.now();
-        
+        const conditionId = Date.now() + Math.floor(Math.random() * 1000);
+
         const conditionHtml = `
             <div class="mc-condition" data-condition-id="${conditionId}">
-                <input type="text" class="mc-input mc-condition-field" placeholder="Field (e.g., giftName)" 
-                    value="${condition ? condition.field : ''}" data-role="field">
+                <input type="text" class="mc-input mc-condition-field" placeholder="Field (e.g., giftName)"
+                    value="${escapeAttr(condition ? condition.field : '')}" data-role="field">
                 <select class="mc-input mc-condition-operator" data-role="operator">
                     <option value="equals" ${condition?.operator === 'equals' ? 'selected' : ''}>Equals</option>
                     <option value="not_equals" ${condition?.operator === 'not_equals' ? 'selected' : ''}>Not Equals</option>
@@ -371,16 +612,15 @@
                     <option value="less_than" ${condition?.operator === 'less_than' ? 'selected' : ''}>Less Than</option>
                     <option value="contains" ${condition?.operator === 'contains' ? 'selected' : ''}>Contains</option>
                 </select>
-                <input type="text" class="mc-input mc-condition-value" placeholder="Value" 
-                    value="${condition ? condition.value : ''}" data-role="value">
-                <button class="mc-condition-remove" onclick="removeCondition(${conditionId})">✕</button>
+                <input type="text" class="mc-input mc-condition-value" placeholder="Value"
+                    value="${escapeAttr(condition ? condition.value : '')}" data-role="value">
+                <button class="mc-condition-remove" onclick="removeCondition(${conditionId})">x</button>
             </div>
         `;
-        
+
         container.insertAdjacentHTML('beforeend', conditionHtml);
     }
 
-    // Remove condition
     window.removeCondition = function(conditionId) {
         const condition = document.querySelector(`[data-condition-id="${conditionId}"]`);
         if (condition) {
@@ -388,59 +628,54 @@
         }
     };
 
-    // Update parameters form
     function updateParametersForm() {
         const actionName = document.getElementById('mappingAction').value;
         const parametersGroup = document.getElementById('parametersGroup');
         const parametersList = document.getElementById('parametersList');
-        
+
         if (!actionName) {
             parametersGroup.style.display = 'none';
             return;
         }
 
-        const action = availableActions.find(a => a.name === actionName);
+        const action = state.status.availableActions.find((item) => item.name === actionName);
         if (!action || !action.params || action.params.length === 0) {
             parametersGroup.style.display = 'none';
             return;
         }
 
         parametersGroup.style.display = 'block';
-        
-        parametersList.innerHTML = action.params.map(param => `
+        parametersList.innerHTML = action.params.map((param) => `
             <div class="mc-form-group">
-                <label>${param}</label>
-                <input type="text" class="mc-input" data-param="${param}" placeholder="Enter value or use {placeholder}">
+                <label>${escapeHtml(param)}</label>
+                <input type="text" class="mc-input" data-param="${escapeAttr(param)}" placeholder="Enter value or use {placeholder}">
             </div>
         `).join('');
     }
 
-    // Save mapping from modal
     async function saveMappingFromModal() {
         const trigger = document.getElementById('mappingTrigger').value;
         const action = document.getElementById('mappingAction').value;
         const enabled = document.getElementById('mappingEnabled').checked;
-        
+
         if (!trigger || !action) {
             alert('Please select a trigger and action');
             return;
         }
 
-        // Collect conditions
         const conditions = [];
-        document.querySelectorAll('.mc-condition').forEach(conditionEl => {
+        document.querySelectorAll('.mc-condition').forEach((conditionEl) => {
             const field = conditionEl.querySelector('[data-role="field"]').value;
             const operator = conditionEl.querySelector('[data-role="operator"]').value;
             const value = conditionEl.querySelector('[data-role="value"]').value;
-            
+
             if (field && value) {
                 conditions.push({ field, operator, value });
             }
         });
 
-        // Collect parameters
         const params = {};
-        document.querySelectorAll('[data-param]').forEach(input => {
+        document.querySelectorAll('[data-param]').forEach((input) => {
             const param = input.dataset.param;
             const value = input.value;
             if (value) {
@@ -457,26 +692,16 @@
         };
 
         try {
-            let response;
-            if (currentMapping) {
-                response = await fetch(`/api/minecraft-connect/mappings/${currentMapping.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mapping)
-                });
-            } else {
-                response = await fetch('/api/minecraft-connect/mappings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mapping)
-                });
-            }
+            const response = await fetch(state.currentMapping ? `/api/minecraft-connect/mappings/${state.currentMapping.id}` : '/api/minecraft-connect/mappings', {
+                method: state.currentMapping ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mapping)
+            });
 
             const data = await response.json();
-            
             if (data.success) {
-                mappings = data.mappings;
-                renderMappings();
+                state.mappings = data.mappings || [];
+                renderCommands();
                 closeMappingModal();
             } else {
                 alert('Failed to save mapping: ' + data.error);
@@ -487,17 +712,15 @@
         }
     }
 
-    // Edit mapping
     window.editMapping = function(id) {
-        const mapping = mappings.find(m => m.id === id);
+        const mapping = state.mappings.find((item) => item.id === id);
         if (mapping) {
             openMappingModal(mapping);
         }
     };
 
-    // Delete mapping
     window.deleteMapping = async function(id) {
-        if (!confirm('Are you sure you want to delete this mapping?')) {
+        if (!confirm('Are you sure you want to delete this command?')) {
             return;
         }
 
@@ -507,10 +730,10 @@
             });
 
             const data = await response.json();
-            
             if (data.success) {
-                mappings = data.mappings;
-                renderMappings();
+                state.mappings = data.mappings || [];
+                renderCommands();
+                renderSetup();
             } else {
                 alert('Failed to delete mapping: ' + data.error);
             }
@@ -520,10 +743,11 @@
         }
     };
 
-    // Test action
     async function testAction() {
         const actionName = prompt('Enter action name:');
-        if (!actionName) return;
+        if (!actionName) {
+            return;
+        }
 
         try {
             const response = await fetch('/api/minecraft-connect/test-action', {
@@ -536,7 +760,6 @@
             });
 
             const data = await response.json();
-            
             if (data.success) {
                 alert('Action queued successfully');
             } else {
@@ -548,52 +771,69 @@
         }
     }
 
-    // Add event to log
-    function addEventToLog(event) {
-        const container = document.getElementById('eventsList');
-        
-        // Remove empty state if present
-        const emptyState = container.querySelector('.mc-empty-state');
-        if (emptyState) {
-            emptyState.remove();
-        }
-
-        const eventHtml = `
-            <div class="mc-event-item">
-                <div class="mc-event-info">
-                    <div class="mc-event-type">${event.type}</div>
-                    <div class="mc-event-details">${event.actions} action(s) triggered</div>
-                </div>
-                <div class="mc-event-time">${new Date(event.timestamp).toLocaleTimeString()}</div>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('afterbegin', eventHtml);
+    function addGiftGoal() {
+        state.config.giftBars = state.config.giftBars || { enabled: false, goals: [] };
+        state.config.giftBars.goals.push({
+            label: 'New goal',
+            current: 0,
+            target: 100,
+            rewardAction: 'spawn_entity',
+            enabled: true
+        });
+        renderGiftBars();
     }
 
-    // Load settings
-    async function loadSettings() {
-        // Settings are loaded with config, just update UI
-        updateStatsDisplay();
+    function collectGiftGoals() {
+        const cards = document.querySelectorAll('[data-goal-index]');
+        return Array.from(cards).map((card) => {
+            const enabledInput = card.querySelector('[data-goal-field="enabled"]');
+            return {
+                label: card.querySelector('[data-goal-field="label"]').value,
+                current: parseInt(card.querySelector('[data-goal-field="current"]').value, 10) || 0,
+                target: parseInt(card.querySelector('[data-goal-field="target"]').value, 10) || 0,
+                rewardAction: card.querySelector('[data-goal-field="rewardAction"]').value,
+                enabled: enabledInput ? enabledInput.checked : true
+            };
+        });
     }
 
-    // Save settings
-    async function saveSettings() {
-        const config = {
+    async function saveSettings(silent = false) {
+        const nextConfig = {
+            ...state.config,
+            ui: {
+                ...state.config.ui,
+                theme: state.config.ui?.theme || 'aurora-2'
+            },
             websocket: {
-                port: parseInt(document.getElementById('wsPort').value),
-                heartbeatInterval: parseInt(document.getElementById('wsHeartbeat').value)
+                ...state.config.websocket,
+                host: document.getElementById('wsHost').value.trim() || 'localhost',
+                port: parseInt(document.getElementById('wsPort').value, 10) || 25560,
+                heartbeatInterval: parseInt(document.getElementById('wsHeartbeat').value, 10) || 30000
             },
             limits: {
-                maxActionsPerMinute: parseInt(document.getElementById('maxActionsPerMin').value),
-                commandCooldown: parseInt(document.getElementById('commandCooldown').value),
-                maxQueueSize: parseInt(document.getElementById('maxQueueSize').value)
+                ...state.config.limits,
+                maxActionsPerMinute: parseInt(document.getElementById('maxActionsPerMin').value, 10) || 30,
+                commandCooldown: parseInt(document.getElementById('commandCooldown').value, 10) || 1000,
+                maxQueueSize: parseInt(document.getElementById('maxQueueSize').value, 10) || 100
             },
             overlay: {
+                ...state.config.overlay,
                 enabled: document.getElementById('overlayEnabled').checked,
                 showUsername: document.getElementById('overlayShowUsername').checked,
                 showAction: document.getElementById('overlayShowAction').checked,
-                animationDuration: parseInt(document.getElementById('overlayDuration').value)
+                animationDuration: parseInt(document.getElementById('overlayDuration').value, 10) || 3000
+            },
+            chat: {
+                ...state.config.chat,
+                enabled: document.getElementById('chatEnabled').checked,
+                mode: document.getElementById('chatMode').value,
+                relayTargets: splitList(document.getElementById('chatRelayTargets').value),
+                filters: splitList(document.getElementById('chatFilters').value)
+            },
+            giftBars: {
+                ...state.config.giftBars,
+                enabled: document.getElementById('giftBarsEnabled').checked,
+                goals: collectGiftGoals()
             }
         };
 
@@ -601,23 +841,60 @@
             const response = await fetch('/api/minecraft-connect/config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
+                body: JSON.stringify(nextConfig)
             });
 
             const data = await response.json();
-            
             if (data.success) {
-                alert('Settings saved successfully! Please restart the server to apply WebSocket changes.');
-            } else {
+                state.config = data.config || nextConfig;
+                applyTheme(state.config.ui?.theme || 'aurora-2');
+                renderGiftBars();
+                renderChatSettings();
+                renderSetup();
+                renderStatus();
+                updateSummary();
+                if (!silent) {
+                    alert('Settings saved successfully.');
+                }
+            } else if (!silent) {
                 alert('Failed to save settings: ' + data.error);
             }
         } catch (error) {
             console.error('[Minecraft Connect] Failed to save settings:', error);
-            alert('Failed to save settings');
+            if (!silent) {
+                alert('Failed to save settings');
+            }
         }
     }
 
-    // Initialize when DOM is ready
+    function splitList(value) {
+        return String(value || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+
+    function joinList(items) {
+        return Array.isArray(items) ? items.join(', ') : '';
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, '&#96;');
+    }
+
+    function cssAttr(value) {
+        return String(value).replace(/"/g, '\\"');
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

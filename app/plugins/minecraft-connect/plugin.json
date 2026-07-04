@@ -24,7 +24,7 @@
     {
       "id": "event-mapping",
       "name": "TikTok Event Mapping",
-      "description": "Map TikTok events (gifts, follows, likes) to Minecraft actions"
+      "description": "Map TikTok events (gifts, follows, likes, chat) to Minecraft commands and actions"
     },
     {
       "id": "action-system",
@@ -49,12 +49,22 @@
     {
       "id": "dashboard-ui",
       "name": "Dashboard UI",
-      "description": "Configuration interface for managing action mappings"
+      "description": "TikOps-style configuration interface for Commands, Chat, Gift bars, and Setup"
     },
     {
       "id": "overlay",
       "name": "Stream Overlay",
       "description": "Visual feedback for Minecraft actions on stream"
+    },
+    {
+      "id": "gift-bars",
+      "name": "Gift Bars",
+      "description": "Track progress goals and surface gift-driven progress bars"
+    },
+    {
+      "id": "chat-relay",
+      "name": "Chat Relay",
+      "description": "Relay and filter TikTok chat into Minecraft and the overlay"
     }
   ],
   "config": {
