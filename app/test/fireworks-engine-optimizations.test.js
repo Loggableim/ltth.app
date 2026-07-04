@@ -211,11 +211,17 @@ describe('Fireworks Engine Optimizations', () => {
         });
 
         test('Emergency overload uses pressure fade instead of abrupt rocket despawn', () => {
+            const emergencyBlockStart = engineCode.indexOf('Emergency pressure fade - reduce load');
+            const emergencyBlockEnd = engineCode.indexOf('// Optimization #10', emergencyBlockStart);
+            const emergencyBlock = engineCode.slice(emergencyBlockStart, emergencyBlockEnd);
+
             expect(engineCode).toContain('startPressureFade()');
             expect(engineCode).toContain('applyPressureFadeToFirework(fw)');
             expect(engineCode).toContain('isPressureFading');
             expect(engineCode).toContain('pressureFadeStartAlpha');
             expect(engineCode).not.toContain('fw.rocket.startDespawn()');
+            expect(emergencyBlock).toContain('Emergency pressure fade');
+            expect(emergencyBlock).not.toContain('this.particlePool.releaseAll(fw.particles)');
         });
     });
     

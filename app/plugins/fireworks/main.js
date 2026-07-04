@@ -203,7 +203,7 @@ class FireworksPlugin {
     loadConfig() {
         const savedConfig = this.api.getConfig('settings');
         
-        this.config = savedConfig || {
+        const defaultConfig = {
             // Global settings
             enabled: true,
             maxParticles: 1000,
@@ -294,13 +294,15 @@ class FireworksPlugin {
             desynchronized: true, // Enable desynchronized rendering for better GPU performance (safe for OBS Browser Source)
             particleSizeRange: [4, 12],
             resolution: 1.0, // Legacy - kept for backward compatibility
-            resolutionPreset: '1080p', // Resolution preset: 360p, 540p, 720p, 1080p, 1440p, 4k
+            resolutionPreset: '1080p', // OBS Browser Source stays 1920x1080 by default
+            internalMaxResolutionPreset: '1080p', // Internal adaptive render ceiling (4k available in UI)
+            internalMinResolutionPreset: '480p', // Internal adaptive render floor for OBS-safe load shedding
             orientation: 'landscape', // 'landscape' or 'portrait'
             adaptiveRenderScaleEnabled: true, // Keep OBS source size stable while scaling internal render resolution
-            minRenderScale: 0.75,
+            minRenderScale: 0.45,
             targetFps: 60,
             minFps: 24, // User can configure down to 24 FPS
-            despawnFadeDuration: 1.5, // Duration for despawn fade effect in seconds
+            despawnFadeDuration: 3.0, // Long fade: pressure relief should look intentional, not abrupt
             
             // Gift popup
             giftPopupEnabled: true, // Show gift animation text
@@ -311,11 +313,11 @@ class FireworksPlugin {
             maxRocketsPerSecond: 5, // Maximum number of fireworks per second (1-20)
             
             // Performance Limits (NEW) - Protect against freezes
-            maxConcurrentFireworks: 5, // Maximum gleichzeitige Fireworks (1-20)
-            maxTotalParticles: 800, // Maximum Partikel global (200-2000)
-            emergencyCleanupThreshold: 1000, // Emergency Cleanup bei X Partikeln (500-3000)
+            maxConcurrentFireworks: 12, // Maximum gleichzeitige Fireworks (1-20)
+            maxTotalParticles: 1400, // Maximum Partikel global (200-2000)
+            emergencyCleanupThreshold: 2200, // Emergency Cleanup bei X Partikeln (500-3000)
             adaptivePerformance: true, // Aktiviere Adaptive Performance
-            minTargetFps: 30, // Minimum FPS bevor Frame Skip (20-50)
+            minTargetFps: 24, // Minimum FPS bevor Frame Skip (20-50)
             frameSkipEnabled: true, // Aktiviere Frame Skip bei Low FPS
             
             // Advanced
@@ -323,6 +325,11 @@ class FireworksPlugin {
             friction: 0.98,
             windEnabled: false,
             windStrength: 0.02
+        };
+
+        this.config = {
+            ...defaultConfig,
+            ...(savedConfig || {})
         };
         
         this.COMBO_TIMEOUT = this.config.comboTimeout;
@@ -1137,7 +1144,7 @@ class FireworksPlugin {
             // Performance settings
             targetFps: this.config.targetFps || 60,
             minFps: this.config.minFps || 24,
-            despawnFadeDuration: this.config.despawnFadeDuration || 1.5,
+            despawnFadeDuration: this.config.despawnFadeDuration || 3.0,
             
             // Gift popup settings
             giftPopupEnabled: this.config.giftPopupEnabled !== false,

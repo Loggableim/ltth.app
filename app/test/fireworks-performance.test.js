@@ -167,6 +167,16 @@ describe('Fireworks Performance Optimizations', () => {
             expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
         });
 
+        test('should support OBS-safe internal resolution bounds from 4k down to 480p', () => {
+            expect(engineCode).toContain('internalMaxResolutionPreset');
+            expect(engineCode).toContain('internalMinResolutionPreset');
+            expect(engineCode).toContain("'480p': { landscape: { width: 854, height: 480 }");
+            expect(engineCode).toContain("'4k': { landscape: { width: 3840, height: 2160 }");
+            expect(engineCode).toContain('getMinRenderScale()');
+            expect(engineCode).toContain('this.config.internalMinResolutionPreset || CONFIG.internalMinResolutionPreset');
+            expect(engineCode).toContain('this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset');
+        });
+
         test('should keep WebGL canvas size stable during benchmark while allowing active adaptive resize', () => {
             expect(engineCode).toContain('if (this.isBenchmarkMode) return');
             expect(engineCode).toContain('shouldPreferRenderScaleRecovery(avgFps)');

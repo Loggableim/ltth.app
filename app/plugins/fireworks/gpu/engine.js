@@ -50,16 +50,18 @@ const CONFIG = {
     baseSecondaryExplosionChance: 0.1,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     resolution: 1.0, // Legacy - Canvas resolution multiplier (0.5 = half res, 1.0 = full res)
-    resolutionPreset: '1080p', // Resolution preset: 360p, 540p, 720p, 1080p, 1440p, 4k
+    resolutionPreset: '1080p', // OBS source preset: keep Browser Source at 1920x1080 by default
+    internalMaxResolutionPreset: '1080p',
+    internalMinResolutionPreset: '480p',
     orientation: 'landscape', // 'landscape' or 'portrait'
     adaptiveRenderScaleEnabled: true,
-    minRenderScale: 0.75,
+    minRenderScale: 0.45,
     renderScaleStep: 0.15,
     renderScaleRecoveryFpsMargin: 6,
     renderScaleEmergencyParticleThreshold: 1200,
     giftPopupPosition: 'bottom', // 'top', 'middle', 'bottom', 'none', or {x, y} coordinates
     giftPopupEnabled: true, // Whether to show gift popup at all
-    despawnFadeDuration: 1.5, // Duration in seconds for rocket despawn fade effect (when rockets are removed due to overload)
+    despawnFadeDuration: 3.0, // Duration in seconds for pressure fade effect under overload
     defaultColors: ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'],
     colorPalettes: {
         classic: ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'],
@@ -1703,6 +1705,8 @@ class FireworksEngine {
             glowEnabled: true,
             resolution: CONFIG.resolution,
             resolutionPreset: CONFIG.resolutionPreset,
+            internalMaxResolutionPreset: CONFIG.internalMaxResolutionPreset,
+            internalMinResolutionPreset: CONFIG.internalMinResolutionPreset,
             orientation: CONFIG.orientation,
             adaptiveRenderScaleEnabled: CONFIG.adaptiveRenderScaleEnabled,
             minRenderScale: CONFIG.minRenderScale,
@@ -1829,7 +1833,7 @@ class FireworksEngine {
         const rect = this.canvas.getBoundingClientRect();
         
         // Get resolution from preset
-        const resolutionPreset = this.config.resolutionPreset || '1080p';
+        const resolutionPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
         const orientation = this.config.orientation || 'landscape';
         const targetResolution = this.getResolutionFromPreset(resolutionPreset, orientation);
         
@@ -1881,6 +1885,7 @@ class FireworksEngine {
     getResolutionFromPreset(preset, orientation) {
         const resolutions = {
             '360p': { landscape: { width: 640, height: 360 }, portrait: { width: 360, height: 640 } },
+            '480p': { landscape: { width: 854, height: 480 }, portrait: { width: 480, height: 854 } },
             '540p': { landscape: { width: 960, height: 540 }, portrait: { width: 540, height: 960 } },
             '720p': { landscape: { width: 1280, height: 720 }, portrait: { width: 720, height: 1280 } },
             '1080p': { landscape: { width: 1920, height: 1080 }, portrait: { width: 1080, height: 1920 } },
@@ -1930,6 +1935,8 @@ class FireworksEngine {
                 if (data.config) {
                     const oldResolution = this.config.resolution;
                     const oldPreset = this.config.resolutionPreset;
+                    const oldInternalMaxPreset = this.config.internalMaxResolutionPreset;
+                    const oldInternalMinPreset = this.config.internalMinResolutionPreset;
                     const oldOrientation = this.config.orientation;
                     const oldRenderer = this.config.renderer;
                     const oldToasterMode = this.config.toasterMode;
@@ -1988,6 +1995,8 @@ class FireworksEngine {
                     // Resize canvas if resolution or orientation changed
                     if (oldResolution !== this.config.resolution || 
                         oldPreset !== this.config.resolutionPreset ||
+                        oldInternalMaxPreset !== this.config.internalMaxResolutionPreset ||
+                        oldInternalMinPreset !== this.config.internalMinResolutionPreset ||
                         oldOrientation !== this.config.orientation) {
                         this.resize();
                     }
@@ -2550,46 +2559,30 @@ class FireworksEngine {
         const now = performance.now();
         const frameTime = now - this.lastTime;
         
-        // BUG FIX #4: EMERGENCY CLEANUP - More aggressive to prevent freeze loops
+        // BUG FIX #4: Emergency pressure fade - reduce load without abrupt visual cuts.
         const totalParticles = this.getTotalParticles();
         if (totalParticles > this.EMERGENCY_CLEANUP_THRESHOLD) {
-            console.error(`[Fireworks] EMERGENCY: ${totalParticles} particles! Aggressive cleanup...`);
-            
-            // Remove 100% of exploded fireworks
-            const explodedFW = this.fireworks.filter(fw => fw.exploded);
-            for (const fw of explodedFW) {
-                if (fw.particles && fw.particles.length > 0) {
-                    this.particlePool.releaseAll(fw.particles);
-                    fw.particles = [];
-                }
-            }
-            
-            // Remove 50% of oldest flying fireworks (by age)
-            // Note: 'age' field increases over time, so higher age = older firework
-            const flyingFW = this.fireworks.filter(fw => !fw.exploded);
-            flyingFW.sort((a, b) => (b.age || 0) - (a.age || 0)); // Sort by age descending (oldest/highest age first)
-            const toRemoveFlying = Math.ceil(flyingFW.length * 0.5);
-            
-            for (let i = 0; i < toRemoveFlying; i++) {
-                const fw = flyingFW[i];
-                if (fw.particles && fw.particles.length > 0) {
-                    this.particlePool.releaseAll(fw.particles);
-                    fw.particles = [];
-                }
-            }
-            
-            // Clean up fireworks array (remove empty fireworks)
-            // Keep: Non-exploded fireworks (rockets still flying, even with empty particle arrays)
-            // Remove: Exploded fireworks without particles (completed explosions)
-            this.fireworks = this.fireworks.filter(fw => {
-                const hasParticles = fw.particles && fw.particles.length > 0;
-                const isValid = !fw.exploded || hasParticles;
-                return isValid;
+            console.warn(`[Fireworks] EMERGENCY: ${totalParticles} particles, starting pressure fade`);
+
+            const sorted = [...this.fireworks].sort((a, b) => {
+                if (a.exploded !== b.exploded) return a.exploded ? -1 : 1;
+                return (b.age || 0) - (a.age || 0);
             });
-            
+            const fadeCount = Math.max(1, Math.ceil(sorted.length * 0.35));
+
+            for (let i = 0; i < fadeCount; i++) {
+                this.applyPressureFadeToFirework(sorted[i]);
+            }
+
+            for (let i = this.fireworks.length - 1; i >= 0; i--) {
+                if (this.fireworks[i].pressureFading && this.isPressureFadeComplete(this.fireworks[i])) {
+                    this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                    this.fireworks.pop();
+                }
+            }
+
             const newCount = this.getTotalParticles();
-            console.log(`[Fireworks] Emergency cleanup: Removed ${explodedFW.length} exploded + ${toRemoveFlying} flying fireworks`);
-            console.log(`[Fireworks] Particles: ${totalParticles} -> ${newCount} (${((1 - newCount/totalParticles) * 100).toFixed(1)}% reduction)`);
+            if (DEBUG) console.log(`[Fireworks] Emergency pressure fade: ${totalParticles} -> ${newCount} particles`);
         }
         
         // Optimization #10: Frame-skip threshold (50ms = 20 FPS)
@@ -2818,7 +2811,7 @@ class FireworksEngine {
         if (now - this.lastRenderScaleChange < 1500) return;
 
         const desiredFps = this.config.targetFps || CONFIG.targetFps;
-        const minScale = this.config.minRenderScale || CONFIG.minRenderScale;
+        const minScale = this.getMinRenderScale();
         const step = CONFIG.renderScaleStep;
         let nextScale = this.renderScale;
 
@@ -2845,9 +2838,25 @@ class FireworksEngine {
     }
 
     shouldUseEmergencyDespawn() {
-        const minScale = this.config.minRenderScale || CONFIG.minRenderScale;
+        const minScale = this.getMinRenderScale();
         const totalParticles = this.getTotalParticles();
         return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold;
+    }
+
+    getMinRenderScale() {
+        const orientation = this.config.orientation || 'landscape';
+        const maxPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
+        const minPreset = this.config.internalMinResolutionPreset || CONFIG.internalMinResolutionPreset;
+        const maxResolution = this.getResolutionFromPreset(maxPreset, orientation);
+        const minResolution = this.getResolutionFromPreset(minPreset, orientation);
+
+        if (!maxResolution || !minResolution || maxResolution.width <= 0 || maxResolution.height <= 0) {
+            return this.config.minRenderScale || CONFIG.minRenderScale;
+        }
+
+        const widthScale = minResolution.width / maxResolution.width;
+        const heightScale = minResolution.height / maxResolution.height;
+        return Math.max(0.125, Math.min(1.0, Math.max(widthScale, heightScale)));
     }
 
     updateAdaptiveQuality(avgFps) {
