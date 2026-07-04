@@ -5047,7 +5047,7 @@ class GameEnginePlugin {
     // Emit game started event (backwards compatibility)
     this.io.emit('game-engine:game-started', {
       sessionId,
-      gameType: 'chess',
+      gameType,
       state: game.getState(),
       config,
       timeControl: gameTimeControl,

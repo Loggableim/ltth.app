@@ -452,6 +452,45 @@ describe('Game Engine GCCE Integration', () => {
         clearInterval(game.timerInterval);
       }
     });
+
+    test('should accept chess challenge and remove pending challenge entry', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'black'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(100, {
+        sessionId: 100,
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer Name'
+      });
+
+      plugin.acceptChallenge(100);
+
+      expect(plugin.pendingChallenges.has(100)).toBe(false);
+      expect(mockSocketIO.emit).toHaveBeenCalledWith(
+        'game-engine:game-started',
+        expect.objectContaining({
+          sessionId: 100,
+          gameType: 'chess'
+        })
+      );
+
+      const game = plugin.activeSessions.get(100);
+      expect(game).toBeDefined();
+      expect(game.whitePlayer.username).toBe('viewer123');
+      expect(game.blackPlayer.username).toBe('streamer');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
   });
 
   describe('Manual Mode', () => {
