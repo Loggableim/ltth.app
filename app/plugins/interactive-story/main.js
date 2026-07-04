@@ -115,6 +115,15 @@ class InteractiveStoryPlugin {
     this.io.emit('story:debug-log', logEntry);
   }
 
+  _safeSerializeForResponse(value) {
+    try {
+      if (value === undefined) return null;
+      return JSON.parse(JSON.stringify(value));
+    } catch (error) {
+      return String(value);
+    }
+  }
+
   async init() {
     this.api.log('📖 Initializing Interactive Story Generator Plugin...', 'info');
 
@@ -315,6 +324,42 @@ class InteractiveStoryPlugin {
   }
 
   /**
+   * Normalize the configured Ollama base URL for consistent OpenAI-compatible requests.
+   * @param {string} rawUrl - Configured Ollama base URL.
+   * @returns {string} Normalized base URL with trailing slash removed.
+   */
+  _normalizeOllamaBaseUrl(rawUrl) {
+    const defaultUrl = 'https://api.ollama.com/v1';
+    const normalized = (rawUrl || defaultUrl).trim().replace(/\/+$/, '');
+    return normalized || defaultUrl;
+  }
+
+  /**
+   * Returns true for Ollama cloud URLs.
+   * @param {string} baseUrl - Normalized base URL.
+   * @returns {boolean}
+   */
+  _isOllamaCloudUrl(baseUrl) {
+    if (!baseUrl) return false;
+    try {
+      const hostname = new URL(baseUrl).hostname.toLowerCase();
+      return hostname === 'api.ollama.com' || hostname === 'ollama.com';
+    } catch (error) {
+      return /api\.ollama\.com$/i.test(baseUrl) || /ollama\.com$/i.test(baseUrl);
+    }
+  }
+
+  /**
+   * Determine whether image generation should run for this config.
+   * @param {Object} config - Plugin config.
+   * @returns {boolean}
+   */
+  _shouldGenerateImages(config) {
+    const effectiveConfig = config || this._loadConfig();
+    return !!(effectiveConfig && effectiveConfig.autoGenerateImages && !effectiveConfig.textOnlyMode);
+  }
+
+  /**
    * Initialize the active LLM service based on the current plugin config.
    * Returns a short status object for logging and validation.
    * @param {Object} config - Current plugin config
@@ -385,9 +430,18 @@ class InteractiveStoryPlugin {
     }
 
     if (provider === 'ollama') {
-      const ollamaBaseUrl = (config.ollamaBaseUrl || 'https://ollama.com/api/v1').trim();
-      const ollamaApiKey = (config.ollamaApiKey || 'ollama').trim() || 'ollama';
+      const ollamaBaseUrl = this._normalizeOllamaBaseUrl(config.ollamaBaseUrl);
+      const rawOllamaApiKey = (config.ollamaApiKey || '').trim();
+      const isCloudOllama = this._isOllamaCloudUrl(ollamaBaseUrl);
+      const ollamaApiKey = isCloudOllama && rawOllamaApiKey ? rawOllamaApiKey : 'ollama';
       const ollamaModel = config.ollamaModel || 'qwen3.5:cloud';
+
+      if (isCloudOllama && !rawOllamaApiKey) {
+        this._debugLog('error', '⚠️ Ollama API key required for cloud endpoint', null);
+        this.api.log('⚠️ Ollama API key required for cloud endpoint', 'warn');
+        this.api.log('Please configure Ollama API key in the Interactive Story configuration', 'warn');
+        return { ok: false, provider: 'ollama', providerName: 'Ollama', missingKey: true };
+      }
 
       this.llmService = new OpenAILLMService(ollamaApiKey, this.logger, debugCallback, {
         ...llmOptions,
@@ -751,25 +805,6 @@ class InteractiveStoryPlugin {
   }
   
   /**
-   * Prepare chapter data for socket emission
-   * Ensures imagePath is just the filename for proper URL construction in overlay
-   * @param {Object} chapter - Chapter object
-   * @returns {Object} Chapter object prepared for emission
-   */
-  _prepareChapterForEmit(chapter) {
-    const prepared = { ...chapter };
-    
-    // Extract just the filename from imagePath if it's a full path
-    if (prepared.imagePath) {
-      // Handle both forward and backslash path separators
-      const pathParts = prepared.imagePath.split(/[/\\]/);
-      prepared.imagePath = pathParts[pathParts.length - 1];
-    }
-    
-    return prepared;
-  }
-  
-  /**
    * Split text into sentences for progressive display
    * @param {string} text - Text to split
    * @returns {Array<string>} Array of sentences
@@ -902,7 +937,7 @@ class InteractiveStoryPlugin {
         );
 
         // Generate image for final chapter
-        if (config.autoGenerateImages && this.imageService) {
+        if (this._shouldGenerateImages(config) && this.imageService) {
           try {
             const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
             const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
@@ -982,7 +1017,7 @@ class InteractiveStoryPlugin {
       );
 
       // Generate image
-      if (config.autoGenerateImages && this.imageService) {
+        if (this._shouldGenerateImages(config) && this.imageService) {
         try {
           const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
           const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
@@ -1091,7 +1126,7 @@ class InteractiveStoryPlugin {
       openRouterModel: 'openrouter/free',
 
       // Ollama settings
-      ollamaBaseUrl: 'https://ollama.com/api/v1',
+      ollamaBaseUrl: 'https://api.ollama.com/v1',
       ollamaApiKey: '',
       ollamaModel: 'qwen3.5:cloud',
       
@@ -1108,6 +1143,7 @@ class InteractiveStoryPlugin {
       
       // Generation settings
       autoGenerateImages: true,
+      textOnlyMode: false,
       autoGenerateTTS: true, // Enable TTS by default
       storyLanguage: 'German', // Language for story generation
       
@@ -1197,10 +1233,19 @@ class InteractiveStoryPlugin {
    * @param {Object} chapter - Chapter object with possible full imagePath
    * @returns {Object|null} - Chapter with filename-only imagePath, or null if chapter is empty
    */
-  _prepareChapterForEmit(chapter) {
-    if (!chapter) return null;
-    
+  _prepareChapterForEmit(chapter, config = null) {
+    if (!chapter) {
+      return null;
+    }
+
+    const preparedConfig = config || this._loadConfig();
     const prepared = { ...chapter };
+
+    if (!this._shouldGenerateImages(preparedConfig)) {
+      prepared.imagePath = null;
+      return prepared;
+    }
+
     if (prepared.imagePath) {
       prepared.imagePath = this._extractFilename(prepared.imagePath);
     }
@@ -1227,12 +1272,14 @@ class InteractiveStoryPlugin {
       res.json({
         configured: !!this.llmService,
         session: this.currentSession,
-        chapter: this.currentChapter,
+        chapter: this._prepareChapterForEmit(this.currentChapter, config),
         voting: this.votingSystem ? this.votingSystem.getStatus() : null,
         isGenerating: this.isGenerating,
         config: {
           maxChapters: config.maxChapters || 5,
-          voteKeywordPattern: config.voteKeywordPattern || '!letter'
+          voteKeywordPattern: config.voteKeywordPattern || '!letter',
+          textOnlyMode: config.textOnlyMode === true,
+          autoGenerateImages: config.autoGenerateImages !== false
         }
       });
     });
@@ -1394,7 +1441,7 @@ class InteractiveStoryPlugin {
         this._debugLog('info', 'Session created', { sessionId, theme });
 
         // Generate image if enabled
-        if (config.autoGenerateImages && this.imageService) {
+        if (this._shouldGenerateImages(config) && this.imageService) {
           try {
             const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
             const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(theme) : '';
@@ -1482,8 +1529,12 @@ class InteractiveStoryPlugin {
           statusCode: error.response?.status,
           responseData: error.response?.data
         });
-        this.logger.error(`Error starting story: ${error.message}`, error);
-        res.status(500).json({ error: error.message });
+        this.logger.error(`Error starting story: ${error.message}`);
+        res.status(500).json({
+          error: error.message,
+          statusCode: error.response?.status || null,
+          responseData: this._safeSerializeForResponse(error.response?.data || null)
+        });
       }
     });
 
@@ -1531,7 +1582,7 @@ class InteractiveStoryPlugin {
         );
 
         // Generate image
-        if (config.autoGenerateImages && this.imageService) {
+        if (this._shouldGenerateImages(config) && this.imageService) {
           try {
             const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
             const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
@@ -1737,6 +1788,7 @@ class InteractiveStoryPlugin {
         let apiUrl = null;
         let useOpenAICompatibleService = false;
         let serviceOptions = {};
+        let requiresApiKey = provider !== 'ollama';
 
         if (provider === 'openai') {
           apiKey = this._getOpenAIApiKey();
@@ -1758,16 +1810,23 @@ class InteractiveStoryPlugin {
           };
           testModel = serviceOptions.defaultModel;
         } else if (provider === 'ollama') {
-          apiKey = (requestConfig.ollamaApiKey || config.ollamaApiKey || 'ollama').trim() || 'ollama';
-          apiUrl = `${(requestConfig.ollamaBaseUrl || config.ollamaBaseUrl || 'https://ollama.com/api/v1').replace(/\/$/, '')}/chat/completions`;
+          const ollamaBaseUrl = this._normalizeOllamaBaseUrl(requestConfig.ollamaBaseUrl || config.ollamaBaseUrl);
+          const rawOllamaApiKey = (requestConfig.ollamaApiKey || config.ollamaApiKey || '').trim();
+          requiresApiKey = this._isOllamaCloudUrl(ollamaBaseUrl);
+          apiKey = requiresApiKey ? rawOllamaApiKey : (rawOllamaApiKey || 'ollama');
+          apiUrl = `${ollamaBaseUrl.replace(/\/$/, '')}/chat/completions`;
           useOpenAICompatibleService = true;
           serviceOptions = {
-            baseURL: (requestConfig.ollamaBaseUrl || config.ollamaBaseUrl || 'https://ollama.com/api/v1').trim(),
+            baseURL: ollamaBaseUrl,
             defaultModel: requestConfig.ollamaModel || config.ollamaModel || 'qwen3.5:cloud',
             allowCustomModels: true,
             fallbackApiKey: 'ollama'
           };
           testModel = serviceOptions.defaultModel;
+          this._debugLog('info', `Validating Ollama endpoint (${requiresApiKey ? 'cloud' : 'local'})`, {
+            baseURL: ollamaBaseUrl,
+            hasApiKey: !!rawOllamaApiKey
+          });
         } else {
           apiKey = this._getSiliconFlowApiKey();
           providerName = 'SiliconFlow';
@@ -1775,12 +1834,12 @@ class InteractiveStoryPlugin {
           apiUrl = 'https://api.siliconflow.com/v1/chat/completions';
         }
 
-        if (!apiKey && provider !== 'ollama') {
-          const settingsPath = provider === 'openai'
-            ? 'Settings ? OpenAI API Configuration'
-            : provider === 'openrouter'
-              ? 'Interactive Story settings ? OpenRouter API key'
-              : 'Settings ? TTS API Keys ? SiliconFlow API Key';
+    if (!apiKey && requiresApiKey) {
+        const settingsPath = provider === 'openai'
+          ? 'Settings ? OpenAI API Configuration'
+          : provider === 'openrouter'
+                ? 'Interactive Story settings ? OpenRouter API key'
+                : 'Settings ? Interactive Story settings ? Ollama API key';
 
           return res.json({
             valid: false,
@@ -1884,6 +1943,8 @@ class InteractiveStoryPlugin {
               ? 'https://platform.openai.com/api-keys'
               : provider === 'openrouter'
                 ? 'https://openrouter.ai/settings/keys'
+                : provider === 'ollama'
+                  ? 'https://api.ollama.com/settings/keys'
                 : 'https://cloud.siliconflow.com/';
 
             troubleshooting = [
@@ -1904,10 +1965,10 @@ class InteractiveStoryPlugin {
             message = `Network error - cannot reach ${providerName} API`;
             const apiDomain = provider === 'openai'
               ? 'api.openai.com'
-              : provider === 'openrouter'
+        : provider === 'openrouter'
                 ? 'openrouter.ai'
                 : provider === 'ollama'
-                  ? 'ollama.com'
+                  ? 'api.ollama.com'
                   : 'api.siliconflow.com';
             troubleshooting = [
               'Check your internet connection',
@@ -1982,7 +2043,7 @@ class InteractiveStoryPlugin {
           );
           
           // Generate image
-          if (config.autoGenerateImages && this.imageService) {
+          if (this._shouldGenerateImages(config) && this.imageService) {
             try {
               const imageModel = config.imageProvider === 'openai' ? config.openaiImageModel : config.defaultImageModel;
               const style = this.imageService.getStyleForTheme ? this.imageService.getStyleForTheme(this.currentSession.theme) : '';
@@ -2048,7 +2109,7 @@ class InteractiveStoryPlugin {
         );
         
         // Generate image
-        if (config.autoGenerateImages && this.imageService) {
+        if (this._shouldGenerateImages(config) && this.imageService) {
           try {
             const style = this.imageService.getStyleForTheme(this.currentSession.theme);
             const imagePrompt = `${nextChapter.title}: ${nextChapter.content.substring(0, 200)}`;
@@ -2154,13 +2215,21 @@ class InteractiveStoryPlugin {
       }
     });
 
-    this.api.registerSocket('story:regenerate-image', async (socket, data) => {
+  this.api.registerSocket('story:regenerate-image', async (socket, data) => {
       if (!this.currentChapter || !this.imageService) {
         return;
       }
 
       try {
         const config = this._loadConfig();
+        if (!this._shouldGenerateImages(config)) {
+          this._debugLog('warn', 'Ignoring image regeneration request because image generation is disabled', {
+            autoGenerateImages: !!config.autoGenerateImages,
+            textOnlyMode: !!config.textOnlyMode
+          });
+          return;
+        }
+
         const style = this.imageService.getStyleForTheme(this.currentSession.theme);
         const imagePrompt = (data && data.customPrompt) || `${this.currentChapter.title}: ${this.currentChapter.content.substring(0, 200)}`;
         
@@ -2171,7 +2240,10 @@ class InteractiveStoryPlugin {
         );
 
         this.currentChapter.imagePath = imagePath;
-        this.io.emit('story:image-updated', { imagePath: this._extractFilename(imagePath) });
+        this.io.emit('story:image-updated', {
+          imagePath: this._extractFilename(imagePath),
+          chapter: this._prepareChapterForEmit(this.currentChapter, config)
+        });
       } catch (error) {
         this.logger.error(`Error regenerating image: ${error.message}`);
       }
@@ -2200,17 +2272,19 @@ class InteractiveStoryPlugin {
       }
       
       // Try to process as vote - voting system will handle pattern matching
+      const voterId = data.uniqueId || data.userId || data.username || data.nickname || 'unknown';
+      const voterName = data.nickname || data.username || 'Viewer';
       const accepted = this.votingSystem.processVote(
-        data.uniqueId,
-        data.nickname,
+        voterId,
+        voterName,
         message
       );
 
       if (accepted && this.currentSession) {
         this.db.updateViewerStats(
           this.currentSession.id,
-          data.uniqueId,
-          data.nickname
+          voterId,
+          voterName
         );
       }
     });
