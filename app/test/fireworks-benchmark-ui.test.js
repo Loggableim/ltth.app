@@ -64,22 +64,30 @@ describe('Fireworks benchmark UI', () => {
     expect(mainJs).toContain('adaptiveRenderScaleEnabled: true');
     expect(settingsHtml).toContain('id="internal-max-resolution"');
     expect(settingsHtml).toContain('id="internal-min-resolution"');
-    expect(settingsHtml).toContain('id="orientation-landscape"');
-    expect(settingsHtml).toContain('id="orientation-portrait"');
+    expect(settingsHtml).toContain('id="orientation-select"');
     expect(settingsHtml).toContain('value="4k"');
     expect(settingsHtml).toContain('value="540p"');
     expect(settingsJs).toContain('config.internalMaxResolutionPreset');
     expect(settingsJs).toContain('config.internalMinResolutionPreset');
     expect(settingsJs).toContain('updateOrientationControls');
     expect(settingsJs).toContain('updateInternalResolutionInfo');
+    expect(settingsHtml).toContain('id="orientation-select"');
   });
 
   test('overlay canvas preserves aspect ratio in browser capture', () => {
     const overlayHtml = readAppFile('plugins', 'fireworks', 'overlay.html');
+    expect(overlayHtml).toContain('id="fireworks-transition-canvas"');
     expect(overlayHtml).toContain('body.portrait #fireworks-canvas');
     expect(overlayHtml).toContain('body.landscape #fireworks-canvas');
     expect(overlayHtml).toContain('object-fit: contain');
     expect(readAppFile('plugins', 'fireworks', 'overlay.html')).toContain('object-position: center center');
+  });
+
+  test('preset and benchmark tabs are prioritized ahead of settings', () => {
+    expect(settingsHtml).toContain('data-tab="settings"');
+    expect(settingsHtml).toContain('data-tab="presets"');
+    expect(settingsHtml).toContain('data-tab="benchmark"');
+    expect(settingsHtml).toContain('id="presets" class="tab-content active"');
   });
 
   test('fireworks english labels do not fall back to question marks', () => {

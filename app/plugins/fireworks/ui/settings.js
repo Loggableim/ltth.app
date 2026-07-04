@@ -77,9 +77,6 @@ function connectSocket() {
     } catch (e) {
         console.error('[Fireworks Settings] Socket error:', e);
     }
-    if (rangeEl) {
-        rangeEl.textContent = internalRangeLabel;
-    }
 }
 
 // ============================================================================
@@ -101,7 +98,7 @@ async function loadConfig() {
     }
 }
 
-async function saveConfig() {
+async function saveConfig(showSuccessToast = true) {
     try {
         normalizeInternalResolutionBounds();
         const response = await fetch('/api/fireworks/config', {
@@ -113,7 +110,9 @@ async function saveConfig() {
         const data = await response.json();
         
         if (data.success) {
-            showToast('Settings saved successfully!', 'success');
+            if (showSuccessToast) {
+                showToast('Settings saved successfully!', 'success');
+            }
         } else {
             showToast('Failed to save settings', 'error');
         }
@@ -516,14 +515,9 @@ function updateInternalResolutionInfo(obsPreset, maxPreset, minPreset, orientati
 
 function updateOrientationControls(orientation) {
     const normalizedOrientation = orientation === 'portrait' ? 'portrait' : 'landscape';
-    const landscapeBtn = document.getElementById('orientation-landscape');
-    const portraitBtn = document.getElementById('orientation-portrait');
-
-    if (landscapeBtn) {
-        landscapeBtn.classList.toggle('active-shape', normalizedOrientation === 'landscape');
-    }
-    if (portraitBtn) {
-        portraitBtn.classList.toggle('active-shape', normalizedOrientation === 'portrait');
+    const select = document.getElementById('orientation-select');
+    if (select) {
+        select.value = normalizedOrientation;
     }
 }
 
@@ -665,19 +659,11 @@ function setupEventListeners() {
             config.internalMinResolutionPreset || '540p',
             config.orientation || 'landscape'
         );
-        // Notify engine to resize canvas
-        if (socket) {
-            socket.emit('fireworks:config-update', { 
-                config: { 
-                    resolutionPreset: config.resolutionPreset,
-                    orientation: config.orientation 
-                } 
-            });
-        }
+        void saveConfig(false);
     });
     
-    document.getElementById('orientation-landscape')?.addEventListener('click', function() {
-        config.orientation = 'landscape';
+    document.getElementById('orientation-select')?.addEventListener('change', function() {
+        config.orientation = this.value === 'portrait' ? 'portrait' : 'landscape';
         updateOrientationControls(config.orientation);
         updateResolutionInfo(config.resolutionPreset || '1080p', config.orientation);
         updateInternalResolutionInfo(
@@ -686,35 +672,7 @@ function setupEventListeners() {
             config.internalMinResolutionPreset || '540p',
             config.orientation
         );
-        // Notify engine to resize canvas
-        if (socket) {
-            socket.emit('fireworks:config-update', { 
-                config: { 
-                    resolutionPreset: config.resolutionPreset,
-                    orientation: config.orientation 
-                } 
-            });
-        }
-    });
-
-    document.getElementById('orientation-portrait')?.addEventListener('click', function() {
-        config.orientation = 'portrait';
-        updateOrientationControls(config.orientation);
-        updateResolutionInfo(config.resolutionPreset || '1080p', config.orientation);
-        updateInternalResolutionInfo(
-            config.resolutionPreset || '1080p',
-            config.internalMaxResolutionPreset || '4k',
-            config.internalMinResolutionPreset || '540p',
-            config.orientation
-        );
-        if (socket) {
-            socket.emit('fireworks:config-update', {
-                config: {
-                    resolutionPreset: config.resolutionPreset,
-                    orientation: config.orientation
-                }
-            });
-        }
+        void saveConfig(false);
     });
 
     document.getElementById('internal-max-resolution')?.addEventListener('change', function() {
@@ -726,15 +684,7 @@ function setupEventListeners() {
             config.internalMinResolutionPreset || '540p',
             config.orientation || 'landscape'
         );
-        if (socket) {
-            socket.emit('fireworks:config-update', {
-                config: {
-                    internalMaxResolutionPreset: config.internalMaxResolutionPreset,
-                    internalMinResolutionPreset: config.internalMinResolutionPreset || '540p',
-                    orientation: config.orientation
-                }
-            });
-        }
+        void saveConfig(false);
     });
 
     document.getElementById('internal-min-resolution')?.addEventListener('change', function() {
@@ -746,15 +696,7 @@ function setupEventListeners() {
             config.internalMinResolutionPreset,
             config.orientation || 'landscape'
         );
-        if (socket) {
-            socket.emit('fireworks:config-update', {
-                config: {
-                    internalMaxResolutionPreset: config.internalMaxResolutionPreset || '4k',
-                    internalMinResolutionPreset: config.internalMinResolutionPreset,
-                    orientation: config.orientation
-                }
-            });
-        }
+        void saveConfig(false);
     });
     
     setupRangeSlider('target-fps', 'target-fps-value', ' FPS', (val) => {

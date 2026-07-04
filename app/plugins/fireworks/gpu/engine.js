@@ -1747,6 +1747,10 @@ class FireworksEngine {
         this.targetRenderScale = 1.0;
         this.qualityScale = 1.0;
         this.lastRenderScaleChange = 0;
+        this.transitionCanvas = null;
+        this.transitionCtx = null;
+        this.transitionFadeMs = 180;
+        this.transitionStartTime = 0;
         this.isBenchmarkMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('benchmark') === 'true';
     }
 
@@ -1758,6 +1762,7 @@ class FireworksEngine {
         // Setup canvas
         this.resize();
         this.applyOverlayOrientationLayout();
+        this.initTransitionLayer();
         
         // Try to initialize WebGL renderer (unless toasterMode is enabled)
         this.initRenderer();
@@ -1836,8 +1841,8 @@ class FireworksEngine {
     }
 
     resize() {
-        // Get resolution from preset
-        const resolutionPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
+        // Get source resolution from the OBS overlay preset
+        const resolutionPreset = this.config.resolutionPreset || CONFIG.resolutionPreset;
         const orientation = this.config.orientation || 'landscape';
         const targetResolution = this.getResolutionFromPreset(resolutionPreset, orientation);
         
@@ -1845,12 +1850,16 @@ class FireworksEngine {
         this.baseHeight = targetResolution.height;
         this.width = this.baseWidth;
         this.height = this.baseHeight;
+        this.renderScale = Math.min(this.renderScale || 1.0, this.getMaxRenderScale());
         this.applyRenderScale();
     }
 
     applyRenderScale() {
-        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1.0 : this.renderScale;
+        const minScale = this.getMinRenderScale();
+        const maxScale = this.getMaxRenderScale();
+        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1.0 : Math.min(maxScale, Math.max(minScale, this.renderScale));
         const orientation = this.config.orientation === 'portrait' ? 'portrait' : 'landscape';
+        this.captureRenderTransitionSnapshot();
         this.renderWidth = Math.max(320, Math.round(this.baseWidth * scale));
         this.renderHeight = Math.max(180, Math.round(this.baseHeight * scale));
 
@@ -1883,6 +1892,60 @@ class FireworksEngine {
         if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (base ${this.baseWidth}x${this.baseHeight}, scale ${scale.toFixed(2)})`);
     }
 
+    initTransitionLayer() {
+        if (typeof document === 'undefined') return;
+
+        const existing = document.getElementById('fireworks-transition-canvas');
+        if (existing) {
+            this.transitionCanvas = existing;
+        } else if (this.canvas && this.canvas.parentNode) {
+            this.transitionCanvas = document.createElement('canvas');
+            this.transitionCanvas.id = 'fireworks-transition-canvas';
+            this.canvas.parentNode.insertBefore(this.transitionCanvas, this.canvas);
+        }
+
+        if (this.transitionCanvas) {
+            this.transitionCtx = this.transitionCanvas.getContext('2d');
+        }
+    }
+
+    captureRenderTransitionSnapshot() {
+        if (!this.transitionCanvas || !this.canvas || !this.canvas.width || !this.canvas.height) return;
+
+        if (!this.transitionCtx) {
+            this.transitionCtx = this.transitionCanvas.getContext('2d');
+        }
+        if (!this.transitionCtx) return;
+
+        this.transitionCanvas.width = this.canvas.width;
+        this.transitionCanvas.height = this.canvas.height;
+        this.transitionCanvas.style.opacity = '1';
+        this.transitionCtx.setTransform(1, 0, 0, 1, 0, 0);
+        this.transitionCtx.clearRect(0, 0, this.transitionCanvas.width, this.transitionCanvas.height);
+        this.transitionCtx.drawImage(this.canvas, 0, 0);
+        this.transitionStartTime = performance.now();
+    }
+
+    updateRenderTransition() {
+        if (!this.transitionCanvas) return;
+        if (!this.transitionStartTime) return;
+
+        const elapsed = performance.now() - this.transitionStartTime;
+        const progress = Math.min(1, elapsed / this.transitionFadeMs);
+        const eased = 1 - Math.pow(1 - progress, 2);
+        const opacity = 1 - eased;
+
+        this.transitionCanvas.style.opacity = String(opacity);
+
+        if (progress >= 1) {
+            this.transitionCanvas.style.opacity = '0';
+            this.transitionStartTime = 0;
+            if (this.transitionCtx) {
+                this.transitionCtx.clearRect(0, 0, this.transitionCanvas.width, this.transitionCanvas.height);
+            }
+        }
+    }
+    
     applyOverlayOrientationLayout() {
         const orientation = this.config.orientation === 'portrait' ? 'portrait' : 'landscape';
         if (typeof document === 'undefined' || !document.body) return;
@@ -2608,6 +2671,8 @@ class FireworksEngine {
             const newCount = this.getTotalParticles();
             if (DEBUG) console.log(`[Fireworks] Emergency pressure fade: ${totalParticles} -> ${newCount} particles`);
         }
+
+        this.updateRenderTransition();
         
         // Optimization #10: Frame-skip threshold (50ms = 20 FPS)
         const FRAME_SKIP_THRESHOLD = 50;
@@ -2836,13 +2901,14 @@ class FireworksEngine {
 
         const desiredFps = this.config.targetFps || CONFIG.targetFps;
         const minScale = this.getMinRenderScale();
+        const maxScale = this.getMaxRenderScale();
         const step = CONFIG.renderScaleStep;
         let nextScale = this.renderScale;
 
         if (avgFps < desiredFps * 0.75 && this.renderScale > minScale) {
             nextScale = Math.max(minScale, this.renderScale - step);
-        } else if (avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin && this.renderScale < 1.0) {
-            nextScale = Math.min(1.0, this.renderScale + step);
+        } else if (avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin && this.renderScale < maxScale) {
+            nextScale = Math.min(maxScale, this.renderScale + step);
         }
 
         nextScale = Math.round(nextScale * 100) / 100;
@@ -2858,7 +2924,7 @@ class FireworksEngine {
 
         const desiredFps = this.config.targetFps || CONFIG.targetFps;
         return avgFps < desiredFps * 0.75 ||
-            (this.renderScale < 1.0 && avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin);
+            (this.renderScale < this.getMaxRenderScale() && avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin);
     }
 
     shouldUseEmergencyDespawn() {
@@ -2869,18 +2935,34 @@ class FireworksEngine {
 
     getMinRenderScale() {
         const orientation = this.config.orientation || 'landscape';
-        const maxPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
         const minPreset = this.config.internalMinResolutionPreset || CONFIG.internalMinResolutionPreset;
-        const maxResolution = this.getResolutionFromPreset(maxPreset, orientation);
+        const sourcePreset = this.config.resolutionPreset || CONFIG.resolutionPreset;
+        const sourceResolution = this.getResolutionFromPreset(sourcePreset, orientation);
         const minResolution = this.getResolutionFromPreset(minPreset, orientation);
 
-        if (!maxResolution || !minResolution || maxResolution.width <= 0 || maxResolution.height <= 0) {
+        if (!sourceResolution || !minResolution || sourceResolution.width <= 0 || sourceResolution.height <= 0) {
             return this.config.minRenderScale || CONFIG.minRenderScale;
         }
 
-        const widthScale = minResolution.width / maxResolution.width;
-        const heightScale = minResolution.height / maxResolution.height;
+        const widthScale = minResolution.width / sourceResolution.width;
+        const heightScale = minResolution.height / sourceResolution.height;
         return Math.max(0.125, Math.min(1.0, Math.max(widthScale, heightScale)));
+    }
+
+    getMaxRenderScale() {
+        const orientation = this.config.orientation || 'landscape';
+        const maxPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
+        const sourcePreset = this.config.resolutionPreset || CONFIG.resolutionPreset;
+        const sourceResolution = this.getResolutionFromPreset(sourcePreset, orientation);
+        const maxResolution = this.getResolutionFromPreset(maxPreset, orientation);
+
+        if (!sourceResolution || !maxResolution || sourceResolution.width <= 0 || sourceResolution.height <= 0) {
+            return 1.0;
+        }
+
+        const widthScale = maxResolution.width / sourceResolution.width;
+        const heightScale = maxResolution.height / sourceResolution.height;
+        return Math.max(1.0, Math.max(widthScale, heightScale));
     }
 
     updateAdaptiveQuality(avgFps) {
@@ -3155,6 +3237,11 @@ class FireworksEngine {
         if (this.trailCtx) {
             this.trailCtx.setTransform(1, 0, 0, 1, 0, 0);
             this.trailCtx.clearRect(0, 0, renderWidth, renderHeight);
+        }
+        if (this.transitionCanvas && this.transitionCtx) {
+            this.transitionCtx.clearRect(0, 0, this.transitionCanvas.width, this.transitionCanvas.height);
+            this.transitionCanvas.style.opacity = '0';
+            this.transitionStartTime = 0;
         }
         
         // Reset performance state

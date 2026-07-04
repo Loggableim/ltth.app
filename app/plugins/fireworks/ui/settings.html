@@ -246,13 +246,13 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="settings">⚙️ <span data-i18n="fireworks.tab_settings">Einstellungen</span></button>
-            <button class="tab-button" data-tab="presets">🎨 <span data-i18n="fireworks.tab_presets">Voreinstellungen</span></button>
+            <button class="tab-button" data-tab="settings">⚙️ <span data-i18n="fireworks.tab_settings">Einstellungen</span></button>
+            <button class="tab-button active" data-tab="presets">🎨 <span data-i18n="fireworks.tab_presets">Voreinstellungen</span></button>
             <button class="tab-button" data-tab="benchmark">📊 <span data-i18n="fireworks.tab_benchmark">Benchmark</span></button>
         </div>
 
         <!-- Tab 1: Settings -->
-        <div id="settings" class="tab-content active">
+        <div id="settings" class="tab-content">
             <!-- Main Toggle -->
             <div class="card rounded-xl p-6 mb-6">
             <div class="flex items-center justify-between">
@@ -637,16 +637,12 @@
                         
                         <div>
                             <label class="block mb-2"><strong>Orientation</strong></label>
-                            <div class="grid grid-cols-2 gap-2" id="resolution-orientation-toggle">
-                                <button type="button" id="orientation-landscape" class="btn-primary py-2 rounded-lg font-bold text-sm" data-orientation="landscape">
-                                    Landscape
-                                </button>
-                                <button type="button" id="orientation-portrait" class="btn-primary py-2 rounded-lg font-bold text-sm" data-orientation="portrait">
-                                    Portrait
-                                </button>
-                            </div>
+                            <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
+                            </select>
                             <p class="text-xs text-gray-400 mt-1">
-                                Choose orientation based on your streaming setup
+                                Choose the output format for the OBS overlay
                             </p>
                         </div>
                         
@@ -1054,7 +1050,7 @@
         <!-- END Settings Tab -->
 
         <!-- Tab 2: Presets -->
-        <div id="presets" class="tab-content">
+        <div id="presets" class="tab-content active">
             <div class="card rounded-xl p-6 mb-6">
                 <h2 class="section-title text-2xl font-bold mb-4">🎨 <span data-i18n="fireworks.presets.title">Voreinstellungen</span></h2>
                 <p class="text-gray-400 mb-6" data-i18n="fireworks.presets.description">
