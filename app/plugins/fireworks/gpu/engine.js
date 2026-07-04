@@ -259,6 +259,12 @@ class Particle {
             rotationSpeed: 0,
             isDespawning: false, // Flag for despawn fade effect
             despawnStartTime: 0, // When despawn started
+            despawnStartAlpha: 1.0,
+            despawnStartSize: 3,
+            isPressureFading: false,
+            pressureFadeStartTime: 0,
+            pressureFadeStartAlpha: 1.0,
+            pressureFadeStartSize: 3,
             // Secondary explosion properties
             willBurst: false,      // Will create mini-burst (for burst shape)
             burstDelay: 0,         // Delay before mini-burst
@@ -299,10 +305,23 @@ class Particle {
             const elapsed = performance.now() - this.despawnStartTime;
             const fadeProgress = Math.min(elapsed / despawnDuration, 1.0);
             
-            // Fade out alpha smoothly
-            this.alpha = Math.max(0, 1.0 - fadeProgress);
+            // Fade out from the particle's current visual state, avoiding visible alpha jumps.
+            this.alpha = this.despawnStartAlpha * (1.0 - fadeProgress);
+            this.size = Math.max(0.1, this.despawnStartSize * (1.0 - fadeProgress * 0.35));
             
             // If fade is complete, mark as done
+            if (fadeProgress >= 1.0) {
+                this.lifespan = 0;
+            }
+        } else if (this.isPressureFading) {
+            const pressureFadeDuration = CONFIG.despawnFadeDuration * 1000;
+            const elapsed = performance.now() - this.pressureFadeStartTime;
+            const fadeProgress = Math.min(elapsed / pressureFadeDuration, 1.0);
+
+            this.alpha = this.pressureFadeStartAlpha * (1.0 - fadeProgress);
+            this.size = Math.max(0.1, this.pressureFadeStartSize * (1.0 - fadeProgress * 0.5));
+            this.lifespan = Math.min(this.lifespan, this.maxLifespan * (1.0 - fadeProgress));
+
             if (fadeProgress >= 1.0) {
                 this.lifespan = 0;
             }
@@ -335,7 +354,7 @@ class Particle {
         this.rotation += this.rotationSpeed * deltaTime;
         
         // Update lifespan for explosion particles with deltaTime
-        if (!this.isSeed && !this.isDespawning) {
+        if (!this.isSeed && !this.isDespawning && !this.isPressureFading) {
             this.lifespan -= this.decay * deltaTime;
             this.alpha = Math.max(0, this.lifespan / this.maxLifespan);
             
@@ -380,6 +399,23 @@ class Particle {
         if (!this.isDespawning) {
             this.isDespawning = true;
             this.despawnStartTime = performance.now();
+            this.despawnStartAlpha = this.alpha;
+            this.despawnStartSize = this.size;
+            this.willBurst = false;
+            this.willSpiral = false;
+            this.trail.length = Math.min(this.trail.length, 2);
+        }
+    }
+
+    startPressureFade() {
+        if (!this.isPressureFading && !this.isDespawning) {
+            this.isPressureFading = true;
+            this.pressureFadeStartTime = performance.now();
+            this.pressureFadeStartAlpha = this.alpha;
+            this.pressureFadeStartSize = this.size;
+            this.willBurst = false;
+            this.willSpiral = false;
+            this.trail.length = Math.min(this.trail.length, 2);
         }
     }
     
@@ -416,6 +452,12 @@ class Particle {
                 rotationSpeed: 0,
                 isDespawning: false,
                 despawnStartTime: 0,
+                despawnStartAlpha: 1.0,
+                despawnStartSize: 3,
+                isPressureFading: false,
+                pressureFadeStartTime: 0,
+                pressureFadeStartAlpha: 1.0,
+                pressureFadeStartSize: 3,
                 willBurst: false,
                 burstDelay: 0,
                 burstTime: 0,
@@ -463,6 +505,12 @@ class Particle {
             this.rotationSpeed = 0;
             this.isDespawning = false;
             this.despawnStartTime = 0;
+            this.despawnStartAlpha = 1.0;
+            this.despawnStartSize = 3;
+            this.isPressureFading = false;
+            this.pressureFadeStartTime = 0;
+            this.pressureFadeStartAlpha = 1.0;
+            this.pressureFadeStartSize = 3;
             this.willBurst = false;
             this.burstDelay = 0;
             this.burstTime = 0;
@@ -2824,6 +2872,33 @@ class FireworksEngine {
         CONFIG.secondaryExplosionChance = CONFIG.baseSecondaryExplosionChance * this.qualityScale;
         CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale));
     }
+
+    applyPressureFadeToFirework(fw) {
+        if (!fw) return;
+
+        fw.pressureFading = true;
+        fw.combo = Math.min(fw.combo || 1, 4);
+
+        if (!fw.exploded && fw.rocket) {
+            fw.rocket.startPressureFade();
+        }
+
+        for (const p of fw.particles || []) {
+            p.startPressureFade();
+        }
+        for (const p of fw.secondaryExplosions || []) {
+            p.startPressureFade();
+        }
+    }
+
+    isPressureFadeComplete(fw) {
+        if (!fw) return true;
+
+        const rocketDone = !fw.rocket || fw.rocket.isDone();
+        const particlesDone = (fw.particles || []).every(p => p.isDone());
+        const secondaryDone = (fw.secondaryExplosions || []).every(p => p.isDone());
+        return rocketDone && particlesDone && secondaryDone;
+    }
     
     /**
      * Render a non-circle particle using Canvas 2D
@@ -2924,41 +2999,11 @@ class FireworksEngine {
                 if (this.fireworks.length > maxFireworksMinimal) {
                     for (let i = this.fireworks.length - 1; i >= maxFireworksMinimal; i--) {
                         const fw = this.fireworks[i];
-                        
-                        // Start despawn for rocket (if exists)
-                        if (!fw.exploded && fw.rocket && !fw.rocket.isDespawning) {
-                            fw.rocket.startDespawn();
-                        }
-                        
-                        // Start despawn for all particles
-                        for (const p of fw.particles) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        for (const p of fw.secondaryExplosions) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        
-                        // Check if ready for removal
-                        const minDespawnTime = (CONFIG.despawnFadeDuration * 1000) / 2;
-                        const now = performance.now();
-                        
-                        // For fireworks with rocket
-                        if (fw.rocket && fw.rocket.isDespawning) {
-                            if (now - fw.rocket.despawnStartTime > minDespawnTime) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
-                        }
-                        // Bug #3 Fix: For instant-explode fireworks (no rocket)
-                        else if (!fw.rocket && fw.exploded) {
-                            // Check if all particles are despawning long enough
-                            const allParticlesDespawning = fw.particles.every(p => 
-                                p.isDespawning && (now - p.despawnStartTime > minDespawnTime)
-                            );
-                            if (allParticlesDespawning || fw.particles.length === 0) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
+
+                        this.applyPressureFadeToFirework(fw);
+                        if (this.isPressureFadeComplete(fw)) {
+                            this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                            this.fireworks.pop();
                         }
                     }
                 }
@@ -2980,34 +3025,11 @@ class FireworksEngine {
                 if (this.fireworks.length > maxFireworksReduced) {
                     for (let i = this.fireworks.length - 1; i >= maxFireworksReduced; i--) {
                         const fw = this.fireworks[i];
-                        
-                        if (!fw.exploded && fw.rocket && !fw.rocket.isDespawning) {
-                            fw.rocket.startDespawn();
-                        }
-                        
-                        for (const p of fw.particles) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        for (const p of fw.secondaryExplosions) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        
-                        const minDespawnTime = (CONFIG.despawnFadeDuration * 1000) / 2;
-                        const now = performance.now();
-                        
-                        if (fw.rocket && fw.rocket.isDespawning) {
-                            if (now - fw.rocket.despawnStartTime > minDespawnTime) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
-                        } else if (!fw.rocket && fw.exploded) {
-                            const allParticlesDespawning = fw.particles.every(p => 
-                                p.isDespawning && (now - p.despawnStartTime > minDespawnTime)
-                            );
-                            if (allParticlesDespawning || fw.particles.length === 0) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
+
+                        this.applyPressureFadeToFirework(fw);
+                        if (this.isPressureFadeComplete(fw)) {
+                            this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                            this.fireworks.pop();
                         }
                     }
                 }

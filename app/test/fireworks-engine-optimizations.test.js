@@ -56,9 +56,9 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('for (let i = this.fireworks.length - 1; i >= maxFireworksReduced; i--)');
         });
         
-        test('Handles instant-explode fireworks (no rocket)', () => {
-            expect(engineCode).toContain('else if (!fw.rocket && fw.exploded)');
-            expect(engineCode).toContain('// Bug #3 Fix: For instant-explode fireworks');
+        test('Handles instant-explode fireworks through pressure fade completion', () => {
+            expect(engineCode).toContain('isPressureFadeComplete(fw)');
+            expect(engineCode).toContain('const rocketDone = !fw.rocket || fw.rocket.isDone()');
         });
         
         test('Uses swap-and-pop instead of splice for O(1) cleanup', () => {
@@ -208,6 +208,14 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('shouldUseEmergencyDespawn()');
             expect(engineCode).toContain('if (!this.shouldUseEmergencyDespawn()) break');
             expect(engineCode).toContain('return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold');
+        });
+
+        test('Emergency overload uses pressure fade instead of abrupt rocket despawn', () => {
+            expect(engineCode).toContain('startPressureFade()');
+            expect(engineCode).toContain('applyPressureFadeToFirework(fw)');
+            expect(engineCode).toContain('isPressureFading');
+            expect(engineCode).toContain('pressureFadeStartAlpha');
+            expect(engineCode).not.toContain('fw.rocket.startDespawn()');
         });
     });
     
