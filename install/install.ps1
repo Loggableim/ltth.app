@@ -3,7 +3,7 @@
 #  PupCid's Little TikTool Helper — https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iwr -useb https://ltth.app/install.ps1 | iex
+#    iwr -useb https://ltth.app/install/install.ps1 | iex
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)

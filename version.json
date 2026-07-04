@@ -6,10 +6,10 @@
   "downloadNote": "Plugin Store release - official LTTH store plus opt-in community registries.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/1.3.9",
   "oneLineInstaller": {
-    "windows": "iwr -useb https://ltth.app/install.ps1 | iex",
-    "macos": "curl -fsSL https://ltth.app/install.sh | bash",
-    "linux": "curl -fsSL https://ltth.app/install.sh | bash",
-    "universal": "curl -fsSL https://ltth.app/install.js | node"
+    "windows": "iwr -useb https://ltth.app/install/install.ps1 | iex",
+    "macos": "curl -fsSL https://ltth.app/install/install.sh | bash",
+    "linux": "curl -fsSL https://ltth.app/install/install.sh | bash",
+    "universal": "curl -fsSL https://ltth.app/install/install.js | node"
   },
   "supportedPlatforms": [
     "windows-amd64",
