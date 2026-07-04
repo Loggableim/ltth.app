@@ -37,23 +37,66 @@
             background: transparent;
             background-color: transparent;
             pointer-events: none;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
             backface-visibility: hidden;
         }
 
         #fireworks-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: relative;
             display: block;
             width: 100%;
             height: 100%;
             background: transparent;
             background-color: transparent;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
+            object-fit: contain;
+            object-position: center center;
+            will-change: contents;
             backface-visibility: hidden;
+            z-index: 1;
+        }
+
+        #fireworks-transition-canvas {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            background-color: transparent;
+            object-fit: contain;
+            object-position: center center;
+            pointer-events: none;
+            opacity: 0;
+            will-change: opacity;
+            backface-visibility: hidden;
+            z-index: 2;
+        }
+
+        body.portrait #fireworks-canvas {
+            width: auto;
+            height: 100%;
+            aspect-ratio: 9 / 16;
+        }
+
+        body.landscape #fireworks-canvas {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 16 / 9;
+        }
+
+        body.portrait #fireworks-transition-canvas {
+            width: auto;
+            height: 100%;
+            aspect-ratio: 9 / 16;
+        }
+
+        body.landscape #fireworks-transition-canvas {
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 16 / 9;
         }
 
         .overlay-bg-transparent {
@@ -663,6 +706,7 @@
 </head>
 <body>
     <div id="fireworks-container">
+        <canvas id="fireworks-transition-canvas"></canvas>
         <canvas id="fireworks-canvas"></canvas>
     </div>
     <div id="debug-panel">

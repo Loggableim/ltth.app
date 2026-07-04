@@ -254,7 +254,10 @@ class ConfigRepair {
         const currentEscaped = currentConfigDir.replace(/\\/g, '\\\\');
 
         return value
-            .replace(/[A-Za-z]:\\Users\\[^\\]+\\AppData\\Local\\ltth.app/gi, () => currentConfigDir)
+            .replace(/[A-Za-z]:\\Users\\[^\\]+\\AppData\\Local\\ltth\.app((?:\\[^\\"]*)*)/gi, (_match, tail = '') => {
+                const tailParts = tail.split('\\').filter(Boolean);
+                return path.join(currentConfigDir, ...tailParts);
+            })
             .replace(/[A-Za-z]:\\\\Users\\\\[^\\]+\\\\AppData\\\\Local\\\\ltth.app/gi, () => currentEscaped);
     }
 

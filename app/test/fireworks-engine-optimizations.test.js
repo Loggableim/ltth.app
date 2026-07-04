@@ -13,11 +13,14 @@ const path = require('path');
 
 describe('Fireworks Engine Optimizations', () => {
     let engineCode;
+    let mainCode;
     
     beforeAll(() => {
         // Read the engine file
         const enginePath = path.join(__dirname, '../plugins/fireworks/gpu/engine.js');
         engineCode = fs.readFileSync(enginePath, 'utf8');
+        const mainPath = path.join(__dirname, '../plugins/fireworks/main.js');
+        mainCode = fs.readFileSync(mainPath, 'utf8');
     });
     
     describe('Bug #1: ParticlePool Set Implementation', () => {
@@ -195,6 +198,12 @@ describe('Fireworks Engine Optimizations', () => {
         test('Fireworks engine uses queued atlas uploads for gift and avatar images', () => {
             expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, giftImg)');
             expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, avatarImg)');
+        });
+
+        test('Gift-trigger particle budget is forwarded into the GPU firework path', () => {
+            expect(engineCode).toContain('requestedParticleCount: Number.isFinite(requestedParticleCount) ? requestedParticleCount : null');
+            expect(engineCode).toContain('particleCount = Math.min(particleCount, Math.floor(this.requestedParticleCount))');
+            expect(mainCode).toContain('requestedParticleCount: particleCount');
         });
 
         test('Fireworks engine prewarms gift and avatar atlas textures before peak bursts', () => {

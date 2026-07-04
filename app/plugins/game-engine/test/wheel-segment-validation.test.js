@@ -382,19 +382,24 @@ describe('Wheel Segment Validation and Synchronization', () => {
         { text: 'Rare', color: '#0000FF', weight: 10 }
       ];
       
+      const randomSpy = jest.spyOn(Math, 'random');
       const results = { 0: 0, 1: 0 };
-      
-      // Test 1000 times to get statistical distribution
-      for (let i = 0; i < 1000; i++) {
-        const index = wheelGame.calculateWinningSegment(segments);
-        results[index]++;
+
+      try {
+        for (let i = 0; i < 100; i++) {
+          randomSpy.mockReturnValueOnce((i + 0.5) / 100);
+        }
+
+        for (let i = 0; i < 100; i++) {
+          const index = wheelGame.calculateWinningSegment(segments);
+          results[index]++;
+        }
+      } finally {
+        randomSpy.mockRestore();
       }
-      
-      // Common should appear roughly 9x more than rare
-      // Allow some variance (7x to 11x)
-      const ratio = results[0] / results[1];
-      expect(ratio).toBeGreaterThan(7);
-      expect(ratio).toBeLessThan(11);
+
+      expect(results[0]).toBe(90);
+      expect(results[1]).toBe(10);
     });
 
     test('should handle single segment', () => {

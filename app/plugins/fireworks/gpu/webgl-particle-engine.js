@@ -34,6 +34,8 @@ class WebGLParticleEngine {
         this.alphaPreservingBlend = options.alphaPreservingBlend !== undefined ? options.alphaPreservingBlend : true;
         this.activeUploadView = null;
         this.lastUploadFloatCount = 0;
+        this.logicalWidth = 0;
+        this.logicalHeight = 0;
         this.pendingAtlasUploads = [];
         this.pendingAtlasKeys = new Set();
         this.maxAtlasUploadsPerFrame = options.maxAtlasUploadsPerFrame || 1;
@@ -597,8 +599,8 @@ class WebGLParticleEngine {
         }
 
         const margin = 100;
-        const width = this.canvas.width || this.canvas.clientWidth || 0;
-        const height = this.canvas.height || this.canvas.clientHeight || 0;
+        const width = this.logicalWidth || this.canvas.width || this.canvas.clientWidth || 0;
+        const height = this.logicalHeight || this.canvas.height || this.canvas.clientHeight || 0;
         return !(
             particle.x < -margin ||
             particle.x > width + margin ||
@@ -632,10 +634,12 @@ class WebGLParticleEngine {
     /**
      * Render all particles in a single draw call
      */
-    render() {
+    render(logicalWidth = this.logicalWidth || this.canvas.width, logicalHeight = this.logicalHeight || this.canvas.height) {
         if (!this.initialized) return;
 
         const gl = this.gl;
+        this.logicalWidth = logicalWidth;
+        this.logicalHeight = logicalHeight;
         this.processAtlasUploads();
         if (this.particleCount === 0) return;
 
@@ -647,7 +651,7 @@ class WebGLParticleEngine {
         gl.useProgram(this.program);
 
         // Update uniforms
-        gl.uniform2f(this.locations.u_resolution, this.canvas.width, this.canvas.height);
+        gl.uniform2f(this.locations.u_resolution, this.logicalWidth, this.logicalHeight);
         gl.uniform1f(this.locations.u_slotsPerRow, this.slotsPerRow);
         gl.uniform1f(this.locations.u_slotSize, 1.0 / this.slotsPerRow);
 
@@ -675,6 +679,15 @@ class WebGLParticleEngine {
         this.canvas.width = width;
         this.canvas.height = height;
         this.gl.viewport(0, 0, width, height);
+    }
+
+    setLogicalSize(width, height) {
+        if (Number.isFinite(width) && width > 0) {
+            this.logicalWidth = width;
+        }
+        if (Number.isFinite(height) && height > 0) {
+            this.logicalHeight = height;
+        }
     }
 
     /**

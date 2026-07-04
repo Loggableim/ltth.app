@@ -31,6 +31,15 @@ That script is the checked-in source of truth used by the release workflow for:
 - `ltth-payload-windows-amd64-<version>.zip`
 - `stable.json`
 
+## Launcher Release Tags
+
+The launcher release workflow in `.github/workflows/build-launcher.yml` is tag-driven:
+
+- `launcher-v*` creates a stable launcher release
+- `launcher-beta-v*` creates a beta launcher release
+
+Both tag families publish the same `launcher.exe` binaries. The tag only marks the GitHub Release metadata and the release manifest, not the executable filename.
+
 ## Launcher Features
 
 ### Port-Fallback und Startdiagnose

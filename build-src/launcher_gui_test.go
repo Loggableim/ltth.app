@@ -285,6 +285,180 @@ func TestStopDetectedLTTHServersTerminatesExternalHealthPID(t *testing.T) {
 	}
 }
 
+func TestPrepareFreshBackendStartupStopsOldServerAndResetsPort(t *testing.T) {
+	port, closeServer := startLauncherHealthTestServer(t, 5252, "LTTH - Pup Cids little TikTool Helper")
+	defer closeServer()
+
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = port
+	launcher.settings = defaultLauncherSettings()
+	launcher.settings.PreferredPort = port
+
+	var terminated []int
+	oldTerminate := terminateProcessTreeByPID
+	oldWait := waitForHealthyServerToStop
+	terminateProcessTreeByPID = func(pid int) error {
+		terminated = append(terminated, pid)
+		return nil
+	}
+	waitForHealthyServerToStop = func(_ *Launcher, _ int, _ time.Duration) bool {
+		return true
+	}
+	defer func() {
+		terminateProcessTreeByPID = oldTerminate
+		waitForHealthyServerToStop = oldWait
+	}()
+
+	stopped, err := launcher.prepareFreshBackendStartup("TEST")
+	if err != nil {
+		t.Fatalf("prepareFreshBackendStartup failed: %v", err)
+	}
+	if !stopped {
+		t.Fatal("expected old LTTH server to be stopped before fresh backend startup")
+	}
+	if launcher.preferredPort != 3000 {
+		t.Fatalf("expected launcher preferred port to reset to 3000, got %d", launcher.preferredPort)
+	}
+
+	settings := launcher.loadSettings()
+	if settings.PreferredPort != 3000 {
+		t.Fatalf("expected persisted preferred port to reset to 3000, got %d", settings.PreferredPort)
+	}
+	foundExpectedPID := false
+	for _, pid := range terminated {
+		if pid == 5252 {
+			foundExpectedPID = true
+			break
+		}
+	}
+	if !foundExpectedPID {
+		t.Fatalf("expected PID 5252 to be terminated, got %#v", terminated)
+	}
+}
+
+func TestPrepareFreshBackendStartupClearsStalePortFileAndStopsPortOwners(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.exeDir = t.TempDir()
+	launcher.preferredPort = 3001
+	launcher.settings = defaultLauncherSettings()
+	launcher.settings.PreferredPort = 3001
+	if err := os.WriteFile(launcher.runtimePortFilePath(), []byte("3001"), 0644); err != nil {
+		t.Fatalf("failed to create stale runtime port file: %v", err)
+	}
+
+	called := false
+	oldStopStale := stopStaleLTTHPortOwners
+	stopStaleLTTHPortOwners = func(_ *Launcher, source string) (bool, error) {
+		called = source == "TEST"
+		return true, nil
+	}
+	defer func() {
+		stopStaleLTTHPortOwners = oldStopStale
+	}()
+
+	stopped, err := launcher.prepareFreshBackendStartup("TEST")
+	if err != nil {
+		t.Fatalf("prepareFreshBackendStartup failed: %v", err)
+	}
+	if !stopped {
+		t.Fatal("expected stale port owner cleanup to be reported as stopped")
+	}
+	if !called {
+		t.Fatal("expected stale LTTH port owner cleanup to be invoked")
+	}
+	if _, err := os.Stat(launcher.runtimePortFilePath()); !os.IsNotExist(err) {
+		t.Fatalf("expected stale runtime port file to be removed, got err=%v", err)
+	}
+	if launcher.preferredPort != 3000 {
+		t.Fatalf("expected startup port to reset to 3000, got %d", launcher.preferredPort)
+	}
+}
+
+func TestBackendPortConfigPinsMaxPortToPreferredPort(t *testing.T) {
+	preferred, maxPort := backendPortConfig(3000)
+	if preferred != 3000 || maxPort != 3000 {
+		t.Fatalf("expected backend port config 3000/3000, got %d/%d", preferred, maxPort)
+	}
+
+	preferred, maxPort = backendPortConfig(0)
+	if preferred != 3000 || maxPort != 3000 {
+		t.Fatalf("expected invalid preferred port to fall back to 3000/3000, got %d/%d", preferred, maxPort)
+	}
+
+	preferred, maxPort = backendPortConfig(4321)
+	if preferred != 4321 || maxPort != 4321 {
+		t.Fatalf("expected manual preferred port to be fixed, got %d/%d", preferred, maxPort)
+	}
+}
+
+func TestResolveNpmCommandForPortableNodeUsesMatchingNpmCLI(t *testing.T) {
+	nodeDir := filepath.Join(t.TempDir(), "runtime", "node")
+	npmCli := filepath.Join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js")
+	if err := os.MkdirAll(filepath.Dir(npmCli), 0755); err != nil {
+		t.Fatalf("failed to create npm cli dir: %v", err)
+	}
+
+	nodeName := "node"
+	if runtime.GOOS == "windows" {
+		nodeName = "node.exe"
+	}
+	nodePath := filepath.Join(nodeDir, nodeName)
+	if err := os.WriteFile(nodePath, []byte("node"), 0644); err != nil {
+		t.Fatalf("failed to create node placeholder: %v", err)
+	}
+	if err := os.WriteFile(npmCli, []byte("npm"), 0644); err != nil {
+		t.Fatalf("failed to create npm cli placeholder: %v", err)
+	}
+
+	launcher := NewLauncher()
+	npm := launcher.resolveNpmCommandForNode(nodePath)
+
+	if npm.Command != nodePath {
+		t.Fatalf("expected npm command to be portable node %q, got %q", nodePath, npm.Command)
+	}
+	if len(npm.Args) == 0 || npm.Args[0] != npmCli {
+		t.Fatalf("expected first npm arg to be npm cli %q, got %#v", npmCli, npm.Args)
+	}
+}
+
+func TestNodeCommandEnvironmentPrependsPortableNodeAndRemovesNodeOptions(t *testing.T) {
+	nodeDir := filepath.Join(t.TempDir(), "runtime", "node")
+	nodeName := "node"
+	if runtime.GOOS == "windows" {
+		nodeName = "node.exe"
+	}
+	nodePath := filepath.Join(nodeDir, nodeName)
+
+	env := nodeCommandEnvironment([]string{
+		"NODE_OPTIONS=--require bad.js",
+		"NPM_CONFIG_NODE_OPTIONS=--require bad.js",
+		"Path=C:\\OtherTools",
+	}, nodePath)
+
+	for _, entry := range env {
+		upper := strings.ToUpper(entry)
+		if strings.HasPrefix(upper, "NODE_OPTIONS=") || strings.HasPrefix(upper, "NPM_CONFIG_NODE_OPTIONS=") {
+			t.Fatalf("node option leaked into child environment: %s", entry)
+		}
+	}
+
+	pathValue := ""
+	for _, entry := range env {
+		key, value, ok := strings.Cut(entry, "=")
+		if ok && strings.EqualFold(key, "Path") {
+			pathValue = value
+			break
+		}
+	}
+	if pathValue == "" {
+		t.Fatal("expected path entry in environment")
+	}
+	if got := strings.Split(pathValue, string(os.PathListSeparator))[0]; got != nodeDir {
+		t.Fatalf("expected node dir to be first path entry, got %q from %q", got, pathValue)
+	}
+}
+
 func TestLauncherStatusPayloadIncludesExternallyDetectedServer(t *testing.T) {
 	port, closeServer := startLauncherHealthTestServer(t, 4343, "LTTH - Pup Cids little TikTool Helper")
 	defer closeServer()
@@ -337,6 +511,66 @@ func TestRepairMojibakeTextRestoresCommonLauncherText(t *testing.T) {
 	want := "Prüfe Änderungen ✅ ⚠️"
 	if got != want {
 		t.Fatalf("expected %q, got %q", want, got)
+	}
+}
+
+func TestLauncherTranslationFallbacksCoverTemplateKeys(t *testing.T) {
+	launcher := NewLauncher()
+	launcher.locale = "de"
+	launcher.translations = map[string]interface{}{}
+
+	requiredKeys := []string{
+		"app_name",
+		"profile.title",
+		"profile.no_profiles",
+		"tabs.changelog",
+		"tabs.api_keys",
+		"tabs.community",
+		"tabs.logging",
+		"status.progress",
+		"status.initializing",
+		"changelog.title",
+		"changelog.loading",
+		"changelog.error",
+		"api_keys.title",
+		"api_keys.intro",
+		"api_keys.mandatory_warning",
+		"api_keys.fallback_warning",
+		"api_keys.elevenlabs.description",
+		"api_keys.openai.description",
+		"api_keys.siliconflow.description",
+		"api_keys.fishAudio.description",
+		"community.title",
+		"community.intro",
+		"community.help_appreciated",
+		"community.links.repo",
+		"community.links.discussions",
+		"community.links.issues",
+		"community.links.discord",
+		"community.contribute",
+		"community.contribute_text",
+		"footer.powered_by",
+		"theme.label",
+		"theme.daymode",
+		"theme.nightmode",
+		"theme.highcontrast",
+		"options.keep_open",
+		"options.keep_open_hint",
+		"options.open_app",
+		"options.app_not_ready",
+		"options.app_ready",
+		"logs.title",
+		"logs.intro",
+		"logs.loading",
+		"logs.empty",
+		"logs.error",
+	}
+
+	for _, key := range requiredKeys {
+		got := launcher.getTranslation(key)
+		if got == "" || got == key {
+			t.Fatalf("missing launcher translation fallback for %q, got %q", key, got)
+		}
 	}
 }
 
@@ -518,6 +752,25 @@ func TestNodeVersionRecommendationUsesSemverRange(t *testing.T) {
 		got := nodeVersionDiagnostic(tc.version)
 		if got.Status != tc.status {
 			t.Fatalf("nodeVersionDiagnostic(%q) status = %s, expected %s: %#v", tc.version, got.Status, tc.status, got)
+		}
+	}
+}
+
+func TestShouldUseGlobalNodeVersionRejectsTooNewRuntime(t *testing.T) {
+	cases := []struct {
+		version string
+		want    bool
+	}{
+		{"v18.19.0", true},
+		{"v22.14.0", true},
+		{"v24.16.0", false},
+		{"v16.20.2", false},
+		{"unknown", false},
+	}
+
+	for _, tc := range cases {
+		if got := shouldUseGlobalNodeVersion(tc.version); got != tc.want {
+			t.Fatalf("shouldUseGlobalNodeVersion(%q) = %v, expected %v", tc.version, got, tc.want)
 		}
 	}
 }

@@ -2,7 +2,13 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for deploying the ltth.app website to GitHub Pages. The website is 100% static and requires no build step.
+This guide provides step-by-step instructions for deploying the ltth.app website pages from this snapshot.
+
+The LTTH runtime is a Node.js app and runs from `app/` (`cd app && npm start`), not as part of GitHub Pages static hosting.
+
+Website deployment notes:
+- The website content is static and has no build step.
+- GitHub Pages applies only to website assets under the repository root.
 
 ---
 
@@ -447,6 +453,8 @@ curl https://ltth.app/version.json
    ```
 
 3. Commit and push changes
+
+The LTTH runtime version is managed separately in `app/package.json` and `app/CHANGELOG.md` (this snapshot: `1.3.9`).
 
 ---
 

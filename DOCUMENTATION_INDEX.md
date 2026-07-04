@@ -2,6 +2,8 @@
 
 This index reflects the current local snapshot.
 
+This workspace is the combined LTTH repository layout (runtime app + website + launcher artifacts).
+
 ## Start Here
 
 - [README.md](README.md): project overview and commands

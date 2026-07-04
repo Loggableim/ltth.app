@@ -15,13 +15,13 @@ socket.on('osc:status', (status) => {
 // OSC-Nachrichten loggen (wenn verbose)
 socket.on('osc:sent', (data) => {
     if (currentConfig.verboseMode) {
-        addLog('send', `${data.address} â†’ ${JSON.stringify(data.args)}`);
+        addLog('send', `${data.address} → ${JSON.stringify(data.args)}`);
     }
 });
 
 socket.on('osc:received', (data) => {
     if (currentConfig.verboseMode) {
-        addLog('recv', `${data.address} â† ${JSON.stringify(data.args)} from ${data.source}`);
+        addLog('recv', `${data.address} ← ${JSON.stringify(data.args)} from ${data.source}`);
     }
 });
 
@@ -43,7 +43,7 @@ socket.on('gift-catalog:updated', (data) => {
             giftCatalog.push(data.gift);
             // Refresh the selector dropdown
             populateGiftCatalogSelector();
-            console.log(`ðŸŽ New gift auto-added to catalog: ${data.gift.name} (ID: ${data.gift.id})`);
+            console.log(`🎁 New gift auto-added to catalog: ${data.gift.name} (ID: ${data.gift.id})`);
         }
     }
 });
@@ -359,7 +359,7 @@ if (advancedFeaturesForm) {
         const data = await response.json();
 
         if (data.success) {
-            alert('Erweiterte Einstellungen gespeichert! Bitte starten Sie die Bridge neu, damit die Ã„nderungen wirksam werden.');
+            alert('Erweiterte Einstellungen gespeichert! Bitte starten Sie die Bridge neu, damit die Änderungen wirksam werden.');
             currentConfig = data.config;
         } else {
             alert('Fehler beim Speichern der erweiterten Einstellungen: ' + data.error);
@@ -504,7 +504,7 @@ document.querySelectorAll('.param-btn').forEach(button => {
     });
 });
 
-// Log-EintrÃ¤ge hinzufÃ¼gen
+// Log-Einträge hinzufügen
 function addLog(type, message) {
     const logViewer = document.getElementById('log-viewer');
     if (!logViewer) {
@@ -516,7 +516,7 @@ function addLog(type, message) {
     entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
     logViewer.insertBefore(entry, logViewer.firstChild);
 
-    // Limit: 100 EintrÃ¤ge
+    // Limit: 100 Einträge
     while (logViewer.children.length > 100) {
         logViewer.removeChild(logViewer.lastChild);
     }
@@ -655,7 +655,7 @@ function loadCustomPresets() {
 
     container.innerHTML = presets.map(preset => `
         <button class="param-btn" data-preset-id="${preset.id}">
-            ðŸŽ¯ ${preset.name}
+            🎯 ${preset.name}
             <small style="display: block; font-size: 0.8em; opacity: 0.7;">${preset.address}</small>
         </button>
     `).join('');
@@ -675,7 +675,7 @@ function loadCustomPresets() {
         btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             const presetId = parseInt(btn.dataset.presetId);
-            if (confirm('Preset lÃ¶schen?')) {
+            if (confirm('Preset löschen?')) {
                 deleteCustomPreset(presetId);
             }
         });
@@ -727,10 +727,10 @@ function populateGiftCatalogSelector() {
     // Update hint based on catalog state
     if (hintEl) {
         if (giftCatalog.length === 0) {
-            hintEl.textContent = 'ðŸ’¡ Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.';
+            hintEl.textContent = '💡 Gifts are auto-detected when viewers send them during a stream. Connect to a TikTok stream to populate the catalogue.';
             hintEl.style.color = 'var(--color-text-muted)';
         } else {
-            hintEl.textContent = `âœ… ${giftCatalog.length} gifts available. New gifts are auto-added when received from stream.`;
+            hintEl.textContent = `✅ ${giftCatalog.length} gifts available. New gifts are auto-added when received from stream.`;
             hintEl.style.color = 'var(--color-accent-success)';
         }
     }
@@ -751,9 +751,9 @@ function populateGiftCatalogSelector() {
             const option = document.createElement('option');
             option.value = JSON.stringify({ id: gift.id, name: gift.name });
             
-            // Format: "Rose (ðŸ’Ž 1) - ID: 5655"
+            // Format: "Rose (💎 1) - ID: 5655"
             const diamondCount = gift.diamond_count || 0;
-            option.textContent = `${gift.name} (ðŸ’Ž ${diamondCount}) - ID: ${gift.id}`;
+            option.textContent = `${gift.name} (💎 ${diamondCount}) - ID: ${gift.id}`;
             
             selector.appendChild(option);
         });
@@ -1268,8 +1268,8 @@ if (typeof window !== 'undefined') {
         const refreshBtn = document.getElementById('refresh-gift-catalog');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
-                const originalText = 'ðŸ”„ Refresh Catalogue';
-                refreshBtn.textContent = 'â³ Loading...';
+                const originalText = '🔄 Refresh Catalogue';
+                refreshBtn.textContent = '⏳ Loading...';
                 refreshBtn.disabled = true;
                 
                 await loadGiftCatalog();
@@ -1461,7 +1461,7 @@ async function autoDetectAvatar() {
     
     try {
         btn.disabled = true;
-        btn.textContent = 'ðŸ” Erkenne Avatar...';
+        btn.textContent = '🔍 Erkenne Avatar...';
         
         const response = await fetch('/api/osc/avatar/auto-detect', {
             method: 'POST'
@@ -1481,11 +1481,11 @@ async function autoDetectAvatar() {
             displayAvailableActions(availableActions);
             
             if (data.isNew) {
-                alert(`âœ… Neuer Avatar erkannt und zur Liste hinzugefÃ¼gt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}\n\nSie kÃ¶nnen den Avatar-Namen in der Avatar-Verwaltung anpassen.`);
+                alert(`✅ Neuer Avatar erkannt und zur Liste hinzugefügt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}\n\nSie können den Avatar-Namen in der Avatar-Verwaltung anpassen.`);
                 // Reload avatars list
                 await loadAvatars();
             } else {
-                alert(`âœ… Avatar erkannt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}`);
+                alert(`✅ Avatar erkannt!\n\nAvatar ID: ${data.avatarId}\nParameter: ${data.parameterCount}`);
             }
         } else {
             alert(formatDiagnostics(data));
@@ -1508,7 +1508,7 @@ async function refreshAvailableActions() {
     
     try {
         btn.disabled = true;
-        btn.textContent = 'ðŸ”„ Aktualisiere...';
+        btn.textContent = '🔄 Aktualisiere...';
         
         // Get current avatar
         const avatarResponse = await fetch('/api/osc/avatar/current');
@@ -1531,14 +1531,14 @@ async function refreshAvailableActions() {
             displayAvailableActions(availableActions);
             
             if (currentAvatarData) {
-                alert('âœ… Aktionen aktualisiert!');
+                alert('✅ Aktionen aktualisiert!');
             }
         } else {
-            alert('âš ï¸ ' + actionsData.error);
+            alert('⚠️ ' + actionsData.error);
         }
     } catch (error) {
         console.error('Error refreshing actions:', error);
-        alert('âŒ Fehler beim Aktualisieren: ' + error.message);
+        alert('❌ Fehler beim Aktualisieren: ' + error.message);
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1590,17 +1590,17 @@ function displayStandardActions(standardActions) {
     if (!container) return;
     
     const actionEmojis = {
-        Wave: 'ðŸ‘‹',
-        Celebrate: 'ðŸŽ‰',
-        Dance: 'ðŸ’ƒ',
-        Hearts: 'â¤ï¸',
-        Confetti: 'ðŸŽŠ'
+        Wave: '👋',
+        Celebrate: '🎉',
+        Dance: '💃',
+        Hearts: '❤️',
+        Confetti: '🎊'
     };
     
     container.innerHTML = Object.entries(standardActions).map(([name, available]) => {
-        const emoji = actionEmojis[name] || 'âœ¨';
+        const emoji = actionEmojis[name] || '✨';
         const statusClass = available ? 'available' : 'unavailable';
-        const statusText = available ? '' : ' (nicht verfÃ¼gbar)';
+        const statusText = available ? '' : ' (nicht verfügbar)';
         
         return `
             <button class="param-btn ${statusClass}" 
@@ -1620,14 +1620,14 @@ function displayEmoteSlots(emoteSlots) {
     container.innerHTML = Object.entries(emoteSlots).map(([name, available]) => {
         const slotNum = name.replace('Emote', '');
         const statusClass = available ? 'available' : 'unavailable';
-        const statusText = available ? '' : ' (nicht verfÃ¼gbar)';
+        const statusText = available ? '' : ' (nicht verfügbar)';
         
         return `
             <button class="param-btn ${statusClass}" 
                     ${available ? '' : 'disabled'}
                     data-action="emote-slot"
                     data-slot="${slotNum}">
-                ðŸ˜€ Emote ${slotNum}${statusText}
+                😀 Emote ${slotNum}${statusText}
             </button>
         `;
     }).join('');
@@ -1656,7 +1656,7 @@ function displayCustomParameters(customParams) {
                     data-action="custom-param"
                     data-path="${escapeHtml(paramPath)}"
                     title="${escapeHtml(paramPath)} (${escapeHtml(paramType)})">
-                ðŸŽ¯ ${paramName}
+                🎯 ${paramName}
                 <small style="display: block; font-size: 0.8em; opacity: 0.7;">${paramType}</small>
             </button>
         `;
@@ -1684,7 +1684,7 @@ function displayPhysBones(physbones) {
                     data-action="physbone"
                     data-bone="${escapeHtml(boneName)}"
                     title="${escapeHtml(bone.basePath || '')}">
-                ðŸ¦´ ${boneName}
+                🦴 ${boneName}
             </button>
         `;
     }).join('');

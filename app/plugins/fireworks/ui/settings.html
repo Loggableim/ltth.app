@@ -246,13 +246,13 @@
 
         <!-- Tabs Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="settings">⚙️ <span data-i18n="fireworks.tab_settings">Einstellungen</span></button>
-            <button class="tab-button" data-tab="presets">🎨 <span data-i18n="fireworks.tab_presets">Voreinstellungen</span></button>
+            <button class="tab-button" data-tab="settings">⚙️ <span data-i18n="fireworks.tab_settings">Einstellungen</span></button>
+            <button class="tab-button active" data-tab="presets">🎨 <span data-i18n="fireworks.tab_presets">Voreinstellungen</span></button>
             <button class="tab-button" data-tab="benchmark">📊 <span data-i18n="fireworks.tab_benchmark">Benchmark</span></button>
         </div>
 
         <!-- Tab 1: Settings -->
-        <div id="settings" class="tab-content active">
+        <div id="settings" class="tab-content">
             <!-- Main Toggle -->
             <div class="card rounded-xl p-6 mb-6">
             <div class="flex items-center justify-between">
@@ -607,17 +607,17 @@
                                     <option value="480p">480p (854x480)</option>
                                     <option value="540p">540p (960x540)</option>
                                     <option value="720p">720p (1280x720)</option>
-                                    <option value="1080p" selected>1080p (1920x1080) - Recommended</option>
+                                    <option value="1080p">1080p (1920x1080)</option>
                                     <option value="1440p">1440p (2560x1440)</option>
-                                    <option value="4k">4K (3840x2160)</option>
+                                    <option value="4k" selected>4K (3840x2160) - Recommended</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label class="block mb-2"><strong>Lowest Internal Render Resolution</strong></label>
                                 <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
-                                    <option value="480p" selected>480p (854x480) - Recommended</option>
-                                    <option value="540p">540p (960x540)</option>
+                                    <option value="480p">480p (854x480)</option>
+                                    <option value="540p" selected>540p (960x540) - Recommended</option>
                                     <option value="720p">720p (1280x720)</option>
                                     <option value="1080p">1080p (1920x1080)</option>
                                     <option value="1440p">1440p (2560x1440)</option>
@@ -630,19 +630,19 @@
                             <strong class="text-emerald-400">OBS-safe Dynamic Resolution:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
                                 <div>• OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
-                                <div>• Internal range: <span id="internal-resolution-range">1920x1080 -> 854x480</span></div>
+                                <div>• Internal range: <span id="internal-resolution-range">3840x2160 -> 960x540</span></div>
                                 <div>• Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
                             </div>
                         </div>
                         
                         <div>
                             <label class="block mb-2"><strong>Orientation</strong></label>
-                            <select id="resolution-orientation" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
-                                <option value="landscape" selected>Landscape (Horizontal)</option>
-                                <option value="portrait">Portrait (Vertical)</option>
+                            <select id="orientation-select" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
                             </select>
                             <p class="text-xs text-gray-400 mt-1">
-                                Choose orientation based on your streaming setup
+                                Choose the output format for the OBS overlay
                             </p>
                         </div>
                         
@@ -1050,7 +1050,7 @@
         <!-- END Settings Tab -->
 
         <!-- Tab 2: Presets -->
-        <div id="presets" class="tab-content">
+        <div id="presets" class="tab-content active">
             <div class="card rounded-xl p-6 mb-6">
                 <h2 class="section-title text-2xl font-bold mb-4">🎨 <span data-i18n="fireworks.presets.title">Voreinstellungen</span></h2>
                 <p class="text-gray-400 mb-6" data-i18n="fireworks.presets.description">

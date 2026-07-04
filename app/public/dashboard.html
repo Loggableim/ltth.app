@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -947,9 +947,9 @@
                         <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
                     </div>
                     <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="Plugin Manager">
+                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="Plugin Store">
                             <i data-lucide="plug"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.plugins">Plugin Manager</span>
+                            <span class="sidebar-item-text" data-i18n="navigation.plugins">Plugin Store</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="wiki" data-tooltip="Wiki">
                             <i data-lucide="book-open"></i>
@@ -984,10 +984,10 @@
                     <!-- Language Switcher with Flags -->
                     <div class="topbar-language-switcher">
                         <select id="topbar-language-selector" class="topbar-language-select" aria-label="Select Language">
-                            <option value="en">ðŸ‡¬ðŸ‡§ EN</option>
-                            <option value="de">ðŸ‡©ðŸ‡ª DE</option>
-                            <option value="es">ðŸ‡ªðŸ‡¸ ES</option>
-                            <option value="fr">ðŸ‡«ðŸ‡· FR</option>
+                            <option value="en">🇬🇧 EN</option>
+                            <option value="de">🇩🇪 DE</option>
+                            <option value="es">🇪🇸 ES</option>
+                            <option value="fr">🇫🇷 FR</option>
                         </select>
                     </div>
                     <button id="profile-btn" class="topbar-profile-btn">
@@ -998,7 +998,7 @@
                         <i data-lucide="settings"></i>
                     </button>
                     <!-- Shutdown Button -->
-                    <button id="topbar-shutdown-btn" class="topbar-icon-btn topbar-shutdown-btn" title="Server herunterfahren und App schlieÃŸen">
+                    <button id="topbar-shutdown-btn" class="topbar-icon-btn topbar-shutdown-btn" title="Server herunterfahren und App schließen">
                         <i data-lucide="power"></i>
                     </button>
                     <!-- Window Controls for frameless window -->
@@ -1080,11 +1080,11 @@
                                 <div class="modal-body">
                                     <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.5rem;" data-i18n="dashboard.import_session_desc">
                                         So finden Sie Ihre SessionID in Ihrem Browser:
-                                        <br>1. Ã–ffnen Sie TikTok.com in Ihrem Browser und loggen Sie sich ein
-                                        <br>2. DrÃ¼cken Sie F12 (oder Rechtsklick â†’ Untersuchen)
+                                        <br>1. Öffnen Sie TikTok.com in Ihrem Browser und loggen Sie sich ein
+                                        <br>2. Drücken Sie F12 (oder Rechtsklick → Untersuchen)
                                         <br>3. Gehen Sie zum "Application" oder "Speicher" Tab
-                                        <br>4. Unter "Cookies" â†’ "https://www.tiktok.com" finden Sie "sessionid"
-                                        <br>5. Kopieren Sie den Wert und fÃ¼gen Sie ihn unten ein
+                                        <br>4. Unter "Cookies" → "https://www.tiktok.com" finden Sie "sessionid"
+                                        <br>5. Kopieren Sie den Wert und fügen Sie ihn unten ein
                                     </p>
                                     <div style="margin-bottom: 1rem;">
                                         <label style="display: block; margin-bottom: 0.5rem; color: var(--color-text-primary); font-weight: 600;">
@@ -1123,7 +1123,7 @@
                                 <div><strong data-i18n="dashboard.session_extracted">Extracted At:</strong> <span id="session-extracted-at">--</span></div>
                                 <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--color-border);">
                                     <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted);" data-i18n="dashboard.extract_session_help">
-                                        Nutzen Sie "Extract SessionID" fÃ¼r automatische Extraktion, oder "Import SessionID" um die SessionID direkt aus Ihrem Browser zu kopieren (empfohlen bei Login-Problemen).
+                                        Nutzen Sie "Extract SessionID" für automatische Extraktion, oder "Import SessionID" um die SessionID direkt aus Ihrem Browser zu kopieren (empfohlen bei Login-Problemen).
                                     </p>
                                 </div>
                             </div>
@@ -1530,14 +1530,14 @@
                                     Visual Flow Editor
                                 </a>
                                 <button id="open-wizard-btn" class="btn btn-primary">
-                                    ðŸ§™ Wizard
+                                    🧙 Wizard
                                 </button>
                                 <button id="add-flow-btn" class="btn btn-ghost">
                                     <i data-lucide="plus"></i>
                                     Quick Create
                                 </button>
                                 <button id="import-flow-btn" class="btn btn-ghost" title="Flow aus JSON importieren">
-                                    ðŸ“¥ Import
+                                    📥 Import
                                 </button>
                                 <input type="file" id="import-flow-file" accept=".json" style="display:none;">
                             </div>
@@ -1558,11 +1558,11 @@
                         <div id="flows-bulk-bar" style="display:none;" class="bg-gray-700 rounded-lg p-3 mb-3 flex items-center gap-3 flex-wrap">
                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
                                 <input type="checkbox" id="flows-select-all" style="width:15px;height:15px;">
-                                Alle auswÃ¤hlen
+                                Alle auswählen
                             </label>
                             <span id="flows-selected-count" class="text-gray-400 text-sm"></span>
-                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm">âœ… Aktivieren</button>
-                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm">â¸ï¸ Deaktivieren</button>
+                            <button id="bulk-enable-flows-btn" class="btn btn-ghost text-sm">✅ Aktivieren</button>
+                            <button id="bulk-disable-flows-btn" class="btn btn-ghost text-sm">⏸️ Deaktivieren</button>
                         </div>
 
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
@@ -2235,13 +2235,13 @@
                     </section>
                 </div>
 
-                <!-- View: Plugin Manager -->
+                <!-- View: Plugin Store -->
                 <div id="view-plugins" class="content-view">
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
                                 <i data-lucide="package"></i>
-                                Plugin Manager
+                                Plugin Store
                             </h2>
                             <div style="display: flex; gap: 12px;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
@@ -2284,6 +2284,76 @@
                                     <div class="stat-label">Total Plugins</div>
                                     <div class="stat-value" id="stat-total-plugins">0</div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                            <button class="plugin-mode-btn active" data-plugin-mode="store" style="padding: 0.75rem 1.15rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer;">
+                                <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                Store
+                            </button>
+                            <button class="plugin-mode-btn" data-plugin-mode="installed" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                Installed
+                            </button>
+                            <button class="plugin-mode-btn" data-plugin-mode="updates" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                Updates
+                            </button>
+                            <button class="plugin-mode-btn" data-plugin-mode="sources" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                <i data-lucide="database" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                Sources
+                            </button>
+                        </div>
+
+                        <div id="plugin-store-sources-panel" style="display: none; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
+                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
+                                        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--color-accent-success);"></i>
+                                        Official LTTH Store
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Official plugins are available by default and remain the primary catalog.</div>
+                                </div>
+                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
+                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
+                                        <i data-lucide="users" style="width: 18px; height: 18px; color: var(--color-accent-warning);"></i>
+                                        Community Sources
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Community plugin sources can install code from third-party registries. Only add sources you trust.</div>
+                                </div>
+                            </div>
+                            <div id="plugin-store-source-errors" style="display: none; margin-bottom: 1rem;"></div>
+                            <div id="plugin-community-disabled" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem;">
+                                <div>
+                                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px;">Community plugin sources are disabled</div>
+                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Enable this only if you want to add plugin registries outside the official LTTH store.</div>
+                                </div>
+                                <button id="enable-community-store-btn" class="btn btn-ghost">
+                                    <i data-lucide="unlock"></i>
+                                    Enable Community Sources
+                                </button>
+                            </div>
+                            <div id="plugin-community-enabled" style="display: none; border-top: 1px solid var(--color-border); padding-top: 1rem;">
+                                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end;">
+                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 180px; font-size: 0.85rem; color: var(--color-text-muted);">
+                                        Source ID
+                                        <input id="community-source-id" type="text" placeholder="creator-name" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
+                                    </label>
+                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 200px; font-size: 0.85rem; color: var(--color-text-muted);">
+                                        Name
+                                        <input id="community-source-name" type="text" placeholder="Creator Plugin Repo" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
+                                    </label>
+                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 2; min-width: 280px; font-size: 0.85rem; color: var(--color-text-muted);">
+                                        Registry URL
+                                        <input id="community-source-url" type="url" placeholder="https://example.com/store.json" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
+                                    </label>
+                                    <button id="add-community-source-btn" class="btn btn-primary">
+                                        <i data-lucide="plus"></i>
+                                        Add Source
+                                    </button>
+                                </div>
+                                <div id="plugin-store-source-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; margin-top: 1rem;"></div>
                             </div>
                         </div>
 
@@ -2345,11 +2415,13 @@
                                     <span>Compact</span>
                                 </button>
                             </div>
+                            <div id="plugin-store-category-chips" style="display: none; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;"></div>
                         </div>
 
                         <div id="plugins-container" class="space-y-4">
                             <!-- Plugin list will be populated by plugin-manager.js -->
                         </div>
+                        <div id="plugin-store-detail-drawer" aria-hidden="true" style="display: none;"></div>
                     </section>
                 </div>
 
@@ -2456,8 +2528,8 @@
                                     <select id="language-selector" class="form-input">
                                         <option value="en">English</option>
                                         <option value="de">Deutsch</option>
-                                        <option value="es">EspaÃ±ol</option>
-                                        <option value="fr">FranÃ§ais</option>
+                                        <option value="es">Español</option>
+                                        <option value="fr">Français</option>
                                     </select>
                                 </div>
                                 <div class="mt-2 text-sm text-gray-400">
@@ -2499,7 +2571,7 @@
                                     TikTok Datenquelle
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">
-                                    WÃ¤hle die Datenquelle fÃ¼r TikTok LIVE Events. Die Ã„nderung wird beim nÃ¤chsten Verbinden aktiv.
+                                    Wähle die Datenquelle für TikTok LIVE Events. Die Änderung wird beim nächsten Verbinden aktiv.
                                 </p>
 
                                 <div class="form-group">
@@ -2507,15 +2579,15 @@
                                         <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-500/10 transition-all" id="datasource-label-eulerstream">
                                             <input type="radio" name="tiktok-data-source" value="eulerstream" id="datasource-eulerstream" checked class="accent-blue-500">
                                             <div>
-                                                <span class="font-medium">âš¡ Eulerstream</span>
-                                                <p class="text-xs text-gray-400 mt-0.5">Direkte WebSocket-Verbindung Ã¼ber Eulerstream SDK</p>
+                                                <span class="font-medium">⚡ Eulerstream</span>
+                                                <p class="text-xs text-gray-400 mt-0.5">Direkte WebSocket-Verbindung über Eulerstream SDK</p>
                                             </div>
                                         </label>
                                         <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border border-gray-600 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-500/10 transition-all" id="datasource-label-tikfinity">
                                             <input type="radio" name="tiktok-data-source" value="tikfinity" id="datasource-tikfinity" class="accent-purple-500">
                                             <div>
-                                                <span class="font-medium">ðŸ”— TikFinity</span>
-                                                <p class="text-xs text-gray-400 mt-0.5">Verbindung Ã¼ber TikFinity Desktop App (lokaler WebSocket)</p>
+                                                <span class="font-medium">🔗 TikFinity</span>
+                                                <p class="text-xs text-gray-400 mt-0.5">Verbindung über TikFinity Desktop App (lokaler WebSocket)</p>
                                             </div>
                                         </label>
                                     </div>
@@ -2531,7 +2603,7 @@
                                                     TikFinity Desktop App erforderlich
                                                 </p>
                                                 <p class="text-gray-400 text-xs">
-                                                    Stelle sicher, dass die TikFinity Desktop App lÃ¤uft und mit deinem TikTok-Account verbunden ist.
+                                                    Stelle sicher, dass die TikFinity Desktop App läuft und mit deinem TikTok-Account verbunden ist.
                                                 </p>
                                             </div>
                                         </div>
@@ -2539,7 +2611,7 @@
                                     <div class="form-group">
                                         <label>WebSocket Port</label>
                                         <input type="number" id="tikfinity-ws-port" class="form-input" value="21213" min="1" max="65535" placeholder="21213">
-                                        <p class="text-xs text-gray-500 mt-1">Standard: 21213. Nur Ã¤ndern wenn in TikFinity ein anderer Port konfiguriert ist.</p>
+                                        <p class="text-xs text-gray-500 mt-1">Standard: 21213. Nur ändern wenn in TikFinity ein anderer Port konfiguriert ist.</p>
                                     </div>
                                     <button id="save-tikfinity-settings" class="btn btn-primary">
                                         <i data-lucide="save"></i>
@@ -2564,10 +2636,10 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                API-SchlÃ¼ssel wird persistent gespeichert
+                                                API-Schlüssel wird persistent gespeichert
                                             </p>
                                             <p class="text-gray-400 text-xs">
-                                                Der EulerStream API-SchlÃ¼ssel wird sicher gespeichert und bleibt bei Updates erhalten.
+                                                Der EulerStream API-Schlüssel wird sicher gespeichert und bleibt bei Updates erhalten.
                                             </p>
                                         </div>
                                     </div>
@@ -2598,7 +2670,7 @@
                                     API Keys
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">
-                                    Zentrale Verwaltung aller API-SchlÃ¼ssel. Nur Dienste mit gÃ¼ltigem Key kÃ¶nnen genutzt werden.
+                                    Zentrale Verwaltung aller API-Schlüssel. Nur Dienste mit gültigem Key können genutzt werden.
                                 </p>
                                 
                                 <!-- Storage Location Info Banner -->
@@ -2607,10 +2679,10 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                Alle API-SchlÃ¼ssel werden persistent gespeichert
+                                                Alle API-Schlüssel werden persistent gespeichert
                                             </p>
                                             <p class="text-gray-400 text-xs">
-                                                Ihre API-SchlÃ¼ssel Ã¼berleben Updates und werden sicher auÃŸerhalb des Anwendungsverzeichnisses gespeichert.
+                                                Ihre API-Schlüssel überleben Updates und werden sicher außerhalb des Anwendungsverzeichnisses gespeichert.
                                             </p>
                                         </div>
                                     </div>
@@ -2704,7 +2776,7 @@
 
                                     <!-- Ollama Cloud API (STT Ticker Translation) -->
                                     <div class="form-group">
-                                        <label>Ollama Cloud API Key (STT Ticker Ãœbersetzung)</label>
+                                        <label>Ollama Cloud API Key (STT Ticker Übersetzung)</label>
                                         <div style="display: flex; gap: 8px;">
                                             <input type="password" id="tts-ollama-api-key" class="form-input" placeholder="Enter Ollama Cloud API key...">
                                             <button type="button" id="toggle-tts-ollama-key" class="btn btn-ghost" style="padding: 0.5rem 1rem;">
@@ -2712,7 +2784,7 @@
                                             </button>
                                         </div>
                                         <p class="text-xs text-gray-500 mt-1">
-                                            Wird vom <strong>STT Ticker Plugin</strong> fÃ¼r die Echtzeit-Ãœbersetzung von Transkripten genutzt. Get your key at <a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
+                                            Wird vom <strong>STT Ticker Plugin</strong> für die Echtzeit-Übersetzung von Transkripten genutzt. Get your key at <a href="https://ollama.cloud" target="_blank" class="text-blue-400 hover:text-blue-300">ollama.cloud</a>.
                                         </p>
                                     </div>
                                 </div>
@@ -2739,10 +2811,10 @@
                                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0"></i>
                                         <div class="text-sm">
                                             <p class="text-green-400 font-medium mb-1">
-                                                <span id="openai-key-status">API-SchlÃ¼ssel wird persistent gespeichert</span>
+                                                <span id="openai-key-status">API-Schlüssel wird persistent gespeichert</span>
                                             </p>
                                             <p class="text-gray-400 text-xs">
-                                                Ihre API-SchlÃ¼ssel werden auÃŸerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: <span id="openai-key-storage-path" class="font-mono text-blue-300">wird geladen...</span>
+                                                Ihre API-Schlüssel werden außerhalb des Anwendungsverzeichnisses gespeichert und bleiben bei Updates erhalten. Speicherort: <span id="openai-key-storage-path" class="font-mono text-blue-300">wird geladen...</span>
                                             </p>
                                         </div>
                                     </div>
@@ -2751,7 +2823,7 @@
                                 <div class="form-group">
                                     <label>API Key</label>
                                     <input type="password" id="openai-api-key" class="form-input" placeholder="sk-...">
-                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint">API-SchlÃ¼ssel eingeben...</p>
+                                    <p class="text-xs text-gray-500 mt-1" id="openai-key-hint">API-Schlüssel eingeben...</p>
                                 </div>
                                 <div class="form-group">
                                     <label>Model</label>
@@ -2785,7 +2857,7 @@
                                         <span id="active-profile-display" style="color: #60a5fa;">default</span>
                                     </div>
                                     <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;">
-                                        âš ï¸ Profile changes require application restart
+                                        ⚠️ Profile changes require application restart
                                     </p>
                                 </div>
 
@@ -2846,13 +2918,13 @@
                                     TikTok Benutzernamen (Aliases)
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">
-                                    Hinterlege alle TikTok-Usernamen, die zu diesem Profil gehÃ¶ren.
-                                    Das Tool erkennt das Profil auch nach einer NamensÃ¤nderung automatisch.
+                                    Hinterlege alle TikTok-Usernamen, die zu diesem Profil gehören.
+                                    Das Tool erkennt das Profil auch nach einer Namensänderung automatisch.
                                 </p>
 
                                 <!-- Alias List -->
                                 <div id="alias-list" class="space-y-2 mb-4">
-                                    <p class="text-gray-500 text-sm" id="alias-list-empty">Keine Usernamen hinterlegt. Das Profil wird beim nÃ¤chsten Verbinden automatisch eingetragen.</p>
+                                    <p class="text-gray-500 text-sm" id="alias-list-empty">Keine Usernamen hinterlegt. Das Profil wird beim nächsten Verbinden automatisch eingetragen.</p>
                                 </div>
 
                                 <!-- Add Alias Form -->
@@ -2877,13 +2949,13 @@
                                     </div>
                                     <button id="add-alias-btn" class="btn btn-primary flex-shrink-0">
                                         <i data-lucide="plus"></i>
-                                        HinzufÃ¼gen
+                                        Hinzufügen
                                     </button>
                                 </div>
 
                                 <p class="text-xs text-gray-500 mt-2">
-                                    â­ = Aktueller Hauptname &nbsp;|&nbsp;
-                                    Klicke auf â­ um einen Namen als Haupt-Username zu setzen &nbsp;|&nbsp;
+                                    ⭐ = Aktueller Hauptname &nbsp;|&nbsp;
+                                    Klicke auf ⭐ um einen Namen als Haupt-Username zu setzen &nbsp;|&nbsp;
                                     Das Profil wird beim Verbinden automatisch erkannt wenn einer dieser Namen verwendet wird.
                                 </p>
                             </div>
@@ -3238,19 +3310,19 @@
                                     <div class="form-group mb-3">
                                         <label class="text-sm text-gray-400">Access Mode</label>
                                         <select id="network-bind-mode" class="form-input mt-1">
-                                            <option value="local">Local Only (127.0.0.1) â€“ most secure</option>
-                                            <option value="select">Select Interfaces â€“ choose specific network adapters</option>
-                                            <option value="all">All Interfaces (0.0.0.0) â€“ full LAN access</option>
-                                            <option value="custom">Custom IP â€“ bind to a specific IP address</option>
+                                            <option value="local">Local Only (127.0.0.1) – most secure</option>
+                                            <option value="select">Select Interfaces – choose specific network adapters</option>
+                                            <option value="all">All Interfaces (0.0.0.0) – full LAN access</option>
+                                            <option value="custom">Custom IP – bind to a specific IP address</option>
                                         </select>
-                                        <p class="text-xs text-gray-500 mt-1">âš  Changing bind mode requires a server restart to take effect.</p>
+                                        <p class="text-xs text-gray-500 mt-1">⚠ Changing bind mode requires a server restart to take effect.</p>
                                     </div>
 
                                     <!-- Select Interfaces group -->
                                     <div id="network-select-ifaces-group" style="display:none;">
                                         <label class="text-sm text-gray-400 mb-2 block">Select Interfaces</label>
                                         <div id="network-iface-list" class="bg-gray-800 rounded p-2 max-h-40 overflow-y-auto">
-                                            <p class="text-sm text-gray-500">Loading interfacesâ€¦</p>
+                                            <p class="text-sm text-gray-500">Loading interfaces…</p>
                                         </div>
                                     </div>
 
@@ -3259,7 +3331,7 @@
                                         <label class="text-sm text-gray-400 mb-1 block">Custom Bind Address</label>
                                         <div class="flex gap-2">
                                             <select id="network-custom-address-select" class="form-input flex-1">
-                                                <option value="">Loadingâ€¦</option>
+                                                <option value="">Loading…</option>
                                             </select>
                                         </div>
                                         <input type="text" id="network-custom-address" class="form-input mt-2" placeholder="e.g. 192.168.1.100">
@@ -3325,7 +3397,7 @@
                                             <input type="text" id="network-tunnel-binary" class="form-input mt-1" placeholder="cloudflared">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label class="text-sm text-gray-400">Named tunnel <span class="text-gray-500">(optional â€“ leave empty for quick tunnel)</span></label>
+                                            <label class="text-sm text-gray-400">Named tunnel <span class="text-gray-500">(optional – leave empty for quick tunnel)</span></label>
                                             <input type="text" id="network-tunnel-named" class="form-input mt-1" placeholder="my-tunnel-name">
                                         </div>
                                     </div>
@@ -3374,7 +3446,7 @@
                                         Add custom domains or reverse proxy URLs to the CORS whitelist so that browsers served via these domains can connect.
                                     </p>
                                     <div id="network-external-url-list" class="mb-3">
-                                        <p class="text-sm text-gray-500">Loadingâ€¦</p>
+                                        <p class="text-sm text-gray-500">Loading…</p>
                                     </div>
                                     <div class="flex gap-2">
                                         <input type="text" id="network-external-url-input" class="form-input flex-1" placeholder="https://my-stream.example.com">
@@ -3391,7 +3463,7 @@
                                         Active Access URLs
                                     </h4>
                                     <div id="network-access-urls">
-                                        <p class="text-sm text-gray-500">Loadingâ€¦</p>
+                                        <p class="text-sm text-gray-500">Loading…</p>
                                     </div>
                                 </div>
 
@@ -3406,7 +3478,7 @@
                             <div class="settings-card">
                                 <h3 class="card-title">
                                     <i data-lucide="info"></i>
-                                    <span>Ãœber die App / About</span>
+                                    <span>Über die App / About</span>
                                 </h3>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                                     <h4 class="text-lg font-semibold mb-2">PupCid's Little TikTool Helper (LTTH)</h4>
@@ -3424,7 +3496,7 @@
                                         </div>
                                         <div class="flex items-start gap-2">
                                             <i data-lucide="github" class="inline-block w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                                            <span>Made with â¤ï¸ by PupCid & Claude AI</span>
+                                            <span>Made with ❤️ by PupCid & Claude AI</span>
                                         </div>
                                     </div>
                                 </div>
@@ -3435,8 +3507,8 @@
                                         <div>
                                             <h4 class="text-sm font-semibold text-yellow-300 mb-2">Wichtiger Hinweis / Important Notice</h4>
                                             <p class="text-xs text-gray-300 mb-2">
-                                                <strong>PupCid's Little TikTool Helper ist ein unabhÃ¤ngiges Analyse- und Creator-Tool.</strong> 
-                                                Es besteht keine geschÃ¤ftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
+                                                <strong>PupCid's Little TikTool Helper ist ein unabhängiges Analyse- und Creator-Tool.</strong>
+                                                Es besteht keine geschäftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
                                             </p>
                                             <p class="text-xs text-gray-300">
                                                 <strong>This product is not an official TikTok product and is not supported, sponsored, or authorized by TikTok or ByteDance.</strong> 
@@ -3471,19 +3543,19 @@
                 <div class="form-group">
                     <label for="flow-trigger-type">Trigger Event</label>
                     <select id="flow-trigger-type" class="form-select">
-                        <option value="tiktok:gift">ðŸŽ Gift Received</option>
-                        <option value="tiktok:follow">â­ New Follow</option>
-                        <option value="tiktok:subscribe">ðŸŒŸ New Subscribe</option>
-                        <option value="tiktok:share">ðŸ”„ Stream Shared</option>
-                        <option value="tiktok:like">â¤ï¸ Likes</option>
-                        <option value="tiktok:chat">ðŸ’¬ Chat Message</option>
+                        <option value="tiktok:gift">🎁 Gift Received</option>
+                        <option value="tiktok:follow">⭐ New Follow</option>
+                        <option value="tiktok:subscribe">🌟 New Subscribe</option>
+                        <option value="tiktok:share">🔄 Stream Shared</option>
+                        <option value="tiktok:like">❤️ Likes</option>
+                        <option value="tiktok:chat">💬 Chat Message</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="flow-action-type">Action Type</label>
                     <select id="flow-action-type" class="form-select">
-                        <option value="alert:show">ðŸ”” Show Alert</option>
-                        <option value="webhook:send">ðŸŒ Webhook (HTTP Request)</option>
+                        <option value="alert:show">🔔 Show Alert</option>
+                        <option value="webhook:send">🌐 Webhook (HTTP Request)</option>
                     </select>
                 </div>
                 <div id="alert-settings" class="form-group">
@@ -3512,7 +3584,7 @@
         <div class="modal-content" style="max-width:760px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
-                    ðŸ§™ Flow Wizard
+                    🧙 Flow Wizard
                 </h3>
                 <button id="flow-wizard-close-btn" class="modal-close">
                     <i data-lucide="x"></i>
@@ -3535,7 +3607,7 @@
         <div class="modal-content" style="max-width:860px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
-                    ðŸ“¦ Flow Presets / Vorlagen
+                    📦 Flow Presets / Vorlagen
                 </h3>
                 <button id="flow-presets-close-btn" class="modal-close">
                     <i data-lucide="x"></i>

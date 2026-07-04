@@ -33,7 +33,9 @@ describe('Fireworks Overlay Transparency', () => {
     });
     
     test('should have canvas with absolute positioning', () => {
-        expect(overlayContent).toMatch(/#fireworks-canvas\s*{[^}]*position:\s*absolute/);
+        expect(overlayContent).toMatch(/#fireworks-container\s*{[^}]*position:\s*fixed/);
+        expect(overlayContent).toMatch(/#fireworks-canvas\s*{[^}]*position:\s*relative/);
+        expect(overlayContent).toMatch(/#fireworks-transition-canvas\s*{[^}]*position:\s*absolute/);
     });
     
     test('should have canvas with transparent background', () => {
@@ -42,8 +44,8 @@ describe('Fireworks Overlay Transparency', () => {
     });
     
     test('should have GPU rendering optimizations', () => {
-        expect(overlayContent).toMatch(/will-change:\s*transform/);
-        expect(overlayContent).toMatch(/transform:\s*translate3d\(0,\s*0,\s*0\)/);
+        expect(overlayContent).toMatch(/will-change:\s*contents/);
+        expect(overlayContent).toMatch(/will-change:\s*opacity/);
         expect(overlayContent).toMatch(/backface-visibility:\s*hidden/);
     });
     

@@ -54,7 +54,7 @@ document.addEventListener('error', (event) => {
     }
 
     if (fallback === 'gift') {
-        parent.textContent = 'ðŸŽ';
+        parent.textContent = '🎁';
         return;
     }
 
@@ -68,7 +68,7 @@ document.addEventListener('error', (event) => {
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize UI first
     initializeButtons();
-    
+
     // Initialize stats menu navigation
     initializeStatsMenuNavigation();
 
@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Wait for server to be fully initialized (prevents race conditions)
     if (window.initHelper) {
         try {
-            console.log('â³ Waiting for server initialization...');
+            console.log('⏳ Waiting for server initialization...');
             await window.initHelper.waitForReady(10000); // 10s timeout
-            console.log('âœ… Server ready, loading dashboard data...');
+            console.log('✅ Server ready, loading dashboard data...');
         } catch (err) {
             console.warn('Server initialization check timed out, proceeding anyway:', err);
         }
@@ -125,11 +125,11 @@ function initializeButtons() {
             unlockAudio().catch(err => console.warn('Audio unlock on interaction failed:', err));
         }
     };
-    
+
     // Add one-time listeners to common interaction elements
     document.body.addEventListener('click', unlockOnInteraction, { once: true });
     document.body.addEventListener('keydown', unlockOnInteraction, { once: true });
-    
+
     // Connect Button
     const connectBtn = document.getElementById('connect-btn');
     if (connectBtn) {
@@ -161,7 +161,7 @@ function initializeButtons() {
         });
     }
 
-    // TTS Voice Buttons (nur wenn Elemente existieren - Plugin kÃ¶nnte diese zur VerfÃ¼gung stellen)
+    // TTS Voice Buttons (nur wenn Elemente existieren - Plugin könnte diese zur Verfügung stellen)
     const addVoiceBtn = document.getElementById('add-voice-btn');
     if (addVoiceBtn) {
         addVoiceBtn.addEventListener('click', showVoiceModal);
@@ -262,7 +262,7 @@ function initializeButtons() {
             if (e.key === 'Enter') createProfile();
         });
     }
-    
+
     // Initialize profile search and filter
     initProfileSearchFilter();
 
@@ -277,7 +277,7 @@ function initializeButtons() {
         resetConfigPathBtn.addEventListener('click', resetConfigPath);
     }
 
-    // TTS Settings Buttons (nur wenn Elemente existieren - Plugin kÃ¶nnte diese zur VerfÃ¼gung stellen)
+    // TTS Settings Buttons (nur wenn Elemente existieren - Plugin könnte diese zur Verfügung stellen)
     const saveTTSBtn = document.getElementById('save-tts-settings-btn');
     if (saveTTSBtn) {
         saveTTSBtn.addEventListener('click', saveTTSSettings);
@@ -446,10 +446,10 @@ function initializeButtons() {
 
     // Plugin Notice Dismissal
     initializePluginNotice();
-    
+
     // Event delegation for dynamically created buttons
     setupEventDelegation();
-    
+
     // Wizard open button
     const openWizardBtn = document.getElementById('open-wizard-btn');
     if (openWizardBtn) {
@@ -509,9 +509,9 @@ function setupEventDelegation() {
     document.body.addEventListener('click', (e) => {
         const target = e.target.closest('[data-action]');
         if (!target) return;
-        
+
         const action = target.dataset.action;
-        
+
         switch (action) {
             case 'delete-voice-mapping':
                 deleteVoiceMapping(target.dataset.username);
@@ -567,12 +567,12 @@ function setupEventDelegation() {
 function initializePluginNotice() {
     const pluginNotice = document.getElementById('plugin-notice');
     const dismissBtn = document.getElementById('dismiss-plugin-notice');
-    
+
     if (!pluginNotice || !dismissBtn) return;
 
     // Check if user has dismissed the notice before
     const isDismissed = localStorage.getItem('plugin-notice-dismissed');
-    
+
     if (!isDismissed) {
         // Show the notice
         pluginNotice.style.display = 'block';
@@ -582,7 +582,7 @@ function initializePluginNotice() {
     dismissBtn.addEventListener('click', () => {
         pluginNotice.style.opacity = '0';
         pluginNotice.style.transform = 'translateY(-20px)';
-        
+
         setTimeout(() => {
             pluginNotice.style.display = 'none';
             localStorage.setItem('plugin-notice-dismissed', 'true');
@@ -614,11 +614,11 @@ function initializeSocketListeners() {
 
     // Socket Connection
     socket.on('connect', () => {
-        console.log('âœ… Connected to server');
+        console.log('✅ Connected to server');
     });
 
     socket.on('disconnect', () => {
-        console.log('âŒ Disconnected from server');
+        console.log('❌ Disconnected from server');
     });
 
     // Fallback API Key Warning
@@ -638,7 +638,7 @@ function initializeSocketListeners() {
 
     // Profile Switched Event - handled by profile-manager.js (shows restart overlay)
     socket.on('profile:switched', (data) => {
-        console.log(`ðŸ”„ Profile switched from "${data.from}" to "${data.to}"`);
+        console.log(`🔄 Profile switched from "${data.from}" to "${data.to}"`);
         // profile-manager.js handles the restart overlay and actual server restart via restartNow()
     });
 
@@ -711,7 +711,7 @@ async function connect() {
     }
 
     const connectBtn = document.getElementById('connect-btn');
-    
+
     // Immediately disable connect button and show connecting state to prevent double-clicks
     if (connectBtn) {
         connectBtn.disabled = true;
@@ -737,14 +737,14 @@ async function connect() {
         if (result.success) {
             // Check if profile was switched automatically
             if (result.profileSwitched && result.requiresRestart) {
-                console.log(`ðŸ”„ Profile automatically switched to: ${result.newProfile}`);
-                
+                console.log(`🔄 Profile automatically switched to: ${result.newProfile}`);
+
                 // Show notification about profile switch and restart
-                const message = result.message || (window.i18n 
-                    ? window.i18n.t('profile.auto_switched', { profile: result.newProfile }) || 
+                const message = result.message || (window.i18n
+                    ? window.i18n.t('profile.auto_switched', { profile: result.newProfile }) ||
                       `Profile wurde automatisch zu "${result.newProfile}" gewechselt. Die Anwendung wird neu gestartet...`
                     : `Profile automatically switched to "${result.newProfile}". Application will restart...`);
-                
+
                 console.log(message);
 
                 if (window.profileManager && typeof window.profileManager.beginProfileRestart === 'function') {
@@ -759,11 +759,11 @@ async function connect() {
                     setTimeout(() => window.location.reload(), 5000);
                 }
             } else {
-                console.log('âœ… Connected to TikTok:', username);
+                console.log('✅ Connected to TikTok:', username);
                 // Button state will be updated by updateConnectionStatus via socket event
             }
         } else {
-            const errorMsg = window.i18n 
+            const errorMsg = window.i18n
                 ? window.i18n.t('errors.connection_failed') + ': ' + result.error
                 : 'Connection failed: ' + result.error;
             alert(errorMsg);
@@ -772,7 +772,7 @@ async function connect() {
         }
     } catch (error) {
         console.error('Connection error:', error);
-        const errorMsg = window.i18n 
+        const errorMsg = window.i18n
             ? window.i18n.t('errors.network_error') + ': ' + error.message
             : 'Connection error: ' + error.message;
         alert(errorMsg);
@@ -805,7 +805,7 @@ async function disconnect() {
         const response = await fetch('/api/disconnect', { method: 'POST' });
         const result = await response.json();
         if (result.success) {
-            console.log('âœ… Disconnected');
+            console.log('✅ Disconnected');
         }
     } catch (error) {
         console.error('Disconnect error:', error);
@@ -830,8 +830,8 @@ function updateConnectionStatus(status, data = {}) {
 
     switch (status) {
         case 'connected':
-            const connectedMsg = window.i18n 
-                ? window.i18n.t('dashboard.connected') + ' @' + data.username 
+            const connectedMsg = window.i18n
+                ? window.i18n.t('dashboard.connected') + ' @' + data.username
                 : 'Connected to @' + data.username;
             infoEl.innerHTML = `<div class="text-green-400 text-sm">${connectedMsg}</div>`;
             connectBtn.disabled = true;
@@ -843,13 +843,13 @@ function updateConnectionStatus(status, data = {}) {
             // Restore connect button to original state
             restoreConnectButton();
             disconnectBtn.disabled = true;
-            
+
             // Reset runtime display
             const runtimeEl = document.getElementById('stat-runtime');
             if (runtimeEl) {
                 runtimeEl.textContent = '--:--:--';
             }
-            
+
             // Hide debug panel
             const debugPanel = document.getElementById('stream-time-debug');
             if (debugPanel) {
@@ -863,7 +863,7 @@ function updateConnectionStatus(status, data = {}) {
                     <div class="font-semibold text-yellow-300">Verbindung wird wiederholt...</div>
                     <div class="text-sm text-yellow-200 mt-1">${data.error}</div>
                     <div class="text-xs text-yellow-400 mt-2">
-                        â³ NÃ¤chster Versuch in ${(data.delay / 1000).toFixed(0)} Sekunden (Versuch ${data.attempt}/${data.maxRetries})
+                        ⏳ Nächster Versuch in ${(data.delay / 1000).toFixed(0)} Sekunden (Versuch ${data.attempt}/${data.maxRetries})
                     </div>
                 </div>
             `;
@@ -882,7 +882,7 @@ function updateConnectionStatus(status, data = {}) {
             if (data.suggestion) {
                 errorHtml += `
                     <div class="mt-3 p-2 bg-gray-800 rounded text-xs text-gray-300">
-                        <div class="font-semibold text-blue-400 mb-1">ðŸ’¡ LÃ¶sungsvorschlag:</div>
+                        <div class="font-semibold text-blue-400 mb-1">💡 Lösungsvorschlag:</div>
                         ${data.suggestion}
                     </div>
                 `;
@@ -891,7 +891,7 @@ function updateConnectionStatus(status, data = {}) {
             if (data.retryable === false) {
                 errorHtml += `
                     <div class="mt-2 text-xs text-red-400">
-                        âš ï¸ Dieser Fehler kann nicht automatisch behoben werden.
+                        ⚠️ Dieser Fehler kann nicht automatisch behoben werden.
                     </div>
                 `;
             }
@@ -933,10 +933,10 @@ function updateStats(stats) {
         const hours = Math.floor(duration / 3600);
         const minutes = Math.floor((duration % 3600) / 60);
         const seconds = duration % 60;
-        
+
         formattedRuntime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
-    
+
     if (runtimeEl) {
         runtimeEl.textContent = formattedRuntime;
     }
@@ -947,7 +947,7 @@ function updateStats(stats) {
         // Use stats.gifts if available, otherwise fallback to counting gifts from events
         giftsElement.textContent = (stats.gifts || 0).toLocaleString();
     }
-    
+
     // ========== Update Event Log Compact Stats Bar ==========
     const eventStatsRuntime = document.getElementById('event-stats-runtime');
     const eventStatsViewers = document.getElementById('event-stats-viewers');
@@ -955,25 +955,25 @@ function updateStats(stats) {
     const eventStatsCoins = document.getElementById('event-stats-coins');
     const eventStatsFollowers = document.getElementById('event-stats-followers');
     const eventStatsGifts = document.getElementById('event-stats-gifts');
-    
+
     if (eventStatsRuntime) eventStatsRuntime.textContent = formattedRuntime;
     if (eventStatsViewers) eventStatsViewers.textContent = stats.viewers.toLocaleString();
     if (eventStatsLikes) eventStatsLikes.textContent = stats.likes.toLocaleString();
     if (eventStatsCoins) eventStatsCoins.textContent = stats.totalCoins.toLocaleString();
     if (eventStatsFollowers) eventStatsFollowers.textContent = stats.followers.toLocaleString();
     if (eventStatsGifts) eventStatsGifts.textContent = (stats.gifts || 0).toLocaleString();
-    
+
     // Update viewer count in stats menu data
     statsMenuData.counts.viewers = stats.viewers || 0;
     statsMenuData.counts.likes = stats.likes || 0;
     statsMenuData.counts.coins = stats.totalCoins || 0;
-    
+
     // Update panel viewer count if panel is open
     const panelViewersCount = document.getElementById('panel-viewers-count');
     if (panelViewersCount) {
         panelViewersCount.textContent = (stats.viewers || 0).toLocaleString();
     }
-    
+
     // ========== Store stats globally for plugins ==========
     window.ltthLiveStats = {
         runtime: formattedRuntime,
@@ -998,17 +998,17 @@ function updateStreamTimeDebug(info) {
     if (debugPanel && startEl && durationEl && methodEl) {
         // Show the debug panel
         debugPanel.style.display = 'block';
-        
+
         // Update values
         startEl.textContent = info.streamStartISO || '--';
-        
+
         const hours = Math.floor(info.currentDuration / 3600);
         const minutes = Math.floor((info.currentDuration % 3600) / 60);
         const seconds = info.currentDuration % 60;
         durationEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
         methodEl.textContent = info.detectionMethod || '--';
-        
+
         // Color code based on detection method
         if (info.detectionMethod && info.detectionMethod.includes('roomInfo')) {
             methodEl.style.color = '#10b981'; // Green - good
@@ -1028,39 +1028,39 @@ function addEventToLog(type, data) {
 
     const time = new Date().toLocaleTimeString();
     const username = data.username || data.uniqueId || data.nickname || 'Viewer';
-    
+
     // Build team level badge - always show
     let teamLevelBadge = '';
     const teamLevel = data.teamMemberLevel || 0;
-    
+
     // Define colors for different team levels:
     // White for level 0
     // Green-yellow for levels 1-10
     // Blue for levels 11-20
     // Violet for levels 21+
     let badgeColor = '';
-    let badgeIcon = 'â¤ï¸';
+    let badgeIcon = '❤️';
     let textColor = 'text-white';
-    
+
     if (teamLevel === 0) {
         badgeColor = 'bg-gray-500';
-        badgeIcon = 'ðŸ¤'; // White heart for level 0
+        badgeIcon = '🤍'; // White heart for level 0
         textColor = 'text-white';
     } else if (teamLevel >= 21) {
         badgeColor = 'bg-violet-600';
-        badgeIcon = 'ðŸ’œ'; // Violet heart for level 21+
+        badgeIcon = '💜'; // Violet heart for level 21+
         textColor = 'text-white';
     } else if (teamLevel >= 11) {
         badgeColor = 'bg-blue-500';
-        badgeIcon = 'ðŸ’™'; // Blue heart for levels 11-20
+        badgeIcon = '💙'; // Blue heart for levels 11-20
         textColor = 'text-white';
     } else {
         // Levels 1-10: green-yellow gradient
         badgeColor = 'bg-gradient-to-r from-green-500 to-yellow-500';
-        badgeIcon = 'ðŸ’š'; // Green heart for levels 1-10
+        badgeIcon = '💚'; // Green heart for levels 1-10
         textColor = 'text-white';
     }
-    
+
     teamLevelBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badgeColor} ${textColor} ml-1" title="Team Level ${teamLevel}">${badgeIcon}${teamLevel}</span>`;
 
     let details = '';
@@ -1068,32 +1068,32 @@ function addEventToLog(type, data) {
 
     switch (type) {
         case 'chat':
-            typeIcon = 'ðŸ’¬ Chat';
+            typeIcon = '💬 Chat';
             details = data.message;
             break;
         case 'gift':
-            typeIcon = 'ðŸŽ Gift';
+            typeIcon = '🎁 Gift';
             const giftName = data.giftName || (data.giftId ? `Gift #${data.giftId}` : 'Unknown Gift');
             details = `${giftName} x${data.repeatCount} (${data.coins} coins)`;
             break;
         case 'follow':
-            typeIcon = 'â­ Follow';
+            typeIcon = '⭐ Follow';
             details = 'New follower!';
             break;
         case 'share':
-            typeIcon = 'ðŸ”„ Share';
+            typeIcon = '🔄 Share';
             details = 'Shared the stream';
             break;
         case 'like':
-            typeIcon = 'â¤ï¸ Like';
+            typeIcon = '❤️ Like';
             details = `+${data.likeCount || 1} (Total: ${data.totalLikes || 0})`;
             break;
         case 'subscribe':
-            typeIcon = 'ðŸŒŸ Subscribe';
+            typeIcon = '🌟 Subscribe';
             details = 'New subscriber!';
             break;
         default:
-            typeIcon = 'ðŸ“Œ ' + type;
+            typeIcon = '📌 ' + type;
             details = JSON.stringify(data);
     }
 
@@ -1104,14 +1104,14 @@ function addEventToLog(type, data) {
         <td class="py-2">${details}</td>
     `;
 
-    // Am Anfang einfÃ¼gen (neueste oben)
+    // Am Anfang einfügen (neueste oben)
     logTable.insertBefore(row, logTable.firstChild);
 
-    // Maximal 100 EintrÃ¤ge behalten
+    // Maximal 100 Einträge behalten
     while (logTable.children.length > 100) {
         logTable.removeChild(logTable.lastChild);
     }
-    
+
     // ========== Update Stats Menu Data ==========
     trackEventForStatsMenu(type, data);
 }
@@ -1124,14 +1124,14 @@ function addEventToLog(type, data) {
 function initializeStatsMenuNavigation() {
     const clickableItems = document.querySelectorAll('.stats-bar-clickable');
     const closeButtons = document.querySelectorAll('.stats-panel-close');
-    
+
     // Add click handlers for menu items
     clickableItems.forEach(item => {
         item.addEventListener('click', () => {
             const panelName = item.dataset.panel;
             toggleStatsPanel(panelName);
         });
-        
+
         // Keyboard accessibility
         item.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1141,7 +1141,7 @@ function initializeStatsMenuNavigation() {
             }
         });
     });
-    
+
     // Add close button handlers
     closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1157,42 +1157,42 @@ function toggleStatsPanel(panelName) {
     const container = document.getElementById('stats-detail-container');
     const panel = document.getElementById(`stats-panel-${panelName}`);
     const menuItems = document.querySelectorAll('.stats-bar-clickable');
-    
+
     if (!container || !panel) return;
-    
+
     // If clicking the same panel, close it
     if (activeStatsPanel === panelName) {
         closeStatsPanel();
         return;
     }
-    
+
     // Hide all panels
     document.querySelectorAll('.stats-detail-panel').forEach(p => {
         p.style.display = 'none';
     });
-    
+
     // Remove active class from all menu items
     menuItems.forEach(item => {
         item.classList.remove('active');
         item.setAttribute('aria-pressed', 'false');
     });
-    
+
     // Show the selected panel and container
     container.style.display = 'block';
     panel.style.display = 'block';
-    
+
     // Add active class to the clicked menu item
     const activeMenuItem = document.querySelector(`.stats-bar-clickable[data-panel="${panelName}"]`);
     if (activeMenuItem) {
         activeMenuItem.classList.add('active');
         activeMenuItem.setAttribute('aria-pressed', 'true');
     }
-    
+
     activeStatsPanel = panelName;
-    
+
     // Refresh the panel content
     refreshStatsPanelContent(panelName);
-    
+
     // Re-initialize lucide icons for new content
     if (window.lucide) {
         window.lucide.createIcons();
@@ -1205,22 +1205,22 @@ function toggleStatsPanel(panelName) {
 function closeStatsPanel() {
     const container = document.getElementById('stats-detail-container');
     const menuItems = document.querySelectorAll('.stats-bar-clickable');
-    
+
     if (container) {
         container.style.display = 'none';
     }
-    
+
     // Hide all panels
     document.querySelectorAll('.stats-detail-panel').forEach(p => {
         p.style.display = 'none';
     });
-    
+
     // Remove active class from all menu items
     menuItems.forEach(item => {
         item.classList.remove('active');
         item.setAttribute('aria-pressed', 'false');
     });
-    
+
     activeStatsPanel = null;
 }
 
@@ -1233,7 +1233,7 @@ function trackEventForStatsMenu(type, data) {
     const nickname = data.nickname || data.username || 'Unknown';
     const profilePictureUrl = data.profilePictureUrl || '';
     const teamMemberLevel = data.teamMemberLevel || 0;
-    
+
     switch (type) {
         case 'chat':
             statsMenuData.chat.unshift({
@@ -1251,7 +1251,7 @@ function trackEventForStatsMenu(type, data) {
             }
             updateStatsPanelCount('chat');
             break;
-            
+
         case 'like':
             statsMenuData.likes.unshift({
                 username,
@@ -1267,7 +1267,7 @@ function trackEventForStatsMenu(type, data) {
                 statsMenuData.likes.pop();
             }
             break;
-            
+
         case 'gift':
             statsMenuData.gifts.unshift({
                 username,
@@ -1299,7 +1299,7 @@ function trackEventForStatsMenu(type, data) {
             }
             updateStatsPanelCount('gifts');
             break;
-            
+
         case 'follow':
             statsMenuData.followers.unshift({
                 username,
@@ -1315,7 +1315,7 @@ function trackEventForStatsMenu(type, data) {
             }
             updateStatsPanelCount('followers');
             break;
-            
+
         case 'subscribe':
             statsMenuData.subscribers.unshift({
                 username,
@@ -1332,7 +1332,7 @@ function trackEventForStatsMenu(type, data) {
             updateStatsPanelCount('subscribers');
             break;
     }
-    
+
     // Track viewer activity (anyone who interacts is a viewer)
     if (username && username !== 'Unknown') {
         statsMenuData.viewers.set(username, {
@@ -1344,7 +1344,7 @@ function trackEventForStatsMenu(type, data) {
             lastActivity: type
         });
     }
-    
+
     // Refresh panel if it's currently open
     if (activeStatsPanel) {
         refreshStatsPanelContent(activeStatsPanel);
@@ -1359,7 +1359,7 @@ function updateStatsPanelCount(panelName) {
     if (countEl) {
         countEl.textContent = statsMenuData.counts[panelName].toLocaleString();
     }
-    
+
     // Also update the stats bar value
     const statsEl = document.getElementById(`event-stats-${panelName}`);
     if (statsEl) {
@@ -1373,50 +1373,50 @@ function updateStatsPanelCount(panelName) {
 function refreshStatsPanelContent(panelName) {
     const listEl = document.getElementById(`${panelName}-list`);
     if (!listEl) return;
-    
+
     let html = '';
-    
+
     switch (panelName) {
         case 'viewers':
             const viewerCount = statsMenuData.viewers.size;
             const countEl = document.getElementById('panel-viewers-count');
             if (countEl) countEl.textContent = viewerCount.toLocaleString();
-            
+
             if (viewerCount === 0) {
                 html = '<p class="stats-panel-empty">No viewers tracked yet</p>';
             } else {
                 const viewers = Array.from(statsMenuData.viewers.values())
                     .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
-                
+
                 html = viewers.map(v => `
                     <div class="stats-panel-item">
                         <div class="stats-panel-item-avatar">
-                            ${v.profilePictureUrl ? 
+                            ${v.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="user" src="${escapeHtml(v.profilePictureUrl)}" alt="${escapeHtml(v.nickname)}">` :
                                 '<i data-lucide="user"></i>'
                             }
                         </div>
                         <div class="stats-panel-item-info">
                             <div class="stats-panel-item-name">${escapeHtml(v.nickname || v.username)}</div>
-                            <div class="stats-panel-item-detail">@${escapeHtml(v.username)} â€¢ ${getActivityIcon(v.lastActivity)}</div>
+                            <div class="stats-panel-item-detail">@${escapeHtml(v.username)} • ${getActivityIcon(v.lastActivity)}</div>
                         </div>
                         <div class="stats-panel-item-time">${v.lastSeen}</div>
                     </div>
                 `).join('');
             }
             break;
-            
+
         case 'chat':
             const chatCountEl = document.getElementById('panel-chat-count');
             if (chatCountEl) chatCountEl.textContent = statsMenuData.counts.chat.toLocaleString();
-            
+
             if (statsMenuData.chat.length === 0) {
                 html = '<p class="stats-panel-empty">No chat messages yet</p>';
             } else {
                 html = statsMenuData.chat.map(c => `
                     <div class="stats-panel-item chat-item">
                         <div class="stats-panel-item-avatar">
-                            ${c.profilePictureUrl ? 
+                            ${c.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="user" src="${escapeHtml(c.profilePictureUrl)}" alt="${escapeHtml(c.nickname)}">` :
                                 '<i data-lucide="user"></i>'
                             }
@@ -1430,47 +1430,47 @@ function refreshStatsPanelContent(panelName) {
                 `).join('');
             }
             break;
-            
+
         case 'likes':
             const likesCountEl = document.getElementById('panel-likes-count');
             // Use total likes from last event if available
-            const totalLikes = statsMenuData.likes.length > 0 ? 
+            const totalLikes = statsMenuData.likes.length > 0 ?
                 (statsMenuData.likes[0].totalLikes || statsMenuData.likes.reduce((sum, l) => sum + l.likeCount, 0)) : 0;
             if (likesCountEl) likesCountEl.textContent = totalLikes.toLocaleString();
-            
+
             if (statsMenuData.likes.length === 0) {
                 html = '<p class="stats-panel-empty">No likes yet</p>';
             } else {
                 html = statsMenuData.likes.map(l => `
                     <div class="stats-panel-item">
                         <div class="stats-panel-item-avatar">
-                            ${l.profilePictureUrl ? 
+                            ${l.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="user" src="${escapeHtml(l.profilePictureUrl)}" alt="${escapeHtml(l.nickname)}">` :
                                 '<i data-lucide="user"></i>'
                             }
                         </div>
                         <div class="stats-panel-item-info">
                             <div class="stats-panel-item-name">${escapeHtml(l.nickname || l.username)}</div>
-                            <div class="stats-panel-item-detail">â¤ï¸ +${l.likeCount}</div>
+                            <div class="stats-panel-item-detail">❤️ +${l.likeCount}</div>
                         </div>
                         <div class="stats-panel-item-time">${l.timestamp}</div>
                     </div>
                 `).join('');
             }
             break;
-            
+
         case 'coins':
             const coinsCountEl = document.getElementById('panel-coins-count');
             const totalCoins = statsMenuData.coins.reduce((sum, c) => sum + c.coins, 0);
             if (coinsCountEl) coinsCountEl.textContent = totalCoins.toLocaleString();
-            
+
             if (statsMenuData.coins.length === 0) {
                 html = '<p class="stats-panel-empty">No coin gifts yet</p>';
             } else {
                 html = statsMenuData.coins.map(c => `
                     <div class="stats-panel-item">
                         <div class="stats-panel-item-avatar">
-                            ${c.profilePictureUrl ? 
+                            ${c.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="user" src="${escapeHtml(c.profilePictureUrl)}" alt="${escapeHtml(c.nickname)}">` :
                                 '<i data-lucide="user"></i>'
                             }
@@ -1479,92 +1479,92 @@ function refreshStatsPanelContent(panelName) {
                             <div class="stats-panel-item-name">${escapeHtml(c.nickname || c.username)}</div>
                             <div class="stats-panel-item-detail">${escapeHtml(c.giftName)}</div>
                         </div>
-                        <div class="stats-panel-item-value">ðŸª™ ${c.coins.toLocaleString()}</div>
+                        <div class="stats-panel-item-value">🪙 ${c.coins.toLocaleString()}</div>
                         <div class="stats-panel-item-time">${c.timestamp}</div>
                     </div>
                 `).join('');
             }
             break;
-            
+
         case 'followers':
             const followersCountEl = document.getElementById('panel-followers-count');
             if (followersCountEl) followersCountEl.textContent = statsMenuData.counts.followers.toLocaleString();
-            
+
             if (statsMenuData.followers.length === 0) {
                 html = '<p class="stats-panel-empty">No followers yet</p>';
             } else {
                 html = statsMenuData.followers.map(f => `
                     <div class="stats-panel-item">
                         <div class="stats-panel-item-avatar">
-                            ${f.profilePictureUrl ? 
+                            ${f.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="user" src="${escapeHtml(f.profilePictureUrl)}" alt="${escapeHtml(f.nickname)}">` :
                                 '<i data-lucide="user"></i>'
                             }
                         </div>
                         <div class="stats-panel-item-info">
                             <div class="stats-panel-item-name">${escapeHtml(f.nickname || f.username)}</div>
-                            <div class="stats-panel-item-detail">â­ New follower!</div>
+                            <div class="stats-panel-item-detail">⭐ New follower!</div>
                         </div>
                         <div class="stats-panel-item-time">${f.timestamp}</div>
                     </div>
                 `).join('');
             }
             break;
-            
+
         case 'subscribers':
             const subscribersCountEl = document.getElementById('panel-subscribers-count');
             if (subscribersCountEl) subscribersCountEl.textContent = statsMenuData.counts.subscribers.toLocaleString();
-            
+
             if (statsMenuData.subscribers.length === 0) {
                 html = '<p class="stats-panel-empty">No subscribers yet</p>';
             } else {
                 html = statsMenuData.subscribers.map(s => `
                     <div class="stats-panel-item subscriber-item">
                         <div class="stats-panel-item-avatar">
-                            ${s.profilePictureUrl ? 
+                            ${s.profilePictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="crown" src="${escapeHtml(s.profilePictureUrl)}" alt="${escapeHtml(s.nickname)}">` :
                                 '<i data-lucide="crown"></i>'
                             }
                         </div>
                         <div class="stats-panel-item-info">
                             <div class="stats-panel-item-name">${escapeHtml(s.nickname || s.username)}</div>
-                            <div class="stats-panel-item-detail">ðŸ‘‘ Subscriber / Superfan</div>
+                            <div class="stats-panel-item-detail">👑 Subscriber / Superfan</div>
                         </div>
                         <div class="stats-panel-item-time">${s.timestamp}</div>
                     </div>
                 `).join('');
             }
             break;
-            
+
         case 'gifts':
             const giftsCountEl = document.getElementById('panel-gifts-count');
             if (giftsCountEl) giftsCountEl.textContent = statsMenuData.counts.gifts.toLocaleString();
-            
+
             if (statsMenuData.gifts.length === 0) {
                 html = '<p class="stats-panel-empty">No gifts yet</p>';
             } else {
                 html = statsMenuData.gifts.map(g => `
                     <div class="stats-panel-item gift-item">
                         <div class="stats-panel-item-avatar">
-                            ${g.giftPictureUrl ? 
+                            ${g.giftPictureUrl ?
                                 `<img class="js-stats-avatar-img" data-fallback-icon="gift" src="${escapeHtml(g.giftPictureUrl)}" alt="${escapeHtml(g.giftName)}">` :
-                                'ðŸŽ'
+                                '🎁'
                             }
                         </div>
                         <div class="stats-panel-item-info">
                             <div class="stats-panel-item-name">${escapeHtml(g.nickname || g.username)}</div>
                             <div class="stats-panel-item-detail">${escapeHtml(g.giftName)} x${g.repeatCount}</div>
                         </div>
-                        <div class="stats-panel-item-value">ðŸª™ ${g.coins.toLocaleString()}</div>
+                        <div class="stats-panel-item-value">🪙 ${g.coins.toLocaleString()}</div>
                         <div class="stats-panel-item-time">${g.timestamp}</div>
                     </div>
                 `).join('');
             }
             break;
     }
-    
+
     listEl.innerHTML = html;
-    
+
     // Re-initialize lucide icons
     if (window.lucide) {
         window.lucide.createIcons();
@@ -1576,13 +1576,13 @@ function refreshStatsPanelContent(panelName) {
  */
 function getActivityIcon(activity) {
     switch (activity) {
-        case 'chat': return 'ðŸ’¬ Chat';
-        case 'like': return 'â¤ï¸ Like';
-        case 'gift': return 'ðŸŽ Gift';
-        case 'follow': return 'â­ Follow';
-        case 'subscribe': return 'ðŸ‘‘ Sub';
-        case 'share': return 'ðŸ”„ Share';
-        default: return 'ðŸ‘€ Watching';
+        case 'chat': return '💬 Chat';
+        case 'like': return '❤️ Like';
+        case 'gift': return '🎁 Gift';
+        case 'follow': return '⭐ Follow';
+        case 'subscribe': return '👑 Sub';
+        case 'share': return '🔄 Share';
+        default: return '👀 Watching';
     }
 }
 
@@ -1622,30 +1622,30 @@ async function loadSettings() {
         const openaiApiKeyInput = document.getElementById('openai-api-key');
         const openaiKeyStatusEl = document.getElementById('openai-key-status');
         const openaiKeyHintEl = document.getElementById('openai-key-hint');
-        
+
         if (openaiApiKeyInput) {
             if (settings.openai_api_key) {
                 openaiApiKeyInput.value = '***REDACTED***';
                 openaiApiKeyInput.placeholder = 'API key configured (hidden)';
-                
+
                 // Update status message
                 if (openaiKeyStatusEl) {
-                    openaiKeyStatusEl.textContent = 'âœ… OpenAI API-SchlÃ¼ssel ist gespeichert';
+                    openaiKeyStatusEl.textContent = '✅ OpenAI API-Schlüssel ist gespeichert';
                 }
                 if (openaiKeyHintEl) {
-                    openaiKeyHintEl.textContent = 'API-SchlÃ¼ssel ist gespeichert. Zum Ã„ndern neuen SchlÃ¼ssel eingeben.';
+                    openaiKeyHintEl.textContent = 'API-Schlüssel ist gespeichert. Zum Ändern neuen Schlüssel eingeben.';
                     openaiKeyHintEl.className = 'text-xs text-green-400 mt-1';
                 }
             } else {
                 openaiApiKeyInput.value = '';
                 openaiApiKeyInput.placeholder = 'sk-...';
-                
+
                 // Update status message
                 if (openaiKeyStatusEl) {
-                    openaiKeyStatusEl.textContent = 'â„¹ï¸ Noch kein API-SchlÃ¼ssel gespeichert';
+                    openaiKeyStatusEl.textContent = 'ℹ️ Noch kein API-Schlüssel gespeichert';
                 }
                 if (openaiKeyHintEl) {
-                    openaiKeyHintEl.textContent = 'API-SchlÃ¼ssel eingeben und speichern...';
+                    openaiKeyHintEl.textContent = 'API-Schlüssel eingeben und speichern...';
                     openaiKeyHintEl.className = 'text-xs text-gray-500 mt-1';
                 }
             }
@@ -1726,12 +1726,12 @@ async function saveSettings() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… Settings saved!');
+            alert('✅ Settings saved!');
             settings = newSettings;
         }
     } catch (error) {
         console.error('Error saving settings:', error);
-        alert('âŒ Error saving settings!');
+        alert('❌ Error saving settings!');
     }
 }
 
@@ -1741,21 +1741,21 @@ async function saveTikTokCredentials() {
     if (!apiKeyInput) return;
 
     const apiKey = apiKeyInput.value.trim();
-    
+
     // Check if user is trying to save without changing the masked key
     if (apiKey === '***REDACTED***') {
-        alert('â„¹ï¸ API key is already saved. To update it, replace the ***REDACTED*** value with your new API key.');
+        alert('ℹ️ API key is already saved. To update it, replace the ***REDACTED*** value with your new API key.');
         return;
     }
-    
+
     if (!apiKey) {
-        alert('âŒ Please enter an API key');
+        alert('❌ Please enter an API key');
         return;
     }
 
     // Validate key format (basic validation)
     if (apiKey.length < 32) {
-        alert('âŒ Invalid API key format. Key must be at least 32 characters long.');
+        alert('❌ Invalid API key format. Key must be at least 32 characters long.');
         return;
     }
 
@@ -1763,23 +1763,23 @@ async function saveTikTokCredentials() {
         const response = await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                tiktok_euler_api_key: apiKey 
+            body: JSON.stringify({
+                tiktok_euler_api_key: apiKey
             })
         });
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… Eulerstream API Key saved successfully!');
+            alert('✅ Eulerstream API Key saved successfully!');
             settings.tiktok_euler_api_key = apiKey;
             // Reload settings to show masked key
             await loadSettings();
         } else {
-            alert('âŒ Error saving API key: ' + (result.error || 'Unknown error'));
+            alert('❌ Error saving API key: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error saving TikTok credentials:', error);
-        alert('âŒ Error saving API key!');
+        alert('❌ Error saving API key!');
     }
 }
 
@@ -1833,7 +1833,7 @@ function updateDataSourceUI(source, dsSettings) {
 }
 
 /**
- * Handle data source radio button change â€” persist via plugin API.
+ * Handle data source radio button change — persist via plugin API.
  */
 async function handleDataSourceChange(e) {
     const source = e.target.value;
@@ -1852,7 +1852,7 @@ async function handleDataSourceChange(e) {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tikfinity_ws_port: port })
                     });
-                } catch (portSaveErr) { /* non-fatal â€“ proceed with switch anyway */
+                } catch (portSaveErr) { /* non-fatal – proceed with switch anyway */
                     console.error('Error auto-saving TikFinity port before switch:', portSaveErr);
                 }
             }
@@ -1869,13 +1869,13 @@ async function handleDataSourceChange(e) {
         if (data.success) {
             updateDataSourceUI(source);
         } else {
-            alert('âŒ ' + (data.error || 'Fehler beim Wechseln der Datenquelle'));
+            alert('❌ ' + (data.error || 'Fehler beim Wechseln der Datenquelle'));
             // revert radio
             loadDataSourceStatus();
         }
     } catch (error) {
         console.error('Error switching data source:', error);
-        alert('âŒ Fehler beim Wechseln der Datenquelle');
+        alert('❌ Fehler beim Wechseln der Datenquelle');
         loadDataSourceStatus();
     }
 }
@@ -1889,7 +1889,7 @@ async function saveTikFinitySettings() {
 
     const port = parseInt(portInput.value, 10);
     if (isNaN(port) || port < 1 || port > 65535) {
-        alert('âŒ UngÃ¼ltiger Port (1 â€“ 65535)');
+        alert('❌ Ungültiger Port (1 – 65535)');
         return;
     }
 
@@ -1901,13 +1901,13 @@ async function saveTikFinitySettings() {
         });
         const data = await response.json();
         if (data.success) {
-            alert('âœ… TikFinity Einstellungen gespeichert!');
+            alert('✅ TikFinity Einstellungen gespeichert!');
         } else {
-            alert('âŒ ' + (data.error || 'Fehler beim Speichern'));
+            alert('❌ ' + (data.error || 'Fehler beim Speichern'));
         }
     } catch (error) {
         console.error('Error saving TikFinity settings:', error);
-        alert('âŒ Fehler beim Speichern der TikFinity Einstellungen');
+        alert('❌ Fehler beim Speichern der TikFinity Einstellungen');
     }
 }
 
@@ -1915,26 +1915,26 @@ async function saveTikFinitySettings() {
 async function saveOpenAICredentials() {
     const apiKeyInput = document.getElementById('openai-api-key');
     const modelSelect = document.getElementById('openai-model');
-    
+
     if (!apiKeyInput || !modelSelect) return;
 
     const apiKey = apiKeyInput.value.trim();
     const model = modelSelect.value;
-    
+
     // Check if user is trying to save without changing the masked key
     if (apiKey === '***REDACTED***') {
-        alert('â„¹ï¸ API key is already saved. To update it, replace the ***REDACTED*** value with your new API key.');
+        alert('ℹ️ API key is already saved. To update it, replace the ***REDACTED*** value with your new API key.');
         return;
     }
-    
+
     if (!apiKey) {
-        alert('âŒ Please enter an API key');
+        alert('❌ Please enter an API key');
         return;
     }
 
     // Validate key format (basic validation for OpenAI keys)
     if (!apiKey.startsWith('sk-') || apiKey.length < 20) {
-        alert('âŒ Invalid OpenAI API key format. Key should start with "sk-".');
+        alert('❌ Invalid OpenAI API key format. Key should start with "sk-".');
         return;
     }
 
@@ -1942,7 +1942,7 @@ async function saveOpenAICredentials() {
         const response = await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 openai_api_key: apiKey,
                 openai_model: model
             })
@@ -1950,17 +1950,17 @@ async function saveOpenAICredentials() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… OpenAI API Configuration saved successfully!');
+            alert('✅ OpenAI API Configuration saved successfully!');
             settings.openai_api_key = apiKey;
             settings.openai_model = model;
             // Reload settings to show masked key
             await loadSettings();
         } else {
-            alert('âŒ Error saving OpenAI configuration: ' + (result.error || 'Unknown error'));
+            alert('❌ Error saving OpenAI configuration: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error saving OpenAI credentials:', error);
-        alert('âŒ Error saving OpenAI configuration!');
+        alert('❌ Error saving OpenAI configuration!');
     }
 }
 
@@ -1973,7 +1973,7 @@ async function saveTTSAPIKeys() {
     const fishaudioKeyInput = document.getElementById('tts-fishaudio-api-key');
     const fishspeechKeyInput = document.getElementById('tts-fishspeech-api-key');
     const ollamaKeyInput = document.getElementById('tts-ollama-api-key');
-    
+
     if (!googleKeyInput || !speechifyKeyInput || !elevenlabsKeyInput || !openaiKeyInput || !fishaudioKeyInput || !fishspeechKeyInput || !ollamaKeyInput) return;
 
     const googleKey = googleKeyInput.value.trim();
@@ -1983,7 +1983,7 @@ async function saveTTSAPIKeys() {
     const fishaudioKey = fishaudioKeyInput.value.trim();
     const fishspeechKey = fishspeechKeyInput.value.trim();
     const ollamaKey = ollamaKeyInput.value.trim();
-    
+
     // Check if there are any actual new keys to save (not placeholders or empty)
     const hasNewKeys = (googleKey && googleKey !== '***REDACTED***') ||
                        (speechifyKey && speechifyKey !== '***REDACTED***') ||
@@ -1992,23 +1992,23 @@ async function saveTTSAPIKeys() {
                        (fishaudioKey && fishaudioKey !== '***REDACTED***') ||
                        (fishspeechKey && fishspeechKey !== '***REDACTED***') ||
                        (ollamaKey && ollamaKey !== '***REDACTED***');
-    
+
     // Check if at least one key exists (either new or placeholder indicating existing)
     const hasAnyKeys = googleKey || speechifyKey || elevenlabsKey || openaiKey || fishaudioKey || fishspeechKey || ollamaKey;
-    
+
     if (!hasAnyKeys) {
-        alert('âŒ Please enter at least one TTS API key');
+        alert('❌ Please enter at least one TTS API key');
         return;
     }
-    
+
     if (!hasNewKeys) {
-        alert('â„¹ï¸ No changes to save. All fields contain existing (masked) keys.\n\nTo update a key, replace the ***REDACTED*** value with your new API key.');
+        alert('ℹ️ No changes to save. All fields contain existing (masked) keys.\n\nTo update a key, replace the ***REDACTED*** value with your new API key.');
         return;
     }
 
     try {
         const updateData = {};
-        
+
         // Only include non-empty keys that aren't placeholders
         if (googleKey && googleKey !== '***REDACTED***') {
             updateData.tts_google_api_key = googleKey;
@@ -2044,8 +2044,8 @@ async function saveTTSAPIKeys() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… TTS API Keys saved successfully!\n\nNote: The TTS plugin may need to reload to use the new keys.');
-            
+            alert('✅ TTS API Keys saved successfully!\n\nNote: The TTS plugin may need to reload to use the new keys.');
+
             // Update local settings cache
             if (googleKey && googleKey !== '***REDACTED***') settings.tts_google_api_key = googleKey;
             if (speechifyKey && speechifyKey !== '***REDACTED***') settings.tts_speechify_api_key = speechifyKey;
@@ -2062,15 +2062,15 @@ async function saveTTSAPIKeys() {
             if (ollamaKey && ollamaKey !== '***REDACTED***') {
                 settings.tts_ollama_api_key = ollamaKey;
             }
-            
+
             // Reload the settings to show the masked keys
             await loadSettings();
         } else {
-            alert('âŒ Error saving TTS API keys: ' + (result.error || 'Unknown error'));
+            alert('❌ Error saving TTS API keys: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error saving TTS API keys:', error);
-        alert('âŒ Error saving TTS API keys!');
+        alert('❌ Error saving TTS API keys!');
     }
 }
 
@@ -2086,7 +2086,7 @@ async function loadVoices(provider = null) {
         const data = await response.json();
         voices = data.voices || {};
 
-        // Voice-Dropdowns fÃ¼llen
+        // Voice-Dropdowns füllen
         const voiceSelects = [
             document.getElementById('default-voice'),
             document.getElementById('modal-voice')
@@ -2145,7 +2145,7 @@ async function loadVoiceMapping() {
                 <td class="py-2">
                     <button data-action="delete-voice-mapping" data-username="${mapping.username}"
                             class="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-700">
-                        ðŸ—‘ï¸ Delete
+                        🗑️ Delete
                     </button>
                 </td>
             `;
@@ -2258,9 +2258,9 @@ async function loadFlows() {
                 <div class="text-center text-gray-400 py-6">
                     <p class="mb-4">Noch keine Flows. Starte mit einem Template oder erstelle deinen eigenen Flow!</p>
                     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                        <button class="btn btn-primary" data-action="show-flow-presets">ðŸ“¦ Vorlagen anzeigen</button>
-                        <button class="btn btn-ghost" data-action="open-wizard">ðŸ§™ Wizard starten</button>
-                        <a href="/ifttt-flow-editor.html" target="_blank" class="btn btn-ghost">ðŸŽ¨ Visual Editor</a>
+                        <button class="btn btn-primary" data-action="show-flow-presets">📦 Vorlagen anzeigen</button>
+                        <button class="btn btn-ghost" data-action="open-wizard">🧙 Wizard starten</button>
+                        <a href="/ifttt-flow-editor.html" target="_blank" class="btn btn-ghost">🎨 Visual Editor</a>
                     </div>
                 </div>
                 <div id="inline-presets-section" class="mt-4"></div>
@@ -2283,7 +2283,7 @@ async function loadFlows() {
             const triggerName = flow.trigger_type.replace('tiktok:', '').replace(':', ' ');
             const triggerIcon = getTriggerIcon(flow.trigger_type);
             const cooldownBadge = flow.cooldown > 0
-                ? `<span class="text-xs bg-gray-600 px-2 py-0.5 rounded" title="Cooldown">â³ ${flow.cooldown}s</span>`
+                ? `<span class="text-xs bg-gray-600 px-2 py-0.5 rounded" title="Cooldown">⏳ ${flow.cooldown}s</span>`
                 : '';
 
             flowDiv.innerHTML = `
@@ -2312,12 +2312,12 @@ async function loadFlows() {
                         <button data-action="test-flow" data-flow-id="${flow.id}"
                                 class="px-3 py-1 rounded text-sm bg-blue-600 hover:bg-blue-700"
                                 title="Flow testen">
-                            ðŸ§ª Test
+                            🧪 Test
                         </button>
                         <button data-action="edit-flow-wizard" data-flow-id="${flow.id}"
                                 class="px-3 py-1 rounded text-sm bg-purple-600 hover:bg-purple-700"
                                 title="Im Wizard bearbeiten">
-                            ðŸ§™ Bearbeiten
+                            🧙 Bearbeiten
                         </button>
                         <a href="/ifttt-flow-editor.html?id=${encodeURIComponent(flow.id)}" target="_blank"
                                 class="px-3 py-1 rounded text-sm bg-indigo-600 hover:bg-indigo-700"
@@ -2327,19 +2327,19 @@ async function loadFlows() {
                         <button data-action="clone-flow" data-flow-id="${flow.id}"
                                 class="px-3 py-1 rounded text-sm bg-gray-600 hover:bg-gray-500"
                                 title="Flow duplizieren">
-                            ðŸ“‹ Clone
+                            📋 Clone
                         </button>
                         <button data-action="export-flow" data-flow-id="${flow.id}"
                                 class="px-3 py-1 rounded text-sm bg-gray-600 hover:bg-gray-500"
                                 title="Als JSON exportieren">
-                            ðŸ“¤ Export
+                            📤 Export
                         </button>
                         <button data-action="toggle-flow" data-flow-id="${flow.id}" data-enabled="${!flow.enabled}"
                                 class="px-3 py-1 rounded text-sm ${flow.enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'}">
-                            ${flow.enabled ? 'âœ… Aktiv' : 'â¸ï¸ Inaktiv'}
+                            ${flow.enabled ? '✅ Aktiv' : '⏸️ Inaktiv'}
                         </button>
                         <button data-action="delete-flow" data-flow-id="${flow.id}" class="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-700">
-                            ðŸ—‘ï¸
+                            🗑️
                         </button>
                     </div>
                 </div>
@@ -2374,7 +2374,7 @@ function updateBulkBar() {
     bulkBar.style.display = 'flex';
 
     if (countEl) {
-        countEl.textContent = checked.length > 0 ? `${checked.length} ausgewÃ¤hlt` : '';
+        countEl.textContent = checked.length > 0 ? `${checked.length} ausgewählt` : '';
     }
 
     if (selectAll) {
@@ -2503,7 +2503,7 @@ async function handleFlowImport(event) {
         const flowData = normalizeImportedFlow(importPayload);
 
         if (!flowData.name || !flowData.trigger_type || !Array.isArray(flowData.actions)) {
-            alert('UngÃ¼ltiges Flow-Format: name, trigger_type und actions sind erforderlich.');
+            alert('Ungültiges Flow-Format: name, trigger_type und actions sind erforderlich.');
             return;
         }
 
@@ -2567,11 +2567,11 @@ function showFlowPresets() {
                     <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                         <button class="btn btn-primary text-sm"
                             data-action="deploy-preset" data-preset-id="${escapeHtml(preset.id)}">
-                            ðŸš€ Jetzt deployen
+                            🚀 Jetzt deployen
                         </button>
                         <button class="btn btn-ghost text-sm"
                             data-action="open-preset-wizard" data-preset-id="${escapeHtml(preset.id)}">
-                            ðŸ§™ Im Wizard Ã¶ffnen
+                            🧙 Im Wizard öffnen
                         </button>
                     </div>
                 </div>
@@ -2592,7 +2592,7 @@ function renderInlinePresets() {
     const presets = getFlowPresets();
     container.innerHTML = `
         <div class="mt-4">
-            <h4 class="font-semibold text-gray-200 mb-3">ðŸš€ Starte mit einer Vorlage:</h4>
+            <h4 class="font-semibold text-gray-200 mb-3">🚀 Starte mit einer Vorlage:</h4>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
                 ${presets.map(preset => `
                     <div class="bg-gray-700 rounded-lg p-3 border border-gray-600 hover:border-blue-500/50 transition-colors">
@@ -2601,9 +2601,9 @@ function renderInlinePresets() {
                         <div class="text-xs text-gray-400 mt-1 mb-3">${escapeHtml(preset.description)}</div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn btn-primary text-xs" style="padding:4px 8px;"
-                                data-action="deploy-preset" data-preset-id="${escapeHtml(preset.id)}">ðŸš€ Deploy</button>
+                                data-action="deploy-preset" data-preset-id="${escapeHtml(preset.id)}">🚀 Deploy</button>
                             <button class="btn btn-ghost text-xs" style="padding:4px 8px;"
-                                data-action="open-preset-wizard" data-preset-id="${escapeHtml(preset.id)}">ðŸ§™ Wizard</button>
+                                data-action="open-preset-wizard" data-preset-id="${escapeHtml(preset.id)}">🧙 Wizard</button>
                         </div>
                     </div>
                 `).join('')}
@@ -2671,20 +2671,20 @@ async function editFlowInWizard(id) {
 
 function getTriggerIcon(triggerType) {
     const icons = {
-        'tiktok:gift': 'ðŸŽ',
-        'tiktok:chat': 'ðŸ’¬',
-        'tiktok:follow': 'ðŸ‘¤',
-        'tiktok:share': 'ðŸ”—',
-        'tiktok:like': 'â¤ï¸',
-        'tiktok:subscribe': 'â­',
-        'tiktok:join': 'ðŸ‘‹',
-        'timer:interval': 'â°',
-        'timer:countdown': 'â±ï¸',
-        'system:connected': 'ðŸ“¡',
-        'system:disconnected': 'ðŸ“´',
-        'goal:reached': 'ðŸŽ¯'
+        'tiktok:gift': '🎁',
+        'tiktok:chat': '💬',
+        'tiktok:follow': '👤',
+        'tiktok:share': '🔗',
+        'tiktok:like': '❤️',
+        'tiktok:subscribe': '⭐',
+        'tiktok:join': '👋',
+        'timer:interval': '⏰',
+        'timer:countdown': '⏱️',
+        'system:connected': '📡',
+        'system:disconnected': '📴',
+        'goal:reached': '🎯'
     };
-    return icons[triggerType] || 'âš¡';
+    return icons[triggerType] || '⚡';
 }
 
 async function testFlow(id) {
@@ -2701,15 +2701,15 @@ async function testFlow(id) {
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
-            alert('âœ… Flow test triggered successfully!');
+            alert('✅ Flow test triggered successfully!');
         } else {
-            alert(`âŒ Test failed: ${result.error || 'Unknown error'}`);
+            alert(`❌ Test failed: ${result.error || 'Unknown error'}`);
         }
     } catch (error) {
         console.error('Error testing flow:', error);
-        alert('âŒ Error testing flow');
+        alert('❌ Error testing flow');
     }
 }
 
@@ -2816,15 +2816,15 @@ async function saveNewFlow() {
 
         const result = await response.json();
         if (result.success) {
-            alert(`âœ… Flow "${name}" created successfully!`);
+            alert(`✅ Flow "${name}" created successfully!`);
             hideCreateFlowModal();
             loadFlows();
         } else {
-            alert('âŒ Error creating flow: ' + (result.error || 'Unknown error'));
+            alert('❌ Error creating flow: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error creating flow:', error);
-        alert('âŒ Error creating flow!');
+        alert('❌ Error creating flow!');
     }
 }
 
@@ -2893,9 +2893,9 @@ async function saveTTSSettings() {
     const ttsChatEnabled = document.getElementById('tts-chat-enabled').checked;
     const ttsMinTeamLevel = document.getElementById('tts-min-team-level').value;
 
-    // Validierung: Google API Key erforderlich wenn Google ausgewÃ¤hlt
+    // Validierung: Google API Key erforderlich wenn Google ausgewählt
     if (provider === 'google' && !googleApiKey) {
-        alert('âŒ Please enter your Google Cloud TTS API key!');
+        alert('❌ Please enter your Google Cloud TTS API key!');
         return;
     }
 
@@ -2916,12 +2916,12 @@ async function saveTTSSettings() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… TTS Settings saved!');
+            alert('✅ TTS Settings saved!');
             settings = { ...settings, ...newSettings };
         }
     } catch (error) {
         console.error('Error saving TTS settings:', error);
-        alert('âŒ Error saving TTS settings!');
+        alert('❌ Error saving TTS settings!');
     }
 }
 
@@ -2936,7 +2936,7 @@ function onTTSProviderChange() {
         googleApiKeyContainer.classList.add('hidden');
     }
 
-    // Voices neu laden fÃ¼r den gewÃ¤hlten Provider
+    // Voices neu laden für den gewählten Provider
     loadVoices(provider);
 }
 
@@ -2944,7 +2944,7 @@ async function testTTS() {
     const testText = document.getElementById('tts-test-text').value;
 
     if (!testText || testText.trim().length === 0) {
-        alert('âš ï¸ Please enter some text to test!');
+        alert('⚠️ Please enter some text to test!');
         return;
     }
 
@@ -2960,13 +2960,13 @@ async function testTTS() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… TTS test sent! Listen in your overlay.');
+            alert('✅ TTS test sent! Listen in your overlay.');
         } else {
-            alert('âŒ TTS test failed: ' + (result.error || 'Unknown error'));
+            alert('❌ TTS test failed: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error testing TTS:', error);
-        alert('âŒ Error testing TTS!');
+        alert('❌ Error testing TTS!');
     }
 }
 
@@ -2976,7 +2976,7 @@ async function testTTS() {
 let profileFilter = 'all'; // 'all' or 'recent'
 let profileSearchQuery = '';
 
-// LÃ¤dt das aktive Profil und zeigt es an
+// Lädt das aktive Profil und zeigt es an
 async function loadActiveProfile() {
     try {
         const response = await fetch('/api/profiles/active');
@@ -3001,7 +3001,7 @@ function initializeProfileAutoRestartToggle() {
     toggle.title = 'Profile switches always restart automatically so the correct database is loaded.';
 }
 
-// LÃ¤dt alle verfÃ¼gbaren Profile mit Filter- und SuchunterstÃ¼tzung
+// Lädt alle verfügbaren Profile mit Filter- und Suchunterstützung
 async function loadProfiles() {
     try {
         const response = await fetch('/api/profiles');
@@ -3015,7 +3015,7 @@ async function loadProfiles() {
         // Apply search filter
         if (profileSearchQuery && profileSearchQuery.trim() !== '') {
             const query = profileSearchQuery.toLowerCase().trim();
-            profiles = profiles.filter(p => 
+            profiles = profiles.filter(p =>
                 p.username.toLowerCase().includes(query)
             );
         }
@@ -3055,7 +3055,7 @@ async function loadProfiles() {
             detailsDiv.className = 'text-xs text-gray-400 mt-1';
             const modifiedDate = new Date(profile.modified).toLocaleString('de-DE');
             const sizeKB = (profile.size / 1024).toFixed(2);
-            detailsDiv.textContent = `Zuletzt geÃ¤ndert: ${modifiedDate} | GrÃ¶ÃŸe: ${sizeKB} KB`;
+            detailsDiv.textContent = `Zuletzt geändert: ${modifiedDate} | Größe: ${sizeKB} KB`;
 
             infoDiv.appendChild(nameDiv);
             infoDiv.appendChild(detailsDiv);
@@ -3067,7 +3067,7 @@ async function loadProfiles() {
             if (!profile.isActive) {
                 const switchBtn = document.createElement('button');
                 switchBtn.className = 'bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 text-sm';
-                switchBtn.textContent = 'ðŸ”„ Wechseln';
+                switchBtn.textContent = '🔄 Wechseln';
                 switchBtn.onclick = () => switchProfile(profile.username);
                 buttonsDiv.appendChild(switchBtn);
             }
@@ -3075,17 +3075,17 @@ async function loadProfiles() {
             // Backup Button
             const backupBtn = document.createElement('button');
             backupBtn.className = 'bg-gray-600 px-3 py-1 rounded hover:bg-gray-500 text-sm';
-            backupBtn.textContent = 'ðŸ’¾';
+            backupBtn.textContent = '💾';
             backupBtn.title = 'Backup erstellen';
             backupBtn.onclick = () => backupProfile(profile.username);
             buttonsDiv.appendChild(backupBtn);
 
-            // Delete Button (nicht fÃ¼r aktives Profil)
+            // Delete Button (nicht für aktives Profil)
             if (!profile.isActive) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-sm';
-                deleteBtn.textContent = 'ðŸ—‘ï¸';
-                deleteBtn.title = 'Profil lÃ¶schen';
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.title = 'Profil löschen';
                 deleteBtn.onclick = () => deleteProfile(profile.username);
                 buttonsDiv.appendChild(deleteBtn);
             }
@@ -3103,7 +3103,7 @@ async function loadProfiles() {
 function initProfileSearchFilter() {
     const searchInput = document.getElementById('profile-search-input');
     const filterBtns = document.querySelectorAll('.profile-filter-btn');
-    
+
     // Search input handler with debounce
     if (searchInput) {
         let searchTimeout;
@@ -3115,16 +3115,16 @@ function initProfileSearchFilter() {
             }, 300);
         });
     }
-    
+
     // Filter button handlers
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const filter = btn.dataset.filter;
-            
+
             // Update active state
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             // Apply filter
             profileFilter = filter;
             loadProfiles();
@@ -3166,23 +3166,23 @@ async function createProfile() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`âœ… Profil "${username}" wurde erfolgreich erstellt!`);
+            alert(`✅ Profil "${username}" wurde erfolgreich erstellt!`);
             usernameInput.value = '';
             await loadProfiles();
         } else {
-            alert('âŒ Fehler beim Erstellen des Profils: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Erstellen des Profils: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error creating profile:', error);
-        alert('âŒ Fehler beim Erstellen des Profils!');
+        alert('❌ Fehler beim Erstellen des Profils!');
     }
 }
 
 // Wechselt zu einem anderen Profil
 async function switchProfile(username) {
     const confirmSwitch = confirm(
-        `MÃ¶chtest du zu Profil "${username}" wechseln?\n\n` +
-        `âš ï¸ Der Server wird danach automatisch neu gestartet.`
+        `Möchtest du zu Profil "${username}" wechseln?\n\n` +
+        `⚠️ Der Server wird danach automatisch neu gestartet.`
     );
 
     if (!confirmSwitch) return;
@@ -3212,20 +3212,20 @@ async function switchProfile(username) {
                 setTimeout(() => window.location.reload(), 5000);
             }
         } else {
-            alert('âŒ Fehler beim Wechseln des Profils: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Wechseln des Profils: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error switching profile:', error);
-        alert('âŒ Netzwerkfehler: ' + error.message);
+        alert('❌ Netzwerkfehler: ' + error.message);
     }
 }
 
-// LÃ¶scht ein Profil
+// Löscht ein Profil
 async function deleteProfile(username) {
     const confirmDelete = confirm(
-        `MÃ¶chtest du das Profil "${username}" wirklich lÃ¶schen?\n\n` +
-        `âš ï¸ Diese Aktion kann nicht rÃ¼ckgÃ¤ngig gemacht werden!\n` +
-        `Alle Einstellungen, Voice-Mappings, Sounds und Konfigurationen werden gelÃ¶scht.`
+        `Möchtest du das Profil "${username}" wirklich löschen?\n\n` +
+        `⚠️ Diese Aktion kann nicht rückgängig gemacht werden!\n` +
+        `Alle Einstellungen, Voice-Mappings, Sounds und Konfigurationen werden gelöscht.`
     );
 
     if (!confirmDelete) return;
@@ -3238,14 +3238,14 @@ async function deleteProfile(username) {
         const result = await response.json();
 
         if (result.success) {
-            alert(`âœ… Profil "${username}" wurde gelÃ¶scht!`);
+            alert(`✅ Profil "${username}" wurde gelöscht!`);
             await loadProfiles();
         } else {
-            alert('âŒ Fehler beim LÃ¶schen des Profils: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Löschen des Profils: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error deleting profile:', error);
-        alert('âŒ Fehler beim LÃ¶schen des Profils!');
+        alert('❌ Fehler beim Löschen des Profils!');
     }
 }
 
@@ -3260,16 +3260,16 @@ async function backupProfile(username) {
 
         if (result.success) {
             alert(
-                `âœ… Backup erstellt!\n\n` +
+                `✅ Backup erstellt!\n\n` +
                 `Profil: ${username}\n` +
                 `Backup-Datei: ${result.backup.backupPath}`
             );
         } else {
-            alert('âŒ Fehler beim Erstellen des Backups: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Erstellen des Backups: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error creating backup:', error);
-        alert('âŒ Fehler beim Erstellen des Backups!');
+        alert('❌ Fehler beim Erstellen des Backups!');
     }
 }
 
@@ -3293,13 +3293,13 @@ async function loadConfigPathInfo() {
             if (defaultEl) defaultEl.textContent = result.defaultConfigDir || '-';
             if (activeEl) activeEl.textContent = result.activeConfigDir || '-';
             if (isCustomEl) {
-                isCustomEl.textContent = result.isUsingCustomPath ? 'âœ… Yes' : 'âŒ No (Default)';
+                isCustomEl.textContent = result.isUsingCustomPath ? '✅ Yes' : '❌ No (Default)';
                 isCustomEl.className = result.isUsingCustomPath ? 'ml-2 text-green-400' : 'ml-2 text-gray-400';
             }
             if (customPathInput && result.customConfigDir) {
                 customPathInput.value = result.customConfigDir;
             }
-            
+
             // Update OpenAI key storage path display
             const openaiStoragePathEl = document.getElementById('openai-key-storage-path');
             if (openaiStoragePathEl && result.userConfigsDir) {
@@ -3320,7 +3320,7 @@ async function setCustomConfigPath() {
     const customPath = customPathInput.value.trim();
     if (!customPath) {
         // TODO: Add i18n support for these messages
-        alert('âŒ Bitte gib einen Pfad ein!');
+        alert('❌ Bitte gib einen Pfad ein!');
         return;
     }
 
@@ -3335,25 +3335,25 @@ async function setCustomConfigPath() {
 
         if (result.success) {
             alert(
-                `âœ… Custom Config Path gesetzt!\n\n` +
+                `✅ Custom Config Path gesetzt!\n\n` +
                 `Neuer Pfad: ${result.path}\n\n` +
-                `âš ï¸ Bitte starte die Anwendung neu, damit die Ã„nderungen wirksam werden.`
+                `⚠️ Bitte starte die Anwendung neu, damit die Änderungen wirksam werden.`
             );
             await loadConfigPathInfo();
         } else {
-            alert('âŒ Fehler beim Setzen des Custom Paths: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Setzen des Custom Paths: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error setting custom config path:', error);
-        alert('âŒ Fehler beim Setzen des Custom Paths!');
+        alert('❌ Fehler beim Setzen des Custom Paths!');
     }
 }
 
 // Reset to default config path
 async function resetConfigPath() {
     const confirmReset = confirm(
-        `MÃ¶chtest du den Config-Pfad wirklich auf den Standard zurÃ¼cksetzen?\n\n` +
-        `âš ï¸ Die Anwendung muss neu gestartet werden.`
+        `Möchtest du den Config-Pfad wirklich auf den Standard zurücksetzen?\n\n` +
+        `⚠️ Die Anwendung muss neu gestartet werden.`
     );
 
     if (!confirmReset) return;
@@ -3367,17 +3367,17 @@ async function resetConfigPath() {
 
         if (result.success) {
             alert(
-                `âœ… Config-Pfad auf Standard zurÃ¼ckgesetzt!\n\n` +
+                `✅ Config-Pfad auf Standard zurückgesetzt!\n\n` +
                 `Standard-Pfad: ${result.path}\n\n` +
-                `âš ï¸ Bitte starte die Anwendung neu.`
+                `⚠️ Bitte starte die Anwendung neu.`
             );
             await loadConfigPathInfo();
         } else {
-            alert('âŒ Fehler beim ZurÃ¼cksetzen: ' + (result.error || 'Unknown error'));
+            alert('❌ Fehler beim Zurücksetzen: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error resetting config path:', error);
-        alert('âŒ Fehler beim ZurÃ¼cksetzen!');
+        alert('❌ Fehler beim Zurücksetzen!');
     }
 }
 
@@ -3388,7 +3388,7 @@ function initializeAudioInfoBanner() {
 
     if (!banner || !dismissBtn) return;
 
-    // PrÃ¼fe ob Banner bereits dismissed wurde
+    // Prüfe ob Banner bereits dismissed wurde
     const isDismissed = localStorage.getItem('audio-info-dismissed');
     if (isDismissed === 'true') {
         banner.style.display = 'none';
@@ -3413,41 +3413,41 @@ function initializeAudioInfoBanner() {
  */
 function unlockAudio() {
     if (audioUnlocked) return Promise.resolve();
-    
+
     return new Promise((resolve) => {
-        console.log('ðŸ”“ [Dashboard] Attempting to unlock audio...');
-        
+        console.log('🔓 [Dashboard] Attempting to unlock audio...');
+
         const audio = document.getElementById('dashboard-tts-audio');
         if (!audio) {
-            console.error('âŒ [Dashboard] Audio element not found');
+            console.error('❌ [Dashboard] Audio element not found');
             resolve();
             return;
         }
-        
+
         // Play and immediately pause a silent audio to unlock
         // This must happen in response to user interaction
         // Using a minimal valid silent WAV (1 sample) to avoid media decode errors
         audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
         audio.volume = 0.01; // Very quiet
-        
+
         const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 audio.pause();
                 audio.currentTime = 0;
                 audioUnlocked = true;
-                console.log('âœ… [Dashboard] Audio unlocked successfully');
-                
+                console.log('✅ [Dashboard] Audio unlocked successfully');
+
                 // Process any pending TTS
                 if (pendingTTSQueue.length > 0) {
-                    console.log(`ðŸŽ¤ [Dashboard] Processing ${pendingTTSQueue.length} pending TTS items`);
+                    console.log(`🎤 [Dashboard] Processing ${pendingTTSQueue.length} pending TTS items`);
                     pendingTTSQueue.forEach(data => playDashboardTTS(data));
                     pendingTTSQueue = [];
                 }
-                
+
                 resolve();
             }).catch((err) => {
-                console.warn('âš ï¸ [Dashboard] Audio unlock failed, but will try anyway:', err);
+                console.warn('⚠️ [Dashboard] Audio unlock failed, but will try anyway:', err);
                 audioUnlocked = true; // Mark as unlocked to avoid repeated prompts
                 resolve();
             });
@@ -3466,7 +3466,7 @@ function showAudioEnablePrompt() {
     if (document.getElementById('audio-enable-prompt')) {
         return;
     }
-    
+
     const prompt = document.createElement('div');
     prompt.id = 'audio-enable-prompt';
     prompt.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-4 max-w-2xl';
@@ -3476,19 +3476,19 @@ function showAudioEnablePrompt() {
         <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
         </svg>
-        <span><strong>Audio aktivieren:</strong> Klicken Sie hier, um TTS-Audio zu hÃ¶ren</span>
+        <span><strong>Audio aktivieren:</strong> Klicken Sie hier, um TTS-Audio zu hören</span>
         <button id="enable-audio-btn" class="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-blue-50 transition flex-shrink-0">
             Aktivieren
         </button>
     `;
-    
+
     document.body.appendChild(prompt);
-    
+
     document.getElementById('enable-audio-btn').addEventListener('click', async () => {
         await unlockAudio();
         prompt.remove();
     });
-    
+
     // Auto-hide after 10 seconds if user doesn't interact
     setTimeout(() => {
         if (document.getElementById('audio-enable-prompt')) {
@@ -3501,11 +3501,11 @@ function showAudioEnablePrompt() {
  * TTS im Dashboard abspielen
  */
 async function playDashboardTTS(data) {
-    console.log('ðŸŽ¤ [Dashboard] Playing TTS:', data.text);
+    console.log('🎤 [Dashboard] Playing TTS:', data.text);
 
     // Check if audio is unlocked
     if (!audioUnlocked) {
-        console.log('âš ï¸ [Dashboard] Audio not unlocked yet, adding to queue and showing prompt');
+        console.log('⚠️ [Dashboard] Audio not unlocked yet, adding to queue and showing prompt');
         pendingTTSQueue.push(data);
         showAudioEnablePrompt();
         return;
@@ -3526,12 +3526,12 @@ async function playDashboardTTS(data) {
         await routeDashboardAudio(audio, data);
 
         audio.play().then(() => {
-            console.log('âœ… [Dashboard] TTS started playing');
+            console.log('✅ [Dashboard] TTS started playing');
         }).catch(err => {
-            console.error('âŒ [Dashboard] TTS playback error:', err);
+            console.error('❌ [Dashboard] TTS playback error:', err);
             // If playback fails due to autoplay policy, show prompt
             if (err.name === 'NotAllowedError') {
-                console.log('âš ï¸ [Dashboard] Autoplay blocked, showing enable prompt');
+                console.log('⚠️ [Dashboard] Autoplay blocked, showing enable prompt');
                 audioUnlocked = false; // Reset unlock state
                 pendingTTSQueue.push(data);
                 showAudioEnablePrompt();
@@ -3541,16 +3541,16 @@ async function playDashboardTTS(data) {
         // URL nach Abspielen freigeben
         audio.onended = () => {
             URL.revokeObjectURL(audioUrl);
-            console.log('âœ… [Dashboard] TTS finished');
+            console.log('✅ [Dashboard] TTS finished');
         };
 
         audio.onerror = (err) => {
-            console.error('âŒ [Dashboard] TTS audio error:', err);
+            console.error('❌ [Dashboard] TTS audio error:', err);
             URL.revokeObjectURL(audioUrl);
         };
 
     } catch (error) {
-        console.error('âŒ [Dashboard] Error in playDashboardTTS:', error);
+        console.error('❌ [Dashboard] Error in playDashboardTTS:', error);
     }
 }
 
@@ -3572,17 +3572,17 @@ function getAudioMimeType(format) {
  * Handle incoming TTS stream chunks
  */
 function handleStreamChunk(data) {
-    console.log(`ðŸŽµ [Dashboard] Stream chunk received for ${data.id}`, {
+    console.log(`🎵 [Dashboard] Stream chunk received for ${data.id}`, {
         chunkNumber: streamingBuffers.has(data.id) ? streamingBuffers.get(data.id).chunks.length + 1 : 1,
         isFirst: data.isFirst
     });
-    
+
     // Check if audio is unlocked
     if (!audioUnlocked) {
-        console.log('âš ï¸ [Dashboard] Audio not unlocked yet, ignoring stream chunk');
+        console.log('⚠️ [Dashboard] Audio not unlocked yet, ignoring stream chunk');
         return;
     }
-    
+
     // Initialize buffer for this stream ID
     if (!streamingBuffers.has(data.id)) {
         streamingBuffers.set(data.id, {
@@ -3593,21 +3593,21 @@ function handleStreamChunk(data) {
             playbackStarted: false
         });
     }
-    
+
     const buffer = streamingBuffers.get(data.id);
-    
+
     // Decode Base64 chunk to Uint8Array
     const binaryString = atob(data.chunk);
     const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
     buffer.chunks.push(bytes);
-    
+
     // Store metadata from first chunk
     if (data.isFirst) {
         buffer.volume = data.volume;
         buffer.speed = data.speed;
         buffer.format = data.format || 'mp3';  // Store format
         buffer.source = data.source || null;
-        console.log(`ðŸŽµ [Dashboard] Stream started for ${data.id}`, {
+        console.log(`🎵 [Dashboard] Stream started for ${data.id}`, {
             volume: buffer.volume,
             speed: buffer.speed,
             format: buffer.format,
@@ -3620,22 +3620,22 @@ function handleStreamChunk(data) {
  * Handle stream end event - combine chunks and play audio
  */
 function handleStreamEnd(data) {
-    console.log(`ðŸŽµ [Dashboard] Stream ended for ${data.id}`, {
+    console.log(`🎵 [Dashboard] Stream ended for ${data.id}`, {
         totalChunks: data.totalChunks,
         totalBytes: data.totalBytes
     });
-    
+
     const buffer = streamingBuffers.get(data.id);
     if (!buffer) {
-        console.warn(`âš ï¸ [Dashboard] No buffer found for stream ${data.id}`);
+        console.warn(`⚠️ [Dashboard] No buffer found for stream ${data.id}`);
         return;
     }
-    
+
     if (buffer.playbackStarted) {
-        console.log(`âš ï¸ [Dashboard] Playback already started for ${data.id}`);
+        console.log(`⚠️ [Dashboard] Playback already started for ${data.id}`);
         return;
     }
-    
+
     buffer.playbackStarted = true;
     playStreamingAudio(data.id, data.source || buffer.source || null);
 }
@@ -3646,17 +3646,17 @@ function handleStreamEnd(data) {
 async function playStreamingAudio(id, source = null) {
     const buffer = streamingBuffers.get(id);
     if (!buffer || buffer.chunks.length === 0) {
-        console.warn(`âš ï¸ [Dashboard] No chunks to play for ${id}`);
+        console.warn(`⚠️ [Dashboard] No chunks to play for ${id}`);
         streamingBuffers.delete(id);
         return;
     }
-    
+
     try {
-        console.log(`ðŸŽµ [Dashboard] Playing streaming audio for ${id}`, {
+        console.log(`🎵 [Dashboard] Playing streaming audio for ${id}`, {
             chunkCount: buffer.chunks.length,
             format: buffer.format
         });
-        
+
         // Combine all chunks into a single Uint8Array
         const totalLength = buffer.chunks.reduce((acc, chunk) => acc + chunk.length, 0);
         const combined = new Uint8Array(totalLength);
@@ -3665,58 +3665,58 @@ async function playStreamingAudio(id, source = null) {
             combined.set(chunk, offset);
             offset += chunk.length;
         }
-        
+
         // Create blob with correct MIME type based on format
         const mimeType = getAudioMimeType(buffer.format);
         const blob = new Blob([combined], { type: mimeType });
         const audioUrl = URL.createObjectURL(blob);
-        
+
         // Get audio element and configure playback
         const audio = document.getElementById('dashboard-tts-audio');
         if (!audio) {
-            console.error('âŒ [Dashboard] Audio element not found');
+            console.error('❌ [Dashboard] Audio element not found');
             streamingBuffers.delete(id);
             return;
         }
-        
+
         // Set playback properties BEFORE setting src for better compatibility
         audio.volume = (buffer.volume || 80) / 100;
         audio.playbackRate = buffer.speed || 1.0;
         audio.src = audioUrl;
 
         await routeDashboardAudio(audio, { source: source || buffer.source });
-        
+
         // Start playback
         audio.play().then(() => {
-            console.log(`âœ… [Dashboard] Streaming TTS started playing for ${id}`);
+            console.log(`✅ [Dashboard] Streaming TTS started playing for ${id}`);
         }).catch(err => {
-            console.error(`âŒ [Dashboard] Streaming TTS playback error for ${id}:`, err);
+            console.error(`❌ [Dashboard] Streaming TTS playback error for ${id}:`, err);
             URL.revokeObjectURL(audioUrl);
             streamingBuffers.delete(id);
         });
-        
+
         // Clean up after playback
         audio.onended = () => {
             URL.revokeObjectURL(audioUrl);
             streamingBuffers.delete(id);
-            console.log(`âœ… [Dashboard] Streaming TTS finished for ${id}`);
+            console.log(`✅ [Dashboard] Streaming TTS finished for ${id}`);
         };
-        
+
         audio.onerror = (err) => {
-            console.error(`âŒ [Dashboard] Streaming TTS audio error for ${id}:`, err);
+            console.error(`❌ [Dashboard] Streaming TTS audio error for ${id}:`, err);
             URL.revokeObjectURL(audioUrl);
             streamingBuffers.delete(id);
         };
-        
+
     } catch (error) {
-        console.error(`âŒ [Dashboard] Error in playStreamingAudio for ${id}:`, error);
+        console.error(`❌ [Dashboard] Error in playStreamingAudio for ${id}:`, error);
         streamingBuffers.delete(id);
     }
 }
 
 
 /**
- * Base64 zu Blob konvertieren (fÃ¼r TTS)
+ * Base64 zu Blob konvertieren (für TTS)
  */
 function base64ToBlob(base64, mimeType) {
     const byteCharacters = atob(base64);
@@ -3746,7 +3746,7 @@ async function loadAutoStartSettings() {
 
             if (platformName) platformName.textContent = platformData.name || 'Unknown';
             if (platformMethod) platformMethod.textContent = platformData.method || 'Unknown';
-            if (supported) supported.textContent = platformData.supported ? 'âœ… Yes' : 'âŒ No';
+            if (supported) supported.textContent = platformData.supported ? '✅ Yes' : '❌ No';
         }
 
         // Load status
@@ -3759,7 +3759,7 @@ async function loadAutoStartSettings() {
                 checkbox.checked = statusData.enabled;
             }
 
-            const statusText = statusData.enabled ? 'âœ… Enabled' : 'âŒ Disabled';
+            const statusText = statusData.enabled ? '✅ Enabled' : '❌ Disabled';
             const statusElement = document.getElementById('autostart-status');
             if (statusElement) {
                 statusElement.textContent = statusText;
@@ -3770,7 +3770,7 @@ async function loadAutoStartSettings() {
         console.error('Failed to load auto-start settings:', error);
         const statusElement = document.getElementById('autostart-status');
         if (statusElement) {
-            statusElement.textContent = 'âŒ Error';
+            statusElement.textContent = '❌ Error';
             statusElement.className = 'font-semibold text-red-400';
         }
     }
@@ -3790,7 +3790,7 @@ async function toggleAutoStart(enabled) {
         const data = await response.json();
 
         if (data.success) {
-            const statusText = enabled ? 'âœ… Enabled' : 'âŒ Disabled';
+            const statusText = enabled ? '✅ Enabled' : '❌ Disabled';
             document.getElementById('autostart-status').textContent = statusText;
             document.getElementById('autostart-status').className = enabled ? 'font-semibold text-green-400' : 'font-semibold text-gray-400';
 
@@ -3951,11 +3951,11 @@ async function importPreset() {
 function showNotification(title, message, type) {
     // Simple alert for now - can be replaced with a toast notification system
     if (type === 'error') {
-        alert(`âŒ ${title}\n\n${message}`);
+        alert(`❌ ${title}\n\n${message}`);
     } else if (type === 'success') {
-        alert(`âœ… ${title}\n\n${message}`);
+        alert(`✅ ${title}\n\n${message}`);
     } else {
-        alert(`â„¹ï¸ ${title}\n\n${message}`);
+        alert(`ℹ️ ${title}\n\n${message}`);
     }
 }
 
@@ -4056,13 +4056,13 @@ async function saveResourceMonitorSettings() {
 
         const result = await response.json();
         if (result.success) {
-            alert('âœ… Resource Monitor settings saved successfully!');
+            alert('✅ Resource Monitor settings saved successfully!');
         } else {
-            alert('âŒ Error saving settings: ' + (result.error || 'Unknown error'));
+            alert('❌ Error saving settings: ' + (result.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error saving resource monitor settings:', error);
-        alert('âŒ Error saving Resource Monitor settings!');
+        alert('❌ Error saving Resource Monitor settings!');
     }
 }
 */
@@ -4145,15 +4145,15 @@ async function saveTikTokSettings() {
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
-            alert('âœ… TikTok Einstellungen gespeichert!\n\nDie Ã„nderungen werden bei der nÃ¤chsten Verbindung zu TikTok wirksam.\nWenn bereits verbunden, bitte trennen und erneut verbinden.');
+            alert('✅ TikTok Einstellungen gespeichert!\n\nDie Änderungen werden bei der nächsten Verbindung zu TikTok wirksam.\nWenn bereits verbunden, bitte trennen und erneut verbinden.');
         } else {
-            alert('âŒ Fehler beim Speichern: ' + (result.error || 'Unbekannter Fehler'));
+            alert('❌ Fehler beim Speichern: ' + (result.error || 'Unbekannter Fehler'));
         }
     } catch (error) {
         console.error('Error saving TikTok settings:', error);
-        alert('âŒ Fehler beim Speichern der Einstellungen');
+        alert('❌ Fehler beim Speichern der Einstellungen');
     }
 }
 
@@ -4182,15 +4182,15 @@ async function loadSessionStatus() {
     try {
         const response = await fetch('/api/session/status');
         const status = await response.json();
-        
+
         const statusContainer = document.getElementById('session-status-container');
         const statusText = document.getElementById('session-status-text');
-        
+
         // Update the new SessionID status panel in TikTok connection section
         const sessionPanel = document.getElementById('session-status-panel');
         const sessionMethod = document.getElementById('session-method');
         const sessionExtractedAt = document.getElementById('session-extracted-at');
-        
+
         if (sessionPanel && sessionMethod && sessionExtractedAt) {
             if (status.hasSession) {
                 sessionPanel.style.display = 'block';
@@ -4206,19 +4206,19 @@ async function loadSessionStatus() {
                 sessionExtractedAt.textContent = '--';
             }
         }
-        
+
         // Check if elements exist before accessing them (legacy status display)
         if (!statusContainer || !statusText) {
             return;
         }
-        
+
         if (status.hasSession) {
             statusContainer.className = 'alert alert-success';
-            statusText.innerHTML = `âœ… Session-ID aktiv: ${status.sessionId}<br>` +
+            statusText.innerHTML = `✅ Session-ID aktiv: ${status.sessionId}<br>` +
                                   `Extrahiert am: ${new Date(status.extractedAt).toLocaleString('de-DE')}`;
         } else {
             statusContainer.className = 'alert alert-info';
-            statusText.textContent = 'â„¹ï¸ Keine Session-ID konfiguriert';
+            statusText.textContent = 'ℹ️ Keine Session-ID konfiguriert';
         }
     } catch (error) {
         console.error('Failed to load session status:', error);
@@ -4229,34 +4229,34 @@ async function loadSessionStatus() {
 document.getElementById('extract-session-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('extract-session-btn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2"></i> Browser Ã¶ffnet...';
+    btn.innerHTML = '<i data-lucide="loader-2"></i> Browser öffnet...';
     lucide.createIcons();
-    
-    showNotification('ðŸŒ Browser wird geÃ¶ffnet. Bitte logge dich in TikTok ein (Browser bleibt bis zu 5 Minuten offen).', 'info');
-    
+
+    showNotification('🌐 Browser wird geöffnet. Bitte logge dich in TikTok ein (Browser bleibt bis zu 5 Minuten offen).', 'info');
+
     try {
         const response = await fetch('/api/session/extract-manual', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-            showNotification('âœ… Session-ID erfolgreich extrahiert! Login fÃ¼r nÃ¤chstes Mal gespeichert.', 'success');
+            showNotification('✅ Session-ID erfolgreich extrahiert! Login für nächstes Mal gespeichert.', 'success');
             await loadSessionStatus();
         } else {
             if (result.message && result.message.includes('not secure')) {
-                showNotification('âš ï¸ TikTok blockiert automatisierte Browser. Bitte verwenden Sie "Import SessionID" stattdessen.', 'warning');
+                showNotification('⚠️ TikTok blockiert automatisierte Browser. Bitte verwenden Sie "Import SessionID" stattdessen.', 'warning');
             } else {
-                showNotification(`âŒ Fehler: ${result.message}`, 'error');
+                showNotification(`❌ Fehler: ${result.message}`, 'error');
             }
         }
     } catch (error) {
         console.error('Manual session extraction error:', error);
-        showNotification('âŒ Fehler bei der manuellen Session-Extraktion', 'error');
+        showNotification('❌ Fehler bei der manuellen Session-Extraktion', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
@@ -4287,19 +4287,19 @@ document.getElementById('cancel-import-btn')?.addEventListener('click', () => {
 document.getElementById('confirm-import-btn')?.addEventListener('click', async () => {
     const sessionId = document.getElementById('import-sessionid-input').value.trim();
     const ttTargetIdc = document.getElementById('import-tttargetidc-input').value.trim();
-    
+
     if (!sessionId) {
-        showNotification('âŒ Bitte SessionID eingeben', 'error');
+        showNotification('❌ Bitte SessionID eingeben', 'error');
         return;
     }
-    
+
     const btn = document.getElementById('confirm-import-btn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.disabled = true;
     btn.innerHTML = '<i data-lucide="loader-2"></i> Importiere...';
     lucide.createIcons();
-    
+
     try {
         const response = await fetch('/api/session/import-manual', {
             method: 'POST',
@@ -4309,19 +4309,19 @@ document.getElementById('confirm-import-btn')?.addEventListener('click', async (
                 ttTargetIdc: ttTargetIdc || null
             })
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-            showNotification('âœ… Session-ID erfolgreich importiert!', 'success');
+            showNotification('✅ Session-ID erfolgreich importiert!', 'success');
             await loadSessionStatus();
             document.getElementById('session-import-modal').classList.remove('active');
         } else {
-            showNotification(`âŒ Fehler: ${result.message}`, 'error');
+            showNotification(`❌ Fehler: ${result.message}`, 'error');
         }
     } catch (error) {
         console.error('Manual session import error:', error);
-        showNotification('âŒ Fehler beim Importieren der Session-ID', 'error');
+        showNotification('❌ Fehler beim Importieren der Session-ID', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
@@ -4343,30 +4343,30 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('extract-session-manual-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('extract-session-manual-btn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2"></i> Browser Ã¶ffnet...';
+    btn.innerHTML = '<i data-lucide="loader-2"></i> Browser öffnet...';
     lucide.createIcons();
-    
-    showNotification('ðŸŒ Browser wird geÃ¶ffnet. Bitte logge dich in TikTok ein.', 'info');
-    
+
+    showNotification('🌐 Browser wird geöffnet. Bitte logge dich in TikTok ein.', 'info');
+
     try {
         const response = await fetch('/api/session/extract-manual', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-            showNotification('âœ… Session-ID erfolgreich extrahiert!', 'success');
+            showNotification('✅ Session-ID erfolgreich extrahiert!', 'success');
             await loadSessionStatus();
         } else {
-            showNotification(`âŒ Fehler: ${result.message}`, 'error');
+            showNotification(`❌ Fehler: ${result.message}`, 'error');
         }
     } catch (error) {
         console.error('Manual session extraction error:', error);
-        showNotification('âŒ Fehler bei der manuellen Session-Extraktion', 'error');
+        showNotification('❌ Fehler bei der manuellen Session-Extraktion', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
@@ -4376,33 +4376,33 @@ document.getElementById('extract-session-manual-btn')?.addEventListener('click',
 
 // Clear session
 document.getElementById('clear-session-btn')?.addEventListener('click', async () => {
-    if (!confirm('MÃ¶chtest du die gespeicherte Session-ID wirklich lÃ¶schen?')) {
+    if (!confirm('Möchtest du die gespeicherte Session-ID wirklich löschen?')) {
         return;
     }
-    
+
     const btn = document.getElementById('clear-session-btn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2"></i> LÃ¶sche...';
+    btn.innerHTML = '<i data-lucide="loader-2"></i> Lösche...';
     lucide.createIcons();
-    
+
     try {
         const response = await fetch('/api/session/clear', {
             method: 'DELETE'
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-            showNotification('âœ… Session-ID gelÃ¶scht', 'success');
+            showNotification('✅ Session-ID gelöscht', 'success');
             await loadSessionStatus();
         } else {
-            showNotification(`âŒ Fehler: ${result.error}`, 'error');
+            showNotification(`❌ Fehler: ${result.error}`, 'error');
         }
     } catch (error) {
         console.error('Session clear error:', error);
-        showNotification('âŒ Fehler beim LÃ¶schen der Session', 'error');
+        showNotification('❌ Fehler beim Löschen der Session', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
@@ -4414,23 +4414,23 @@ document.getElementById('clear-session-btn')?.addEventListener('click', async ()
 document.getElementById('test-browser-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('test-browser-btn');
     const originalHTML = btn.innerHTML;
-    
+
     btn.disabled = true;
     btn.innerHTML = '<i data-lucide="loader-2"></i> Teste...';
     lucide.createIcons();
-    
+
     try {
         const response = await fetch('/api/session/test-browser');
         const result = await response.json();
-        
+
         if (result.available) {
-            showNotification('âœ… Browser-Automation verfÃ¼gbar!', 'success');
+            showNotification('✅ Browser-Automation verfügbar!', 'success');
         } else {
-            showNotification(`âš ï¸ Browser nicht verfÃ¼gbar: ${result.message}`, 'warning');
+            showNotification(`⚠️ Browser nicht verfügbar: ${result.message}`, 'warning');
         }
     } catch (error) {
         console.error('Browser test error:', error);
-        showNotification('âŒ Fehler beim Browser-Test', 'error');
+        showNotification('❌ Fehler beim Browser-Test', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
@@ -4446,7 +4446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(loadSessionStatus, 100);
         });
     }
-    
+
     // Also load on page load if on settings page
     if (window.location.hash === '#settings' || !window.location.hash) {
         setTimeout(loadSessionStatus, 500);
@@ -4460,66 +4460,66 @@ document.getElementById('run-diagnostics-btn')?.addEventListener('click', async 
     const btn = document.getElementById('run-diagnostics-btn');
     const resultDiv = document.getElementById('diagnostics-result');
     const contentDiv = document.getElementById('diagnostics-content');
-    
+
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2"></i> LÃ¤uft...';
-    
+    btn.innerHTML = '<i data-lucide="loader-2"></i> Läuft...';
+
     try {
         const username = document.getElementById('username-input').value || 'tiktok';
         const response = await fetch(`/api/diagnostics?username=${encodeURIComponent(username)}`);
         const diagnostics = await response.json();
-        
+
         // Display results
         resultDiv.style.display = 'block';
-        
+
         let html = '<div style="font-family: monospace; line-height: 1.6;">';
-        
+
         // Euler API Key Status
-        html += '<div style="margin-bottom: 1rem;"><strong>ðŸ”‘ Euler API Key:</strong><br>';
+        html += '<div style="margin-bottom: 1rem;"><strong>🔑 Euler API Key:</strong><br>';
         const keyInfo = diagnostics.eulerApiKey || {};
         if (keyInfo.activeKey) {
             const keyMode = keyInfo.usingFallback ? 'Fallback wird verwendet' : 'Eigener Key wird verwendet';
             html += `Quelle: ${keyMode}<br>`;
-            html += `âœ… Aktiv (${keyInfo.activeSource}): ${keyInfo.activeKey}<br>`;
+            html += `✅ Aktiv (${keyInfo.activeSource}): ${keyInfo.activeKey}<br>`;
         } else {
-            html += 'âŒ Nicht konfiguriert<br>';
+            html += '❌ Nicht konfiguriert<br>';
         }
         html += '</div>';
-        
+
         // TikTok API Test
-        html += '<div style="margin-bottom: 1rem;"><strong>ðŸŒ TikTok API:</strong><br>';
+        html += '<div style="margin-bottom: 1rem;"><strong>🌐 TikTok API:</strong><br>';
         const tiktokApi = diagnostics.tiktokApi || {};
         if (tiktokApi.success) {
-            html += `âœ… Erreichbar (${tiktokApi.responseTime}ms)<br>`;
+            html += `✅ Erreichbar (${tiktokApi.responseTime}ms)<br>`;
         } else {
-            html += `âŒ Fehler: ${tiktokApi.error || 'Nicht erreichbar'}<br>`;
+            html += `❌ Fehler: ${tiktokApi.error || 'Nicht erreichbar'}<br>`;
         }
         html += '</div>';
-        
+
         // Euler WebSocket Test
-        html += '<div style="margin-bottom: 1rem;"><strong>ðŸ”Œ Euler WebSocket:</strong><br>';
+        html += '<div style="margin-bottom: 1rem;"><strong>🔌 Euler WebSocket:</strong><br>';
         const eulerWebSocket = diagnostics.eulerWebSocket || {};
         if (eulerWebSocket.success) {
-            html += `âœ… Verbindung OK (${eulerWebSocket.responseTime}ms)<br>`;
+            html += `✅ Verbindung OK (${eulerWebSocket.responseTime}ms)<br>`;
         } else {
-            html += `âš ï¸ ${eulerWebSocket.error || 'Nicht verbunden'}<br>`;
+            html += `⚠️ ${eulerWebSocket.error || 'Nicht verbunden'}<br>`;
         }
         html += '</div>';
-        
+
         // Configuration
-        html += '<div style="margin-bottom: 1rem;"><strong>âš™ï¸ Konfiguration:</strong><br>';
+        html += '<div style="margin-bottom: 1rem;"><strong>⚙️ Konfiguration:</strong><br>';
         const connectionConfig = diagnostics.connectionConfig || {};
         html += `Fallback aktuell verwendet: ${keyInfo.usingFallback ? 'Ja' : 'Nein'}<br>`;
-        html += `Euler Fallbacks: ${connectionConfig.enableEulerFallbacks ? 'âœ… Aktiviert' : 'âŒ Deaktiviert'}<br>`;
-        html += `Connect with Unique ID: ${connectionConfig.connectWithUniqueId ? 'âœ… Aktiviert' : 'âŒ Deaktiviert'}<br>`;
+        html += `Euler Fallbacks: ${connectionConfig.enableEulerFallbacks ? '✅ Aktiviert' : '❌ Deaktiviert'}<br>`;
+        html += `Connect with Unique ID: ${connectionConfig.connectWithUniqueId ? '✅ Aktiviert' : '❌ Deaktiviert'}<br>`;
         html += `Timeout: ${connectionConfig.connectionTimeout ? connectionConfig.connectionTimeout / 1000 : 30}s<br>`;
         html += '</div>';
-        
+
         // Recent Attempts
         if (diagnostics.recentAttempts && diagnostics.recentAttempts.length > 0) {
-            html += '<div style="margin-bottom: 1rem;"><strong>ðŸ“œ Letzte Verbindungsversuche:</strong><br>';
+            html += '<div style="margin-bottom: 1rem;"><strong>📜 Letzte Verbindungsversuche:</strong><br>';
             diagnostics.recentAttempts.slice(0, 5).forEach(attempt => {
-                const icon = attempt.success ? 'âœ…' : 'âŒ';
+                const icon = attempt.success ? '✅' : '❌';
                 const time = new Date(attempt.timestamp).toLocaleTimeString('de-DE');
                 html += `${icon} ${time} - @${attempt.username}`;
                 if (!attempt.success) {
@@ -4529,32 +4529,32 @@ document.getElementById('run-diagnostics-btn')?.addEventListener('click', async 
             });
             html += '</div>';
         }
-        
+
         // Recommendations
         if (diagnostics.recommendations && diagnostics.recommendations.length > 0) {
-            html += '<div><strong>ðŸ’¡ Empfehlungen:</strong><br>';
+            html += '<div><strong>💡 Empfehlungen:</strong><br>';
             diagnostics.recommendations.forEach(rec => {
-                const icon = rec.severity === 'error' ? 'ðŸ”´' : rec.severity === 'warning' ? 'ðŸŸ¡' : 'ðŸ”µ';
+                const icon = rec.severity === 'error' ? '🔴' : rec.severity === 'warning' ? '🟡' : '🔵';
                 html += `${icon} ${rec.message}<br>`;
-                html += `<span style="color: var(--text-secondary); font-size: 0.9em;">â†’ ${rec.action}</span><br><br>`;
+                html += `<span style="color: var(--text-secondary); font-size: 0.9em;">→ ${rec.action}</span><br><br>`;
             });
             html += '</div>';
         }
-        
+
         html += '</div>';
         contentDiv.innerHTML = html;
-        
+
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
-        
+
     } catch (error) {
         resultDiv.style.display = 'block';
-        contentDiv.innerHTML = `<div style="color: var(--error);">âŒ Fehler: ${error.message}</div>`;
+        contentDiv.innerHTML = `<div style="color: var(--error);">❌ Fehler: ${error.message}</div>`;
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="activity"></i> Verbindungsdiagnose ausfÃ¼hren';
+        btn.innerHTML = '<i data-lucide="activity"></i> Verbindungsdiagnose ausführen';
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -4566,18 +4566,18 @@ async function loadConnectionHealth() {
     try {
         const response = await fetch('/api/connection-health');
         const health = await response.json();
-        
+
         const healthDiv = document.getElementById('connection-health');
         const statusSpan = document.getElementById('health-status');
         const detailsDiv = document.getElementById('health-details');
-        
+
         if (healthDiv && statusSpan && detailsDiv) {
             healthDiv.style.display = 'block';
-            
+
             // Set status color
             let bgColor = 'var(--bg-secondary)';
             let textColor = 'var(--text-primary)';
-            
+
             switch (health.status) {
                 case 'healthy':
                     bgColor = 'rgba(34, 197, 94, 0.1)';
@@ -4596,25 +4596,25 @@ async function loadConnectionHealth() {
                     textColor = 'rgb(239, 68, 68)';
                     break;
             }
-            
+
             healthDiv.style.background = bgColor;
             statusSpan.style.color = textColor;
             statusSpan.textContent = health.message;
-            
+
             let details = '';
             if (health.eulerKeyConfigured) {
                 details += `Euler Key: ${health.eulerKeySource}`;
             } else {
                 details += 'Kein Euler Key konfiguriert';
             }
-            
+
             if (health.recentAttempts && health.recentAttempts.length > 0) {
                 const failures = health.recentAttempts.filter(a => !a.success).length;
                 details += ` | ${failures}/${health.recentAttempts.length} fehlgeschlagen`;
             }
-            
+
             detailsDiv.textContent = details;
-            
+
             // Re-initialize Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -4673,28 +4673,28 @@ function showFallbackKeyWarning(data) {
 
     warningBox.innerHTML = `
         <div style="text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 20px;">âš ï¸</div>
+            <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
             <h2 style="color: #f59e0b; font-size: 28px; margin-bottom: 20px; font-weight: bold;">
                 Fallback API Key wird verwendet
             </h2>
             <p style="color: #d1d5db; font-size: 18px; line-height: 1.6; margin-bottom: 20px;">
-                Du verwendest einen gemeinsamen Fallback-Key. Dies ist nur eine NotlÃ¶sung!
+                Du verwendest einen gemeinsamen Fallback-Key. Dies ist nur eine Notlösung!
             </p>
             <p style="color: #9ca3af; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-                Bitte hole dir deinen eigenen <strong>kostenlosen</strong> API Key von 
+                Bitte hole dir deinen eigenen <strong>kostenlosen</strong> API Key von
                 <a href="https://www.eulerstream.com" target="_blank" style="color: #60a5fa; text-decoration: underline;">eulerstream.com</a>
                 und speichere ihn in den Einstellungen.
             </p>
             <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                 <p style="color: #fbbf24; font-size: 14px; margin: 0;">
-                    <strong>Hinweis:</strong> Dieser Fallback-Key wird von allen Nutzern geteilt und kÃ¶nnte jederzeit deaktiviert werden.
+                    <strong>Hinweis:</strong> Dieser Fallback-Key wird von allen Nutzern geteilt und könnte jederzeit deaktiviert werden.
                 </p>
             </div>
             <div style="font-size: 36px; color: #f59e0b; font-weight: bold; margin-top: 20px;" id="countdown-timer">
                 ${remainingSeconds}
             </div>
             <p style="color: #6b7280; font-size: 14px; margin-top: 10px;">
-                Dieses Fenster schlieÃŸt sich automatisch...
+                Dieses Fenster schließt sich automatisch...
             </p>
         </div>
     `;
@@ -4795,7 +4795,7 @@ function showEulerBackupKeyWarning(data) {
 
     warningBox.innerHTML = `
         <div style="text-align: center;">
-            <div style="font-size: 80px; margin-bottom: 30px; animation: pulse 2s infinite;">ðŸš¨</div>
+            <div style="font-size: 80px; margin-bottom: 30px; animation: pulse 2s infinite;">🚨</div>
             <h2 style="color: #fca5a5; font-size: 32px; margin-bottom: 25px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
                 Euler Backup Key Erkannt
             </h2>
@@ -4803,11 +4803,11 @@ function showEulerBackupKeyWarning(data) {
                 Du verwendest den Euler Backup Key!
             </p>
             <p style="color: #fca5a5; font-size: 18px; line-height: 1.7; margin-bottom: 30px;">
-                Dieser Key ist <strong>nur als Notfall-Backup</strong> gedacht und sollte <strong>nicht regulÃ¤r verwendet werden</strong>.
+                Dieser Key ist <strong>nur als Notfall-Backup</strong> gedacht und sollte <strong>nicht regulär verwendet werden</strong>.
             </p>
             <div style="background: rgba(220, 38, 38, 0.2); border: 2px solid #dc2626; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
                 <p style="color: #fef2f2; font-size: 16px; margin: 0; line-height: 1.6;">
-                    <strong>âš ï¸ WICHTIG:</strong> Bitte hole dir deinen eigenen <strong>kostenlosen</strong> API Key von 
+                    <strong>⚠️ WICHTIG:</strong> Bitte hole dir deinen eigenen <strong>kostenlosen</strong> API Key von
                     <a href="https://www.eulerstream.com" target="_blank" style="color: #fbbf24; text-decoration: underline; font-weight: bold;">eulerstream.com</a>
                     und speichere ihn in den Einstellungen.
                 </p>
@@ -4818,7 +4818,7 @@ function showEulerBackupKeyWarning(data) {
                 </p>
             </div>
             <p style="color: #dc2626; font-size: 15px; margin-top: 15px; font-weight: 700; text-transform: uppercase;">
-                âš ï¸ Dieses Fenster kann nicht geschlossen werden âš ï¸
+                ⚠️ Dieses Fenster kann nicht geschlossen werden ⚠️
             </p>
         </div>
     `;
@@ -4921,10 +4921,10 @@ function renderUsernameAliases(aliases) {
     const rows = aliases.map(alias => {
         const lastSeen = alias.last_seen_at
             ? new Date(alias.last_seen_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            : 'â€”';
+            : '—';
         const addedAt = alias.added_at
             ? new Date(alias.added_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            : 'â€”';
+            : '—';
         const isPrimary = alias.is_primary === 1 || alias.is_primary === true;
 
         return `
@@ -4935,7 +4935,7 @@ function renderUsernameAliases(aliases) {
                     title="${isPrimary ? 'Haupt-Username (aktiv)' : 'Als Haupt-Username setzen'}"
                     data-action="alias-set-primary" data-username="${escapeHtml(alias.username)}"
                     ${isPrimary ? 'disabled' : ''}
-                >â­</button>
+                >⭐</button>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="font-mono font-semibold text-white">@${escapeHtml(alias.username)}</span>
@@ -4943,8 +4943,8 @@ function renderUsernameAliases(aliases) {
                         ${alias.label ? `<span class="text-xs text-gray-400 truncate">${escapeHtml(alias.label)}</span>` : ''}
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5">
-                        HinzugefÃ¼gt: ${addedAt}
-                        ${alias.last_seen_at ? ` Â· Zuletzt gesehen: ${lastSeen}` : ''}
+                        Hinzugefügt: ${addedAt}
+                        ${alias.last_seen_at ? ` · Zuletzt gesehen: ${lastSeen}` : ''}
                     </div>
                 </div>
                 <button
@@ -4984,7 +4984,7 @@ async function addUsernameAlias() {
     }
 
     if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
-        alert('UngÃ¼ltiger Username. Erlaubt sind: Buchstaben, Zahlen, Punkt, Unterstrich, Bindestrich.');
+        alert('Ungültiger Username. Erlaubt sind: Buchstaben, Zahlen, Punkt, Unterstrich, Bindestrich.');
         return;
     }
 
@@ -5008,7 +5008,7 @@ async function addUsernameAlias() {
         }
     } catch (error) {
         console.error('[Aliases] Error adding alias:', error);
-        alert('Netzwerkfehler beim HinzufÃ¼gen.');
+        alert('Netzwerkfehler beim Hinzufügen.');
     } finally {
         if (btn) btn.disabled = false;
     }

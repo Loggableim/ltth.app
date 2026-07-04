@@ -139,6 +139,22 @@
         }
         .summary-item .num { font-size: 1.8rem; font-weight: 700; color: #667eea; }
         .summary-item .lbl { font-size: 0.78rem; color: var(--color-text-muted, #888); margin-top: 2px; }
+        .legacy-candidate {
+            background: var(--color-bg-tertiary, #0f0f1e);
+            border: 1px solid var(--color-border, #2a2a3e);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .legacy-candidate-title { font-weight: 700; margin-bottom: 4px; }
+        .legacy-candidate-path {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--color-text-muted, #888);
+            word-break: break-all;
+            margin-bottom: 6px;
+        }
+        .legacy-candidate-summary { font-size: 0.86rem; color: var(--color-text-secondary, #ccc); margin-bottom: 10px; }
         .hidden { display: none !important; }
         .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -337,6 +353,12 @@
 
         <div id="legacyAlert" class="alert hidden"></div>
 
+        <div class="card hidden" id="legacyDiscoveryCard">
+            <h2>Detected Old Configs</h2>
+            <p class="desc">Known LTTH locations were scanned for old profiles, plugin data, uploads, and user data.</p>
+            <div id="legacyDiscoveryList"></div>
+        </div>
+
         <div class="card">
             <h2>🗂️ Import from Old Installation Path</h2>
             <p class="desc">Enter the directory where your old LTTH installation was installed. The tool will scan for configuration files and import them into the current persistent storage location.</p>
@@ -381,13 +403,19 @@
     'use strict';
 
     // ── Tab switching ──────────────────────────────────────────────────────────
+    function activateTab(tabName) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+        const panel = document.getElementById('tab-' + tabName);
+        if (!btn || !panel) return;
+
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        panel.classList.add('active');
+    }
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        });
+        btn.addEventListener('click', () => activateTab(btn.dataset.tab));
     });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -798,6 +826,52 @@
     const legacyResultCard = document.getElementById('legacyResultCard');
     let legacyValidated = false;
 
+    async function loadLegacyDiscovery() {
+        const card = document.getElementById('legacyDiscoveryCard');
+        const list = document.getElementById('legacyDiscoveryList');
+        if (!card || !list) return;
+
+        try {
+            const resp = await fetch('/api/config-import/discover');
+            const data = await resp.json();
+            const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+            if (!data.success || candidates.length === 0) {
+                return;
+            }
+
+            list.innerHTML = candidates.map((candidate, index) => {
+                const candidatePath = candidate.importPath || candidate.actualPath || '';
+                const label = candidate.label || `Legacy source ${index + 1}`;
+                const summary = candidate.summary || `${candidate.fileCount || 0} file(s) detected`;
+                return `
+                    <div class="legacy-candidate">
+                        <div class="legacy-candidate-title">${escHtml(label)}</div>
+                        <div class="legacy-candidate-path">${escHtml(candidate.actualPath || candidatePath)}</div>
+                        <div class="legacy-candidate-summary">${escHtml(summary)}</div>
+                        <button class="btn btn-secondary legacy-use-candidate" data-path="${escHtml(candidatePath)}">
+                            Use this source
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.legacy-use-candidate').forEach(button => {
+                button.addEventListener('click', () => {
+                    const candidatePath = button.getAttribute('data-path');
+                    if (!candidatePath) return;
+                    legacyPathInput.value = candidatePath;
+                    legacyValidateBtn.click();
+                });
+            });
+
+            showEl(card);
+        } catch {
+            // Discovery is helpful but non-blocking; manual path entry still works.
+        }
+    }
+
+    loadLegacyDiscovery();
+
     legacyValidateBtn.addEventListener('click', async () => {
         const importPath = legacyPathInput.value.trim();
         if (!importPath) { showAlert(legacyAlert, '❌ Please enter a path.', 'error'); return; }
@@ -904,6 +978,21 @@
     });
 
     // ── XSS helper ────────────────────────────────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab');
+    if (initialTab) {
+        activateTab(initialTab);
+    }
+
+    const initialLegacyPath = urlParams.get('legacyPath');
+    if (initialLegacyPath) {
+        legacyPathInput.value = initialLegacyPath;
+        activateTab('legacy');
+        if (urlParams.get('autoScan') === '1') {
+            setTimeout(() => legacyValidateBtn.click(), 0);
+        }
+    }
+
     function escHtml(str) {
         if (str === null || str === undefined) return '';
         return String(str)

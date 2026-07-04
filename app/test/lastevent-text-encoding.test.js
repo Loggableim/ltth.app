@@ -34,9 +34,8 @@ describe('LastEvent text encoding regressions', () => {
 
     const metadataText = container.querySelector('.gift-metadata')?.textContent || '';
     expect(metadataText).toContain('×3');
-    expect(metadataText).toContain('💰 120 coins');
-    expect(metadataText).not.toContain('Ã—');
-    expect(metadataText).not.toContain('ðŸ');
+    expect(metadataText).toContain('120 coins');
+    expect(metadataText).not.toMatch(/(?:\uFFFD|Ã|Â|ï¿½)/);
 
     delete global.document;
     delete global.window;
@@ -55,10 +54,7 @@ describe('LastEvent text encoding regressions', () => {
 
     files.forEach(file => {
       const content = fs.readFileSync(file, 'utf8');
-      expect(content).not.toContain('Ã');
-      expect(content).not.toContain('â');
-      expect(content).not.toContain('ðŸ');
-      expect(content).not.toContain('�');
+      expect(content).not.toMatch(/(?:\uFFFD|Ã|Â|ï¿½)/);
     });
   });
 

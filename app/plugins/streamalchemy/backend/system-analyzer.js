@@ -171,9 +171,17 @@ class SystemAnalyzer {
     }
 
     return {
-      targetRoot: path.resolve(targetRoot),
+      targetRoot: this.resolveTargetRoot(targetRoot),
       freeGb
     };
+  }
+
+  resolveTargetRoot(targetRoot) {
+    const rawTargetRoot = String(targetRoot || process.cwd());
+    if (path.win32.isAbsolute(rawTargetRoot) && this.os.platform() === 'win32') {
+      return path.win32.resolve(rawTargetRoot);
+    }
+    return path.resolve(rawTargetRoot);
   }
 
   recommend(gpu, presets = []) {

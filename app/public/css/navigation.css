@@ -516,10 +516,10 @@ body {
 .sidebar-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    margin: 0.25rem 0;
-    border-radius: 8px;
+    gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    margin: 0.16rem 0;
+    border-radius: 10px;
     color: var(--color-text-secondary);
     text-decoration: none;
     transition: all 0.2s ease;
@@ -552,6 +552,43 @@ body {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
+    color: var(--sidebar-icon-accent, var(--color-text-secondary));
+    transition: transform 0.16s ease, color 0.16s ease, opacity 0.16s ease;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar-item:hover svg {
+    transform: scale(1.08);
+    opacity: 1;
+}
+
+.sidebar-item.active svg {
+    color: white;
+    transform: scale(1.06);
+    opacity: 1;
+}
+
+.sidebar-quick-icon svg {
+    color: var(--sidebar-icon-accent, var(--color-text-secondary));
+    width: 20px;
+    height: 20px;
+    transition: transform 0.16s ease, color 0.16s ease, opacity 0.16s ease;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar-quick-icon:hover svg {
+    transform: scale(1.08);
+    opacity: 1;
+}
+
+.sidebar-quick-icon[data-state="on"] svg,
+.sidebar-quick-icon[data-state="active"] svg {
+    color: white;
+    transform: scale(1.06);
 }
 
 .sidebar-item-text {

@@ -9,6 +9,49 @@
     // ========== STATE ==========
     let currentView = 'dashboard';
     let sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    const SIDEBAR_ICON_ACCENTS = {
+        dashboard: '#f59e0b',
+        clarityhud: '#38bdf8',
+        'lastevent-spotlight': '#a855f7',
+        events: '#22c55e',
+        flows: '#06b6d4',
+        goals: '#ef4444',
+        'advanced-timer': '#f97316',
+        tts: '#f43f5e',
+        'music-bot': '#8b5cf6',
+        soundboard: '#14b8a6',
+        'talking-heads': '#ec4899',
+        'stt-ticker': '#3b82f6',
+        'stt-capture': '#0ea5e9',
+        'webgpu-emoji-rain': '#f59e0b',
+        fireworks: '#fb7185',
+        'fireworks-dev': '#64748b',
+        'flame-overlay': '#f97316',
+        'quiz-show': '#10b981',
+        'interactive-story': '#8b5cf6',
+        coinbattle: '#eab308',
+        'game-engine': '#6366f1',
+        'viewer-leaderboard': '#0ea5e9',
+        'viewer-profiles': '#14b8a6',
+        'gift-milestone': '#f43f5e',
+        toptier: '#d97706',
+        vdoninja: '#7c3aed',
+        multicam: '#06b6d4',
+        'osc-bridge': '#22c55e',
+        openshock: '#ef4444',
+        'weather-control': '#38bdf8',
+        'minecraft-connect': '#16a34a',
+        streamalchemy: '#ec4899',
+        gcce: '#f59e0b',
+        'gcce-hud': '#8b5cf6',
+        'thermal-printer': '#64748b',
+        chatango: '#f97316',
+        animazingpal: '#ef4444',
+        'config-import': '#06b6d4',
+        plugins: '#22c55e',
+        wiki: '#a855f7',
+        settings: '#64748b'
+    };
 
     // ========== INITIALIZATION ==========
     document.addEventListener('DOMContentLoaded', async () => {
@@ -21,6 +64,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
 
         // Register i18n language change listener to update connection status
         if (window.i18n) {
@@ -206,6 +250,7 @@
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+                applySidebarIconAccents();
             });
         }
 
@@ -267,6 +312,39 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
+    }
+
+    function hashString(value) {
+        let hash = 0;
+        for (let i = 0; i < value.length; i += 1) {
+            hash = (hash << 5) - hash + value.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    }
+
+    function buildAccentColor(key) {
+        const normalized = String(key || '').toLowerCase();
+        if (SIDEBAR_ICON_ACCENTS[normalized]) {
+            return SIDEBAR_ICON_ACCENTS[normalized];
+        }
+        const hue = hashString(normalized) % 360;
+        return `hsl(${hue} 78% 58%)`;
+    }
+
+    function applySidebarIconAccents() {
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            const key = item.dataset.plugin || item.dataset.view || item.dataset.tooltip || item.textContent || 'sidebar';
+            item.style.setProperty('--sidebar-icon-accent', buildAccentColor(key));
+            item.classList.add('sidebar-item-colored');
+        });
+
+        document.querySelectorAll('.sidebar-quick-icon').forEach(item => {
+            const key = item.dataset.plugin || item.dataset.action || item.id || item.title || 'quick';
+            item.style.setProperty('--sidebar-icon-accent', buildAccentColor(key));
+            item.classList.add('sidebar-quick-icon-colored');
+        });
     }
 
     function toggleCategory(category, categoryId) {
@@ -292,6 +370,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
     }
 
     // ========== NAVIGATION ==========
@@ -392,6 +471,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
 
         // Lazy-load JavaScript modules for this view (non-blocking)
         if (window.LazyLoader) {
@@ -508,6 +588,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
     }
 
     // ========== DASHBOARD RESOURCES MONITOR ==========
@@ -636,6 +717,7 @@
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
+            applySidebarIconAccents();
 
         } catch (error) {
             // Retry on network errors
@@ -711,6 +793,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
     }
 
     // ========== WINDOW CONTROLS (Frameless Window) ==========
@@ -898,6 +981,7 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        applySidebarIconAccents();
     }
 
     // Handle window resize

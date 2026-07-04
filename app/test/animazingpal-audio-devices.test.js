@@ -11,7 +11,9 @@ describe('AnimazingPal audio device discovery', () => {
     jest.clearAllMocks();
   });
 
-  test('lists active Windows playback endpoints for UI fallback', async () => {
+  const windowsTest = process.platform === 'win32' ? test : test.skip;
+
+  windowsTest('lists active Windows playback endpoints for UI fallback', async () => {
     childProcess.execFile.mockImplementation((command, args, options, callback) => {
       callback(null, JSON.stringify([
         {

@@ -160,14 +160,26 @@ describe('Fireworks Performance Optimizations', () => {
             expect(engineCode).toContain('adaptiveRenderScaleEnabled: true');
             expect(engineCode).toContain('this.baseWidth = 0');
             expect(engineCode).toContain('this.renderScale = 1.0');
+            expect(engineCode).toContain('this.renderWidth = 0');
+            expect(engineCode).toContain('this.renderHeight = 0');
+            expect(engineCode).toContain('this.transitionCanvas = null');
+            expect(engineCode).toContain('this.transitionFadeMs = 180');
             expect(engineCode).toContain('this.isBenchmarkMode =');
+            expect(engineCode).toContain('applyOverlayOrientationLayout()');
+            expect(engineCode).toContain('initTransitionLayer()');
             expect(engineCode).toContain('updateAdaptiveRenderScale(avgFps)');
             expect(engineCode).toContain('applyRenderScale()');
-            expect(engineCode).toContain('this.canvas.style.width = \'100%\'');
+            expect(engineCode).toContain('this.canvas.style.width = orientation === \'portrait\' ? \'auto\' : \'100%\'');
             expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
+            expect(engineCode).toContain('this.canvas.style.objectFit = \'contain\'');
+            expect(engineCode).toContain('this.trailCanvas.width = this.renderWidth');
+            expect(engineCode).toContain('this.webglEngine.resize(this.renderWidth, this.renderHeight)');
+            expect(engineCode).toContain('this.webglEngine.render(this.width, this.height)');
+            expect(engineCode).toContain('captureRenderTransitionSnapshot()');
+            expect(engineCode).toContain('updateRenderTransition()');
         });
 
-        test('should support OBS-safe internal resolution bounds from 4k down to 480p', () => {
+        test('should support OBS-safe internal resolution bounds from 4k down to 540p', () => {
             expect(engineCode).toContain('internalMaxResolutionPreset');
             expect(engineCode).toContain('internalMinResolutionPreset');
             expect(engineCode).toContain("'480p': { landscape: { width: 854, height: 480 }");

@@ -10,12 +10,50 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync, exec, execFileSync } = require('child_process');
+const { execFile, execFileSync } = require('child_process');
 const TTYLogger = require('./tty-logger');
 
 // PERFORMANCE: Cache file for npm/node version checks
 const ENV_CACHE_FILE = path.join(os.tmpdir(), 'ltth-env-cache.json');
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function resolveNpmCommandForNode(nodePath, existsSync = fs.existsSync, platform = process.platform) {
+    const nodeDir = nodePath ? path.dirname(nodePath) : '';
+    const npmCli = nodeDir ? path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js') : '';
+    if (nodePath && npmCli && existsSync(npmCli)) {
+        return { command: nodePath, args: [npmCli], label: `${nodePath} ${npmCli}` };
+    }
+
+    const npmName = platform === 'win32' ? 'npm.cmd' : 'npm';
+    const adjacentNpm = nodeDir ? path.join(nodeDir, npmName) : '';
+    if (adjacentNpm && existsSync(adjacentNpm)) {
+        return { command: adjacentNpm, args: [], label: adjacentNpm };
+    }
+
+    return { command: npmName, args: [], label: npmName };
+}
+
+function pathKeyForEnv(env) {
+    if (process.platform !== 'win32') {
+        return 'PATH';
+    }
+    return Object.keys(env).find(key => key.toLowerCase() === 'path') || 'Path';
+}
+
+function prependRuntimePath(env, runtimeDir) {
+    if (!runtimeDir) {
+        return env;
+    }
+    const key = pathKeyForEnv(env);
+    const existing = String(env[key] || '');
+    const runtimeLower = runtimeDir.toLowerCase();
+    const parts = existing
+        .split(path.delimiter)
+        .filter(Boolean)
+        .filter(entry => entry.toLowerCase() !== runtimeLower);
+    env[key] = [runtimeDir, ...parts].join(path.delimiter);
+    return env;
+}
 
 class Launcher {
     constructor() {
@@ -36,6 +74,9 @@ class Launcher {
         try {
             if (fs.existsSync(ENV_CACHE_FILE)) {
                 const cache = JSON.parse(fs.readFileSync(ENV_CACHE_FILE, 'utf8'));
+                if (cache.nodePath !== process.execPath || cache.npmCommand !== this.getNpmCommandCacheKey()) {
+                    return null;
+                }
                 if (Date.now() - cache.timestamp < CACHE_TTL) {
                     return cache;
                 }
@@ -54,6 +95,8 @@ class Launcher {
         try {
             const cache = {
                 npmVersion,
+                nodePath: process.execPath,
+                npmCommand: this.getNpmCommandCacheKey(),
                 timestamp: Date.now()
             };
             fs.writeFileSync(ENV_CACHE_FILE, JSON.stringify(cache));
@@ -68,7 +111,13 @@ class Launcher {
      */
     _checkNpmAsync() {
         return new Promise((resolve, reject) => {
-            exec('npm -v', { encoding: 'utf8', timeout: 10000 }, (err, stdout, stderr) => {
+            const npmCommand = this.getNpmCommand();
+            execFile(npmCommand.command, [...npmCommand.args, '-v'], {
+                encoding: 'utf8',
+                timeout: 10000,
+                windowsHide: true,
+                env: this.sanitizeNodeEnvironment(process.env)
+            }, (err, stdout, stderr) => {
                 if (err) {
                     const errorMsg = stderr ? `${err.message}: ${stderr}` : err.message;
                     reject(new Error(errorMsg));
@@ -76,6 +125,26 @@ class Launcher {
                     resolve(stdout.trim());
                 }
             });
+        });
+    }
+
+    getNpmCommand() {
+        return resolveNpmCommandForNode(process.execPath);
+    }
+
+    getNpmCommandCacheKey() {
+        const npmCommand = this.getNpmCommand();
+        return [npmCommand.command, ...npmCommand.args].join('\u0000');
+    }
+
+    runNpm(args, extraEnv = {}) {
+        const npmCommand = this.getNpmCommand();
+        return execFileSync(npmCommand.command, [...npmCommand.args, ...args], {
+            cwd: this.projectRoot,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            encoding: 'utf8',
+            windowsHide: true,
+            env: this.sanitizeNodeEnvironment(Object.assign({}, process.env, extraEnv))
         });
     }
 
@@ -307,7 +376,8 @@ class Launcher {
             }
         }
 
-        const command = useCI ? 'npm ci' : 'npm install';
+        const npmArgs = useCI ? ['ci'] : ['install'];
+        const command = `npm ${npmArgs.join(' ')}`;
         this.log.info(`Führe "${command}" aus...`);
 
         try {
@@ -316,17 +386,12 @@ class Launcher {
 
             // Umgebungsvariablen setzen, um Puppeteer-Downloads zu überspringen
             // Dies verhindert Netzwerkfehler bei der Installation
-            const env = this.sanitizeNodeEnvironment(Object.assign({}, process.env, {
+            const installEnv = {
                 PUPPETEER_SKIP_DOWNLOAD: 'true',
                 YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
-            }));
+            };
 
-            execSync(command, {
-                cwd: this.projectRoot,
-                stdio: ['pipe', 'pipe', 'pipe'],
-                encoding: 'utf8',
-                env: env
-            });
+            this.runNpm(npmArgs, installEnv);
 
             spinner.stop();
             this.log.success('Installation erfolgreich!');
@@ -335,14 +400,9 @@ class Launcher {
             if (useCI) {
                 this.log.warn('npm ci fehlgeschlagen. Versuche Fallback mit npm install...');
                 try {
-                    execSync('npm install', {
-                        cwd: this.projectRoot,
-                        stdio: ['pipe', 'pipe', 'pipe'],
-                        encoding: 'utf8',
-                        env: this.sanitizeNodeEnvironment(Object.assign({}, process.env, {
-                            PUPPETEER_SKIP_DOWNLOAD: 'true',
-                            YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
-                        }))
+                    this.runNpm(['install'], {
+                        PUPPETEER_SKIP_DOWNLOAD: 'true',
+                        YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
                     });
                     this.log.success('Fallback-Installation mit npm install erfolgreich!');
                     return;
@@ -365,7 +425,7 @@ class Launcher {
         delete sanitized.node_options;
         delete sanitized.npm_config_node_options;
         delete sanitized.NPM_CONFIG_NODE_OPTIONS;
-        return sanitized;
+        return prependRuntimePath(sanitized, path.dirname(process.execPath));
     }
 
     verifyNativeModules() {
@@ -374,25 +434,21 @@ class Launcher {
             cwd: this.projectRoot,
             stdio: ['pipe', 'pipe', 'pipe'],
             encoding: 'utf8',
+            windowsHide: true,
             env: this.sanitizeNodeEnvironment(process.env)
         }).trim();
     }
 
     rebuildNativeModules() {
-        this.log.info('FÃ¼hre "npm rebuild better-sqlite3" aus...');
-        return execSync('npm rebuild better-sqlite3', {
-            cwd: this.projectRoot,
-            stdio: ['pipe', 'pipe', 'pipe'],
-            encoding: 'utf8',
-            env: this.sanitizeNodeEnvironment(Object.assign({}, process.env, {
-                PUPPETEER_SKIP_DOWNLOAD: 'true',
-                YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
-            }))
+        this.log.info('Führe "npm rebuild better-sqlite3" aus...');
+        return this.runNpm(['rebuild', 'better-sqlite3'], {
+            PUPPETEER_SKIP_DOWNLOAD: 'true',
+            YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
         });
     }
 
     async checkNativeModules() {
-        this.log.info('PrÃ¼fe native Node-Module...');
+        this.log.info('Prüfe native Node-Module...');
         try {
             const output = this.verifyNativeModules();
             this.log.success(`Native Module OK: ${output}`);
@@ -460,7 +516,7 @@ class Launcher {
                 env.LTTH_LOG_ARCHIVE_DONE = 'true';
             }
 
-            const serverProcess = spawn('node', [serverPath], {
+            const serverProcess = spawn(process.execPath, [serverPath], {
                 cwd: this.projectRoot,
                 stdio: 'inherit',
                 env
@@ -472,7 +528,7 @@ class Launcher {
                 if (code === 75) {
                     this.log.newLine();
                     this.log.separator();
-                    this.log.info('♻️  Server-Neustart wird durchgeführt (Profilwechsel)...');
+                    this.log.info('??  Server-Neustart wird durchgeführt (Profilwechsel)...');
                     this.log.separator();
                     this.log.newLine();
                     // Kurze Verzögerung damit Datei-Handles sauber geschlossen werden
@@ -538,5 +594,7 @@ class Launcher {
         });
     }
 }
+
+Launcher.resolveNpmCommandForNode = resolveNpmCommandForNode;
 
 module.exports = Launcher;

@@ -35,6 +35,7 @@ const (
 
 	// Node.js settings
 	nodeVersionFallback        = "22.14.0"
+	defaultBackendPort         = 3000
 	serverHealthTimeoutSeconds = 180
 	serverHealthTimeout        = time.Duration(serverHealthTimeoutSeconds) * time.Second
 
@@ -131,6 +132,101 @@ type Launcher struct {
 }
 
 var allowedLocales = []string{"de", "en", "es", "fr"}
+
+var launcherTranslationFallbacks = map[string]map[string]string{
+	"de": {
+		"app_name":                         "LTTH Launcher",
+		"profile.title":                    "Profil",
+		"profile.no_profiles":              "Keine Profile gefunden",
+		"tabs.changelog":                   "Changelog",
+		"tabs.api_keys":                    "API Keys",
+		"tabs.community":                   "Community",
+		"tabs.logging":                     "Logs",
+		"status.progress":                  "Fortschritt",
+		"status.initializing":              "Initialisiere...",
+		"changelog.title":                  "Changelog",
+		"changelog.loading":                "Lade Changelog...",
+		"changelog.error":                  "Changelog konnte nicht geladen werden.",
+		"api_keys.title":                   "API Keys",
+		"api_keys.intro":                   "Konfiguriere optionale API Keys fuer erweiterte Funktionen.",
+		"api_keys.mandatory_warning":       "Einige Funktionen benoetigen eigene API Keys.",
+		"api_keys.fallback_warning":        "Ohne API Key werden lokale oder eingeschraenkte Fallbacks genutzt.",
+		"api_keys.elevenlabs.description":  "ElevenLabs Stimmen und TTS-Funktionen.",
+		"api_keys.openai.description":      "OpenAI Funktionen fuer KI-gestuetzte Workflows.",
+		"api_keys.siliconflow.description": "SiliconFlow KI-Funktionen.",
+		"api_keys.fishAudio.description":   "Fish Audio Stimmen und Audio-Funktionen.",
+		"community.title":                  "Community",
+		"community.intro":                  "Links zu Projekt, Diskussionen und Support.",
+		"community.help_appreciated":       "Feedback und Bugreports helfen bei der Weiterentwicklung.",
+		"community.links.repo":             "Repository",
+		"community.links.discussions":      "Diskussionen",
+		"community.links.issues":           "Issues",
+		"community.links.discord":          "Discord",
+		"community.contribute":             "Mithelfen?",
+		"community.contribute_text":        "Pull Requests, Tests und Feedback sind willkommen.",
+		"footer.powered_by":                "Bereitgestellt von LTTH",
+		"theme.label":                      "Theme",
+		"theme.daymode":                    "Tag",
+		"theme.nightmode":                  "Nacht",
+		"theme.highcontrast":               "Kontrast",
+		"options.keep_open":                "Launcher offen halten",
+		"options.keep_open_hint":           "Der Launcher verwaltet den Serverprozess.",
+		"options.open_app":                 "App oeffnen",
+		"options.app_not_ready":            "App noch nicht bereit",
+		"options.app_ready":                "App bereit",
+		"logs.title":                       "Logs",
+		"logs.intro":                       "Launcher- und Serverlogs fuer Diagnose.",
+		"logs.loading":                     "Lade Logs...",
+		"logs.empty":                       "Keine Logs vorhanden.",
+		"logs.error":                       "Logs konnten nicht geladen werden.",
+	},
+	"en": {
+		"app_name":                         "LTTH Launcher",
+		"profile.title":                    "Profile",
+		"profile.no_profiles":              "No profiles found",
+		"tabs.changelog":                   "Changelog",
+		"tabs.api_keys":                    "API Keys",
+		"tabs.community":                   "Community",
+		"tabs.logging":                     "Logs",
+		"status.progress":                  "Progress",
+		"status.initializing":              "Initializing...",
+		"changelog.title":                  "Changelog",
+		"changelog.loading":                "Loading changelog...",
+		"changelog.error":                  "Could not load changelog.",
+		"api_keys.title":                   "API Keys",
+		"api_keys.intro":                   "Configure optional API keys for advanced features.",
+		"api_keys.mandatory_warning":       "Some features require your own API keys.",
+		"api_keys.fallback_warning":        "Without API keys, local or limited fallbacks are used.",
+		"api_keys.elevenlabs.description":  "ElevenLabs voices and TTS features.",
+		"api_keys.openai.description":      "OpenAI features for AI-assisted workflows.",
+		"api_keys.siliconflow.description": "SiliconFlow AI features.",
+		"api_keys.fishAudio.description":   "Fish Audio voices and audio features.",
+		"community.title":                  "Community",
+		"community.intro":                  "Links to project, discussions, and support.",
+		"community.help_appreciated":       "Feedback and bug reports help development.",
+		"community.links.repo":             "Repository",
+		"community.links.discussions":      "Discussions",
+		"community.links.issues":           "Issues",
+		"community.links.discord":          "Discord",
+		"community.contribute":             "Contribute?",
+		"community.contribute_text":        "Pull requests, tests, and feedback are welcome.",
+		"footer.powered_by":                "Powered by LTTH",
+		"theme.label":                      "Theme",
+		"theme.daymode":                    "Day",
+		"theme.nightmode":                  "Night",
+		"theme.highcontrast":               "High contrast",
+		"options.keep_open":                "Keep launcher open",
+		"options.keep_open_hint":           "The launcher manages the server process.",
+		"options.open_app":                 "Open app",
+		"options.app_not_ready":            "App not ready",
+		"options.app_ready":                "App ready",
+		"logs.title":                       "Logs",
+		"logs.intro":                       "Launcher and server logs for diagnostics.",
+		"logs.loading":                     "Loading logs...",
+		"logs.empty":                       "No logs available.",
+		"logs.error":                       "Could not load logs.",
+	},
+}
 
 const (
 	diagnosticOK      = "ok"
@@ -234,7 +330,7 @@ func defaultLauncherSettings() LauncherSettings {
 	return LauncherSettings{
 		Locale:           "de",
 		Theme:            "night",
-		PreferredPort:    3000,
+		PreferredPort:    defaultBackendPort,
 		KeepLauncherOpen: true,
 		SafeMode:         false,
 		UpdateChannel:    updateChannelLocal,
@@ -379,22 +475,20 @@ func repairMojibakeText(text string) string {
 }
 
 func getCurrentNodePort() int {
-	const fallbackPort = 3000
-
 	exePath, err := os.Executable()
 	if err != nil {
-		return fallbackPort
+		return defaultBackendPort
 	}
 
 	portFilePath := filepath.Join(filepath.Dir(exePath), ".ltth_port")
 	content, err := os.ReadFile(portFilePath)
 	if err != nil {
-		return fallbackPort
+		return defaultBackendPort
 	}
 
 	port, err := strconv.Atoi(strings.TrimSpace(string(content)))
 	if err != nil || port <= 0 {
-		return fallbackPort
+		return defaultBackendPort
 	}
 
 	return port
@@ -402,7 +496,7 @@ func getCurrentNodePort() int {
 
 func dashboardURL(port int) string {
 	if port <= 0 {
-		port = 3000
+		port = defaultBackendPort
 	}
 	return fmt.Sprintf("http://localhost:%d/dashboard.html", port)
 }
@@ -487,6 +581,11 @@ func normalizePort(port int, fallback int) int {
 	return fallback
 }
 
+func backendPortConfig(preferredPort int) (int, int) {
+	port := normalizePort(preferredPort, defaultBackendPort)
+	return port, port
+}
+
 func hiddenCommand(name string, args ...string) *exec.Cmd {
 	cmd := exec.Command(name, args...)
 	if runtime.GOOS == "windows" {
@@ -538,12 +637,12 @@ func (l *Launcher) candidatePorts() []int {
 
 	base := l.preferredPort
 	if base == 0 {
-		base = 3000
+		base = defaultBackendPort
 	}
 	for port := base; port <= base+50 && port <= 65535; port++ {
 		add(port)
 	}
-	for port := 3000; port <= 3050; port++ {
+	for port := defaultBackendPort; port <= defaultBackendPort+50; port++ {
 		add(port)
 	}
 
@@ -615,7 +714,7 @@ func windowsProcessName(pid string) string {
 }
 
 func (l *Launcher) logPortDiagnostics() {
-	preferred := normalizePort(l.preferredPort, 3000)
+	preferred := normalizePort(l.preferredPort, defaultBackendPort)
 	if isPortAvailable(preferred) {
 		l.logAndSync("[INFO] Preferred port %d is available", preferred)
 		return
@@ -623,7 +722,7 @@ func (l *Launcher) logPortDiagnostics() {
 
 	l.logAndSync("[WARNING] Preferred port %d is already in use", preferred)
 	l.logAndSync("[WARNING] Port owner details: %s", describePortOwner(preferred))
-	l.logAndSync("[INFO] Node.js backend will fall back to the next free port in range %d-%d", preferred, minInt(preferred+50, 65535))
+	l.logAndSync("[WARNING] Backend port is fixed to %d; no automatic fallback port will be used.", preferred)
 }
 
 func minInt(a, b int) int {
@@ -650,6 +749,7 @@ func waitingAttemptProgress(attemptCount int) int {
 var (
 	terminateProcessTreeByPID  = terminateProcessTreeByPIDOS
 	waitForHealthyServerToStop = defaultWaitForHealthyServerToStop
+	stopStaleLTTHPortOwners    = defaultStopStaleLTTHPortOwners
 )
 
 // loadTranslations loads i18n strings from locale files
@@ -694,7 +794,7 @@ func (l *Launcher) loadTranslations(locale string) error {
 // getTranslation retrieves a translation by key path (e.g., "status.initializing")
 func (l *Launcher) getTranslation(key string) string {
 	if l.translations == nil {
-		return key
+		return l.getLauncherTranslationFallback(key)
 	}
 
 	parts := strings.Split(key, ".")
@@ -712,6 +812,24 @@ func (l *Launcher) getTranslation(key string) string {
 		}
 	}
 
+	return l.getLauncherTranslationFallback(key)
+}
+
+func (l *Launcher) getLauncherTranslationFallback(key string) string {
+	locale := l.locale
+	if locale == "" {
+		locale = "de"
+	}
+	if translations, ok := launcherTranslationFallbacks[locale]; ok {
+		if value, ok := translations[key]; ok {
+			return value
+		}
+	}
+	if translations, ok := launcherTranslationFallbacks["en"]; ok {
+		if value, ok := translations[key]; ok {
+			return value
+		}
+	}
 	return key
 }
 
@@ -1141,6 +1259,10 @@ func nodeVersionDiagnostic(version string) NodeVersionRecommendation {
 	return NodeVersionRecommendation{Status: diagnosticOK, Message: "Node.js Version ist im unterstützten Bereich.", Major: major}
 }
 
+func shouldUseGlobalNodeVersion(version string) bool {
+	return nodeVersionDiagnostic(version).Status == diagnosticOK
+}
+
 func classifyPluginFailures(logText string) []PluginFailure {
 	var failures []PluginFailure
 	seen := map[string]bool{}
@@ -1252,7 +1374,7 @@ func (l *Launcher) collectDiagnostics() []DiagnosticItem {
 	}
 	items = append(items, deps)
 
-	port := normalizePort(l.preferredPort, 3000)
+	port := normalizePort(l.preferredPort, defaultBackendPort)
 	portItem := DiagnosticItem{
 		ID:          "preferred_port",
 		Label:       "Port",
@@ -1262,7 +1384,7 @@ func (l *Launcher) collectDiagnostics() []DiagnosticItem {
 	}
 	if !isPortAvailable(port) {
 		portItem.Status = diagnosticWarning
-		portItem.Message = fmt.Sprintf("Wunschport %d ist belegt. LTTH nutzt automatisch einen freien Folgeport.", port)
+		portItem.Message = fmt.Sprintf("Wunschport %d ist belegt. Der Launcher stoppt alte LTTH-Instanzen vor dem Start; andere Prozesse müssen beendet oder ein anderer Port gewählt werden.", port)
 		portItem.Details = describePortOwner(port)
 		portItem.FixAction = "port-auto"
 		portItem.FixLabel = "Freien Port wählen"
@@ -1441,18 +1563,203 @@ func (l *Launcher) exportDiagnosticPackage() (string, error) {
 }
 
 func (l *Launcher) chooseFreePreferredPort() int {
-	start := normalizePort(l.preferredPort, 3000)
+	start := normalizePort(l.preferredPort, defaultBackendPort)
 	for port := start; port <= start+50 && port <= 65535; port++ {
 		if isPortAvailable(port) {
 			return port
 		}
 	}
-	for port := 3000; port <= 3050; port++ {
+	for port := defaultBackendPort; port <= defaultBackendPort+50; port++ {
 		if isPortAvailable(port) {
 			return port
 		}
 	}
 	return start
+}
+
+func (l *Launcher) resetStartupPortToDefault() error {
+	if l.preferredPort == defaultBackendPort && l.settings.PreferredPort == defaultBackendPort {
+		return nil
+	}
+
+	previousPort := normalizePort(l.preferredPort, 0)
+	settings := l.settings
+	if settings.Locale == "" {
+		settings = defaultLauncherSettings()
+	}
+	settings.PreferredPort = defaultBackendPort
+	l.preferredPort = defaultBackendPort
+	l.settings = settings
+
+	if previousPort != 0 && previousPort != defaultBackendPort {
+		l.logAndSync("[STARTUP] Resetting backend port from %d to fixed launcher port %d", previousPort, defaultBackendPort)
+	} else {
+		l.logAndSync("[STARTUP] Backend port fixed to %d", defaultBackendPort)
+	}
+
+	return l.saveSettings(settings)
+}
+
+func (l *Launcher) prepareFreshBackendStartup(source string) (bool, error) {
+	stopped, err := l.stopDetectedLTTHServers(source)
+	if err != nil {
+		return stopped, err
+	}
+	stoppedPorts, err := stopStaleLTTHPortOwners(l, source)
+	if err != nil {
+		return stopped || stoppedPorts, err
+	}
+	if stoppedPorts {
+		stopped = true
+	}
+	l.clearRuntimePortFile()
+	if err := l.resetStartupPortToDefault(); err != nil {
+		return stopped, err
+	}
+	return stopped, nil
+}
+
+func parseListeningPortPIDs(netstatOutput string, ports []int) map[int][]int {
+	portSet := map[int]bool{}
+	for _, port := range ports {
+		port = normalizePort(port, 0)
+		if port != 0 {
+			portSet[port] = true
+		}
+	}
+
+	result := map[int][]int{}
+	seen := map[string]bool{}
+	for _, line := range strings.Split(netstatOutput, "\n") {
+		fields := strings.Fields(strings.TrimSpace(line))
+		if len(fields) < 5 || !strings.EqualFold(fields[0], "TCP") || !strings.EqualFold(fields[len(fields)-2], "LISTENING") {
+			continue
+		}
+		portText := fields[1]
+		colon := strings.LastIndex(portText, ":")
+		if colon < 0 || colon == len(portText)-1 {
+			continue
+		}
+		port, err := strconv.Atoi(portText[colon+1:])
+		if err != nil || !portSet[port] {
+			continue
+		}
+		pid, err := strconv.Atoi(fields[len(fields)-1])
+		if err != nil || pid <= 0 {
+			continue
+		}
+		key := fmt.Sprintf("%d:%d", port, pid)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		result[port] = append(result[port], pid)
+	}
+	return result
+}
+
+func isManagedLTTHProcessCommandLine(commandLine string, exeDir string, appDir string) bool {
+	normalized := strings.ToLower(filepath.ToSlash(commandLine))
+	if normalized == "" || (!strings.Contains(normalized, "server.js") && !strings.Contains(normalized, "launch.js")) {
+		return false
+	}
+
+	for _, root := range []string{exeDir, appDir} {
+		if root == "" {
+			continue
+		}
+		if absRoot, err := filepath.Abs(root); err == nil {
+			root = absRoot
+		}
+		if strings.Contains(normalized, strings.ToLower(filepath.ToSlash(root))) {
+			return true
+		}
+	}
+
+	return strings.Contains(normalized, "/runtime/node/")
+}
+
+func uniquePorts(ports []int) []int {
+	seen := map[int]bool{}
+	var result []int
+	for _, port := range ports {
+		port = normalizePort(port, 0)
+		if port == 0 || seen[port] {
+			continue
+		}
+		seen[port] = true
+		result = append(result, port)
+	}
+	return result
+}
+
+func defaultStopStaleLTTHPortOwners(l *Launcher, source string) (bool, error) {
+	if runtime.GOOS != "windows" {
+		return false, nil
+	}
+	output, err := hiddenCommand("netstat", "-ano", "-p", "tcp").CombinedOutput()
+	if err != nil {
+		return false, fmt.Errorf("netstat failed while checking stale LTTH ports: %w", err)
+	}
+
+	portPIDs := parseListeningPortPIDs(string(output), uniquePorts(l.candidatePorts()))
+	if len(portPIDs) == 0 {
+		return false, nil
+	}
+
+	if source == "" {
+		source = "INFO"
+	}
+
+	stopped := false
+	var failures []string
+	for port, pids := range portPIDs {
+		for _, pid := range pids {
+			commandLine := windowsProcessCommandLine(pid)
+			if !isManagedLTTHProcessCommandLine(commandLine, l.exeDir, l.appDir) {
+				l.logAndSync("[%s] Port %d is owned by PID %d, but it does not look like this LTTH server. Owner: %s", source, port, pid, strings.TrimSpace(commandLine))
+				continue
+			}
+
+			l.logAndSync("[%s] Stale LTTH port owner detected on port %d with PID %d. Stopping it before startup.", source, port, pid)
+			if err := terminateProcessTreeByPID(pid); err != nil {
+				failures = append(failures, fmt.Sprintf("could not stop stale LTTH port owner PID %d on port %d: %v", pid, port, err))
+				continue
+			}
+			stopped = true
+			if !waitForPortAvailable(port, 15*time.Second) {
+				failures = append(failures, fmt.Sprintf("port %d was still occupied after stopping PID %d", port, pid))
+			}
+		}
+	}
+
+	if len(failures) > 0 {
+		return stopped, errors.New(strings.Join(failures, "; "))
+	}
+	return stopped, nil
+}
+
+func windowsProcessCommandLine(pid int) string {
+	if pid <= 0 {
+		return ""
+	}
+	script := fmt.Sprintf("(Get-CimInstance Win32_Process -Filter \"ProcessId = %d\").CommandLine", pid)
+	output, err := hiddenCommand("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script).CombinedOutput()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
+func waitForPortAvailable(port int, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if isPortAvailable(port) {
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return isPortAvailable(port)
 }
 
 func (l *Launcher) updateSettingsFromRequest(r *http.Request) (LauncherSettings, error) {
@@ -2170,14 +2477,30 @@ func (l *Launcher) sendRedirect() {
 
 func (l *Launcher) checkNodeJS() error {
 	// 1. Check portable installation first
-	portableNode := l.getNodeExecutable()
+	portableNode := l.getPortableNodeExecutable()
 	if portableNode != "" {
 		l.nodePath = portableNode
 		return nil
 	}
 
-	// 2. No node found → install portable version
-	l.logAndSync("[INFO] Node.js not found – installing portable version...")
+	// 2. Use a compatible global Node.js only if it is in the supported range.
+	globalNode := l.getGlobalNodeExecutable()
+	if globalNode != "" {
+		version := getNodeVersionForExecutable(globalNode)
+		if shouldUseGlobalNodeVersion(version) {
+			l.nodePath = globalNode
+			return nil
+		}
+		target := l.resolvedNodeVersion
+		if strings.TrimSpace(target) == "" {
+			target = nodeVersionFallback
+		}
+		l.logAndSync("[WARNING] Global Node.js %s at %s is outside the supported startup range; installing portable Node.js %s.", strings.TrimSpace(version), globalNode, target)
+	} else {
+		l.logAndSync("[INFO] Node.js not found – installing portable version...")
+	}
+
+	// 3. No compatible Node.js found → install portable version.
 	nodePath, err := l.installNodePortable()
 	if err != nil {
 		return fmt.Errorf("Node.js Installation fehlgeschlagen: %v", err)
@@ -2187,7 +2510,11 @@ func (l *Launcher) checkNodeJS() error {
 }
 
 func (l *Launcher) getNodeVersion() string {
-	cmd := hiddenCommand(l.nodePath, "--version")
+	return getNodeVersionForExecutable(l.nodePath)
+}
+
+func getNodeVersionForExecutable(nodePath string) string {
+	cmd := hiddenCommand(nodePath, "--version")
 	output, err := cmd.Output()
 	if err != nil {
 		return "unknown"
@@ -2217,6 +2544,65 @@ func sanitizeNodeEnvironment(env []string) []string {
 	return sanitized
 }
 
+func samePathEntry(a, b string) bool {
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(filepath.Clean(a), filepath.Clean(b))
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
+}
+
+func prependPathEntry(env []string, dir string) []string {
+	dir = strings.TrimSpace(dir)
+	if dir == "" {
+		return env
+	}
+
+	pathKey := "PATH"
+	if runtime.GOOS == "windows" {
+		pathKey = "Path"
+	}
+
+	result := make([]string, 0, len(env)+1)
+	foundPath := false
+	for _, entry := range env {
+		key, value, ok := strings.Cut(entry, "=")
+		isPath := ok && (key == "PATH" || (runtime.GOOS == "windows" && strings.EqualFold(key, "Path")))
+		if !isPath {
+			result = append(result, entry)
+			continue
+		}
+
+		if foundPath {
+			continue
+		}
+		foundPath = true
+		pathKey = key
+
+		parts := []string{dir}
+		for _, existing := range filepath.SplitList(value) {
+			if strings.TrimSpace(existing) == "" || samePathEntry(existing, dir) {
+				continue
+			}
+			parts = append(parts, existing)
+		}
+		result = append(result, pathKey+"="+strings.Join(parts, string(os.PathListSeparator)))
+	}
+
+	if !foundPath {
+		result = append(result, pathKey+"="+dir)
+	}
+	return result
+}
+
+func nodeCommandEnvironment(env []string, nodePath string) []string {
+	sanitized := sanitizeNodeEnvironment(env)
+	nodePath = strings.TrimSpace(nodePath)
+	if nodePath == "" {
+		return sanitized
+	}
+	return prependPathEntry(sanitized, filepath.Dir(nodePath))
+}
+
 func (l *Launcher) verifyNativeModulesWithPath(nodePath string) error {
 	nodePath = strings.TrimSpace(nodePath)
 	if nodePath == "" {
@@ -2229,7 +2615,7 @@ func (l *Launcher) verifyNativeModulesWithPath(nodePath string) error {
 	script := "const Database = require('better-sqlite3'); const db = new Database(':memory:'); db.close(); console.log('native-modules-ok')"
 	cmd := hiddenCommand(nodePath, "-e", script)
 	cmd.Dir = l.appDir
-	cmd.Env = sanitizeNodeEnvironment(os.Environ())
+	cmd.Env = nodeCommandEnvironment(os.Environ(), nodePath)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -2253,27 +2639,18 @@ func (l *Launcher) installDependencies() error {
 	l.updateProgressLocalized(45, "status.npm_install_delay_notice", "HINWEIS: npm install kann mehrere Minuten dauern, besonders bei langsamer Internetverbindung. Bitte warten...")
 	time.Sleep(2 * time.Second)
 
-	npmPath := l.resolveNpmPath()
-	l.logAndSync("[INFO] Using npm: %s", npmPath)
+	npm := l.resolveNpmCommand()
+	l.logAndSync("[INFO] Using npm: %s", npm.Label)
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", npmPath, "install")
-		// Hide the npm install window on Windows using CREATE_NO_WINDOW flag
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: createNoWindow,
-		}
-	} else {
-		cmd = exec.Command(npmPath, "install")
-	}
+	cmd := npm.execCommand("install")
 
 	cmd.Dir = l.appDir
 
 	// Set environment variables to skip problematic preinstall checks
-	cmd.Env = sanitizeNodeEnvironment(append(os.Environ(),
+	cmd.Env = nodeCommandEnvironment(append(os.Environ(),
 		"YOUTUBE_DL_SKIP_PYTHON_CHECK=1",
 		"PUPPETEER_SKIP_DOWNLOAD=true",
-	))
+	), l.nodePath)
 
 	// Capture output for logging and progress updates
 	stdout, err := cmd.StdoutPipe()
@@ -2381,20 +2758,12 @@ func (l *Launcher) installDependencies() error {
 		l.updateProgressLocalized(50, "status.npm_install_retry", "Wiederhole npm install (Fallback ohne --cache)...")
 		time.Sleep(1 * time.Second)
 
-		var retryCmd *exec.Cmd
-		if runtime.GOOS == "windows" {
-			retryCmd = exec.Command("cmd", "/C", npmPath, "install")
-			retryCmd.SysProcAttr = &syscall.SysProcAttr{
-				CreationFlags: createNoWindow,
-			}
-		} else {
-			retryCmd = exec.Command(npmPath, "install")
-		}
+		retryCmd := npm.execCommand("install")
 		retryCmd.Dir = l.appDir
-		retryCmd.Env = sanitizeNodeEnvironment(append(os.Environ(),
+		retryCmd.Env = nodeCommandEnvironment(append(os.Environ(),
 			"YOUTUBE_DL_SKIP_PYTHON_CHECK=1",
 			"PUPPETEER_SKIP_DOWNLOAD=true",
-		))
+		), l.nodePath)
 		var retryStderr bytes.Buffer
 		retryCmd.Stderr = &retryStderr
 
@@ -2417,7 +2786,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	launchJS := filepath.Join(l.appDir, "launch.js")
 	cmd := hiddenCommand(l.nodePath, launchJS)
 	cmd.Dir = l.appDir
-	preferredPort := normalizePort(l.preferredPort, 3000)
+	preferredPort, maxPort := backendPortConfig(l.preferredPort)
 
 	// Set environment variable to disable automatic browser opening
 	// The GUI launcher handles the redirect to dashboard after server is ready
@@ -2446,7 +2815,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	rootLogDir := rootLogDirForApp(l.appDir)
 	env = append(env, "OPEN_BROWSER=false")
 	env = append(env, fmt.Sprintf("LTTH_PORT=%d", preferredPort))
-	env = append(env, fmt.Sprintf("LTTH_MAX_PORT=%d", minInt(preferredPort+50, 65535)))
+	env = append(env, fmt.Sprintf("LTTH_MAX_PORT=%d", maxPort))
 	env = append(env, fmt.Sprintf("LTTH_LOG_DIR=%s", rootLogDir))
 	env = append(env, "LTTH_LOG_ARCHIVE_DONE=true")
 	if l.logPath != "" {
@@ -2470,7 +2839,7 @@ func (l *Launcher) startTool() (*exec.Cmd, error) {
 	l.logAndSync("Working directory: %s", l.appDir)
 	l.logAndSync("OPEN_BROWSER environment variable set to: false")
 	l.logAndSync("LTTH_PORT environment variable set to: %d", preferredPort)
-	l.logAndSync("LTTH_MAX_PORT environment variable set to: %d", minInt(preferredPort+50, 65535))
+	l.logAndSync("LTTH_MAX_PORT environment variable set to: %d", maxPort)
 	l.logAndSync("LTTH_LOG_DIR environment variable set to: %s", rootLogDir)
 	l.clearRuntimePortFile()
 	l.logPortDiagnostics()
@@ -2776,7 +3145,7 @@ func (l *Launcher) markServerStartDone(err error) {
 func (l *Launcher) manualStartServer(port int) error {
 	port = normalizePort(port, l.preferredPort)
 	if port == 0 {
-		port = 3000
+		port = defaultBackendPort
 	}
 
 	l.startMu.Lock()
@@ -2939,13 +3308,13 @@ func (l *Launcher) autoFixYtDlp() {
 		"or set a custom path in Music Bot settings.")
 }
 
-// autoFixPort selects a free preferred port before starting the backend.
+// autoFixPort reports fixed-port readiness before starting the backend.
 func (l *Launcher) autoFixPort() {
-	preferred := normalizePort(l.preferredPort, 3000)
+	preferred := normalizePort(l.preferredPort, defaultBackendPort)
 
 	if existingPort, ok := l.detectHealthyServerPort(); ok {
-		l.logAndSync("[INFO] Existing LTTH server detected on port %d; startup will attach instead of starting a second backend.", existingPort)
-		l.updateProgressLocalized(87, "status.port_existing", "Bestehender LTTH-Server gefunden...")
+		l.logAndSync("[INFO] Existing LTTH server detected on port %d; startup cleanup will stop it before a fresh backend starts.", existingPort)
+		l.updateProgressLocalized(87, "status.port_existing", "Bestehender LTTH-Server wird vor Neustart gestoppt...")
 		return
 	}
 
@@ -2955,20 +3324,10 @@ func (l *Launcher) autoFixPort() {
 		return
 	}
 
-	l.logAndSync("[WARNING] Preferred backend port %d is occupied; selecting fallback port.", preferred)
+	l.logAndSync("[WARNING] Preferred backend port %d is occupied.", preferred)
 	l.logAndSync("[WARNING] Port owner details: %s", describePortOwner(preferred))
-
-	for port := preferred + 1; port <= minInt(preferred+50, 65535); port++ {
-		if isPortAvailable(port) {
-			l.preferredPort = port
-			l.logAndSync("[INFO] Using fallback backend port %d", port)
-			l.updateProgressLocalized(87, "status.port_fallback", "Nutze freien Port %d", port)
-			return
-		}
-	}
-
-	l.logAndSync("[WARNING] No free fallback port found in range %d-%d; Node.js backend will try its own fallback handling.", preferred, minInt(preferred+50, 65535))
-	l.updateProgressLocalized(87, "status.port_delegated", "Port-Management wird an Node.js delegiert...")
+	l.logAndSync("[WARNING] Backend startup stays fixed to port %d. If this is not LTTH, stop the other process or choose another port manually.", preferred)
+	l.updateProgressLocalized(87, "status.port_occupied", "Port %d ist belegt", preferred)
 }
 
 // ============================================================
@@ -3037,7 +3396,13 @@ func buildNodeDownloadURL(version string) string {
 // getNodeExecutable returns the path to the node executable, checking the portable
 // runtime/node directory first and then the system PATH.
 func (l *Launcher) getNodeExecutable() string {
-	// Portable installation
+	if portableNode := l.getPortableNodeExecutable(); portableNode != "" {
+		return portableNode
+	}
+	return l.getGlobalNodeExecutable()
+}
+
+func (l *Launcher) getPortableNodeExecutable() string {
 	var portableNode string
 	if runtime.GOOS == "windows" {
 		portableNode = filepath.Join(l.exeDir, "runtime", "node", "node.exe")
@@ -3047,8 +3412,10 @@ func (l *Launcher) getNodeExecutable() string {
 	if _, err := os.Stat(portableNode); err == nil {
 		return portableNode
 	}
+	return ""
+}
 
-	// Global installation
+func (l *Launcher) getGlobalNodeExecutable() string {
 	nodePath, err := exec.LookPath("node")
 	if err == nil {
 		return nodePath
@@ -3346,20 +3713,68 @@ func (l *Launcher) checkAndUpdateNodePortable() (bool, error) {
 	return true, nil
 }
 
-// resolveNpmPath returns the path to npm/npm.cmd, preferring the portable
-// installation when the node executable lives inside runtime/node.
-func (l *Launcher) resolveNpmPath() string {
-	if strings.Contains(l.nodePath, filepath.Join("runtime", "node")) {
-		nodeDir := filepath.Dir(l.nodePath)
-		if runtime.GOOS == "windows" {
-			return filepath.Join(nodeDir, "npm.cmd")
-		}
-		return filepath.Join(nodeDir, "bin", "npm")
+type npmCommand struct {
+	Command string
+	Args    []string
+	Label   string
+}
+
+func (n npmCommand) execCommand(extraArgs ...string) *exec.Cmd {
+	args := append([]string{}, n.Args...)
+	args = append(args, extraArgs...)
+
+	lowerCommand := strings.ToLower(n.Command)
+	if runtime.GOOS == "windows" && (strings.HasSuffix(lowerCommand, ".cmd") || strings.HasSuffix(lowerCommand, ".bat")) {
+		shellArgs := append([]string{"/C", n.Command}, args...)
+		return hiddenCommand("cmd", shellArgs...)
 	}
+	return hiddenCommand(n.Command, args...)
+}
+
+func (l *Launcher) resolveNpmCommand() npmCommand {
+	return l.resolveNpmCommandForNode(l.nodePath)
+}
+
+func fallbackNpmCommand() npmCommand {
+	name := "npm"
 	if runtime.GOOS == "windows" {
-		return "npm.cmd"
+		name = "npm.cmd"
 	}
-	return "npm"
+	return npmCommand{Command: name, Label: name}
+}
+
+func (l *Launcher) resolveNpmCommandForNode(nodePath string) npmCommand {
+	nodePath = strings.TrimSpace(nodePath)
+	if nodePath == "" {
+		return fallbackNpmCommand()
+	}
+
+	nodeDir := filepath.Dir(nodePath)
+	npmCliCandidates := []string{
+		filepath.Join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
+		filepath.Join(nodeDir, "..", "node_modules", "npm", "bin", "npm-cli.js"),
+		filepath.Join(nodeDir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+	}
+	for _, npmCli := range npmCliCandidates {
+		if info, err := os.Stat(npmCli); err == nil && !info.IsDir() {
+			return npmCommand{
+				Command: nodePath,
+				Args:    []string{npmCli},
+				Label:   fmt.Sprintf("%s %s", nodePath, npmCli),
+			}
+		}
+	}
+
+	npmName := "npm"
+	if runtime.GOOS == "windows" {
+		npmName = "npm.cmd"
+	}
+	adjacentNpm := filepath.Join(nodeDir, npmName)
+	if info, err := os.Stat(adjacentNpm); err == nil && !info.IsDir() {
+		return npmCommand{Command: adjacentNpm, Label: adjacentNpm}
+	}
+
+	return fallbackNpmCommand()
 }
 
 // rebuildNativeModules runs `npm rebuild better-sqlite3` in the app directory.
@@ -3367,33 +3782,14 @@ func (l *Launcher) rebuildNativeModules() error {
 	return l.rebuildNativeModulesWithPath(l.nodePath)
 }
 
-func (l *Launcher) resolveNpmPathForNode(nodePath string) string {
-	if runtime.GOOS == "windows" {
-		if nodePath != "" && strings.Contains(strings.ToLower(filepath.ToSlash(nodePath)), "/runtime/node/") {
-			return filepath.Join(filepath.Dir(nodePath), "npm.cmd")
-		}
-		return "npm.cmd"
-	}
-	if nodePath != "" && strings.Contains(strings.ToLower(filepath.ToSlash(nodePath)), "/runtime/node/") {
-		return filepath.Join(filepath.Dir(nodePath), "bin", "npm")
-	}
-	return "npm"
-}
-
 func (l *Launcher) rebuildNativeModulesWithPath(nodePath string) error {
-	npmPath := l.resolveNpmPath()
+	npm := l.resolveNpmCommand()
 	if nodePath = strings.TrimSpace(nodePath); nodePath != "" {
-		npmPath = l.resolveNpmPathForNode(nodePath)
+		npm = l.resolveNpmCommandForNode(nodePath)
 	}
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", npmPath, "rebuild", "better-sqlite3")
-		cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: createNoWindow}
-	} else {
-		cmd = exec.Command(npmPath, "rebuild", "better-sqlite3")
-	}
+	cmd := npm.execCommand("rebuild", "better-sqlite3")
 	cmd.Dir = l.appDir
-	cmd.Env = sanitizeNodeEnvironment(append(os.Environ(), "PUPPETEER_SKIP_DOWNLOAD=true"))
+	cmd.Env = nodeCommandEnvironment(append(os.Environ(), "PUPPETEER_SKIP_DOWNLOAD=true"), nodePath)
 
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
@@ -3917,6 +4313,17 @@ func (l *Launcher) runLauncher() {
 		l.logger.Printf("[WARNING] Could not auto-create .env: %v\n", err)
 	}
 
+	// Startup policy: replace old LTTH servers and launch fresh on port 3000.
+	if stopped, err := l.prepareFreshBackendStartup("STARTUP"); err != nil {
+		l.logAndSync("[ERROR] Could not prepare fresh backend startup: %v", err)
+		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
+		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
+		return
+	} else if stopped {
+		l.updateProgressLocalized(86, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
+		time.Sleep(500 * time.Millisecond)
+	}
+
 	// Auto-fix: Check port availability
 	l.autoFixPort()
 
@@ -3931,26 +4338,10 @@ func (l *Launcher) runLauncher() {
 	l.logger.Println("[Phase 4] Starting Node.js server...")
 	time.Sleep(500 * time.Millisecond)
 
-	if servers := l.detectedLTTHServers(); len(servers) > 0 {
-		server := servers[0]
-		port := server.Port
-		if port == 0 {
-			port = l.preferredPort
-		}
-		l.serverPort = port
-		l.serverStarted = true
-		l.startupInProgress = false
-		l.lastStartError = ""
-		l.logAndSync("[INFO] Existing LTTH server detected on port %d with PID %d. Waiting for user action instead of stopping it automatically.", port, server.PID)
-		l.updateProgressLocalized(100, "status.server_already_running", "Server läuft bereits auf Port %d. Öffnen, stoppen oder übernehmen ist im Launcher möglich.", port)
-		l.sendRedirect()
-		return
-	}
-
 	if stopped, err := l.stopDetectedLTTHServers("STARTUP"); err != nil {
 		l.logAndSync("[ERROR] Could not stop existing LTTH server before startup: %v", err)
 		l.updateProgressLocalized(95, "status.stop_old_instance_failed", "Alte Server-Instanz konnte nicht gestoppt werden: %v", err)
-		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfÃ¼gbar. Logs prÃ¼fen und Port wÃ¤hlen.")
+		l.updateProgressLocalized(100, "status.manual_start_available", "Manueller Start ist im Launcher verfügbar. Logs prüfen und Port wählen.")
 		return
 	} else if stopped {
 		l.updateProgressLocalized(90, "status.old_instance_stopped", "Alte Server-Instanz gestoppt.")
@@ -3990,7 +4381,7 @@ func (l *Launcher) runLauncher() {
 	// Wait for server to be ready
 	l.updateProgressLocalized(93, "status.waiting_for_server_start", "Warte auf Server-Start...")
 	l.logger.Printf("[INFO] Waiting for server health check (%ds timeout)...\n", serverHealthTimeoutSeconds)
-	l.logger.Println("[INFO] Checking if server responds on current .ltth_port (fallback 3000)...")
+	l.logger.Println("[INFO] Checking if server responds on the fresh runtime port file (fixed startup port 3000)...")
 
 	// Check server health with process monitoring
 	healthCheckTimeout := time.After(serverHealthTimeout)
@@ -4098,7 +4489,7 @@ func (l *Launcher) runLauncher() {
 			l.logger.Println("[ERROR]  - Server startet, aber hängt sich bei Initialisierung auf")
 			l.logger.Println("[ERROR]  - Dependencies werden geladen (kann lange dauern)")
 			l.logger.Println("[ERROR]  - Datenbank-Migration läuft")
-			l.logger.Println("[ERROR]  - Portbereich 3000-3050 ist blockiert durch Firewall")
+			l.logger.Println("[ERROR]  - Port 3000 ist blockiert durch Firewall oder einen anderen Prozess")
 			l.logger.Println("[ERROR] ===========================================")
 
 			l.updateProgressLocalized(95, "status.server_timeout", "Server-Start Timeout (%ds)", serverHealthTimeoutSeconds)

@@ -1,10 +1,10 @@
 {
-  "version": "1.3.8",
-  "releaseDate": "2026-07-03",
+  "version": "1.3.9",
+  "releaseDate": "2026-07-04",
   "status": "stable",
-  "downloadVersion": "1.3.8",
-  "downloadNote": "Consolidated release — ltth.app now hosts both website and app codebase.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/1.3.8",
+  "downloadVersion": "1.3.9",
+  "downloadNote": "Plugin Store release - official LTTH store plus opt-in community registries.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/1.3.9",
   "oneLineInstaller": {
     "windows": "iwr -useb https://ltth.app/install.ps1 | iex",
     "macos": "curl -fsSL https://ltth.app/install.sh | bash",
@@ -19,6 +19,17 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.9": {
+      "date": "2026-07-04",
+      "changes": [
+        "NEW: Plugin Manager expanded into a Plugin Store with Installed and Store tabs",
+        "NEW: Official LTTH plugin registry support via store.json",
+        "NEW: One-click plugin install/update flow from trusted registry entries",
+        "NEW: Community plugin repositories are supported behind explicit user opt-in",
+        "SECURITY: Store installs require HTTPS package URLs, plugin id validation, safe extraction, and SHA-256 checksums",
+        "IMPROVED: Store UI shows Official, Community, Open Beta, Installed, and Update Available badges"
+      ]
+    },
     "1.3.8": {
       "date": "2026-07-02",
       "changes": [

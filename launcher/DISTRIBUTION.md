@@ -118,6 +118,15 @@ git push
 # GitHub Actions oder manuell auf Server deployen
 ```
 
+### GitHub Release Tags
+
+Wenn der Launcher über GitHub Releases veröffentlicht wird, gilt folgende Tag-Konvention:
+
+- `launcher-v*` für stabile Releases
+- `launcher-beta-v*` für Beta-Releases
+
+Der Workflow veröffentlicht dabei weiterhin dieselben Artefakte, markiert den Release aber anhand des Tags als stable oder beta.
+
 ### Option C: CDN/Object Storage
 
 ```bash

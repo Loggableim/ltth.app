@@ -92,7 +92,7 @@ When the tool is updated, the website can be updated by:
 
 1. **Changelog**: The changelog page already links to GitHub, so it stays current automatically
 2. **Features**: Update features.html and features-en.html if new major features are added
-3. **Plugins**: Update plugins.html and plugins-en.html if new plugins are added
+3. **Plugins**: `plugins.html` is now populated from `/plugin-store.json` (official store manifest), so new official plugins are reflected automatically; only manual static feature pages need updates for docs/marketing copy.
 4. **Screenshots**: Add new screenshots to `/screenshots` directory if available
 
 ### Automated Updates (Future)
@@ -126,29 +126,9 @@ When updating the website via agent mode, the agent should:
 
 ## Plugin Documentation
 
-The tool has a plugin system with plugins in `/app/plugins/`:
+The tool has a plugin system with plugins in `/app/plugins/` (36 manifests in this snapshot).
 
-- api-bridge
-- clarityhud
-- config-import
-- emoji-rain
-- gift-milestone
-- goals
-- hybridshock
-- lastevent-spotlight
-- minecraft-connect
-- multicam
-- openshock
-- osc-bridge
-- quiz_show
-- resource-monitor
-- soundboard
-- tts
-- vdoninja
-- viewer-xp
-- weather-control
-
-Each plugin should be documented on the plugins page with screenshots and descriptions.
+Use `app/plugins/*/plugin.json` to derive the current plugin list and descriptions.
 
 ## Maintenance Notes
 

@@ -115,4 +115,29 @@ describe('Plugin Manager listing', () => {
         assert(managerScript.includes('/api/plugins?locale='));
         assert(managerScript.includes('encodeURIComponent(locale)'));
     });
+
+    it('includes appstore modes, drawer, and opt-in community controls', () => {
+        const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
+        const dashboardHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+
+        assert(dashboardHtml.includes('data-plugin-mode="store"'));
+        assert(dashboardHtml.includes('data-plugin-mode="installed"'));
+        assert(dashboardHtml.includes('data-plugin-mode="updates"'));
+        assert(dashboardHtml.includes('data-plugin-mode="sources"'));
+        assert(dashboardHtml.includes('id="plugin-store-category-chips"'));
+        assert(dashboardHtml.includes('id="plugin-store-detail-drawer"'));
+        assert(dashboardHtml.includes('id="plugin-store-sources-panel"'));
+        assert(dashboardHtml.includes('id="enable-community-store-btn"'));
+        assert(managerScript.includes('/api/plugin-store?locale='));
+        assert(managerScript.includes('/api/plugin-store/community/enable'));
+        assert(managerScript.includes('/api/plugin-store/sources'));
+        assert(managerScript.includes('currentStoreMode'));
+        assert(managerScript.includes('selectedStorePlugin'));
+        assert(managerScript.includes('renderStoreShell'));
+        assert(managerScript.includes('openStorePluginDetail'));
+        assert(managerScript.includes('Catalog Only'));
+        assert(managerScript.includes('getStorePluginPricing'));
+        assert(managerScript.includes('Package missing'));
+        assert(managerScript.includes('Free'));
+    });
 });
