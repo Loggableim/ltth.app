@@ -1039,6 +1039,9 @@
                         </div>
                     </div>
 
+                    <div class="dashboard-cockpit-grid">
+                        <div class="dashboard-primary-column">
+
                     <!-- 1. TikTok Live Connection Section -->
                     <section class="dashboard-section connection-section">
                         <h2 class="section-title">
@@ -1059,7 +1062,7 @@
                                 <i data-lucide="key"></i>
                                 <span data-i18n="dashboard.extract_session">Extract SessionID</span>
                             </button>
-                            <button id="import-session-btn" class="btn btn-secondary" title="Import SessionID from your browser cookies" style="margin-left: 0.5rem;">
+                            <button id="import-session-btn" class="btn btn-secondary" title="Import SessionID from your browser cookies">
                                 <i data-lucide="clipboard"></i>
                                 <span data-i18n="dashboard.import_session">Import SessionID</span>
                             </button>
@@ -1264,6 +1267,10 @@
                         </div>
                     </section>
 
+                        </div>
+
+                        <div class="dashboard-side-column">
+
                     <!-- 4. Community Chat / Shoutbox Section -->
                     <section class="dashboard-section shoutbox-section" data-plugin="chatango">
                         <h2 class="section-title">
@@ -1303,8 +1310,10 @@
                         </button>
                     </section>
 
+                        </div>
+
                     <!-- 6. Plugin & Tool Shortcuts -->
-                    <section class="dashboard-section shortcuts-section">
+                    <section class="dashboard-section shortcuts-section dashboard-tools-row">
                         <h2 class="section-title">
                             <i data-lucide="grid-3x3"></i>
                             Tools & Plugins
@@ -1313,6 +1322,7 @@
                             <!-- Will be dynamically populated -->
                         </div>
                     </section>
+                    </div>
 
                 </div>
 
@@ -2475,6 +2485,13 @@
                                             <input type="checkbox" id="auto-connect-enabled">
                                             <span data-i18n="settings.auto_connect">Auto-connect to last TikTok user on startup</span>
                                         </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="show-live-event-log">
+                                            <span>Show Live Event Log</span>
+                                        </label>
+                                        <p class="text-xs text-gray-500 ml-6">Enable this if you want direct access to the Events view.</p>
                                     </div>
                                     <div class="form-group">
                                         <label class="checkbox-label">
