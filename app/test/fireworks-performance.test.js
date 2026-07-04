@@ -160,10 +160,16 @@ describe('Fireworks Performance Optimizations', () => {
             expect(engineCode).toContain('adaptiveRenderScaleEnabled: true');
             expect(engineCode).toContain('this.baseWidth = 0');
             expect(engineCode).toContain('this.renderScale = 1.0');
+            expect(engineCode).toContain('this.isBenchmarkMode =');
             expect(engineCode).toContain('updateAdaptiveRenderScale(avgFps)');
             expect(engineCode).toContain('applyRenderScale()');
             expect(engineCode).toContain('this.canvas.style.width = \'100%\'');
             expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
+        });
+
+        test('should keep WebGL canvas size stable during benchmark and active fireworks', () => {
+            expect(engineCode).toContain('if (this.isBenchmarkMode) return');
+            expect(engineCode).toContain('if (this.fireworks.length > 0) return');
         });
 
         test('should degrade quality before dropping fireworks features', () => {

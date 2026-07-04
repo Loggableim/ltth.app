@@ -1692,6 +1692,7 @@ class FireworksEngine {
         this.targetRenderScale = 1.0;
         this.qualityScale = 1.0;
         this.lastRenderScaleChange = 0;
+        this.isBenchmarkMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('benchmark') === 'true';
     }
 
     async init() {
@@ -2719,6 +2720,9 @@ class FireworksEngine {
     }
 
     updateAdaptiveRenderScale(avgFps) {
+        if (this.isBenchmarkMode) return;
+        if (this.fireworks.length > 0) return;
+
         if (this.config.adaptiveRenderScaleEnabled === false) {
             if (this.renderScale !== 1.0) {
                 this.renderScale = 1.0;
