@@ -56,4 +56,18 @@ describe('Fireworks benchmark UI', () => {
     expect(settingsJs).toMatch(/finally\s*{[\s\S]*restoreBenchmarkPreset\(\)/);
     expect(mainJs).toMatch(/if \(!this\.benchmarkPreset\)\s*{[\s\S]*this\.benchmarkPreset = { \.\.\.this\.config };/);
   });
+
+  test('settings expose OBS-safe adaptive internal resolution bounds', () => {
+    expect(mainJs).toContain("resolutionPreset: '1080p'");
+    expect(mainJs).toContain("internalMaxResolutionPreset: '1080p'");
+    expect(mainJs).toContain("internalMinResolutionPreset: '480p'");
+    expect(mainJs).toContain('adaptiveRenderScaleEnabled: true');
+    expect(settingsHtml).toContain('id="internal-max-resolution"');
+    expect(settingsHtml).toContain('id="internal-min-resolution"');
+    expect(settingsHtml).toContain('value="4k"');
+    expect(settingsHtml).toContain('value="480p"');
+    expect(settingsJs).toContain('config.internalMaxResolutionPreset');
+    expect(settingsJs).toContain('config.internalMinResolutionPreset');
+    expect(settingsJs).toContain('updateInternalResolutionInfo');
+  });
 });

@@ -42,17 +42,26 @@ const CONFIG = {
     rocketSpeed: -12,
     rocketAcceleration: -0.08,
     trailLength: 20,
+    baseTrailLength: 20,
     trailFadeAlpha: 10,
     trailFadeSpeed: 0.02,
     sparkleChance: 0.15,
     secondaryExplosionChance: 0.1,
+    baseSecondaryExplosionChance: 0.1,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     resolution: 1.0, // Legacy - Canvas resolution multiplier (0.5 = half res, 1.0 = full res)
-    resolutionPreset: '1080p', // Resolution preset: 360p, 540p, 720p, 1080p, 1440p, 4k
+    resolutionPreset: '1080p', // OBS source preset: keep Browser Source at 1920x1080 by default
+    internalMaxResolutionPreset: '1080p',
+    internalMinResolutionPreset: '480p',
     orientation: 'landscape', // 'landscape' or 'portrait'
+    adaptiveRenderScaleEnabled: true,
+    minRenderScale: 0.45,
+    renderScaleStep: 0.15,
+    renderScaleRecoveryFpsMargin: 6,
+    renderScaleEmergencyParticleThreshold: 1200,
     giftPopupPosition: 'bottom', // 'top', 'middle', 'bottom', 'none', or {x, y} coordinates
     giftPopupEnabled: true, // Whether to show gift popup at all
-    despawnFadeDuration: 1.5, // Duration in seconds for rocket despawn fade effect (when rockets are removed due to overload)
+    despawnFadeDuration: 3.0, // Duration in seconds for pressure fade effect under overload
     defaultColors: ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'],
     colorPalettes: {
         classic: ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'],
@@ -252,6 +261,12 @@ class Particle {
             rotationSpeed: 0,
             isDespawning: false, // Flag for despawn fade effect
             despawnStartTime: 0, // When despawn started
+            despawnStartAlpha: 1.0,
+            despawnStartSize: 3,
+            isPressureFading: false,
+            pressureFadeStartTime: 0,
+            pressureFadeStartAlpha: 1.0,
+            pressureFadeStartSize: 3,
             // Secondary explosion properties
             willBurst: false,      // Will create mini-burst (for burst shape)
             burstDelay: 0,         // Delay before mini-burst
@@ -292,10 +307,23 @@ class Particle {
             const elapsed = performance.now() - this.despawnStartTime;
             const fadeProgress = Math.min(elapsed / despawnDuration, 1.0);
             
-            // Fade out alpha smoothly
-            this.alpha = Math.max(0, 1.0 - fadeProgress);
+            // Fade out from the particle's current visual state, avoiding visible alpha jumps.
+            this.alpha = this.despawnStartAlpha * (1.0 - fadeProgress);
+            this.size = Math.max(0.1, this.despawnStartSize * (1.0 - fadeProgress * 0.35));
             
             // If fade is complete, mark as done
+            if (fadeProgress >= 1.0) {
+                this.lifespan = 0;
+            }
+        } else if (this.isPressureFading) {
+            const pressureFadeDuration = CONFIG.despawnFadeDuration * 1000;
+            const elapsed = performance.now() - this.pressureFadeStartTime;
+            const fadeProgress = Math.min(elapsed / pressureFadeDuration, 1.0);
+
+            this.alpha = this.pressureFadeStartAlpha * (1.0 - fadeProgress);
+            this.size = Math.max(0.1, this.pressureFadeStartSize * (1.0 - fadeProgress * 0.5));
+            this.lifespan = Math.min(this.lifespan, this.maxLifespan * (1.0 - fadeProgress));
+
             if (fadeProgress >= 1.0) {
                 this.lifespan = 0;
             }
@@ -328,7 +356,7 @@ class Particle {
         this.rotation += this.rotationSpeed * deltaTime;
         
         // Update lifespan for explosion particles with deltaTime
-        if (!this.isSeed && !this.isDespawning) {
+        if (!this.isSeed && !this.isDespawning && !this.isPressureFading) {
             this.lifespan -= this.decay * deltaTime;
             this.alpha = Math.max(0, this.lifespan / this.maxLifespan);
             
@@ -373,6 +401,23 @@ class Particle {
         if (!this.isDespawning) {
             this.isDespawning = true;
             this.despawnStartTime = performance.now();
+            this.despawnStartAlpha = this.alpha;
+            this.despawnStartSize = this.size;
+            this.willBurst = false;
+            this.willSpiral = false;
+            this.trail.length = Math.min(this.trail.length, 2);
+        }
+    }
+
+    startPressureFade() {
+        if (!this.isPressureFading && !this.isDespawning) {
+            this.isPressureFading = true;
+            this.pressureFadeStartTime = performance.now();
+            this.pressureFadeStartAlpha = this.alpha;
+            this.pressureFadeStartSize = this.size;
+            this.willBurst = false;
+            this.willSpiral = false;
+            this.trail.length = Math.min(this.trail.length, 2);
         }
     }
     
@@ -409,6 +454,12 @@ class Particle {
                 rotationSpeed: 0,
                 isDespawning: false,
                 despawnStartTime: 0,
+                despawnStartAlpha: 1.0,
+                despawnStartSize: 3,
+                isPressureFading: false,
+                pressureFadeStartTime: 0,
+                pressureFadeStartAlpha: 1.0,
+                pressureFadeStartSize: 3,
                 willBurst: false,
                 burstDelay: 0,
                 burstTime: 0,
@@ -456,6 +507,12 @@ class Particle {
             this.rotationSpeed = 0;
             this.isDespawning = false;
             this.despawnStartTime = 0;
+            this.despawnStartAlpha = 1.0;
+            this.despawnStartSize = 3;
+            this.isPressureFading = false;
+            this.pressureFadeStartTime = 0;
+            this.pressureFadeStartAlpha = 1.0;
+            this.pressureFadeStartSize = 3;
             this.willBurst = false;
             this.burstDelay = 0;
             this.burstTime = 0;
@@ -483,6 +540,7 @@ class Firework {
             shape: 'burst',
             colors: CONFIG.colorPalettes.classic,
             intensity: 1.0,
+            adaptiveParticleSizeScale: 1.0,
             giftImage: null,
             userAvatar: null,
             avatarParticleChance: 0.3,
@@ -496,6 +554,7 @@ class Firework {
         };
         
         Object.assign(this, defaults, args);
+        this.adaptiveParticleSizeScale = Math.max(0.6, Math.min(1.0, this.adaptiveParticleSizeScale || 1.0));
         
         // State management
         this.particles = [];
@@ -532,7 +591,7 @@ class Firework {
             // If user avatar is available, use it as the rocket head
             const rocketType = this.userAvatar ? 'image' : 'circle';
             const rocketImage = this.userAvatar;
-            const rocketSize = this.userAvatar ? 8 + this.intensity : 3 + this.intensity;
+            const rocketSize = (this.userAvatar ? 8 + this.intensity : 3 + this.intensity) * this.adaptiveParticleSizeScale;
             
             this.rocket = new Particle({
                 x: this.x,
@@ -695,7 +754,7 @@ class Firework {
                 y: explosionY,
                 vx: vel.vx,
                 vy: vel.vy,
-                size: isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4),
+                size: (isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4)) * this.adaptiveParticleSizeScale,
                 hue: hue,
                 saturation: isSparkle ? 100 : 90,
                 brightness: isSparkle ? 100 : 95,
@@ -725,7 +784,7 @@ class Firework {
                 y: explosionY,
                 vx: vel.vx,
                 vy: vel.vy,
-                size: isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4),
+                size: (isSparkle ? 2 + Math.random() * 2 : (particleType === 'image' ? 4 + Math.random() * 4 : 3 + Math.random() * 4)) * this.adaptiveParticleSizeScale,
                 hue: hue,
                 saturation: isSparkle ? 100 : 90,
                 brightness: isSparkle ? 100 : 95,
@@ -1646,7 +1705,11 @@ class FireworksEngine {
             glowEnabled: true,
             resolution: CONFIG.resolution,
             resolutionPreset: CONFIG.resolutionPreset,
+            internalMaxResolutionPreset: CONFIG.internalMaxResolutionPreset,
+            internalMinResolutionPreset: CONFIG.internalMinResolutionPreset,
             orientation: CONFIG.orientation,
+            adaptiveRenderScaleEnabled: CONFIG.adaptiveRenderScaleEnabled,
+            minRenderScale: CONFIG.minRenderScale,
             targetFps: CONFIG.targetFps,
             minFps: CONFIG.minFps,
             giftPopupPosition: CONFIG.giftPopupPosition
@@ -1676,6 +1739,13 @@ class FireworksEngine {
         
         this.width = 0;
         this.height = 0;
+        this.baseWidth = 0;
+        this.baseHeight = 0;
+        this.renderScale = 1.0;
+        this.targetRenderScale = 1.0;
+        this.qualityScale = 1.0;
+        this.lastRenderScaleChange = 0;
+        this.isBenchmarkMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('benchmark') === 'true';
     }
 
     async init() {
@@ -1763,16 +1833,27 @@ class FireworksEngine {
         const rect = this.canvas.getBoundingClientRect();
         
         // Get resolution from preset
-        const resolutionPreset = this.config.resolutionPreset || '1080p';
+        const resolutionPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
         const orientation = this.config.orientation || 'landscape';
         const targetResolution = this.getResolutionFromPreset(resolutionPreset, orientation);
         
-        // Apply target resolution
-        this.canvas.width = targetResolution.width;
-        this.canvas.height = targetResolution.height;
-        
-        this.width = targetResolution.width;
-        this.height = targetResolution.height;
+        this.baseWidth = targetResolution.width;
+        this.baseHeight = targetResolution.height;
+        this.applyRenderScale();
+    }
+
+    applyRenderScale() {
+        const scale = this.config.adaptiveRenderScaleEnabled === false ? 1.0 : this.renderScale;
+        const width = Math.max(320, Math.round(this.baseWidth * scale));
+        const height = Math.max(180, Math.round(this.baseHeight * scale));
+
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+
+        this.width = width;
+        this.height = height;
         
         // Resize WebGL engine if active
         if (this.webglEngine && this.useWebGL) {
@@ -1785,7 +1866,7 @@ class FireworksEngine {
             this.trailCanvas.height = this.height;
         }
         
-        if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (${resolutionPreset}, ${orientation})`);
+        if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (base ${this.baseWidth}x${this.baseHeight}, scale ${scale.toFixed(2)})`);
     }
     
     // Optimization #6: Initialize layer splitting for performance
@@ -1804,6 +1885,7 @@ class FireworksEngine {
     getResolutionFromPreset(preset, orientation) {
         const resolutions = {
             '360p': { landscape: { width: 640, height: 360 }, portrait: { width: 360, height: 640 } },
+            '480p': { landscape: { width: 854, height: 480 }, portrait: { width: 480, height: 854 } },
             '540p': { landscape: { width: 960, height: 540 }, portrait: { width: 540, height: 960 } },
             '720p': { landscape: { width: 1280, height: 720 }, portrait: { width: 720, height: 1280 } },
             '1080p': { landscape: { width: 1920, height: 1080 }, portrait: { width: 1080, height: 1920 } },
@@ -1828,6 +1910,9 @@ class FireworksEngine {
             });
 
             this.socket.on('fireworks:trigger', (data) => {
+                this.prewarmTriggerAssets(data).catch((error) => {
+                    if (DEBUG) console.warn('[Fireworks] Asset prewarm failed:', error);
+                });
                 this.handleTrigger(data);
             });
 
@@ -1850,6 +1935,8 @@ class FireworksEngine {
                 if (data.config) {
                     const oldResolution = this.config.resolution;
                     const oldPreset = this.config.resolutionPreset;
+                    const oldInternalMaxPreset = this.config.internalMaxResolutionPreset;
+                    const oldInternalMinPreset = this.config.internalMinResolutionPreset;
                     const oldOrientation = this.config.orientation;
                     const oldRenderer = this.config.renderer;
                     const oldToasterMode = this.config.toasterMode;
@@ -1908,6 +1995,8 @@ class FireworksEngine {
                     // Resize canvas if resolution or orientation changed
                     if (oldResolution !== this.config.resolution || 
                         oldPreset !== this.config.resolutionPreset ||
+                        oldInternalMaxPreset !== this.config.internalMaxResolutionPreset ||
+                        oldInternalMinPreset !== this.config.internalMinResolutionPreset ||
                         oldOrientation !== this.config.orientation) {
                         this.resize();
                     }
@@ -2132,9 +2221,8 @@ class FireworksEngine {
             // Upload gift image to texture atlas if WebGL is active
             if (giftImg && this.useWebGL && this.webglEngine) {
                 const key = 'gift:' + giftImage;
-                const slot = this.webglEngine.allocateSlot(key);
+                const slot = this.webglEngine.queueImageUpload(key, giftImg);
                 if (slot >= 0) {
-                    this.webglEngine.uploadImageToSlot(slot, giftImg);
                     giftTextureIndex = slot;
                 }
             }
@@ -2144,9 +2232,8 @@ class FireworksEngine {
             // Upload avatar image to texture atlas if WebGL is active
             if (avatarImg && this.useWebGL && this.webglEngine) {
                 const key = 'avatar:' + userAvatar;
-                const slot = this.webglEngine.allocateSlot(key);
+                const slot = this.webglEngine.queueImageUpload(key, avatarImg);
                 if (slot >= 0) {
-                    this.webglEngine.uploadImageToSlot(slot, avatarImg);
                     // Use avatar texture index if no gift image
                     if (!giftTextureIndex) {
                         giftTextureIndex = slot;
@@ -2172,6 +2259,7 @@ class FireworksEngine {
             skipRocket: skipRockets, // Pass flag to Firework class
             instantExplode: instantExplode, // Explode immediately without any delay
             engineFps: this.fps, // Pass current FPS for performance-based decisions
+            adaptiveParticleSizeScale: this.getAdaptiveParticleSizeScale(),
             giftTextureIndex: giftTextureIndex // Texture Atlas slot for gift/avatar
         });
         
@@ -2323,7 +2411,7 @@ class FireworksEngine {
             return null;
         }
 
-        return new Promise((resolve) => {
+        const imagePromise = new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = async () => {
@@ -2338,9 +2426,40 @@ class FireworksEngine {
                 this.imageCache.set(url, img);
                 resolve(img);
             };
-            img.onerror = () => resolve(null);
+            img.onerror = () => {
+                this.imageCache.delete(url);
+                resolve(null);
+            };
             img.src = url;
         });
+
+        this.imageCache.set(url, imagePromise);
+        return imagePromise;
+    }
+
+    async prewarmAtlasImage(key, url) {
+        if (!url || !this.useWebGL || !this.webglEngine) return;
+
+        const image = await this.loadImage(url);
+        if (image) {
+            this.webglEngine.queueImageUpload(key, image);
+        }
+    }
+
+    async prewarmTriggerAssets(data) {
+        if (!data) return;
+
+        const prewarmTasks = [];
+        if (data.giftImage) {
+            prewarmTasks.push(this.prewarmAtlasImage('gift:' + data.giftImage, data.giftImage));
+        }
+        if (data.userAvatar) {
+            prewarmTasks.push(this.prewarmAtlasImage('avatar:' + data.userAvatar, data.userAvatar));
+        }
+
+        if (prewarmTasks.length > 0) {
+            await Promise.all(prewarmTasks);
+        }
     }
     
     /**
@@ -2440,46 +2559,30 @@ class FireworksEngine {
         const now = performance.now();
         const frameTime = now - this.lastTime;
         
-        // BUG FIX #4: EMERGENCY CLEANUP - More aggressive to prevent freeze loops
+        // BUG FIX #4: Emergency pressure fade - reduce load without abrupt visual cuts.
         const totalParticles = this.getTotalParticles();
         if (totalParticles > this.EMERGENCY_CLEANUP_THRESHOLD) {
-            console.error(`[Fireworks] EMERGENCY: ${totalParticles} particles! Aggressive cleanup...`);
-            
-            // Remove 100% of exploded fireworks
-            const explodedFW = this.fireworks.filter(fw => fw.exploded);
-            for (const fw of explodedFW) {
-                if (fw.particles && fw.particles.length > 0) {
-                    this.particlePool.releaseAll(fw.particles);
-                    fw.particles = [];
-                }
-            }
-            
-            // Remove 50% of oldest flying fireworks (by age)
-            // Note: 'age' field increases over time, so higher age = older firework
-            const flyingFW = this.fireworks.filter(fw => !fw.exploded);
-            flyingFW.sort((a, b) => (b.age || 0) - (a.age || 0)); // Sort by age descending (oldest/highest age first)
-            const toRemoveFlying = Math.ceil(flyingFW.length * 0.5);
-            
-            for (let i = 0; i < toRemoveFlying; i++) {
-                const fw = flyingFW[i];
-                if (fw.particles && fw.particles.length > 0) {
-                    this.particlePool.releaseAll(fw.particles);
-                    fw.particles = [];
-                }
-            }
-            
-            // Clean up fireworks array (remove empty fireworks)
-            // Keep: Non-exploded fireworks (rockets still flying, even with empty particle arrays)
-            // Remove: Exploded fireworks without particles (completed explosions)
-            this.fireworks = this.fireworks.filter(fw => {
-                const hasParticles = fw.particles && fw.particles.length > 0;
-                const isValid = !fw.exploded || hasParticles;
-                return isValid;
+            console.warn(`[Fireworks] EMERGENCY: ${totalParticles} particles, starting pressure fade`);
+
+            const sorted = [...this.fireworks].sort((a, b) => {
+                if (a.exploded !== b.exploded) return a.exploded ? -1 : 1;
+                return (b.age || 0) - (a.age || 0);
             });
-            
+            const fadeCount = Math.max(1, Math.ceil(sorted.length * 0.35));
+
+            for (let i = 0; i < fadeCount; i++) {
+                this.applyPressureFadeToFirework(sorted[i]);
+            }
+
+            for (let i = this.fireworks.length - 1; i >= 0; i--) {
+                if (this.fireworks[i].pressureFading && this.isPressureFadeComplete(this.fireworks[i])) {
+                    this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                    this.fireworks.pop();
+                }
+            }
+
             const newCount = this.getTotalParticles();
-            console.log(`[Fireworks] Emergency cleanup: Removed ${explodedFW.length} exploded + ${toRemoveFlying} flying fireworks`);
-            console.log(`[Fireworks] Particles: ${totalParticles} -> ${newCount} (${((1 - newCount/totalParticles) * 100).toFixed(1)}% reduction)`);
+            if (DEBUG) console.log(`[Fireworks] Emergency pressure fade: ${totalParticles} -> ${newCount} particles`);
         }
         
         // Optimization #10: Frame-skip threshold (50ms = 20 FPS)
@@ -2627,17 +2730,9 @@ class FireworksEngine {
             const avgFps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
             
             // Adaptive Trail-Length based on FPS (Enhanced)
-            if (avgFps > 50) {
-                CONFIG.trailLength = 20; // Full quality
-            } else if (avgFps > 40) {
-                CONFIG.trailLength = 12; // Good performance
-            } else if (avgFps > 30) {
-                CONFIG.trailLength = 8; // Medium performance
-            } else if (avgFps > 25) {
-                CONFIG.trailLength = 5; // Low performance
-            } else {
-                CONFIG.trailLength = 3; // Minimal performance
-            }
+            this.updateAdaptiveRenderScale(avgFps);
+            this.updateAdaptiveQuality(avgFps);
+            this.adjustSecondaryEffectsForLoad();
             
             // Adaptive performance mode
             // Bug #2 Fix: Removed duplicate targetFps declaration - already declared earlier in this method
@@ -2698,6 +2793,120 @@ class FireworksEngine {
         
         // Render all particles in a single draw call
         this.webglEngine.render();
+    }
+
+    updateAdaptiveRenderScale(avgFps) {
+        if (this.isBenchmarkMode) return;
+        if (!this.shouldPreferRenderScaleRecovery(avgFps)) return;
+
+        if (this.config.adaptiveRenderScaleEnabled === false) {
+            if (this.renderScale !== 1.0) {
+                this.renderScale = 1.0;
+                this.applyRenderScale();
+            }
+            return;
+        }
+
+        const now = performance.now();
+        if (now - this.lastRenderScaleChange < 1500) return;
+
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+        const minScale = this.getMinRenderScale();
+        const step = CONFIG.renderScaleStep;
+        let nextScale = this.renderScale;
+
+        if (avgFps < desiredFps * 0.75 && this.renderScale > minScale) {
+            nextScale = Math.max(minScale, this.renderScale - step);
+        } else if (avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin && this.renderScale < 1.0) {
+            nextScale = Math.min(1.0, this.renderScale + step);
+        }
+
+        nextScale = Math.round(nextScale * 100) / 100;
+        if (nextScale !== this.renderScale) {
+            this.renderScale = nextScale;
+            this.lastRenderScaleChange = now;
+            this.applyRenderScale();
+        }
+    }
+
+    shouldPreferRenderScaleRecovery(avgFps) {
+        if (this.config.adaptiveRenderScaleEnabled === false) return true;
+
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+        return avgFps < desiredFps * 0.75 ||
+            (this.renderScale < 1.0 && avgFps > desiredFps - CONFIG.renderScaleRecoveryFpsMargin);
+    }
+
+    shouldUseEmergencyDespawn() {
+        const minScale = this.getMinRenderScale();
+        const totalParticles = this.getTotalParticles();
+        return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold;
+    }
+
+    getMinRenderScale() {
+        const orientation = this.config.orientation || 'landscape';
+        const maxPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
+        const minPreset = this.config.internalMinResolutionPreset || CONFIG.internalMinResolutionPreset;
+        const maxResolution = this.getResolutionFromPreset(maxPreset, orientation);
+        const minResolution = this.getResolutionFromPreset(minPreset, orientation);
+
+        if (!maxResolution || !minResolution || maxResolution.width <= 0 || maxResolution.height <= 0) {
+            return this.config.minRenderScale || CONFIG.minRenderScale;
+        }
+
+        const widthScale = minResolution.width / maxResolution.width;
+        const heightScale = minResolution.height / maxResolution.height;
+        return Math.max(0.125, Math.min(1.0, Math.max(widthScale, heightScale)));
+    }
+
+    updateAdaptiveQuality(avgFps) {
+        const desiredFps = this.config.targetFps || CONFIG.targetFps;
+
+        if (avgFps >= desiredFps * 0.9) {
+            this.qualityScale = 1.0;
+        } else if (avgFps >= desiredFps * 0.75) {
+            this.qualityScale = 0.85;
+        } else if (avgFps >= this.minTargetFps) {
+            this.qualityScale = 0.75;
+        } else {
+            this.qualityScale = 0.65;
+        }
+    }
+
+    getAdaptiveParticleSizeScale() {
+        return this.qualityScale;
+    }
+
+    adjustSecondaryEffectsForLoad() {
+        CONFIG.secondaryExplosionChance = CONFIG.baseSecondaryExplosionChance * this.qualityScale;
+        CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale));
+    }
+
+    applyPressureFadeToFirework(fw) {
+        if (!fw) return;
+
+        fw.pressureFading = true;
+        fw.combo = Math.min(fw.combo || 1, 4);
+
+        if (!fw.exploded && fw.rocket) {
+            fw.rocket.startPressureFade();
+        }
+
+        for (const p of fw.particles || []) {
+            p.startPressureFade();
+        }
+        for (const p of fw.secondaryExplosions || []) {
+            p.startPressureFade();
+        }
+    }
+
+    isPressureFadeComplete(fw) {
+        if (!fw) return true;
+
+        const rocketDone = !fw.rocket || fw.rocket.isDone();
+        const particlesDone = (fw.particles || []).every(p => p.isDone());
+        const secondaryDone = (fw.secondaryExplosions || []).every(p => p.isDone());
+        return rocketDone && particlesDone && secondaryDone;
     }
     
     /**
@@ -2786,52 +2995,24 @@ class FireworksEngine {
             case 'minimal':
                 // Extreme reduction for very low FPS
                 CONFIG.maxParticlesPerExplosion = 50;
-                CONFIG.trailLength = 5;
+                CONFIG.baseTrailLength = 5;
                 CONFIG.sparkleChance = 0.05;
-                CONFIG.secondaryExplosionChance = 0;
-                this.config.glowEnabled = false;
-                this.config.trailsEnabled = false;
+                CONFIG.baseSecondaryExplosionChance = 0.03;
+                this.config.glowEnabled = true;
+                this.config.trailsEnabled = true;
+
+                if (!this.shouldUseEmergencyDespawn()) break;
                 
                 // Bug #3 Fix: Fixed despawn logic - iterate in reverse and check properly
                 const maxFireworksMinimal = 5;
                 if (this.fireworks.length > maxFireworksMinimal) {
                     for (let i = this.fireworks.length - 1; i >= maxFireworksMinimal; i--) {
                         const fw = this.fireworks[i];
-                        
-                        // Start despawn for rocket (if exists)
-                        if (!fw.exploded && fw.rocket && !fw.rocket.isDespawning) {
-                            fw.rocket.startDespawn();
-                        }
-                        
-                        // Start despawn for all particles
-                        for (const p of fw.particles) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        for (const p of fw.secondaryExplosions) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        
-                        // Check if ready for removal
-                        const minDespawnTime = (CONFIG.despawnFadeDuration * 1000) / 2;
-                        const now = performance.now();
-                        
-                        // For fireworks with rocket
-                        if (fw.rocket && fw.rocket.isDespawning) {
-                            if (now - fw.rocket.despawnStartTime > minDespawnTime) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
-                        }
-                        // Bug #3 Fix: For instant-explode fireworks (no rocket)
-                        else if (!fw.rocket && fw.exploded) {
-                            // Check if all particles are despawning long enough
-                            const allParticlesDespawning = fw.particles.every(p => 
-                                p.isDespawning && (now - p.despawnStartTime > minDespawnTime)
-                            );
-                            if (allParticlesDespawning || fw.particles.length === 0) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
+
+                        this.applyPressureFadeToFirework(fw);
+                        if (this.isPressureFadeComplete(fw)) {
+                            this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                            this.fireworks.pop();
                         }
                     }
                 }
@@ -2840,45 +3021,24 @@ class FireworksEngine {
             case 'reduced':
                 // Moderate reduction for low FPS
                 CONFIG.maxParticlesPerExplosion = 100;
-                CONFIG.trailLength = 10;
+                CONFIG.baseTrailLength = 10;
                 CONFIG.sparkleChance = 0.08;
-                CONFIG.secondaryExplosionChance = 0.05;
+                CONFIG.baseSecondaryExplosionChance = 0.05;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
+
+                if (!this.shouldUseEmergencyDespawn()) break;
                 
                 // Bug #3 Fix: Fixed despawn logic for reduced mode
                 const maxFireworksReduced = 15;
                 if (this.fireworks.length > maxFireworksReduced) {
                     for (let i = this.fireworks.length - 1; i >= maxFireworksReduced; i--) {
                         const fw = this.fireworks[i];
-                        
-                        if (!fw.exploded && fw.rocket && !fw.rocket.isDespawning) {
-                            fw.rocket.startDespawn();
-                        }
-                        
-                        for (const p of fw.particles) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        for (const p of fw.secondaryExplosions) {
-                            if (!p.isDespawning) p.startDespawn();
-                        }
-                        
-                        const minDespawnTime = (CONFIG.despawnFadeDuration * 1000) / 2;
-                        const now = performance.now();
-                        
-                        if (fw.rocket && fw.rocket.isDespawning) {
-                            if (now - fw.rocket.despawnStartTime > minDespawnTime) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
-                        } else if (!fw.rocket && fw.exploded) {
-                            const allParticlesDespawning = fw.particles.every(p => 
-                                p.isDespawning && (now - p.despawnStartTime > minDespawnTime)
-                            );
-                            if (allParticlesDespawning || fw.particles.length === 0) {
-                                this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
-                                this.fireworks.pop();
-                            }
+
+                        this.applyPressureFadeToFirework(fw);
+                        if (this.isPressureFadeComplete(fw)) {
+                            this.fireworks[i] = this.fireworks[this.fireworks.length - 1];
+                            this.fireworks.pop();
                         }
                     }
                 }
@@ -2887,13 +3047,14 @@ class FireworksEngine {
             case 'normal':
                 // Full quality
                 CONFIG.maxParticlesPerExplosion = 200;
-                CONFIG.trailLength = 20;
+                CONFIG.baseTrailLength = 20;
                 CONFIG.sparkleChance = 0.15;
-                CONFIG.secondaryExplosionChance = 0.1;
+                CONFIG.baseSecondaryExplosionChance = 0.1;
                 this.config.glowEnabled = true;
                 this.config.trailsEnabled = true;
                 break;
         }
+        this.adjustSecondaryEffectsForLoad();
     }
     
     showFreezeWarning() {

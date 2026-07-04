@@ -10,6 +10,11 @@
 const fs = require('fs');
 const path = require('path');
 
+function readLocale(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw.replace(/^\uFEFF/, ''));
+}
+
 describe('Viewer Profiles Plugin Sidebar Integration', () => {
   let dashboardHtml;
   let enLocale;
@@ -21,10 +26,10 @@ describe('Viewer Profiles Plugin Sidebar Integration', () => {
     const dashboardPath = path.join(__dirname, '..', 'public', 'dashboard.html');
     dashboardHtml = fs.readFileSync(dashboardPath, 'utf8');
 
-    enLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'en.json'), 'utf8'));
-    deLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'de.json'), 'utf8'));
-    esLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'es.json'), 'utf8'));
-    frLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'fr.json'), 'utf8'));
+    enLocale = readLocale(path.join(__dirname, '..', 'locales', 'en.json'));
+    deLocale = readLocale(path.join(__dirname, '..', 'locales', 'de.json'));
+    esLocale = readLocale(path.join(__dirname, '..', 'locales', 'es.json'));
+    frLocale = readLocale(path.join(__dirname, '..', 'locales', 'fr.json'));
   });
 
   describe('Sidebar Menu Entry', () => {

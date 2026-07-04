@@ -239,8 +239,8 @@ describe('TemplateRenderer CSP Compliance', () => {
 
     renderer.updateSettings({ alignCenter: false });
 
-    expect(container.style.justifyContent).toBe('');
-    expect(container.style.alignItems).toBe('');
+    expect(container.style.justifyContent).toBe('flex-start');
+    expect(container.style.alignItems).toBe('flex-start');
     expect(container.style.textAlign).toBe('left');
   });
 

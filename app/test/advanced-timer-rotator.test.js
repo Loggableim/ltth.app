@@ -175,6 +175,7 @@ describe('Advanced Timer — Rotator + Threshold-Effects', () => {
         const plugin = { api, db: { loadAllRotatorSettings: () => [], loadAllThresholdSettings: () => [] }, engine };
         const r = new RotatorService(plugin);
         r.init();
+        r._snapshotIntervalMs = 0;
 
         // Pre-set rotator settings (enable, 3 slots, position left)
         r.rotatorSettings.set('t1', {
@@ -232,13 +233,14 @@ describe('Advanced Timer — Rotator + Threshold-Effects', () => {
         timer.addTime(15, 'like:u3', { sourceType: 'like' });
 
         // Snapshot was emitted at least once
-        const snap = emitted.find(e => e.ev === 'advanced-timer:rotator-snapshot');
+        const snap = emitted.filter(e => e.ev === 'advanced-timer:rotator-snapshot').pop();
         expect(snap).toBeDefined();
         expect(snap.data.timerId).toBe('t2');
+        const history = r.history.get('t2');
         // Buffer trimmed to slot_count=2
-        expect(snap.data.entries.length).toBe(2);
-        expect(snap.data.entries[0].amount).toBe(15);
-        expect(snap.data.entries[1].amount).toBe(10);
+        expect(history.length).toBe(2);
+        expect(history[0].amount).toBe(15);
+        expect(history[1].amount).toBe(10);
 
         r.destroy();
     });

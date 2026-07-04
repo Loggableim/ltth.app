@@ -596,8 +596,43 @@
                                 <option value="4k">4K (3840x2160) - Ultra</option>
                             </select>
                             <p class="text-xs text-gray-400 mt-1">
-                                Lower resolution reduces GPU load and improves performance
+                                Standard OBS Browser Source size. Recommended: 1080p (1920x1080).
                             </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2"><strong>Highest Internal Render Resolution</strong></label>
+                                <select id="internal-max-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMaxResolutionPreset">
+                                    <option value="480p">480p (854x480)</option>
+                                    <option value="540p">540p (960x540)</option>
+                                    <option value="720p">720p (1280x720)</option>
+                                    <option value="1080p" selected>1080p (1920x1080) - Recommended</option>
+                                    <option value="1440p">1440p (2560x1440)</option>
+                                    <option value="4k">4K (3840x2160)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block mb-2"><strong>Lowest Internal Render Resolution</strong></label>
+                                <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
+                                    <option value="480p" selected>480p (854x480) - Recommended</option>
+                                    <option value="540p">540p (960x540)</option>
+                                    <option value="720p">720p (1280x720)</option>
+                                    <option value="1080p">1080p (1920x1080)</option>
+                                    <option value="1440p">1440p (2560x1440)</option>
+                                    <option value="4k">4K (3840x2160)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
+                            <strong class="text-emerald-400">OBS-safe Dynamic Resolution:</strong>
+                            <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
+                                <div>• OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
+                                <div>• Internal range: <span id="internal-resolution-range">1920x1080 -> 854x480</span></div>
+                                <div>• Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
+                            </div>
                         </div>
                         
                         <div>
@@ -648,14 +683,14 @@
                         
                         <div>
                             <label class="block mb-2"><strong>Despawn Fade Duration</strong></label>
-                            <input type="range" id="despawn-fade" min="0.5" max="3.0" step="0.5" value="1.5" class="w-full" data-config="despawnFadeDuration">
+                            <input type="range" id="despawn-fade" min="1.0" max="5.0" step="0.5" value="3.0" class="w-full" data-config="despawnFadeDuration">
                             <div class="flex justify-between text-sm text-gray-400">
-                                <span>0.5s</span>
-                                <span id="despawn-fade-value">1.5s</span>
-                                <span>3.0s</span>
+                                <span>1.0s</span>
+                                <span id="despawn-fade-value">3.0s</span>
+                                <span>5.0s</span>
                             </div>
                             <p class="text-xs text-gray-400 mt-1">
-                                How long rockets fade out when despawned due to overload (longer looks better)
+                                How long overloaded rockets and particles fade out under pressure (longer looks smoother)
                             </p>
                         </div>
                         

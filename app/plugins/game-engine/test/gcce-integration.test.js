@@ -418,6 +418,360 @@ describe('Game Engine GCCE Integration', () => {
       expect(game.player1.username).toBe('streamer');
       expect(game.player2.username).toBe('viewer123');
     });
+
+    test('should start chess from challenge with deterministic white/black roles', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'white'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.startGameFromChallenge(99, {
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer Name'
+      }, 'streamer');
+
+      const game = plugin.activeSessions.get(99);
+
+      expect(plugin.db.updateSession).toHaveBeenCalledWith(99, expect.objectContaining({
+        player1_username: 'streamer',
+        player1_role: 'streamer'
+      }));
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(99, 'viewer123', 'viewer');
+      expect(game.whitePlayer.username).toBe('streamer');
+      expect(game.blackPlayer.username).toBe('viewer123');
+      expect(game.whitePlayer.side).toBe('white');
+      expect(game.blackPlayer.side).toBe('black');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
+
+    test('should accept chess challenge and remove pending challenge entry', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'black'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(100, {
+        sessionId: 100,
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer Name'
+      });
+
+      plugin.acceptChallenge(100);
+
+      expect(plugin.pendingChallenges.has(100)).toBe(false);
+      expect(mockSocketIO.emit).toHaveBeenCalledWith(
+        'game-engine:game-started',
+        expect.objectContaining({
+          sessionId: 100,
+          gameType: 'chess'
+        })
+      );
+
+      const game = plugin.activeSessions.get(100);
+      expect(game).toBeDefined();
+      expect(game.whitePlayer.username).toBe('viewer123');
+      expect(game.blackPlayer.username).toBe('streamer');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
+
+    test('should support passing viewer opponent when accepting challenge', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4,
+          streamerRole: 'player1'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(101, {
+        sessionId: 101,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(101, 'viewer456');
+
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(101, 'viewer456', 'viewer');
+      expect(mockSocketIO.emit).toHaveBeenCalledWith(
+        'game-engine:game-started',
+        expect.objectContaining({
+          sessionId: 101,
+          gameType: 'connect4'
+        })
+      );
+
+      const game = plugin.activeSessions.get(101);
+      expect(game).toBeDefined();
+      expect(game.player1.username).toBe('viewer123');
+      expect(game.player2.username).toBe('viewer456');
+      expect(plugin.pendingChallenges.has(101)).toBe(false);
+    });
+
+    test('should allow viewer opponent to start chess challenge with both viewer sides represented', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.chess,
+          streamerRole: 'white'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(102, {
+        sessionId: 102,
+        gameType: 'chess',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(102, 'viewer456');
+
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(102, 'viewer456', 'viewer');
+      const game = plugin.activeSessions.get(102);
+      expect(game).toBeDefined();
+      expect(game.whitePlayer.username).toBe('viewer456');
+      expect(game.blackPlayer.username).toBe('viewer123');
+
+      if (game.timerInterval) {
+        clearInterval(game.timerInterval);
+      }
+    });
+
+    test('should assign player objects correctly when Connect4 challenge is accepted by viewer with streamerRole player2', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4,
+          streamerRole: 'player2'
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getGameMedia: jest.fn(() => null)
+      };
+
+      plugin.pendingChallenges.set(103, {
+        sessionId: 103,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      plugin.acceptChallenge(103, 'viewer456');
+
+      const game = plugin.activeSessions.get(103);
+      expect(game).toBeDefined();
+      expect(game.player1.username).toBe('viewer123');
+      expect(game.player2.username).toBe('viewer456');
+      expect(game.player1.role).toBe('viewer');
+      expect(game.player2.role).toBe('viewer');
+      expect(plugin.db.addPlayer2).toHaveBeenCalledWith(103, 'viewer456', 'viewer');
+    });
+
+    test('should ignore malformed challenge payload without gameType', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(101, null, 'streamer');
+      }).not.toThrow();
+    });
+
+    test('should ignore malformed challenge payload without challengerUsername', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(101, { gameType: 'connect4' }, 'streamer');
+      }).not.toThrow();
+    });
+
+    test('should ignore challenge acceptance when opponent equals challenger', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(104, {
+          gameType: 'connect4',
+          challengerUsername: 'viewer123',
+          challengerNickname: 'Viewer One'
+        }, 'viewer123');
+      }).not.toThrow();
+
+      expect(plugin.db.addPlayer2).not.toHaveBeenCalled();
+      expect(plugin.activeSessions.has(104)).toBe(false);
+    });
+
+    test('should ignore malformed challenge payload on acceptChallenge and clear pending entry', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      plugin.pendingChallenges.set(105, {
+        sessionId: 105,
+        gameType: 'connect4'
+      });
+
+      expect(() => {
+        plugin.acceptChallenge(105, 'streamer');
+      }).not.toThrow();
+
+      expect(plugin.pendingChallenges.has(105)).toBe(false);
+      expect(plugin.db.addPlayer2).not.toHaveBeenCalled();
+      expect(plugin.activeSessions.has(105)).toBe(false);
+    });
+
+    test('should clear timeout when challenge is accepted by viewer opponent', () => {
+      jest.useFakeTimers();
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        getGameMedia: jest.fn(() => null),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      const timeoutHandle = setTimeout(() => {}, 10000);
+      const clearSpy = jest.spyOn(global, 'clearTimeout').mockImplementation(() => {});
+
+      plugin.pendingChallenges.set(108, {
+        sessionId: 108,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One',
+        timeout: timeoutHandle
+      });
+
+      plugin.acceptChallenge(108, 'viewer456');
+
+      expect(clearSpy).toHaveBeenCalledWith(timeoutHandle);
+      expect(plugin.pendingChallenges.has(108)).toBe(false);
+
+      clearSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    test('should accept timeout challenge as streamer by default', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        getGameMedia: jest.fn(() => null),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn(),
+        getChallenge: jest.fn()
+      };
+
+      plugin.pendingChallenges.set(106, {
+        sessionId: 106,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One'
+      });
+
+      const startSpy = jest.spyOn(plugin, 'startGameFromChallenge').mockImplementation(() => {});
+
+      plugin.acceptChallengeAsStreamer(106);
+
+      expect(startSpy).toHaveBeenCalledWith(106, expect.objectContaining({
+        challengerUsername: 'viewer123'
+      }), 'streamer');
+      expect(plugin.pendingChallenges.has(106)).toBe(false);
+    });
+
+    test('should clear timeout when accepting challenge as streamer', () => {
+      jest.useFakeTimers();
+      plugin.db = {
+        getGameConfig: jest.fn(() => ({
+          ...plugin.defaultConfigs.connect4
+        })),
+        getGameMedia: jest.fn(() => null),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      const timeoutHandle = setTimeout(() => {}, 10000);
+      const clearSpy = jest.spyOn(global, 'clearTimeout').mockImplementation(() => {});
+
+      plugin.pendingChallenges.set(107, {
+        sessionId: 107,
+        gameType: 'connect4',
+        challengerUsername: 'viewer123',
+        challengerNickname: 'Viewer One',
+        timeout: timeoutHandle
+      });
+
+      plugin.acceptChallengeAsStreamer(107);
+
+      expect(clearSpy).toHaveBeenCalledWith(timeoutHandle);
+      expect(plugin.pendingChallenges.has(107)).toBe(false);
+
+      clearSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    test('should forward opponentUsername from socket event to acceptChallenge', () => {
+      let connectionHandler;
+      let acceptChallengeHandler;
+      const socketForConnection = {
+        on: jest.fn((event, callback) => {
+          if (event === 'game-engine:accept-challenge') {
+            acceptChallengeHandler = callback;
+          }
+        })
+      };
+
+      mockSocketIO.on.mockImplementation((event, handler) => {
+        if (event === 'connection') {
+          connectionHandler = handler;
+        }
+      });
+
+      const acceptSpy = jest.spyOn(plugin, 'acceptChallenge').mockImplementation(() => {});
+
+      plugin.registerSocketEvents();
+      connectionHandler(socketForConnection);
+      acceptChallengeHandler({
+        sessionId: 123,
+        opponentUsername: 'viewer456'
+      });
+
+      expect(acceptSpy).toHaveBeenCalledWith(123, 'viewer456');
+    });
   });
 
   describe('Manual Mode', () => {

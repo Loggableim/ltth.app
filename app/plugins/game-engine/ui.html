@@ -2631,6 +2631,12 @@
             </select>
           </div>
           <div class="form-group">
+            <label>
+              <input type="checkbox" id="arena-adaptive-resolution-enabled" checked>
+              Adaptive Aufloesung bei FPS-Drops
+            </label>
+          </div>
+          <div class="form-group">
             <label>FPS-Ziel:</label>
             <select id="arena-target-fps">
               <option value="60">60 FPS</option>
@@ -2734,6 +2740,40 @@
           <div class="form-group">
             <label>Max. Like-Leben pro Event:</label>
             <input type="number" id="arena-max-like-life-batch" min="1" max="50000" step="1">
+          </div>
+        </div>
+
+        <h3>Arena Chat-Steuerung</h3>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="arena-chat-strategy-enabled" checked>
+            Chat-Strategien aktiv
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          <div class="form-group">
+            <label>Command Prefix:</label>
+            <input type="text" id="arena-chat-command-prefix" value="!arena" readonly>
+          </div>
+          <div class="form-group">
+            <label>Strategie-Dauer (Sekunden):</label>
+            <input type="number" id="arena-chat-strategy-duration" min="1" max="600" step="1">
+          </div>
+          <div class="form-group">
+            <label>Command-Cooldown (Sekunden):</label>
+            <input type="number" id="arena-chat-strategy-cooldown" min="0" max="300" step="1">
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="arena-chat-target-enabled" checked>
+              Target-Command erlauben
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="arena-show-command-hints" checked>
+              Commands im Arena-HUD anzeigen
+            </label>
           </div>
         </div>
 
@@ -5095,6 +5135,7 @@
         setArenaField('arena-food-despawn-ms', config.foodDespawnMs !== undefined ? config.foodDespawnMs : 120000);
         setArenaField('arena-food-burst-despawn-ms', config.foodBurstDespawnMs !== undefined ? config.foodBurstDespawnMs : 90000);
         setArenaField('arena-render-scale', config.renderScale !== undefined ? config.renderScale : 0.7);
+        setArenaCheckbox('arena-adaptive-resolution-enabled', config.adaptiveResolutionEnabled, true);
         setArenaField('arena-target-fps', config.targetFps || 45);
         setArenaField('arena-max-render-players', config.maxRenderPlayers || config.maxPlayers || 48);
         setArenaField('arena-renderer-mode', config.rendererMode || 'auto');
@@ -5112,6 +5153,12 @@
         setArenaField('arena-like-life-value', config.likeLifeValue !== undefined ? config.likeLifeValue : 1);
         setArenaField('arena-like-growth-max-mass', config.likeGrowthMaxMass !== undefined ? config.likeGrowthMaxMass : 42);
         setArenaField('arena-max-like-life-batch', config.maxLikeLifeBatch !== undefined ? config.maxLikeLifeBatch : 500);
+        setArenaCheckbox('arena-chat-strategy-enabled', config.chatStrategyEnabled, true);
+        setArenaField('arena-chat-command-prefix', '!arena');
+        setArenaField('arena-chat-strategy-duration', Math.round((config.chatStrategyDurationMs !== undefined ? config.chatStrategyDurationMs : 45000) / 1000));
+        setArenaField('arena-chat-strategy-cooldown', Math.round((config.chatStrategyCooldownMs !== undefined ? config.chatStrategyCooldownMs : 8000) / 1000));
+        setArenaCheckbox('arena-chat-target-enabled', config.chatTargetCommandEnabled, true);
+        setArenaCheckbox('arena-show-command-hints', config.topOverlayShowCommandHints, true);
         setArenaField('arena-top-overlay-design', config.topOverlayDesign || 'framed-field');
         setArenaField('arena-top-overlay-position', config.topOverlayPosition || 'top-center');
         setArenaField('arena-top-overlay-density', config.topOverlayDensity || 'full');
@@ -5158,6 +5205,7 @@
         foodDespawnMs: getArenaNumber('arena-food-despawn-ms', base.foodDespawnMs !== undefined ? base.foodDespawnMs : 120000),
         foodBurstDespawnMs: getArenaNumber('arena-food-burst-despawn-ms', base.foodBurstDespawnMs !== undefined ? base.foodBurstDespawnMs : 90000),
         renderScale: getArenaNumber('arena-render-scale', base.renderScale || 0.7),
+        adaptiveResolutionEnabled: document.getElementById('arena-adaptive-resolution-enabled')?.checked !== false,
         targetFps: getArenaNumber('arena-target-fps', base.targetFps || 45),
         maxRenderPlayers: getArenaNumber('arena-max-render-players', base.maxRenderPlayers || base.maxPlayers || 48),
         rendererMode: document.getElementById('arena-renderer-mode')?.value || base.rendererMode || 'auto',
@@ -5177,6 +5225,11 @@
         likeLifeValue: getArenaNumber('arena-like-life-value', base.likeLifeValue !== undefined ? base.likeLifeValue : 1),
         likeGrowthMaxMass: getArenaNumber('arena-like-growth-max-mass', base.likeGrowthMaxMass !== undefined ? base.likeGrowthMaxMass : 42),
         maxLikeLifeBatch: getArenaNumber('arena-max-like-life-batch', base.maxLikeLifeBatch !== undefined ? base.maxLikeLifeBatch : 500),
+        chatStrategyEnabled: document.getElementById('arena-chat-strategy-enabled')?.checked !== false,
+        chatStrategyDurationMs: getArenaNumber('arena-chat-strategy-duration', 45) * 1000,
+        chatStrategyCooldownMs: getArenaNumber('arena-chat-strategy-cooldown', 8) * 1000,
+        chatTargetCommandEnabled: document.getElementById('arena-chat-target-enabled')?.checked !== false,
+        topOverlayShowCommandHints: document.getElementById('arena-show-command-hints')?.checked !== false,
         topOverlayDesign: document.getElementById('arena-top-overlay-design')?.value || base.topOverlayDesign || 'framed-field',
         topOverlayPosition: document.getElementById('arena-top-overlay-position')?.value || base.topOverlayPosition || 'top-center',
         topOverlayDensity: document.getElementById('arena-top-overlay-density')?.value || base.topOverlayDensity || 'full',

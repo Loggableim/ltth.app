@@ -298,5 +298,178 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(css).toContain('--musicbot-accent');
     expect(css).not.toContain('var(--color-accent)');
   });
+
+  test('first-run easy-peasy smoke: overlay copy, onboarding complete and minimum setup persistence path', async () => {
+    const { dom, fetchMock } = bootMusicBotUi();
+    doms.push(dom);
+
+    const overlayCopy = dom.window.document.getElementById('overlay-copy');
+    const onboardingComplete = dom.window.document.getElementById('musicbot-onboarding-complete');
+    const onboardingPanel = dom.window.document.getElementById('musicbot-onboarding');
+    const blockedKeywords = dom.window.document.getElementById('blocked-keywords');
+    const aliasRequest = dom.window.document.querySelector('.alias-input[data-command=\"request\"]');
+    const aliasSkip = dom.window.document.querySelector('.alias-input[data-command=\"skip\"]');
+    const payToPlayGifts = dom.window.document.getElementById('pay-to-play-gifts');
+    const payToSkipGifts = dom.window.document.getElementById('pay-to-skip-gifts');
+    const aliasSave = dom.window.document.getElementById('alias-save');
+
+    expect(overlayCopy).not.toBeNull();
+    expect(onboardingComplete).not.toBeNull();
+    expect(onboardingPanel).not.toBeNull();
+    expect(blockedKeywords).not.toBeNull();
+    expect(aliasRequest).not.toBeNull();
+    expect(aliasSkip).not.toBeNull();
+    expect(payToPlayGifts).not.toBeNull();
+    expect(payToSkipGifts).not.toBeNull();
+    expect(aliasSave).not.toBeNull();
+
+    overlayCopy.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(dom.window.navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+    const [copiedUrl] = dom.window.navigator.clipboard.writeText.mock.calls[0];
+    expect(copiedUrl).toContain('/plugins/music-bot/overlay.html');
+    expect(copiedUrl).toContain('design=');
+    expect(copiedUrl).toContain('theme=');
+    expect(copiedUrl).toContain('position=');
+
+    blockedKeywords.value = 'vip\nscammer';
+    aliasRequest.value = 'sr, request';
+    aliasSkip.value = 'skip, überspringen';
+    payToPlayGifts.value = 'Rose, GG';
+    payToSkipGifts.value = 'GG';
+
+    aliasSave.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    blockedKeywords.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+    payToPlayGifts.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+    payToSkipGifts.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+
+    onboardingComplete.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const onboardingCall = fetchMock.mock.calls.find(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/onboarding/complete' && options.method === 'POST';
+    });
+    expect(onboardingCall).toBeTruthy();
+
+    const configPosts = fetchMock.mock.calls.filter(([url, options = {}]) => {
+      return url === '/api/plugins/music-bot/config' && options.method === 'POST';
+    });
+    const parsedConfigPosts = configPosts.map(([, options = {}]) => {
+      try {
+        return JSON.parse(options.body || '{}');
+      } catch (_) {
+        return {};
+      }
+    });
+
+    const aliasPayload = parsedConfigPosts.find((payload) => {
+      return payload.commandAliases?.request?.includes('sr');
+    });
+    const moderationPayload = parsedConfigPosts.find((payload) => {
+      return payload.moderation && Array.isArray(payload.moderation.blockedKeywords);
+    });
+    const playPayload = parsedConfigPosts.find((payload) => {
+      return payload.monetization && Array.isArray(payload.monetization.payToPlayGiftCatalog);
+    });
+    const skipPayload = parsedConfigPosts.find((payload) => {
+      return payload.monetization && Array.isArray(payload.monetization.payToSkipGiftCatalog);
+    });
+
+    expect(aliasPayload).toBeTruthy();
+    expect(moderationPayload).toBeTruthy();
+    expect(playPayload).toBeTruthy();
+    expect(skipPayload).toBeTruthy();
+    expect(moderationPayload.moderation.blockedKeywords).toEqual(['vip', 'scammer']);
+    expect(aliasPayload.commandAliases.request).toEqual(['sr', 'request']);
+    expect(aliasPayload.commandAliases.skip).toEqual(['skip', 'überspringen']);
+    expect(playPayload.monetization.payToPlayGiftCatalog).toEqual(['Rose', 'GG']);
+    expect(skipPayload.monetization.payToSkipGiftCatalog).toEqual(['GG']);
+
+    expect(onboardingPanel.hidden).toBe(true);
+  });
+
+  describe('TikTokstreamer first-run easy-peasy mini-suite', () => {
+    test('keeps onboarding completion easy with one-click copy + completion call', async () => {
+      const { dom, fetchMock } = bootMusicBotUi();
+      doms.push(dom);
+
+      const overlayCopy = dom.window.document.getElementById('overlay-copy');
+      const onboardingComplete = dom.window.document.getElementById('musicbot-onboarding-complete');
+      const onboardingPanel = dom.window.document.getElementById('musicbot-onboarding');
+
+      expect(overlayCopy).not.toBeNull();
+      expect(onboardingComplete).not.toBeNull();
+      expect(onboardingPanel).not.toBeNull();
+
+      overlayCopy.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      await Promise.resolve();
+      expect(dom.window.navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+
+      onboardingComplete.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      await Promise.resolve();
+
+      const onboardingCall = fetchMock.mock.calls.find(([url, options = {}]) =>
+        url === '/api/plugins/music-bot/onboarding/complete' && options.method === 'POST'
+      );
+      expect(onboardingCall).toBeTruthy();
+      expect(onboardingPanel.hidden).toBe(true);
+    });
+
+    test('persists minimum bootstrap setup in first-run path for TikTokstreamer onboarding', async () => {
+      const { dom, fetchMock } = bootMusicBotUi();
+      doms.push(dom);
+
+      const blockedKeywords = dom.window.document.getElementById('blocked-keywords');
+      const aliasRequest = dom.window.document.querySelector('.alias-input[data-command=\"request\"]');
+      const payToPlayGifts = dom.window.document.getElementById('pay-to-play-gifts');
+      const payToSkipGifts = dom.window.document.getElementById('pay-to-skip-gifts');
+      const aliasSave = dom.window.document.getElementById('alias-save');
+
+      expect(blockedKeywords).not.toBeNull();
+      expect(aliasRequest).not.toBeNull();
+      expect(payToPlayGifts).not.toBeNull();
+      expect(payToSkipGifts).not.toBeNull();
+      expect(aliasSave).not.toBeNull();
+
+      blockedKeywords.value = 'vip\nfast-follower';
+      aliasRequest.value = 'sr';
+      payToPlayGifts.value = 'rose, gg';
+      payToSkipGifts.value = 'hearts';
+
+      aliasSave.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      blockedKeywords.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+      payToPlayGifts.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+      payToSkipGifts.dispatchEvent(new dom.window.Event('blur', { bubbles: true }));
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const configPosts = fetchMock.mock.calls.filter(([url, options = {}]) => {
+        return url === '/api/plugins/music-bot/config' && options.method === 'POST';
+      });
+      const parsedConfigPosts = configPosts.map(([, options = {}]) => {
+        try {
+          return JSON.parse(options.body || '{}');
+        } catch (_) {
+          return {};
+        }
+      });
+
+      const moderationPayload = parsedConfigPosts.find((payload) => payload?.moderation?.blockedKeywords?.length > 0);
+      const aliasPayload = parsedConfigPosts.find((payload) => payload?.commandAliases?.request?.includes('sr'));
+      const playPayload = parsedConfigPosts.find((payload) => payload?.monetization?.payToPlayGiftCatalog?.length > 0);
+      const skipPayload = parsedConfigPosts.find((payload) => payload?.monetization?.payToSkipGiftCatalog?.length > 0);
+
+      expect(moderationPayload).toBeTruthy();
+      expect(aliasPayload).toBeTruthy();
+      expect(playPayload).toBeTruthy();
+      expect(skipPayload).toBeTruthy();
+      expect(moderationPayload.moderation.blockedKeywords).toEqual(['vip', 'fast-follower']);
+      expect(aliasPayload.commandAliases.request).toEqual(['sr']);
+      expect(playPayload.monetization.payToPlayGiftCatalog).toEqual(['rose', 'gg']);
+      expect(skipPayload.monetization.payToSkipGiftCatalog).toEqual(['hearts']);
+    });
+  });
 });
 

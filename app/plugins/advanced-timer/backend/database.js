@@ -1011,7 +1011,14 @@ class TimerDatabase {
 
     saveRotator(timerId, settings) {
         try {
-            const norm = this._normalizeRotator({ ...settings, timer_id: timerId });
+            const existing = this.db.prepare('SELECT * FROM advanced_timer_rotator_settings WHERE timer_id = ?').get(timerId);
+            const base = existing
+                ? this._normalizeRotator(existing)
+                : this._normalizeRotator({
+                    timer_id: timerId,
+                    include_sources: this._ROTATOR_DEFAULT_SOURCES.join(',')
+                });
+            const norm = this._normalizeRotator({ ...base, ...settings, timer_id: timerId });
             this.db.prepare(`
                 INSERT INTO advanced_timer_rotator_settings
                 (timer_id, enabled, slot_count, position, rotation_interval_ms,

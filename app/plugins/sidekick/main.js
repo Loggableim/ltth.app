@@ -1884,7 +1884,7 @@ class SidekickPlugin {
     const speechDelivered = animazingPalResult?.responded === true
       && !animazingPalResult?.speechFailed
       && !animazingPalResult?.speechBlocked;
-    const shouldRememberHostSpeech = decision?.respond !== false && decision?.accept !== false;
+    const shouldRememberHostSpeech = speechDelivered;
     if (shouldRememberHostSpeech) {
       this.conversationCoordinator.recordHostSpeech?.(text, metadata);
     }

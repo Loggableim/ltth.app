@@ -72,6 +72,7 @@ class SttTickerPlugin {
 
       this.logger.info('✅ STT Ticker Plugin initialized successfully');
       this.logger.info('   - Overlay: /overlay/stt-ticker');
+      this.logger.info('   - Master:  /stt-ticker');
       this.logger.info('   - Config:  /api/stt-ticker/config');
       this.logger.info('   - ASR:     /api/stt-ticker/transcribe');
       this.logger.info('   - Translation: ' + (this.config.translation?.enabled ? '✅ enabled' : '⏸️ disabled'));
@@ -110,6 +111,14 @@ class SttTickerPlugin {
     // Overlay ausliefern
     this.api.registerRoute('get', '/overlay/stt-ticker', (req, res) => {
       res.sendFile(path.join(__dirname, 'overlay', 'ticker.html'));
+    });
+
+    // Master-UI: kombinierte Ansicht für Admin + Capture
+    this.api.registerRoute('get', '/stt-ticker', (req, res) => {
+      res.sendFile(path.join(__dirname, 'master.html'));
+    });
+    this.api.registerRoute('get', '/stt-ticker/master', (req, res) => {
+      res.sendFile(path.join(__dirname, 'master.html'));
     });
 
     // Admin-UI ausliefern

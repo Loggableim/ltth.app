@@ -56,9 +56,9 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('for (let i = this.fireworks.length - 1; i >= maxFireworksReduced; i--)');
         });
         
-        test('Handles instant-explode fireworks (no rocket)', () => {
-            expect(engineCode).toContain('else if (!fw.rocket && fw.exploded)');
-            expect(engineCode).toContain('// Bug #3 Fix: For instant-explode fireworks');
+        test('Handles instant-explode fireworks through pressure fade completion', () => {
+            expect(engineCode).toContain('isPressureFadeComplete(fw)');
+            expect(engineCode).toContain('const rocketDone = !fw.rocket || fw.rocket.isDone()');
         });
         
         test('Uses swap-and-pop instead of splice for O(1) cleanup', () => {
@@ -167,6 +167,61 @@ describe('Fireworks Engine Optimizations', () => {
         test('Debug panel shows queue size', () => {
             expect(engineCode).toContain('// Optimization #19: Update debug panel to show queue size');
             expect(engineCode).toContain('Q:${this.fireworks.length}');
+        });
+    });
+
+    describe('OBS-Safe Adaptive Quality', () => {
+        let webglCode;
+
+        beforeAll(() => {
+            const webglPath = path.join(__dirname, '../plugins/fireworks/gpu/webgl-particle-engine.js');
+            webglCode = fs.readFileSync(webglPath, 'utf8');
+        });
+
+        test('WebGL upload only sends active particle data', () => {
+            expect(webglCode).toContain('this.activeUploadView = null');
+            expect(webglCode).toContain('this.lastUploadFloatCount = 0');
+            expect(webglCode).toContain('getActiveUploadView()');
+            expect(webglCode).toContain('gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.getActiveUploadView())');
+        });
+
+        test('Texture atlas uploads are queued outside peak rendering', () => {
+            expect(webglCode).toContain('this.pendingAtlasUploads = []');
+            expect(webglCode).toContain('queueImageUpload(key, image)');
+            expect(webglCode).toContain('processAtlasUploads');
+            expect(webglCode).toContain('this.maxAtlasUploadsPerFrame');
+        });
+
+        test('Fireworks engine uses queued atlas uploads for gift and avatar images', () => {
+            expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, giftImg)');
+            expect(engineCode).toContain('this.webglEngine.queueImageUpload(key, avatarImg)');
+        });
+
+        test('Fireworks engine prewarms gift and avatar atlas textures before peak bursts', () => {
+            expect(engineCode).toContain('prewarmTriggerAssets(data)');
+            expect(engineCode).toContain('prewarmAtlasImage(\'gift:\' + data.giftImage, data.giftImage)');
+            expect(engineCode).toContain('prewarmAtlasImage(\'avatar:\' + data.userAvatar, data.userAvatar)');
+            expect(engineCode).toContain('this.prewarmTriggerAssets(data).catch');
+        });
+
+        test('Despawn is reserved for emergency overload after adaptive scaling', () => {
+            expect(engineCode).toContain('shouldUseEmergencyDespawn()');
+            expect(engineCode).toContain('if (!this.shouldUseEmergencyDespawn()) break');
+            expect(engineCode).toContain('return this.renderScale <= minScale && totalParticles > CONFIG.renderScaleEmergencyParticleThreshold');
+        });
+
+        test('Emergency overload uses pressure fade instead of abrupt rocket despawn', () => {
+            const emergencyBlockStart = engineCode.indexOf('Emergency pressure fade - reduce load');
+            const emergencyBlockEnd = engineCode.indexOf('// Optimization #10', emergencyBlockStart);
+            const emergencyBlock = engineCode.slice(emergencyBlockStart, emergencyBlockEnd);
+
+            expect(engineCode).toContain('startPressureFade()');
+            expect(engineCode).toContain('applyPressureFadeToFirework(fw)');
+            expect(engineCode).toContain('isPressureFading');
+            expect(engineCode).toContain('pressureFadeStartAlpha');
+            expect(engineCode).not.toContain('fw.rocket.startDespawn()');
+            expect(emergencyBlock).toContain('Emergency pressure fade');
+            expect(emergencyBlock).not.toContain('this.particlePool.releaseAll(fw.particles)');
         });
     });
     

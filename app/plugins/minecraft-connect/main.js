@@ -33,6 +33,9 @@ class MinecraftConnectPlugin {
 
         // Configuration
         this.config = {
+            ui: {
+                theme: 'aurora-2'
+            },
             websocket: {
                 port: 25560,
                 host: 'localhost',
@@ -50,6 +53,16 @@ class MinecraftConnectPlugin {
                 showAction: true,
                 animationDuration: 3000,
                 position: 'top-right'
+            },
+            chat: {
+                enabled: false,
+                mode: 'relay',
+                filters: [],
+                relayTargets: []
+            },
+            giftBars: {
+                enabled: false,
+                goals: []
             },
             mappings: []
         };
@@ -146,7 +159,7 @@ class MinecraftConnectPlugin {
             try {
                 const configData = await fs.readFile(configPath, 'utf8');
                 const loadedConfig = JSON.parse(configData);
-                this.config = { ...this.config, ...loadedConfig };
+                this.config = this.mergeConfig(this.config, loadedConfig);
                 this.api.log('Configuration loaded from config.json');
             } catch (error) {
                 // Config file doesn't exist, use defaults
@@ -167,6 +180,39 @@ class MinecraftConnectPlugin {
         } catch {
             return false;
         }
+    }
+
+    /**
+     * Merge config objects while preserving nested sections.
+     */
+    mergeConfig(base, updates = {}) {
+        const merged = { ...base, ...updates };
+        merged.ui = { ...base.ui, ...(updates.ui || {}) };
+        merged.websocket = { ...base.websocket, ...(updates.websocket || {}) };
+        merged.limits = { ...base.limits, ...(updates.limits || {}) };
+        merged.overlay = { ...base.overlay, ...(updates.overlay || {}) };
+        merged.chat = { ...base.chat, ...(updates.chat || {}) };
+        merged.giftBars = { ...base.giftBars, ...(updates.giftBars || {}) };
+        merged.mappings = Array.isArray(updates.mappings) ? updates.mappings : (base.mappings || []);
+        return merged;
+    }
+
+    /**
+     * Build a consolidated dashboard payload for the refreshed UI.
+     */
+    getDashboardState() {
+        return {
+            config: this.config,
+            status: {
+                connectionStatus: this.connectionStatus,
+                isConnected: this.wsServer ? this.wsServer.isConnected() : false,
+                availableActions: this.availableActions,
+                stats: this.stats,
+                queueStatus: this.commandQueue ? this.commandQueue.getStatus() : null
+            },
+            mappings: this.actionMapper ? this.actionMapper.getMappings() : [],
+            events: this.eventLog
+        };
     }
 
     /**
@@ -340,11 +386,19 @@ class MinecraftConnectPlugin {
             });
         });
 
+        // Get dashboard state
+        this.api.registerRoute('GET', '/api/minecraft-connect/dashboard', async (req, res) => {
+            res.json({
+                success: true,
+                dashboard: this.getDashboardState()
+            });
+        });
+
         // Update config
         this.api.registerRoute('PUT', '/api/minecraft-connect/config', async (req, res) => {
             try {
                 const updates = req.body;
-                this.config = { ...this.config, ...updates };
+                this.config = this.mergeConfig(this.config, updates);
                 await this.saveConfig();
                 
                 res.json({

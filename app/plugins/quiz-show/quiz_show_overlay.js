@@ -153,11 +153,12 @@
     function syncApplicationTheme() {
         // Map application themes to overlay themes
         const themeMapping = {
-            'aurora': 'dark',
-            'night': 'dark',
-            'day': 'day',
-            'contrast': 'contrast',
-            'vision-impaired': 'contrast'
+          'aurora': 'dark',
+          'aurora-2': 'dark',
+          'night': 'dark',
+          'day': 'day',
+          'contrast': 'contrast',
+          'vision-impaired': 'contrast'
         };
         
         // Try to read from localStorage (works in dashboard, not in OBS sandbox)
@@ -266,11 +267,12 @@
         } else {
             // Use application theme
             const themeMapping = {
-                'aurora': 'dark',
-                'night': 'dark',
-                'day': 'day',
-                'contrast': 'contrast',
-                'vision-impaired': 'contrast'
+              'aurora': 'dark',
+              'aurora-2': 'dark',
+              'night': 'dark',
+              'day': 'day',
+              'contrast': 'contrast',
+              'vision-impaired': 'contrast'
             };
             overlay.setAttribute('data-theme', themeMapping[appTheme] || 'dark');
             overlay.removeAttribute('data-theme-preset');

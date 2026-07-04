@@ -5,7 +5,8 @@ const appRoot = path.join(__dirname, '..');
 const locales = ['en', 'de', 'es', 'fr'];
 
 function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const raw = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(raw.replace(/^\uFEFF/, ''));
 }
 
 function isObject(value) {
@@ -34,6 +35,24 @@ function expectSameKeys(reference, actual) {
 }
 
 describe('i18n locale consistency', () => {
+  test('runtime loader reads BOM-prefixed locale JSON files', () => {
+    jest.resetModules();
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const i18n = require('../modules/i18n');
+    const esTranslations = i18n.getAllTranslations('es');
+    const frTranslations = i18n.getAllTranslations('fr');
+    const parseErrors = consoleError.mock.calls
+      .map(args => args.join(' '))
+      .filter(message => message.includes('Unexpected token'));
+
+    consoleError.mockRestore();
+
+    expect(esTranslations.app.name).toBe("PupCid's Little TikTool Helper");
+    expect(frTranslations.app.name).toBe("PupCid's Little TikTool Helper");
+    expect(parseErrors).toEqual([]);
+  });
+
   test('central locale files expose the same keys for every supported language', () => {
     const localeKeys = Object.fromEntries(locales.map(locale => {
       const filePath = path.join(appRoot, 'locales', `${locale}.json`);

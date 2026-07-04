@@ -152,8 +152,46 @@ describe('Fireworks Performance Optimizations', () => {
         test('should adaptively adjust trail length based on FPS', () => {
             // Verify adaptive trail length
             expect(engineCode).toContain('Adaptive Trail-Length based on FPS');
-            expect(engineCode).toMatch(/avgFps > 50[\s\S]*?CONFIG\.trailLength = 20/);
-            expect(engineCode).toMatch(/avgFps > 25[\s\S]*?CONFIG\.trailLength = 5/);
+            expect(engineCode).toContain('updateAdaptiveQuality(avgFps)');
+            expect(engineCode).toContain('CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale))');
+        });
+
+        test('should adapt internal render scale without changing OBS source size', () => {
+            expect(engineCode).toContain('adaptiveRenderScaleEnabled: true');
+            expect(engineCode).toContain('this.baseWidth = 0');
+            expect(engineCode).toContain('this.renderScale = 1.0');
+            expect(engineCode).toContain('this.isBenchmarkMode =');
+            expect(engineCode).toContain('updateAdaptiveRenderScale(avgFps)');
+            expect(engineCode).toContain('applyRenderScale()');
+            expect(engineCode).toContain('this.canvas.style.width = \'100%\'');
+            expect(engineCode).toContain('this.canvas.style.height = \'100%\'');
+        });
+
+        test('should support OBS-safe internal resolution bounds from 4k down to 480p', () => {
+            expect(engineCode).toContain('internalMaxResolutionPreset');
+            expect(engineCode).toContain('internalMinResolutionPreset');
+            expect(engineCode).toContain("'480p': { landscape: { width: 854, height: 480 }");
+            expect(engineCode).toContain("'4k': { landscape: { width: 3840, height: 2160 }");
+            expect(engineCode).toContain('getMinRenderScale()');
+            expect(engineCode).toContain('this.config.internalMinResolutionPreset || CONFIG.internalMinResolutionPreset');
+            expect(engineCode).toContain('this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset');
+        });
+
+        test('should keep WebGL canvas size stable during benchmark while allowing active adaptive resize', () => {
+            expect(engineCode).toContain('if (this.isBenchmarkMode) return');
+            expect(engineCode).toContain('shouldPreferRenderScaleRecovery(avgFps)');
+            expect(engineCode).toContain('if (!this.shouldPreferRenderScaleRecovery(avgFps)) return');
+            expect(engineCode).toContain('CONFIG.renderScaleEmergencyParticleThreshold');
+            expect(engineCode).not.toContain('if (this.fireworks.length > 0) return');
+        });
+
+        test('should degrade quality before dropping fireworks features', () => {
+            expect(engineCode).toContain('this.qualityScale = 1.0');
+            expect(engineCode).toContain('updateAdaptiveQuality(avgFps)');
+            expect(engineCode).toContain('getAdaptiveParticleSizeScale()');
+            expect(engineCode).toContain('adjustSecondaryEffectsForLoad()');
+            expect(engineCode).toContain('CONFIG.secondaryExplosionChance = CONFIG.baseSecondaryExplosionChance * this.qualityScale');
+            expect(engineCode).toContain('CONFIG.trailLength = Math.max(3, Math.round(CONFIG.baseTrailLength * this.qualityScale))');
         });
     });
 });

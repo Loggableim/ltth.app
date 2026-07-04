@@ -175,6 +175,7 @@ const DEFAULT_CONFIG = {
   maxFood: 130,
   maxFoodRender: 72,
   renderScale: 0.7,
+  adaptiveResolutionEnabled: true,
   targetFps: 45,
   maxRenderPlayers: 48,
   rendererMode: 'auto',
@@ -192,6 +193,11 @@ const DEFAULT_CONFIG = {
   topOverlayLeaderboardRows: 3,
   infoRotatorPlacement: 'in-hud',
   infoRotatorLanguageMode: 'de-en',
+  chatStrategyEnabled: true,
+  chatStrategyDurationMs: 45000,
+  chatStrategyCooldownMs: 8000,
+  chatTargetCommandEnabled: true,
+  topOverlayShowCommandHints: true,
   maxWeaponPickups: 10,
   weaponPickupRadius: 14,
   weaponPickupSpawnIntervalMs: 3400,
@@ -473,6 +479,8 @@ const DEFAULT_CONFIG = {
     emptyText: 'Waiting for live activity'
   }
 };
+
+const AI_STATE_MIN_DURATION_MS = 900;
 
 class ArenaGame {
   constructor(api, db, logger, options = {}) {
@@ -766,6 +774,170 @@ class ArenaGame {
     return { success: true, player: payload, weapon: player.weapon };
   }
 
+  handleChatStrategy(data, argsOrMessage = []) {
+    const config = this.getConfig();
+    if (!config.enabled || config.chatStrategyEnabled === false) {
+      return { success: false, error: 'Arena chat strategy disabled' };
+    }
+
+    const viewer = this._normalizeViewer(data);
+    if (!viewer.username) {
+      return { success: false, error: 'Missing viewer identity' };
+    }
+
+    const args = this._normalizeChatStrategyArgs(argsOrMessage);
+    const command = String(args[0] || '').trim().toLowerCase();
+    if (!command) {
+      return { success: false, error: 'Missing arena command' };
+    }
+
+    const player = this._getOrCreatePlayer(viewer, config);
+    this._cleanupPlayerChatStrategy(player);
+
+    if (command !== 'status') {
+      const cooldown = this._chatStrategyCooldown(player, config);
+      if (cooldown) {
+        return cooldown;
+      }
+    }
+
+    if (command === 'hunt' || command === 'attack') {
+      return this.setPlayerStrategy(viewer, 'hunt', { player, config });
+    }
+    if (command === 'flee') {
+      return this.setPlayerStrategy(viewer, 'flee', { player, config });
+    }
+    if (command === 'farm') {
+      return this.setPlayerStrategy(viewer, 'farm', { player, config });
+    }
+    if (command === 'target') {
+      if (config.chatTargetCommandEnabled === false) {
+        return { success: false, error: 'Target command disabled' };
+      }
+      return this.setPlayerTarget(viewer, args.slice(1).join(' '), { player, config });
+    }
+    if (command === 'role') {
+      return this.setPlayerStrategy(viewer, 'role', {
+        player,
+        config,
+        role: String(args[1] || '').trim().toLowerCase()
+      });
+    }
+    if (command === 'status') {
+      return {
+        success: true,
+        status: true,
+        username: player.username,
+        strategy: player.strategyOverride || null,
+        targetUsername: player.targetUsername || null,
+        activeRole: player.activeRole || null,
+        message: this._formatChatStrategyStatus(player)
+      };
+    }
+
+    return { success: false, error: 'Unknown arena command' };
+  }
+
+  setPlayerStrategy(viewer, strategy, options = {}) {
+    const config = options.config || this.getConfig();
+    const player = options.player || this._getOrCreatePlayer(this._normalizeViewer(viewer), config);
+    const normalized = this._normalizeStrategy(strategy);
+    if (!player || !normalized) {
+      return { success: false, error: 'Invalid arena strategy' };
+    }
+
+    const now = this.now();
+    const durationMs = this._strategyDurationMs(config);
+    let activeRole = null;
+    let activeRoleProfile = null;
+
+    if (normalized === 'role') {
+      activeRole = this._normalizeRoleId(options.role, config);
+      if (!activeRole) {
+        return { success: false, error: 'Invalid arena role' };
+      }
+      activeRoleProfile = this._roleProfile(activeRole, config);
+    }
+
+    player.strategyOverride = normalized;
+    player.strategyExpiresAt = now + durationMs;
+    player.chatCommandCooldownUntil = now + this._strategyCooldownMs(config);
+    player.activeRole = activeRole;
+    player.activeRoleProfile = activeRoleProfile;
+    player.activeRoleExpiresAt = activeRole ? player.strategyExpiresAt : null;
+
+    this.io.emit('arena:strategy-updated', {
+      username: player.username,
+      nickname: player.nickname,
+      strategy: player.strategyOverride,
+      strategyExpiresAt: player.strategyExpiresAt,
+      activeRole: player.activeRole,
+      timestamp: now
+    });
+    this.emitState('strategy-updated', { force: true });
+
+    return {
+      success: true,
+      username: player.username,
+      strategy: player.strategyOverride,
+      strategyExpiresAt: player.strategyExpiresAt,
+      activeRole: player.activeRole
+    };
+  }
+
+  setPlayerTarget(viewer, targetQuery, options = {}) {
+    const config = options.config || this.getConfig();
+    const player = options.player || this._getOrCreatePlayer(this._normalizeViewer(viewer), config);
+    if (!player) {
+      return { success: false, error: 'Missing player' };
+    }
+
+    const target = this._findTargetPlayer(targetQuery, player.username);
+    if (!target) {
+      return { success: false, error: 'Target not found' };
+    }
+
+    const now = this.now();
+    player.strategyOverride = player.strategyOverride || 'target';
+    player.strategyExpiresAt = now + this._strategyDurationMs(config);
+    player.targetUsername = target.username;
+    player.targetExpiresAt = player.strategyExpiresAt;
+    player.chatCommandCooldownUntil = now + this._strategyCooldownMs(config);
+
+    this.io.emit('arena:target-updated', {
+      username: player.username,
+      nickname: player.nickname,
+      targetUsername: target.username,
+      targetNickname: target.nickname,
+      targetExpiresAt: player.targetExpiresAt,
+      timestamp: now
+    });
+    this.emitState('target-updated', { force: true });
+
+    return {
+      success: true,
+      username: player.username,
+      targetUsername: target.username,
+      targetExpiresAt: player.targetExpiresAt
+    };
+  }
+
+  getArenaCommandHints(config = this.getConfig()) {
+    if (config.chatStrategyEnabled === false || config.topOverlayShowCommandHints === false) {
+      return [];
+    }
+    const hints = [
+      { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena hunt - Angriff' },
+      { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena flee - Überleben' },
+      { kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena farm - Sammeln' }
+    ];
+    if (config.chatTargetCommandEnabled !== false) {
+      hints.push({ kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena target Name - Ziel markieren' });
+    }
+    hints.push({ kind: 'command', label: 'Chat Command', iconText: 'CMD', text: '!arena role tactician - KI-Rolle wählen' });
+    return hints;
+  }
+
   tick(deltaMs = DEFAULT_TICK_RATE_MS) {
     const config = this.getConfig();
     if (!config.enabled) return this.getState('disabled');
@@ -840,6 +1012,7 @@ class ArenaGame {
   }
 
   chooseBehavior(player, config = this.getConfig()) {
+    this._cleanupPlayerChatStrategy(player);
     if (!this.aiSpatialIndex) {
       this.aiSpatialIndex = this._buildSpatialIndex(config);
     }
@@ -904,6 +1077,7 @@ class ArenaGame {
     const prey = this._rankHuntTarget(player, movement, config);
     const weapon = this._rankWeaponPickup(player, movement, config);
     const pressure = this._rankPressureTarget(player, movement, config);
+    const targetPlayer = this._activeTargetPlayer(player);
     const growthRival = pressure || this._rankStrategicGrowthTarget(player, movement, config);
     const food = this._rankFoodTarget(player, movement, config, {
       pressureTarget: growthRival && growthRival.target,
@@ -922,6 +1096,7 @@ class ArenaGame {
       threat,
       prey,
       pressure,
+      targetPlayer,
       weapon,
       food,
       boundary
@@ -956,7 +1131,7 @@ class ArenaGame {
 
     if (context.threat) {
       const fleeIntent = this._createFleeIntent(player, context, threatScore, riskAppetite);
-      if (mustRetreatFromThreat) {
+      if (mustRetreatFromThreat && riskAppetite < 0.9) {
         fleeIntent.score += threatScore * 0.55 + 4.2;
         fleeIntent.metadata = this._aiMetadata({
           ...fleeIntent.metadata,
@@ -970,6 +1145,9 @@ class ArenaGame {
           const evadeIntent = this._createEvadeWeaponIntent(player, context, threatScore, escapeRoute);
           if (!player.weapon) {
             evadeIntent.score += survivalNeed * 2.6 + personality.weaponFocus * 0.75;
+          }
+          if (escapeRoute.alignment > 0.35 && personality.fear >= 1.2) {
+            evadeIntent.score += threatScore * 0.42 + personality.weaponFocus * 2.2;
           }
           candidates.push(evadeIntent);
         }
@@ -999,13 +1177,38 @@ class ArenaGame {
       const massAdvantage = Math.max(1, player.mass / Math.max(context.prey.target.mass, 1));
       const predatorBonus = this._clamp((massAdvantage - 1.25) * 2.1, 0, 5.8) *
         sizeProfile.attackIntentScale;
-      const riskBonus = riskAppetite * (2.6 + laneAlignment * 2.4);
+      const riskBonus = riskAppetite * (4.2 + laneAlignment * 5.8);
       candidates.push(this._createAttackIntent(
         player,
         context,
         (context.prey.score - threatPenalty - staminaPenalty + combatReadiness * 1.2 + riskBonus +
           chainsawCommitmentBonus + predatorBonus) * sizeProfile.attackIntentScale
       ));
+    }
+
+    if ((player.strategyOverride === 'hunt' || player.strategyOverride === 'attack') && !context.prey) {
+      const chatHuntTarget = this._rankChatHuntTarget(player, context.movement, config);
+      if (chatHuntTarget) {
+        const intercept = this._predictInterceptPosition(player, chatHuntTarget.target, context.movement, config, personality);
+        candidates.push({
+          mode: 'hunt-player',
+          intent: 'attack',
+          target: chatHuntTarget.target,
+          vector: this._vectorToTarget(player, intercept),
+          score: chatHuntTarget.score + 18,
+          metadata: this._aiMetadata({
+            reason: 'chat-hunt',
+            target: this._serializeAiEntity(chatHuntTarget.target)
+          })
+        });
+      }
+    }
+
+    if (context.targetPlayer) {
+      const targetIntent = this._createTargetIntent(player, context, config);
+      if (targetIntent) {
+        candidates.push(targetIntent);
+      }
     }
 
     if (
@@ -1079,12 +1282,96 @@ class ArenaGame {
     }
 
     candidates.push(this._createWanderIntent(player, context));
-    return candidates;
+    return this._applyChatStrategyBias(candidates, player, context, config);
+  }
+
+  _createTargetIntent(player, context, config) {
+    const target = context.targetPlayer;
+    if (!target || target.username === player.username) return null;
+    const distance = this._distance(player, target);
+    const maxDistance = Math.max(
+      Number(context.movement?.huntDistance) || DEFAULT_CONFIG.movement.huntDistance,
+      Number(context.movement?.weaponSenseDistance) || DEFAULT_CONFIG.movement.weaponSenseDistance
+    ) * 1.35;
+    if (distance > maxDistance) return null;
+
+    const threat = context.threat && context.threat.target && context.threat.target.username !== target.username
+      ? context.threat
+      : null;
+    const attackContext = this._playerAbsorbContext(player, target, config);
+    const weaponContext = this._weaponAttackContext(player, target, config);
+    const canChallenge = attackContext.canAbsorb || weaponContext.canAttack ||
+      (Number(player.mass) || 0) >= (Number(target.mass) || 0) * 0.88;
+    if (!canChallenge) return null;
+
+    const personality = context.personality;
+    const intercept = this._predictInterceptPosition(player, target, context.movement, config, personality);
+    const threatPenalty = threat ? Math.max(0, threat.score || 0) * personality.fear * 0.34 : 0;
+    const closeness = this._clamp(1 - distance / Math.max(maxDistance, 1), 0, 1);
+    return {
+      mode: 'hunt-player',
+      intent: 'target',
+      target,
+      vector: this._combineSteeringVectors([
+        { vector: this._vectorToTarget(player, intercept), weight: 2.8 * personality.aggression },
+        { vector: threat ? threat.vector : { x: 0, y: 0 }, weight: threat ? 0.45 * personality.fear : 0 },
+        { vector: context.boundary, weight: 0.35 }
+      ]),
+      score: 18 + closeness * 8 + personality.aggression * 3 + personality.intelligence * 1.4 - threatPenalty,
+      metadata: this._aiMetadata({
+        reason: 'chat-target',
+        target: this._serializeAiEntity(target)
+      })
+    };
+  }
+
+  _applyChatStrategyBias(candidates, player, context, config) {
+    this._cleanupPlayerChatStrategy(player);
+    const strategy = player && player.strategyOverride;
+    if (!strategy && !player?.targetUsername) return candidates;
+
+    return candidates.map(candidate => {
+      if (!candidate) return candidate;
+      let score = candidate.score;
+      if (strategy === 'hunt' || strategy === 'attack') {
+        if (candidate.mode === 'hunt-player') score += 14;
+        if (candidate.mode === 'pressure-player') score += 7;
+        if (candidate.mode === 'hunt-food') score -= 7;
+        if (candidate.mode === 'flee') score -= 4;
+      } else if (strategy === 'flee') {
+        if (candidate.mode === 'flee') score += 12;
+        if (candidate.mode === 'evade-weapon') score += 18;
+        if (candidate.mode === 'hunt-weapon') score += 6;
+        if (candidate.mode === 'hunt-player' || candidate.mode === 'pressure-player') score -= 8;
+      } else if (strategy === 'farm') {
+        if (candidate.mode === 'hunt-food') score += 24;
+        if (candidate.mode === 'hunt-weapon') score += 8;
+        if (candidate.mode === 'evade-weapon') score += 5;
+        if (candidate.mode === 'hunt-player' || candidate.mode === 'pressure-player') score -= 14;
+      } else if (strategy === 'role') {
+        if (candidate.mode === 'hunt-player' && player.activeRole === 'berserker') score += 8;
+        if ((candidate.mode === 'flee' || candidate.mode === 'evade-weapon') && player.activeRole === 'survivor') score += 8;
+        if ((candidate.mode === 'hunt-food' || candidate.mode === 'hunt-weapon') && player.activeRole === 'forager') score += 8;
+      }
+      if (player.targetUsername && candidate.target?.username === player.targetUsername) {
+        score += 16;
+      }
+      return score === candidate.score
+        ? candidate
+        : {
+            ...candidate,
+            score,
+            metadata: this._aiMetadata({
+              ...candidate.metadata,
+              chatStrategy: strategy || null,
+              chatTarget: player.targetUsername || null
+            })
+          };
+    });
   }
 
   _shouldPrioritizeRetreatFromThreat(player, context, config = DEFAULT_CONFIG) {
     if (!context || !context.threat || !context.threat.target) return false;
-    if (!this._isWeaponActive(player.weapon, context.now)) return false;
     const threat = context.threat.target;
     const playerWeaponContext = this._weaponAttackContext(player, threat, config);
     if (playerWeaponContext.canAttack) return false;
@@ -1094,8 +1381,9 @@ class ArenaGame {
     const absorbThreat = this._playerAbsorbContext(threat, player, config);
     const weaponThreat = this._weaponAttackContext(threat, player, config);
     // If player can absorb the threat (e.g. with chainsaw/dash), no retreat needed
+    // unless the threat currently can damage the player with a weapon.
     const playerAbsorb = this._playerAbsorbContext(player, threat, config);
-    if (playerAbsorb.canAbsorb) return false;
+    if (playerAbsorb.canAbsorb && !weaponThreat.canAttack) return false;
     const weaponThreatRange = weaponThreat.range > 0
       ? weaponThreat.range + (Number(threat.radius) || 0) + (Number(player.radius) || 0) * 0.4
       : 0;
@@ -1449,15 +1737,24 @@ class ArenaGame {
     const sizeProfile = context.sizeProfile || this._sizeBehaviorProfile(player, config);
     const steeringPlan = this._buildSteeringPlan(player, intent, context);
     const steeringVector = this._smoothCommittedSteeringVector(player, steeringPlan.vector, intent, context, targetKey);
+    const rawAiState = this._classifyAiState(player, intent, context, config);
+    const aiStateMemory = this._resolveAiState(player, rawAiState, intent, context, config);
+    const aiState = aiStateMemory.state;
     const decision = this._storeBehaviorDecision(player, {
       mode: intent.mode,
       intent: intent.intent,
       target: intent.target,
       vector: steeringVector,
       score: intent.score,
+      state: aiState,
       metadata: {
         ...this._aiMetadata(),
         ...(intent.metadata || {}),
+        aiState,
+        aiStateRaw: aiStateMemory.rawState,
+        aiStatePrevious: aiStateMemory.previousState,
+        aiStateEnteredAt: aiStateMemory.enteredAt,
+        aiStateUpdatedAt: aiStateMemory.updatedAt,
         sizeClass: sizeProfile.sizeClass,
         sizeRole: sizeProfile.role,
         steering: steeringPlan.weights
@@ -1471,12 +1768,114 @@ class ArenaGame {
       vector: steeringVector,
       score: Number(decision.score) || 0,
       metadata: decision.metadata || {},
+      state: aiState,
+      rawState: aiStateMemory.rawState,
+      previousState: aiStateMemory.previousState,
+      stateEnteredAt: aiStateMemory.enteredAt,
+      stateUpdatedAt: aiStateMemory.updatedAt,
       weaponType: player.weapon && player.weapon.type ? player.weapon.type : null,
       lockedUntil: now + memoryMs * lockScale,
       updatedAt: now
     };
 
     return decision;
+  }
+
+  _classifyAiState(player, intent = {}, context = null, config = this.getConfig()) {
+    const mode = String(intent && intent.mode ? intent.mode : '').toLowerCase();
+    const action = String(intent && intent.intent ? intent.intent : mode).toLowerCase();
+    const metadata = intent && intent.metadata ? intent.metadata : {};
+    const personality = context && context.personality ? context.personality : this._personalityTraits(player);
+    const survivalNeed = this._survivalNeed(player, config, personality);
+    const sizeProfile = context && context.sizeProfile ? context.sizeProfile : this._sizeBehaviorProfile(player, config);
+    const hasThreat = Boolean(context && context.threat);
+
+    if (mode === 'flee' || action === 'flee') return 'retreating';
+    if (metadata.reason === 'recovery-food' || survivalNeed >= 0.82) return 'recovering';
+    if (mode === 'evade-weapon' || action === 'evade-arm' || mode === 'hunt-weapon' || action === 'arm') {
+      return hasThreat && mode === 'evade-weapon' && survivalNeed >= 0.86 ? 'retreating' : 'arming';
+    }
+    if (mode === 'hunt-player' || action === 'attack' || action === 'target') return 'dueling';
+    if (mode === 'pressure-player' || action === 'pressure') return 'dominating';
+    if (mode === 'hunt-food' || action === 'feed') return 'farming';
+    if ((sizeProfile.sizeClass === 'large' || sizeProfile.sizeClass === 'giant') && !hasThreat && survivalNeed < 0.55) {
+      return 'dominating';
+    }
+    return 'scouting';
+  }
+
+  _resolveAiState(player, rawState, intent = {}, context = null, config = this.getConfig()) {
+    const now = context && Number.isFinite(context.now) ? context.now : this.now();
+    const nextState = this._normalizeAiState(rawState);
+    const previous = player && player.aiStateMemory ? player.aiStateMemory : null;
+    const previousState = previous && previous.state ? this._normalizeAiState(previous.state) : null;
+    const enteredAt = previous && Number.isFinite(previous.enteredAt) ? previous.enteredAt : now;
+    const elapsedMs = Math.max(0, now - enteredAt);
+    const minDurationMs = Number(config.aiStateMinDurationMs) || AI_STATE_MIN_DURATION_MS;
+    const urgentInterrupt = this._aiStatePriority(nextState) >= 75 &&
+      this._aiStatePriority(nextState) > this._aiStatePriority(previousState);
+    const canInterrupt = !previousState ||
+      previousState === nextState ||
+      elapsedMs >= minDurationMs ||
+      urgentInterrupt;
+    const state = canInterrupt ? nextState : previousState;
+    const changed = !previousState || state !== previousState;
+    const memory = {
+      state,
+      rawState: nextState,
+      previousState: changed ? previousState : previous && previous.previousState ? previous.previousState : null,
+      enteredAt: changed ? now : enteredAt,
+      updatedAt: now,
+      mode: intent && intent.mode ? intent.mode : null,
+      intent: intent && intent.intent ? intent.intent : null
+    };
+
+    if (player) {
+      player.aiStateMemory = memory;
+    }
+    return memory;
+  }
+
+  _normalizeAiState(state) {
+    const normalized = String(state || '').toLowerCase();
+    if ([
+      'scouting',
+      'farming',
+      'arming',
+      'dueling',
+      'retreating',
+      'recovering',
+      'dominating'
+    ].includes(normalized)) {
+      return normalized;
+    }
+    return 'scouting';
+  }
+
+  _aiStatePriority(state) {
+    const priority = {
+      scouting: 10,
+      farming: 20,
+      dominating: 30,
+      dueling: 45,
+      arming: 55,
+      recovering: 75,
+      retreating: 100
+    };
+    return priority[this._normalizeAiState(state)] || 0;
+  }
+
+  _aiStateLabel(state) {
+    const labels = {
+      scouting: 'SCOUT',
+      farming: 'FARM',
+      arming: 'ARM',
+      dueling: 'DUEL',
+      retreating: 'RETREAT',
+      recovering: 'RECOVER',
+      dominating: 'DOMINATE'
+    };
+    return labels[String(state || '').toLowerCase()] || 'SCOUT';
   }
 
   _smoothCommittedSteeringVector(player, vector, intent, context, targetKey) {
@@ -1814,6 +2213,7 @@ class ArenaGame {
   _serializeAiState(player, config = this.getConfig()) {
     const intent = player.aiIntent || null;
     const memory = player.behaviorMemory || null;
+    const stateMemory = player.aiStateMemory || null;
     const metadata = intent && intent.metadata ? intent.metadata : {};
     const sizeProfile = this._sizeBehaviorProfile(player, config);
     const targetKey = intent && intent.targetKey
@@ -1823,9 +2223,40 @@ class ArenaGame {
         : memory && memory.targetId
           ? `entity:${memory.targetId}`
           : null;
+    const state = intent && intent.state
+      ? intent.state
+      : metadata.aiState
+        ? metadata.aiState
+        : stateMemory && stateMemory.state
+          ? stateMemory.state
+          : memory && memory.state
+          ? memory.state
+          : 'scouting';
+    const rawState = intent && intent.rawState
+      ? intent.rawState
+      : metadata.aiStateRaw
+        ? metadata.aiStateRaw
+        : stateMemory && stateMemory.rawState
+          ? stateMemory.rawState
+          : state;
+    const previousState = intent && Object.prototype.hasOwnProperty.call(intent, 'previousState')
+      ? intent.previousState
+      : metadata.aiStatePrevious || (stateMemory && stateMemory.previousState) || null;
+    const stateEnteredAt = intent && intent.stateEnteredAt
+      ? intent.stateEnteredAt
+      : metadata.aiStateEnteredAt || (stateMemory && stateMemory.enteredAt) || null;
+    const stateUpdatedAt = intent && intent.stateUpdatedAt
+      ? intent.stateUpdatedAt
+      : metadata.aiStateUpdatedAt || (stateMemory && stateMemory.updatedAt) || null;
 
     return {
       role: this._aiRole(player, config),
+      state,
+      stateLabel: this._aiStateLabel(state),
+      rawState,
+      previousState,
+      stateEnteredAt,
+      stateUpdatedAt,
       mode: intent && intent.mode ? intent.mode : memory && memory.mode ? memory.mode : 'idle',
       intent: intent && intent.intent ? intent.intent : memory && memory.intent ? memory.intent : 'idle',
       targetKey,
@@ -1900,6 +2331,7 @@ class ArenaGame {
         maxLikeLifeBatch: config.maxLikeLifeBatch,
         giftLifePerCoin: config.giftLifePerCoin,
         renderScale: config.renderScale,
+        adaptiveResolutionEnabled: config.adaptiveResolutionEnabled,
         targetFps: config.targetFps,
         maxRenderPlayers: config.maxRenderPlayers,
         rendererMode: config.rendererMode,
@@ -1915,8 +2347,13 @@ class ArenaGame {
         topOverlayShowCount: config.topOverlayShowCount,
         topOverlayShowLeaderboard: config.topOverlayShowLeaderboard,
         topOverlayLeaderboardRows: config.topOverlayLeaderboardRows,
+        topOverlayShowCommandHints: config.topOverlayShowCommandHints,
         infoRotatorPlacement: config.infoRotatorPlacement,
         infoRotatorLanguageMode: config.infoRotatorLanguageMode,
+        chatStrategyEnabled: config.chatStrategyEnabled,
+        chatStrategyDurationMs: config.chatStrategyDurationMs,
+        chatStrategyCooldownMs: config.chatStrategyCooldownMs,
+        chatTargetCommandEnabled: config.chatTargetCommandEnabled,
         maxWeaponPickups: config.maxWeaponPickups,
         tickRateMs: config.tickRateMs,
         stateEmitIntervalMs: config.stateEmitIntervalMs,
@@ -2945,6 +3382,7 @@ class ArenaGame {
   _resetAiIntentForWeaponChange(player) {
     if (!player) return;
     player.aiIntent = null;
+    player.aiStateMemory = null;
   }
 
   _resolvePlayerCollisions(config) {
@@ -3096,6 +3534,7 @@ class ArenaGame {
     player.vy = away.y;
     player.energy = this._clamp((Number(player.energy) || 0) + 12, 0, config.maxEnergy);
     player.aiIntent = null;
+    player.aiStateMemory = null;
 
     this.io.emit('arena:spawn-protection', {
       username: player.username,
@@ -3786,6 +4225,7 @@ class ArenaGame {
       effects: {},
       personality,
       behaviorMemory: null,
+      aiStateMemory: null,
       wanderVector: null,
       spawnedAt: Number(spawnOptions.spawnedAt) || now,
       spawnProtectedUntil: spawnOptions.spawnProtection
@@ -4417,8 +4857,9 @@ class ArenaGame {
       const absorbThreat = this._playerAbsorbContext(other, player, config);
       const weaponThreat = this._weaponAttackContext(other, player, config);
       // If player can absorb the other (e.g. with chainsaw/dash), don't treat as threat
+      // unless that other player carries an active weapon that can damage them.
       const playerAbsorb = this._playerAbsorbContext(player, other, config);
-      if (playerAbsorb.canAbsorb) continue;
+      if (playerAbsorb.canAbsorb && !weaponThreat.canAttack) continue;
       if (!absorbThreat.canAbsorb && !weaponThreat.canAttack) continue;
       if (!weaponThreat.canAttack && other.mass <= player.mass * fleeMassRatio) continue;
 
@@ -5490,6 +5931,29 @@ class ArenaGame {
     );
   }
 
+  _rankChatHuntTarget(player, movement, config) {
+    return this._rankPlayerTarget(
+      player,
+      (other, distance) => this._canChatHuntTarget(player, other, distance, movement, config),
+      (other, distance) => {
+        const massRatio = Math.max(0.1, (Number(player.mass) || 1) / Math.max(1, Number(other.mass) || 1));
+        const closeness = this._clamp(1 - distance / Math.max(1, Number(movement.huntDistance) || DEFAULT_CONFIG.movement.huntDistance), 0, 1);
+        return massRatio * 5 + closeness * 6;
+      },
+      config
+    );
+  }
+
+  _canChatHuntTarget(player, other, distance, movement, config = DEFAULT_CONFIG) {
+    if (!other || other.username === player.username) return false;
+    const maxDistance = (Number(movement.huntDistance) || DEFAULT_CONFIG.movement.huntDistance) * 1.15;
+    if (distance > maxDistance) return false;
+    const playerMass = Math.max(1, Number(player.mass) || 1);
+    const otherMass = Math.max(1, Number(other.mass) || 1);
+    const weaponContext = this._weaponAttackContext(player, other, config);
+    return weaponContext.canAttack || playerMass >= otherMass * 1.08;
+  }
+
   _canAttackPlayerTarget(player, other, distance, movement, config = DEFAULT_CONFIG) {
     if (!other || other.username === player.username) return false;
     const absorbContext = this._playerAbsorbContext(player, other, config);
@@ -5744,7 +6208,46 @@ class ArenaGame {
   }
 
   _personalityTraits(player) {
-    return this._normalizePersonality(player && player.personality);
+    this._cleanupPlayerChatStrategy(player);
+    const base = player && player.activeRoleProfile
+      ? player.activeRoleProfile
+      : player && player.personality;
+    const traits = this._normalizePersonality(base);
+    const strategy = player && player.strategyOverride;
+    if (strategy === 'hunt' || strategy === 'attack') {
+      return this._normalizePersonality({
+        ...traits,
+        aggression: traits.aggression + 0.36,
+        fear: traits.fear - 0.22,
+        weaponFocus: traits.weaponFocus + 0.08,
+        foodFocus: traits.foodFocus - 0.25,
+        commitment: traits.commitment + 0.18,
+        riskTolerance: traits.riskTolerance + 0.32
+      });
+    }
+    if (strategy === 'flee') {
+      return this._normalizePersonality({
+        ...traits,
+        aggression: traits.aggression - 0.28,
+        fear: traits.fear + 0.36,
+        weaponFocus: traits.weaponFocus + 0.28,
+        foodFocus: traits.foodFocus - 0.05,
+        commitment: traits.commitment + 0.12,
+        riskTolerance: traits.riskTolerance - 0.3
+      });
+    }
+    if (strategy === 'farm') {
+      return this._normalizePersonality({
+        ...traits,
+        aggression: traits.aggression - 0.26,
+        fear: traits.fear + 0.08,
+        weaponFocus: traits.weaponFocus + 0.14,
+        foodFocus: traits.foodFocus + 0.42,
+        commitment: traits.commitment + 0.1,
+        riskTolerance: traits.riskTolerance - 0.12
+      });
+    }
+    return traits;
   }
 
   _normalizePersonality(profile = {}) {
@@ -5773,6 +6276,104 @@ class ArenaGame {
       commitment,
       riskTolerance: this._clamp(Number(profile.riskTolerance) || derivedRiskTolerance, 0.35, 1.75)
     };
+  }
+
+  _normalizeChatStrategyArgs(argsOrMessage) {
+    if (Array.isArray(argsOrMessage)) {
+      return argsOrMessage.map(arg => String(arg || '').trim()).filter(Boolean);
+    }
+    const message = String(argsOrMessage || '').trim();
+    if (!message) return [];
+    return message.replace(/^[/!]arena\s*/i, '').split(/\s+/).filter(Boolean);
+  }
+
+  _normalizeStrategy(strategy) {
+    const value = String(strategy || '').trim().toLowerCase();
+    if (value === 'attack') return 'hunt';
+    return ['hunt', 'flee', 'farm', 'target', 'role'].includes(value) ? value : null;
+  }
+
+  _strategyDurationMs(config) {
+    return this._clamp(Number(config.chatStrategyDurationMs) || DEFAULT_CONFIG.chatStrategyDurationMs, 1000, 10 * 60 * 1000);
+  }
+
+  _strategyCooldownMs(config) {
+    return this._clamp(Number(config.chatStrategyCooldownMs) || DEFAULT_CONFIG.chatStrategyCooldownMs, 0, 5 * 60 * 1000);
+  }
+
+  _chatStrategyCooldown(player, config) {
+    const now = this.now();
+    const until = Number(player && player.chatCommandCooldownUntil) || 0;
+    if (until <= now) return null;
+    return {
+      success: false,
+      cooldown: true,
+      username: player.username,
+      remainingMs: until - now,
+      availableAt: until
+    };
+  }
+
+  _cleanupPlayerChatStrategy(player) {
+    if (!player) return;
+    const now = this.now();
+    if (player.strategyExpiresAt && now >= player.strategyExpiresAt) {
+      player.strategyOverride = null;
+      player.strategyExpiresAt = null;
+      player.activeRole = null;
+      player.activeRoleProfile = null;
+      player.activeRoleExpiresAt = null;
+    }
+    if (player.targetExpiresAt && now >= player.targetExpiresAt) {
+      player.targetUsername = null;
+      player.targetExpiresAt = null;
+    }
+  }
+
+  _normalizeRoleId(roleId, config) {
+    const role = String(roleId || '').trim().toLowerCase();
+    return this._roleProfile(role, config) ? role : null;
+  }
+
+  _roleProfile(roleId, config) {
+    const profiles = Array.isArray(config.personalityProfiles) && config.personalityProfiles.length
+      ? config.personalityProfiles
+      : DEFAULT_CONFIG.personalityProfiles;
+    const role = String(roleId || '').trim().toLowerCase();
+    const profile = profiles.find(item => String(item && item.id || '').toLowerCase() === role);
+    return profile ? this._normalizePersonality(profile) : null;
+  }
+
+  _findTargetPlayer(query, ownUsername = '') {
+    const needle = String(query || '').trim().toLowerCase();
+    if (!needle) return null;
+    const normalizedOwn = String(ownUsername || '').toLowerCase();
+    let partial = null;
+    for (const player of this.players.values()) {
+      if (!player || String(player.username || '').toLowerCase() === normalizedOwn) continue;
+      const username = String(player.username || '').toLowerCase();
+      const nickname = String(player.nickname || '').toLowerCase();
+      if (username === needle || nickname === needle) return player;
+      if (!partial && (username.includes(needle) || nickname.includes(needle))) {
+        partial = player;
+      }
+    }
+    return partial;
+  }
+
+  _activeTargetPlayer(player) {
+    this._cleanupPlayerChatStrategy(player);
+    if (!player || !player.targetUsername) return null;
+    const target = this.players.get(player.targetUsername);
+    return target || this._findTargetPlayer(player.targetUsername, player.username);
+  }
+
+  _formatChatStrategyStatus(player) {
+    const parts = [];
+    if (player.strategyOverride) parts.push(`strategy ${player.strategyOverride}`);
+    if (player.activeRole) parts.push(`role ${player.activeRole}`);
+    if (player.targetUsername) parts.push(`target ${player.targetUsername}`);
+    return parts.length ? `Arena: ${parts.join(', ')}` : 'Arena: no active strategy';
   }
 
   _stabilizeBehavior(player, candidate, movement, config = DEFAULT_CONFIG) {
@@ -5814,6 +6415,7 @@ class ArenaGame {
     player.behaviorMemory = {
       mode: decision.mode,
       intent: decision.intent || decision.mode,
+      state: decision.state || (decision.metadata && decision.metadata.aiState) || null,
       targetUsername,
       targetId,
       score: Number(decision.score) || 0,
@@ -6410,6 +7012,7 @@ class ArenaGame {
   }
 
   _serializePlayer(player, config = this.getConfig()) {
+    this._cleanupPlayerChatStrategy(player);
     const profilePictureUrl = player.profilePictureUrl || '';
     return {
       username: player.username,
@@ -6429,6 +7032,11 @@ class ArenaGame {
       extraLives: Math.max(0, Math.floor(Number(player.extraLives) || 0)),
       color: player.color,
       personality: player.personality ? { ...player.personality } : null,
+      strategy: player.strategyOverride || null,
+      strategyExpiresAt: player.strategyExpiresAt || null,
+      targetUsername: player.targetUsername || null,
+      targetExpiresAt: player.targetExpiresAt || null,
+      activeRole: player.activeRole || null,
       ai: this._serializeAiState(player, config),
       weapon: player.weapon ? { ...player.weapon } : null,
       lastActivityAt: player.lastActivityAt

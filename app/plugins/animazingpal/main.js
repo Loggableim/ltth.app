@@ -7350,7 +7350,7 @@ class AnimazingPalPlugin {
 
       engine: 'fishaudio',
 
-      source: options.source || 'animazingpal-host-speech-output',
+      source: options.source || 'animazingpal',
 
       teamLevel: 99,
 
@@ -9334,7 +9334,7 @@ class AnimazingPalPlugin {
 
     const reasons = [];
 
-    const hasResponseChannel = !!event.templateEnabled || !!event.brainEnabled;
+    const hasResponseChannel = !!event.templateEnabled || !!event.brainEnabled || eventType === 'follow';
 
 
 
