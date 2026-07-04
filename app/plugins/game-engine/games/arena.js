@@ -493,7 +493,6 @@ class ArenaGame {
     this.foodPool = [];
     this.weaponPickups = new Map();
     this.mines = new Map();
-    this.recentGiftEvents = new Map();
     this.foodIdCounter = 0;
     this.weaponPickupIdCounter = 0;
     this.mineIdCounter = 0;
@@ -589,7 +588,6 @@ class ArenaGame {
     this.foodPool.length = 0;
     this.weaponPickups.clear();
     this.mines.clear();
-    this.recentGiftEvents.clear();
     this.logger.info('Arena game destroyed');
   }
 
@@ -689,13 +687,7 @@ class ArenaGame {
 
     const giftName = (data && data.giftName ? String(data.giftName) : 'Gift').trim();
     const giftId = data && data.giftId !== undefined && data.giftId !== null ? String(data.giftId).trim() : '';
-    const dedupKey = `${viewer.username}:${giftName}:${giftId || 'no-id'}`;
     const now = this.now();
-    const lastGiftAt = this.recentGiftEvents.get(dedupKey);
-    if (lastGiftAt && now - lastGiftAt < 1000) {
-      return { success: false, error: 'Duplicate gift ignored' };
-    }
-    this.recentGiftEvents.set(dedupKey, now);
 
     this._cleanupRespawnCooldowns(config);
     const existingUsername = this._resolvePlayerUsername(viewer);
