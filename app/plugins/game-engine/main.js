@@ -1181,6 +1181,11 @@ class GameEnginePlugin {
    * Start game from an accepted challenge
    */
   startGameFromChallenge(sessionId, challenge, opponentUsername) {
+    if (!challenge || !challenge.gameType) {
+      this.logger.warn(`Invalid challenge payload for session ${sessionId}`);
+      return;
+    }
+
     const config = this.db.getGameConfig(challenge.gameType) || this.defaultConfigs[challenge.gameType];
     const opponent = opponentUsername || 'streamer';
 

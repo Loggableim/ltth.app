@@ -491,6 +491,18 @@ describe('Game Engine GCCE Integration', () => {
         clearInterval(game.timerInterval);
       }
     });
+
+    test('should ignore malformed challenge payload without gameType', () => {
+      plugin.db = {
+        getGameConfig: jest.fn(),
+        updateSession: jest.fn(),
+        addPlayer2: jest.fn()
+      };
+
+      expect(() => {
+        plugin.startGameFromChallenge(101, null, 'streamer');
+      }).not.toThrow();
+    });
   });
 
   describe('Manual Mode', () => {
