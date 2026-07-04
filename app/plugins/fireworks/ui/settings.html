@@ -607,17 +607,17 @@
                                     <option value="480p">480p (854x480)</option>
                                     <option value="540p">540p (960x540)</option>
                                     <option value="720p">720p (1280x720)</option>
-                                    <option value="1080p" selected>1080p (1920x1080) - Recommended</option>
+                                    <option value="1080p">1080p (1920x1080)</option>
                                     <option value="1440p">1440p (2560x1440)</option>
-                                    <option value="4k">4K (3840x2160)</option>
+                                    <option value="4k" selected>4K (3840x2160) - Recommended</option>
                                 </select>
                             </div>
 
                             <div>
                                 <label class="block mb-2"><strong>Lowest Internal Render Resolution</strong></label>
                                 <select id="internal-min-resolution" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="internalMinResolutionPreset">
-                                    <option value="480p" selected>480p (854x480) - Recommended</option>
-                                    <option value="540p">540p (960x540)</option>
+                                    <option value="480p">480p (854x480)</option>
+                                    <option value="540p" selected>540p (960x540) - Recommended</option>
                                     <option value="720p">720p (1280x720)</option>
                                     <option value="1080p">1080p (1920x1080)</option>
                                     <option value="1440p">1440p (2560x1440)</option>
@@ -630,17 +630,21 @@
                             <strong class="text-emerald-400">OBS-safe Dynamic Resolution:</strong>
                             <div class="mt-2 space-y-1 text-sm text-gray-300" id="internal-resolution-info">
                                 <div>• OBS Source: <span id="obs-source-resolution">1920x1080</span></div>
-                                <div>• Internal range: <span id="internal-resolution-range">1920x1080 -> 854x480</span></div>
+                                <div>• Internal range: <span id="internal-resolution-range">3840x2160 -> 960x540</span></div>
                                 <div>• Scaling changes only the canvas bitmap, not the OBS Browser Source size.</div>
                             </div>
                         </div>
                         
                         <div>
                             <label class="block mb-2"><strong>Orientation</strong></label>
-                            <select id="resolution-orientation" class="w-full bg-black/30 rounded-lg px-4 py-2" data-config="orientation">
-                                <option value="landscape" selected>Landscape (Horizontal)</option>
-                                <option value="portrait">Portrait (Vertical)</option>
-                            </select>
+                            <div class="grid grid-cols-2 gap-2" id="resolution-orientation-toggle">
+                                <button type="button" id="orientation-landscape" class="btn-primary py-2 rounded-lg font-bold text-sm" data-orientation="landscape">
+                                    Landscape
+                                </button>
+                                <button type="button" id="orientation-portrait" class="btn-primary py-2 rounded-lg font-bold text-sm" data-orientation="portrait">
+                                    Portrait
+                                </button>
+                            </div>
                             <p class="text-xs text-gray-400 mt-1">
                                 Choose orientation based on your streaming setup
                             </p>

@@ -59,15 +59,50 @@ describe('Fireworks benchmark UI', () => {
 
   test('settings expose OBS-safe adaptive internal resolution bounds', () => {
     expect(mainJs).toContain("resolutionPreset: '1080p'");
-    expect(mainJs).toContain("internalMaxResolutionPreset: '1080p'");
-    expect(mainJs).toContain("internalMinResolutionPreset: '480p'");
+    expect(mainJs).toContain("internalMaxResolutionPreset: '4k'");
+    expect(mainJs).toContain("internalMinResolutionPreset: '540p'");
     expect(mainJs).toContain('adaptiveRenderScaleEnabled: true');
     expect(settingsHtml).toContain('id="internal-max-resolution"');
     expect(settingsHtml).toContain('id="internal-min-resolution"');
+    expect(settingsHtml).toContain('id="orientation-landscape"');
+    expect(settingsHtml).toContain('id="orientation-portrait"');
     expect(settingsHtml).toContain('value="4k"');
-    expect(settingsHtml).toContain('value="480p"');
+    expect(settingsHtml).toContain('value="540p"');
     expect(settingsJs).toContain('config.internalMaxResolutionPreset');
     expect(settingsJs).toContain('config.internalMinResolutionPreset');
+    expect(settingsJs).toContain('updateOrientationControls');
     expect(settingsJs).toContain('updateInternalResolutionInfo');
+  });
+
+  test('overlay canvas preserves aspect ratio in browser capture', () => {
+    const overlayHtml = readAppFile('plugins', 'fireworks', 'overlay.html');
+    expect(overlayHtml).toContain('body.portrait #fireworks-canvas');
+    expect(overlayHtml).toContain('body.landscape #fireworks-canvas');
+    expect(overlayHtml).toContain('object-fit: contain');
+    expect(readAppFile('plugins', 'fireworks', 'overlay.html')).toContain('object-position: center center');
+  });
+
+  test('fireworks english labels do not fall back to question marks', () => {
+    const keys = [
+      'fireworks.save_settings',
+      'fireworks.gift_triggers',
+      'fireworks.combo_system',
+      'fireworks.explosion_shapes',
+      'fireworks.test_burst',
+      'fireworks.test_heart',
+      'fireworks.test_star',
+      'fireworks.test_ring',
+      'fireworks.test_spiral',
+      'fireworks.test_paws',
+      'fireworks.test_random',
+      'fireworks.colors',
+      'fireworks.visual_effects'
+    ];
+
+    for (const key of keys) {
+      const value = getDottedValue(enLocale, key);
+      expect(value).toBeDefined();
+      expect(value).not.toMatch(/^\?+/);
+    }
   });
 });

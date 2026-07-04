@@ -51,12 +51,12 @@ const CONFIG = {
     backgroundColor: 'rgba(0, 0, 0, 0)',
     resolution: 1.0, // Legacy - Canvas resolution multiplier (0.5 = half res, 1.0 = full res)
     resolutionPreset: '1080p', // OBS source preset: keep Browser Source at 1920x1080 by default
-    internalMaxResolutionPreset: '1080p',
-    internalMinResolutionPreset: '480p',
+    internalMaxResolutionPreset: '4k',
+    internalMinResolutionPreset: '540p',
     orientation: 'landscape', // 'landscape' or 'portrait'
     adaptiveRenderScaleEnabled: true,
     minRenderScale: 0.45,
-    renderScaleStep: 0.15,
+    renderScaleStep: 0.05,
     renderScaleRecoveryFpsMargin: 6,
     renderScaleEmergencyParticleThreshold: 1200,
     giftPopupPosition: 'bottom', // 'top', 'middle', 'bottom', 'none', or {x, y} coordinates
@@ -1741,6 +1741,8 @@ class FireworksEngine {
         this.height = 0;
         this.baseWidth = 0;
         this.baseHeight = 0;
+        this.renderWidth = 0;
+        this.renderHeight = 0;
         this.renderScale = 1.0;
         this.targetRenderScale = 1.0;
         this.qualityScale = 1.0;
@@ -1755,6 +1757,7 @@ class FireworksEngine {
 
         // Setup canvas
         this.resize();
+        this.applyOverlayOrientationLayout();
         
         // Try to initialize WebGL renderer (unless toasterMode is enabled)
         this.initRenderer();
@@ -1808,6 +1811,10 @@ class FireworksEngine {
                 if (success) {
                     this.useWebGL = true;
                     this.rendererMode = 'webgl';
+                    this.webglEngine.resize(this.renderWidth || this.canvas.width, this.renderHeight || this.canvas.height);
+                    if (typeof this.webglEngine.setLogicalSize === 'function') {
+                        this.webglEngine.setLogicalSize(this.width, this.height);
+                    }
                     console.log('[Fireworks] WebGL2 renderer initialized successfully');
                 } else {
                     this.useWebGL = false;
@@ -1829,9 +1836,6 @@ class FireworksEngine {
     }
 
     resize() {
-        const dpr = window.devicePixelRatio || 1;
-        const rect = this.canvas.getBoundingClientRect();
-        
         // Get resolution from preset
         const resolutionPreset = this.config.internalMaxResolutionPreset || CONFIG.internalMaxResolutionPreset;
         const orientation = this.config.orientation || 'landscape';
@@ -1839,34 +1843,53 @@ class FireworksEngine {
         
         this.baseWidth = targetResolution.width;
         this.baseHeight = targetResolution.height;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
         this.applyRenderScale();
     }
 
     applyRenderScale() {
         const scale = this.config.adaptiveRenderScaleEnabled === false ? 1.0 : this.renderScale;
-        const width = Math.max(320, Math.round(this.baseWidth * scale));
-        const height = Math.max(180, Math.round(this.baseHeight * scale));
+        const orientation = this.config.orientation === 'portrait' ? 'portrait' : 'landscape';
+        this.renderWidth = Math.max(320, Math.round(this.baseWidth * scale));
+        this.renderHeight = Math.max(180, Math.round(this.baseHeight * scale));
 
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.canvas.style.width = '100%';
+        this.canvas.width = this.renderWidth;
+        this.canvas.height = this.renderHeight;
+        this.canvas.style.width = orientation === 'portrait' ? 'auto' : '100%';
         this.canvas.style.height = '100%';
+        this.canvas.style.maxWidth = '100%';
+        this.canvas.style.maxHeight = '100%';
+        this.canvas.style.objectFit = 'contain';
+        this.canvas.style.objectPosition = 'center center';
 
-        this.width = width;
-        this.height = height;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
         
         // Resize WebGL engine if active
         if (this.webglEngine && this.useWebGL) {
-            this.webglEngine.resize(this.width, this.height);
+            this.webglEngine.resize(this.renderWidth, this.renderHeight);
+            if (typeof this.webglEngine.setLogicalSize === 'function') {
+                this.webglEngine.setLogicalSize(this.width, this.height);
+            }
         }
         
         // Optimization #6: Resize trail canvas too
         if (this.trailCanvas) {
-            this.trailCanvas.width = this.width;
-            this.trailCanvas.height = this.height;
+            this.trailCanvas.width = this.renderWidth;
+            this.trailCanvas.height = this.renderHeight;
         }
         
         if (DEBUG) console.log(`[Fireworks] Canvas resolution: ${this.canvas.width}x${this.canvas.height} (base ${this.baseWidth}x${this.baseHeight}, scale ${scale.toFixed(2)})`);
+    }
+
+    applyOverlayOrientationLayout() {
+        const orientation = this.config.orientation === 'portrait' ? 'portrait' : 'landscape';
+        if (typeof document === 'undefined' || !document.body) return;
+
+        document.body.classList.toggle('portrait', orientation === 'portrait');
+        document.body.classList.toggle('landscape', orientation !== 'portrait');
+        document.body.dataset.fireworksOrientation = orientation;
     }
     
     // Optimization #6: Initialize layer splitting for performance
@@ -1875,8 +1898,8 @@ class FireworksEngine {
         
         // Create off-screen canvas for trails
         this.trailCanvas = document.createElement('canvas');
-        this.trailCanvas.width = this.width;
-        this.trailCanvas.height = this.height;
+        this.trailCanvas.width = this.renderWidth || this.width;
+        this.trailCanvas.height = this.renderHeight || this.height;
         this.trailCtx = this.trailCanvas.getContext('2d');
         
         if (DEBUG) console.log('[Fireworks] Layer splitting initialized');
@@ -1999,6 +2022,7 @@ class FireworksEngine {
                         oldInternalMinPreset !== this.config.internalMinResolutionPreset ||
                         oldOrientation !== this.config.orientation) {
                         this.resize();
+                        this.applyOverlayOrientationLayout();
                     }
                     
                     if (DEBUG) console.log('[Fireworks] Config updated:', data.config);
@@ -2792,7 +2816,7 @@ class FireworksEngine {
         this.webglEngine.updateParticles(this.fireworks);
         
         // Render all particles in a single draw call
-        this.webglEngine.render();
+        this.webglEngine.render(this.width, this.height);
     }
 
     updateAdaptiveRenderScale(avgFps) {
@@ -2808,7 +2832,7 @@ class FireworksEngine {
         }
 
         const now = performance.now();
-        if (now - this.lastRenderScaleChange < 1500) return;
+        if (now - this.lastRenderScaleChange < 500) return;
 
         const desiredFps = this.config.targetFps || CONFIG.targetFps;
         const minScale = this.getMinRenderScale();
@@ -2954,11 +2978,21 @@ class FireworksEngine {
      * Render using Canvas 2D (fallback)
      */
     renderCanvas() {
+        const worldWidth = this.width;
+        const worldHeight = this.height;
+        const renderWidth = this.renderWidth || worldWidth;
+        const renderHeight = this.renderHeight || worldHeight;
+        const scaleX = worldWidth > 0 ? renderWidth / worldWidth : 1;
+        const scaleY = worldHeight > 0 ? renderHeight / worldHeight : 1;
+
         // Clear with configurable background for trail effect
         const bgColor = this.config.backgroundColor || CONFIG.backgroundColor;
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        this.ctx.fillStyle = bgColor;
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, renderWidth, renderHeight);
+        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
+            this.ctx.fillStyle = bgColor;
+            this.ctx.fillRect(0, 0, renderWidth, renderHeight);
+        }
         
         // Optimization #6: Layer splitting - Update trails less frequently
         this.trailFrameCounter++;
@@ -2967,7 +3001,9 @@ class FireworksEngine {
         if (shouldUpdateTrails && this.trailCanvas && this.config.trailsEnabled) {
             this.trailFrameCounter = 0;
             // Clear and redraw trails on separate canvas
-            this.trailCtx.clearRect(0, 0, this.width, this.height);
+            this.trailCtx.setTransform(1, 0, 0, 1, 0, 0);
+            this.trailCtx.clearRect(0, 0, renderWidth, renderHeight);
+            this.trailCtx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
             for (const fw of this.fireworks) {
                 this.renderTrailsToLayer(fw);
             }
@@ -2975,8 +3011,11 @@ class FireworksEngine {
         
         // Optimization #6: Composite trail layer first (background)
         if (this.trailCanvas && this.config.trailsEnabled) {
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0);
             this.ctx.drawImage(this.trailCanvas, 0, 0);
         }
+
+        this.ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
 
         // Render all fireworks
         for (const firework of this.fireworks) {
@@ -3109,9 +3148,13 @@ class FireworksEngine {
         this.fireworks.length = 0;
         
         // Clear canvases
-        this.ctx.clearRect(0, 0, this.width, this.height);
+        const renderWidth = this.renderWidth || this.width;
+        const renderHeight = this.renderHeight || this.height;
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, renderWidth, renderHeight);
         if (this.trailCtx) {
-            this.trailCtx.clearRect(0, 0, this.width, this.height);
+            this.trailCtx.setTransform(1, 0, 0, 1, 0, 0);
+            this.trailCtx.clearRect(0, 0, renderWidth, renderHeight);
         }
         
         // Reset performance state

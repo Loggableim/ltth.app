@@ -295,8 +295,8 @@ class FireworksPlugin {
             particleSizeRange: [4, 12],
             resolution: 1.0, // Legacy - kept for backward compatibility
             resolutionPreset: '1080p', // OBS Browser Source stays 1920x1080 by default
-            internalMaxResolutionPreset: '1080p', // Internal adaptive render ceiling (4k available in UI)
-            internalMinResolutionPreset: '480p', // Internal adaptive render floor for OBS-safe load shedding
+            internalMaxResolutionPreset: '4k', // Internal adaptive render ceiling
+            internalMinResolutionPreset: '540p', // Internal adaptive render floor for OBS-safe load shedding
             orientation: 'landscape', // 'landscape' or 'portrait'
             adaptiveRenderScaleEnabled: true, // Keep OBS source size stable while scaling internal render resolution
             minRenderScale: 0.45,
