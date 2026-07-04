@@ -846,8 +846,12 @@ async function deleteImage(filename) {
 
             // Remove URL from textarea
             const currentUrls = document.getElementById('image_urls').value.split('\n');
-            const urlToRemove = `/uploads/webgpu-emoji-rain/${filename}`;
-            const newUrls = currentUrls.filter(url => url.trim() !== urlToRemove);
+            const normalizedFilename = `/webgpu-emoji-rain/uploads/${filename}`;
+            const legacyFilename = `/uploads/webgpu-emoji-rain/${filename}`;
+            const newUrls = currentUrls.filter((url) => {
+                const trimmedUrl = url.trim();
+                return trimmedUrl !== normalizedFilename && trimmedUrl !== legacyFilename;
+            });
             document.getElementById('image_urls').value = newUrls.join('\n');
 
             // Reload image list

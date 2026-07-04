@@ -1380,7 +1380,7 @@ class WebGPUEmojiRainPlugin {
     });
 
     // Serve uploaded emoji images
-    this.api.registerRoute('get', '/webgpu-emoji-rain/uploads/:filename', (req, res) => {
+    const serveUploadedImage = (req, res) => {
       const filename = req.params.filename;
       const filePath = this.resolveUploadFilePath(filename);
 
@@ -1393,7 +1393,10 @@ class WebGPUEmojiRainPlugin {
       } else {
         res.status(404).json({ success: false, error: 'File not found' });
       }
-    });
+    };
+
+    this.api.registerRoute('get', '/webgpu-emoji-rain/uploads/:filename', serveUploadedImage);
+    this.api.registerRoute('get', '/uploads/webgpu-emoji-rain/:filename', serveUploadedImage);
 
     // Get emoji rain config (from database)
     this.api.registerRoute('get', '/api/webgpu-emoji-rain/config', (req, res) => {
@@ -2316,6 +2319,7 @@ class WebGPUEmojiRainPlugin {
     // Serve uploaded files
     const express = require('express');
     this.api.getApp().use('/plugins/webgpu-emoji-rain/uploads', express.static(this.uploadDir));
+    this.api.getApp().use('/uploads/webgpu-emoji-rain', express.static(this.uploadDir));
 
     this.api.log('✅ [WebGPU Emoji Rain] All routes registered successfully', 'info');
   }
