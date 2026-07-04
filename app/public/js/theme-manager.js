@@ -1,28 +1,14 @@
 /**
  * Theme Manager
- * Handles day/night/high contrast theme switching
+ * Handles theme switching and persistence
  * Corporate branding color: #12a116
  */
 
 class ThemeManager {
     constructor() {
-        this.currentTheme = 'aurora'; // Default theme
+        this.currentTheme = 'night'; // Default theme
         this.monitoredIframes = new WeakSet(); // Track iframes to avoid duplicate listeners
         this.themes = {
-            aurora: {
-                name: 'Aurora',
-                icon: 'sparkles',
-                description: 'Fresh default theme',
-                badge: 'Recommended',
-                swatches: ['#22d3ee', '#34d399', '#8b5cf6']
-            },
-            'aurora-2': {
-                name: 'Aurora 2.0',
-                icon: 'sparkles',
-                description: 'Refined glass theme with sharper depth',
-                badge: 'New',
-                swatches: ['#67e8f9', '#34d399', '#a78bfa']
-            },
             'vision-impaired': {
                 name: 'Vision Impaired',
                 icon: 'accessibility',
@@ -268,8 +254,6 @@ class ThemeManager {
         const miniIcon = document.getElementById('sidebar-mini-icon');
         
         const miniLogoMap = {
-            aurora: '/ltthmini_nightmode.png',
-            'aurora-2': '/ltthmini_nightmode.png',
             'vision-impaired': '/ltthmini_highcontrast.png',
             day: '/ltthmini_daymode.png',
             contrast: '/ltthmini_highcontrast.png',

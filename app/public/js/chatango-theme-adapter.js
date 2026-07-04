@@ -260,7 +260,7 @@ class ChatangoThemeAdapter {
         return {
             enabled: true,
             roomHandle: 'pupcidsltth',
-            theme: 'aurora',
+            theme: 'night',
             fontSize: '10',
             allowPM: false,
             showTicker: true,
@@ -486,7 +486,7 @@ class ChatangoThemeAdapter {
 
     getCurrentTheme() {
         const themeAttr = document.documentElement.getAttribute('data-theme');
-        return themeAttr || 'aurora'; // Default to aurora if no theme set
+        return themeAttr || 'night'; // Default to night if no theme set
     }
 
     updateChatangoTheme() {
@@ -522,7 +522,7 @@ class ChatangoThemeAdapter {
      * This can be used to manually recreate the embed with new colors
      */
     getConfigForTheme(theme) {
-        return this.themeConfigs[theme] || this.themeConfigs.aurora || this.themeConfigs['vision-impaired'] || this.themeConfigs.night;
+        return this.themeConfigs[theme] || this.themeConfigs.night || this.themeConfigs['vision-impaired'];
     }
 
     /**
