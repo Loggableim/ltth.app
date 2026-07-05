@@ -260,9 +260,39 @@
         html[data-theme="vision-impaired"] .preview-container,
         html[data-theme="vision-impaired"] .frame-position-controls,
         html[data-theme="vision-impaired"] .info-box {
-            background: #050505;
-            border: 2px solid #facc15;
-            box-shadow: none;
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-workspace {
+            --trigger-bg: #000;
+            --trigger-bg-soft: rgba(250, 204, 21, 0.08);
+            --trigger-border: rgba(250, 204, 21, 0.55);
+            --trigger-border-strong: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card,
+        html[data-theme="vision-impaired"] .gift-catalog-panel {
+            background: #000;
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.12);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-hero {
+            background:
+                radial-gradient(circle at top right, rgba(250, 204, 21, 0.18), transparent 32%),
+                linear-gradient(180deg, #000, #050505);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-header {
+            border-bottom-color: rgba(250, 204, 21, 0.3);
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            background: rgba(250, 204, 21, 0.08);
+            border-color: rgba(250, 204, 21, 0.3);
+            color: #fff1bf;
         }
 
         html[data-theme="vision-impaired"] .control-room-hero,
@@ -3310,7 +3340,7 @@
             const names = Object.keys(presets);
             
             if (names.length === 0) {
-                container.innerHTML = '<p style="color: #888; font-size: 13px;">Noch keine Presets gespeichert.</p>';
+                container.innerHTML = '<p style="color: #f3f4f6; font-size: 14px; line-height: 1.5;">Noch keine Presets gespeichert.</p>';
                 return;
             }
             
@@ -3322,7 +3352,7 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; background: #333; padding: 10px 15px; border-radius: 4px; margin-bottom: 8px;">
                         <div>
                             <strong style="color: #ff9933;">${escapedName}</strong>
-                            <span style="color: #666; font-size: 12px; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
+                            <span style="color: #e5e7eb; font-size: 14px; line-height: 1.45; margin-left: 10px;">Gespeichert am ${escapeHtml(date)}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="btn preset-load-btn" data-preset-name="${escapedName}" style="padding: 6px 12px; font-size: 12px;">📂 Laden</button>

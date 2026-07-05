@@ -29,7 +29,8 @@
 
       function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+        const lightThemes = new Set(['day', 'contrast', 'vision-impaired']);
+        document.documentElement.style.colorScheme = lightThemes.has(theme) ? 'light' : 'dark';
       }
 
       function syncTheme() {
@@ -102,6 +103,138 @@
 
     html[data-theme="night"] .dashboard-subtitle {
       color: rgba(255, 255, 255, 0.88);
+    }
+
+    html[data-theme="contrast"],
+    html[data-theme="vision-impaired"] {
+      color-scheme: light;
+    }
+
+    html[data-theme="contrast"] body {
+      background:
+        radial-gradient(circle at top left, rgba(0, 0, 0, 0.08), transparent 38%),
+        linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+      color: #000000;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 38%),
+        linear-gradient(180deg, #fff8db 0%, #f8fafc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="contrast"] h1,
+    html[data-theme="vision-impaired"] h1,
+    html[data-theme="contrast"] .dashboard-subtitle,
+    html[data-theme="vision-impaired"] .dashboard-subtitle {
+      text-shadow: none;
+    }
+
+    html[data-theme="contrast"] h1 {
+      color: #000000;
+    }
+
+    html[data-theme="vision-impaired"] h1 {
+      color: #10203a;
+    }
+
+    html[data-theme="contrast"] .dashboard-subtitle {
+      color: #111111;
+    }
+
+    html[data-theme="vision-impaired"] .dashboard-subtitle {
+      color: #1e3a8a;
+    }
+
+    html[data-theme="contrast"] .stat-card,
+    html[data-theme="vision-impaired"] .stat-card {
+      background: #ffffff;
+      color: #000000;
+      border-width: 3px;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .stat-card {
+      border-color: #000000;
+    }
+
+    html[data-theme="vision-impaired"] .stat-card {
+      border-color: #1e3a8a;
+      background: #fffdf0;
+    }
+
+    html[data-theme="contrast"] button,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="contrast"] textarea,
+    html[data-theme="vision-impaired"] button,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select,
+    html[data-theme="vision-impaired"] textarea {
+      background: #ffffff;
+      color: #000000;
+      border-color: currentColor;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] button,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="contrast"] textarea {
+      border-width: 2px;
+    }
+
+    html[data-theme="vision-impaired"] button,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select,
+    html[data-theme="vision-impaired"] textarea {
+      border-width: 2px;
+      font-weight: 600;
+    }
+
+    html[data-theme="contrast"] a,
+    html[data-theme="vision-impaired"] a {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 2px;
+    }
+
+    html[data-theme="contrast"] a {
+      color: #000000;
+    }
+
+    html[data-theme="vision-impaired"] a {
+      color: #1d4ed8;
+    }
+
+    html[data-theme="contrast"] table,
+    html[data-theme="vision-impaired"] table {
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid currentColor;
+    }
+
+    html[data-theme="contrast"] th,
+    html[data-theme="vision-impaired"] th {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+
+    html[data-theme="contrast"] td,
+    html[data-theme="vision-impaired"] td {
+      border-color: currentColor;
+    }
+
+    html[data-theme="contrast"] :focus-visible {
+      outline: 3px solid #000000;
+      outline-offset: 3px;
+    }
+
+    html[data-theme="vision-impaired"] :focus-visible {
+      outline: 3px solid #1d4ed8;
+      outline-offset: 3px;
     }
 
     html[data-theme="day"] .stat-card {

@@ -173,6 +173,74 @@
             color: #000;
         }
 
+        html[data-theme="contrast"] .card-title,
+        html[data-theme="contrast"] .stat-label,
+        html[data-theme="contrast"] .form-label,
+        html[data-theme="contrast"] .empty-state,
+        html[data-theme="contrast"] .empty-state p,
+        html[data-theme="contrast"] small,
+        html[data-theme="contrast"] #session-start-info {
+            color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .tabs {
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .tab-btn {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+            border-bottom: 0 !important;
+            border-radius: 8px 8px 0 0;
+        }
+
+        html[data-theme="contrast"] .tab-btn:hover,
+        html[data-theme="contrast"] .tab-btn:focus-visible {
+            background: #111 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="contrast"] .tab-btn.active {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="contrast"] .tab-btn.active::after {
+            background: #000 !important;
+        }
+
+        html[data-theme="contrast"] .leaderboard-table th,
+        html[data-theme="contrast"] .leaderboard-table td {
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .leaderboard-table th {
+            background: #111 !important;
+            color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .leaderboard-table td {
+            background: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="contrast"] .leaderboard-table tr:hover {
+            background: #111 !important;
+        }
+
+        html[data-theme="contrast"] .message.success {
+            background: #050505 !important;
+            color: #bbf7d0 !important;
+            border: 2px solid #34d399 !important;
+        }
+
+        html[data-theme="contrast"] .message.error {
+            background: #050505 !important;
+            color: #fecaca !important;
+            border: 2px solid #f87171 !important;
+        }
+
         html[data-theme="vision-impaired"] .header h1,
         html[data-theme="vision-impaired"] .card-title,
         html[data-theme="vision-impaired"] .stat-label,
@@ -495,6 +563,36 @@
             background: #000 !important;
             color: #fff7cc !important;
             border: 4px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .form-label {
+            font-size: 1.15rem;
+        }
+
+        html[data-theme="vision-impaired"] .tab-btn,
+        html[data-theme="vision-impaired"] .btn {
+            font-size: 1.1rem;
+        }
+
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] select.form-input {
+            font-size: 1.15rem;
+            padding: 12px 14px;
+        }
+
+        html[data-theme="vision-impaired"] .form-label input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+
+        html[data-theme="vision-impaired"] .leaderboard-table th,
+        html[data-theme="vision-impaired"] .leaderboard-table td {
+            font-size: 1.05rem;
+        }
+
+        html[data-theme="vision-impaired"] small {
+            font-size: 1rem;
         }
     </style>
 </head>
