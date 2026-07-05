@@ -1,10 +1,10 @@
 # LLM Start Here
 
-This is the current technical entry point for agents working on the LTTH snapshot.
+This is the current technical entry point for agents working on the LTTH workspace.
 
 ## Current Context
 
-LTTH is a local TikTok LIVE helper with a Node.js backend, Socket.IO realtime layer, SQLite persistence, static frontend assets, OBS overlays, event automation, and a plugin ecosystem.
+LTTH is a local TikTok LIVE helper with a Node.js backend, Socket.IO realtime layer, SQLite persistence, static frontend assets, OBS overlays, event automation, a plugin ecosystem, and a plugin store.
 
 Canonical identity:
 
@@ -15,13 +15,15 @@ Canonical identity:
 
 If older repo names appear in archive files, generated reports, comments, or paths, do not use them for current GitHub work. `REPOSITORY_IDENTITY.md` is the canonical identity marker.
 
-This workspace is a local snapshot:
+This workspace is a full Git checkout:
 
-- No `.git` directory is present.
+- `.git/` is present. Use `git log`, `git branch`, `git diff`, etc. normally.
+- Active local branch: `ltth.app`. Remote default: `origin/main`.
 - Dependencies are installed in `app/`; root `node_modules/` remains intentionally absent.
 - `app/` is the maintained runtime.
 - The old Electron main-process folder is not present.
 - Root `package.json` is a convenience wrapper, not the backend dependency manifest.
+- Current version: `1.3.9` (see `version.json` and `app/package.json`).
 
 Before making changes, read:
 
@@ -43,28 +45,82 @@ app/server.js
   IFTTT automation engine
   core REST routes
   plugin loader
+  plugin store routes
+  wiki routes
+  locale routes
+  Swagger (lazy-loaded, skippable via DISABLE_SWAGGER)
 
 app/modules/
   database.js
   tiktok.js
-  adapters/
+  adapters/ (EulerstreamAdapter, TikFinityAdapter, BaseAdapter)
   plugin-loader.js
-  ifttt/
+  plugin-store.js          ← plugin store registry, install, community sources
+  ifttt/                   ← visual automation engine
   goals.js
   alerts.js
   leaderboard.js
   obs-websocket.js
   config-path-manager.js
+  config-repair.js
+  legacy-config-discovery.js ← discovers scattered legacy config files
+  port-manager.js          ← port fallback helper (3000–3050 range)
+  launcher.js              ← platform-agnostic launcher checks
+  update-manager.js        ← Git-backed update manager with rollback support
+  i18n.js                  ← backend i18n with plugin translation merging
+  user-database.js
   user-profiles.js
+  backup/                  ← backup/import/export subsystem
+  changelog-agent/         ← automated changelog generation
+  webgpu-engine/            ← experimental WebGPU engine (TypeScript)
 
 app/plugins/
   36 plugin manifests
   plugin-specific backend, UI, overlay, tests, assets
 
+app/routes/
+  plugin-routes.js         ← plugin + plugin-store API endpoints
+  wiki-routes.js           ← wiki API
+  locale.js                ← i18n translation API
+  debug-routes.js
+
 app/public/
   dashboard and overlay HTML
-  browser JavaScript
-  CSS and static assets
+  browser JavaScript (dashboard.js, navigation.js, plugin-manager.js, etc.)
+  CSS (navigation.css, themes.css, tailwind.output.css, etc.)
+  static assets
+
+app/locales/
+  de.json, en.json, es.json, fr.json  ← backend-served translations
+  *.enhanced.json, validation-report.json, compare.py
+
+app/test/
+  222 Jest test files (*.test.js)
+  62 manual test files (*.manual.js)
+  jest.setup.js            ← Blob/File polyfills for Node 20/22
+```
+
+## Website & Static Assets (Repository Root)
+
+The repository root hosts the public `ltth.app` website and supporting infrastructure:
+
+```text
+_partials/         ← shared HTML fragments (header.html, footer.html)
+js/                ← shared website JS (layout.js, i18n.js, main.js, docs.js)
+css/               ← shared website CSS (layout.css, main.css, docs.css)
+locales/           ← client-side website translations (de/en/es/fr + home-*.json)
+features/          ← static HTML feature pages (alerts, emoji-rain, tts, etc.)
+screenshots/       ← website screenshots (de/, features/, live-check/)
+install/           ← one-line installer scripts (install.js, install.sh, install.ps1)
+plugin-store.json  ← official plugin store registry (36 entries)
+plugin-store/      ← pre-packaged plugin ZIPs (packages/*.zip)
+build-src/         ← Go launcher sources (launcher-gui.go, bootstrapper.go, etc.)
+runtime/           ← runtime state (launcher_settings.json, node/)
+scripts/           ← release and test scripts
+new_patch/         ← release staging area
+released_patches/  ← released patch archive
+downloads/         ← download page + legacy launcher
+naked/             ← reduced repo clone from 2026-04-30 (ignored by .gitignore)
 ```
 
 ## Main Data Flow
@@ -76,6 +132,19 @@ app/public/
 5. `PluginLoader` registers plugin TikTok listeners and Socket.IO handlers.
 6. Dashboard and OBS overlays receive updates through Socket.IO and HTTP routes.
 
+## Plugin Store Architecture
+
+The plugin store (v1.3.9) adds:
+
+- `GET /api/plugin-store` — list official + opt-in community store plugins.
+- `GET /api/plugin-store/sources` — list configured store sources.
+- `POST /api/plugin-store/community/enable` — opt in to community sources.
+- `POST /api/plugin-store/sources` — add a community registry source.
+- `DELETE /api/plugin-store/sources/:id` — remove a community source.
+- `POST /api/plugin-store/:sourceId/:pluginId/install` — install a plugin from a registry.
+
+Security: HTTPS-only package URLs, SHA-256 checksum verification, safe ZIP extraction with path-traversal protection, plugin ID validation.
+
 ## Important Files
 
 - `app/server.js`: central runtime composition and route wiring
@@ -83,11 +152,19 @@ app/public/
 - `app/modules/adapters/TikFinityAdapter.js`: TikFinity WebSocket adapter
 - `app/modules/database.js`: schema, settings, event logs, plugin-support tables
 - `app/modules/plugin-loader.js`: PluginAPI and lifecycle
+- `app/modules/plugin-store.js`: plugin store registry, install, community sources
+- `app/modules/legacy-config-discovery.js`: discovers scattered legacy config files
+- `app/modules/port-manager.js`: port fallback helper
 - `app/modules/ifttt/`: visual automation engine
 - `app/public/js/dashboard.js`: dashboard behavior
+- `app/public/js/plugin-manager.js`: plugin manager + store UI
+- `app/public/js/navigation.js`: navigation and plugin visibility
 - `app/public/dashboard.html`: main dashboard shell
 - `app/package.json`: backend dependency manifest
+- `plugin-store.json`: plugin store registry
 - `build-src/`: Go launcher source
+- `version.json`: current version and one-line installer commands
+- `_partials/` + `js/layout.js`: shared website layout system
 
 ## Plugin Rules
 
@@ -141,6 +218,10 @@ npm start
 npm run dev
 npm test
 npm run build:css
+npm run build:launcher:win    # builds launcher.exe
+npm run build:launcher:console # builds launcher-console.exe
+npm run build:launcher:dev    # builds dev_launcher.exe
+npm run build:bootstrapper:win # builds ltth-bootstrapper.exe
 ```
 
 ## Working Standards
@@ -157,10 +238,14 @@ npm run build:css
 
 ## Known Snapshot Issues
 
-- No Git metadata.
 - No active Electron main-process source.
+- `update-manager.js` is Git-backed again and no longer a no-op stub.
 - `docs_archive/` contains many historical reports that can be stale.
 - Some user wiki pages may still contain older feature counts or release wording.
 - Root `node_modules/` is intentionally absent because root package scripts forward into `app/`.
+- `fireworks-dev-2.0.0.zip` remains in `plugin-store/packages/` although `app/plugins/fireworks-dev/` source was deleted.
+- `launcher.exe~` in root is a stale backup binary (not covered by `.gitignore`).
+- Go version inconsistency: `go.mod` requires 1.24.10, `build-launcher.yml` CI uses `~1.21`.
+- `naked/` is a reduced repo clone from 2026-04-30, ignored by `.gitignore`.
 
 Treat code as the final source of truth.

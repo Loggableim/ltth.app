@@ -32,7 +32,7 @@
   ],
   "notes": {
     "repository": "Canonical GitHub repository is Loggableim/ltth.app; website is https://ltth.app. Do not use old LTTH repo names from archived docs.",
-    "snapshot": "This workspace is not a Git checkout and currently does not include the Electron main-process folder. Use app/package.json for Node dependencies.",
+    "snapshot": "This workspace is a full Git checkout of Loggableim/ltth.app (branch ltth.app). The Electron main-process folder is not present. Use app/package.json for Node dependencies.",
     "install": "Run npm install in app/ before starting the backend."
   }
 }
