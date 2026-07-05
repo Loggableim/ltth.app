@@ -144,18 +144,27 @@ async function downloadSource() {
     } else {
         log(`Klone Repository nach ${cfg.dir}...`);
         const url = `https://github.com/${cfg.repoOwner}/${cfg.repoName}.git`;
-        let cloned = false;
         try {
-            await exec('git', ['clone', '--branch', `v${cfg.version}`, '--depth', '1', url, cfg.dir]);
-            cloned = true;
-        } catch { /* try without v prefix */ }
-        if (!cloned) {
+            await exec('git', ['clone', '--depth', '1', url, cfg.dir]);
+
             try {
-                await exec('git', ['clone', '--branch', cfg.version, '--depth', '1', url, cfg.dir]);
-                cloned = true;
-            } catch (e) {
-                warn('Tag-basiertes Klonen fehlgeschlagen, klone main...');
+                await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `refs/tags/v${cfg.version}:refs/tags/v${cfg.version}`]);
+                await exec('git', ['-C', cfg.dir, 'checkout', `v${cfg.version}`]);
+            } catch {
+                try {
+                    await exec('git', ['-C', cfg.dir, 'fetch', '--depth', '1', 'origin', `${cfg.version}:refs/tags/${cfg.version}`]);
+                    await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
+                } catch {
+                    warn('Tag nicht verfügbar, nutze Standard-Branch...');
+                }
+            }
+        } catch {
+            warn('Tag-basiertes Klonen fehlgeschlagen, klone main...');
+            try {
                 await exec('git', ['clone', '--depth', '1', url, cfg.dir]);
+            } catch (e) {
+                err(`Konnte Repository nicht klonen: ${e.message}`);
+                process.exit(1);
             }
         }
     }

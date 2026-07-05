@@ -125,18 +125,28 @@ function Download-Source {
             Remove-Item -Path $LTTHDir -Recurse -Force
         }
         New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
-        $ok = $false
+        $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
         try {
-            git clone --branch "v$LTTHVersion" --depth 1 "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git" $LTTHDir 2>&1 | Out-Null
-            $ok = $true
-        } catch {
+            git clone --depth 1 $repoUrl $LTTHDir 2>&1 | Out-Null
+
             try {
-                git clone --branch $LTTHVersion --depth 1 "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git" $LTTHDir 2>&1 | Out-Null
-                $ok = $true
+                git -C $LTTHDir fetch --depth 1 origin "refs/tags/v$LTTHVersion:refs/tags/v$LTTHVersion" 2>&1 | Out-Null
+                git -C $LTTHDir checkout "v$LTTHVersion" 2>&1 | Out-Null
             } catch {
-                Warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
-                git clone --depth 1 "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git" $LTTHDir 2>&1 | Out-Null
-                $ok = $true
+                try {
+                    git -C $LTTHDir fetch --depth 1 origin "refs/tags/$LTTHVersion:refs/tags/$LTTHVersion" 2>&1 | Out-Null
+                    git -C $LTTHDir checkout "$LTTHVersion" 2>&1 | Out-Null
+                } catch {
+                    Warn "Tag nicht verfügbar, nutze Standard-Branch..."
+                }
+            }
+        } catch {
+            Warn "Tag-basierter Clone fehlgeschlagen, klone main..."
+            try {
+                git clone --depth 1 $repoUrl $LTTHDir
+            } catch {
+                Err "Repository konnte nicht geklont werden: $($_.Exception.Message)"
+                exit 1
             }
         }
     }

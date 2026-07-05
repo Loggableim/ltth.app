@@ -136,12 +136,18 @@ download_source() {
             rm -rf "$LTTH_DIR"
         fi
         mkdir -p "$(dirname "$LTTH_DIR")"
-        git clone --branch "v${LTTH_VERSION}" --depth 1 \
-            "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" \
-            "$LTTH_DIR" 2>/dev/null \
-            || git clone --branch "${LTTH_VERSION}" --depth 1 \
-                "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" \
-                "$LTTH_DIR"
+        if git clone --depth 1 "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" "$LTTH_DIR" 2>/dev/null; then
+            git -C "$LTTH_DIR" fetch --depth 1 origin "refs/tags/v${LTTH_VERSION}:refs/tags/v${LTTH_VERSION}" >/dev/null 2>&1 \
+                || true
+            if ! git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
+                if ! git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
+                    warn "Tag nicht verfügbar, nutze Standard-Branch..."
+                fi
+            fi
+        else
+            warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
+            git clone --depth 1 "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" "$LTTH_DIR"
+        fi
     fi
     ok "Quellcode bereit in ${LTTH_DIR}"
 }
