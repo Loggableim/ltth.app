@@ -119,15 +119,31 @@ function Download-Source {
         } catch {
             Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
         }
+        $tagCheckedOut = $false
         try {
-            git checkout "v$LTTHVersion" 2>&1 | Out-Null
+            git fetch --depth 1 origin "refs/tags/v$LTTHVersion:refs/tags/v$LTTHVersion" 2>&1 | Out-Null
+            git checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
+            $tagCheckedOut = $true
         } catch {
+        }
+        if (-not $tagCheckedOut) {
             try {
-                git checkout $LTTHVersion 2>&1 | Out-Null
+                git fetch --depth 1 origin "refs/tags/$LTTHVersion:refs/tags/$LTTHVersion" 2>&1 | Out-Null
+                git checkout --quiet "$LTTHVersion" 2>&1 | Out-Null
+                $tagCheckedOut = $true
             } catch {
-                Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
-                git checkout main 2>&1 | Out-Null
             }
+        }
+        if (-not $tagCheckedOut) {
+            try {
+                git checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
+                $tagCheckedOut = $true
+            } catch {
+            }
+        }
+        if (-not $tagCheckedOut) {
+            Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
+            git checkout --quiet main 2>&1 | Out-Null
         }
         Pop-Location
     } else {
@@ -142,11 +158,11 @@ function Download-Source {
 
             try {
                 git -C $LTTHDir fetch --depth 1 origin "refs/tags/v$LTTHVersion:refs/tags/v$LTTHVersion" 2>&1 | Out-Null
-                git -C $LTTHDir checkout "v$LTTHVersion" 2>&1 | Out-Null
+                git -C $LTTHDir checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
             } catch {
                 try {
                     git -C $LTTHDir fetch --depth 1 origin "refs/tags/$LTTHVersion:refs/tags/$LTTHVersion" 2>&1 | Out-Null
-                    git -C $LTTHDir checkout "$LTTHVersion" 2>&1 | Out-Null
+                    git -C $LTTHDir checkout --quiet "$LTTHVersion" 2>&1 | Out-Null
                 } catch {
                     Warn "Tag nicht verfügbar, nutze Standard-Branch..."
                 }
