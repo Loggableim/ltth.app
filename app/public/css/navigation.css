@@ -141,8 +141,8 @@ body {
 .sidebar-logo {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
+    justify-content: flex-start;
+    gap: 0.85rem;
     width: 100%;
     min-width: 0;
     padding: 0;
@@ -150,10 +150,9 @@ body {
 
 /* Mini logo - responsive sizing based on screen size */
 .sidebar-logo-mini {
-    min-height: 40px;
-    min-width: 40px;
-    height: 40px;
-    width: 40px;
+    height: 52px;
+    width: auto;
+    max-width: 112px;
     flex-shrink: 0;
     transition: all var(--transition-speed) ease;
     object-fit: contain;
@@ -176,10 +175,9 @@ body {
 }
 
 .sidebar-collapsed .sidebar-logo-mini {
-    min-height: 48px;
-    min-width: 48px;
-    height: 48px;
-    width: 48px;
+    height: 44px;
+    width: auto;
+    max-width: 72px;
 }
 
 .sidebar-collapsed .sidebar-toggle-btn {

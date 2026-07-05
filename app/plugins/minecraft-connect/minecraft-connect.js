@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-    const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+    const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
 
     const state = {
         socket: null,
@@ -986,3 +986,4 @@
         init();
     }
 })();
+

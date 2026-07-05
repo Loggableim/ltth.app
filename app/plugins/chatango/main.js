@@ -178,7 +178,7 @@ class ChatangoPlugin {
             return { valid: false, error: 'Invalid configuration data' };
         }
 
-        const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
+        const validThemes = ['night', 'day', 'contrast', 'vision-impaired', 'cid'], 'cid';
         const validPositions = ['br', 'bl', 'tr', 'tl'];
         const validFontSizes = ['8', '10', '12', '14'];
 
@@ -250,7 +250,7 @@ class ChatangoPlugin {
         this.api.registerRoute('GET', '/chatango/embed/dashboard', async (req, res) => {
             const config = await this.api.getConfig('config') || this.getDefaultConfig();
             // Validate theme parameter against whitelist
-            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired', 'cid'], 'cid';
             const requestedTheme = req.query.theme || config.theme || 'night';
             const theme = validThemes.includes(requestedTheme) ? requestedTheme : 'night';
             const html = this.generateEmbedHTML('dashboard', theme);
@@ -261,7 +261,7 @@ class ChatangoPlugin {
         this.api.registerRoute('GET', '/chatango/embed/widget', async (req, res) => {
             const config = await this.api.getConfig('config') || this.getDefaultConfig();
             // Validate theme parameter against whitelist
-            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired', 'cid'], 'cid';
             const requestedTheme = req.query.theme || config.theme || 'night';
             const theme = validThemes.includes(requestedTheme) ? requestedTheme : 'night';
             const html = this.generateEmbedHTML('widget', theme);
@@ -294,7 +294,7 @@ class ChatangoPlugin {
         // GET /api/chatango/embed - Get embed code for current config
         this.api.registerRoute('get', '/api/chatango/embed', async (req, res) => {
             const validTypes = ['dashboard', 'widget'];
-            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired', 'cid'], 'cid';
             
             const type = validTypes.includes(req.query.type) ? req.query.type : 'dashboard';
             const theme = validThemes.includes(req.query.theme) ? req.query.theme : this.config.theme;
@@ -604,3 +604,4 @@ class ChatangoPlugin {
 }
 
 module.exports = ChatangoPlugin;
+

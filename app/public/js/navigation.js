@@ -1016,7 +1016,7 @@
             goodbye.innerHTML = `
                 <div class="shutdown-goodbye-content">
                     <div class="shutdown-goodbye-logo">
-                        <img src="/ltthmini_nightmode.png" alt="LTTH" class="shutdown-goodbye-img">
+                        <img src="/cid-logo.png" alt="Cid" class="shutdown-goodbye-img">
                     </div>
                     <h1 class="shutdown-goodbye-title">Auf Wiedersehen! 👋</h1>
                     <p class="shutdown-goodbye-subtitle">Der Server wird heruntergefahren...</p>

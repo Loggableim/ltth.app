@@ -16,6 +16,13 @@ class ThemeManager {
                 badge: 'Accessibility',
                 swatches: ['#ffffff', '#fbbf24', '#000000']
             },
+            cid: {
+                name: 'Cid',
+                icon: 'sparkles',
+                description: 'Pup Cid inspired green-on-black brand mode',
+                badge: 'Brand',
+                swatches: ['#4ade80', '#12a116', '#000000']
+            },
             night: {
                 name: 'Night Mode',
                 icon: 'moon',
@@ -252,17 +259,10 @@ class ThemeManager {
 
     updateSidebarLogo(theme) {
         const miniIcon = document.getElementById('sidebar-mini-icon');
-        
-        const miniLogoMap = {
-            'vision-impaired': '/ltthmini_highcontrast.png',
-            day: '/ltthmini_daymode.png',
-            contrast: '/ltthmini_highcontrast.png',
-            night: '/ltthmini_nightmode.png'
-        };
-        
+
         // Update mini logo icon
         if (miniIcon) {
-            miniIcon.src = miniLogoMap[theme] || miniLogoMap.night;
+            miniIcon.src = '/cid-logo.png';
         }
     }
 

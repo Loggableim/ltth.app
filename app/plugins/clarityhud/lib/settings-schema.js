@@ -241,7 +241,7 @@
 
   const ENUMS = {
     align: ['left', 'center', 'right'],
-    mode: ['day', 'night', 'contrast', 'vision-impaired'],
+    mode: ['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid',
     accessibilityPreset: ['default', 'none', 'highContrast', 'visionImpaired', 'dyslexiaFriendly', 'motionSensitive', 'vr-optimized', 'low-vision', 'colorblind', 'dyslexia'],
     emojiRenderMode: ['image', 'unicode'],
     badgeSize: ['small', 'medium', 'large'],
@@ -662,3 +662,4 @@
     validateProfile
   };
 });
+

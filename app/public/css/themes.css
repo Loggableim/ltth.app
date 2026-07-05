@@ -235,6 +235,74 @@
     --app-background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
 }
 
+/* Cid Brand Theme */
+[data-theme="cid"] {
+    color-scheme: dark;
+
+    --brand-primary: #4ade80;
+    --brand-primary-hover: #22c55e;
+    --brand-primary-light: rgba(74, 222, 128, 0.18);
+
+    --color-bg-primary: #030603;
+    --color-bg-secondary: #08110a;
+    --color-bg-tertiary: #0d1810;
+    --color-bg-card: rgba(9, 16, 10, 0.96);
+    --color-bg-hover: #122015;
+
+    --color-accent-primary: #4ade80;
+    --color-accent-secondary: #86efac;
+    --color-accent-success: #22c55e;
+    --color-accent-warning: #eab308;
+    --color-accent-danger: #fb7185;
+
+    --color-text-primary: #f4fff4;
+    --color-text-secondary: #d1e7d1;
+    --color-text-muted: #8aa38a;
+
+    --color-border: rgba(74, 222, 128, 0.22);
+    --color-divider: #0d160f;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.16);
+    --shadow-md: 0 8px 20px -10px rgba(0, 0, 0, 0.52);
+    --shadow-lg: 0 18px 38px -18px rgba(0, 0, 0, 0.72);
+    --glow-primary: 0 0 24px rgba(74, 222, 128, 0.28);
+    --glow-success: 0 0 24px rgba(34, 197, 94, 0.26);
+    --glow-brand: 0 0 32px rgba(74, 222, 128, 0.32);
+
+    --color-input-bg: rgba(5, 9, 6, 0.98);
+    --color-input-border: rgba(74, 222, 128, 0.24);
+    --color-input-focus: #4ade80;
+    --color-input-text: #f4fff4;
+    --color-input-placeholder: #6b8a6f;
+
+    --color-btn-secondary-bg: rgba(15, 25, 16, 0.96);
+    --color-btn-secondary-hover: rgba(26, 42, 28, 0.98);
+    --color-btn-secondary-text: #f4fff4;
+
+    --color-chart-primary: #4ade80;
+    --color-chart-secondary: #86efac;
+    --color-chart-success: #22c55e;
+    --color-chart-warning: #eab308;
+    --color-chart-danger: #fb7185;
+    --color-chart-grid: #203124;
+    --color-chart-axis: #8aa38a;
+
+    --color-badge-bg: rgba(10, 18, 11, 0.96);
+    --color-badge-text: #dbf7dd;
+
+    --color-modal-backdrop: rgba(0, 0, 0, 0.9);
+    --color-modal-bg: rgba(7, 12, 8, 0.98);
+
+    --gradient-primary: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    --gradient-brand: linear-gradient(135deg, #4ade80 0%, #12a116 100%);
+
+    --color-disabled-bg: #09110b;
+    --color-disabled-text: #4d6650;
+    --color-active-bg: rgba(74, 222, 128, 0.14);
+    --color-active-border: #4ade80;
+    --app-background: radial-gradient(circle at 15% 12%, rgba(74, 222, 128, 0.16), transparent 24%), radial-gradient(circle at 80% 10%, rgba(18, 161, 22, 0.12), transparent 20%), radial-gradient(circle at 52% 82%, rgba(34, 197, 94, 0.08), transparent 26%), linear-gradient(180deg, #030603 0%, #050905 48%, #030603 100%);
+}
+
 /* Day Mode Theme */
 [data-theme="day"] {
     color-scheme: light;

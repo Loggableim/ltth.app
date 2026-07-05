@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
-      const THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+      const THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
       function readTheme() {
         try {
           const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
@@ -155,3 +155,4 @@
   </script>
 </body>
 </html>
+

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
 
       function readTheme() {
         try {
@@ -1166,7 +1166,7 @@
       const maxLines = (document.getElementById('maxLines-input')?.value) || '2';
       const fontSize = (document.getElementById('fontSize-input')?.value) || '36px';
       const themeRaw = localStorage.getItem('dashboard-theme') || localStorage.getItem('theme') || localStorage.getItem('ui-theme') || 'night';
-      const theme = ['day', 'night', 'contrast', 'vision-impaired'].includes(themeRaw) ? themeRaw : 'night';
+      const theme = ['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid'.includes(themeRaw) ? themeRaw : 'night';
       const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
         + '&position=' + encodeURIComponent(position)
         + '&maxLines=' + encodeURIComponent(maxLines)
@@ -1388,6 +1388,7 @@
   </script>
 </body>
 </html>
+
 
 
 

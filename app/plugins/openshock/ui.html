@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
         (function () {
-            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
             function readTheme() {
                 try {
                     const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
@@ -1256,3 +1256,4 @@
     <script src="/openshock/ui.js"></script>
 </body>
 </html>
+
