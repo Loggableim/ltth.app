@@ -1,6 +1,6 @@
 # ==============================================================================
 #  LTTH One-Line Installer (Windows PowerShell)
-#  PupCid's Little TikTool Helper ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â https://ltth.app
+#  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
 #    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
@@ -9,8 +9,9 @@
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
 #    $env:LTTH_DIR         - Installationsverzeichnis (Default: $env:LOCALAPPDATA\LTTH)
 #    $env:LTTH_PORT        - HTTP-Port (Default: 3000)
-#    $env:LTTH_NO_BROWSER  - Browser nach Start nicht ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶ffnen
+#    $env:LTTH_NO_BROWSER  - Browser nach Start nicht oeffnen
 #    $env:LTTH_QUIET       - Reduzierte Ausgabe
+#    $env:LTTH_NO_PAUSE    - Bei Fehler nicht auf Enter warten
 # ==============================================================================
 
 $ErrorActionPreference = 'Stop'
@@ -24,12 +25,43 @@ $LTTHDir       = if ($env:LTTH_DIR)         { $env:LTTH_DIR         } else { Joi
 $LTTHPort      = if ($env:LTTH_PORT)        { $env:LTTH_PORT        } else { '3000' }
 $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0' }
 $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0' }
+$LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
+$script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
 
 # ---------- Hilfsfunktionen ----------
-function Log($msg)  { if ($LTTHQuiet -ne '1') { Write-Host "[ltth] $msg" -ForegroundColor Cyan } }
-function Ok($msg)   { if ($LTTHQuiet -ne '1') { Write-Host "[OK] $msg" -ForegroundColor Green } }
-function Warn($msg) { Write-Host "[!] $msg" -ForegroundColor Yellow }
-function Err($msg)  { Write-Host "[X] $msg" -ForegroundColor Red }
+function Write-InstallerLine {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Line,
+        [string]$Color = 'White',
+        [bool]$Always = $false
+    )
+
+    try {
+        Add-Content -LiteralPath $script:LTTHInstallerLog -Value $Line -Encoding UTF8
+    } catch { }
+
+    if ($Always -or $LTTHQuiet -ne '1') {
+        Write-Host $Line -ForegroundColor $Color
+    }
+}
+
+function Log($msg)  { Write-InstallerLine -Line "[ltth] $msg" -Color Cyan }
+function Ok($msg)   { Write-InstallerLine -Line "[OK] $msg" -Color Green }
+function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always $true }
+function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
+function Fail($msg) { throw $msg }
+
+function Pause-On-Error {
+    if ($LTTHNoPause -eq '1') { return }
+
+    try {
+        if ([Environment]::UserInteractive -and $Host.Name -match 'ConsoleHost') {
+            Write-Host ""
+            Read-Host "Fehler sichtbar. Druecke Enter zum Schliessen"
+        }
+    } catch { }
+}
 
 function Invoke-Git {
     param(
@@ -102,14 +134,12 @@ function Resolve-Version {
                 $LTTHVersion = $tags[0].name -replace '^v', ''
                 $resolved = $true
             } catch {
-                Err "Konnte neueste Version nicht ermitteln: $_"
-                exit 1
+                Fail "Konnte neueste Version nicht ermitteln: $_"
             }
         }
 
         if (-not $resolved) {
-            Err "Konnte neueste Version nicht ermitteln."
-            exit 1
+            Fail "Konnte neueste Version nicht ermitteln."
         }
 
         $script:LTTHVersion = $LTTHVersion
@@ -119,17 +149,17 @@ function Resolve-Version {
     }
 }
 
-# ---------- Git prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼fen ----------
+# ---------- Git pruefen ----------
 function Ensure-Git {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Err "Git ist nicht installiert."
         Err "Bitte installiere Git: https://git-scm.com/download/win"
         Err "Oder verwende den LTTH Cloud Launcher: https://ltth.app/downloads/launcher.exe"
-        exit 1
+        Fail "Git ist nicht installiert."
     }
 }
 
-# ---------- Node.js prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼fen / installieren ----------
+# ---------- Node.js pruefen / installieren ----------
 function Ensure-Node {
     if (Get-Command node -ErrorAction SilentlyContinue) {
         $v = node --version
@@ -146,12 +176,10 @@ function Ensure-Node {
         winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
         $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
         if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-            Err "Node.js konnte nicht automatisch installiert werden. Bitte manuell installieren: https://nodejs.org/"
-            exit 1
+            Fail "Node.js konnte nicht automatisch installiert werden. Bitte manuell installieren: https://nodejs.org/"
         }
     } else {
-        Err "winget fehlt. Bitte installiere Node.js manuell: https://nodejs.org/"
-        exit 1
+        Fail "winget fehlt. Bitte installiere Node.js manuell: https://nodejs.org/"
     }
 }
 
@@ -209,20 +237,19 @@ function Download-Source {
                     Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
                     Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
                 } catch {
-                    Warn "Tag nicht verfÃƒÆ’Ã‚Â¼gbar, nutze Standard-Branch..."
+                    Warn "Tag nicht verfuegbar, nutze Standard-Branch..."
                 }
             }
         } catch {
             Warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
             if (Test-Path $LTTHDir) {
-                Warn "Zielverzeichnis fÃƒÆ’Ã‚Â¼r Haupt-Branch bereinigen..."
+                Warn "Zielverzeichnis fuer Haupt-Branch bereinigen..."
                 Remove-Item -Path $LTTHDir -Recurse -Force
             }
             try {
                 Invoke-Git -Arguments @('clone', '--depth', '1', $repoUrl, $LTTHDir)
             } catch {
-                Err "Repository konnte nicht geklont werden: $($_.Exception.Message)"
-                exit 1
+                Fail "Repository konnte nicht geklont werden: $($_.Exception.Message)"
             }
         }
     }
@@ -255,29 +282,26 @@ function Install-Deps {
         $stdoutLog = "$npmLogBase.out.log"
         $stderrLog = "$npmLogBase.err.log"
 
+        $previousErrorActionPreference = $ErrorActionPreference
         try {
-            $proc = Start-Process -FilePath $npmExecutable `
-                                  -ArgumentList $npmArgs `
-                                  -WorkingDirectory $appDir `
-                                  -RedirectStandardOutput $stdoutLog `
-                                  -RedirectStandardError $stderrLog `
-                                  -WindowStyle Hidden `
-                                  -PassThru `
-                                  -Wait
+            $ErrorActionPreference = 'Continue'
+            & $npmExecutable @npmArgs 1>$stdoutLog 2>$stderrLog
+            $npmExitCode = $LASTEXITCODE
         } catch {
-            Err "npm konnte nicht gestartet werden: $($_.Exception.Message)"
-            exit 1
+            Fail "npm konnte nicht gestartet werden: $($_.Exception.Message)"
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
         }
 
-        if ($proc.ExitCode -ne 0) {
-            Err "npm install fehlgeschlagen (ExitCode $($proc.ExitCode))."
+        if ($npmExitCode -ne 0) {
+            Err "npm install fehlgeschlagen (ExitCode $npmExitCode)."
             if (Test-Path $stderrLog) {
                 Get-Content $stderrLog -Tail 40 | ForEach-Object { Write-Host $_ }
             }
             if (Test-Path $stdoutLog) {
                 Get-Content $stdoutLog -Tail 20 | ForEach-Object { Write-Host $_ }
             }
-            exit 1
+            Fail "npm install fehlgeschlagen. Siehe npm-Logs im Installationsverzeichnis."
         }
 
         Remove-Item -Path $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
@@ -312,8 +336,7 @@ function Start-App {
     if ($proc) {
         Ok "LTTH laeuft (PID $($proc.Id)) auf Port $LTTHPort"
     } else {
-        Err "LTTH konnte nicht gestartet werden. Siehe $logFile"
-        exit 1
+        Fail "LTTH konnte nicht gestartet werden. Siehe $logFile und $logFile.err"
     }
 }
 
@@ -357,4 +380,14 @@ function Main {
     Write-Host ""
 }
 
-Main
+try {
+    Main
+} catch {
+    Write-Host ""
+    Err "Installation abgebrochen: $($_.Exception.Message)"
+    Write-Host ""
+    Write-Host "  Installer-Log: $script:LTTHInstallerLog" -ForegroundColor Yellow
+    Write-Host "  Installationsverzeichnis: $LTTHDir" -ForegroundColor Yellow
+    Write-Host ""
+    Pause-On-Error
+}
