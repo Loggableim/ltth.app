@@ -304,8 +304,22 @@
             margin-top: 5px;
         }
 
+        .upload-progress {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            font-weight: 600;
+            line-height: 1.4;
+            max-width: 100%;
+        }
+
         .button-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             justify-content: center;
             margin-top: 30px;
@@ -576,6 +590,12 @@
             background: #2a0000;
             border-color: #f87171;
         }
+
+        html[data-theme="vision-impaired"] .upload-progress {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
     </style>
 </head>
 <body>
@@ -601,7 +621,7 @@
         </div>
 
         <!-- TikTok Visual Mode Settings -->
-        <div class="config-section section-success">
+        <div class="config-section">
             <h2>TikTok Visual Effects Overlay</h2>
             <div class="form-grid">
                 <div class="form-group">
@@ -651,7 +671,7 @@
         </div>
 
         <!-- OBS HUD Settings -->
-        <div class="config-section section-success">
+        <div class="config-section">
             <h2>🎮 OBS HUD Einstellungen</h2>
             <div class="help-text" style="margin-bottom: 20px; font-size: 1em;">
                 Separate hochwertige Overlay-Seite für OBS mit fester Auflösung und Game-Quality Grafik
@@ -773,7 +793,7 @@
                     <button type="button" id="upload-images-btn" class="secondary">📤 Upload</button>
                 </div>
                 <div class="help-text">PNG, JPG, GIF, WebP, SVG (max. 5MB pro Datei)</div>
-                <div id="upload-progress" style="display: none; margin-top: 10px; color: var(--brand-primary); font-weight: 600;"></div>
+                <div id="upload-progress" class="upload-progress"></div>
             </div>
 
             <!-- Uploaded Images Grid -->

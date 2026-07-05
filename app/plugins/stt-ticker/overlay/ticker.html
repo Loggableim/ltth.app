@@ -254,15 +254,16 @@
     function getThemeStyles(theme) {
       const isDay = theme === 'day';
       const isHighContrast = theme === 'contrast' || theme === 'vision-impaired';
+      const isVisionImpaired = theme === 'vision-impaired';
       return {
-        background: isDay ? 'rgba(255, 255, 255, 0.88)' : isHighContrast ? 'rgba(0, 0, 0, 0.97)' : 'rgba(0, 0, 0, 0.72)',
-        borderColor: theme === 'vision-impaired' ? '#facc15' : theme === 'contrast' ? '#facc15' : 'rgba(255, 255, 255, 0.08)',
-        color: isDay ? '#0f172a' : isHighContrast ? '#fff7cc' : '#ffffff',
-        textShadow: isDay ? '0 1px 2px rgba(255,255,255,0.45)' : theme === 'vision-impaired' ? '0 0 12px rgba(0,0,0,0.95)' : '0 2px 8px rgba(0,0,0,0.8)',
-        boxShadow: theme === 'vision-impaired' ? '0 0 0 6px rgba(250, 204, 21, 0.22), 0 0 36px rgba(250, 204, 21, 0.16)' : 'none',
-        fontWeight: theme === 'vision-impaired' ? '800' : '700',
-        letterSpacing: theme === 'vision-impaired' ? '0.04em' : '0.01em',
-        lineHeight: theme === 'vision-impaired' ? '1.15' : '1.2'
+        background: isDay ? 'rgba(255, 255, 255, 0.88)' : isVisionImpaired ? 'rgba(0, 0, 0, 0.99)' : isHighContrast ? 'rgba(0, 0, 0, 0.97)' : 'rgba(0, 0, 0, 0.72)',
+        borderColor: isVisionImpaired ? '#facc15' : theme === 'contrast' ? '#facc15' : 'rgba(255, 255, 255, 0.08)',
+        color: isDay ? '#0f172a' : isVisionImpaired ? '#fffdf0' : isHighContrast ? '#fff7cc' : '#ffffff',
+        textShadow: isDay ? '0 1px 2px rgba(255,255,255,0.45)' : isVisionImpaired ? '0 0 14px rgba(0,0,0,0.98)' : '0 2px 8px rgba(0,0,0,0.8)',
+        boxShadow: isVisionImpaired ? '0 0 0 7px rgba(250, 204, 21, 0.3), 0 0 40px rgba(250, 204, 21, 0.2)' : 'none',
+        fontWeight: isVisionImpaired ? '900' : '700',
+        letterSpacing: isVisionImpaired ? '0.06em' : '0.01em',
+        lineHeight: isVisionImpaired ? '1.1' : '1.2'
       };
     }
 
@@ -452,6 +453,9 @@
         el.style.textShadow = designStyles.textShadow || themeStyles.textShadow;
         el.style.fontWeight = designStyles.fontWeight || themeStyles.fontWeight;
         el.style.letterSpacing = designStyles.letterSpacing || themeStyles.letterSpacing;
+        if ((document.documentElement.getAttribute('data-theme') || '').toLowerCase() === 'vision-impaired') {
+          el.style.fontSize = '1.08em';
+        }
       });
 
       updateClassicVisibility();
