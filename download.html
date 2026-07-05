@@ -471,13 +471,14 @@
     // ---------- Copy-Buttons ----------
     document.querySelectorAll('.copy-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-            const target = document.getElementById(btn.dataset.copyTarget);
-            if (!target) return;
-            const copyText = (btn.dataset.copyText || '').toString().trim() || (target.innerText || '')
+        const target = document.getElementById(btn.dataset.copyTarget);
+        if (!target) return;
+            const sourceText = (btn.dataset.copyText || '').toString().trim() || (target.innerText || '');
+            const copyText = sourceText
                 .replace(/[\r\n]+/g, ' ')
-                    .replace(/^(?:PS>|\$)\s*/, '')
-                    .replace(/^Kopieren\s*/i, '')
-                    .trim();
+                .replace(/^\s*(?:PS>|\$)\s*/, '')
+                .replace(/^Kopieren\s*/i, '')
+                .trim();
             if (!copyText) return;
             navigator.clipboard.writeText(copyText).then(() => {
                 const orig = btn.textContent;

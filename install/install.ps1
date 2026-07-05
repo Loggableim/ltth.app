@@ -18,7 +18,8 @@ $ErrorActionPreference = 'Stop'
 # ---------- Konfiguration ----------
 $LTTHRepoOwner = if ($env:LTTH_REPO_OWNER) { $env:LTTH_REPO_OWNER } else { 'Loggableim' }
 $LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth.app' }
-$LTTHVersion   = if ($env:LTTH_VERSION)     { $env:LTTH_VERSION     } else { 'latest' }
+$LTTHVersion   = if ($env:LTTH_VERSION) { $env:LTTH_VERSION } else { 'latest' }
+$script:LTTHVersion = $LTTHVersion
 $LTTHDir       = if ($env:LTTH_DIR)         { $env:LTTH_DIR         } else { Join-Path $env:LOCALAPPDATA 'LTTH' }
 $LTTHPort      = if ($env:LTTH_PORT)        { $env:LTTH_PORT        } else { '3000' }
 $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0' }
@@ -64,6 +65,7 @@ function Resolve-Version {
             exit 1
         }
 
+        $script:LTTHVersion = $LTTHVersion
         Ok "Neueste Version: v$LTTHVersion"
     } else {
         Ok "Verwende angegebene Version: v$LTTHVersion"
