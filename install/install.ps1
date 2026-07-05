@@ -189,7 +189,11 @@ function Install-Deps {
     Log "Installiere npm-Abhaengigkeiten (kann einige Minuten dauern)..."
     Push-Location (Join-Path $LTTHDir 'app')
     try {
-        npm install --no-audit --no-fund --loglevel=error 2>&1 | Out-Null
+        if (Get-Command npm.cmd -ErrorAction SilentlyContinue) {
+            npm.cmd install --no-audit --no-fund --loglevel=error 2>&1 | Out-Null
+        } else {
+            npm install --no-audit --no-fund --loglevel=error 2>&1 | Out-Null
+        }
     } finally {
         Pop-Location
     }
