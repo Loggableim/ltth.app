@@ -3,7 +3,7 @@
 #  PupCid's Little TikTool Helper — https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iwr -useb https://ltth.app/install.ps1 | iex
+#    iwr -useb https://ltth.app/install/install.ps1 | iex
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -35,8 +35,17 @@ function Resolve-Version {
     if ($LTTHVersion -eq 'latest') {
         Log "Ermittle neueste Version von GitHub..."
         try {
-            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/releases/latest" -TimeoutSec 15
-            $LTTHVersion = $release.tag_name -replace '^v', ''
+            try {
+                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/releases/latest" -TimeoutSec 15
+                $LTTHVersion = $release.tag_name -replace '^v', ''
+            } catch {
+                Warn "Kein GitHub Release gefunden; verwende neuesten Tag..."
+                $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/tags?per_page=1" -TimeoutSec 15
+                if ($null -eq $tags -or @($tags).Count -eq 0) {
+                    throw "Keine Tags gefunden."
+                }
+                $LTTHVersion = $tags[0].name -replace '^v', ''
+            }
             Ok "Neueste Version: v$LTTHVersion"
         } catch {
             Err "Konnte neueste Version nicht ermitteln: $_"
