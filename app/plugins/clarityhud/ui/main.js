@@ -729,6 +729,8 @@ function renderTabContent(dock, tabId) {
               <select id="mode">
                 <option value="day" ${s.mode === 'day' ? 'selected' : ''}>Day Mode</option>
                 <option value="night" ${s.mode === 'night' ? 'selected' : ''}>Night Mode</option>
+                <option value="contrast" ${s.mode === 'contrast' ? 'selected' : ''}>High Contrast</option>
+                <option value="vision-impaired" ${s.mode === 'vision-impaired' ? 'selected' : ''}>Vision Impaired</option>
               </select>
             </div>
           </div>

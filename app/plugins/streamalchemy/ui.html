@@ -5,6 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StreamAlchemy Relaunch</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -268,6 +311,166 @@
       gap: 12px;
       align-items: flex-start;
     }
+
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .sidebar,
+    html[data-theme="day"] .metric,
+    html[data-theme="day"] .panel,
+    html[data-theme="day"] .item,
+    html[data-theme="day"] .recipe,
+    html[data-theme="day"] .job,
+    html[data-theme="day"] .preset-card,
+    html[data-theme="day"] .button,
+    html[data-theme="day"] input,
+    html[data-theme="day"] select {
+      background: #fff;
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .nav button {
+      color: #4b5563;
+    }
+
+    html[data-theme="day"] .nav button:hover,
+    html[data-theme="day"] .nav button.active {
+      color: #10203a;
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(135deg, #0b1020 0%, #111827 100%);
+      color: #f8fafc;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .sidebar,
+    html[data-theme="contrast"] .metric,
+    html[data-theme="contrast"] .panel,
+    html[data-theme="contrast"] .item,
+    html[data-theme="contrast"] .recipe,
+    html[data-theme="contrast"] .job,
+    html[data-theme="contrast"] .preset-card,
+    html[data-theme="contrast"] .button,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="vision-impaired"] .sidebar,
+    html[data-theme="vision-impaired"] .metric,
+    html[data-theme="vision-impaired"] .panel,
+    html[data-theme="vision-impaired"] .item,
+    html[data-theme="vision-impaired"] .recipe,
+    html[data-theme="vision-impaired"] .job,
+    html[data-theme="vision-impaired"] .preset-card,
+    html[data-theme="vision-impaired"] .button,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select {
+      background: #000;
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .nav button,
+    html[data-theme="vision-impaired"] .nav button {
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .nav button:hover,
+    html[data-theme="contrast"] .nav button.active,
+    html[data-theme="vision-impaired"] .nav button:hover,
+    html[data-theme="vision-impaired"] .nav button.active {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 18px;
+      letter-spacing: 0.01em;
+    }
+
+    html[data-theme="vision-impaired"] .shell {
+      grid-template-columns: 288px minmax(0, 1fr);
+    }
+
+    html[data-theme="vision-impaired"] .topline {
+      gap: 22px;
+    }
+
+    html[data-theme="vision-impaired"] .topline h2 {
+      font-size: 2rem;
+    }
+
+    html[data-theme="vision-impaired"] .topline p {
+      max-width: none;
+      font-size: 1.05rem;
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .metric strong {
+      font-size: 2rem;
+    }
+
+    html[data-theme="vision-impaired"] .panel h3,
+    html[data-theme="vision-impaired"] .name,
+    html[data-theme="vision-impaired"] .brand h1 {
+      color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .muted,
+    html[data-theme="vision-impaired"] .model-help,
+    html[data-theme="vision-impaired"] .manual-steps,
+    html[data-theme="vision-impaired"] .notice {
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .notice {
+      background: #050505;
+    }
+
+    html[data-theme="vision-impaired"] .status {
+      background: #111;
+      color: #facc15;
+      border: 1px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .item-frame {
+      background: #050505;
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .button.primary {
+      color: #000;
+      background: #facc15;
+      border-color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .button {
+      min-height: 44px;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .preset-card .header {
+      align-items: center;
+    }
+
+    html[data-theme="vision-impaired"] .preset-card .name {
+      font-size: 1.1rem;
+    }
+
+    html[data-theme="vision-impaired"] .empty {
+      background: #050505;
+      color: #fff;
+      border-color: #facc15;
+    }
+
     .empty {
       padding: 18px;
       border: 1px dashed var(--color-border, rgba(148, 163, 184, 0.25));

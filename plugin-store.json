@@ -31,7 +31,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/advanced-timer.png"
+        "/screenshots/features/advanced-timer.png"
       ]
     },
     {
@@ -58,7 +58,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/animazingpal.png"
+        "/screenshots/features/animazingpal.png"
       ]
     },
     {
@@ -85,7 +85,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/api-bridge-admin.png"
+        "/screenshots/features/api-bridge-admin.png"
       ]
     },
     {
@@ -114,7 +114,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/chatango.png"
+        "/screenshots/features/chatango.png"
       ]
     },
     {
@@ -141,7 +141,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/clarityhud.png"
+        "/screenshots/features/clarityhud.png"
       ]
     },
     {
@@ -168,7 +168,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/coinbattle.png"
+        "/screenshots/features/coinbattle.png"
       ]
     },
     {
@@ -195,7 +195,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/config-import.png"
+        "/screenshots/features/config-import.png"
       ]
     },
     {
@@ -219,7 +219,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/data-source.png"
+        "/screenshots/features/data-source.png"
       ]
     },
     {
@@ -243,7 +243,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/fireworks.png"
+        "/screenshots/features/fireworks.png"
       ]
     },
     {
@@ -270,7 +270,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/flame-overlay.png"
+        "/screenshots/features/flame-overlay.png"
       ]
     },
     {
@@ -297,7 +297,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/game-engine.png"
+        "/screenshots/features/game-engine.png"
       ]
     },
     {
@@ -324,7 +324,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/gcce.png"
+        "/screenshots/features/gcce.png"
       ]
     },
     {
@@ -351,7 +351,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/gift-milestone.png"
+        "/screenshots/features/gift-milestone.png"
       ]
     },
     {
@@ -380,7 +380,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/goals.png"
+        "/screenshots/features/goals.png"
       ]
     },
     {
@@ -407,7 +407,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/interactive-story.png"
+        "/screenshots/features/interactive-story.png"
       ]
     },
     {
@@ -436,7 +436,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/lastevent-spotlight.png"
+        "/screenshots/features/lastevent-spotlight.png"
       ]
     },
     {
@@ -463,7 +463,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/milestone-leaderboard.png"
+        "/screenshots/features/milestone-leaderboard.png"
       ]
     },
     {
@@ -490,7 +490,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/multicam.png"
+        "/screenshots/features/multicam.png"
       ]
     },
     {
@@ -514,7 +514,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/music-bot.png"
+        "/screenshots/features/music-bot.png"
       ]
     },
     {
@@ -541,7 +541,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/openshock.png"
+        "/screenshots/features/openshock.png"
       ]
     },
     {
@@ -568,7 +568,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/osc-bridge.png"
+        "/screenshots/features/osc-bridge.png"
       ]
     },
     {
@@ -595,7 +595,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/quiz-show.png"
+        "/screenshots/features/quiz-show.png"
       ]
     },
     {
@@ -622,7 +622,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/sidekick-dashboard.png"
+        "/screenshots/features/sidekick-dashboard.png"
       ]
     },
     {
@@ -651,7 +651,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/soundboard-detail.png"
+        "/screenshots/features/soundboard-detail.png"
       ]
     },
     {
@@ -678,7 +678,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/stream-alchemy.png"
+        "/screenshots/features/stream-alchemy.png"
       ]
     },
     {
@@ -703,7 +703,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/stt-ticker.png"
+        "/screenshots/features/stt-ticker.png"
       ]
     },
     {
@@ -728,7 +728,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/talking-heads.png"
+        "/screenshots/features/talking-heads.png"
       ]
     },
     {
@@ -755,7 +755,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/thermal-printer.png"
+        "/screenshots/features/thermal-printer.png"
       ]
     },
     {
@@ -781,7 +781,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/toptier.png"
+        "/screenshots/features/toptier.png"
       ]
     },
     {
@@ -810,7 +810,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/tts-admin.png"
+        "/screenshots/features/tts-admin.png"
       ]
     },
     {
@@ -837,7 +837,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/vdoninja.png"
+        "/screenshots/features/vdoninja.png"
       ]
     },
     {
@@ -864,7 +864,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/viewer-leaderboard.png"
+        "/screenshots/features/viewer-leaderboard.png"
       ]
     },
     {
@@ -891,7 +891,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/viewer-profiles.png"
+        "/screenshots/features/viewer-profiles.png"
       ]
     },
     {
@@ -918,7 +918,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/weather-control.png"
+        "/screenshots/features/weather-control.png"
       ]
     },
     {
@@ -950,7 +950,7 @@
         "currency": "EUR"
       },
       "screenshots": [
-        "/assets/screenshots/webgpu-emoji-rain.png"
+        "/screenshots/features/webgpu-emoji-rain.png"
       ]
     }
   ]

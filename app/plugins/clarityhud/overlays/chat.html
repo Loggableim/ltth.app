@@ -30,7 +30,7 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       font-family: var(--chat-font-family);
       overflow: hidden;
       width: 100vw;
@@ -147,6 +147,11 @@
     /* Accessibility: Vision Impaired Mode */
     body.vision-impaired .chat-message {
       padding: 20px 28px;
+    }
+
+    html {
+      background: transparent;
+      color-scheme: dark;
     }
 
     /* Accessibility: Reduce Motion */

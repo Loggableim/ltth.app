@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,42 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.socket.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>CoinBattle - Admin Panel</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -511,6 +547,83 @@
             transform: scale(1.1);
         }
 
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .header h1,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .stat-value,
+        html[data-theme="vision-impaired"] .tab.active {
+            color: #facc15;
+            background: none;
+            -webkit-text-fill-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .container,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] .form-select,
+        html[data-theme="vision-impaired"] .tabs,
+        html[data-theme="vision-impaired"] .alert {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .tab {
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .tab.active {
+            border-bottom-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn {
+            background: #111;
+            color: #fff;
+            border: 2px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .btn-success {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #991b1b;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .form-label,
+        html[data-theme="vision-impaired"] p,
+        html[data-theme="vision-impaired"] .loading,
+        html[data-theme="vision-impaired"] .label,
+        html[data-theme="vision-impaired"] .help-text {
+            color: #fff;
+            opacity: 1;
+        }
+
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] .form-select {
+            border-width: 2px;
+        }
+
+        html[data-theme="vision-impaired"] .form-range::-webkit-slider-thumb,
+        html[data-theme="vision-impaired"] .form-range::-moz-range-thumb {
+            background: #facc15;
+        }
+
         @media (max-width: 768px) {
             .grid-2, .grid-3, .grid-4 {
                 grid-template-columns: 1fr;
@@ -520,6 +633,26 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 16px;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions .form-select {
+                width: 100% !important;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+                overflow-x: visible;
+            }
+
+            .tab {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 0;
+                white-space: normal;
+                text-align: center;
             }
 
             .timer-display {
@@ -839,10 +972,10 @@
                     <div class="form-group">
                         <label class="form-label">Theme</label>
                         <select class="form-select" id="setting-theme">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                            <option value="neon">Neon</option>
-                            <option value="minimal">Minimal</option>
+                            <option value="night">Night</option>
+                            <option value="day">Day</option>
+                            <option value="contrast">High Contrast</option>
+                            <option value="vision-impaired">Vision Impaired</option>
                         </select>
                     </div>
                     <div class="form-group">

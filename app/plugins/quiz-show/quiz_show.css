@@ -21,9 +21,10 @@ body[data-theme] {
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 20px 24px;
 }
 
 /* Header */
@@ -2077,4 +2078,175 @@ code {
 
 .category-dropdown-divider {
     border-bottom: 1px solid var(--color-border);
+}
+
+/* ============================================ */
+/* THEME-SPECIFIC QUIZ SHOW OVERRIDES          */
+/* ============================================ */
+
+:is(html[data-theme="day"], body[data-theme="day"]) .container,
+:is(html[data-theme="night"], body[data-theme="night"]) .container,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .container,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .container {
+    border: 1px solid var(--color-border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+:is(html[data-theme="day"], body[data-theme="day"]) .panel,
+:is(html[data-theme="day"], body[data-theme="day"]) .stat-card,
+:is(html[data-theme="night"], body[data-theme="night"]) .panel,
+:is(html[data-theme="night"], body[data-theme="night"]) .stat-card,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .panel,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .stat-card,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .panel,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card {
+    border: 1px solid var(--color-border);
+}
+
+:is(html[data-theme="day"], body[data-theme="day"]) .tab-button,
+:is(html[data-theme="day"], body[data-theme="day"]) .btn,
+:is(html[data-theme="night"], body[data-theme="night"]) .tab-button,
+:is(html[data-theme="night"], body[data-theme="night"]) .btn {
+    border-color: var(--color-border);
+}
+
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) body,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .container {
+    background: #000;
+    color: #fff;
+}
+
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .header,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .panel,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .stat-card,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .tab-button,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .btn,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .answer-option,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .category-filter-button,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .category-dropdown {
+    background: #000;
+    color: #fff;
+    border-color: #facc15;
+    box-shadow: none;
+}
+
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .tab-button.active,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .btn.btn-primary,
+:is(html[data-theme="contrast"], body[data-theme="contrast"]) .answer-option.selected {
+    background: #facc15;
+    color: #000;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) body,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .container {
+    background: #000;
+    color: #fff;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .container {
+    border: 4px solid #facc15;
+    box-shadow: none;
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: 0.01em;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .header,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .panel,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .btn,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .answer-option,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .category-filter-button,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .category-dropdown,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .grid-visual-preview {
+    background: #000;
+    color: #fff;
+    border-color: #facc15;
+    box-shadow: none;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .header {
+    gap: 16px;
+    padding: 24px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .header h1,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .panel-header h2,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .question-text,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card h3 {
+    color: #fff;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .panel {
+    padding: 24px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .panel-header {
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tabs {
+    gap: 12px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button {
+    min-height: 48px;
+    padding: 12px 18px;
+    border-width: 3px;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button.active,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button:hover,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .btn.btn-primary,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .answer-option.selected {
+    background: #facc15;
+    color: #000;
+    border-color: #facc15;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .btn,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .answer-option,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .category-filter-button {
+    min-height: 50px;
+    padding: 14px 18px;
+    border-width: 3px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .question-text {
+    font-size: 1.9rem;
+    line-height: 1.4;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .answer-option {
+    margin-bottom: 14px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .answer-option .answer-letter {
+    color: #facc15;
+    font-weight: 900;
+    font-size: 1.1em;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card {
+    padding: 18px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card .stat-value,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .stat-card .stat-label {
+    color: #fff;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .category-dropdown {
+    border-width: 3px;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .grid-visual-preview {
+    border-width: 3px;
 }

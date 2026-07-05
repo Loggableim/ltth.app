@@ -34,7 +34,7 @@
       --color-like: #e91e63;
     }
 
-    body {
+    html, body {
       font-family: 'Open Sans', sans-serif;
       overflow: hidden;
       width: 100vw;
@@ -51,6 +51,11 @@
     body.reduce-motion * {
       animation: none !important;
       transition: none !important;
+    }
+
+    html {
+      background: transparent;
+      color-scheme: dark;
     }
 
     /* Type accent bindings */

@@ -8,12 +8,46 @@
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
-        // Apply saved theme immediately to prevent flash
-        (function() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme && savedTheme !== 'night') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
             }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
         })();
     </script>
     <style>
@@ -21,6 +55,149 @@
             padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .queue-header,
+        html[data-theme="day"] .current-processing,
+        html[data-theme="day"] .queue-item {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .queue-header,
+        html[data-theme="night"] .current-processing,
+        html[data-theme="night"] .queue-item {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .btn-clear {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        html[data-theme="night"] .btn-clear {
+            background: #f87171;
+            color: #ffffff;
+        }
+
+        html[data-theme="day"] .processing-title,
+        html[data-theme="night"] .processing-title {
+            color: #f59e0b;
+        }
+
+        html[data-theme="day"] .stat-label,
+        html[data-theme="day"] .detail-label,
+        html[data-theme="day"] .queue-time,
+        html[data-theme="night"] .stat-label,
+        html[data-theme="night"] .detail-label,
+        html[data-theme="night"] .queue-time {
+            color: var(--text-muted, #888);
+        }
+
+        html[data-theme="contrast"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .queue-header,
+        html[data-theme="contrast"] .current-processing,
+        html[data-theme="contrast"] .queue-item {
+            background: #050505;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] .btn-clear {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="contrast"] .processing-title,
+        html[data-theme="contrast"] .queue-position,
+        html[data-theme="contrast"] .status-badge {
+            color: #000;
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.08rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .queue-container {
+            max-width: 1400px;
+        }
+
+        html[data-theme="vision-impaired"] .queue-header,
+        html[data-theme="vision-impaired"] .current-processing,
+        html[data-theme="vision-impaired"] .queue-item {
+            background: #000;
+            color: #fff;
+            border: 4px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .queue-header {
+            padding: 18px;
+        }
+
+        html[data-theme="vision-impaired"] .current-processing {
+            padding: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .detail-label,
+        html[data-theme="vision-impaired"] .queue-time {
+            color: #fff7cc;
+            font-size: 0.92rem;
+        }
+
+        html[data-theme="vision-impaired"] .stat-value {
+            font-size: 2.2rem;
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .processing-title {
+            color: #facc15;
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        html[data-theme="vision-impaired"] .queue-source {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        html[data-theme="vision-impaired"] .btn-clear {
+            background: #facc15;
+            color: #000;
+            border: 3px solid #facc15;
+            font-size: 1rem;
+            padding: 14px 26px;
+        }
+
+        html[data-theme="vision-impaired"] .queue-position,
+        html[data-theme="vision-impaired"] .status-badge {
+            background: #facc15;
+            color: #000;
+            font-weight: 900;
         }
 
         .queue-header {

@@ -130,6 +130,34 @@ class TikTokConnector extends EventEmitter {
     if (this._adapter) this._adapter.streamStartTime = value;
   }
 
+  get roomId() {
+    return this._adapter ? this._adapter.roomId : null;
+  }
+
+  set roomId(value) {
+    if (this._adapter) this._adapter.roomId = value;
+  }
+
+  /**
+   * Returns a stable key for the currently active live stream when the
+   * active adapter can provide one. This is used by plugins that need to
+   * distinguish a new live session from a reconnect to the same stream.
+   * @returns {string|null}
+   */
+  getCurrentStreamKey() {
+    if (!this._adapter) return null;
+
+    // Eulerstream can expose a stable room ID and, as a fallback, a stream
+    // start timestamp. TikFinity does not provide a stable live-session
+    // identifier, so return null to avoid false resets on reconnects.
+    if (this._currentSource === 'eulerstream') {
+      if (this._adapter.roomId) return `room:${this._adapter.roomId}`;
+      if (this._adapter.streamStartTime) return `start:${this._adapter.streamStartTime}`;
+    }
+
+    return null;
+  }
+
   /**
    * Provides access to the adapter's sessionGifts Map for backward-compatibility.
    * Returns a no-op Map when no adapter is active.

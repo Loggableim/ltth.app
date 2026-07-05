@@ -5,12 +5,14 @@
 (function() {
     'use strict';
 
+    const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
     const state = {
         socket: null,
         dashboard: null,
         config: {
             ui: {
-                theme: 'aurora-2'
+                theme: 'night'
             },
             websocket: {
                 host: 'localhost',
@@ -53,9 +55,67 @@
     };
 
     function init() {
+        syncThemeFromEnvironment();
+        try {
+            if (window.parent && window.parent !== window) {
+                const observer = new MutationObserver(syncThemeFromEnvironment);
+                observer.observe(window.parent.document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            }
+        } catch (error) {}
+        window.addEventListener('storage', (event) => {
+            if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                syncThemeFromEnvironment();
+            }
+        });
+        window.addEventListener('focus', syncThemeFromEnvironment);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                syncThemeFromEnvironment();
+            }
+        });
         bindEvents();
         connectSocket();
         loadDashboard();
+    }
+
+    function normalizeTheme(theme) {
+        if (VALID_THEMES.has(theme)) {
+            return theme;
+        }
+        return 'night';
+    }
+
+    function readThemeFromEnvironment() {
+        try {
+            if (window.parent && window.parent !== window) {
+                const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                if (VALID_THEMES.has(parentTheme)) {
+                    return parentTheme;
+                }
+            }
+        } catch (error) {}
+
+        try {
+            for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                const value = localStorage.getItem(key);
+                if (VALID_THEMES.has(value)) {
+                    return value;
+                }
+            }
+        } catch (error) {}
+
+        return null;
+    }
+
+    function resolveTheme(preferredTheme) {
+        return readThemeFromEnvironment() || normalizeTheme(preferredTheme);
+    }
+
+    function syncThemeFromEnvironment() {
+        applyTheme(resolveTheme(state.config.ui?.theme || 'night'));
     }
 
     function bindEvents() {
@@ -180,7 +240,7 @@
         state.status = dashboard.status || state.status;
         state.mappings = dashboard.mappings || [];
         state.events = dashboard.events || [];
-        applyTheme(state.config.ui?.theme || 'aurora-2');
+        applyTheme(resolveTheme(state.config.ui?.theme || 'night'));
         fillFormsFromConfig();
         renderAll();
     }
@@ -195,7 +255,7 @@
     }
 
     function renderAll() {
-        applyTheme(state.config.ui?.theme || 'aurora-2');
+        applyTheme(resolveTheme(state.config.ui?.theme || 'night'));
         renderStatus();
         renderSummary();
         renderCommands();
@@ -225,18 +285,41 @@
     }
 
     function applyTheme(theme) {
-        const value = theme === 'aurora' ? 'aurora' : 'aurora-2';
+        const value = normalizeTheme(theme);
         document.documentElement.dataset.theme = value;
+        document.documentElement.style.colorScheme = value === 'day' ? 'light' : 'dark';
         state.config.ui = state.config.ui || {};
         state.config.ui.theme = value;
 
         document.querySelectorAll('[data-theme-option]').forEach((button) => {
             button.classList.toggle('active', button.dataset.themeOption === value);
+            if (value === 'vision-impaired') {
+                const isActive = button.dataset.themeOption === value;
+                button.style.setProperty('background-color', isActive ? '#facc15' : '#000', 'important');
+                button.style.setProperty('color', isActive ? '#000' : '#fff7cc', 'important');
+                button.style.setProperty('border-color', '#facc15', 'important');
+            } else {
+                button.style.removeProperty('background-color');
+                button.style.removeProperty('color');
+                button.style.removeProperty('border-color');
+            }
         });
     }
 
+    function persistThemeSelection(theme) {
+        const value = normalizeTheme(theme);
+
+        try {
+            for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                localStorage.setItem(key, value);
+            }
+        } catch (error) {}
+    }
+
     function setTheme(theme) {
-        applyTheme(theme);
+        const value = normalizeTheme(theme);
+        applyTheme(value);
+        persistThemeSelection(value);
         saveSettings(true);
     }
 
@@ -263,7 +346,7 @@
 
         if (connectionMeta) {
             const queueSize = state.status.queueStatus?.queueSize || 0;
-            connectionMeta.textContent = `Queue ${queueSize} | Theme ${state.config.ui?.theme || 'aurora-2'}`;
+            connectionMeta.textContent = `Queue ${queueSize} | Theme ${document.documentElement.dataset.theme || 'night'}`;
         }
 
         const testBtn = document.getElementById('testActionBtn');
@@ -519,7 +602,7 @@
             { label: 'WebSocket bridge', done: state.status.connectionStatus && state.status.connectionStatus !== 'Disconnected' },
             { label: 'Minecraft mod connection', done: !!state.status.isConnected },
             { label: 'Commands configured', done: state.mappings.length > 0 },
-            { label: 'Aurora 2.0 selected', done: (state.config.ui?.theme || 'aurora-2') === 'aurora-2' }
+            { label: 'Modern theme selected', done: VALID_THEMES.has(state.config.ui?.theme || 'night') }
         ];
 
         checklist.innerHTML = steps.map((step) => `
@@ -802,7 +885,7 @@
             ...state.config,
             ui: {
                 ...state.config.ui,
-                theme: state.config.ui?.theme || 'aurora-2'
+                theme: normalizeTheme(document.documentElement.dataset.theme || state.config.ui?.theme || 'night')
             },
             websocket: {
                 ...state.config.websocket,
@@ -847,7 +930,9 @@
             const data = await response.json();
             if (data.success) {
                 state.config = data.config || nextConfig;
-                applyTheme(state.config.ui?.theme || 'aurora-2');
+                const savedTheme = normalizeTheme(state.config.ui?.theme || 'night');
+                persistThemeSelection(savedTheme);
+                applyTheme(savedTheme);
                 renderGiftBars();
                 renderChatSettings();
                 renderSetup();

@@ -4,6 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STT Ticker - Master</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     :root {
       --bg: #0f1220;
@@ -31,6 +81,143 @@
       background: linear-gradient(180deg, #0b0e1a 0%, #11162a 100%);
       color: var(--text);
       overflow: hidden;
+    }
+
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .topbar {
+      background: rgba(248, 251, 255, 0.96);
+      border-bottom-color: #93c5fd;
+    }
+
+    html[data-theme="day"] .tabs {
+      background: #dbe6ff;
+      border-bottom-color: #bfd0f7;
+    }
+
+    html[data-theme="day"] .frame-wrap {
+      background: #eef4ff;
+    }
+
+    html[data-theme="day"] .frame-shell {
+      background: #ffffff;
+      border-color: #bfd0f7;
+    }
+
+    html[data-theme="day"] .capture-panel {
+      background: linear-gradient(180deg, #ffffff, #f1f6ff);
+      color: #10203a;
+      border-color: #93c5fd;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .topbar,
+    html[data-theme="vision-impaired"] .topbar {
+      background: #000;
+      border-bottom: 2px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .brand h1,
+    html[data-theme="vision-impaired"] .brand h1 {
+      color: #facc15;
+    }
+
+    html[data-theme="contrast"] .tabs,
+    html[data-theme="vision-impaired"] .tabs {
+      background: #000;
+      border-bottom: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn,
+    html[data-theme="vision-impaired"] .tab-btn {
+      background: #111;
+      color: #fff;
+      border: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .frame-wrap,
+    html[data-theme="vision-impaired"] .frame-wrap {
+      background: #000;
+    }
+
+    html[data-theme="contrast"] .frame-shell,
+    html[data-theme="vision-impaired"] .frame-shell {
+      background: #050505;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .capture-panel,
+    html[data-theme="vision-impaired"] .capture-panel {
+      background: #050505;
+      border-color: #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .capture-panel h2,
+    html[data-theme="vision-impaired"] .capture-panel h2 {
+      color: #facc15;
+    }
+
+    html[data-theme="contrast"] .capture-panel p,
+    html[data-theme="vision-impaired"] .capture-panel p,
+    html[data-theme="contrast"] .sub,
+    html[data-theme="vision-impaired"] .sub,
+    html[data-theme="contrast"] .hint,
+    html[data-theme="vision-impaired"] .hint {
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.08rem;
+    }
+
+    html[data-theme="vision-impaired"] .topbar {
+      height: auto;
+      min-height: 82px;
+      padding: 16px 18px;
+    }
+
+    html[data-theme="vision-impaired"] .brand h1 {
+      font-size: 22px;
+    }
+
+    html[data-theme="vision-impaired"] .btn {
+      font-size: 14px;
+      padding: 10px 14px;
+    }
+
+    html[data-theme="vision-impaired"] .tabs {
+      padding-top: 12px;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn {
+      font-size: 14px;
+      padding: 10px 14px;
+    }
+
+    html[data-theme="vision-impaired"] .capture-panel {
+      gap: 18px;
+      padding: 32px;
+    }
+
+    html[data-theme="vision-impaired"] .capture-panel h2 {
+      font-size: clamp(2rem, 3vw, 3.2rem);
     }
 
     .topbar {
@@ -103,6 +290,18 @@
       color: #fff;
     }
 
+    html[data-theme="contrast"] .btn.accent,
+    html[data-theme="vision-impaired"] .btn.accent {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .btn.warn,
+    html[data-theme="vision-impaired"] .btn.warn {
+      background: #7f1d1d;
+      color: #fff;
+    }
+
     .tabs {
       margin-top: 72px;
       background: var(--panel);
@@ -161,6 +360,55 @@
       background: transparent;
     }
 
+    .capture-panel {
+      height: 100%;
+      min-height: 100%;
+      border-radius: 22px;
+      border: 2px solid rgba(251, 191, 36, 0.8);
+      background: linear-gradient(180deg, rgba(7, 10, 18, 0.98), rgba(12, 16, 28, 0.98));
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 14px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .capture-panel__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .capture-panel h2 {
+      margin: 0;
+      color: #facc15;
+      font-size: clamp(1.8rem, 2.4vw, 2.8rem);
+      line-height: 1.08;
+    }
+
+    .capture-panel p {
+      margin: 0;
+      max-width: 760px;
+      font-size: 1.02rem;
+      line-height: 1.7;
+      color: var(--text-main);
+      opacity: 0.92;
+    }
+
+    .capture-panel__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
     .hint {
       color: var(--text-dim);
       font-size: 11px;
@@ -194,7 +442,18 @@
       <iframe src="/stt-ticker/ui" title="STT Ticker Admin"></iframe>
     </div>
     <div class="frame-shell" data-view="capture">
-      <iframe src="/stt-ticker/capture" title="STT Ticker Capture"></iframe>
+      <div class="capture-panel">
+        <div class="capture-panel__eyebrow">Audio Capture</div>
+        <h2>Capture läuft in einem eigenen Fenster</h2>
+        <p>
+          Die Capture-Ansicht ist für verlässlichen Mikrofonzugriff als Standalone-Tab gebaut.
+          Öffne sie direkt, dann bleibt die Audio-Freigabe stabil und die Oberfläche rendert sauber.
+        </p>
+        <div class="capture-panel__actions">
+          <a class="btn accent" href="/stt-ticker/capture" target="_blank">Capture öffnen</a>
+          <a class="btn" href="/stt-ticker/ui" target="_blank">Admin öffnen</a>
+        </div>
+      </div>
     </div>
   </div>
 

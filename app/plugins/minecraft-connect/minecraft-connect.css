@@ -1,5 +1,6 @@
 :root {
     --mc-bg: #071018;
+    --mc-bg-2: #050912;
     --mc-surface: rgba(14, 24, 38, 0.78);
     --mc-surface-strong: rgba(18, 30, 48, 0.94);
     --mc-border: rgba(163, 196, 255, 0.14);
@@ -16,26 +17,64 @@
     --mc-radius-sm: 12px;
 }
 
-:root[data-theme='aurora'] {
-    --mc-bg: #08111a;
-    --mc-surface: rgba(12, 21, 32, 0.72);
-    --mc-surface-strong: rgba(18, 27, 40, 0.9);
-    --mc-border: rgba(126, 164, 255, 0.16);
-    --mc-border-strong: rgba(126, 164, 255, 0.28);
-    --mc-accent: #8edbff;
-    --mc-accent-2: #9b8dff;
-    --mc-accent-3: #5ff0bf;
+:root[data-theme='day'] {
+    --mc-bg: #eef4ff;
+    --mc-bg-2: #dde9ff;
+    --mc-surface: rgba(255, 255, 255, 0.88);
+    --mc-surface-strong: rgba(247, 250, 255, 0.96);
+    --mc-border: rgba(41, 66, 110, 0.16);
+    --mc-border-strong: rgba(41, 66, 110, 0.26);
+    --mc-text: #0f172a;
+    --mc-muted: #4b5563;
+    --mc-accent: #2563eb;
+    --mc-accent-2: #7c3aed;
+    --mc-accent-3: #db2777;
+    --mc-shadow: 0 22px 56px rgba(15, 23, 42, 0.14);
 }
 
-:root[data-theme='aurora-2'] {
-    --mc-bg: #050912;
-    --mc-surface: rgba(13, 18, 31, 0.82);
-    --mc-surface-strong: rgba(17, 24, 41, 0.95);
-    --mc-border: rgba(114, 243, 192, 0.14);
-    --mc-border-strong: rgba(114, 243, 192, 0.28);
+:root[data-theme='night'] {
+    --mc-bg: #071018;
+    --mc-bg-2: #050912;
+    --mc-surface: rgba(14, 24, 38, 0.78);
+    --mc-surface-strong: rgba(18, 30, 48, 0.94);
+    --mc-border: rgba(163, 196, 255, 0.14);
+    --mc-border-strong: rgba(163, 196, 255, 0.24);
+    --mc-text: #e9f1ff;
+    --mc-muted: #8ea3bf;
     --mc-accent: #72f3c0;
     --mc-accent-2: #7ea4ff;
     --mc-accent-3: #ff8bb8;
+    --mc-shadow: 0 28px 80px rgba(1, 5, 14, 0.48);
+}
+
+:root[data-theme='contrast'] {
+    --mc-bg: #050505;
+    --mc-bg-2: #000000;
+    --mc-surface: rgba(10, 10, 10, 0.96);
+    --mc-surface-strong: rgba(0, 0, 0, 0.98);
+    --mc-border: rgba(250, 204, 21, 0.7);
+    --mc-border-strong: rgba(250, 204, 21, 0.9);
+    --mc-text: #ffffff;
+    --mc-muted: #f5e7a6;
+    --mc-accent: #facc15;
+    --mc-accent-2: #ffffff;
+    --mc-accent-3: #f59e0b;
+    --mc-shadow: 0 0 0 2px rgba(250, 204, 21, 0.55);
+}
+
+:root[data-theme='vision-impaired'] {
+    --mc-bg: #000000;
+    --mc-bg-2: #000000;
+    --mc-surface: rgba(0, 0, 0, 0.98);
+    --mc-surface-strong: rgba(0, 0, 0, 1);
+    --mc-border: rgba(250, 204, 21, 0.92);
+    --mc-border-strong: rgba(255, 255, 255, 0.95);
+    --mc-text: #ffffff;
+    --mc-muted: #fef08a;
+    --mc-accent: #facc15;
+    --mc-accent-2: #ffffff;
+    --mc-accent-3: #fb7185;
+    --mc-shadow: 0 0 0 4px rgba(250, 204, 21, 0.8);
 }
 
 * {
@@ -52,9 +91,9 @@ body {
     color: var(--mc-text);
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background:
-        radial-gradient(circle at top left, rgba(126, 164, 255, 0.24), transparent 26%),
-        radial-gradient(circle at top right, rgba(114, 243, 192, 0.18), transparent 22%),
-        linear-gradient(180deg, #07111b 0%, #050912 100%);
+        radial-gradient(circle at top left, color-mix(in srgb, var(--mc-accent-2) 24%, transparent), transparent 26%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--mc-accent) 18%, transparent), transparent 22%),
+        linear-gradient(180deg, var(--mc-bg) 0%, var(--mc-bg-2) 100%);
 }
 
 body::before {
@@ -69,11 +108,30 @@ body::before {
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 90%);
 }
 
+:root[data-theme='contrast'] body,
+:root[data-theme='vision-impaired'] body {
+    background: linear-gradient(180deg, var(--mc-bg) 0%, var(--mc-bg-2) 100%);
+}
+
+:root[data-theme='contrast'] body::before,
+:root[data-theme='vision-impaired'] body::before {
+    background-size: 32px 32px;
+    opacity: 0.55;
+}
+
+:root[data-theme='vision-impaired'] body::before {
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+
 .minecraft-connect-container {
     position: relative;
     padding: 24px;
-    max-width: 1480px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 .mc-hero,
@@ -210,6 +268,12 @@ body::before {
     color: var(--mc-text);
 }
 
+:root[data-theme='day'] .mc-theme-switcher,
+:root[data-theme='contrast'] .mc-theme-switcher,
+:root[data-theme='vision-impaired'] .mc-theme-switcher {
+    background: color-mix(in srgb, var(--mc-surface) 70%, transparent);
+}
+
 .mc-btn {
     display: inline-flex;
     align-items: center;
@@ -242,6 +306,156 @@ body::before {
     color: var(--mc-text);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--mc-border);
+}
+
+:root[data-theme='day'] .mc-btn-secondary {
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--mc-text);
+}
+
+:root[data-theme='contrast'] .mc-btn-primary,
+:root[data-theme='vision-impaired'] .mc-btn-primary {
+    color: #000;
+    background: #facc15;
+    box-shadow: none;
+}
+
+:root[data-theme='contrast'] .mc-btn-secondary,
+:root[data-theme='vision-impaired'] .mc-btn-secondary {
+    background: #111;
+    color: #fff;
+    border-color: var(--mc-border);
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-switcher {
+    background: #000;
+    border-color: var(--mc-border);
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-chip {
+    color: #fff7cc;
+    background: #000;
+    border: 1px solid transparent;
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-chip.active {
+    background: #facc15;
+    color: #000;
+    border-color: #facc15;
+}
+
+:root[data-theme='vision-impaired'] .mc-tab {
+    color: #fff7cc;
+    background: #000;
+    border: 1px solid var(--mc-border);
+}
+
+:root[data-theme='vision-impaired'] .mc-tab.active {
+    color: #000;
+    background: #facc15;
+}
+
+:root[data-theme='vision-impaired'] body {
+    font-size: 17px;
+    line-height: 1.7;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero {
+    border-width: 3px;
+    padding: 30px 28px;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero h1 {
+    font-size: clamp(2.4rem, 3.8vw, 4.25rem);
+    line-height: 1.03;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero-subtitle {
+    max-width: 56ch;
+    font-size: 1.02rem;
+    line-height: 1.75;
+}
+
+:root[data-theme='vision-impaired'] .mc-status-indicator {
+    min-height: 58px;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+}
+
+:root[data-theme='vision-impaired'] .mc-status-meta {
+    font-size: 0.98rem;
+    color: #fffdf0;
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-switcher {
+    gap: 10px;
+    padding: 8px;
+    border-width: 2px;
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-chip {
+    padding: 10px 14px;
+    font-size: 0.97rem;
+    letter-spacing: 0.02em;
+}
+
+:root[data-theme='vision-impaired'] .mc-btn {
+    min-height: 48px;
+    padding: 12px 18px;
+    font-size: 1rem;
+}
+
+:root[data-theme='vision-impaired'] .mc-tabs {
+    gap: 10px;
+    padding: 8px;
+}
+
+:root[data-theme='vision-impaired'] .mc-tab {
+    padding: 11px 18px;
+    min-height: 46px;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    border-width: 2px;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header {
+    margin-bottom: 22px;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header h2 {
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header p {
+    font-size: 1rem;
+    line-height: 1.65;
+}
+
+:root[data-theme='vision-impaired'] .mc-card {
+    padding: 24px;
+    border-width: 2px;
+    box-shadow: var(--mc-shadow), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='vision-impaired'] .mc-card-head {
+    margin-bottom: 18px;
+}
+
+:root[data-theme='vision-impaired'] .mc-card-head h3 {
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+}
+
+:root[data-theme='vision-impaired'] .mc-card-note {
+    font-size: 0.95rem;
+    color: #fffdf0;
+}
+
+:root[data-theme='vision-impaired'] .mc-empty-state,
+:root[data-theme='vision-impaired'] .mc-form-group label {
+    font-size: 0.98rem;
+    line-height: 1.6;
 }
 
 .mc-btn-danger {
@@ -733,6 +947,11 @@ body::before {
         padding: 16px;
     }
 
+    .mc-hero-panel {
+        width: 100%;
+        align-items: stretch;
+    }
+
     .mc-panel-header,
     .mc-command-top,
     .mc-feed-item,
@@ -752,6 +971,121 @@ body::before {
 
     .mc-theme-switcher {
         width: 100%;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        justify-content: stretch;
     }
+
+    .mc-theme-chip {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .mc-hero-panel .mc-btn {
+        width: 100%;
+    }
+}
+
+:root[data-theme='vision-impaired'] body {
+    font-size: 17px !important;
+    line-height: 1.7;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero {
+    padding: 30px 28px !important;
+    border-width: 3px !important;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero h1 {
+    font-size: clamp(2.4rem, 3.8vw, 4.25rem) !important;
+    line-height: 1.03;
+}
+
+:root[data-theme='vision-impaired'] .mc-hero-subtitle {
+    max-width: 56ch;
+    font-size: 1.02rem !important;
+    line-height: 1.75;
+}
+
+:root[data-theme='vision-impaired'] .mc-status-indicator {
+    min-height: 58px;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+}
+
+:root[data-theme='vision-impaired'] .mc-status-meta {
+    font-size: 0.98rem;
+    color: #fffdf0;
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-switcher {
+    gap: 10px;
+    padding: 8px !important;
+    border-width: 2px !important;
+}
+
+:root[data-theme='vision-impaired'] .mc-theme-chip {
+    padding: 10px 14px !important;
+    font-size: 0.97rem !important;
+    letter-spacing: 0.02em;
+}
+
+:root[data-theme='vision-impaired'] .mc-btn {
+    min-height: 48px;
+    padding: 12px 18px !important;
+    font-size: 1rem;
+}
+
+:root[data-theme='vision-impaired'] .mc-tabs {
+    gap: 10px;
+    padding: 8px;
+}
+
+:root[data-theme='vision-impaired'] .mc-tab {
+    padding: 11px 18px !important;
+    min-height: 46px;
+    font-size: 1rem !important;
+    letter-spacing: 0.01em;
+    border-width: 2px !important;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header {
+    margin-bottom: 22px;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header h2 {
+    font-size: 2rem !important;
+    letter-spacing: -0.02em;
+}
+
+:root[data-theme='vision-impaired'] .mc-panel-header p {
+    font-size: 1rem !important;
+    line-height: 1.65;
+}
+
+:root[data-theme='vision-impaired'] .mc-card {
+    padding: 24px !important;
+    border: 2px solid var(--mc-border) !important;
+    box-shadow: var(--mc-shadow), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+:root[data-theme='vision-impaired'] .mc-card-head {
+    margin-bottom: 18px;
+}
+
+:root[data-theme='vision-impaired'] .mc-card-head h3 {
+    font-size: 1.25rem !important;
+    letter-spacing: -0.01em;
+}
+
+:root[data-theme='vision-impaired'] .mc-card-note {
+    font-size: 0.95rem !important;
+    color: #fffdf0 !important;
+}
+
+:root[data-theme='vision-impaired'] .mc-empty-state,
+:root[data-theme='vision-impaired'] .mc-form-group label {
+    font-size: 0.98rem;
+    line-height: 1.6;
 }

@@ -16,8 +16,9 @@
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         .card {
@@ -172,6 +173,63 @@
 
         .btn-secondary:hover {
             background: var(--color-btn-secondary-hover);
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #000;
+            border: 2px solid #ffe66d;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary:hover,
+        html[data-theme="vision-impaired"] .btn-success:hover,
+        html[data-theme="vision-impaired"] .btn-secondary:hover,
+        html[data-theme="vision-impaired"] .btn-danger:hover {
+            background: #111;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #050505;
+            border-color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1.65;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            padding: 0 28px 28px;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #000;
+            border: 3px solid #ffe66d;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .info-box h4,
+        html[data-theme="vision-impaired"] .stat-value {
+            color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .card-title {
+            font-size: 1.65rem;
+        }
+
+        html[data-theme="vision-impaired"] .stat-value {
+            font-size: 2.35rem;
         }
 
         .btn-group {

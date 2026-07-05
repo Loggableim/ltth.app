@@ -397,8 +397,16 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* Table */
+.table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .table {
     width: 100%;
+    min-width: 640px;
     border-collapse: collapse;
     margin-top: 16px;
 }
@@ -1065,6 +1073,18 @@ input[type="range"]::-moz-range-thumb {
     .grid-3,
     .grid-4 {
         grid-template-columns: 1fr;
+    }
+
+    .table {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        min-width: 560px;
+    }
+
+    .table {
+        min-width: 560px;
     }
     
     .gift-catalog-grid {

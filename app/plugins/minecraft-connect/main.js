@@ -34,7 +34,7 @@ class MinecraftConnectPlugin {
         // Configuration
         this.config = {
             ui: {
-                theme: 'aurora-2'
+                theme: 'night'
             },
             websocket: {
                 port: 25560,

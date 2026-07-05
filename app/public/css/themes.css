@@ -4,29 +4,29 @@
    Corporate Branding Color: #12a116 (Green)
    ============================================ */
 
-/* Default Theme (Aurora) */
+/* Default Theme (Night-compatible legacy alias) */
 :root,
 [data-theme="aurora"] {
     color-scheme: dark;
 
     /* Branding Color */
-    --brand-primary: #34d399;
-    --brand-primary-hover: #22c55e;
-    --brand-primary-light: rgba(52, 211, 153, 0.18);
+    --brand-primary: #12a116;
+    --brand-primary-hover: #0f8712;
+    --brand-primary-light: rgba(18, 161, 22, 0.2);
     
     /* Background Colors */
-    --color-bg-primary: #08111f;
-    --color-bg-secondary: #101a2d;
-    --color-bg-tertiary: #1b2a41;
-    --color-bg-card: rgba(16, 26, 45, 0.92);
-    --color-bg-hover: #1b2a41;
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-bg-card: #1e293b;
+    --color-bg-hover: #334155;
     
     /* Accent Colors */
-    --color-accent-primary: #22d3ee;
+    --color-accent-primary: #3b82f6;
     --color-accent-secondary: #8b5cf6;
-    --color-accent-success: #34d399;
-    --color-accent-warning: #fbbf24;
-    --color-accent-danger: #fb7185;
+    --color-accent-success: #10b981;
+    --color-accent-warning: #f59e0b;
+    --color-accent-danger: #ef4444;
     
     /* Text Colors */
     --color-text-primary: #f8fafc;
@@ -34,56 +34,56 @@
     --color-text-muted: #94a3b8;
     
     /* Borders & Dividers */
-    --color-border: #22304a;
-    --color-divider: #152033;
+    --color-border: #334155;
+    --color-divider: #1e293b;
     
     /* Shadows & Glows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 8px 20px -8px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 18px 40px -18px rgba(0, 0, 0, 0.65);
-    --glow-primary: 0 0 24px rgba(34, 211, 238, 0.28);
-    --glow-success: 0 0 24px rgba(52, 211, 153, 0.28);
-    --glow-brand: 0 0 24px rgba(52, 211, 153, 0.32);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --glow-primary: 0 0 20px rgba(59, 130, 246, 0.3);
+    --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+    --glow-brand: 0 0 20px rgba(18, 161, 22, 0.3);
     
     /* Input & Form Colors */
-    --color-input-bg: rgba(8, 17, 31, 0.92);
-    --color-input-border: #22304a;
-    --color-input-focus: #22d3ee;
+    --color-input-bg: #1e293b;
+    --color-input-border: #334155;
+    --color-input-focus: #3b82f6;
     --color-input-text: #f8fafc;
-    --color-input-placeholder: #7c8aa4;
+    --color-input-placeholder: #64748b;
     
     /* Button Colors */
-    --color-btn-secondary-bg: #162238;
-    --color-btn-secondary-hover: #22304a;
+    --color-btn-secondary-bg: #334155;
+    --color-btn-secondary-hover: #475569;
     --color-btn-secondary-text: #f8fafc;
     
     /* Chart Colors */
-    --color-chart-primary: #22d3ee;
+    --color-chart-primary: #3b82f6;
     --color-chart-secondary: #8b5cf6;
-    --color-chart-success: #34d399;
-    --color-chart-warning: #fbbf24;
-    --color-chart-danger: #fb7185;
-    --color-chart-grid: #22304a;
-    --color-chart-axis: #7c8aa4;
+    --color-chart-success: #10b981;
+    --color-chart-warning: #f59e0b;
+    --color-chart-danger: #ef4444;
+    --color-chart-grid: #334155;
+    --color-chart-axis: #64748b;
     
     /* Badge Colors */
-    --color-badge-bg: rgba(34, 48, 74, 0.9);
-    --color-badge-text: #dbeafe;
+    --color-badge-bg: #334155;
+    --color-badge-text: #cbd5e1;
     
     /* Modal & Overlay */
     --color-modal-backdrop: rgba(4, 10, 18, 0.84);
-    --color-modal-bg: rgba(12, 20, 36, 0.96);
+    --color-modal-bg: #1e293b;
     
     /* Gradient Overlays */
-    --gradient-primary: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
-    --gradient-brand: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --gradient-brand: linear-gradient(135deg, #12a116 0%, #0f8712 100%);
     
     /* Interactive States */
     --color-disabled-bg: #132033;
     --color-disabled-text: #526178;
-    --color-active-bg: rgba(34, 211, 238, 0.16);
-    --color-active-border: #22d3ee;
-    --app-background: radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 30%), radial-gradient(circle at top right, rgba(52, 211, 153, 0.12), transparent 24%), linear-gradient(180deg, #08111f 0%, #0b1424 55%, #09101d 100%);
+    --color-active-bg: rgba(59, 130, 246, 0.15);
+    --color-active-border: #3b82f6;
+    --app-background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
 }
 
 /* Aurora 2.0 Theme */

@@ -39,7 +39,6 @@
         'osc-bridge': '#22c55e',
         openshock: '#ef4444',
         'weather-control': '#38bdf8',
-        'minecraft-connect': '#16a34a',
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'gcce-hud': '#8b5cf6',
@@ -135,6 +134,89 @@
     }
 
     // ========== IFRAME LAZY LOADING ==========
+    function normalizeEmbeddedIframeLayout(iframe) {
+        if (!iframe) return;
+
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (!iframeDoc || !iframeDoc.documentElement) return;
+            if (iframeDoc.documentElement.dataset.ltthEmbedNormalized === '1') return;
+
+            const styleId = 'ltth-dashboard-embed-style';
+            let style = iframeDoc.getElementById(styleId);
+
+            if (!style) {
+                style = iframeDoc.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                    html,
+                    body {
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        max-width: none !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow-x: hidden !important;
+                        box-sizing: border-box !important;
+                    }
+
+                    body {
+                        display: block !important;
+                    }
+
+                    body > *,
+                    main,
+                    #app,
+                    #root,
+                    .app,
+                    .page,
+                    .page-container,
+                    .page-shell,
+                    .page-layout,
+                    .dashboard,
+                    .dashboard-shell,
+                    .dashboard-page,
+                    .plugin-page,
+                    .plugin-container,
+                    .plugin-shell,
+                    .settings-page,
+                    .settings-container,
+                    .content,
+                    .content-wrapper,
+                    .container,
+                    .wrapper,
+                    section,
+                    article,
+                    header,
+                    footer,
+                    nav,
+                    form,
+                    aside,
+                    [class*="container"],
+                    [class*="wrapper"],
+                    [class*="shell"],
+                    [class*="layout"],
+                    [class*="page"],
+                    [class*="panel"] {
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        max-width: none !important;
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                        padding-left: 0 !important;
+                        padding-right: 0 !important;
+                        box-sizing: border-box !important;
+                    }
+                `;
+                (iframeDoc.head || iframeDoc.documentElement).appendChild(style);
+            }
+
+            iframeDoc.documentElement.dataset.ltthEmbedNormalized = '1';
+        } catch (error) {
+            // Ignore sandboxed or cross-origin frames.
+        }
+    }
+
     /**
      * Load iframes within a view that have data-src attribute (lazy loading)
      * or reload iframes that have src but might be showing 404
@@ -158,6 +240,7 @@
                     if (container) {
                         iframe.addEventListener('load', () => {
                             container.classList.add('loaded');
+                            normalizeEmbeddedIframeLayout(iframe);
                         }, { once: true });
                     }
                     
@@ -178,6 +261,8 @@
             } catch (e) {
                 // Cross-origin frame, can't check - that's okay, it probably loaded successfully
             }
+
+            normalizeEmbeddedIframeLayout(iframe);
         });
     }
     
@@ -210,6 +295,7 @@
                     // Re-add load listener
                     iframe.addEventListener('load', () => {
                         container.classList.add('loaded');
+                        normalizeEmbeddedIframeLayout(iframe);
                     }, { once: true });
                 }
                 
@@ -693,17 +779,32 @@
             // Exclude quick action buttons - they are handled separately in dashboard-enhancements.js
             const pluginElements = document.querySelectorAll('[data-plugin]:not(.quick-action-btn)');
             pluginElements.forEach(element => {
-                const requiredPlugin = element.getAttribute('data-plugin');
-                const pluginInfo = availablePlugins.get(requiredPlugin);
-                const isInstalled = Boolean(pluginInfo);
-                const isEnabled = activePlugins.has(requiredPlugin);
+            const requiredPlugin = element.getAttribute('data-plugin');
+            const pluginInfo = availablePlugins.get(requiredPlugin);
+            const isInstalled = Boolean(pluginInfo);
+            const isEnabled = activePlugins.has(requiredPlugin);
 
-                if (!isInstalled) {
+            if (!isInstalled) {
+                const hasDedicatedView = document.getElementById(`view-${requiredPlugin}`)
+                    || document.querySelector(`.content-view[data-plugin="${requiredPlugin}"]`);
+
+                if (!hasDedicatedView) {
                     element.style.display = 'none';
                     element.dataset.pluginState = 'missing';
                     element.classList.add('plugin-missing');
                     element.classList.remove('plugin-disabled');
                     return;
+                }
+
+                element.style.removeProperty('display');
+                element.dataset.pluginState = 'missing-active-view';
+                element.classList.add('plugin-disabled');
+                element.classList.remove('plugin-missing');
+                if (element.classList.contains('sidebar-item')) {
+                    element.setAttribute('aria-disabled', 'true');
+                }
+                console.log(`Showing fallback sidebar entry for view-backed plugin: ${requiredPlugin}`);
+                return;
                 }
 
                 element.style.removeProperty('display');

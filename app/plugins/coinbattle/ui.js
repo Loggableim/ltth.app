@@ -22,6 +22,21 @@
   let translations = {};
   let currentLanguage = 'en';
 
+  const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+  const LEGACY_THEME_MAP = {
+    dark: 'night',
+    light: 'day',
+    neon: 'contrast',
+    minimal: 'night'
+  };
+
+  function normalizeTheme(value) {
+    if (VALID_THEMES.has(value)) {
+      return value;
+    }
+    return LEGACY_THEME_MAP[value] || 'night';
+  }
+
   const overlayResolutionPresets = {
     '1280x720': { width: 1280, height: 720 },
     '1920x1080': { width: 1920, height: 1080 },
@@ -485,7 +500,10 @@
 
       if (result.success) {
         const config = result.data;
-        currentState.config = config;
+        currentState.config = {
+          ...config,
+          theme: normalizeTheme(config.theme)
+        };
 
         // Populate form fields
         document.getElementById('match-mode').value = config.mode || 'solo';
@@ -497,7 +515,7 @@
         document.getElementById('setting-extension-threshold').value = config.extensionThreshold || 15;
         document.getElementById('setting-extension-duration').value = config.extensionDuration || 60;
         document.getElementById('setting-team-assignment').value = config.teamAssignment || 'random';
-        document.getElementById('setting-theme').value = config.theme || 'dark';
+        document.getElementById('setting-theme').value = normalizeTheme(config.theme);
         document.getElementById('setting-skin').value = config.skin || 'gold';
         document.getElementById('setting-layout').value = config.layout || 'fullscreen';
         document.getElementById('setting-fontsize').value = config.fontSize || 16;
@@ -548,7 +566,7 @@
       extensionThreshold: parseInt(document.getElementById('setting-extension-threshold').value),
       extensionDuration: parseInt(document.getElementById('setting-extension-duration').value),
       teamAssignment: document.getElementById('setting-team-assignment').value,
-      theme: document.getElementById('setting-theme').value,
+      theme: normalizeTheme(document.getElementById('setting-theme').value),
       skin: document.getElementById('setting-skin').value,
       layout: document.getElementById('setting-layout').value,
       fontSize: parseInt(document.getElementById('setting-fontsize').value),
@@ -606,7 +624,7 @@
   function updateOverlayURL() {
     const { width, height } = getOverlayDimensions();
     const params = new URLSearchParams({
-      theme: document.getElementById('setting-theme')?.value || 'dark',
+      theme: normalizeTheme(document.getElementById('setting-theme')?.value || 'night'),
       skin: document.getElementById('setting-skin')?.value || 'gold',
       layout: document.getElementById('setting-layout')?.value || 'fullscreen',
       showAvatars: String(document.getElementById('setting-show-avatars')?.checked !== false),

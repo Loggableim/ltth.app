@@ -7,6 +7,38 @@
   <title>Viewer XP System</title>
   <meta http-equiv="refresh" content="0; url=/viewer-xp/admin">
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+      function readTheme() {
+        try {
+          const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+          if (THEMES.has(parentTheme)) return parentTheme;
+        } catch (error) {}
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+        return 'night';
+      }
+      function sync() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+      document.addEventListener('DOMContentLoaded', sync);
+      window.addEventListener('load', sync);
+      window.addEventListener('focus', sync);
+      try {
+        new MutationObserver(sync).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-theme']
+        });
+      } catch (error) {}
+    })();
+  </script>
   <style>
     body {
       background: var(--color-bg-primary);
@@ -72,6 +104,36 @@
     .redirect-link:hover {
       filter: brightness(1.1);
       transform: translateY(-1px);
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background: #000 !important;
+      color: #fff !important;
+      font-size: 1.05rem;
+    }
+
+    html[data-theme="vision-impaired"] .redirect-container {
+      background: #000 !important;
+      border: 2px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="vision-impaired"] .redirect-title {
+      color: #fff7cc !important;
+    }
+
+    html[data-theme="vision-impaired"] .redirect-message {
+      color: #f8e7a1 !important;
+    }
+
+    html[data-theme="vision-impaired"] .spinner {
+      border-color: #444 !important;
+      border-top-color: #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] .redirect-link {
+      background: #facc15 !important;
+      color: #000 !important;
     }
   </style>
 </head>

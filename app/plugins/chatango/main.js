@@ -24,7 +24,7 @@ class ChatangoPlugin {
         // Theme configurations matching the existing chatango-theme-adapter.js
         this.themeConfigs = {
             night: {
-                a: '13A318',      // Background color (green)
+                a: '1e293b',      // Background color (dark card surface)
                 b: 100,           // Background opacity
                 c: 'FFFFFF',      // Title and icons color (white)
                 d: 'FFFFFF',      // Group owner's msg, URL text
@@ -34,23 +34,23 @@ class ChatangoPlugin {
                 h: '334155',      // Input background color (slate)
                 i: 100,           // Input background opacity
                 j: 'FFFFFF',      // Input text color (white)
-                k: '13A318',      // Date color (green)
-                l: '13A318',      // Border color (green)
-                m: '13A318',      // Button color (green)
+                k: '38bdf8',      // Date color (sky accent)
+                l: '334155',      // Border color (slate)
+                m: '334155',      // Button color (slate)
                 n: 'FFFFFF',      // Button text color (white)
                 o: 100,           // Button opacity
                 p: '10',          // Font size
-                q: '13A318',      // Main border color (green)
+                q: '334155',      // Main border color (slate)
                 r: 100,           // Main border visibility
                 s: 0,             // Rounded corners
                 t: 0,             // Messages sound toggle (off)
                 sbc: '64748b',    // Scrollbar color
                 sba: 100,         // Scrollbar opacity
-                cvbg: '13a318',   // Collapsed view background (green)
+                cvbg: '1e293b',   // Collapsed view background (dark card surface)
                 cvfg: 'FFFFFF'    // Collapsed view font/icon color (white)
             },
             day: {
-                a: '13A318',      // Background color (green)
+                a: 'f8fafc',      // Background color (light card surface)
                 b: 100,           // Background opacity
                 c: '1e293b',      // Title and icons color (dark)
                 d: '1e293b',      // Group owner's msg, URL text (dark)
@@ -60,19 +60,19 @@ class ChatangoPlugin {
                 h: 'FFFFFF',      // Input background color (white)
                 i: 100,           // Input background opacity
                 j: '1e293b',      // Input text color (dark)
-                k: '0f8712',      // Date color (darker green)
-                l: '13A318',      // Border color (green)
-                m: '13A318',      // Button color (green)
+                k: '0284c7',      // Date color (blue accent)
+                l: 'cbd5e1',      // Border color (light slate)
+                m: 'cbd5e1',      // Button color (light slate)
                 n: 'FFFFFF',      // Button text color (white)
                 o: 100,           // Button opacity
                 p: '10',          // Font size
-                q: '13A318',      // Main border color (green)
+                q: 'cbd5e1',      // Main border color (light slate)
                 r: 100,           // Main border visibility
                 s: 0,             // Rounded corners
                 t: 0,             // Messages sound toggle (off)
                 sbc: 'cbd5e1',    // Scrollbar color (light gray)
                 sba: 100,         // Scrollbar opacity
-                cvbg: '13a318',   // Collapsed view background (green)
+                cvbg: 'f8fafc',   // Collapsed view background (light card surface)
                 cvfg: 'FFFFFF'    // Collapsed view font/icon color (white)
             },
             contrast: {
@@ -80,6 +80,32 @@ class ChatangoPlugin {
                 b: 100,           // Background opacity
                 c: 'FFFF00',      // Title and icons color (yellow)
                 d: 'FFFF00',      // Group owner's msg, URL text (yellow)
+                e: '000000',      // Messages background color (black)
+                f: 100,           // Messages background opacity
+                g: 'FFFFFF',      // Messages text color (white)
+                h: '000000',      // Input background color (black)
+                i: 100,           // Input background opacity
+                j: 'FFFF00',      // Input text color (yellow)
+                k: 'FFFF00',      // Date color (yellow)
+                l: 'FFFF00',      // Border color (yellow)
+                m: 'FFFF00',      // Button color (yellow)
+                n: '000000',      // Button text color (black)
+                o: 100,           // Button opacity
+                p: '12',          // Font size (larger for readability)
+                q: 'FFFF00',      // Main border color (yellow)
+                r: 100,           // Main border visibility
+                s: 0,             // Rounded corners
+                t: 0,             // Messages sound toggle (off)
+                sbc: 'FFFF00',    // Scrollbar color (yellow)
+                sba: 100,         // Scrollbar opacity
+                cvbg: '000000',   // Collapsed view background (black)
+                cvfg: 'FFFF00'    // Collapsed view font/icon color (yellow)
+            },
+            'vision-impaired': {
+                a: '000000',      // Background color (black)
+                b: 100,           // Background opacity
+                c: 'FFFFFF',      // Title and icons color (white)
+                d: 'FFFFFF',      // Group owner's msg, URL text (white)
                 e: '000000',      // Messages background color (black)
                 f: 100,           // Messages background opacity
                 g: 'FFFFFF',      // Messages text color (white)
@@ -152,7 +178,7 @@ class ChatangoPlugin {
             return { valid: false, error: 'Invalid configuration data' };
         }
 
-        const validThemes = ['night', 'day', 'contrast'];
+        const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
         const validPositions = ['br', 'bl', 'tr', 'tl'];
         const validFontSizes = ['8', '10', '12', '14'];
 
@@ -224,7 +250,7 @@ class ChatangoPlugin {
         this.api.registerRoute('GET', '/chatango/embed/dashboard', async (req, res) => {
             const config = await this.api.getConfig('config') || this.getDefaultConfig();
             // Validate theme parameter against whitelist
-            const validThemes = ['night', 'day', 'contrast'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
             const requestedTheme = req.query.theme || config.theme || 'night';
             const theme = validThemes.includes(requestedTheme) ? requestedTheme : 'night';
             const html = this.generateEmbedHTML('dashboard', theme);
@@ -235,7 +261,7 @@ class ChatangoPlugin {
         this.api.registerRoute('GET', '/chatango/embed/widget', async (req, res) => {
             const config = await this.api.getConfig('config') || this.getDefaultConfig();
             // Validate theme parameter against whitelist
-            const validThemes = ['night', 'day', 'contrast'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
             const requestedTheme = req.query.theme || config.theme || 'night';
             const theme = validThemes.includes(requestedTheme) ? requestedTheme : 'night';
             const html = this.generateEmbedHTML('widget', theme);
@@ -268,7 +294,7 @@ class ChatangoPlugin {
         // GET /api/chatango/embed - Get embed code for current config
         this.api.registerRoute('get', '/api/chatango/embed', async (req, res) => {
             const validTypes = ['dashboard', 'widget'];
-            const validThemes = ['night', 'day', 'contrast'];
+            const validThemes = ['night', 'day', 'contrast', 'vision-impaired'];
             
             const type = validTypes.includes(req.query.type) ? req.query.type : 'dashboard';
             const theme = validThemes.includes(req.query.theme) ? req.query.theme : this.config.theme;

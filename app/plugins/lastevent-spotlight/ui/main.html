@@ -7,12 +7,45 @@
   <title>LastEvent Spotlight</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
-    // Apply saved theme immediately to prevent flash
+    // Apply and keep theme in sync with the dashboard
     (function() {
-      const savedTheme = localStorage.getItem('dashboard-theme');
-      if (savedTheme && savedTheme !== 'night') {
-        document.documentElement.setAttribute('data-theme', savedTheme);
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          const savedTheme = localStorage.getItem('dashboard-theme');
+          if (VALID_THEMES.has(savedTheme)) return savedTheme;
+        } catch (error) {}
+        return 'night';
       }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+
+      syncTheme();
+
+      window.addEventListener('storage', (event) => {
+        if (event && event.key === 'dashboard-theme') {
+          syncTheme();
+        }
+      });
+
+      window.addEventListener('focus', syncTheme);
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
     })();
   </script>
   <script src="/socket.io/socket.io.js"></script>
@@ -332,6 +365,107 @@
 
     .color-input-wrapper input[type="text"] {
       flex: 1;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.65;
+      letter-spacing: 0.01em;
+    }
+
+    html[data-theme="vision-impaired"] .lastevent-container {
+      padding: 28px;
+    }
+
+    html[data-theme="vision-impaired"] .lastevent-header h1 {
+      font-size: 34px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .lastevent-header p {
+      font-size: 16px;
+      color: #f8fafc;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-grid {
+      gap: 24px;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-card,
+    html[data-theme="vision-impaired"] .modal-content {
+      background: #000;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-card {
+      padding: 24px;
+      border-radius: 12px;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-card h3,
+    html[data-theme="vision-impaired"] .modal-header h2 {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-card .icon {
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] .url-container {
+      background: #000;
+      border: 2px solid #facc15;
+      color: #fff;
+      font-size: 13px;
+      padding: 14px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    html[data-theme="vision-impaired"] .btn {
+      min-height: 48px;
+      padding: 12px 18px;
+      border: 2px solid #facc15;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 10px;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .btn:hover {
+      opacity: 1;
+      transform: none;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .btn-success,
+    html[data-theme="vision-impaired"] .btn-info {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] .modal-header,
+    html[data-theme="vision-impaired"] .modal-footer {
+      padding: 24px;
+      border-color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .modal-body {
+      padding: 24px;
     }
   </style>
 </head>

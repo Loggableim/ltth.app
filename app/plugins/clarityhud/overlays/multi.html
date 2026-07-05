@@ -35,7 +35,7 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       font-family: var(--multi-font-family);
       overflow: hidden;
       width: 100vw;
@@ -50,6 +50,11 @@
       display: flex;
       gap: 12px;
       opacity: var(--multi-opacity);
+    }
+
+    html {
+      background: transparent;
+      color-scheme: dark;
     }
 
     /* Layout modes */

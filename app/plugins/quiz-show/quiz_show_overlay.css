@@ -1415,6 +1415,90 @@ body {
     --glow: none;
 }
 
+.overlay-container[data-vision-impaired="true"] {
+    --primary: #ffffff;
+    --secondary: #facc15;
+    --color-primary: #ffffff;
+    --color-secondary: #facc15;
+    --bg-card: rgba(0, 0, 0, 0.98);
+    --surface: rgba(0, 0, 0, 0.96);
+    --border-color: #facc15;
+    --text-primary: #ffffff;
+    --text-secondary: #fff7cc;
+    --glow: none;
+    --glow-intensity: 0;
+    --border-width: 4px;
+    font-size: 1.12rem;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+}
+
+.overlay-container[data-vision-impaired="true"] .question-section,
+.overlay-container[data-vision-impaired="true"] .answers-section,
+.overlay-container[data-vision-impaired="true"] .timer-section,
+.overlay-container[data-vision-impaired="true"] .leaderboard-overlay,
+.overlay-container[data-vision-impaired="true"] .category-vote-overlay,
+.overlay-container[data-vision-impaired="true"] .duel-overlay,
+.overlay-container[data-vision-impaired="true"] .achievement-overlay,
+.overlay-container[data-vision-impaired="true"] .joker-info-overlay {
+    border-width: 4px;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.overlay-container[data-vision-impaired="true"] .question-card,
+.overlay-container[data-vision-impaired="true"] .answer-card,
+.overlay-container[data-vision-impaired="true"] .leaderboard-entry,
+.overlay-container[data-vision-impaired="true"] .leaderboard-item,
+.overlay-container[data-vision-impaired="true"] .category-vote-overlay,
+.overlay-container[data-vision-impaired="true"] .duel-overlay,
+.overlay-container[data-vision-impaired="true"] .achievement-overlay,
+.overlay-container[data-vision-impaired="true"] .joker-info-overlay {
+    background: rgba(0, 0, 0, 0.98);
+    border-color: #facc15;
+    box-shadow: none;
+}
+
+.overlay-container[data-vision-impaired="true"] .question-text {
+    font-size: 1.45em;
+    line-height: 1.35;
+}
+
+.overlay-container[data-vision-impaired="true"] .answer-text {
+    font-size: 1.25em;
+    line-height: 1.35;
+}
+
+.overlay-container[data-vision-impaired="true"] .answer-letter {
+    font-size: 1.2em;
+    font-weight: 900;
+}
+
+.overlay-container[data-vision-impaired="true"] .timer-value,
+.overlay-container[data-vision-impaired="true"] .timer-bar-text,
+.overlay-container[data-vision-impaired="true"] .timer-neon-value,
+.overlay-container[data-vision-impaired="true"] .timer-ring-value {
+    font-size: 1.2em;
+    font-weight: 900;
+}
+
+.overlay-container[data-vision-impaired="true"] .category-vote-title,
+.overlay-container[data-vision-impaired="true"] .duel-score,
+.overlay-container[data-vision-impaired="true"] .leaderboard-title,
+.overlay-container[data-vision-impaired="true"] .correct-text,
+.overlay-container[data-vision-impaired="true"] .joker-title {
+    font-size: 1.2em;
+    font-weight: 900;
+}
+
+.overlay-container[data-vision-impaired="true"] .category-vote-meta,
+.overlay-container[data-vision-impaired="true"] .duel-label,
+.overlay-container[data-vision-impaired="true"] .achievement-description,
+.overlay-container[data-vision-impaired="true"] .leaderboard-username,
+.overlay-container[data-vision-impaired="true"] .leaderboard-entry {
+    color: #fff7cc;
+}
+
 .overlay-container[data-reduced-motion="true"] *,
 .overlay-container[data-reduced-motion="true"] *::before,
 .overlay-container[data-reduced-motion="true"] *::after {

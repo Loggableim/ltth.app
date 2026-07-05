@@ -531,6 +531,84 @@ body {
 }
 
 /* ============================================
+   THEME-SPECIFIC ACCESSIBILITY OVERRIDES
+   ============================================ */
+
+[data-theme="contrast"] {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-card: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #facc15;
+  --border-color: #facc15;
+  --accent-primary: #facc15;
+  --accent-secondary: #facc15;
+  --success-color: #facc15;
+  --error-color: #ffffff;
+  --warning-color: #facc15;
+  --shadow-color: transparent;
+}
+
+[data-theme="vision-impaired"] {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-card: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --border-color: #facc15;
+  --accent-primary: #facc15;
+  --accent-secondary: #facc15;
+  --success-color: #facc15;
+  --error-color: #ffffff;
+  --warning-color: #facc15;
+  --shadow-color: transparent;
+}
+
+[data-theme="vision-impaired"] body {
+  font-size: 18px;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+}
+
+[data-theme="vision-impaired"] .card,
+[data-theme="vision-impaired"] .theme-toggle,
+[data-theme="vision-impaired"] .mobile-menu-toggle,
+[data-theme="vision-impaired"] .preview-container,
+[data-theme="vision-impaired"] .category-dropdown,
+[data-theme="vision-impaired"] .error-container {
+  border-width: 3px;
+  box-shadow: none;
+}
+
+[data-theme="vision-impaired"] .card,
+[data-theme="vision-impaired"] .preview-container,
+[data-theme="vision-impaired"] .category-dropdown {
+  border-color: #facc15;
+}
+
+[data-theme="vision-impaired"] .card:hover,
+[data-theme="vision-impaired"] .preview-btn:hover,
+[data-theme="vision-impaired"] .theme-toggle:hover,
+[data-theme="vision-impaired"] .mobile-menu-toggle:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme="vision-impaired"] .preview-btn,
+[data-theme="vision-impaired"] .theme-toggle,
+[data-theme="vision-impaired"] .mobile-menu-toggle,
+[data-theme="vision-impaired"] .error-dismiss {
+  border-width: 3px;
+  font-weight: 700;
+}
+
+[data-theme="vision-impaired"] .empty-state-title,
+[data-theme="vision-impaired"] .preview-title,
+[data-theme="vision-impaired"] .heading-responsive {
+  color: #ffffff;
+}
+
+/* ============================================
    CUSTOM FONT SUPPORT
    ============================================ */
 

@@ -106,6 +106,7 @@ const DEFAULT_CONFIG = {
     enabled: false,
     apiKey: '',                 // wird persistent in Plugin-Config gespeichert
     model: 'nemotron-3-nano',  // default model for translation
+    timeoutMs: 30000,           // Ollama Cloud request timeout (in ms)
     targetLanguage: 'en',
     sourceLanguage: 'auto',     // 'auto' = Heuristik erkennt Quellsprache
     autoDetectDefault: 'de',    // fallback language when sourceLanguage='auto'

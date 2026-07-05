@@ -3,7 +3,7 @@
  * Handles real-time timer display in OBS overlays
  */
 
-const socket = io();
+const socket = typeof io === 'function' ? io() : { on() {}, emit() {}, off() {} };
 let timerId = null;
 let timer = null;
 let template = 'default'; // default, progress, circular, minimal, big
@@ -26,7 +26,58 @@ if (templateParam && validTemplates.includes(templateParam)) {
 
 if (!timerId) {
     console.error('No timer ID provided in URL');
-    document.getElementById('timer-container').innerHTML = '<div style="color: white; text-align: center;">No timer ID specified</div>';
+    const container = document.getElementById('timer-container');
+    if (container) {
+        document.body.style.background = 'linear-gradient(180deg, #08111f 0%, #05080f 100%)';
+        document.body.style.color = '#f8fafc';
+        document.body.style.minHeight = '100vh';
+        container.innerHTML = `
+            <div style="
+                width: min(860px, calc(100vw - 32px));
+                margin: 32px auto;
+                padding: 28px 32px;
+                border: 3px solid #facc15;
+                border-radius: 24px;
+                background: rgba(8, 12, 20, 0.96);
+                color: #f8fafc;
+                box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+                text-align: left;
+                line-height: 1.7;
+                font-family: 'Segoe UI', BlinkMacSystemFont, sans-serif;
+            ">
+                <div style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 14px;
+                    font-size: 0.8rem;
+                    letter-spacing: 0.18em;
+                    text-transform: uppercase;
+                    color: #fde68a;
+                ">Advanced Timer Overlay</div>
+                <h1 style="
+                    margin: 0 0 12px;
+                    font-size: clamp(2rem, 3vw, 3rem);
+                    line-height: 1.08;
+                    color: #facc15;
+                ">Timer ID missing</h1>
+                <p style="margin: 0 0 16px; font-size: 1.05rem; color: #e5e7eb; max-width: 68ch;">
+                    This overlay is intentionally launched with a <code style="color:#facc15;">timer</code> query parameter.
+                    Open it from the Advanced Timer UI, or append a timer ID in the URL to preview a live timer.
+                </p>
+                <div style="
+                    padding: 16px 18px;
+                    border-radius: 16px;
+                    border: 2px solid rgba(250, 204, 21, 0.55);
+                    background: rgba(250, 204, 21, 0.08);
+                    color: #fff7cc;
+                    font-size: 0.98rem;
+                ">
+                    Example: <span style="color:#facc15;">/plugins/advanced-timer/overlay.html?timer=YOUR_TIMER_ID</span>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // ── Rotator + Threshold state ──────────────────────────────────────

@@ -7,6 +7,55 @@
     <title data-i18n="tts.admin_panel.title">TTS Admin Panel</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            window.addEventListener('storage', (event) => {
+                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         /* Custom animations */
         .fade-in {
@@ -34,6 +83,195 @@
             -webkit-user-select: none;
             user-select: none;
             cursor: pointer;
+        }
+
+        html[data-theme="day"] body {
+            background-color: #eff4ff !important;
+            color: #10203a !important;
+        }
+
+        html[data-theme="day"] .bg-gray-800,
+        html[data-theme="day"] .bg-gray-700,
+        html[data-theme="day"] .bg-gray-900,
+        html[data-theme="day"] .bg-gray-850 {
+            background-color: #ffffff !important;
+            color: #10203a !important;
+        }
+
+        html[data-theme="day"] .text-gray-400,
+        html[data-theme="day"] .text-gray-500 {
+            color: #52657f !important;
+        }
+
+        html[data-theme="night"] body {
+            background-color: #020617 !important;
+            color: #e5e7eb !important;
+        }
+
+        html[data-theme="night"] .bg-gray-800,
+        html[data-theme="night"] .bg-gray-700,
+        html[data-theme="night"] .bg-gray-900,
+        html[data-theme="night"] .bg-gray-850 {
+            background-color: #111827 !important;
+            color: #e5e7eb !important;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background-color: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="contrast"] .bg-gray-800,
+        html[data-theme="contrast"] .bg-gray-700,
+        html[data-theme="contrast"] .bg-gray-900,
+        html[data-theme="contrast"] .bg-gray-850,
+        html[data-theme="vision-impaired"] .bg-gray-800,
+        html[data-theme="vision-impaired"] .bg-gray-700,
+        html[data-theme="vision-impaired"] .bg-gray-900,
+        html[data-theme="vision-impaired"] .bg-gray-850 {
+            background-color: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .text-gray-400,
+        html[data-theme="vision-impaired"] .text-gray-500,
+        html[data-theme="vision-impaired"] .text-gray-300 {
+            color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] #debug-info,
+        html[data-theme="vision-impaired"] #debug-info {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-bottom: 3px solid #fff !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button,
+        html[data-theme="vision-impaired"] .filter-btn,
+        html[data-theme="vision-impaired"] .log-filter-btn,
+        html[data-theme="vision-impaired"] button,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] textarea {
+            border-width: 3px !important;
+            font-size: 1rem !important;
+        }
+
+        html[data-theme="vision-impaired"] .bg-green-600,
+        html[data-theme="vision-impaired"] .bg-blue-600,
+        html[data-theme="vision-impaired"] .bg-yellow-600 {
+            background-color: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 2px solid #facc15 !important;
+            border-bottom-color: #facc15 !important;
+            border-color: #facc15 !important;
+            box-shadow: inset 0 -2px 0 #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button:hover {
+            color: #fff !important;
+            background: #111 !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px !important;
+            }
+
+            .mb-8.flex.justify-between.items-start {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .mb-8.flex.justify-between.items-start > div:last-child {
+                width: 100%;
+            }
+
+            #saveConfigBtnTop {
+                width: 100%;
+            }
+
+            .mb-6.border-b.border-gray-700 nav {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .tab-button {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 0;
+                white-space: normal;
+                line-height: 1.2;
+                text-align: center;
+            }
+
+            html[data-theme="vision-impaired"] .tab-button {
+                flex: 1 1 calc(50% - 8px) !important;
+            }
+
+            .container > .grid[class*="lg:grid-cols-2"],
+            .container > .grid[class*="lg:grid-cols-3"],
+            .container > .grid[class*="md:grid-cols-2"],
+            .container > .grid[class*="md:grid-cols-3"],
+            .container > .grid[class*="md:grid-cols-4"] {
+                grid-template-columns: 1fr !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            .container > .grid > div {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+
+            .flex.items-center.space-x-2 {
+                flex-wrap: wrap;
+            }
+
+            .flex.items-center.justify-between.mb-4,
+            .flex.items-center.justify-between.mb-3 {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .flex.items-center.justify-between.mb-4 > *,
+            .flex.items-center.justify-between.mb-3 > * {
+                width: 100%;
+            }
+
+            #fishCustomVoicesList > div {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            #fishCustomVoicesList > div > .flex-1 {
+                width: 100%;
+            }
+
+            #fishCustomVoicesList > div > button {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .grid.grid-cols-2.md\:grid-cols-4.gap-4.text-sm,
+            .grid.grid-cols-1.md\:grid-cols-2.gap-4.text-sm {
+                grid-template-columns: 1fr !important;
+            }
         }
     </style>
 </head>

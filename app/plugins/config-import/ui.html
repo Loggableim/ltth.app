@@ -6,6 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Config Backup & Restore - Pup Cid's Little TikTool Helper</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,7 +51,161 @@
             line-height: 1.6;
             padding: 20px;
         }
-        .container { max-width: 960px; margin: 0 auto; }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .header,
+        html[data-theme="day"] .card,
+        html[data-theme="day"] .upload-zone,
+        html[data-theme="day"] .selected-file,
+        html[data-theme="day"] .summary-item,
+        html[data-theme="day"] .legacy-candidate,
+        html[data-theme="day"] .log-area {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .header,
+        html[data-theme="night"] .card,
+        html[data-theme="night"] .upload-zone,
+        html[data-theme="night"] .selected-file,
+        html[data-theme="night"] .summary-item,
+        html[data-theme="night"] .legacy-candidate,
+        html[data-theme="night"] .log-area {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .header h1 {
+            color: #10203a;
+            -webkit-text-fill-color: #10203a;
+            background: none;
+        }
+
+        html[data-theme="night"] .header h1 {
+            color: #f8fafc;
+            -webkit-text-fill-color: #f8fafc;
+            background: none;
+        }
+
+        html[data-theme="day"] .header p,
+        html[data-theme="day"] .card p.desc,
+        html[data-theme="day"] .form-group label,
+        html[data-theme="day"] .preview-title,
+        html[data-theme="day"] .upload-zone p,
+        html[data-theme="day"] .legacy-candidate-summary,
+        html[data-theme="day"] .mode-desc,
+        html[data-theme="day"] .section-title,
+        html[data-theme="day"] .summary-item .lbl {
+            color: #42526b;
+        }
+
+        html[data-theme="night"] .header p,
+        html[data-theme="night"] .card p.desc,
+        html[data-theme="night"] .form-group label,
+        html[data-theme="night"] .preview-title,
+        html[data-theme="night"] .upload-zone p,
+        html[data-theme="night"] .legacy-candidate-summary,
+        html[data-theme="night"] .mode-desc,
+        html[data-theme="night"] .section-title,
+        html[data-theme="night"] .summary-item .lbl {
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        html[data-theme="day"] .form-group input[type=text],
+        html[data-theme="day"] .btn-secondary,
+        html[data-theme="day"] .btn-primary,
+        html[data-theme="day"] .mode-btn,
+        html[data-theme="day"] .checkbox-label {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] .form-group input[type=text],
+        html[data-theme="night"] .btn-secondary,
+        html[data-theme="night"] .btn-primary,
+        html[data-theme="night"] .mode-btn,
+        html[data-theme="night"] .checkbox-label {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .header,
+        html[data-theme="vision-impaired"] .header,
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .upload-zone,
+        html[data-theme="vision-impaired"] .upload-zone,
+        html[data-theme="contrast"] .selected-file,
+        html[data-theme="vision-impaired"] .selected-file,
+        html[data-theme="contrast"] .summary-item,
+        html[data-theme="vision-impaired"] .summary-item,
+        html[data-theme="contrast"] .legacy-candidate,
+        html[data-theme="vision-impaired"] .legacy-candidate,
+        html[data-theme="contrast"] .log-area,
+        html[data-theme="vision-impaired"] .log-area {
+            background: #050505;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="contrast"] .mode-btn.selected,
+        html[data-theme="vision-impaired"] .mode-btn.selected {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="contrast"] .mode-btn,
+        html[data-theme="vision-impaired"] .mode-btn,
+        html[data-theme="contrast"] .checkbox-label,
+        html[data-theme="vision-impaired"] .checkbox-label,
+        html[data-theme="contrast"] .form-group input[type=text],
+        html[data-theme="vision-impaired"] .form-group input[type=text] {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .header h1,
+        html[data-theme="vision-impaired"] .card h2,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .preview-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .header p,
+        html[data-theme="vision-impaired"] .card p.desc,
+        html[data-theme="vision-impaired"] .form-group label,
+        html[data-theme="vision-impaired"] .upload-zone p,
+        html[data-theme="vision-impaired"] .legacy-candidate-summary,
+        html[data-theme="vision-impaired"] .mode-desc,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .summary-item .lbl {
+            color: #fff7cc;
+        }
+        .container { width: 100%; max-width: 1240px; margin: 0 auto; }
         .header { text-align: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid var(--color-border, #2a2a3e); }
         .header h1 {
             font-size: 2.2rem; font-weight: 700; margin-bottom: 8px;
@@ -159,6 +349,23 @@
         .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted, #888); margin-bottom: 10px; margin-top: 16px; }
+
+        html[data-theme="vision-impaired"] .mode-btn {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .mode-btn.selected {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .mode-desc {
+            color: #fff7cc;
+            font-size: 0.92rem;
+        }
     </style>
 </head>
 <body>

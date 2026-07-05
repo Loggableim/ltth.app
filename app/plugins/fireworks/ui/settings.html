@@ -6,6 +6,42 @@
     <title>Fireworks Superplugin - Settings</title>
     <link href="/css/tailwind.output.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -221,6 +257,173 @@
         .tab-content.active {
             display: block;
         }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .tab-button,
+        html[data-theme="vision-impaired"] .tab-button {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            font-size: 20px;
+            line-height: 1.75;
+        }
+
+        html[data-theme="vision-impaired"] .card {
+            background: #000;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .preset-card {
+            padding: 22px;
+        }
+
+        html[data-theme="vision-impaired"] .tabs {
+            border-bottom-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button {
+            color: #fff;
+            font-size: 18px;
+            padding: 14px 26px;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button:hover {
+            background: rgba(250, 204, 21, 0.12);
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button.active {
+            color: #000;
+            background: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] p,
+        html[data-theme="vision-impaired"] li,
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .text-gray-400,
+        html[data-theme="vision-impaired"] .text-gray-300,
+        html[data-theme="vision-impaired"] .text-gray-200 {
+            color: #fff !important;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card,
+        html[data-theme="vision-impaired"] .preset-card:hover {
+            border-width: 3px;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card h3,
+        html[data-theme="vision-impaired"] .preset-card .text-xs {
+            color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card h3 {
+            font-size: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .preset-card .text-xs {
+            font-size: 0.98rem;
+        }
+
+        html[data-theme="vision-impaired"] .bg-blue-900\/20,
+        html[data-theme="vision-impaired"] .bg-green-900\/20,
+        html[data-theme="vision-impaired"] .bg-yellow-900\/20 {
+            background: #050505 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-danger {
+            border: 3px solid #facc15;
+            font-size: 1rem;
+            min-height: 48px;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 16px 12px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+            }
+
+            header > div:last-child {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            #test-btn,
+            #save-btn {
+                flex: 1 1 180px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .tab-button {
+                flex: 1 1 140px;
+                padding: 10px 14px;
+                font-size: 15px;
+            }
+
+            .grid,
+            .grid.grid-cols-1,
+            .grid.grid-cols-2,
+            .grid.grid-cols-3 {
+                grid-template-columns: 1fr !important;
+            }
+
+            .flex.gap-2 {
+                flex-wrap: wrap;
+            }
+
+            .flex.gap-2 > button,
+            .flex.gap-2 > a {
+                flex: 1 1 180px;
+            }
+
+            html[data-theme="vision-impaired"] body {
+                font-size: 19px;
+            }
+
+            html[data-theme="vision-impaired"] .tab-button {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body class="text-white p-6">
@@ -235,8 +438,8 @@
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.test_firework">
-                    🧪 Test Firework
+                <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold">
+                    Test Firework
                 </button>
                 <button id="save-btn" class="btn-success px-6 py-3 rounded-lg font-bold" data-i18n="fireworks.save_settings">
                     💾 Save Settings
@@ -282,7 +485,7 @@
                             <input type="number" id="min-coins" class="w-full bg-black/30 rounded-lg px-4 py-2" value="1" min="1">
                         </div>
                         
-                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_gift_firework">
+                        <button id="test-gift-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
                             🎁 Test Gift Firework
                         </button>
                     </div>
@@ -841,7 +1044,7 @@
                             </p>
                         </div>
                         
-                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold" data-i18n="fireworks.test_avatar_firework">
+                        <button id="test-avatar-btn" class="w-full btn-primary py-3 rounded-lg font-bold">
                             👤 Test Avatar Firework
                         </button>
                     </div>

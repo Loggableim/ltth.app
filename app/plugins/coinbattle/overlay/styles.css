@@ -1288,22 +1288,86 @@ body.theme-light .entry-name {
   color: #1a202c;
 }
 
-/* Neon Theme */
+/* High Contrast Theme */
+body.theme-contrast,
+body.theme-vision-impaired {
+  background: #000;
+  color: #fff;
+}
+
+body.theme-contrast .timer-bg,
+body.theme-contrast .team-score,
+body.theme-contrast .leaderboard-container,
+body.theme-contrast .post-match-leaderboard,
+body.theme-contrast .winner-credits,
+body.theme-contrast .pyramid-container,
+body.theme-vision-impaired .timer-bg,
+body.theme-vision-impaired .team-score,
+body.theme-vision-impaired .leaderboard-container,
+body.theme-vision-impaired .post-match-leaderboard,
+body.theme-vision-impaired .winner-credits,
+body.theme-vision-impaired .pyramid-container {
+  background: rgba(0, 0, 0, 0.96);
+  border: 2px solid #facc15;
+  box-shadow: none;
+}
+
+body.theme-contrast .timer-display,
+body.theme-contrast .entry-name,
+body.theme-contrast .team-name,
+body.theme-contrast .team-coins,
+body.theme-contrast .leaderboard-title,
+body.theme-contrast .pyramid-name,
+body.theme-contrast .pyramid-score,
+body.theme-contrast .winner-name,
+body.theme-contrast .winner-coins,
+body.theme-vision-impaired .timer-display,
+body.theme-vision-impaired .entry-name,
+body.theme-vision-impaired .team-name,
+body.theme-vision-impaired .team-coins,
+body.theme-vision-impaired .leaderboard-title,
+body.theme-vision-impaired .pyramid-name,
+body.theme-vision-impaired .pyramid-score,
+body.theme-vision-impaired .winner-name,
+body.theme-vision-impaired .winner-coins {
+  color: #fff7cc;
+  text-shadow: none;
+}
+
+body.theme-vision-impaired .timer-display {
+  font-size: clamp(4rem, 7vw, 7rem);
+  letter-spacing: 0.02em;
+  color: #facc15;
+}
+
+body.theme-vision-impaired .leaderboard-entry,
+body.theme-vision-impaired .pyramid-slot,
+body.theme-vision-impaired .winner-credits-entry {
+  border-color: #facc15;
+}
+
+body.theme-vision-impaired .leaderboard-entry {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+body.theme-vision-impaired .team-score {
+  padding: 20px;
+}
+
+body.theme-vision-impaired .timer-label,
+body.theme-vision-impaired .entry-meta,
+body.theme-vision-impaired .entry-stats,
+body.theme-vision-impaired .pyramid-meta,
+body.theme-vision-impaired .post-match-meta,
+body.theme-vision-impaired .winner-credits-meta {
+  color: #fef08a;
+}
+
+/* Legacy Theme Aliases */
 body.theme-neon .timer-bg,
 body.theme-neon .team-score,
-body.theme-neon .leaderboard-container {
-  background: rgba(0, 0, 0, 0.9);
-  border: 2px solid #00ff00;
-  box-shadow: 0 0 20px #00ff00, inset 0 0 20px rgba(0, 255, 0, 0.2);
-}
-
-body.theme-neon .timer-display,
-body.theme-neon .entry-name {
-  color: #00ff00;
-  text-shadow: 0 0 10px #00ff00;
-}
-
-/* Minimal Theme */
+body.theme-neon .leaderboard-container,
 body.theme-minimal .timer-bg,
 body.theme-minimal .team-score,
 body.theme-minimal .leaderboard-container {
@@ -1311,6 +1375,7 @@ body.theme-minimal .leaderboard-container {
   backdrop-filter: blur(5px);
 }
 
+body.theme-neon .leaderboard-entry,
 body.theme-minimal .leaderboard-entry {
   background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

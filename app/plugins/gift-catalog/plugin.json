@@ -1,0 +1,20 @@
+{
+  "id": "gift-catalog",
+  "name": "Developer Guides",
+  "version": "1.0.0",
+  "description": "Collection of developer guides for TikTok integration surfaces.",
+  "author": "Pup Cid",
+  "entry": "main.js",
+  "enabled": false,
+  "devStatus": "development-beta",
+  "permissions": [
+    "routes",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Dedicated plugin surface for refreshing and testing TikTok gift catalog language/region handling.",
+    "de": "Eigenständiges Plugin f\u00fcr das Aktualisieren des TikTok-Geschenkekatalogs inklusive Sprach- und Regions-Parameter.",
+    "es": "Superficie dedicada para actualizar y probar el manejo de idioma/regi\u00f3n del cat\u00e1logo de regalos de TikTok.",
+    "fr": "Interface de plugin dédiée au rafra\u00eechissement et au test de la gestion des langues et r\u00e9gions du catalogue de cadeaux TikTok."
+  }
+}

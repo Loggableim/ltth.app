@@ -1,10 +1,59 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STT Ticker - Admin</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -13,7 +62,7 @@
       color: #eee;
       padding: 16px;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { width: 100%; max-width: none; margin: 0; }
     h1 { color: #4CAF50; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; font-size: 22px; }
     .subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
 
@@ -137,19 +186,250 @@
     }
     .key-section .key-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .key-section .key-header strong { color: #64B5F6; font-size: 12px; }
+
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .tabs {
+      background: #dbe6ff;
+    }
+
+    html[data-theme="day"] .card,
+    html[data-theme="day"] .stat,
+    html[data-theme="day"] .btn-secondary,
+    html[data-theme="day"] input,
+    html[data-theme="day"] select,
+    html[data-theme="day"] .key-section,
+    html[data-theme="day"] .info-box {
+      background: #ffffff;
+      color: #10203a;
+      border-color: #c7d2fe;
+    }
+
+    html[data-theme="day"] .subtitle,
+    html[data-theme="day"] .help-text,
+    html[data-theme="day"] .stat-label {
+      color: #475569;
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    html[data-theme="night"] .tabs {
+      background: #121a30;
+    }
+
+    html[data-theme="night"] .card,
+    html[data-theme="night"] .stat,
+    html[data-theme="night"] .btn-secondary,
+    html[data-theme="night"] input,
+    html[data-theme="night"] select,
+    html[data-theme="night"] .key-section,
+    html[data-theme="night"] .info-box {
+      background: #11172a;
+      color: #e5e7eb;
+      border-color: #2b3552;
+    }
+
+    html[data-theme="contrast"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .tabs {
+      background: #000;
+      border-bottom: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .card,
+    html[data-theme="contrast"] .stat,
+    html[data-theme="contrast"] .btn-secondary,
+    html[data-theme="contrast"] input,
+    html[data-theme="contrast"] select,
+    html[data-theme="contrast"] .key-section,
+    html[data-theme="contrast"] .info-box {
+      background: #050505;
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="contrast"] .btn-primary {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="contrast"] .subtitle,
+    html[data-theme="contrast"] .help-text,
+    html[data-theme="contrast"] .stat-label,
+    html[data-theme="contrast"] .tab-content p,
+    html[data-theme="contrast"] .info-box p,
+    html[data-theme="contrast"] .key-section p {
+      color: #fff7cc;
+    }
+
+    html[data-theme="contrast"] .card-title,
+    html[data-theme="contrast"] .stat-value {
+      color: #facc15;
+    }
+    html[data-theme="night"] .tab-btn.active,
+    html[data-theme="night"] .btn-primary {
+      background: #4CAF50;
+      color: #fff;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+      font-size: 1.08rem;
+    }
+
+    html[data-theme="vision-impaired"] .container {
+      max-width: 100%;
+      padding-left: 28px;
+      padding-right: 28px;
+    }
+
+    html[data-theme="vision-impaired"] h1 {
+      color: #facc15;
+      font-size: clamp(34px, 4vw, 44px);
+      letter-spacing: 0.02em;
+    }
+
+    html[data-theme="vision-impaired"] .subtitle,
+    html[data-theme="vision-impaired"] .help-text,
+    html[data-theme="vision-impaired"] .stat-label,
+    html[data-theme="vision-impaired"] .tab-content p,
+    html[data-theme="vision-impaired"] .info-box p,
+    html[data-theme="vision-impaired"] .key-section p {
+      color: #fff7cc;
+      font-size: 1.08rem;
+      line-height: 1.6;
+    }
+
+    html[data-theme="vision-impaired"] .tabs,
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .stat,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select,
+    html[data-theme="vision-impaired"] .key-section,
+    html[data-theme="vision-impaired"] .info-box {
+      background: #000;
+      color: #fff;
+      border: 5px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn {
+      color: #e5e7eb;
+      font-size: 16px;
+      padding: 14px 20px;
+      letter-spacing: 0.01em;
+    }
+
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] .card-title,
+    html[data-theme="vision-impaired"] .stat-value {
+      color: #facc15;
+      font-size: 1.28rem;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary {
+      background: #facc15;
+      color: #000;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000;
+      color: #fff;
+      border: 5px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
+    }
+
+    html[data-theme="vision-impaired"] .btn-danger {
+      background: #7f1d1d;
+      color: #fff;
+      border: 5px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
+    }
+
+    html[data-theme="vision-impaired"] .badge-green,
+    html[data-theme="vision-impaired"] .badge-yellow,
+    html[data-theme="vision-impaired"] .badge-gray {
+      background: #000;
+      color: #facc15;
+      border: 2px solid #facc15;
+    }
+
+    @media (max-width: 820px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      .tabs {
+        padding: 3px 4px;
+      }
+
+      .tab-btn {
+        flex: 1 1 130px;
+      }
+
+      .grid-2,
+      .grid-3,
+      .grid-4 {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-row,
+      .inline-flex {
+        align-items: stretch;
+      }
+
+      .btn-row .btn,
+      .btn-row .external-link,
+      .inline-flex > * {
+        width: 100%;
+      }
+
+      .key-section .key-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .key-section .key-header .badge {
+        margin-left: 0;
+      }
+
+      #overlay-url {
+        font-size: 11px;
+      }
+    }
   </style>
 </head>
 <body>
 <div class="container">
     <h1>STT Ticker</h1>
-    <p class="subtitle">Live-Untertitel-Overlay für gehörlose und schwerhörige Zuschauer</p>
+    <p class="subtitle">Live-Untertitel-Overlay fuer gehoerlose und schwerhoerige Zuschauer</p>
 
     <!-- Tabs -->
     <div class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="tab-status">Status & Capture</button>
       <button class="tab-btn" data-tab="tab-overlay">Overlay</button>
       <button class="tab-btn" data-tab="tab-asr">ASR & Sprache</button>
-      <button class="tab-btn" data-tab="tab-translation">Übersetzung</button>
+      <button class="tab-btn" data-tab="tab-translation">Uebersetzung</button>
       <button class="tab-btn" data-tab="tab-multilang">Multi-Language</button>
     </div>
 
@@ -172,12 +452,12 @@
 
       <div class="card">
         <div class="card-title">Audio-Capture</div>
-        <p class="help-text">Läuft in <strong>eigenem Tab</strong> (zuverlässiger Mikrofon-Zugriff). Kann minimiert werden.</p>
+        <p class="help-text">Laeuft in <strong>eigenem Tab</strong> (zuverlaessiger Mikrofon-Zugriff). Kann minimiert werden.</p>
         <div class="btn-row">
-          <a id="capture-link" class="external-link" href="/stt-ticker?tab=capture" target="_blank">Capture-Tab öffnen</a>
+          <a id="capture-link" class="external-link" href="/stt-ticker?tab=capture" target="_blank">Capture-Tab oeffnen</a>
         </div>
         <ol class="help-text" style="padding-left:16px;margin-top:6px;">
-          <li>Capture-Tab öffnen, dann <strong>Capture starten</strong> klicken</li>
+          <li>Capture-Tab oeffnen, dann <strong>Capture starten</strong> klicken</li>
           <li>Mikrofon erlauben, dann Audio geht an ASR und Transkripte im Overlay erscheinen</li>
         </ol>
       </div>
@@ -187,7 +467,7 @@
     <div id="tab-overlay" class="tab-content">
       <div class="card">
         <div class="card-title">Overlay (OBS Browser Source)</div>
-        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufügen:</p>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzuf�gen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -202,7 +482,7 @@
               <option value="compact">Compact (Klein)</option>
               <option value="cinematic">Cinematic (Film)</option>
               <option value="scrolling">Scrolling (Laufband)</option>
-              <option value="fliessend">Fließend (Liste)</option>
+              <option value="fliessend">Fliessend (Liste)</option>
               <option value="starwars">Star Wars (Crawl)</option>
               <option value="ticker3">3-Zeilen Ticker</option>
               <option value="karaoke">Karaoke (Wort-Highlight)</option>
@@ -231,7 +511,7 @@
         </div>
         <div class="btn-row">
           <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
-          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay öffnen</a>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay �ffnen</a>
         </div>
       </div>
     </div>
@@ -277,7 +557,7 @@
             <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
           </div>
-          <p class="help-text">Überschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+          <p class="help-text">�berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
         </div>
       </div>
 
@@ -297,7 +577,7 @@
           <div>
             <label>STT-Modell</label>
             <select id="asr-model-select">
-              <option value="">Modell wählen</option>
+              <option value="">Modell w�hlen</option>
             </select>
           </div>
         </div>
@@ -346,13 +626,13 @@
       </div>
     </div>
 
-    <!-- ==================== TAB 4: Übersetzung ==================== -->
+    <!-- ==================== TAB 4: Uebersetzung ==================== -->
     <div id="tab-translation" class="tab-content">
       <div class="card">
-        <div class="card-title">Übersetzung (Ollama Cloud)</div>
+        <div class="card-title">Uebersetzung (Ollama Cloud)</div>
         <div class="inline-flex" style="margin-bottom:8px;">
           <label class="mt-0" style="display:inline-flex;align-items:center;gap:4px;">
-            <input type="checkbox" id="translation-enabled"> Übersetzung aktivieren
+            <input type="checkbox" id="translation-enabled"> Uebersetzung aktivieren
           </label>
           <span id="translation-key-status" style="font-size:11px;color:#4CAF50;"></span>
         </div>
@@ -370,7 +650,7 @@
             <select id="translation-model"><option value="">Modelle laden...</option></select>
           </div>
           <div>
-            <label>Übersetzungs-Farbe</label>
+            <label>Uebersetzungs-Farbe</label>
             <input type="color" id="translation-color" value="#ffd700">
           </div>
           <div>
@@ -378,12 +658,12 @@
             <select id="translation-sourceLanguage"></select>
           </div>
           <div>
-            <label>Zielsprache (Übersetzung)</label>
+            <label>Zielsprache (Uebersetzung)</label>
             <select id="translation-targetLanguage"></select>
           </div>
         </div>
         <div class="btn-row">
-          <button id="btn-save-translation" class="btn btn-primary btn-sm">Übersetzung speichern</button>
+          <button id="btn-save-translation" class="btn btn-primary btn-sm">Uebersetzung speichern</button>
           <button id="btn-clear-cache" class="btn btn-secondary btn-sm">Cache leeren</button>
           <span id="translation-status" style="font-size:12px;"></span>
         </div>
@@ -394,8 +674,8 @@
     <div id="tab-multilang" class="tab-content">
       <div class="card">
         <div class="card-title">Multi-Language Output (N Zeilen)</div>
-        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Übersetzungen.<br>
-        <strong>Voraussetzung:</strong> Übersetzung muss im Tab "Übersetzung" aktiviert sein.</p>
+        <p class="help-text">Je Zeile eine Sprache. Zeile 1 = Original, Zeile 2..N = Uebersetzungen.<br>
+        <strong>Voraussetzung:</strong> Uebersetzung muss im Tab "Uebersetzung" aktiviert sein.</p>
 
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -403,7 +683,7 @@
             <select id="ml-default-lang"></select>
           </div>
           <div>
-            <label>Sprache hinzufügen</label>
+            <label>Sprache hinzuf�gen</label>
             <div class="inline-flex">
               <select id="ml-add-lang" style="flex:1;"></select>
               <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
@@ -548,30 +828,30 @@
     const LANGUAGE_OPTIONS = [
       ['de', 'Deutsch'],
       ['en', 'English'],
-      ['es', 'Español'],
-      ['fr', 'Français'],
+      ['es', 'Espa�ol'],
+      ['fr', 'Fran�ais'],
       ['it', 'Italiano'],
-      ['pt', 'Português'],
+      ['pt', 'Portugu�s'],
       ['nl', 'Nederlands'],
       ['pl', 'Polski'],
-      ['ru', 'Русский'],
-      ['ja', '日本語'],
-      ['ko', '한국어'],
-      ['zh', '中文'],
-      ['ar', 'العربية'],
-      ['tr', 'Türkçe'],
+      ['ru', '???????'],
+      ['ja', '???'],
+      ['ko', '???'],
+      ['zh', '??'],
+      ['ar', '???????'],
+      ['tr', 'T�rk�e'],
       ['sv', 'Svenska'],
       ['da', 'Dansk'],
       ['fi', 'Suomi'],
       ['no', 'Norsk'],
-      ['cs', 'Čeština'],
+      ['cs', 'Ce�tina'],
       ['hu', 'Magyar'],
-      ['ro', 'Română'],
-      ['uk', 'Українська'],
-      ['el', 'Ελληνικά'],
-      ['he', 'עברית'],
-      ['th', 'ไทย'],
-      ['vi', 'Tiếng Việt']
+      ['ro', 'Rom�na'],
+      ['uk', '??????????'],
+      ['el', '????????'],
+      ['he', '?????'],
+      ['th', '???'],
+      ['vi', 'Ti?ng Vi?t']
     ];
 
     function populateLanguageSelect(selectId, selectedValue, includeEmpty = false) {
@@ -582,7 +862,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache wählen...';
+        placeholder.textContent = 'Sprache w�hlen...';
         select.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -611,7 +891,7 @@
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // STT-Modell-Dropdown befüllen (wird von loadAsrModels() gemacht)
+      // STT-Modell-Dropdown bef�llen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
       const modelSelect = document.getElementById('asr-model-select');
       if (modelSelect) {
@@ -654,7 +934,7 @@
       }
     }
 
-    // Lädt Deepgram + ElevenLabs Modelle und befüllt das STT-Modell-Dropdown
+    // Laedt Deepgram + ElevenLabs Modelle und befuelle das STT-Modell-Dropdown
     async function loadAsrModels() {
       const dgModels = [], elModels = [];
       try {
@@ -725,30 +1005,30 @@
     const LANG_NAMES = {
       'de': 'Deutsch',
       'en': 'English',
-      'es': 'Español',
-      'fr': 'Français',
+      'es': 'Espa�ol',
+      'fr': 'Fran�ais',
       'it': 'Italiano',
-      'pt': 'Português',
+      'pt': 'Portugu�s',
       'nl': 'Nederlands',
       'pl': 'Polski',
-      'ru': 'Русский',
-      'ja': '日本語',
-      'ko': '한국어',
-      'zh': '中文',
-      'ar': 'العربية',
-      'tr': 'Türkçe',
+      'ru': '???????',
+      'ja': '???',
+      'ko': '???',
+      'zh': '??',
+      'ar': '???????',
+      'tr': 'T�rk�e',
       'sv': 'Svenska',
       'da': 'Dansk',
       'fi': 'Suomi',
       'no': 'Norsk',
-      'cs': 'Čeština',
+      'cs': 'Ce�tina',
       'hu': 'Magyar',
-      'ro': 'Română',
-      'uk': 'Українська',
-      'el': 'Ελληνικά',
-      'he': 'עברית',
-      'th': 'ไทย',
-      'vi': 'Tiếng Việt'
+      'ro': 'Rom�na',
+      'uk': '??????????',
+      'el': '????????',
+      'he': '?????',
+      'th': '???',
+      'vi': 'Ti?ng Vi?t'
     };
     let currentOutputLangs = ['en'];
 
@@ -759,7 +1039,7 @@
       for (const lang of currentOutputLangs) {
         const tag = document.createElement('span');
         tag.className = 'lang-tag';
-        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">�</span>';
         tag.addEventListener('click', () => {
           currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
           renderLangTags(currentOutputLangs);
@@ -880,10 +1160,13 @@
       const position = (document.getElementById('position-select')?.value) || 'bottom-center';
       const maxLines = (document.getElementById('maxLines-input')?.value) || '2';
       const fontSize = (document.getElementById('fontSize-input')?.value) || '36px';
+      const themeRaw = localStorage.getItem('dashboard-theme') || localStorage.getItem('theme') || localStorage.getItem('ui-theme') || 'night';
+      const theme = ['day', 'night', 'contrast', 'vision-impaired'].includes(themeRaw) ? themeRaw : 'night';
       const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
         + '&position=' + encodeURIComponent(position)
         + '&maxLines=' + encodeURIComponent(maxLines)
-        + '&fontSize=' + encodeURIComponent(fontSize);
+        + '&fontSize=' + encodeURIComponent(fontSize)
+        + '&theme=' + encodeURIComponent(theme);
       const input = document.getElementById('overlay-url');
       const link = document.getElementById('open-overlay-btn');
       if (input) input.value = url;
@@ -1023,10 +1306,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key g�ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ung�ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1054,10 +1337,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key g�ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ung�ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1100,3 +1383,6 @@
   </script>
 </body>
 </html>
+
+
+

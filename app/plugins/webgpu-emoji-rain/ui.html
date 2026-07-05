@@ -6,6 +6,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebGPU Emoji Rain Konfiguration - TikTok Stream Tool</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            syncTheme();
+
+            window.addEventListener('storage', (event) => {
+                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             margin: 0;
@@ -302,21 +353,37 @@
 
         .notification {
             position: fixed;
-            top: 20px;
+            top: auto;
+            bottom: 20px;
             right: 20px;
-            padding: 15px 25px;
+            width: fit-content;
+            max-width: min(85vw, 360px);
+            padding: 12px 16px;
             border-radius: 8px;
             background: var(--color-accent-success);
             color: white;
             font-weight: 600;
             border: 1px solid var(--color-border);
             box-shadow: var(--shadow-lg);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.45;
+            white-space: normal;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
             transform: translateX(400px);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
             z-index: 1000;
+            overflow-wrap: anywhere;
+            text-align: left;
         }
 
         .notification.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
             transform: translateX(0);
         }
 
@@ -379,11 +446,13 @@
 
         .section-warning {
             border: 2px solid var(--color-accent-warning);
+            border-left-width: 8px;
             background: var(--color-bg-card);
         }
 
         .section-success {
             border: 2px solid var(--color-accent-success);
+            border-left-width: 8px;
             background: var(--color-bg-card);
         }
 
@@ -440,6 +509,72 @@
         .nav-button-primary:hover {
             background: var(--brand-primary-light);
             filter: brightness(1.2);
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] h1 {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] .form-group label,
+        html[data-theme="vision-impaired"] .info-box strong,
+        html[data-theme="vision-impaired"] .tip-box strong {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-section,
+        html[data-theme="vision-impaired"] .config-section,
+        html[data-theme="vision-impaired"] .info-box,
+        html[data-theme="vision-impaired"] .tip-box {
+            background: #000;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .section-success,
+        html[data-theme="vision-impaired"] .section-warning {
+            background: #000;
+            border-top-width: 2px;
+            border-right-width: 2px;
+            border-bottom-width: 2px;
+        }
+
+        html[data-theme="vision-impaired"] .section-success {
+            border-left-color: #22c55e;
+        }
+
+        html[data-theme="vision-impaired"] .section-warning {
+            border-left-color: #f59e0b;
+        }
+
+        html[data-theme="vision-impaired"] .nav-button {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .nav-button-primary {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .notification {
+            background: #111;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .notification.error {
+            background: #2a0000;
+            border-color: #f87171;
         }
     </style>
 </head>

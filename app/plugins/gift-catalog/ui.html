@@ -1,0 +1,1783 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Guides</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const themes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+      const fallback = 'night';
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (themes.has(parentTheme)) {
+              return parentTheme;
+            }
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (themes.has(value)) {
+              return value;
+            }
+          }
+        } catch (error) {}
+
+        return fallback;
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      function syncTheme() {
+        applyTheme(readTheme());
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          syncTheme();
+        }
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          const observer = new MutationObserver(syncTheme);
+          observer.observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --gc-font: 'Manrope', 'Segoe UI', Arial, sans-serif;
+      --gc-card: color-mix(in srgb, var(--color-bg-card, #0f172a) 88%, transparent);
+      --gc-border: color-mix(in srgb, var(--color-border, #334155) 85%, transparent);
+      --gc-radius: 16px;
+      --gc-shadow: 0 16px 40px rgba(2, 6, 23, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--color-text-primary, #e2e8f0);
+      background: linear-gradient(130deg, var(--color-bg-primary, #020617), var(--color-bg-secondary, #0f172a));
+      font-family: var(--gc-font);
+      min-height: 100vh;
+    }
+
+    .gc-preview {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 20px 30px;
+      display: grid;
+      gap: 16px;
+      position: relative;
+    }
+
+    .gc-preview::before {
+      content: '';
+      position: absolute;
+      inset: 0 -25% auto;
+      height: 230px;
+      background:
+        radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--color-accent-primary, #3b82f6) 12%, transparent), transparent 56%),
+        radial-gradient(circle at 85% 0%, color-mix(in srgb, #22c55e 12%, transparent), transparent 52%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .gc-title-wrap {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .gc-title-wrap h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.01em;
+    }
+
+    .gc-status {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      background: var(--color-bg-secondary, #0b1220);
+      border: 1px solid var(--color-border, #334155);
+    }
+
+    .gc-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+    }
+
+    .gc-dot.ready {
+      background: #22c55e;
+    }
+
+    .gc-description {
+      color: var(--color-text-muted, #94a3b8);
+      margin: 6px 0 0;
+      font-size: 0.86rem;
+      max-width: 900px;
+    }
+
+    .gc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .gc-card {
+      padding: 16px;
+      border: 1px solid var(--gc-border);
+      border-radius: var(--gc-radius);
+      background: var(--gc-card);
+      backdrop-filter: blur(3px);
+      box-shadow: var(--gc-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .gc-card h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .gc-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .gc-step {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--color-accent-primary, #3b82f6);
+      background: color-mix(in srgb, var(--color-accent-primary, #3b82f6) 16%, var(--color-bg-secondary, #0b1220));
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .gc-card p {
+      margin: 0;
+      color: var(--color-text-muted, #94a3b8);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .gc-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .gc-field label {
+      color: var(--color-text-secondary, #cbd5e1);
+      font-size: 0.77rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .gc-input,
+    .gc-select,
+    textarea {
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      background: var(--color-bg-secondary, #0b1220);
+      color: var(--color-text-primary, #f8fafc);
+      padding: 9px 10px;
+      font-size: 0.86rem;
+    }
+
+    .gc-scroll-area {
+      margin-top: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      background: var(--color-bg-primary, #020617);
+      padding: 10px;
+    }
+
+    .gc-scroll-area::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .gc-scroll-area::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      border: 2px solid var(--color-bg-primary, #020617);
+      background: var(--color-border, #334155);
+    }
+
+    .gc-demo-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .gc-demo-list-item {
+      border: 1px solid var(--gc-border);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: var(--color-bg-secondary, #0b1220);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .gc-demo-list-item-meta {
+      color: var(--color-text-muted, #94a3b8);
+      font-size: 0.74rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gc-input::placeholder,
+    .gc-select {
+      color: var(--color-text-muted, #94a3b8);
+    }
+
+    .gc-select option {
+      background: var(--color-bg-secondary, #0b1220);
+      color: var(--color-text-primary, #f8fafc);
+    }
+
+    .gc-input::placeholder,
+    textarea::placeholder {
+      color: var(--color-text-muted, #94a3b8);
+    }
+
+    .gc-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+    }
+
+    .gc-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .gc-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .gc-flag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .gc-flag-btn,
+    .gc-region-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 70px;
+      border: 1px solid var(--gc-border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.76rem;
+      background: var(--color-bg-secondary, #0b1220);
+      color: var(--color-text-primary, #f8fafc);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .gc-flag-btn.active,
+    .gc-region-pill.active {
+      border-color: var(--color-accent-primary, #3b82f6);
+      background: color-mix(in srgb, var(--color-accent-primary, #3b82f6) 16%, var(--color-bg-secondary, #0b1220));
+      font-weight: 700;
+    }
+
+    .gc-flag-chip {
+      width: 16px;
+      height: 12px;
+      border-radius: 2px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    .gc-flag-chip[data-locale='en'] {
+      background: linear-gradient(90deg, #012169 33%, #fff 33%, #fff 67%, #c8102e 67%);
+    }
+
+    .gc-flag-chip[data-locale='de'] {
+      background:
+        linear-gradient(90deg, #000 33%, #fc0 33%, #fc0 67%, #dd0000 67%);
+    }
+
+    .gc-flag-chip[data-locale='es'] {
+      background:
+        linear-gradient(180deg, #aa151b 0%, #aa151b 31%, #f1bf00 31%, #f1bf00 62%, #ad1519 62%, #ad1519 100%);
+    }
+
+    .gc-flag-chip[data-locale='fr'] {
+      background:
+        linear-gradient(90deg, #002395 31%, #fff 31%, #fff 66%, #ed2939 66%);
+    }
+
+    .gc-region-pill {
+      border-radius: 999px;
+    }
+
+    .gc-quick-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: var(--color-accent-primary, #3b82f6);
+      color: var(--color-text-inverse, #020617);
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      filter: grayscale(35%);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-text-primary, #e2e8f0);
+      border-color: var(--gc-border);
+    }
+
+    .gc-result {
+      margin: 0;
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      padding: 10px 11px;
+      background: var(--color-bg-primary, #020617);
+      font-size: 0.78rem;
+      color: #d6e3ff;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+      max-height: 220px;
+      overflow: auto;
+    }
+
+    .gc-info {
+      border-left: 3px solid var(--color-accent-secondary, #f59e0b);
+      padding: 8px 10px;
+      border-radius: 0 10px 10px 0;
+      background: color-mix(in srgb, #f59e0b 8%, var(--color-bg-secondary, #0b1220));
+      font-size: 0.8rem;
+      color: var(--color-text-primary, #e2e8f0);
+    }
+
+    .gc-endpoint {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      background: var(--color-bg-secondary, #0b1220);
+    }
+
+    .gc-endpoint .method {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-weight: 700;
+      background: var(--color-accent-primary, #3b82f6);
+      color: var(--color-text-inverse, #020617);
+      font-size: 0.75rem;
+    }
+
+    .gc-endpoint code {
+      font-size: 0.77rem;
+      color: #c7d2fe;
+      word-break: break-all;
+    }
+
+    .gc-endpoint.preview {
+      grid-template-columns: auto 1fr auto;
+      margin-top: 10px;
+    }
+
+    .gc-endpoint.preview code {
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 2px;
+    }
+
+    .gc-copy-btn {
+      font-size: 0.75rem;
+      padding: 6px 9px;
+    }
+
+    .gc-snippet {
+      background: var(--color-bg-primary, #020617);
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      padding: 10px;
+      position: relative;
+      min-height: 132px;
+    }
+
+    .gc-snippet pre {
+      margin: 0;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+      font-size: 0.74rem;
+      line-height: 1.4;
+      max-height: 170px;
+      overflow: auto;
+    }
+
+    .gc-snippet-caption {
+      color: var(--color-text-secondary, #94a3b8);
+      font-size: 0.8rem;
+      margin-top: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .gc-footer {
+      color: var(--color-text-muted, #94a3b8);
+      font-size: 0.76rem;
+      text-align: right;
+    }
+
+    .gc-note {
+      font-size: 0.74rem;
+      color: var(--color-text-muted, #94a3b8);
+      border-top: 1px dashed var(--gc-border);
+      margin-top: 2px;
+      padding-top: 8px;
+    }
+
+    .gc-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--gc-border);
+      padding-bottom: 8px;
+      margin-top: 2px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .gc-tab {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background: var(--color-bg-secondary, #0b1220);
+      color: var(--color-text-secondary, #cbd5e1);
+      padding: 7px 12px;
+      font-size: 0.79rem;
+      cursor: pointer;
+    }
+
+    .gc-tab.active {
+      border-color: var(--color-accent-primary, #3b82f6);
+      color: var(--color-text-primary, #e2e8f0);
+      background: color-mix(in srgb, var(--color-accent-primary, #3b82f6) 14%, var(--color-bg-secondary, #0b1220));
+      font-weight: 700;
+    }
+
+    .gc-tab:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .gc-panel {
+      display: none;
+      animation: gc-fade-in 120ms ease-out;
+    }
+
+    .gc-panel.active {
+      display: block;
+    }
+
+    .gc-panel-placeholder {
+      border: 1px dashed var(--gc-border);
+      border-radius: var(--gc-radius);
+      padding: 30px 18px;
+      color: var(--color-text-muted, #94a3b8);
+      background: var(--color-bg-card, transparent);
+      text-align: center;
+    }
+
+    @keyframes gc-fade-in {
+      from {
+        opacity: 0.75;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .gc-title-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .gc-row,
+      .gc-row-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="gc-preview">
+    <section class="gc-card">
+      <div class="gc-title-wrap">
+        <div>
+          <h1>Developer Guides</h1>
+          <p class="gc-description">
+            Start point for developer-oriented TikTok integration guides.
+          </p>
+        </div>
+        <span id="connection-state" class="gc-status">
+          <span class="gc-dot"></span>
+          <span>Disconnected</span>
+        </span>
+      </div>
+      <p id="connection-message" class="gc-description">
+        Endpoints are tested live against:
+        /api/gift-catalog-manager/config,
+        /api/gift-catalog-manager/refresh
+        and
+        /api/gift-catalog-manager/catalog
+      </p>
+    </section>
+
+    <div class="gc-tabs" id="guide-tabs">
+      <button class="gc-tab active" data-tab="gift-catalog" type="button">Gift Catalog Guide</button>
+      <button class="gc-tab" data-tab="future-guides" type="button" disabled>Future Guides</button>
+    </div>
+
+    <section class="gc-panel active" data-tab-panel="gift-catalog">
+      <div class="gc-grid">
+      <section class="gc-card">
+          <div class="gc-card-header">
+            <h2>Region and language defaults</h2>
+            <span class="gc-step">1</span>
+          </div>
+          <p>Store defaults used by refresh and inspect how locale/region affects names.</p>
+          <form id="config-form">
+            <div class="gc-row">
+              <div class="gc-field">
+                <label for="app-language">app_language</label>
+                <input id="app-language" class="gc-input" placeholder="en-US" />
+              </div>
+              <div class="gc-field">
+                <label for="browser-language">browser_language</label>
+                <input id="browser-language" class="gc-input" placeholder="en" />
+              </div>
+            </div>
+            <div class="gc-row">
+              <div class="gc-field">
+                <label for="webcast-language">webcast_language</label>
+                <input id="webcast-language" class="gc-input" placeholder="en" />
+              </div>
+              <div class="gc-field">
+                <label for="priority-region">priority_region</label>
+                <input id="priority-region" class="gc-input" placeholder="DE or empty" />
+              </div>
+              <div class="gc-field">
+                <label>Region quick set</label>
+                <div class="gc-flag-row">
+                  <button class="gc-region-pill" id="region-auto" type="button" data-region="">AUTO</button>
+                  <button class="gc-region-pill" type="button" data-region="DE">DE</button>
+                  <button class="gc-region-pill" type="button" data-region="US">US</button>
+                  <button class="gc-region-pill" type="button" data-region="ES">ES</button>
+                  <button class="gc-region-pill" type="button" data-region="FR">FR</button>
+                </div>
+              </div>
+            </div>
+            <div class="gc-row">
+              <div class="gc-field">
+                <label for="tz-name">tz_name</label>
+                <input id="tz-name" class="gc-input" placeholder="Europe/Berlin" />
+              </div>
+              <div class="gc-field">
+                <label for="locales">locales (comma separated)</label>
+                <input id="locales" class="gc-input" placeholder="en,de,es,fr" />
+              </div>
+              <div class="gc-field">
+                <label>Locale quick-picks</label>
+                <div class="gc-flag-row" id="locale-quick-picks">
+                  <button class="gc-flag-btn" type="button" data-locale="en" data-region="" data-source="config"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="de" data-region="DE" data-source="config"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="es" data-region="ES" data-source="config"><span class="gc-flag-chip" data-locale="es"></span><span>ES</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="fr" data-region="FR" data-source="config"><span class="gc-flag-chip" data-locale="fr"></span><span>FR</span></button>
+                </div>
+              </div>
+            </div>
+          </form>
+          <div class="gc-actions">
+            <button id="load-config">Load saved config</button>
+            <button id="save-config" class="btn-secondary">Save as default</button>
+            <button id="preset-de" class="btn-secondary">DE</button>
+            <button id="preset-us" class="btn-secondary">US</button>
+            <button id="preset-jp" class="btn-secondary">JP</button>
+          </div>
+          <pre id="config-output" class="gc-result">No config loaded yet.</pre>
+        </section>
+
+        <section class="gc-card">
+          <div class="gc-card-header">
+            <h2>Refresh demo calls</h2>
+            <span class="gc-step">2</span>
+          </div>
+          <p>Send custom payloads to validate region/language behavior from another plugin endpoint.</p>
+
+          <div class="gc-endpoint">
+            <span class="method">POST</span>
+            <code>/api/gift-catalog-manager/refresh</code>
+            <button id="refresh-current" class="gc-copy-btn btn-secondary" type="button">Use saved config</button>
+          </div>
+
+          <div class="gc-endpoint">
+            <span class="method">POST</span>
+            <code>/api/gift-catalog-manager/refresh</code>
+            <button id="refresh-custom" class="gc-copy-btn btn-secondary" type="button">Use current form</button>
+          </div>
+
+          <div class="gc-endpoint">
+            <span class="method">POST</span>
+            <code>/api/gift-catalog/update</code>
+            <button id="refresh-core" class="gc-copy-btn btn-secondary" type="button">Legacy server endpoint</button>
+          </div>
+
+          <div class="gc-info">
+            The backend can call refresh with parameters. The demo below sends a request with a custom locale bundle and shows the returned payload.
+          </div>
+          <div class="gc-actions">
+            <button id="run-refresh-form">Run current form</button>
+            <button id="run-refresh-default" class="btn-secondary">Run defaults</button>
+            <button id="run-refresh-core" class="btn-secondary">Run core update</button>
+            <button id="run-refresh-all" class="btn-secondary">Run all configured locales</button>
+          </div>
+          <pre id="refresh-output" class="gc-result">No refresh call executed yet.</pre>
+        </section>
+
+        <section class="gc-card">
+          <div class="gc-card-header">
+            <h2>Catalog readout</h2>
+            <span class="gc-step">3</span>
+          </div>
+          <p>Inspect current catalog payload from the shared endpoint used by existing plugins.</p>
+          <div class="gc-row">
+            <div class="gc-field">
+              <label for="catalog-locale">Locale</label>
+              <select id="catalog-locale" class="gc-select">
+                <option value="">Default names</option>
+                <option value="en">en</option>
+                <option value="de">de</option>
+                <option value="es">es</option>
+                <option value="fr">fr</option>
+              </select>
+            </div>
+            <div class="gc-field">
+              <label for="catalog-region">Region override</label>
+              <select id="catalog-region" class="gc-select">
+                <option value="">(none)</option>
+                <option value="DE">DE</option>
+                <option value="ES">ES</option>
+                <option value="FR">FR</option>
+                <option value="US">US</option>
+              </select>
+            </div>
+            <div class="gc-field">
+                <label>Locale quick-picks</label>
+                <div class="gc-flag-row" id="catalog-locale-quick">
+                  <button class="gc-flag-btn" type="button" data-locale="en" data-source="catalog"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="de" data-source="catalog"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="es" data-source="catalog"><span class="gc-flag-chip" data-locale="es"></span><span>ES</span></button>
+                  <button class="gc-flag-btn" type="button" data-locale="fr" data-source="catalog"><span class="gc-flag-chip" data-locale="fr"></span><span>FR</span></button>
+                </div>
+            </div>
+            <div class="gc-field">
+              <label>Region quick-picks</label>
+              <div class="gc-flag-row" id="catalog-region-quick">
+                <button class="gc-region-pill" type="button" data-region="">AUTO</button>
+                <button class="gc-region-pill" type="button" data-region="DE">DE</button>
+                <button class="gc-region-pill" type="button" data-region="ES">ES</button>
+                <button class="gc-region-pill" type="button" data-region="FR">FR</button>
+              </div>
+              </div>
+            </div>
+          <div class="gc-actions">
+            <button id="load-catalog-manager">Load /api/gift-catalog-manager/catalog</button>
+            <button id="load-catalog-legacy" class="btn-secondary">Load /api/gift-catalog</button>
+            <button id="load-catalog-sample" class="btn-secondary">Load 1st 10 sample gifts</button>
+            <button id="load-catalog-all" class="btn-secondary">Load all locales</button>
+          </div>
+          <pre id="catalog-output" class="gc-result">No catalog loaded yet.</pre>
+        </section>
+      </div>
+
+        <section class="gc-card">
+          <div class="gc-card-header">
+            <h2>Demo integrations</h2>
+            <span class="gc-step">4</span>
+          </div>
+          <p>These controls intentionally mirror the kinds of embeds you requested: dropdown, list and scroll area.</p>
+
+          <div class="gc-row-2">
+            <div class="gc-field">
+              <label for="demo-list-source">List data source</label>
+              <select id="demo-list-source" class="gc-select">
+                <option value="static">Static demo data</option>
+                <option value="live">Live /api/gift-catalog-manager/catalog</option>
+            </select>
+          </div>
+          <div class="gc-field">
+            <label for="demo-list-locale">Locale</label>
+            <select id="demo-list-locale" class="gc-select">
+              <option value="en">en</option>
+              <option value="de">de</option>
+              <option value="es">es</option>
+              <option value="fr">fr</option>
+            </select>
+              <div class="gc-flag-row" id="demo-locale-quick">
+                <button class="gc-flag-btn" type="button" data-locale="en" data-source="demo"><span class="gc-flag-chip" data-locale="en"></span><span>EN</span></button>
+                <button class="gc-flag-btn" type="button" data-locale="de" data-source="demo"><span class="gc-flag-chip" data-locale="de"></span><span>DE</span></button>
+                <button class="gc-flag-btn" type="button" data-locale="es" data-source="demo"><span class="gc-flag-chip" data-locale="es"></span><span>ES</span></button>
+                <button class="gc-flag-btn" type="button" data-locale="fr" data-source="demo"><span class="gc-flag-chip" data-locale="fr"></span><span>FR</span></button>
+              </div>
+            </div>
+              <div class="gc-field">
+                <label for="demo-region">Region override</label>
+                <select id="demo-region" class="gc-select">
+                  <option value="">AUTO</option>
+                  <option value="DE">DE</option>
+                  <option value="ES">ES</option>
+                  <option value="FR">FR</option>
+                  <option value="US">US</option>
+                </select>
+                <div class="gc-flag-row" id="demo-region-quick">
+                  <button class="gc-region-pill" type="button" data-region="">AUTO</button>
+                  <button class="gc-region-pill" type="button" data-region="DE">DE</button>
+                  <button class="gc-region-pill" type="button" data-region="ES">ES</button>
+                  <button class="gc-region-pill" type="button" data-region="FR">FR</button>
+                  <button class="gc-region-pill" type="button" data-region="US">US</button>
+                </div>
+              </div>
+            </div>
+
+          <div class="gc-endpoint preview">
+            <span class="method">GET</span>
+            <code id="demo-endpoint-preview">/api/gift-catalog-manager/catalog</code>
+            <button class="gc-copy-btn btn-secondary" id="copy-demo-endpoint" type="button">Copy endpoint</button>
+          </div>
+
+        <div class="gc-actions">
+          <button id="demo-refresh-list" class="btn-secondary" type="button">Render demo list</button>
+          <button id="demo-shuffle-list" class="btn-secondary" type="button">Shuffle order</button>
+          <button id="demo-reset-list" class="btn-secondary" type="button">Reset list</button>
+        </div>
+
+        <div class="gc-scroll-area" id="demo-scroll-area">
+          <ul id="demo-list" class="gc-demo-list">
+            <li class="gc-demo-list-item">
+              <span>Loading demo entries…</span>
+              <span class="gc-demo-list-item-meta">No source selected</span>
+            </li>
+          </ul>
+        </div>
+        <p id="demo-list-status" class="gc-info" style="margin-top: 8px;">Select a source and render.</p>
+      </section>
+
+      <section class="gc-card">
+        <div class="gc-card-header">
+          <h2>Implementation demos (copy-ready)</h2>
+          <span class="gc-step">5</span>
+        </div>
+        <p>Use these snippets in other plugins; adjust route base to your preferred pattern.</p>
+
+        <div class="gc-row-2">
+          <div class="gc-snippet">
+            <div class="gc-snippet-caption">
+              Frontend plugin request
+              <button class="gc-copy-btn btn-secondary" data-copy="snippet-frontend">Copy</button>
+            </div>
+            <pre id="snippet-frontend">const payload = {
+  app_language: 'de-DE',
+  browser_language: 'de',
+  webcast_language: 'de-DE',
+  priority_region: 'DE',
+  tz_name: 'Europe/Berlin',
+  locales: ['en', 'de', 'es', 'fr']
+};
+
+const response = await fetch('/api/gift-catalog-manager/refresh', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(payload)
+});
+
+const data = await response.json();
+if (!data.success) throw new Error(data.error || 'refresh failed');
+</pre>
+          </div>
+
+          <div class="gc-snippet">
+            <div class="gc-snippet-caption">
+              Shared catalog consumer
+              <button class="gc-copy-btn btn-secondary" data-copy="snippet-consumer">Copy</button>
+            </div>
+            <pre id="snippet-consumer">const response = await fetch('/api/gift-catalog-manager/catalog?locales=de,fr');
+const payload = await response.json();
+
+if (payload.success && Array.isArray(payload.catalog)) {
+  const top = payload.catalog.slice(0, 5);
+  top.forEach((gift) => {
+    // Integrate gift.image_url / gift.id / gift.name
+  });
+} else if (payload.success && payload.catalogsByLocale) {
+  const selected = payload.catalogsByLocale['de'] || [];
+  const top = selected.slice(0, 5);
+  top.forEach((gift) => {
+    // Integrate gift.image_url / gift.id / gift.name
+  });
+}
+</pre>
+          </div>
+
+          <div class="gc-snippet">
+            <div class="gc-snippet-caption">
+              Backend route fallback
+              <button class="gc-copy-btn btn-secondary" data-copy="snippet-backend">Copy</button>
+            </div>
+            <pre id="snippet-backend">this.api.registerRoute('POST', '/my-plugin/gifts/refresh', async (req, res) => {
+  const options = req.body || {};
+  const refreshPayload = Object.assign({}, options);
+  const response = await fetch('/api/gift-catalog-manager/refresh', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(refreshPayload)
+  });
+  const data = await response.json();
+  res.json(data);
+});</pre>
+          </div>
+
+          <div class="gc-snippet">
+            <div class="gc-snippet-caption">
+              Language map utility
+              <button class="gc-copy-btn btn-secondary" data-copy="snippet-map">Copy</button>
+            </div>
+            <pre id="snippet-map">const localeMap = {
+  en: { app: 'en-US', browser: 'en', webcast: 'en' },
+  de: { app: 'de-DE', browser: 'de', webcast: 'de-DE' },
+  fr: { app: 'fr-FR', browser: 'fr', webcast: 'fr-FR' }
+};
+
+function resolveGiftLocale(locale) {
+  return localeMap[locale] || localeMap.en;
+}</pre>
+          </div>
+        </div>
+      </section>
+
+        <p class="gc-footer">Developer preview created for internal plugin integration checks and demo-driven implementation planning.</p>
+        <p class="gc-note">Region + Locale controls are intentionally centralized so downstream plugins consume one pattern and one API contract.</p>
+      </section>
+
+      <section class="gc-panel" data-tab-panel="future-guides">
+        <section class="gc-card">
+          <h2>Coming Guides</h2>
+          <p class="gc-panel-placeholder">
+            Placeholder for future developer guides.
+            Use this tab as the anchor for additional guide surfaces.
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const endpoints = {
+          config: '/api/gift-catalog-manager/config',
+          refresh: '/api/gift-catalog-manager/refresh',
+          managerCatalog: '/api/gift-catalog-manager/catalog',
+          catalog: '/api/gift-catalog',
+          coreRefresh: '/api/gift-catalog/update'
+        };
+
+        const demoGiftData = {
+          en: ['Rose', 'Firework', 'K-Pop Heart', 'Rocket', 'Crown', 'Moon', 'Sparkle', 'Pizza', 'Galaxy', 'Golden Ticket', 'Confetti', 'Star'],
+          de: ['Rose', 'Feuerwerk', 'K-Pop Herz', 'Rakete', 'Krone', 'Mond', 'Glitzer', 'Pizza', 'Galaxie', 'Goldenes Ticket', 'Konfetti', 'Stern'],
+          es: ['Rosa', 'Fuegos artificiales', 'Corazon K-Pop', 'Cohete', 'Corona', 'Luna', 'Destello', 'Pizza', 'Galaxia', 'Boleto Dorado', 'Confeti', 'Estrella'],
+          fr: ['Rose', "Feu d'artifice", 'Coeur K-Pop', 'Fusee', 'Couronne', 'Lune', 'Paillettes', 'Pizza', 'Galaxie', 'Ticket dore', 'Confettis', 'Etoile']
+        };
+
+        let demoCatalogItems = [];
+
+        const connectionState = document.getElementById('connection-state');
+        const connectionMessage = document.getElementById('connection-message');
+        const configOutput = document.getElementById('config-output');
+        const refreshOutput = document.getElementById('refresh-output');
+        const catalogOutput = document.getElementById('catalog-output');
+        const guideTabButtons = document.querySelectorAll('.gc-tab[data-tab]');
+        const guidePanels = document.querySelectorAll('.gc-panel[data-tab-panel]');
+
+        const demoComponents = {
+          listSource: document.getElementById('demo-list-source'),
+          listLocale: document.getElementById('demo-list-locale'),
+          listContainer: document.getElementById('demo-list'),
+          listStatus: document.getElementById('demo-list-status'),
+          refreshButton: document.getElementById('demo-refresh-list'),
+          shuffleButton: document.getElementById('demo-shuffle-list'),
+          resetButton: document.getElementById('demo-reset-list'),
+          demoLocaleQuickPick: document.querySelectorAll('.gc-flag-btn[data-source="demo"]'),
+          localeQuickPick: document.querySelectorAll('#locale-quick-picks .gc-flag-btn'),
+          catalogLocaleQuickPick: document.querySelectorAll('#catalog-locale-quick .gc-flag-btn'),
+          endpointPreview: document.getElementById('demo-endpoint-preview'),
+          endpointCopyButton: document.getElementById('copy-demo-endpoint'),
+          demoRegion: document.getElementById('demo-region'),
+          regionPills: document.querySelectorAll('.gc-region-pill')
+        };
+
+        const catalogComponents = {
+          locale: document.getElementById('catalog-locale'),
+          region: document.getElementById('catalog-region')
+        };
+
+        const form = {
+          appLanguage: document.getElementById('app-language'),
+          browserLanguage: document.getElementById('browser-language'),
+          webcastLanguage: document.getElementById('webcast-language'),
+          priorityRegion: document.getElementById('priority-region'),
+          tzName: document.getElementById('tz-name'),
+          locales: document.getElementById('locales')
+        };
+
+        const defaults = {
+          app_language: 'en-US',
+          browser_language: 'en',
+          webcast_language: 'en',
+          priority_region: '',
+          tz_name: 'Europe/Berlin',
+          locales: ['en', 'de', 'es', 'fr']
+        };
+
+        const localePresets = {
+          en: {
+            app_language: 'en-US',
+            browser_language: 'en',
+            webcast_language: 'en',
+            priority_region: '',
+            tz_name: 'America/New_York'
+          },
+          de: {
+            app_language: 'de-DE',
+            browser_language: 'de',
+            webcast_language: 'de',
+            priority_region: 'DE',
+            tz_name: 'Europe/Berlin'
+          },
+          es: {
+            app_language: 'es-ES',
+            browser_language: 'es',
+            webcast_language: 'es',
+            priority_region: 'ES',
+            tz_name: 'Europe/Madrid'
+          },
+          fr: {
+            app_language: 'fr-FR',
+            browser_language: 'fr',
+            webcast_language: 'fr',
+            priority_region: 'FR',
+            tz_name: 'Europe/Paris'
+          },
+          jp: {
+            app_language: 'ja-JP',
+            browser_language: 'ja',
+            webcast_language: 'ja-JP',
+            priority_region: 'JP',
+            tz_name: 'Asia/Tokyo'
+          }
+        };
+
+        let currentConfig = null;
+
+        function setStatus(message, ok) {
+          const dot = connectionState.querySelector('.gc-dot');
+          const text = connectionState.querySelector('span:last-child');
+          dot.classList.toggle('ready', ok === true);
+          text.textContent = message;
+          connectionMessage.textContent = message;
+        }
+
+        function activateGuideTab(tabName) {
+          const target = String(tabName || 'gift-catalog');
+          guideTabButtons.forEach(function (button) {
+            button.classList.toggle('active', button.dataset.tab === target);
+          });
+
+          guidePanels.forEach(function (panel) {
+            panel.classList.toggle('active', panel.dataset.tabPanel === target);
+          });
+        }
+
+        function setOutput(target, value) {
+          target.textContent = formatJson(value);
+        }
+
+        function formatJson(value) {
+          try {
+            return JSON.stringify(value, null, 2);
+          } catch (error) {
+            return String(value);
+          }
+        }
+
+        function setActiveGroup(selector, attr, value) {
+          document.querySelectorAll(selector).forEach(function (button) {
+            button.classList.toggle('active', button.getAttribute(attr) === value);
+          });
+        }
+
+        function setActiveLocale(flagLocale, scope) {
+          const normalized = (flagLocale || '').toLowerCase();
+          if (!normalized) return;
+
+          const targetScope = (scope || 'all');
+          const isDemoScope = targetScope === 'all' || targetScope === 'demo';
+          const isCatalogScope = targetScope === 'all' || targetScope === 'catalog';
+          const isConfigScope = targetScope === 'all' || targetScope === 'config' || targetScope === 'general';
+
+          if (isDemoScope && demoComponents.listLocale) {
+            demoComponents.listLocale.value = normalized;
+            setActiveGroup('.gc-flag-btn[data-source="demo"]', 'data-locale', normalized);
+          }
+
+          if (isCatalogScope && catalogComponents.locale) {
+            catalogComponents.locale.value = normalized;
+            setActiveGroup('#catalog-locale-quick .gc-flag-btn', 'data-locale', normalized);
+          }
+
+          if (isConfigScope) {
+            setActiveGroup('#locale-quick-picks .gc-flag-btn', 'data-locale', normalized);
+          }
+
+          if (isDemoScope) {
+            renderDemoList();
+            updateDemoEndpointPreview();
+          }
+        }
+
+        function setActiveRegion(region) {
+          const next = (region || '').toUpperCase();
+          if (form.priorityRegion) {
+            form.priorityRegion.value = next;
+          }
+
+          if (catalogComponents.region) {
+            catalogComponents.region.value = next;
+          }
+
+          if (demoComponents.demoRegion) {
+            demoComponents.demoRegion.value = next;
+          }
+
+          demoComponents.regionPills.forEach(function (pill) {
+            const nextValue = (pill.getAttribute('data-region') || '').toUpperCase();
+            pill.classList.toggle('active', nextValue === next);
+          });
+
+          updateDemoEndpointPreview();
+        }
+
+        function updateDemoEndpointPreview() {
+          if (!demoComponents.endpointPreview) {
+            return;
+          }
+
+          const locale = (demoComponents.listLocale && demoComponents.listLocale.value || 'en').trim();
+          const region = (demoComponents.demoRegion && demoComponents.demoRegion.value || '').trim();
+          const query = [];
+
+          if (locale) {
+            query.push(`locales=${encodeURIComponent(locale.toLowerCase())}`);
+          }
+
+          if (region) {
+            query.push(`region=${encodeURIComponent(region.toUpperCase())}`);
+          }
+
+          demoComponents.endpointPreview.textContent = query.length
+            ? `${endpoints.managerCatalog}?${query.join('&')}`
+            : endpoints.managerCatalog;
+        }
+
+        function setLocaleAndForm(locale, regionHint) {
+          const preset = localePresets[locale] || null;
+          if (!preset) {
+            setActiveLocale(locale, 'general');
+            setActiveRegion(regionHint || '');
+            return;
+          }
+
+          fillForm({
+            app_language: preset.app_language,
+            browser_language: preset.browser_language,
+            webcast_language: preset.webcast_language,
+            priority_region: regionHint != null ? regionHint : preset.priority_region,
+            tz_name: preset.tz_name,
+            locales: [locale]
+          });
+
+          setActiveLocale(locale, 'general');
+          setActiveRegion(regionHint != null ? regionHint : preset.priority_region);
+        }
+
+        function buildManagerCatalogUrl(localeList) {
+          const query = [];
+
+          if (Array.isArray(localeList) && localeList.length) {
+            const normalized = localeList
+              .map(function (locale) {
+                return String(locale || '').trim().toLowerCase();
+              })
+              .filter(Boolean);
+
+            if (normalized.length) {
+              query.push(`locales=${encodeURIComponent(normalized.join(','))}`);
+            }
+          } else {
+            const locale = (catalogComponents.locale && catalogComponents.locale.value || '').trim();
+            if (locale) {
+              query.push(`locale=${encodeURIComponent(locale)}`);
+            }
+          }
+
+          if (catalogComponents.region && catalogComponents.region.value) {
+            query.push(`region=${encodeURIComponent(catalogComponents.region.value.trim())}`);
+          }
+
+          return endpoints.managerCatalog + (query.length ? `?${query.join('&')}` : '');
+        }
+
+        function parseLocaleInput(value) {
+          if (typeof value !== 'string') return [];
+          const seen = new Set();
+          const normalized = [];
+
+          value
+            .split(',')
+            .map(function (locale) {
+              return locale.trim().toLowerCase();
+            })
+            .filter(Boolean)
+            .forEach(function (locale) {
+              if (seen.has(locale)) return;
+              seen.add(locale);
+              normalized.push(locale);
+            });
+
+          return normalized;
+        }
+
+        function serializeLocaleInput(value) {
+          if (Array.isArray(value)) {
+            return value.join(',');
+          }
+          if (typeof value === 'string') {
+            return value;
+          }
+          return '';
+        }
+
+        function sanitizeCatalogName(gift) {
+          if (gift == null) return null;
+          if (typeof gift === 'string') return gift;
+          return gift.name || gift.giftName || gift.gift_name || gift.title || gift.label || null;
+        }
+
+        function fillForm(config = {}) {
+          form.appLanguage.value = config.app_language || '';
+          form.browserLanguage.value = config.browser_language || '';
+          form.webcastLanguage.value = config.webcast_language || '';
+          form.priorityRegion.value = config.priority_region || '';
+          form.tzName.value = config.tz_name || '';
+          form.locales.value = serializeLocaleInput(config.locales || []);
+        }
+
+        function syncVisualControlsFromForm(config) {
+          const locale = (config.browser_language || defaults.browser_language || 'en').split('-')[0].toLowerCase();
+          setActiveLocale(locale, 'config');
+          setActiveRegion(config.priority_region || '');
+
+          if (catalogComponents.locale) {
+            catalogComponents.locale.value = locale;
+          }
+          if (catalogComponents.region) {
+            catalogComponents.region.value = config.priority_region || '';
+          }
+        }
+
+        function currentDemoLocale() {
+          return (demoComponents.listLocale.value || 'en').toLowerCase();
+        }
+
+        function isLiveCatalogAvailable() {
+          return Array.isArray(demoCatalogItems) && demoCatalogItems.length > 0;
+        }
+
+        async function apiRequest(method, url, body) {
+          const request = {
+            method,
+            headers: body ? { 'content-type': 'application/json' } : undefined
+          };
+
+          if (body) {
+            request.body = JSON.stringify(body);
+          }
+
+          const response = await fetch(url, request);
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result && result.error ? result.error : 'Request failed');
+          }
+          return result;
+        }
+
+        async function loadConfig() {
+          try {
+            const data = await apiRequest('GET', endpoints.config);
+            currentConfig = data.config || {};
+            fillForm(currentConfig);
+            syncVisualControlsFromForm(currentConfig);
+            setOutput(configOutput, {
+              loadedFrom: endpoints.config,
+              success: true,
+              config: currentConfig
+            });
+            setStatus('Connected', true);
+          } catch (error) {
+            setOutput(configOutput, {
+              error: error.message,
+              endpoint: endpoints.config
+            });
+            setStatus('Connection issue', false);
+          }
+        }
+        async function saveConfig() {
+          const payload = {
+            app_language: (form.appLanguage.value || '').trim(),
+            browser_language: (form.browserLanguage.value || '').trim(),
+            webcast_language: (form.webcastLanguage.value || '').trim(),
+            priority_region: (form.priorityRegion.value || '').trim(),
+            tz_name: (form.tzName.value || '').trim(),
+            locales: parseLocaleInput(form.locales.value)
+          };
+
+          try {
+            const data = await apiRequest('POST', endpoints.config, payload);
+            currentConfig = data.config || {};
+            fillForm(currentConfig);
+            syncVisualControlsFromForm(currentConfig);
+            setOutput(configOutput, {
+              loadedFrom: endpoints.config,
+              saved: true,
+              config: currentConfig
+            });
+            setStatus('Defaults saved', true);
+          } catch (error) {
+            setOutput(configOutput, {
+              error: error.message,
+              endpoint: endpoints.config
+            });
+            setStatus('Save failed', false);
+          }
+        }
+
+        async function runRefresh(body) {
+          try {
+            const data = await apiRequest('POST', endpoints.refresh, body);
+            setOutput(refreshOutput, {
+              loadedFrom: endpoints.refresh,
+              data
+            });
+            setStatus('Refresh successful', true);
+          } catch (error) {
+            setOutput(refreshOutput, {
+              loadedFrom: endpoints.refresh,
+              error: error.message
+            });
+            setStatus('Refresh failed', false);
+          }
+        }
+
+        async function runRefreshLegacy() {
+          try {
+            const response = await fetch(endpoints.coreRefresh, { method: 'POST' });
+            const data = await response.json();
+            if (!response.ok || data.success === false) {
+              throw new Error(data && data.error ? data.error : 'Core refresh failed');
+            }
+            setOutput(refreshOutput, {
+              loadedFrom: endpoints.coreRefresh,
+              data
+            });
+            setStatus('Legacy refresh successful', true);
+          } catch (error) {
+            setOutput(refreshOutput, {
+              loadedFrom: endpoints.coreRefresh,
+              error: error.message
+            });
+            setStatus('Legacy refresh failed', false);
+          }
+        }
+
+        async function loadCatalog(showSamples, localeList) {
+          const managerUrl = buildManagerCatalogUrl(localeList);
+          try {
+            const data = await apiRequest('GET', managerUrl);
+            const catalogByLocale = data && typeof data.catalogsByLocale === 'object' && data.catalogsByLocale !== null
+              ? data.catalogsByLocale
+              : null;
+            const locale = (catalogComponents.locale && catalogComponents.locale.value || 'en').trim().toLowerCase();
+
+            const selectedLocaleCatalog = catalogByLocale
+              ? (catalogByLocale[locale] || catalogByLocale.en || Object.values(catalogByLocale)[0] || [])
+              : (Array.isArray(data.catalog) ? data.catalog : []);
+
+            const sampleCatalog = Array.isArray(selectedLocaleCatalog) ? selectedLocaleCatalog : [];
+            demoCatalogItems = sampleCatalog.slice(0);
+
+            const payload = {
+              loadedFrom: managerUrl,
+              success: true,
+              count: data.count || sampleCatalog.length,
+              locales: data.locales || [],
+              locale: data.locale,
+              catalogsByLocale: catalogByLocale || undefined,
+              availableLocales: data.availableLocales || [],
+              lastUpdate: data.lastUpdate,
+              sample: sampleCatalog.slice(0, showSamples ? 10 : 0)
+            };
+
+            setOutput(catalogOutput, payload);
+            if (demoComponents.listSource.value === 'live') {
+              renderDemoList();
+            }
+            setStatus('Manager catalog loaded', true);
+          } catch (error) {
+            setOutput(catalogOutput, {
+              error: error.message,
+              endpoint: managerUrl
+            });
+            setStatus('Catalog load failed', false);
+          }
+        }
+
+        async function loadCatalogLegacy(showSamples) {
+          try {
+            const data = await apiRequest('GET', endpoints.catalog);
+            const catalog = Array.isArray(data.catalog) ? data.catalog : [];
+            const payload = {
+              loadedFrom: endpoints.catalog,
+              success: true,
+              count: data.count || catalog.length,
+              locale: 'legacy',
+              lastUpdate: data.lastUpdate,
+              sample: catalog.slice(0, showSamples ? 10 : 0)
+            };
+
+            setOutput(catalogOutput, payload);
+            setStatus('Legacy catalog loaded', true);
+          } catch (error) {
+            setOutput(catalogOutput, {
+              loadedFrom: endpoints.catalog,
+              error: error.message
+            });
+            setStatus('Catalog load failed', false);
+          }
+        }
+
+        function applyPreset(preset) {
+          const normalizedPreset = preset === 'us' ? 'en' : preset;
+          const finalPreset = normalizedPreset === 'usa' ? 'en' : normalizedPreset;
+          if (!localePresets[finalPreset]) {
+            return;
+          }
+          setLocaleAndForm(finalPreset, localePresets[finalPreset].priority_region);
+        }
+
+        function collectFormValues() {
+          return {
+            app_language: (form.appLanguage.value || '').trim(),
+            browser_language: (form.browserLanguage.value || '').trim(),
+            webcast_language: (form.webcastLanguage.value || '').trim(),
+            priority_region: (form.priorityRegion.value || '').trim(),
+            tz_name: (form.tzName.value || '').trim(),
+            locales: parseLocaleInput(form.locales.value)
+          };
+        }
+
+        function renderDemoList(shuffleList) {
+          const useLive = demoComponents.listSource.value === 'live';
+          const locale = currentDemoLocale();
+          let gifts = [];
+
+          if (useLive && isLiveCatalogAvailable()) {
+            gifts = demoCatalogItems.map(sanitizeCatalogName).filter(Boolean);
+          } else {
+            gifts = (demoGiftData[locale] || demoGiftData.en).slice(0);
+          }
+
+          if (shuffleList) {
+            gifts = gifts.slice(0).sort(function () {
+              return Math.random() - 0.5;
+            });
+          }
+
+          demoComponents.listContainer.textContent = '';
+
+          if (!gifts.length) {
+            const emptyItem = document.createElement('li');
+            emptyItem.className = 'gc-demo-list-item';
+            emptyItem.innerHTML = '<span>No gifts available.</span><span class="gc-demo-list-item-meta">Load catalog first for live mode</span>';
+            demoComponents.listContainer.appendChild(emptyItem);
+            demoComponents.listStatus.textContent = useLive
+              ? 'No gifts loaded from /api/gift-catalog-manager/catalog.'
+              : 'Static list for locale ' + locale + ' is empty.';
+            return;
+          }
+
+          gifts.forEach(function (name, index) {
+            const item = document.createElement('li');
+            const title = document.createElement('span');
+            const meta = document.createElement('span');
+            item.className = 'gc-demo-list-item';
+            title.textContent = (index + 1) + '. ' + name;
+            meta.className = 'gc-demo-list-item-meta';
+            meta.textContent = useLive ? 'Live source' : 'Demo source ' + locale;
+            item.appendChild(title);
+            item.appendChild(meta);
+            demoComponents.listContainer.appendChild(item);
+          });
+
+          demoComponents.listStatus.textContent = useLive
+            ? ('Loaded from live endpoint: ' + gifts.length + ' gift entries.')
+            : ('Demo list rendered for locale: ' + locale + ' (' + gifts.length + ' entries).');
+        }
+
+        function copySnippet(id) {
+          const target = document.getElementById(id);
+          if (!target || !target.textContent) return;
+
+          const value = target.textContent.trim();
+          if (!value) return;
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).catch(function () {
+              window.prompt('Copy failed. Use this snippet:', value);
+            });
+          } else {
+            window.prompt('Copy this snippet:', value);
+          }
+        }
+
+        function bindDemoControls() {
+          demoComponents.localeQuickPick.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+              event.preventDefault();
+              const locale = button.getAttribute('data-locale');
+              const region = button.getAttribute('data-region');
+              setLocaleAndForm(locale, region);
+              setActiveLocale(locale, 'config');
+              updateDemoEndpointPreview();
+            });
+          });
+
+          demoComponents.catalogLocaleQuickPick.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+              event.preventDefault();
+              const locale = button.getAttribute('data-locale');
+              setActiveLocale(locale, 'catalog');
+              loadCatalog(false, [locale]);
+              setStatus('Catalog locale quick pick selected', true);
+            });
+          });
+
+          demoComponents.demoLocaleQuickPick.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+              event.preventDefault();
+              const locale = button.getAttribute('data-locale');
+              setActiveLocale(locale, 'demo');
+              renderDemoList();
+              updateDemoEndpointPreview();
+            });
+          });
+
+          demoComponents.listSource.addEventListener('change', renderDemoList);
+          demoComponents.listLocale.addEventListener('change', function () {
+            setActiveGroup('.gc-flag-btn[data-source="demo"]', 'data-locale', (demoComponents.listLocale.value || '').toLowerCase());
+            renderDemoList();
+            updateDemoEndpointPreview();
+          });
+
+          demoComponents.demoRegion.addEventListener('change', function () {
+            const region = demoComponents.demoRegion.value;
+            setActiveRegion(region);
+            if (demoComponents.listSource.value === 'live') {
+              loadCatalog(false, [(demoComponents.listLocale.value || 'en').toLowerCase()]);
+            }
+            renderDemoList();
+            setStatus('Demo region updated', true);
+          });
+
+          demoComponents.refreshButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            renderDemoList();
+            updateDemoEndpointPreview();
+          });
+
+          demoComponents.shuffleButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            renderDemoList(true);
+          });
+
+          demoComponents.resetButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            demoComponents.listSource.value = 'static';
+            demoComponents.listLocale.value = defaults.browser_language || 'en';
+            renderDemoList();
+            updateDemoEndpointPreview();
+          });
+
+          demoComponents.regionPills.forEach(function (pill) {
+            pill.addEventListener('click', function (event) {
+              event.preventDefault();
+              const nextRegion = pill.getAttribute('data-region');
+              const isDemoRegion = !!pill.closest('#demo-region-quick');
+              setActiveRegion(nextRegion);
+              if (isDemoRegion && demoComponents.listSource.value === 'live') {
+                loadCatalog(false, [(demoComponents.listLocale.value || 'en').toLowerCase()]);
+              }
+              renderDemoList();
+            });
+          });
+
+          demoComponents.endpointCopyButton.addEventListener('click', function () {
+            if (!demoComponents.endpointPreview) {
+              return;
+            }
+
+            if (!navigator.clipboard) {
+              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+              return;
+            }
+
+            navigator.clipboard.writeText(demoComponents.endpointPreview.textContent || '').catch(function () {
+              window.prompt('Endpoint:', demoComponents.endpointPreview.textContent || '');
+            });
+          });
+
+          if (catalogComponents.locale) {
+            catalogComponents.locale.addEventListener('change', function () {
+              setActiveLocale(catalogComponents.locale.value, 'catalog');
+              renderDemoList();
+              setStatus('Catalog locale updated', true);
+            });
+          }
+
+          if (catalogComponents.region) {
+            catalogComponents.region.addEventListener('change', function () {
+              setActiveRegion(catalogComponents.region.value);
+              setStatus('Catalog region override updated', true);
+            });
+          }
+        }
+
+        guideTabButtons.forEach(function (button) {
+          if (button.disabled) return;
+
+          button.addEventListener('click', function (event) {
+            event.preventDefault();
+            activateGuideTab(button.dataset.tab);
+          });
+        });
+
+        document.getElementById('load-config').addEventListener('click', function (event) {
+          event.preventDefault();
+          loadConfig();
+        });
+        document.getElementById('save-config').addEventListener('click', function (event) {
+          event.preventDefault();
+          saveConfig();
+        });
+        document.getElementById('preset-de').addEventListener('click', function (event) {
+          event.preventDefault();
+          applyPreset('de');
+        });
+        document.getElementById('preset-us').addEventListener('click', function (event) {
+          event.preventDefault();
+          applyPreset('us');
+        });
+        document.getElementById('preset-jp').addEventListener('click', function (event) {
+          event.preventDefault();
+          applyPreset('jp');
+        });
+
+        document.getElementById('run-refresh-form').addEventListener('click', function (event) {
+          event.preventDefault();
+          runRefresh(collectFormValues());
+        });
+        document.getElementById('run-refresh-default').addEventListener('click', function (event) {
+          event.preventDefault();
+          runRefresh(currentConfig || defaults);
+        });
+        document.getElementById('run-refresh-core').addEventListener('click', function (event) {
+          event.preventDefault();
+          runRefreshLegacy();
+        });
+        document.getElementById('run-refresh-all').addEventListener('click', function (event) {
+          event.preventDefault();
+          const configuredLocales = parseLocaleInput(form.locales.value);
+          runRefresh({
+            app_language: form.appLanguage.value || defaults.app_language,
+            browser_language: form.browserLanguage.value || defaults.browser_language,
+            webcast_language: form.webcastLanguage.value || defaults.webcast_language,
+            priority_region: form.priorityRegion.value || defaults.priority_region,
+            tz_name: form.tzName.value || defaults.tz_name,
+            locales: configuredLocales.length ? configuredLocales : defaults.locales
+          });
+        });
+
+        document.getElementById('refresh-current').addEventListener('click', function (event) {
+          event.preventDefault();
+          if (currentConfig) {
+            runRefresh(currentConfig);
+            return;
+          }
+          runRefresh(collectFormValues());
+        });
+        document.getElementById('refresh-custom').addEventListener('click', function (event) {
+          event.preventDefault();
+          runRefresh(collectFormValues());
+        });
+        document.getElementById('refresh-core').addEventListener('click', function (event) {
+          event.preventDefault();
+          runRefreshLegacy();
+        });
+
+        document.getElementById('load-catalog-manager').addEventListener('click', function (event) {
+          event.preventDefault();
+          loadCatalog(false);
+        });
+        document.getElementById('load-catalog-all').addEventListener('click', function (event) {
+          event.preventDefault();
+          const configuredLocales = (Array.isArray(currentConfig && currentConfig.locales) && currentConfig.locales.length)
+            ? currentConfig.locales
+            : defaults.locales;
+          loadCatalog(false, configuredLocales);
+        });
+        document.getElementById('load-catalog-sample').addEventListener('click', function (event) {
+          event.preventDefault();
+          loadCatalog(true);
+        });
+        document.getElementById('load-catalog-legacy').addEventListener('click', function (event) {
+          event.preventDefault();
+          loadCatalogLegacy(false);
+        });
+
+        document.querySelectorAll('.gc-copy-btn[data-copy]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            copySnippet(button.getAttribute('data-copy'));
+          });
+        });
+
+        fillForm({
+          app_language: defaults.app_language,
+          browser_language: defaults.browser_language,
+          webcast_language: defaults.webcast_language,
+          priority_region: defaults.priority_region,
+          tz_name: defaults.tz_name,
+          locales: defaults.locales
+        });
+        syncVisualControlsFromForm({
+          app_language: defaults.app_language,
+          browser_language: defaults.browser_language,
+          webcast_language: defaults.webcast_language,
+          priority_region: defaults.priority_region,
+          tz_name: defaults.tz_name,
+          locales: defaults.locales
+        });
+        bindDemoControls();
+        demoComponents.listLocale.value = defaults.browser_language || 'en';
+        updateDemoEndpointPreview();
+        renderDemoList();
+        activateGuideTab('gift-catalog');
+        loadConfig();
+      })();
+    </script>
+  </body>
+</html>

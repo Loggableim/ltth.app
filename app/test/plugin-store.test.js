@@ -102,6 +102,7 @@ describe('PluginStore', () => {
     assert.strictEqual(tts.installedVersion, '1.0.0');
     assert.strictEqual(tts.channel, 'open-beta');
     assert.deepStrictEqual(tts.pricing, { type: 'free', amount: 0, currency: 'EUR' });
+    assert.strictEqual(tts.sha256, '');
     assert.strictEqual(soundboard.installed, false);
     assert.strictEqual(soundboard.official, true);
     assert.deepStrictEqual(soundboard.pricing, { type: 'paid', amount: 499, currency: 'EUR' });

@@ -7,7 +7,78 @@
     <title>OpenShock Control Panel</title>
     <link rel="stylesheet" href="/openshock/openshock.css">
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .tabs,
+        html[data-theme="vision-impaired"] .log-container {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] select {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] .status-badge {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">

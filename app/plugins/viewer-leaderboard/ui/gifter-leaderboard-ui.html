@@ -6,6 +6,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboard - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function normalizeTheme(theme) {
+                if (VALID_THEMES.has(theme)) return theme;
+                return 'night';
+            }
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function applyTheme(theme) {
+                const value = normalizeTheme(theme);
+                document.documentElement.setAttribute('data-theme', value);
+                document.documentElement.style.colorScheme = value === 'day' ? 'light' : 'dark';
+            }
+
+            function syncTheme() {
+                applyTheme(readTheme());
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,9 +74,118 @@
             min-height: 100vh;
         }
 
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .header h1 {
+            color: #10203a;
+            -webkit-text-fill-color: #10203a;
+            background: none;
+        }
+
+        html[data-theme="night"] .header h1 {
+            color: #f8fafc;
+            -webkit-text-fill-color: #f8fafc;
+            background: none;
+        }
+
+        html[data-theme="day"] .header p {
+            color: #42526b;
+        }
+
+        html[data-theme="night"] .header p {
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        html[data-theme="day"] .card,
+        html[data-theme="day"] .stat-card {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .card,
+        html[data-theme="night"] .stat-card {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .leaderboard-table th,
+        html[data-theme="day"] .leaderboard-table td {
+            border-bottom-color: #d9e3f7;
+        }
+
+        html[data-theme="night"] .leaderboard-table th,
+        html[data-theme="night"] .leaderboard-table td {
+            border-bottom-color: #2b3552;
+        }
+
+        html[data-theme="day"] .leaderboard-table th {
+            background: #e8eefc;
+        }
+
+        html[data-theme="night"] .leaderboard-table th {
+            background: #0f172a;
+        }
+
+        html[data-theme="day"] .btn-secondary {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] .btn-secondary {
+            background: #1e293b;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .stat-card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="contrast"] .form-input,
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #050505;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .header h1,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .form-label {
+            color: #fff7cc;
+        }
+
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0 24px;
+            box-sizing: border-box;
         }
 
         .header {
@@ -251,6 +416,85 @@
         .empty-icon {
             font-size: 4rem;
             margin-bottom: 16px;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+            font-size: 1.12rem;
+            line-height: 1.8;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            max-width: none;
+            padding: 0 20px;
+        }
+
+        html[data-theme="vision-impaired"] .header h1,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .stat-value {
+            color: #fff7cc !important;
+            text-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .header p,
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .empty-state,
+        html[data-theme="vision-impaired"] .empty-state p,
+        html[data-theme="vision-impaired"] .form-label,
+        html[data-theme="vision-impaired"] small {
+            color: #f8e7a1 !important;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card {
+            background: #000 !important;
+            color: #fff !important;
+            border: 4px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .tabs {
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-btn {
+            color: #fff7cc !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-btn.active {
+            color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] select.form-input {
+            background: #000 !important;
+            color: #fff !important;
+            border: 4px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000 !important;
+            color: #fff !important;
+            border: 4px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .leaderboard-table th,
+        html[data-theme="vision-impaired"] .leaderboard-table td {
+            border-bottom-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .message.success,
+        html[data-theme="vision-impaired"] .message.error {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 4px solid #facc15 !important;
         }
     </style>
 </head>

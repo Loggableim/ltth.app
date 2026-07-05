@@ -50,6 +50,7 @@ function generateUniqueSoundId() {
 
 // Audio pool for soundboard playback
 let audioPool = [];
+let giftRecommendationsCache = [];
 
 // Dedicated preview audio element (reused to prevent multiple simultaneous previews)
 let previewAudio = null;
@@ -63,6 +64,255 @@ let currentPlayMode = 'overlap';     // Default to overlap mode ('overlap', 'que
 let currentMaxQueueLength = 10;
 let activeAnimationInput = null;
 const MAX_GIFT_REPEAT_PLAYS = 50;
+
+// ========== WORKSPACE NAVIGATION ==========
+let currentWorkspaceView = 'overview';
+let workspaceDirty = false;
+
+function setWorkspaceDirty(isDirty = true) {
+    workspaceDirty = isDirty;
+    const saveState = document.getElementById('soundboard-save-state');
+    if (saveState) {
+        saveState.textContent = workspaceDirty ? 'Unsaved changes' : 'All settings saved';
+        saveState.style.color = workspaceDirty ? '#f59e0b' : '';
+    }
+}
+
+function updateWorkspaceOverview() {
+    const giftCount = document.getElementById('overview-gift-count');
+    if (giftCount) {
+        giftCount.textContent = String(giftsCache.length || 0);
+    }
+
+    const enabledState = document.getElementById('overview-enabled-state');
+    const enabledInput = document.getElementById('soundboard-enabled');
+    if (enabledState && enabledInput) {
+        enabledState.textContent = enabledInput.checked ? 'Enabled' : 'Disabled';
+    }
+
+    const obsState = document.getElementById('overview-obs-state');
+    const overlayUrl = document.getElementById('animation-overlay-url');
+    if (obsState && overlayUrl) {
+        obsState.textContent = overlayUrl.value ? 'Ready' : 'Loading';
+    }
+}
+
+async function loadGiftRecommendations() {
+    const container = document.getElementById('gift-recommendations-list');
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-gray-400 text-sm">Loading recommendations...</div>';
+
+    try {
+        giftRecommendationsCache = await fetchGiftRecommendations();
+        renderGiftRecommendations();
+    } catch (error) {
+        log.error('Error loading gift recommendations', { error: error.message });
+        container.innerHTML = '<div class="text-red-400 text-sm">Could not load recommendations.</div>';
+    }
+}
+
+async function fetchGiftRecommendations() {
+    const response = await fetch('/api/soundboard/recommendations/unconfigured-gifts?limit=10&lookback=5000');
+    const contentType = response.headers.get('content-type') || '';
+
+    if (response.ok && contentType.includes('application/json')) {
+        const result = await response.json();
+        if (result.success) {
+            return result.recommendations || [];
+        }
+        throw new Error(result.error || 'Failed to load recommendations');
+    }
+
+    // Older running servers do not have the new plugin route until restart.
+    // Fall back to the existing event log API so the UI still works after a refresh.
+    return fetchGiftRecommendationsFromEventLogs();
+}
+
+async function fetchGiftRecommendationsFromEventLogs() {
+    const [giftSoundsResponse, eventLogsResponse] = await Promise.all([
+        fetch('/api/soundboard/gifts'),
+        fetch('/api/event-logs?type=gift&limit=1000')
+    ]);
+
+    if (!giftSoundsResponse.ok || !eventLogsResponse.ok) {
+        throw new Error('Recommendation fallback APIs are unavailable');
+    }
+
+    const configuredGifts = await giftSoundsResponse.json();
+    const eventLogResult = await eventLogsResponse.json();
+    const configuredIds = new Set((configuredGifts || []).map(gift => Number(gift.giftId)));
+    const grouped = new Map();
+
+    (eventLogResult.logs || []).forEach(row => {
+        const gift = normalizeRecommendationGift(row.data || {});
+        if (!gift.giftId || configuredIds.has(Number(gift.giftId))) {
+            return;
+        }
+
+        const existing = grouped.get(gift.giftId) || {
+            giftId: gift.giftId,
+            label: gift.label || `Gift ${gift.giftId}`,
+            imageUrl: gift.imageUrl || null,
+            diamondCount: gift.diamondCount || null,
+            dropCount: 0,
+            repeatCount: 0,
+            lastDroppedAt: row.timestamp || null
+        };
+
+        existing.dropCount += 1;
+        existing.repeatCount += gift.repeatCount || 1;
+        if (!existing.lastDroppedAt || (row.timestamp && row.timestamp > existing.lastDroppedAt)) {
+            existing.lastDroppedAt = row.timestamp;
+        }
+        grouped.set(gift.giftId, existing);
+    });
+
+    return Array.from(grouped.values())
+        .sort((a, b) => {
+            if (b.repeatCount !== a.repeatCount) return b.repeatCount - a.repeatCount;
+            return b.dropCount - a.dropCount;
+        })
+        .slice(0, 10);
+}
+
+function normalizeRecommendationGift(data = {}) {
+    const gift = data.giftDetails || data.gift || data.giftInfo || {};
+    const giftId = parseInt(
+        data.giftId || data.gift_id || gift.giftId || gift.gift_id || gift.id || data.id,
+        10
+    );
+    const repeatCount = parseInt(
+        data.repeatCount || data.repeat_count || data.comboCount || data.combo_count ||
+        data.giftCount || data.gift_count || gift.repeatCount || gift.repeat_count ||
+        gift.giftCount || gift.gift_count || data.count || gift.count || 1,
+        10
+    );
+    const diamondCount = parseInt(
+        data.diamondCount || data.diamond_count || gift.diamondCount || gift.diamond_count || gift.diamonds || data.diamonds,
+        10
+    );
+
+    return {
+        giftId: Number.isFinite(giftId) ? giftId : null,
+        label: data.giftName || data.gift_name || gift.giftName || gift.gift_name || gift.name || data.name,
+        imageUrl: data.giftPictureUrl || data.gift_image || gift.giftPictureUrl || gift.imageUrl || gift.image || gift.icon || null,
+        diamondCount: Number.isFinite(diamondCount) ? diamondCount : null,
+        repeatCount: Number.isFinite(repeatCount) && repeatCount > 0 ? repeatCount : 1
+    };
+}
+
+function renderGiftRecommendations() {
+    const container = document.getElementById('gift-recommendations-list');
+    if (!container) return;
+
+    if (giftRecommendationsCache.length === 0) {
+        container.innerHTML = '<div class="text-gray-400 text-sm">No recommendations yet. Gifts need to be dropped first, and already configured gifts are excluded.</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    giftRecommendationsCache.forEach(gift => {
+        const card = document.createElement('div');
+        card.className = 'gift-recommendation-card';
+        card.innerHTML = `
+            <div class="gift-recommendation-image">
+                ${gift.imageUrl ? `<img src="${escapeHtml(gift.imageUrl)}" alt="${escapeHtml(gift.label)}">` : '🎁'}
+            </div>
+            <div style="min-width: 0;">
+                <div class="gift-recommendation-title">${escapeHtml(gift.label)}</div>
+                <div class="gift-recommendation-meta">
+                    ${gift.repeatCount || gift.dropCount} received · ${gift.dropCount} drops · ID ${gift.giftId}
+                    ${gift.diamondCount ? ` · 💎 ${gift.diamondCount}` : ''}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-primary" type="button" data-action="configure-recommended-gift" data-gift-id="${gift.giftId}">
+                Configure
+            </button>
+        `;
+        container.appendChild(card);
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function configureRecommendedGift(giftId) {
+    const gift = giftRecommendationsCache.find(item => Number(item.giftId) === Number(giftId));
+    if (!gift) return;
+
+    selectGift({
+        id: gift.giftId,
+        name: gift.label,
+        image_url: gift.imageUrl || null,
+        diamond_count: gift.diamondCount || 0
+    });
+    switchSoundboardWorkspace('gift-mapping');
+}
+
+function switchSoundboardWorkspace(viewName) {
+    currentWorkspaceView = viewName || 'overview';
+
+    document.querySelectorAll('[data-soundboard-view]').forEach(button => {
+        button.classList.toggle('active', button.dataset.soundboardView === currentWorkspaceView);
+    });
+
+    document.querySelectorAll('[data-workspace-panel]').forEach(panel => {
+        panel.classList.toggle('active', panel.dataset.workspacePanel === currentWorkspaceView);
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function initializeSoundboardWorkspace() {
+    const simpleSearchSlot = document.getElementById('library-simple-search-slot');
+    const simpleSearch = document.querySelector('.myinstants-search');
+    if (simpleSearchSlot && simpleSearch) {
+        simpleSearchSlot.appendChild(simpleSearch);
+    }
+
+    const gifSearchSlot = document.getElementById('library-gif-search-slot');
+    const gifSearch = document.querySelector('.gif-search');
+    if (gifSearchSlot && gifSearch) {
+        gifSearchSlot.appendChild(gifSearch);
+    }
+
+    document.querySelectorAll('[data-soundboard-view]').forEach(button => {
+        button.addEventListener('click', () => {
+            switchSoundboardWorkspace(button.dataset.soundboardView);
+        });
+    });
+
+    document.querySelectorAll('[data-save-proxy]').forEach(button => {
+        button.addEventListener('click', () => {
+            const saveButton = document.getElementById('save-soundboard-btn');
+            if (saveButton) saveButton.click();
+        });
+    });
+
+    const workspaceRoot = document.querySelector('.soundboard-workspace');
+    if (workspaceRoot) {
+        workspaceRoot.addEventListener('input', event => {
+            const target = event.target;
+            if (target && target.matches && target.matches('input, select, textarea')) {
+                setWorkspaceDirty(true);
+                updateWorkspaceOverview();
+            }
+        });
+        workspaceRoot.addEventListener('change', event => {
+            const target = event.target;
+            if (target && target.matches && target.matches('input, select, textarea')) {
+                setWorkspaceDirty(true);
+                updateWorkspaceOverview();
+            }
+        });
+    }
+
+    switchSoundboardWorkspace(currentWorkspaceView);
+}
 
 // ========== SOCKET EVENTS ==========
 socket.on('soundboard:play', (data) => {
@@ -536,6 +786,9 @@ async function loadSoundboardSettings() {
         
         const likeWindow = document.getElementById('soundboard-like-window');
         if (likeWindow) likeWindow.value = settings.soundboard_like_window_seconds || '10';
+
+        updateWorkspaceOverview();
+        setWorkspaceDirty(false);
         
     } catch (error) {
         log.error('Error loading soundboard settings', { error: error.message });
@@ -751,6 +1004,8 @@ async function saveSoundboardSettings() {
         if (response.ok) {
             alert('✅ Soundboard settings saved successfully!');
             logAudioEvent('success', 'Settings saved successfully', null);
+            setWorkspaceDirty(false);
+            updateWorkspaceOverview();
         }
     } catch (error) {
         log.error('Error saving soundboard settings', { error: error.message });
@@ -805,6 +1060,7 @@ async function loadGiftSounds() {
         
         // Update cache
         giftsCache = gifts;
+        updateWorkspaceOverview();
         
         const tbody = document.getElementById('gift-sounds-list');
         if (!tbody) {
@@ -1044,6 +1300,7 @@ async function addGiftSound() {
             // Reload lists
             await loadGiftSounds();
             await loadGiftCatalog(); // Reload catalog to update checkmarks
+            await loadGiftRecommendations();
         }
     } catch (error) {
         log.error('Error adding gift sound', { error: error.message });
@@ -1065,6 +1322,7 @@ async function deleteGiftSound(giftId) {
             logAudioEvent('success', `Gift sound deleted: ${giftId}`, null);
             await loadGiftSounds();
             await loadGiftCatalog(); // Reload catalog to update checkmarks
+            await loadGiftRecommendations();
         }
     } catch (error) {
         log.error('Error deleting gift sound', { error: error.message });
@@ -2556,11 +2814,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+
+    initializeSoundboardWorkspace();
     
     // Load initial data
     loadSoundboardSettings();
     loadGiftSounds();
     loadGiftCatalog();
+    loadGiftRecommendations();
     loadCategories(); // Load categories for advanced search
     checkAudioSystemStatus();
     initializeEventSoundSliders(); // Initialize event sound volume sliders
@@ -2627,10 +2888,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (action === 'delete-gift') {
                 const giftId = parseInt(actionBtn.dataset.giftId);
                 deleteGiftSound(giftId);
+            } else if (action === 'configure-recommended-gift') {
+                const giftId = parseInt(actionBtn.dataset.giftId);
+                configureRecommendedGift(giftId);
             }
             return;
         }
     });
+
+    const refreshGiftRecommendationsBtn = document.getElementById('refresh-gift-recommendations-btn');
+    if (refreshGiftRecommendationsBtn) {
+        refreshGiftRecommendationsBtn.addEventListener('click', loadGiftRecommendations);
+    }
     
     // Catalog refresh button
     const refreshCatalogBtn = document.getElementById('refresh-catalog-btn');

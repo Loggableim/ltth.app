@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -7,11 +7,46 @@
     <title>Multi-Cam Switcher - Geschenkekatalog</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
-        (function() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme && savedTheme !== 'night') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
             }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
         })();
     </script>
     <script src="/socket.io/socket.io.js"></script>
@@ -27,7 +62,7 @@
             font-size: 14px;
         }
 
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { width: 100%; max-width: 1240px; margin: 0 auto; }
 
         h1 { font-size: 24px; margin-bottom: 20px; color: var(--color-text-primary); }
         h2 {
@@ -218,6 +253,251 @@
         .gift-card .gift-scene-select select.mapped-option {
             border-color: var(--color-accent-success);
         }
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .status-bar,
+        html[data-theme="day"] .control-group,
+        html[data-theme="day"] .gift-catalog-controls,
+        html[data-theme="day"] .gift-card,
+        html[data-theme="day"] .gift-card .gift-image,
+        html[data-theme="day"] .gift-card.mapped,
+        html[data-theme="day"] .gift-card .gift-scene-select select {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .status-bar,
+        html[data-theme="night"] .control-group,
+        html[data-theme="night"] .gift-catalog-controls,
+        html[data-theme="night"] .gift-card,
+        html[data-theme="night"] .gift-card .gift-image,
+        html[data-theme="night"] .gift-card.mapped,
+        html[data-theme="night"] .gift-card .gift-scene-select select {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] button,
+        html[data-theme="day"] select {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] button,
+        html[data-theme="night"] select {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="contrast"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="day"] .status-bar,
+        html[data-theme="day"] .control-group,
+        html[data-theme="day"] .gift-catalog-controls,
+        html[data-theme="day"] .gift-card,
+        html[data-theme="day"] .gift-card .gift-image,
+        html[data-theme="day"] .gift-card.mapped,
+        html[data-theme="day"] .save-bar,
+        html[data-theme="day"] .log-container {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .status-bar,
+        html[data-theme="night"] .control-group,
+        html[data-theme="night"] .gift-catalog-controls,
+        html[data-theme="night"] .gift-card,
+        html[data-theme="night"] .gift-card .gift-image,
+        html[data-theme="night"] .gift-card.mapped,
+        html[data-theme="night"] .save-bar,
+        html[data-theme="night"] .log-container {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="contrast"] .status-bar,
+        html[data-theme="contrast"] .control-group,
+        html[data-theme="contrast"] .gift-catalog-controls,
+        html[data-theme="contrast"] .gift-card,
+        html[data-theme="contrast"] .gift-card .gift-image,
+        html[data-theme="contrast"] .gift-card.mapped,
+        html[data-theme="contrast"] .save-bar,
+        html[data-theme="contrast"] .log-container,
+        html[data-theme="vision-impaired"] .status-bar,
+        html[data-theme="vision-impaired"] .control-group,
+        html[data-theme="vision-impaired"] .gift-catalog-controls,
+        html[data-theme="vision-impaired"] .gift-card,
+        html[data-theme="vision-impaired"] .gift-card .gift-image,
+        html[data-theme="vision-impaired"] .gift-card.mapped,
+        html[data-theme="vision-impaired"] .save-bar,
+        html[data-theme="vision-impaired"] .log-container {
+            background: #050505;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="day"] button,
+        html[data-theme="day"] select,
+        html[data-theme="day"] input {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="day"] button.primary {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        html[data-theme="day"] button.success {
+            background: #10b981;
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        html[data-theme="day"] button.danger {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        html[data-theme="night"] button,
+        html[data-theme="night"] select,
+        html[data-theme="night"] input {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="night"] button.primary {
+            background: #60a5fa;
+            color: #fff;
+            border-color: #60a5fa;
+        }
+
+        html[data-theme="night"] button.success {
+            background: #34d399;
+            color: #fff;
+            border-color: #34d399;
+        }
+
+        html[data-theme="night"] button.danger {
+            background: #f87171;
+            color: #fff;
+            border-color: #f87171;
+        }
+
+        html[data-theme="contrast"] button,
+        html[data-theme="contrast"] select,
+        html[data-theme="contrast"] input,
+        html[data-theme="contrast"] .gift-card .gift-coins-input input,
+        html[data-theme="vision-impaired"] button,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] .gift-card .gift-coins-input input {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] button.primary,
+        html[data-theme="contrast"] button.success,
+        html[data-theme="contrast"] button.danger,
+        html[data-theme="vision-impaired"] button.primary,
+        html[data-theme="vision-impaired"] button.success,
+        html[data-theme="vision-impaired"] button.danger {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] h1,
+        html[data-theme="contrast"] h2,
+        html[data-theme="contrast"] h3,
+        html[data-theme="contrast"] .gift-card .gift-name,
+        html[data-theme="contrast"] .gift-card .gift-coins,
+        html[data-theme="contrast"] .tier-header,
+        html[data-theme="contrast"] .save-bar .save-info strong,
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] h2,
+        html[data-theme="vision-impaired"] h3,
+        html[data-theme="vision-impaired"] .gift-card .gift-name,
+        html[data-theme="vision-impaired"] .gift-card .gift-coins,
+        html[data-theme="vision-impaired"] .tier-header,
+        html[data-theme="vision-impaired"] .save-bar .save-info strong {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.08rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            max-width: 1500px;
+        }
+
+        html[data-theme="vision-impaired"] .status-bar,
+        html[data-theme="vision-impaired"] .control-group,
+        html[data-theme="vision-impaired"] .gift-catalog-controls,
+        html[data-theme="vision-impaired"] .gift-card,
+        html[data-theme="vision-impaired"] .gift-card .gift-image,
+        html[data-theme="vision-impaired"] .gift-card.mapped,
+        html[data-theme="vision-impaired"] .save-bar,
+        html[data-theme="vision-impaired"] .log-container {
+            border-width: 3px;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .gift-grid {
+            gap: 16px;
+        }
+
+        html[data-theme="vision-impaired"] .gift-card {
+            padding: 16px;
+        }
+
+        html[data-theme="vision-impaired"] .gift-card .gift-name {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        html[data-theme="vision-impaired"] .gift-card .gift-coins {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        html[data-theme="vision-impaired"] button,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        html[data-theme="vision-impaired"] .save-bar {
+            position: static;
+        }
 
         .gift-card .gift-coins-input {
             display: flex;
@@ -348,6 +628,33 @@
             padding: 8px 16px;
             font-size: 13px;
             font-weight: 600;
+        }
+
+        html[data-theme="vision-impaired"] .scene-switcher-compact button.primary,
+        html[data-theme="vision-impaired"] .save-bar button.primary,
+        html[data-theme="vision-impaired"] .gift-catalog-controls button,
+        html[data-theme="vision-impaired"] .button-group button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .scene-switcher-compact button.primary:hover,
+        html[data-theme="vision-impaired"] .save-bar button.primary:hover,
+        html[data-theme="vision-impaired"] .gift-catalog-controls button:hover,
+        html[data-theme="vision-impaired"] .button-group button:hover {
+            background: #111;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .scene-switcher-compact select,
+        html[data-theme="vision-impaired"] .gift-catalog-controls select,
+        html[data-theme="vision-impaired"] .gift-card .gift-scene-select select,
+        html[data-theme="vision-impaired"] .gift-card .gift-coins-input input {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
         }
 
         /* Log */

@@ -105,6 +105,203 @@
       box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
     }
 
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    html[data-theme="day"] .page-header,
+    html[data-theme="day"] .card,
+    html[data-theme="day"] .section-card,
+    html[data-theme="day"] .theme-card,
+    html[data-theme="day"] .modal-content,
+    html[data-theme="day"] .info-box,
+    html[data-theme="day"] .pill {
+      background: #fff;
+      color: #10203a;
+      border: 1px solid #bfd0f7;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    html[data-theme="night"] .page-header,
+    html[data-theme="night"] .card,
+    html[data-theme="night"] .section-card,
+    html[data-theme="night"] .theme-card,
+    html[data-theme="night"] .modal-content,
+    html[data-theme="night"] .info-box,
+    html[data-theme="night"] .pill {
+      background: #11172a;
+      color: #e5e7eb;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+    }
+
+    html[data-theme="day"] .page-title,
+    html[data-theme="day"] .eyebrow,
+    html[data-theme="day"] .page-subtitle,
+    html[data-theme="day"] .language-label,
+    html[data-theme="day"] .section-title,
+    html[data-theme="day"] .card-title,
+    html[data-theme="day"] .text-muted {
+      color: #10203a !important;
+    }
+
+    html[data-theme="night"] .page-title,
+    html[data-theme="night"] .eyebrow,
+    html[data-theme="night"] .page-subtitle,
+    html[data-theme="night"] .language-label,
+    html[data-theme="night"] .section-title,
+    html[data-theme="night"] .card-title,
+    html[data-theme="night"] .text-muted {
+      color: #fff7cc !important;
+    }
+
+    html[data-theme="day"] .theme-chip {
+      background: linear-gradient(135deg, #4f7cff 0%, #6d28d9 100%);
+      color: #fff;
+    }
+
+    html[data-theme="night"] .theme-chip {
+      background: #000;
+      color: #facc15;
+      border: 2px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+      font-size: 1.12rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .page-header,
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .section-card,
+    html[data-theme="vision-impaired"] .theme-card,
+    html[data-theme="vision-impaired"] .modal-content,
+    html[data-theme="vision-impaired"] .info-box,
+    html[data-theme="vision-impaired"] .pill {
+      background: #000;
+      color: #fff;
+      border: 4px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .theme-chip {
+      background: #000;
+      color: #facc15;
+      border: 4px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .page-title,
+    html[data-theme="vision-impaired"] .eyebrow,
+    html[data-theme="vision-impaired"] .page-subtitle,
+    html[data-theme="vision-impaired"] .language-label,
+    html[data-theme="vision-impaired"] .section-title,
+    html[data-theme="vision-impaired"] .card-title,
+    html[data-theme="vision-impaired"] .text-muted {
+      color: #fff7cc !important;
+    }
+
+    html[data-theme="vision-impaired"] .theme-card.selected {
+      border-color: #facc15;
+      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.28);
+    }
+
+    html[data-theme="vision-impaired"] .card-header {
+      background: #facc15;
+      color: #000;
+      text-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .card-header * {
+      color: inherit !important;
+    }
+
+    html[data-theme="vision-impaired"] .config-section-header {
+      background: #000;
+      color: #facc15;
+      border-bottom: 3px solid #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .config-section-header h5,
+    html[data-theme="vision-impaired"] .config-section-toggle {
+      color: inherit;
+    }
+
+    html[data-theme="vision-impaired"] #overlayPreviewContainer > div {
+      border: 4px solid #facc15 !important;
+      background: #000 !important;
+    }
+
+    html[data-theme="vision-impaired"] #overlayPreview {
+      background: #000 !important;
+    }
+
+    html[data-theme="contrast"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .page-header,
+    html[data-theme="contrast"] .card,
+    html[data-theme="contrast"] .section-card,
+    html[data-theme="contrast"] .theme-card,
+    html[data-theme="contrast"] .modal-content,
+    html[data-theme="contrast"] .info-box,
+    html[data-theme="contrast"] .pill {
+      background: #050505;
+      color: #fff;
+      border: 2px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .theme-chip {
+      background: #000;
+      color: #facc15;
+      border: 2px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="contrast"] .page-title,
+    html[data-theme="contrast"] .eyebrow,
+    html[data-theme="contrast"] .page-subtitle,
+    html[data-theme="contrast"] .language-label,
+    html[data-theme="contrast"] .section-title,
+    html[data-theme="contrast"] .card-title,
+    html[data-theme="contrast"] .text-muted {
+      color: #fff7cc !important;
+    }
+
+    html[data-theme="contrast"] .theme-card.selected {
+      border-color: #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45);
+    }
+
+    html[data-theme="contrast"] .card-header {
+      background: #facc15;
+      color: #000;
+      text-shadow: none;
+    }
+
+    html[data-theme="contrast"] .config-section-header {
+      background: #111;
+      color: #facc15;
+      border-bottom: 2px solid #facc15;
+    }
+
+    html[data-theme="contrast"] .config-section-header h5,
+    html[data-theme="contrast"] .config-section-toggle {
+      color: inherit;
+    }
+
     .header-actions {
       display: flex;
       gap: 12px;
@@ -1484,7 +1681,7 @@
           status: { ready: 'Ready for your next stream' },
           theme_synced: 'Theme synced with dashboard',
           language_label: 'Language',
-          theme_name: { night: 'Night', day: 'Day', contrast: 'High Contrast' }
+          theme_name: { night: 'Night', day: 'Day', contrast: 'High Contrast', 'vision-impaired': 'Vision Impaired' }
         },
         cards: {
           status: {
@@ -1656,7 +1853,7 @@
           status: { ready: 'Bereit für deinen nächsten Stream' },
           theme_synced: 'Design mit Dashboard synchronisiert',
           language_label: 'Sprache',
-          theme_name: { night: 'Nacht', day: 'Tag', contrast: 'Hoher Kontrast' }
+          theme_name: { night: 'Nacht', day: 'Tag', contrast: 'Hoher Kontrast', 'vision-impaired': 'Sehbehindertenmodus' }
         },
         cards: {
           status: {
@@ -1866,6 +2063,23 @@
       document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
     }
 
+    function readSharedTheme() {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+      try {
+        const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+        if (validThemes.has(parentTheme)) return parentTheme;
+      } catch (error) {}
+
+      try {
+        for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          const value = localStorage.getItem(key);
+          if (validThemes.has(value)) return value;
+        }
+      } catch (error) {}
+
+      return document.documentElement.getAttribute('data-theme') || 'night';
+    }
+
     function updateProviderHelp(provider) {
       const help = document.getElementById('llmProviderHelp');
       if (!help) return;
@@ -1911,20 +2125,20 @@
         });
       }
 
-      const parentTheme = (() => {
-        try {
-          return window.parent?.document?.documentElement?.getAttribute('data-theme');
-        } catch (error) {
-          return null;
+      updateThemeBadge(readSharedTheme());
+
+      window.addEventListener('storage', (event) => {
+        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          updateThemeBadge(readSharedTheme());
         }
-      })();
-      updateThemeBadge(parentTheme || document.documentElement.getAttribute('data-theme') || 'night');
+      });
+
+      window.addEventListener('focus', () => updateThemeBadge(readSharedTheme()));
 
       const themeObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.attributeName === 'data-theme') {
-            const theme = document.documentElement.getAttribute('data-theme') || 'night';
-            updateThemeBadge(theme);
+            updateThemeBadge(readSharedTheme());
           }
         });
       });

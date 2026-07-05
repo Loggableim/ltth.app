@@ -164,3 +164,68 @@ body {
         right: 20px;
     }
 }
+
+:root[data-theme='day'] .mc-notification {
+    background: linear-gradient(135deg, #e8eefc 0%, #dbe7ff 100%);
+    color: #10203a;
+    border: 1px solid rgba(41, 66, 110, 0.18);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme='night'] .mc-notification {
+    background: linear-gradient(135deg, #16213e 0%, #0f172a 100%);
+    color: #e9f1ff;
+    border: 1px solid rgba(126, 164, 255, 0.18);
+}
+
+:root[data-theme='contrast'] .mc-notification,
+:root[data-theme='vision-impaired'] .mc-notification {
+    background: #000;
+    color: #fff;
+    border: 3px solid #facc15;
+    box-shadow: none;
+}
+
+:root[data-theme='contrast'] .mc-notification-title,
+:root[data-theme='vision-impaired'] .mc-notification-title {
+    color: #fff7cc;
+    text-shadow: none;
+}
+
+:root[data-theme='vision-impaired'] .mc-overlay-container {
+    width: calc(100% - 32px);
+    right: 16px;
+    max-height: 92vh;
+}
+
+:root[data-theme='vision-impaired'] .mc-notification {
+    padding: 24px;
+}
+
+:root[data-theme='vision-impaired'] .mc-notification-title {
+    font-size: 22px;
+    font-weight: 900;
+}
+
+:root[data-theme='vision-impaired'] .mc-notification-body {
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+:root[data-theme='vision-impaired'] .mc-notification-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+    background: #facc15;
+    color: #000;
+}
+
+:root[data-theme='vision-impaired'] .mc-notification-action,
+:root[data-theme='vision-impaired'] .mc-notification-user {
+    color: #fff7cc;
+}
+
+:root[data-theme='contrast'] .mc-particle,
+:root[data-theme='vision-impaired'] .mc-particle {
+    background: #facc15;
+}

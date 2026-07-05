@@ -245,6 +245,7 @@ class Translator {
    */
   async _callOllama(systemPrompt, text, cfg) {
     const axios = require('axios');
+    const timeoutMs = Number(cfg.timeoutMs) > 0 ? Number(cfg.timeoutMs) : 30000;
 
     const response = await axios.post(
       `${OLLAMA_BASE_URL}/chat/completions`,
@@ -263,7 +264,7 @@ class Translator {
           'Authorization': `Bearer ${cfg.apiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 15000
+        timeout: timeoutMs
       }
     );
 

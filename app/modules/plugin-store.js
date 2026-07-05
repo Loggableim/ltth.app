@@ -392,6 +392,7 @@ class PluginStore {
       minLtthVersion: plugin.minLtthVersion || null,
       catalogOnly: plugin.catalogOnly === true,
       packageUrl: plugin.packageUrl || '',
+      sha256: plugin.sha256 || '',
       screenshots: Array.isArray(plugin.screenshots) ? plugin.screenshots : []
     };
   }

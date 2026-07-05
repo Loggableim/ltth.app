@@ -7,6 +7,55 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (VALID_THEMES.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (VALID_THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('storage', (event) => {
+        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+          syncTheme();
+        }
+      });
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     .status-dot {
       width: 12px;
@@ -128,6 +177,119 @@
     }
     input:checked + .slider:before {
       transform: translateX(24px);
+    }
+
+    html[data-theme] body {
+      background: var(--color-bg-primary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .card {
+      background: var(--color-bg-card) !important;
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme] .btn,
+    html[data-theme] .grid-item,
+    html[data-theme] .tab,
+    html[data-theme] .input,
+    html[data-theme] .select {
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme] .btn-primary {
+      background: var(--color-accent-primary) !important;
+      color: #000 !important;
+    }
+
+    html[data-theme] .btn-success {
+      background: var(--color-accent-success) !important;
+      color: #000 !important;
+    }
+
+    html[data-theme] .btn-danger {
+      background: var(--color-accent-danger) !important;
+      color: #000 !important;
+    }
+
+    html[data-theme] .btn-secondary {
+      background: var(--color-bg-hover) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .input,
+    html[data-theme] .select {
+      background: var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .grid-item {
+      background: var(--color-bg-secondary) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html[data-theme] .grid-item:hover,
+    html[data-theme] .tab:hover {
+      background: var(--color-bg-hover) !important;
+    }
+
+    html[data-theme] .tab.active {
+      border-bottom-color: var(--color-accent-primary) !important;
+      color: var(--color-accent-primary) !important;
+    }
+
+    html[data-theme] .text-gray-300,
+    html[data-theme] .text-gray-400,
+    html[data-theme] .text-gray-500,
+    html[data-theme] .text-red-400,
+    html[data-theme] .border-gray-700,
+    html[data-theme] .bg-gray-800,
+    html[data-theme] .bg-gray-900,
+    html[data-theme] .bg-gray-900\/60 {
+      color: var(--color-text-secondary) !important;
+      background: var(--color-bg-secondary) !important;
+      border-color: var(--color-border) !important;
+    }
+
+    html[data-theme="vision-impaired"] body {
+      font-size: 1.08rem;
+      line-height: 1.7;
+    }
+
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="vision-impaired"] .grid-item,
+    html[data-theme="vision-impaired"] .tab,
+    html[data-theme="vision-impaired"] .input,
+    html[data-theme="vision-impaired"] .select {
+      background: #000 !important;
+      color: #fff !important;
+      border: 3px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="vision-impaired"] .btn-success,
+    html[data-theme="vision-impaired"] .btn-danger {
+      background: #facc15 !important;
+      color: #000 !important;
+      border: 3px solid #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000 !important;
+      color: #fff !important;
+      border: 3px solid #facc15 !important;
+    }
+
+    html[data-theme="vision-impaired"] .tab.active {
+      background: #facc15 !important;
+      color: #000 !important;
+    }
+
+    html[data-theme="vision-impaired"] .text-gray-300,
+    html[data-theme="vision-impaired"] .text-gray-400,
+    html[data-theme="vision-impaired"] .text-gray-500 {
+      color: #fff7cc !important;
     }
   </style>
 </head>

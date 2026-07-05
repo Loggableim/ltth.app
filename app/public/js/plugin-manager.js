@@ -21,12 +21,21 @@ class PluginManager {
         this.filteredStorePlugins = [];
         this.currentFilter = 'all';
         this.currentSort = 'name';
+        this.currentStoreSort = 'relevance';
         this.searchQuery = '';
         this.compactMode = false;
         this.currentTab = 'store';
         this.currentStoreMode = 'store';
         this.currentStoreCategory = 'all';
         this.selectedStorePlugin = null;
+        this.currentAppVersion = null;
+        this.currentStoreFilters = {
+            official: false,
+            free: false,
+            openBeta: false,
+            compatible: false,
+            installed: false
+        };
         this.storeCategories = [
             { id: 'all', label: 'All' },
             { id: 'featured', label: 'Featured' },
@@ -126,7 +135,11 @@ class PluginManager {
         const sortSelect = document.getElementById('plugin-sort');
         if (sortSelect) {
             sortSelect.addEventListener('change', (e) => {
-                this.currentSort = e.target.value;
+                if (this.currentStoreMode === 'installed') {
+                    this.currentSort = e.target.value;
+                } else {
+                    this.currentStoreSort = e.target.value;
+                }
                 this.applyFiltersAndSort();
             });
         }
@@ -174,6 +187,7 @@ class PluginManager {
         // when switching to the plugins view
         this.updateStoreModeControls();
         this.renderStoreCategoryChips();
+        this.loadCurrentAppVersion();
     }
 
     applyFiltersAndSort() {
@@ -237,34 +251,42 @@ class PluginManager {
             return;
         }
 
-        let filtered = this.getStorePluginsForCurrentMode().filter(plugin => {
-            if (this.searchQuery) {
-                const searchStr = `${plugin.name} ${plugin.description} ${plugin.id} ${plugin.author} ${plugin.category} ${plugin.sourceName}`.toLowerCase();
-                if (!searchStr.includes(this.searchQuery)) {
-                    return false;
-                }
+        const query = String(this.searchQuery || '').trim();
+        const filtered = [];
+
+        for (const plugin of this.getStorePluginsForCurrentMode()) {
+            if (this.currentStoreMode === 'store' && this.currentStoreCategory !== 'all' && !this.storePluginMatchesCategory(plugin, this.currentStoreCategory)) {
+                continue;
             }
 
-            if (this.currentStoreMode === 'store' && this.currentStoreCategory !== 'all') {
-                return this.storePluginMatchesCategory(plugin, this.currentStoreCategory);
+            if (this.currentStoreFilters.official && !plugin.official) {
+                continue;
             }
 
-            return true;
-        });
-
-        filtered.sort((a, b) => {
-            switch (this.currentSort) {
-                case 'status':
-                    return (b.installed ? 1 : 0) - (a.installed ? 1 : 0);
-                case 'type':
-                    return (a.category || '').localeCompare(b.category || '');
-                case 'author':
-                    return (a.author || '').localeCompare(b.author || '');
-                case 'name':
-                default:
-                    return a.name.localeCompare(b.name);
+            if (this.currentStoreFilters.free && this.getStorePluginPricing(plugin).type !== 'free') {
+                continue;
             }
-        });
+
+            if (this.currentStoreFilters.openBeta && plugin.channel !== 'open-beta' && !(Array.isArray(plugin.badges) && plugin.badges.includes('open-beta'))) {
+                continue;
+            }
+
+            if (this.currentStoreFilters.installed && !plugin.installed) {
+                continue;
+            }
+
+            if (this.currentStoreFilters.compatible && !this.isStorePluginCompatible(plugin)) {
+                continue;
+            }
+
+            if (query && this.getStorePluginSearchScore(plugin, query) === 0) {
+                continue;
+            }
+
+            filtered.push(plugin);
+        }
+
+        filtered.sort((a, b) => this.compareStorePlugins(a, b, query));
 
         this.filteredStorePlugins = filtered;
         this.renderStoreShell();
@@ -289,6 +311,9 @@ class PluginManager {
         });
 
         this.updateStoreModeControls();
+        if (this.currentStoreMode === 'installed' || this.currentStoreMode === 'sources') {
+            this.closeStorePluginDetail();
+        }
 
         this.applyFiltersAndSort();
     }
@@ -340,6 +365,35 @@ class PluginManager {
                 this.showError('Error loading plugin store: ' + error.message);
             }
         }
+    }
+
+    async loadCurrentAppVersion() {
+        try {
+            const response = await fetch('/api/update/current');
+            const data = await response.json();
+
+            if (data && data.success && data.version) {
+                this.currentAppVersion = String(data.version);
+                this.applyFiltersAndSort();
+            }
+        } catch (error) {
+            console.warn('Could not load current app version for plugin store compatibility filters:', error);
+        }
+    }
+
+    compareVersions(a = '0.0.0', b = '0.0.0') {
+        const left = String(a).split('.').map((part) => parseInt(part, 10) || 0);
+        const right = String(b).split('.').map((part) => parseInt(part, 10) || 0);
+        const length = Math.max(left.length, right.length);
+
+        for (let index = 0; index < length; index += 1) {
+            const diff = (left[index] || 0) - (right[index] || 0);
+            if (diff !== 0) {
+                return diff;
+            }
+        }
+
+        return 0;
     }
 
     updateCommunityPanel() {
@@ -396,6 +450,87 @@ class PluginManager {
         if (pluginsContainer) {
             pluginsContainer.style.display = sourcesMode ? 'none' : '';
         }
+
+        this.syncStoreControls();
+        this.syncStoreQuickFilters();
+    }
+
+    syncStoreControls() {
+        const searchInput = document.getElementById('plugin-search');
+        const sortSelect = document.getElementById('plugin-sort');
+
+        if (searchInput) {
+            if (this.currentStoreMode === 'installed') {
+                searchInput.placeholder = 'Search installed plugins...';
+            } else if (this.currentStoreMode === 'updates') {
+                searchInput.placeholder = 'Search plugin updates...';
+            } else {
+                searchInput.placeholder = 'Search the store...';
+            }
+        }
+
+        if (sortSelect) {
+            const isInstalled = this.currentStoreMode === 'installed';
+            const options = isInstalled ? this.getInstalledSortOptions() : this.getStoreSortOptions();
+            const currentValue = isInstalled ? this.currentSort : this.currentStoreSort;
+            sortSelect.innerHTML = options.map(option => `
+                <option value="${this.escapeHtml(option.value)}">${this.escapeHtml(option.label)}</option>
+            `).join('');
+            sortSelect.value = currentValue;
+        }
+    }
+
+    syncStoreQuickFilters() {
+        const container = document.getElementById('plugin-store-filter-chips');
+        if (!container) return;
+
+        const quickFilters = [
+            { id: 'official', label: 'Official', icon: 'shield-check' },
+            { id: 'free', label: 'Free', icon: 'badge-check' },
+            { id: 'openBeta', label: 'Open Beta', icon: 'flask-conical' },
+            { id: 'compatible', label: 'Compatible', icon: 'check-circle-2' },
+            { id: 'installed', label: 'Installed', icon: 'hard-drive' }
+        ];
+
+        const active = this.currentStoreMode === 'store' || this.currentStoreMode === 'updates';
+        container.style.display = active ? 'flex' : 'none';
+        container.innerHTML = quickFilters.map(filter => {
+            const isActive = Boolean(this.currentStoreFilters[filter.id]);
+            return `
+                <button type="button" class="plugin-store-filter-chip ${isActive ? 'active' : ''}" data-store-filter="${filter.id}" aria-pressed="${isActive ? 'true' : 'false'}">
+                    <i data-lucide="${filter.icon}" style="width: 13px; height: 13px;"></i>
+                    <span>${this.escapeHtml(filter.label)}</span>
+                </button>
+            `;
+        }).join('');
+
+        container.querySelectorAll('[data-store-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filterId = btn.getAttribute('data-store-filter');
+                this.currentStoreFilters[filterId] = !this.currentStoreFilters[filterId];
+                this.syncStoreQuickFilters();
+                this.applyFiltersAndSort();
+            });
+        });
+    }
+
+    getInstalledSortOptions() {
+        return [
+            { value: 'name', label: 'Name' },
+            { value: 'status', label: 'Status' },
+            { value: 'type', label: 'Type' },
+            { value: 'author', label: 'Author' }
+        ];
+    }
+
+    getStoreSortOptions() {
+        return [
+            { value: 'relevance', label: 'Relevance' },
+            { value: 'updates', label: 'Updates' },
+            { value: 'newest', label: 'Newest' },
+            { value: 'popular', label: 'Popular' },
+            { value: 'name', label: 'Name' }
+        ];
     }
 
     getStorePluginsForCurrentMode() {
@@ -403,6 +538,117 @@ class PluginManager {
             return this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable);
         }
         return this.storePlugins;
+    }
+
+    isStorePluginCompatible(plugin) {
+        if (!plugin || !plugin.minLtthVersion || !this.currentAppVersion) {
+            return true;
+        }
+
+        return this.compareVersions(this.currentAppVersion, plugin.minLtthVersion) >= 0;
+    }
+
+    getStorePluginSearchScore(plugin, query) {
+        const terms = [
+            plugin.name,
+            plugin.description,
+            plugin.id,
+            plugin.author,
+            plugin.sourceName,
+            plugin.category,
+            plugin.channel,
+            ...(Array.isArray(plugin.badges) ? plugin.badges : [])
+        ].filter(Boolean).map(value => String(value).toLowerCase());
+
+        const normalizedQuery = String(query || '').toLowerCase();
+        if (!normalizedQuery) {
+            return 1;
+        }
+
+        let score = 0;
+        const name = String(plugin.name || '').toLowerCase();
+        const id = String(plugin.id || '').toLowerCase();
+        const description = String(plugin.description || '').toLowerCase();
+        const sourceName = String(plugin.sourceName || '').toLowerCase();
+
+        if (id === normalizedQuery) score += 200;
+        if (name === normalizedQuery) score += 180;
+        if (name.startsWith(normalizedQuery)) score += 120;
+        if (name.includes(normalizedQuery)) score += 90;
+        if (id.includes(normalizedQuery)) score += 80;
+        if (description.includes(normalizedQuery)) score += 60;
+        if (sourceName.includes(normalizedQuery)) score += 40;
+
+        for (const term of terms) {
+            if (term.includes(normalizedQuery)) {
+                score += 8;
+            }
+        }
+
+        if (plugin.installed) score += 10;
+        if (plugin.updateAvailable) score += 12;
+        if (plugin.official) score += 6;
+        if (plugin.packageUrl) score += 4;
+
+        return score;
+    }
+
+    compareStorePlugins(a, b, query = '') {
+        const leftScore = query ? this.getStorePluginSearchScore(a, query) : this.getStoreSortScore(a, this.currentStoreSort);
+        const rightScore = query ? this.getStorePluginSearchScore(b, query) : this.getStoreSortScore(b, this.currentStoreSort);
+
+        if (leftScore !== rightScore) {
+            return rightScore - leftScore;
+        }
+
+        return String(a.name || a.id || '').localeCompare(String(b.name || b.id || ''));
+    }
+
+    getStoreSortScore(plugin, sortKey) {
+        switch (sortKey) {
+            case 'updates':
+                return plugin.updateAvailable ? 1000 + this.versionWeight(plugin.version) : 0;
+            case 'newest':
+                return this.versionWeight(plugin.version);
+            case 'popular':
+                return this.getPopularityScore(plugin);
+            case 'relevance':
+                return this.getRelevanceScore(plugin);
+            case 'name':
+            default:
+                return 0;
+        }
+    }
+
+    versionWeight(version) {
+        const parts = String(version || '0.0.0').split('.').map(part => parseInt(part, 10) || 0);
+        return (parts[0] * 10000) + (parts[1] * 100) + (parts[2] || 0);
+    }
+
+    getPopularityScore(plugin) {
+        let score = 0;
+        if (plugin.official) score += 40;
+        if (plugin.installed) score += 25;
+        if (plugin.updateAvailable) score += 10;
+        if (plugin.packageUrl) score += 12;
+        if (plugin.screenshots && plugin.screenshots.length > 0) score += 8;
+        if (plugin.channel === 'open-beta') score += 3;
+        score += Array.isArray(plugin.badges) ? plugin.badges.length * 4 : 0;
+        if (this.isFeaturedStorePlugin(plugin)) score += 20;
+        return score;
+    }
+
+    getRelevanceScore(plugin) {
+        let score = this.getPopularityScore(plugin);
+        if (this.currentStoreFilters.official && plugin.official) score += 20;
+        if (this.currentStoreFilters.free && this.getStorePluginPricing(plugin).type === 'free') score += 10;
+        if (this.currentStoreFilters.compatible && this.isStorePluginCompatible(plugin)) score += 15;
+        if (this.currentStoreFilters.installed && plugin.installed) score += 15;
+        if (this.currentStoreFilters.openBeta && plugin.channel === 'open-beta') score += 8;
+        if (this.currentStoreCategory === 'featured' && this.isFeaturedStorePlugin(plugin)) score += 25;
+        if (this.currentStoreCategory === 'open-beta' && plugin.channel === 'open-beta') score += 25;
+        if (this.currentStoreCategory !== 'all' && this.storePluginMatchesCategory(plugin, this.currentStoreCategory)) score += 20;
+        return score;
     }
 
     storePluginMatchesCategory(plugin, category) {
@@ -549,37 +795,38 @@ class PluginManager {
             return;
         }
 
-        container.className = '';
+        container.className = 'plugin-store-shell';
 
         const errorsHtml = this.storeErrors.length > 0 && this.currentStoreMode === 'store'
-            ? `<div style="padding: 0.75rem 1rem; margin-bottom: 1rem; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12); border-radius: 8px; color: #fbbf24; font-size: 0.9rem;">Some community store sources could not be loaded. Check Sources for details.</div>`
+            ? `
+                <div class="plugin-store-warning">
+                    <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
+                    <span>Some community store sources could not be loaded. Check Sources for details.</span>
+                </div>
+            `
             : '';
         const headerHtml = this.renderStoreHeader();
-        const showFeatured = this.currentStoreMode === 'store' && !this.searchQuery && this.currentStoreCategory === 'all';
-        const featuredPlugins = showFeatured ? this.getFeaturedStorePlugins() : [];
-        const featuredKeys = new Set(featuredPlugins.map(plugin => `${plugin.sourceId}:${plugin.id}`));
-        const gridPlugins = showFeatured
-            ? this.filteredStorePlugins.filter(plugin => !featuredKeys.has(`${plugin.sourceId}:${plugin.id}`))
+        const discoverySections = this.currentStoreMode === 'store' && !this.searchQuery && this.currentStoreCategory === 'all' && !this.hasAnyStoreFilter()
+            ? this.getStoreDiscoverySections()
+            : [];
+        const discoveryHtml = discoverySections.length > 0
+            ? this.renderStoreDiscoverySections(discoverySections)
+            : '';
+        const discoveryKeys = new Set(
+            discoverySections.flatMap(section => section.plugins.map(plugin => `${plugin.sourceId}:${plugin.id}`))
+        );
+        const gridPlugins = discoveryKeys.size > 0
+            ? this.filteredStorePlugins.filter(plugin => !discoveryKeys.has(`${plugin.sourceId}:${plugin.id}`))
             : this.filteredStorePlugins;
-        const featuredHtml = showFeatured ? this.renderFeaturedStoreRow(featuredPlugins) : '';
-
-        if (this.filteredStorePlugins.length === 0) {
-            container.innerHTML = headerHtml + errorsHtml + `
-                <div class="text-center text-gray-400 py-12" style="border: 1px dashed var(--color-border); border-radius: 12px; background: var(--color-bg-card);">
-                    <i data-lucide="${this.currentStoreMode === 'updates' ? 'check-circle' : 'shopping-bag'}" style="width: 56px; height: 56px; margin: 0 auto 1rem; color: #60a5fa;"></i>
-                    <p class="text-lg">${this.currentStoreMode === 'updates' ? 'All plugins are up to date' : 'No plugins match this search'}</p>
-                    <p class="text-sm mt-2">${this.currentStoreMode === 'updates' ? 'Installed plugins do not have available store updates.' : 'Try another search term or category.'}</p>
+        const gridHtml = gridPlugins.length === 0
+            ? this.renderStoreEmptyState()
+            : `
+                <div class="plugin-store-grid">
+                    ${gridPlugins.map(plugin => this.renderStorePlugin(plugin)).join('')}
                 </div>
             `;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            return;
-        }
 
-        container.innerHTML = headerHtml + errorsHtml + featuredHtml + `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; align-items: stretch;">
-                ${gridPlugins.map(plugin => this.renderStorePlugin(plugin)).join('')}
-            </div>
-        `;
+        container.innerHTML = [headerHtml, errorsHtml, discoveryHtml, gridHtml].join('');
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -596,32 +843,153 @@ class PluginManager {
         const total = this.storePlugins.length;
         const installed = this.storePlugins.filter(plugin => plugin.installed).length;
         const updates = this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable).length;
-        const title = this.currentStoreMode === 'updates' ? 'Plugin Updates' : 'Official LTTH Plugin Store';
+        const title = this.currentStoreMode === 'updates'
+            ? 'Plugin Updates'
+            : this.currentStoreMode === 'installed'
+                ? 'Installed Plugins'
+                : 'Official LTTH Plugin Store';
         const subtitle = this.currentStoreMode === 'updates'
-            ? 'Updates available from configured plugin sources.'
-            : 'Browse official LTTH plugins. Community repos stay hidden until you enable them in Sources.';
+            ? 'Review available upgrades before you install them.'
+            : this.currentStoreMode === 'installed'
+                ? 'Manage local plugins, reload dev builds, and review status.'
+                : 'Browse official LTTH plugins first. Community sources stay in Sources until you opt in.';
+        const actionHtml = this.currentStoreMode === 'updates' && updates > 0
+            ? `
+                <button type="button" class="plugin-store-update-all" data-update-all-store-plugins="true">
+                    <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                    Update all official
+                </button>
+            `
+            : '';
+        const trustHtml = this.currentAppVersion
+            ? `<span class="plugin-store-inline-note">Current LTTH version: v${this.escapeHtml(this.currentAppVersion)}</span>`
+            : '<span class="plugin-store-inline-note">Version check pending</span>';
 
         return `
-            <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px;">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 10px; color: var(--color-text-primary); font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">
-                        <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : 'shopping-bag'}" style="width: 20px; height: 20px; color: var(--color-accent-primary);"></i>
-                        ${title}
+            <section class="plugin-store-header">
+                <div class="plugin-store-header__title">
+                    <div class="plugin-store-header__title-row">
+                        <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : this.currentStoreMode === 'installed' ? 'hard-drive' : 'shopping-bag'}" style="width: 22px; height: 22px; color: var(--color-accent-primary);"></i>
+                        <h3>${title}</h3>
                     </div>
-                    <div style="color: var(--color-text-muted); font-size: 0.9rem;">${subtitle}</div>
+                    <p>${subtitle}</p>
+                    <div class="plugin-store-header__meta">
+                        ${this.renderStoreBadge(`${total} total`, 'package')}
+                        ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
+                        ${this.renderStoreBadge(`${updates} updates`, 'download')}
+                        ${this.renderStoreBadge(this.communityEnabled ? 'Community enabled' : 'Community off', 'users')}
+                        ${trustHtml}
+                    </div>
                 </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    ${this.renderStoreBadge(`${total} plugins`, 'package')}
-                    ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
-                    ${this.renderStoreBadge(`${updates} updates`, 'download')}
-                    ${this.renderStoreBadge(this.communityEnabled ? 'Community on' : 'Community off', 'users')}
+                <div class="plugin-store-header__actions">
+                    ${actionHtml}
                 </div>
-            </div>
+            </section>
         `;
     }
 
     getFeaturedStorePlugins() {
-        return this.storePlugins.filter(plugin => this.isFeaturedStorePlugin(plugin)).slice(0, 4);
+        return this.storePlugins
+            .filter(plugin => this.isFeaturedStorePlugin(plugin))
+            .sort((a, b) => this.getPopularityScore(b) - this.getPopularityScore(a))
+            .slice(0, 4);
+    }
+
+    getRecommendedStorePlugins() {
+        const installedCategories = new Map();
+
+        for (const plugin of this.storePlugins.filter(item => item.installed)) {
+            const category = this.getStorePluginCategoryLabel(plugin).toLowerCase();
+            installedCategories.set(category, (installedCategories.get(category) || 0) + 1);
+        }
+
+        return this.storePlugins
+            .filter(plugin => !plugin.installed && this.currentStoreMode === 'store')
+            .sort((a, b) => this.getRecommendationScore(b, installedCategories) - this.getRecommendationScore(a, installedCategories))
+            .slice(0, 4);
+    }
+
+    getNewStorePlugins() {
+        return this.storePlugins
+            .filter(plugin => !plugin.installed)
+            .sort((a, b) => this.versionWeight(b.version) - this.versionWeight(a.version))
+            .slice(0, 4);
+    }
+
+    getPopularStorePlugins() {
+        return this.storePlugins
+            .filter(plugin => plugin.packageUrl)
+            .sort((a, b) => this.getPopularityScore(b) - this.getPopularityScore(a))
+            .slice(0, 4);
+    }
+
+    getRecommendationScore(plugin, installedCategories = new Map()) {
+        let score = this.getPopularityScore(plugin);
+        const category = this.getStorePluginCategoryLabel(plugin).toLowerCase();
+        score += (installedCategories.get(category) || 0) * 15;
+        if (this.isFeaturedStorePlugin(plugin)) score += 12;
+        if (plugin.official) score += 6;
+        if (this.isStorePluginCompatible(plugin)) score += 8;
+        return score;
+    }
+
+    hasAnyStoreFilter() {
+        return Object.values(this.currentStoreFilters).some(Boolean);
+    }
+
+    getStoreDiscoverySections() {
+        return [
+            { title: 'Featured', icon: 'sparkles', plugins: this.getFeaturedStorePlugins() },
+            { title: 'For you', icon: 'wand-sparkles', plugins: this.getRecommendedStorePlugins() },
+            { title: 'New', icon: 'clock-3', plugins: this.getNewStorePlugins() },
+            { title: 'Popular', icon: 'trending-up', plugins: this.getPopularStorePlugins() }
+        ].filter(section => section.plugins.length > 0);
+    }
+
+    renderStoreDiscoverySections(sections = this.getStoreDiscoverySections()) {
+        if (!sections || sections.length === 0) {
+            return '';
+        }
+
+        return `
+            <div class="plugin-store-discovery">
+                ${sections.map(section => this.renderStoreCollectionSection(section)).join('')}
+            </div>
+        `;
+    }
+
+    renderStoreCollectionSection(section) {
+        return `
+            <section class="plugin-store-collection">
+                <div class="plugin-store-collection__header">
+                    <div class="plugin-store-collection__title">
+                        <i data-lucide="${section.icon}" style="width: 16px; height: 16px; color: var(--color-accent-primary);"></i>
+                        <h4>${this.escapeHtml(section.title)}</h4>
+                    </div>
+                    <span>${section.plugins.length} plugins</span>
+                </div>
+                <div class="plugin-store-collection__grid">
+                    ${section.plugins.map(plugin => this.renderStorePlugin(plugin, true)).join('')}
+                </div>
+            </section>
+        `;
+    }
+
+    renderStoreEmptyState() {
+        const emptyTitle = this.currentStoreMode === 'updates'
+            ? 'No updates available'
+            : 'No plugins match this view';
+        const emptyText = this.currentStoreMode === 'updates'
+            ? 'Installed plugins are already on the latest available store version.'
+            : 'Try a different search term, sort order, or filter combination.';
+
+        return `
+            <div class="plugin-store-empty">
+                <i data-lucide="${this.currentStoreMode === 'updates' ? 'check-circle-2' : 'search-x'}" style="width: 58px; height: 58px; color: var(--color-accent-primary);"></i>
+                <h4>${emptyTitle}</h4>
+                <p>${emptyText}</p>
+            </div>
+        `;
     }
 
     renderFeaturedStoreRow(featured = this.getFeaturedStorePlugins()) {
@@ -647,40 +1015,76 @@ class PluginManager {
         const category = this.getStorePluginCategoryLabel(plugin);
         const iconText = this.getStorePluginInitials(plugin);
         const accent = this.getStorePluginAccent(plugin);
+        const media = this.getStorePluginMedia(plugin, compact);
+        const versionSummary = this.getStorePluginVersionSummary(plugin);
+        const trustSummary = this.getStorePluginTrustSummary(plugin);
+        const compatibilitySummary = this.getStorePluginCompatibilitySummary(plugin);
 
         return `
-            <button type="button" class="plugin-store-card" data-store-card="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" style="text-align: left; width: 100%; min-height: ${compact ? '170px' : '220px'}; display: flex; flex-direction: column; gap: 0.85rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; padding: ${compact ? '0.9rem' : '1rem'}; cursor: pointer; color: inherit; transition: border-color 0.2s, transform 0.2s;">
-                <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
-                    <div style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 12px; background: ${accent.background}; border: 1px solid ${accent.border}; display: flex; align-items: center; justify-content: center; color: ${accent.color}; font-weight: 800; font-size: 1rem;">
-                        ${this.escapeHtml(iconText)}
+            <article class="plugin-store-card ${compact ? 'plugin-store-card--compact' : ''}" role="button" tabindex="0" data-store-card="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" aria-label="${this.escapeHtml(plugin.name || plugin.id)}">
+                ${media}
+                <div class="plugin-store-card__body">
+                    <div class="plugin-store-card__title-row">
+                        <div class="plugin-store-card__title-wrap">
+                            <div class="plugin-store-card__title">${this.escapeHtml(plugin.name || plugin.id)}</div>
+                            <div class="plugin-store-card__badges">${badgeHtml}</div>
+                        </div>
+                        <span class="plugin-store-card__price ${pricing.type === 'free' ? 'is-free' : 'is-paid'}">${this.escapeHtml(pricing.label)}</span>
                     </div>
-                    <div style="min-width: 0; flex: 1;">
-                        <div style="color: var(--color-text-primary); font-weight: 800; font-size: 1rem; line-height: 1.2; margin-bottom: 0.35rem; overflow-wrap: anywhere;">${this.escapeHtml(plugin.name || plugin.id)}</div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${badgeHtml}</div>
-                    </div>
-                </div>
-                <div style="color: var(--color-text-muted); font-size: 0.88rem; line-height: 1.35; min-height: 2.4rem; overflow: hidden;">${this.escapeHtml(plugin.description || 'No description available')}</div>
-                <div style="margin-top: auto; display: flex; justify-content: space-between; gap: 0.75rem; align-items: end;">
-                    <div style="min-width: 0; color: var(--color-text-muted); font-size: 0.78rem;">
-                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px;"><i data-lucide="folder" style="width: 13px; height: 13px;"></i><span>${this.escapeHtml(category)}</span></div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
-                            <span style="font-family: monospace;">v${this.escapeHtml(plugin.version || '0.0.0')}</span>
-                            <span style="color: ${pricing.type === 'free' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${this.escapeHtml(pricing.label)}</span>
+                    <p class="plugin-store-card__description">${this.escapeHtml(plugin.description || 'No description available')}</p>
+                    <div class="plugin-store-card__summary">
+                        <div class="plugin-store-card__summary-item">
+                            <i data-lucide="folder" style="width: 13px; height: 13px;"></i>
+                            <span>${this.escapeHtml(category)}</span>
+                        </div>
+                        <div class="plugin-store-card__summary-item">
+                            <i data-lucide="tag" style="width: 13px; height: 13px;"></i>
+                            <span>${this.escapeHtml(versionSummary)}</span>
+                        </div>
+                        <div class="plugin-store-card__summary-item">
+                            <i data-lucide="shield-check" style="width: 13px; height: 13px;"></i>
+                            <span>${this.escapeHtml(trustSummary)}</span>
+                        </div>
+                        <div class="plugin-store-card__summary-item">
+                            <i data-lucide="check-circle-2" style="width: 13px; height: 13px;"></i>
+                            <span>${this.escapeHtml(compatibilitySummary)}</span>
                         </div>
                     </div>
-                    <span data-store-action="true" data-source-id="${this.escapeHtml(plugin.sourceId || '')}" data-plugin-id="${this.escapeHtml(plugin.id || '')}" style="display: inline-flex; align-items: center; gap: 6px; min-width: 94px; justify-content: center; padding: 0.55rem 0.7rem; border-radius: 8px; border: 1px solid ${action.disabled ? 'var(--color-border)' : 'rgba(16, 185, 129, 0.45)'}; background: ${action.disabled ? 'var(--color-bg-secondary)' : 'rgba(16, 185, 129, 0.16)'}; color: ${action.disabled ? 'var(--color-text-muted)' : '#34d399'}; font-size: 0.82rem; font-weight: 700;">
-                        <i data-lucide="${action.icon}" style="width: 15px; height: 15px;"></i>
-                        ${action.label}
-                    </span>
                 </div>
-            </button>
+                <div class="plugin-store-card__footer">
+                    <div class="plugin-store-card__footer-meta">
+                        <span>${this.escapeHtml(plugin.sourceName || (plugin.official ? 'Official LTTH' : 'Community source'))}</span>
+                        ${plugin.installed ? `<span>${plugin.updateAvailable ? `Installed ${this.escapeHtml(plugin.installedVersion || '')}` : 'Installed'}</span>` : '<span>Ready to install</span>'}
+                    </div>
+                    <button
+                        type="button"
+                        class="plugin-store-card__action ${action.disabled ? 'is-disabled' : ''}"
+                        data-store-action="true"
+                        data-source-id="${this.escapeHtml(plugin.sourceId || '')}"
+                        data-plugin-id="${this.escapeHtml(plugin.id || '')}"
+                        ${action.disabled ? 'disabled' : ''}
+                    >
+                        <i data-lucide="${action.icon}" style="width: 15px; height: 15px;"></i>
+                        <span>${this.escapeHtml(action.label)}</span>
+                    </button>
+                </div>
+            </article>
         `;
     }
 
     bindStoreCardEvents(container) {
         container.querySelectorAll('[data-store-card]').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('[data-store-action="true"]')) {
+                    return;
+                }
                 this.openStorePluginDetail(card.getAttribute('data-source-id'), card.getAttribute('data-plugin-id'));
+            });
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.openStorePluginDetail(card.getAttribute('data-source-id'), card.getAttribute('data-plugin-id'));
+                }
             });
         });
 
@@ -691,6 +1095,11 @@ class PluginManager {
                 if (plugin) this.handleStorePluginAction(plugin);
             });
         });
+
+        const updateAllButton = container.querySelector('[data-update-all-store-plugins]');
+        if (updateAllButton) {
+            updateAllButton.addEventListener('click', () => this.updateAllStorePlugins());
+        }
     }
 
     findStorePlugin(sourceId, pluginId) {
@@ -782,6 +1191,14 @@ class PluginManager {
             badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Open Beta</span>');
         }
 
+        if (plugin.sha256) {
+            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.14); color: #34d399; font-size: 0.7rem;">SHA-256</span>');
+        }
+
+        if (plugin.minLtthVersion) {
+            badges.push(`<span style="padding: 3px 8px; border-radius: 999px; background: rgba(148, 163, 184, 0.14); color: #cbd5e1; font-size: 0.7rem;">LTTH ${this.escapeHtml(plugin.minLtthVersion)}+</span>`);
+        }
+
         if (plugin.installed) {
             badges.push(`<span style="padding: 3px 8px; border-radius: 999px; background: rgba(34, 197, 94, 0.14); color: #22c55e; font-size: 0.7rem;">${plugin.updateAvailable ? 'Update' : 'Installed'}</span>`);
         }
@@ -812,6 +1229,72 @@ class PluginManager {
         return { background: 'rgba(148, 163, 184, 0.14)', border: 'rgba(148, 163, 184, 0.35)', color: '#cbd5e1' };
     }
 
+    getStorePluginMedia(plugin, compact = false) {
+        const thumbnail = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
+            ? plugin.screenshots[0]
+            : '';
+        const accent = this.getStorePluginAccent(plugin);
+        const iconText = this.getStorePluginInitials(plugin);
+
+        if (thumbnail) {
+            return `
+                <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
+                    <img src="${this.escapeHtml(thumbnail)}" alt="" loading="lazy" />
+                    <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'Community')}</span>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
+                <div class="plugin-store-card__avatar" style="background: ${accent.background}; border-color: ${accent.border}; color: ${accent.color};">
+                    ${this.escapeHtml(iconText)}
+                </div>
+                <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'Community')}</span>
+            </div>
+        `;
+    }
+
+    getStorePluginVersionSummary(plugin) {
+        if (plugin.installed && plugin.updateAvailable && plugin.installedVersion) {
+            return `v${plugin.installedVersion} -> v${plugin.version}`;
+        }
+
+        if (plugin.installed && plugin.installedVersion) {
+            return `v${plugin.installedVersion}`;
+        }
+
+        return `v${plugin.version || '0.0.0'}`;
+    }
+
+    getStorePluginTrustSummary(plugin) {
+        const summary = [];
+
+        summary.push(plugin.official ? 'Official source' : 'Community source');
+        if (plugin.sha256) {
+            summary.push('SHA-256 verified');
+        }
+        if (plugin.packageUrl) {
+            summary.push('Installable package');
+        }
+
+        return summary.join(' · ');
+    }
+
+    getStorePluginCompatibilitySummary(plugin) {
+        if (!plugin.minLtthVersion) {
+            return this.isStorePluginCompatible(plugin) ? 'Compatible' : 'Compatibility unknown';
+        }
+
+        if (!this.currentAppVersion) {
+            return `Requires LTTH ${plugin.minLtthVersion}+`;
+        }
+
+        return this.isStorePluginCompatible(plugin)
+            ? `Compatible with LTTH ${this.currentAppVersion}`
+            : `Requires LTTH ${plugin.minLtthVersion}+`;
+    }
+
     openStorePluginDetail(sourceId, pluginId) {
         const plugin = this.findStorePlugin(sourceId, pluginId);
         if (!plugin) return;
@@ -837,45 +1320,90 @@ class PluginManager {
         const pricing = this.getStorePluginPricing(plugin);
         const category = this.getStorePluginCategoryLabel(plugin);
         const badges = this.renderStorePluginBadges(plugin);
-        const screenshots = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
-            ? plugin.screenshots.map(src => `<img src="${this.escapeHtml(src)}" alt="" style="width: 100%; border-radius: 8px; border: 1px solid var(--color-border);">`).join('')
-            : '<div style="height: 120px; border: 1px dashed var(--color-border); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: 0.9rem;">No screenshots yet</div>';
+        const screenshots = Array.isArray(plugin.screenshots) ? plugin.screenshots : [];
+        const primaryScreenshot = screenshots.length > 0 ? screenshots[0] : '';
+        const extraScreenshots = screenshots.slice(1, 4);
+        const versionSummary = this.getStorePluginVersionSummary(plugin);
+        const trustSummary = this.getStorePluginTrustSummary(plugin);
+        const compatibilitySummary = this.getStorePluginCompatibilitySummary(plugin);
+        const changelogSummary = plugin.installed && plugin.updateAvailable
+            ? `Update available from v${this.escapeHtml(plugin.installedVersion || 'unknown')} to v${this.escapeHtml(plugin.version || '0.0.0')}.`
+            : `Latest store package: v${this.escapeHtml(plugin.version || '0.0.0')}.`;
 
         drawer.style.display = 'block';
         drawer.setAttribute('aria-hidden', 'false');
         drawer.innerHTML = `
-            <div data-store-drawer-backdrop style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 1200;"></div>
-            <aside role="dialog" aria-modal="true" aria-label="${this.escapeHtml(plugin.name || plugin.id)} details" style="position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: var(--color-bg-primary); border-left: 1px solid var(--color-border); z-index: 1201; padding: 1.25rem; overflow-y: auto; box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);">
-                <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 1rem;">
-                    <div>
-                        <div style="color: var(--color-text-primary); font-weight: 800; font-size: 1.35rem; margin-bottom: 0.45rem;">${this.escapeHtml(plugin.name || plugin.id)}</div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${badges}</div>
+            <div data-store-drawer-backdrop class="plugin-store-drawer__backdrop"></div>
+            <aside role="dialog" aria-modal="true" aria-label="${this.escapeHtml(plugin.name || plugin.id)} details" class="plugin-store-drawer__panel">
+                <div class="plugin-store-drawer__header">
+                    <div class="plugin-store-drawer__hero">
+                        <div class="plugin-store-drawer__media">
+                            ${primaryScreenshot
+                                ? `<img src="${this.escapeHtml(primaryScreenshot)}" alt="" loading="lazy" />`
+                                : `<div class="plugin-store-drawer__avatar">${this.escapeHtml(this.getStorePluginInitials(plugin))}</div>`}
+                        </div>
+                        <div class="plugin-store-drawer__title">
+                            <h3>${this.escapeHtml(plugin.name || plugin.id)}</h3>
+                            <div class="plugin-store-drawer__badges">${badges}</div>
+                            <p>${this.escapeHtml(plugin.description || 'No description available')}</p>
+                        </div>
                     </div>
-                    <button type="button" data-store-drawer-close class="btn btn-ghost" style="padding: 0.55rem;">
+                    <button type="button" data-store-drawer-close class="btn btn-ghost plugin-store-drawer__close">
                         <i data-lucide="x" style="width: 18px; height: 18px;"></i>
                     </button>
                 </div>
-                <p style="color: var(--color-text-muted); line-height: 1.5; margin: 0 0 1rem;">${this.escapeHtml(plugin.description || 'No description available')}</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
-                    ${this.renderStoreDetailField('Version', `v${plugin.version || '0.0.0'}`)}
+
+                ${plugin.official ? '' : `
+                    <div class="plugin-store-drawer__warning">
+                        <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
+                        <span>Community plugin. Only install if you trust the source.</span>
+                    </div>
+                `}
+
+                <div class="plugin-store-drawer__meta-grid">
+                    ${this.renderStoreDetailField('Version', versionSummary)}
                     ${this.renderStoreDetailField('Installed', plugin.installedVersion || (plugin.installed ? 'Yes' : 'No'))}
                     ${this.renderStoreDetailField('Category', category)}
                     ${this.renderStoreDetailField('Source', plugin.sourceName || plugin.sourceId || 'LTTH')}
                     ${this.renderStoreDetailField('Author', plugin.author || 'Unknown')}
                     ${this.renderStoreDetailField('Price', pricing.label)}
-                    ${this.renderStoreDetailField('Compatibility', plugin.minLtthVersion ? `LTTH ${plugin.minLtthVersion}+` : 'Current LTTH')}
+                    ${this.renderStoreDetailField('Trust', trustSummary)}
+                    ${this.renderStoreDetailField('Compatibility', compatibilitySummary)}
                 </div>
-                ${plugin.channel === 'open-beta' ? '<div style="padding: 0.75rem; border-radius: 8px; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); color: #fbbf24; font-size: 0.9rem; margin-bottom: 1rem;">Open Beta: this plugin may change faster than stable plugins.</div>' : ''}
-                <div style="margin-bottom: 1rem;">
-                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 0.6rem;">Screenshots</div>
-                    <div style="display: grid; gap: 0.75rem;">${screenshots}</div>
-                </div>
-                <button type="button" data-store-drawer-action class="btn btn-primary" style="width: 100%; justify-content: center;" ${action.disabled ? 'disabled' : ''}>
+
+                <section class="plugin-store-drawer__section">
+                    <div class="plugin-store-drawer__section-title">
+                        <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
+                        <span>Version notes</span>
+                    </div>
+                    <p class="plugin-store-drawer__notes">${this.escapeHtml(changelogSummary)}</p>
+                    ${plugin.minLtthVersion ? `<p class="plugin-store-drawer__notes">Requires LTTH v${this.escapeHtml(plugin.minLtthVersion)} or newer.</p>` : ''}
+                </section>
+
+                <section class="plugin-store-drawer__section">
+                    <div class="plugin-store-drawer__section-title">
+                        <i data-lucide="images" style="width: 15px; height: 15px;"></i>
+                        <span>Screenshots</span>
+                    </div>
+                    <div class="plugin-store-drawer__gallery">
+                        ${primaryScreenshot
+                            ? `<img src="${this.escapeHtml(primaryScreenshot)}" alt="" loading="lazy" class="plugin-store-drawer__gallery-main" />`
+                            : '<div class="plugin-store-drawer__empty">No screenshots yet</div>'}
+                        ${extraScreenshots.length > 0 ? `
+                            <div class="plugin-store-drawer__thumbs">
+                                ${extraScreenshots.map(src => `<img src="${this.escapeHtml(src)}" alt="" loading="lazy" class="plugin-store-drawer__thumb" />`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </section>
+
+                <button type="button" data-store-drawer-action class="btn btn-primary plugin-store-drawer__action" ${action.disabled ? 'disabled' : ''}>
                     <i data-lucide="${action.icon}"></i>
                     ${action.label}
                 </button>
-                ${!plugin.packageUrl ? '<div style="color: var(--color-text-muted); font-size: 0.82rem; margin-top: 0.6rem;">This store entry does not provide an install package yet.</div>' : ''}
-                ${pricing.type === 'paid' ? '<div style="color: var(--color-text-muted); font-size: 0.82rem; margin-top: 0.6rem;">Paid plugin checkout is reserved for a later store release.</div>' : ''}
+
+                ${!plugin.packageUrl ? '<div class="plugin-store-drawer__hint">This store entry does not provide an install package yet.</div>' : ''}
+                ${pricing.type === 'paid' ? '<div class="plugin-store-drawer__hint">Paid plugin checkout is reserved for a later store release.</div>' : ''}
             </aside>
         `;
 
@@ -1398,7 +1926,10 @@ class PluginManager {
         }
     }
 
-    async installStorePlugin(sourceId, pluginId) {
+    async installStorePlugin(sourceId, pluginId, options = {}) {
+        const silent = options.silent === true;
+        const reloadAfterInstall = options.reloadAfterInstall !== false;
+
         try {
             const plugin = this.storePlugins.find(item => item.sourceId === sourceId && item.id === pluginId);
             if (plugin && plugin.community) {
@@ -1408,26 +1939,82 @@ class PluginManager {
                 }
             }
 
-            this.showInfo('Installing plugin...');
+            if (!silent) {
+                this.showInfo(plugin && plugin.updateAvailable ? `Updating ${plugin.name || pluginId}...` : 'Installing plugin...');
+            }
             const response = await fetch(`/api/plugin-store/${encodeURIComponent(sourceId)}/${encodeURIComponent(pluginId)}/install`, {
                 method: 'POST'
             });
             const data = await response.json();
 
             if (data.success) {
-                this.showSuccess(`Plugin "${data.plugin.name}" installed`);
-                await this.loadPlugins();
-                await this.loadStorePlugins(false);
-                this.applyFiltersAndSort();
-                if (typeof checkPluginsAndUpdateUI === 'function') {
+                if (!silent) {
+                    this.showSuccess(`Plugin "${data.plugin.name}" installed`);
+                }
+                if (reloadAfterInstall) {
+                    await this.loadPlugins();
+                    await this.loadStorePlugins(false);
+                    this.applyFiltersAndSort();
+                }
+                if (reloadAfterInstall && typeof checkPluginsAndUpdateUI === 'function') {
                     await checkPluginsAndUpdateUI();
                 }
+                return true;
             } else {
-                this.showError('Install failed: ' + data.error);
+                if (!silent) {
+                    this.showError('Install failed: ' + data.error);
+                }
+                return false;
             }
         } catch (error) {
             console.error('Error installing plugin:', error);
-            this.showError('Install failed: ' + error.message);
+            if (!silent) {
+                this.showError('Install failed: ' + error.message);
+            }
+            return false;
+        }
+    }
+
+    async updateAllStorePlugins() {
+        const updatePlugins = this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable && plugin.packageUrl);
+        const officialUpdates = updatePlugins.filter(plugin => plugin.official);
+        const communityUpdates = updatePlugins.filter(plugin => plugin.community);
+
+        if (officialUpdates.length === 0) {
+            this.showInfo('No official updates available.');
+            return;
+        }
+
+        const confirmMsg = communityUpdates.length > 0
+            ? `Update ${officialUpdates.length} official plugin${officialUpdates.length === 1 ? '' : 's'} now? ${communityUpdates.length} community update${communityUpdates.length === 1 ? '' : 's'} are left untouched.`
+            : `Update ${officialUpdates.length} official plugin${officialUpdates.length === 1 ? '' : 's'} now?`;
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        let updatedCount = 0;
+        for (const plugin of officialUpdates) {
+            const success = await this.installStorePlugin(plugin.sourceId, plugin.id, {
+                silent: true,
+                reloadAfterInstall: false
+            });
+            if (success) {
+                updatedCount += 1;
+            }
+        }
+
+        await this.loadPlugins();
+        await this.loadStorePlugins(false);
+        this.applyFiltersAndSort();
+        if (typeof checkPluginsAndUpdateUI === 'function') {
+            await checkPluginsAndUpdateUI();
+        }
+
+        if (updatedCount > 0) {
+            this.showSuccess(`${updatedCount} plugin${updatedCount === 1 ? '' : 's'} updated`);
+        } else {
+            this.showError('No updates could be applied.');
         }
     }
 

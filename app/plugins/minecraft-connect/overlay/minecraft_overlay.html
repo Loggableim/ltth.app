@@ -5,6 +5,46 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Connect Overlay</title>
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <link rel="stylesheet" href="/plugins/minecraft-connect/overlay/minecraft_overlay.css">
 </head>
 <body>

@@ -5,8 +5,91 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Connect</title>
-    <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css">
+    <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css?v=3">
     <link rel="stylesheet" href="/css/themes.css">
+    <style>
+        :root[data-theme='vision-impaired'] .mc-theme-switcher {
+            background: #000 !important;
+            border-color: var(--mc-border) !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-theme-chip {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 1px solid #facc15 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-theme-chip.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-color: #facc15 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-tab {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 1px solid #facc15 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-tab.active {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-btn-secondary {
+            background: #000 !important;
+            color: #fff !important;
+            border: 1px solid #facc15 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-btn-primary {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+    </style>
+    <script>
+        (function () {
+            function applyVisionImpairedChrome() {
+                if (document.documentElement.getAttribute('data-theme') !== 'vision-impaired') return;
+
+                document.querySelectorAll('.mc-theme-chip').forEach((chip) => {
+                    const active = chip.classList.contains('active');
+                    chip.style.setProperty('background-color', active ? '#facc15' : '#000', 'important');
+                    chip.style.setProperty('color', active ? '#000' : '#fff7cc', 'important');
+                    chip.style.setProperty('border-color', '#facc15', 'important');
+                });
+
+                document.querySelectorAll('.mc-tab').forEach((tab) => {
+                    const active = tab.classList.contains('active');
+                    tab.style.setProperty('background-color', active ? '#facc15' : '#000', 'important');
+                    tab.style.setProperty('color', active ? '#000' : '#fff7cc', 'important');
+                    tab.style.setProperty('border-color', '#facc15', 'important');
+                });
+
+                document.querySelectorAll('.mc-btn-primary').forEach((btn) => {
+                    btn.style.setProperty('background-color', '#facc15', 'important');
+                    btn.style.setProperty('color', '#000', 'important');
+                });
+
+                document.querySelectorAll('.mc-btn-secondary').forEach((btn) => {
+                    btn.style.setProperty('background-color', '#000', 'important');
+                    btn.style.setProperty('color', '#fff', 'important');
+                    btn.style.setProperty('border-color', '#facc15', 'important');
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', applyVisionImpairedChrome);
+            window.addEventListener('load', applyVisionImpairedChrome);
+            window.addEventListener('focus', applyVisionImpairedChrome);
+
+            try {
+                new MutationObserver(applyVisionImpairedChrome).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+        })();
+    </script>
 </head>
 <body>
     <div class="minecraft-connect-container">
@@ -14,7 +97,7 @@
             <div class="mc-hero-copy">
                 <p class="mc-kicker">Minecraft Connect</p>
                 <h1>Commands, Chat, Gift bars, Setup</h1>
-                <p class="mc-hero-subtitle">A TikOps-style control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
+                <p class="mc-hero-subtitle">A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
                 <div class="mc-status-row">
                     <div class="mc-status-indicator">
                         <div class="mc-status-dot" id="statusDot"></div>
@@ -25,8 +108,10 @@
             </div>
             <div class="mc-hero-panel">
                 <div class="mc-theme-switcher" aria-label="Theme switcher">
-                    <button class="mc-theme-chip" data-theme-option="aurora">Aurora</button>
-                    <button class="mc-theme-chip" data-theme-option="aurora-2">Aurora 2.0</button>
+                    <button class="mc-theme-chip" data-theme-option="day">Day</button>
+                    <button class="mc-theme-chip" data-theme-option="night">Night</button>
+                    <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
+                    <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
                 </div>
                 <button class="mc-btn mc-btn-secondary" id="refreshDashboardBtn">Refresh</button>
                 <button class="mc-btn mc-btn-primary" id="testActionBtn">Test Action</button>
@@ -180,7 +265,7 @@
                             <div id="giftGoalsList"></div>
                             <div class="mc-empty-state mc-empty-state-inline" id="giftGoalsEmpty">
                                 <p>No goals configured.</p>
-                                <p class="mc-text-muted">Add a goal to show a TikOps-style gift bar.</p>
+                                <p class="mc-text-muted">Add a goal to show an LTTH gift bar.</p>
                             </div>
                         </div>
 
@@ -271,8 +356,10 @@
                             <div class="mc-theme-picker">
                                 <span class="mc-card-note">Theme</span>
                                 <div class="mc-theme-switcher">
-                                    <button class="mc-theme-chip" data-theme-option="aurora">Aurora</button>
-                                    <button class="mc-theme-chip" data-theme-option="aurora-2">Aurora 2.0</button>
+                                    <button class="mc-theme-chip" data-theme-option="day">Day</button>
+                                    <button class="mc-theme-chip" data-theme-option="night">Night</button>
+                                    <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
+                                    <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
                                 </div>
                             </div>
                         </div>
@@ -336,6 +423,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/plugins/minecraft-connect/minecraft-connect.js"></script>
+    <script src="/plugins/minecraft-connect/minecraft-connect.js?v=2"></script>
 </body>
 </html>

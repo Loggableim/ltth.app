@@ -2959,10 +2959,10 @@ class QuizShowPlugin {
         });
 
         // Get active layout
-        this.api.registerRoute('get', '/api/quiz-show/layouts/active', (req, res) => {
+        this.api.registerRoute('get', '/api/quiz-show/layouts/active', async (req, res) => {
             try {
                 if (!this.config.customLayoutEnabled || !this.config.activeLayoutId) {
-                    return res.json({ success: true, layout: null, customLayoutEnabled: false });
+                    return res.status(200).json({ success: true, layout: null, customLayoutEnabled: false });
                 }
 
                 const layout = this.db.prepare('SELECT * FROM overlay_layouts WHERE id = ?').get(this.config.activeLayoutId);
@@ -2971,12 +2971,12 @@ class QuizShowPlugin {
                     // Active layout was deleted, reset config
                     this.config.activeLayoutId = null;
                     this.config.customLayoutEnabled = false;
-                    this.saveConfig();
-                    return res.json({ success: true, layout: null, customLayoutEnabled: false });
+                    await this.saveConfig();
+                    return res.status(200).json({ success: true, layout: null, customLayoutEnabled: false });
                 }
 
                 layout.layout_config = JSON.parse(layout.layout_config);
-                res.json({ success: true, layout, customLayoutEnabled: true });
+                return res.status(200).json({ success: true, layout, customLayoutEnabled: true });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
             }

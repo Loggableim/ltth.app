@@ -8,16 +8,236 @@
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
-        // Apply saved theme immediately to prevent flash
-        (function() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme && savedTheme !== 'night') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+                    if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
             }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('load', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
         })();
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/i18n-client.js"></script>
+    <style>
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .card,
+        html[data-theme="day"] .stat-card,
+        html[data-theme="day"] .tabs,
+        html[data-theme="day"] .log-container {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+            box-shadow: none;
+        }
+
+        html[data-theme="night"] .card,
+        html[data-theme="night"] .stat-card,
+        html[data-theme="night"] .tabs,
+        html[data-theme="night"] .log-container {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+            box-shadow: none;
+        }
+
+        html[data-theme="day"] .tab-button,
+        html[data-theme="day"] .btn,
+        html[data-theme="day"] .form-input,
+        html[data-theme="day"] select {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] .tab-button,
+        html[data-theme="night"] .btn,
+        html[data-theme="night"] .form-input,
+        html[data-theme="night"] select {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="day"] .status-badge {
+            background: #fff;
+            color: #10203a;
+            border: 2px solid #c7d2fe;
+        }
+
+        html[data-theme="night"] .status-badge {
+            background: #0f172a;
+            color: #e5e7eb;
+            border: 2px solid #334155;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .stat-card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="contrast"] .tabs,
+        html[data-theme="vision-impaired"] .tabs,
+        html[data-theme="contrast"] .log-container,
+        html[data-theme="vision-impaired"] .log-container {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] .tab-button,
+        html[data-theme="vision-impaired"] .tab-button,
+        html[data-theme="contrast"] .btn,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="contrast"] .form-input,
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="contrast"] select,
+        html[data-theme="vision-impaired"] select {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="contrast"] .btn-warning,
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="contrast"] .status-badge,
+        html[data-theme="vision-impaired"] .status-badge {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .tabs,
+        html[data-theme="vision-impaired"] .log-container {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .form-input,
+        html[data-theme="vision-impaired"] select {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] .status-badge {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        @media (max-width: 800px) {
+            .container {
+                padding: 16px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            header > div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                padding-bottom: 4px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .tab-button {
+                flex: 1 1 calc(50% - 8px);
+                text-align: center;
+                white-space: normal;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .btn-group {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .btn-group .btn {
+                flex: 1 1 calc(50% - 8px);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -255,22 +475,24 @@
                 <div class="card-header">
                     <h2 class="card-title">Per-Device Limits</h2>
                 </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Device</th>
-                            <th>Max Intensity</th>
-                            <th>Max Duration (ms)</th>
-                            <th>Cooldown (ms)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="deviceLimitsTable">
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">No devices configured</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Device</th>
+                                <th>Max Intensity</th>
+                                <th>Max Duration (ms)</th>
+                                <th>Cooldown (ms)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceLimitsTable">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No devices configured</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- User Limits -->
@@ -540,40 +762,42 @@
                 <div class="card-header">
                     <h2 class="card-title">Detailed Statistics</h2>
                 </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody id="detailedStatsTable">
-                        <tr>
-                            <td>Total Events Received</td>
-                            <td id="statTotalEvents">0</td>
-                        </tr>
-                        <tr>
-                            <td>Total Commands Sent</td>
-                            <td id="statTotalCommands">0</td>
-                        </tr>
-                        <tr>
-                            <td>Successful Commands</td>
-                            <td id="statSuccessfulCommands">0</td>
-                        </tr>
-                        <tr>
-                            <td>Failed Commands</td>
-                            <td id="statFailedCommands">0</td>
-                        </tr>
-                        <tr>
-                            <td>Average Response Time</td>
-                            <td id="statAvgResponseTime">0ms</td>
-                        </tr>
-                        <tr>
-                            <td>Commands in Queue</td>
-                            <td id="statQueueSize">0</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailedStatsTable">
+                            <tr>
+                                <td>Total Events Received</td>
+                                <td id="statTotalEvents">0</td>
+                            </tr>
+                            <tr>
+                                <td>Total Commands Sent</td>
+                                <td id="statTotalCommands">0</td>
+                            </tr>
+                            <tr>
+                                <td>Successful Commands</td>
+                                <td id="statSuccessfulCommands">0</td>
+                            </tr>
+                            <tr>
+                                <td>Failed Commands</td>
+                                <td id="statFailedCommands">0</td>
+                            </tr>
+                            <tr>
+                                <td>Average Response Time</td>
+                                <td id="statAvgResponseTime">0ms</td>
+                            </tr>
+                            <tr>
+                                <td>Commands in Queue</td>
+                                <td id="statQueueSize">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

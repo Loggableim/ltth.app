@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gift Milestone Celebration - TikTok Stream Tool</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('storage', (event) => {
+                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             margin: 0;
@@ -113,6 +162,94 @@
             border-radius: 34px;
         }
 
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .nav-button,
+        html[data-theme="day"] .section,
+        html[data-theme="day"] .modal-content,
+        html[data-theme="day"] .notification,
+        html[data-theme="day"] .tier-item,
+        html[data-theme="day"] .user-item,
+        html[data-theme="day"] .stats-card {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .nav-button,
+        html[data-theme="night"] .section,
+        html[data-theme="night"] .modal-content,
+        html[data-theme="night"] .notification,
+        html[data-theme="night"] .tier-item,
+        html[data-theme="night"] .user-item,
+        html[data-theme="night"] .stats-card {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+        }
+
+        html[data-theme="contrast"] .section,
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="contrast"] .upload-section,
+        html[data-theme="vision-impaired"] .upload-section,
+        html[data-theme="contrast"] .modal-content,
+        html[data-theme="vision-impaired"] .modal-content,
+        html[data-theme="contrast"] .notification,
+        html[data-theme="vision-impaired"] .notification,
+        html[data-theme="contrast"] .tier-item,
+        html[data-theme="vision-impaired"] .tier-item,
+        html[data-theme="contrast"] .user-item,
+        html[data-theme="vision-impaired"] .user-item,
+        html[data-theme="contrast"] .stats-card,
+        html[data-theme="vision-impaired"] .stats-card {
+            background: #050505 !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .nav-button,
+        html[data-theme="vision-impaired"] .nav-button,
+        html[data-theme="contrast"] .upload-button,
+        html[data-theme="vision-impaired"] .upload-button,
+        html[data-theme="contrast"] .test-button,
+        html[data-theme="vision-impaired"] .test-button,
+        html[data-theme="contrast"] .reset-button,
+        html[data-theme="vision-impaired"] .reset-button,
+        html[data-theme="contrast"] .delete-button,
+        html[data-theme="vision-impaired"] .delete-button,
+        html[data-theme="contrast"] .save-button,
+        html[data-theme="vision-impaired"] .save-button {
+            background: #000 !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .save-button,
+        html[data-theme="vision-impaired"] .save-button {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section h2,
+        html[data-theme="vision-impaired"] .modal-header {
+            color: #fff7cc !important;
+        }
         .slider:before {
             position: absolute;
             content: "";
@@ -506,6 +643,100 @@
             opacity: 0.6;
             font-size: 1.1em;
         }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000 !important;
+            color: #fff !important;
+            font-size: 1.12rem;
+            line-height: 1.75;
+        }
+
+        html[data-theme="vision-impaired"] body::before,
+        html[data-theme="vision-impaired"] body::after {
+            display: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .container {
+            max-width: 1320px;
+            padding: 18px 22px 30px;
+        }
+
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="vision-impaired"] .upload-section,
+        html[data-theme="vision-impaired"] .modal-content,
+        html[data-theme="vision-impaired"] .notification,
+        html[data-theme="vision-impaired"] .tier-item,
+        html[data-theme="vision-impaired"] .user-item,
+        html[data-theme="vision-impaired"] .stats-card {
+            background: #000 !important;
+            color: #fff !important;
+            border: 3px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .section::before,
+        html[data-theme="vision-impaired"] .upload-section::before,
+        html[data-theme="vision-impaired"] .modal-content::before,
+        html[data-theme="vision-impaired"] .notification::before,
+        html[data-theme="vision-impaired"] .tier-item::before,
+        html[data-theme="vision-impaired"] .user-item::before,
+        html[data-theme="vision-impaired"] .stats-card::before {
+            display: none !important;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section h2,
+        html[data-theme="vision-impaired"] .modal-header {
+            color: #fff7cc !important;
+            text-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .empty-state {
+            color: #f8e7a1 !important;
+        }
+
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] textarea {
+            background: #000 !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .nav-button,
+        html[data-theme="vision-impaired"] .upload-button,
+        html[data-theme="vision-impaired"] .test-button,
+        html[data-theme="vision-impaired"] .reset-button,
+        html[data-theme="vision-impaired"] .delete-button,
+        html[data-theme="vision-impaired"] .save-button {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 2px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="vision-impaired"] .save-button {
+            background: #facc15 !important;
+            color: #000 !important;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-switch .slider {
+            background-color: #000 !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-switch input:checked + .slider {
+            background-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .toggle-switch input:checked + .slider:before {
+            background-color: #000 !important;
+        }
     </style>
 </head>
 <body>
@@ -689,7 +920,7 @@
 
             <div class="modal-buttons">
                 <button class="save-button" id="saveTierButton">💾 Speichern</button>
-                <button class="reset-button" id="cancelTierButton">❌ Abbrechen</button>
+                <button class="reset-button" id="cancelTierButton">âŒ Abbrechen</button>
             </div>
         </div>
     </div>

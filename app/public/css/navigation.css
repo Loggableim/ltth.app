@@ -844,6 +844,10 @@ body {
     contain: layout style;
 }
 
+.content-view[data-plugin] {
+    padding: 0.5rem;
+}
+
 .content-view.active {
     display: flex;
     flex-direction: column;
@@ -1553,6 +1557,15 @@ input:checked + .toggle-slider:before {
     min-height: 0; /* Critical for flexbox sizing */
     overflow-y: auto; /* FIX: Allow vertical scrolling in settings panel */
     overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.content-view[data-plugin] .view-section {
+    padding: 0;
+}
+
+.content-view[data-plugin] .iframe-container {
+    width: 100%;
+    min-height: 520px;
 }
 
 .view-header {

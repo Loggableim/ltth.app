@@ -512,75 +512,77 @@ function renderDeviceList() {
     }
 
     const html = `
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Battery</th>
-                    <th>RSSI</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${devices.map(device => `
-                    <tr ${device.isPaused ? 'class="device-paused"' : ''}>
-                        <td><strong>${escapeHtml(device.name)}</strong></td>
-                        <td><code>${escapeHtml(device.id)}</code></td>
-                        <td><span class="badge badge-info">${escapeHtml(device.type || 'Unknown')}</span></td>
-                        <td>
-                            ${device.isPaused ? `
-                                <span class="badge badge-warning" title="Shocker is paused">
-                                    ⏸️ Paused
-                                </span>
-                            ` : `
-                                <span class="badge ${device.online ? 'badge-success' : 'badge-secondary'}">
-                                    ${device.online ? 'Online' : 'Offline'}
-                                </span>
-                            `}
-                        </td>
-                        <td>
-                            ${device.battery !== undefined ? `
-                                <div class="battery">
-                                    ${device.battery}%
-                                </div>
-                            ` : '-'}
-                        </td>
-                        <td>
-                            ${device.rssi !== undefined ? `
-                                <span class="signal signal-${getSignalStrength(device.rssi)}">
-                                    ${device.rssi} dBm
-                                </span>
-                            ` : '-'}
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                <button data-device-id="${escapeHtml(device.id)}" data-test-type="vibrate"
-                                        class="btn btn-sm btn-secondary test-device-btn"
-                                        title="Test Vibrate"
-                                        ${device.isPaused ? 'disabled' : ''}>
-                                    🔊
-                                </button>
-                                <button data-device-id="${escapeHtml(device.id)}" data-test-type="shock"
-                                        class="btn btn-sm btn-warning test-device-btn"
-                                        title="Test Shock"
-                                        ${device.isPaused ? 'disabled' : ''}>
-                                    ⚡
-                                </button>
-                                <button data-device-id="${escapeHtml(device.id)}" data-test-type="sound"
-                                        class="btn btn-sm btn-info test-device-btn"
-                                        title="Test Sound"
-                                        ${device.isPaused ? 'disabled' : ''}>
-                                    🔔
-                                </button>
-                            </div>
-                        </td>
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Battery</th>
+                        <th>RSSI</th>
+                        <th>Actions</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    ${devices.map(device => `
+                        <tr ${device.isPaused ? 'class="device-paused"' : ''}>
+                            <td><strong>${escapeHtml(device.name)}</strong></td>
+                            <td><code>${escapeHtml(device.id)}</code></td>
+                            <td><span class="badge badge-info">${escapeHtml(device.type || 'Unknown')}</span></td>
+                            <td>
+                                ${device.isPaused ? `
+                                    <span class="badge badge-warning" title="Shocker is paused">
+                                        ⏸️ Paused
+                                    </span>
+                                ` : `
+                                    <span class="badge ${device.online ? 'badge-success' : 'badge-secondary'}">
+                                        ${device.online ? 'Online' : 'Offline'}
+                                    </span>
+                                `}
+                            </td>
+                            <td>
+                                ${device.battery !== undefined ? `
+                                    <div class="battery">
+                                        ${device.battery}%
+                                    </div>
+                                ` : '-'}
+                            </td>
+                            <td>
+                                ${device.rssi !== undefined ? `
+                                    <span class="signal signal-${getSignalStrength(device.rssi)}">
+                                        ${device.rssi} dBm
+                                    </span>
+                                ` : '-'}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button data-device-id="${escapeHtml(device.id)}" data-test-type="vibrate"
+                                            class="btn btn-sm btn-secondary test-device-btn"
+                                            title="Test Vibrate"
+                                            ${device.isPaused ? 'disabled' : ''}>
+                                        🔊
+                                    </button>
+                                    <button data-device-id="${escapeHtml(device.id)}" data-test-type="shock"
+                                            class="btn btn-sm btn-warning test-device-btn"
+                                            title="Test Shock"
+                                            ${device.isPaused ? 'disabled' : ''}>
+                                        ⚡
+                                    </button>
+                                    <button data-device-id="${escapeHtml(device.id)}" data-test-type="sound"
+                                            class="btn btn-sm btn-info test-device-btn"
+                                            title="Test Sound"
+                                            ${device.isPaused ? 'disabled' : ''}>
+                                        🔔
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
     `;
 
     container.innerHTML = html;

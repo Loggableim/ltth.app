@@ -1,0 +1,175 @@
+- generic [ref=e1]:
+  - heading "STT Ticker - Audio Capture" [level=1] [ref=e2]
+  - paragraph [ref=e3]: Client-seitige Stille-Erkennung + Multi-Language Output
+  - generic [ref=e4]:
+    - generic [ref=e7]: Bereit zum Start
+    - generic [ref=e8]:
+      - generic [ref=e9]: Live-Pegel (RMS)
+      - generic [ref=e10]: "0.000"
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: "0"
+        - generic [ref=e15]: An Server gesendet
+      - generic [ref=e16]:
+        - generic [ref=e17]: "0"
+        - generic [ref=e18]: Stille �bersprungen
+      - generic [ref=e19]:
+        - generic [ref=e20]: 0%
+        - generic [ref=e21]: Tokens gespart
+    - generic [ref=e22]:
+      - button "Capture starten" [ref=e23] [cursor=pointer]
+      - button "Stop" [disabled] [ref=e24]
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: OBS
+        - strong [ref=e28]: OBS Overlay URL
+      - generic [ref=e29]:
+        - textbox [ref=e30]: http://localhost:3001/overlay/stt-ticker?design=dual-language&position=bottom-center&maxLines=2&fontSize=36px
+        - button "Kopieren" [ref=e31] [cursor=pointer]
+      - paragraph [ref=e32]: Als Browser Source in OBS einf�gen
+    - generic [ref=e33]:
+      - heading "Live-Output (2 Zeilen)" [level=3] [ref=e96]:
+        - text: Live-Output
+        - generic [ref=e35]: (2 Zeilen)
+      - generic [ref=e36]:
+        - generic [ref=e97]:
+          - generic [ref=e98]: English
+          - generic [ref=e99]: wartet auf �bersetzung...
+        - generic [ref=e100]:
+          - generic [ref=e101]: Fran�ais
+          - generic [ref=e102]: wartet auf �bersetzung...
+    - generic [ref=e43]:
+      - heading "Multi-Language Einstellungen" [level=3] [ref=e44] [cursor=pointer]
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: STT-Modell
+          - combobox [ref=e48]:
+            - option "Scribe Realtime v2" [selected]
+            - option "Scribe v1"
+            - option "Scribe v1 Experimental"
+        - generic [ref=e49]:
+          - generic [ref=e50]: �bersetzungs-Modell
+          - combobox [ref=e51]:
+            - option "gemma4:26b"
+            - option "qwen3.6:27b"
+            - option "glm-5.2:cloud"
+            - option "minimax-m2.5:cloud"
+            - option "kimi-k2.6:cloud"
+            - option "minimax-m3:cloud"
+            - option "deepseek-v3.2:cloud"
+            - option "glm-4.7:cloud"
+            - option "minimax-m2.7:cloud"
+            - option "deepseek-v4-flash:cloud"
+            - option "glm-5.1:cloud"
+            - option "gemma4:31b-cloud"
+            - option "competent_rosalind_46/gem:latest"
+            - option "gemma4:latest"
+            - option "llama3.2:1b"
+            - option "qwen3.5:2b"
+            - option "kimi-k2.7-code:cloud"
+            - option "nemotron-3-nano:4b" [selected]
+            - option "nemotron-mini:latest"
+            - option "glm4:latest"
+            - option "glm4:9b"
+            - option "llama3.1:8b"
+            - option "gemma3:4b"
+            - option "qwen3.5:4b"
+            - option "deepseek-v4-pro:cloud"
+            - option "moondream:latest"
+            - option "bakllava:latest"
+            - option "llava:latest"
+            - option "llama3.2:3b"
+        - generic [ref=e52]:
+          - generic [ref=e53]: Default-Sprache (Original)
+          - combobox [ref=e54]:
+            - option "Deutsch" [selected]
+            - option "English"
+            - option "Espa�ol"
+            - option "Fran�ais"
+            - option "Italiano"
+            - option "Portugu�s"
+            - option "Nederlands"
+            - option "Polski"
+            - option "???????"
+            - option "???"
+            - option "???"
+            - option "??"
+            - option "???????"
+            - option "T�rk�e"
+            - option "Svenska"
+            - option "Dansk"
+            - option "Suomi"
+            - option "Norsk"
+            - option "Ce�tina"
+            - option "Magyar"
+            - option "Rom�na"
+            - option "??????????"
+            - option "????????"
+            - option "?????"
+            - option "???"
+            - option "Ti?ng Vi?t"
+        - generic [ref=e56]:
+          - checkbox "Default-Sprache anzeigen (Zeile 1)" [ref=e57]
+          - text: Default-Sprache anzeigen (Zeile 1)
+        - generic [ref=e58]:
+          - generic [ref=e59]: Sprache hinzuf�gen
+          - combobox [ref=e60]:
+            - option "Sprache w�hlen..." [selected]
+            - option "Deutsch"
+            - option "English"
+            - option "Espa�ol"
+            - option "Fran�ais"
+            - option "Italiano"
+            - option "Portugu�s"
+            - option "Nederlands"
+            - option "Polski"
+            - option "???????"
+            - option "???"
+            - option "???"
+            - option "??"
+            - option "???????"
+            - option "T�rk�e"
+            - option "Svenska"
+            - option "Dansk"
+            - option "Suomi"
+            - option "Norsk"
+            - option "Ce�tina"
+            - option "Magyar"
+            - option "Rom�na"
+            - option "??????????"
+            - option "????????"
+            - option "?????"
+            - option "???"
+            - option "Ti?ng Vi?t"
+          - button "+" [active] [ref=e61] [cursor=pointer]
+        - generic [ref=e62]:
+          - generic [ref=e63]: Aktive Sprachen
+          - generic [ref=e64]:
+            - generic [ref=e103] [cursor=pointer]:
+              - text: English
+              - generic [ref=e104]: �
+            - generic [ref=e105] [cursor=pointer]:
+              - text: Fran�ais
+              - generic [ref=e106]: �
+        - button "Speichern" [ref=e68] [cursor=pointer]
+    - generic [ref=e69]:
+      - generic [ref=e80]: "[16:57:12] Bereit. Klicke \"Capture starten\" um loszulegen."
+      - generic [ref=e81]: "[16:57:12] 29 Modelle geladen"
+      - generic [ref=e82]: "[16:57:12] Ollama Key vorhanden - lade Modelle..."
+      - generic [ref=e83]: "[16:57:12] Multi-Language: 1 Zielsprachen"
+      - generic [ref=e84]: "[16:57:12] VAD geladen: threshold=0.019"
+      - generic [ref=e85]: Bereit. Klicke "Capture starten"...
+    - generic [ref=e74]:
+      - strong [ref=e75]: "Multi-Language Output:"
+      - text: 1. W�hle
+      - strong [ref=e76]: Default-Sprache
+      - text: (was gesprochen wird)
+      - text: 2. F�ge
+      - strong [ref=e77]: Zielsprachen
+      - text: hinzu (je eine Zeile im Output)
+      - text: 3. W�hle
+      - strong [ref=e78]: �bersetzungs-Modell
+      - text: (wird automatisch geladen wenn API-Key vorhanden)
+      - text: 4. Starte Capture - jede Zeile zeigt eine Sprache
+      - strong [ref=e79]: �bersetzung via Ollama Cloud
+      - text: "- muss in den Admin-Settings aktiviert sein."

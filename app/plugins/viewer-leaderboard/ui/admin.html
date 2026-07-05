@@ -6,6 +6,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🎮 Viewer XP & Leaderboard - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function() {
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+      function readTheme() {
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+            if (validThemes.has(parentTheme)) return parentTheme;
+          }
+        } catch (error) {}
+
+        try {
+          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (validThemes.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function syncTheme() {
+        const theme = readTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+      }
+
+      syncTheme();
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <link href="/css/vendor/bootstrap.min.css" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -627,8 +671,41 @@
 
       .sidebar {
         width: 100%;
+        padding: 16px 14px;
         border-right: none;
         border-bottom: 1px solid var(--color-border);
+      }
+
+      .sidebar-logo {
+        font-size: 1.25rem;
+        margin-bottom: 4px;
+      }
+
+      .sidebar-subtitle {
+        margin-bottom: 16px;
+      }
+
+      .sidebar nav {
+        display: grid;
+        gap: 12px;
+      }
+
+      .nav-section {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 0;
+      }
+
+      .nav-section-title {
+        grid-column: 1 / -1;
+        margin-bottom: 4px;
+      }
+
+      .nav-item {
+        margin-bottom: 0;
+        padding: 10px 12px;
+        font-size: 0.92rem;
       }
 
       .main-content {
@@ -637,6 +714,57 @@
 
       .stats-grid {
         grid-template-columns: 1fr;
+      }
+
+      html[data-theme="vision-impaired"] .sidebar {
+        width: 100% !important;
+        padding: 16px 14px !important;
+      }
+
+      html[data-theme="vision-impaired"] .sidebar-logo {
+        font-size: 1.3rem !important;
+        margin-bottom: 4px !important;
+      }
+
+      html[data-theme="vision-impaired"] .sidebar-subtitle {
+        font-size: 0.95rem !important;
+        margin-bottom: 16px !important;
+      }
+
+      html[data-theme="vision-impaired"] .sidebar nav {
+        display: grid !important;
+        gap: 12px !important;
+      }
+
+      html[data-theme="vision-impaired"] .nav-section {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        margin-bottom: 0 !important;
+      }
+
+      html[data-theme="vision-impaired"] .nav-section-title {
+        grid-column: 1 / -1 !important;
+        margin-bottom: 4px !important;
+      }
+
+      html[data-theme="vision-impaired"] .nav-item {
+        margin-bottom: 0 !important;
+        padding: 10px 12px !important;
+        font-size: 0.92rem !important;
+        min-height: auto !important;
+      }
+
+      html[data-theme="vision-impaired"] .main-content {
+        padding: 16px !important;
+      }
+
+      html[data-theme="vision-impaired"] .page-title {
+        font-size: 1.8rem !important;
+      }
+
+      html[data-theme="vision-impaired"] .stat-card {
+        padding: 18px !important;
       }
     }
 
@@ -719,6 +847,181 @@
     .rank-default {
       background: var(--color-bg-tertiary);
       color: var(--color-text-secondary);
+    }
+
+    html[data-theme="day"] body {
+      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+      color: #10203a;
+    }
+
+    html[data-theme="night"] body {
+      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+      color: #e5e7eb;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000;
+      color: #fff;
+    }
+
+    html[data-theme="contrast"] .sidebar,
+    html[data-theme="vision-impaired"] .sidebar,
+    html[data-theme="contrast"] .card,
+    html[data-theme="vision-impaired"] .card,
+    html[data-theme="contrast"] .stat-card,
+    html[data-theme="vision-impaired"] .stat-card {
+      background: #000;
+      color: #fff;
+      border-color: #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .sidebar-logo,
+    html[data-theme="vision-impaired"] .page-title,
+    html[data-theme="vision-impaired"] .stat-card-value,
+    html[data-theme="vision-impaired"] .card-header,
+    html[data-theme="vision-impaired"] .nav-item.active {
+      color: #facc15;
+      -webkit-text-fill-color: currentColor;
+      background: none;
+    }
+
+    html[data-theme="vision-impaired"] .sidebar {
+      width: 320px;
+      padding: 28px 22px;
+    }
+
+    html[data-theme="vision-impaired"] .sidebar-logo {
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+
+    html[data-theme="vision-impaired"] .sidebar-subtitle {
+      font-size: 1rem;
+      color: #fff7cc;
+      margin-bottom: 40px;
+    }
+
+    html[data-theme="vision-impaired"] .nav-section-title {
+      color: #facc15;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+    }
+
+    html[data-theme="vision-impaired"] .nav-item {
+      padding: 14px 16px;
+      font-size: 1rem;
+      min-height: 52px;
+    }
+
+    html[data-theme="vision-impaired"] .main-content {
+      padding: 36px;
+    }
+
+    html[data-theme="vision-impaired"] .page-title {
+      font-size: 2.5rem;
+      line-height: 1.05;
+    }
+
+    html[data-theme="vision-impaired"] .page-description {
+      font-size: 1.12rem;
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] .stat-card {
+      background: #050505;
+      border: 3px solid #facc15;
+      padding: 28px;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .stat-card-icon {
+      font-size: 2.4rem;
+    }
+
+    html[data-theme="vision-impaired"] .stat-card-value {
+      font-size: 2.35rem;
+      line-height: 1;
+    }
+
+    html[data-theme="vision-impaired"] .stat-card-label,
+    html[data-theme="vision-impaired"] .stat-card-change,
+    html[data-theme="vision-impaired"] .form-text,
+    html[data-theme="vision-impaired"] .empty-state-description {
+      font-size: 0.98rem;
+      color: #fff7cc;
+    }
+
+    html[data-theme="vision-impaired"] .card {
+      background: #050505;
+      border: 3px solid #facc15;
+      box-shadow: none;
+      margin-bottom: 28px;
+    }
+
+    html[data-theme="vision-impaired"] .card-header {
+      background: #000;
+      border-bottom: 3px solid #facc15;
+      padding: 20px 28px;
+      font-size: 1.2rem;
+    }
+
+    html[data-theme="vision-impaired"] .card-body {
+      padding: 28px;
+    }
+
+    html[data-theme="vision-impaired"] .overlay-card,
+    html[data-theme="vision-impaired"] .modal-content {
+      background: #050505;
+      border: 3px solid #facc15;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .nav-item,
+    html[data-theme="vision-impaired"] .btn,
+    html[data-theme="vision-impaired"] .badge {
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .btn-warning {
+      background: #000 !important;
+      color: #facc15 !important;
+      border-color: #facc15 !important;
+      box-shadow: inset 0 0 0 1px #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .btn-warning:hover {
+      background: #111 !important;
+      color: #fff7cc !important;
+      border-color: #fff7cc !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-success {
+      background: #000 !important;
+      color: #facc15 !important;
+      border-color: #facc15 !important;
+      box-shadow: inset 0 0 0 1px #facc15;
+    }
+
+    html[data-theme="vision-impaired"] .btn-success:hover {
+      background: #111 !important;
+      color: #fff7cc !important;
+      border-color: #fff7cc !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn {
+      min-height: 46px;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    html[data-theme="vision-impaired"] .btn-sm {
+      min-height: 40px;
+      font-size: 0.92rem;
+    }
+
+    html[data-theme="vision-impaired"] .badge {
+      font-size: 0.82rem;
     }
   </style>
 </head>

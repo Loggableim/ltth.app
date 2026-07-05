@@ -6,6 +6,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="goals.title">Goals - Multi-Overlay System</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -354,6 +398,132 @@
             display: flex;
             gap: 8px;
             margin-top: 16px;
+        }
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .sidebar,
+        html[data-theme="vision-impaired"] .sidebar,
+        html[data-theme="contrast"] .goal-card,
+        html[data-theme="vision-impaired"] .goal-card,
+        html[data-theme="contrast"] .modal-content,
+        html[data-theme="vision-impaired"] .modal-content {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .logo,
+        html[data-theme="vision-impaired"] .goal-card-title,
+        html[data-theme="vision-impaired"] .page-title,
+        html[data-theme="vision-impaired"] .modal-content h2,
+        html[data-theme="vision-impaired"] .modal-content h3 {
+            color: #facc15;
+            -webkit-text-fill-color: currentColor;
+            background: none;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .tab-btn,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
+            -webkit-text-fill-color: currentColor;
+        }
+
+        html[data-theme="vision-impaired"] .tab-btn.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-color: #facc15 !important;
+            -webkit-text-fill-color: currentColor;
+        }
+
+        html[data-theme="vision-impaired"] .sidebar .btn-primary {
+            background: #facc15 !important;
+            color: #000 !important;
+            border-color: #facc15 !important;
+            -webkit-text-fill-color: currentColor;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                height: auto;
+                overflow-y: auto;
+            }
+
+            .app-container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--color-border);
+                padding: 20px 16px;
+            }
+
+            .main-content {
+                padding: 20px 16px 28px;
+            }
+
+            .goal-card-header,
+            .multigoal-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .goal-stats {
+                flex-wrap: wrap;
+                gap: 10px 16px;
+            }
+
+            .goal-actions,
+            .multigoal-actions,
+            .form-row {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+
+            .sidebar > div[style*="display: flex; gap: 8px;"] {
+                flex-wrap: wrap;
+            }
+
+            .sidebar .tab-btn,
+            .sidebar .btn-primary {
+                width: 100%;
+            }
+
+            .modal-content {
+                width: calc(100% - 24px);
+                padding: 20px;
+            }
+
+            .multigoal-info {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>

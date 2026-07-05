@@ -5,6 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok Visual Effects Overlay - Einstellungen</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -20,7 +56,8 @@
         }
         
         .container {
-            max-width: 900px;
+            width: 100%;
+            max-width: 1240px;
             margin: 0 auto;
         }
         
@@ -176,6 +213,161 @@
         
         .btn-secondary:hover {
             background: #666;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+            font-size: 1.22rem;
+            line-height: 1.82;
+        }
+
+        html[data-theme="vision-impaired"] .container,
+        html[data-theme="vision-impaired"] .control-room-shell {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] h1 {
+            font-size: clamp(2.6rem, 4vw, 4.2rem);
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle {
+            font-size: 1.14rem;
+            line-height: 1.88;
+            color: #fff7cc;
+            max-width: 76ch;
+        }
+
+        html[data-theme="vision-impaired"] .frame-position-controls h3,
+        html[data-theme="vision-impaired"] .frame-position-controls p,
+        html[data-theme="vision-impaired"] #presetList p,
+        html[data-theme="vision-impaired"] #triggerStatusBox span,
+        html[data-theme="vision-impaired"] #triggerLogContainer p {
+            font-size: 1.16rem !important;
+            line-height: 1.78 !important;
+        }
+
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls,
+        html[data-theme="vision-impaired"] .info-box {
+            background: #050505;
+            border: 2px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .control-room-hero,
+        html[data-theme="vision-impaired"] .broadcast-stack {
+            grid-template-columns: 1fr;
+        }
+
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .frame-position-controls {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .slider-value,
+        html[data-theme="vision-impaired"] .frame-position-input label,
+        html[data-theme="vision-impaired"] small {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] label,
+        html[data-theme="vision-impaired"] .frame-position-input label {
+            font-size: 1.08rem;
+            line-height: 1.66;
+        }
+
+        html[data-theme="vision-impaired"] .section-title {
+            font-size: 1.82rem;
+            line-height: 1.18;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .info-box p,
+        html[data-theme="vision-impaired"] .trigger-card p,
+        html[data-theme="vision-impaired"] .trigger-card small,
+        html[data-theme="vision-impaired"] .gift-catalog-toolbar small,
+        html[data-theme="vision-impaired"] .frame-position-input small,
+        html[data-theme="vision-impaired"] .trigger-status-box p {
+            font-size: 1.08rem;
+            line-height: 1.72;
+        }
+
+        html[data-theme="vision-impaired"] .slider-value {
+            font-size: 1.08rem;
+            min-width: 80px;
+        }
+
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .preview-controls button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #facc15;
+            font-size: 1.12rem;
+            min-height: 50px;
+        }
+
+        html[data-theme="vision-impaired"] .btn:hover,
+        html[data-theme="vision-impaired"] .preview-controls button:hover {
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .preview-controls button.active {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .preset-btn,
+        html[data-theme="vision-impaired"] .preview-mode-btn {
+            font-size: 1.08rem;
+            min-height: 48px;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card h3,
+        html[data-theme="vision-impaired"] .info-box h3 {
+            font-size: 1.58rem;
+            line-height: 1.18;
+        }
+
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .trigger-card-meta {
+            font-size: 1.08rem;
+            letter-spacing: 0.02em;
+        }
+
+        html[data-theme="vision-impaired"] input[type="text"],
+        html[data-theme="vision-impaired"] input[type="number"],
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] input[type="color"],
+        html[data-theme="vision-impaired"] input[type="range"] {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            min-height: 52px;
+            font-size: 1.16rem;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group {
+            background: #050505 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .checkbox-group label {
+            font-size: 1.12rem !important;
         }
         
         .info-box {
@@ -986,13 +1178,13 @@
         .preview-container {
             border-radius: 16px;
             overflow: hidden;
-            width: min(100%, 760px);
-            max-width: 760px;
+            width: 100%;
+            max-width: none;
         }
 
         .frame-position-controls {
-            width: min(100%, 760px);
-            max-width: 760px;
+            width: 100%;
+            max-width: none;
         }
 
         .preview-wrapper {
@@ -1079,6 +1271,58 @@
             .tab-strip {
                 position: static;
             }
+        }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: #111827;
+            color: #e5e7eb;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .section,
+        html[data-theme="vision-impaired"] .section,
+        html[data-theme="contrast"] .hero-card,
+        html[data-theme="vision-impaired"] .hero-card {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] h1,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .hero-title {
+            color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .control-room-subtitle,
+        html[data-theme="vision-impaired"] .hero-hint,
+        html[data-theme="vision-impaired"] .broadcast-card p,
+        html[data-theme="vision-impaired"] .card p,
+        html[data-theme="vision-impaired"] .trigger-card-meta,
+        html[data-theme="vision-impaired"] .trigger-card-kicker,
+        html[data-theme="vision-impaired"] .hero-chip {
+            font-size: 1.05rem;
+            line-height: 1.55;
+        }
+
+        html[data-theme="vision-impaired"] input,
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .action-btn {
+            border-width: 3px;
+            font-size: 1rem;
         }
     </style>
 </head>

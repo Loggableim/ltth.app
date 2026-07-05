@@ -1,6 +1,6 @@
 /**
  * Chatango Theme Adapter
- * Adapts Chatango shoutbox colors to match the current theme (aurora/day/night/high contrast/vision impaired)
+ * Adapts Chatango shoutbox colors to match the current theme (day/night/high contrast/vision impaired)
  * Corporate branding color: #13A318 (green)
  * 
  * This module now handles dynamic loading of Chatango embeds to ensure they
@@ -12,62 +12,62 @@ class ChatangoThemeAdapter {
         this.pluginConfig = null; // Will be loaded from API
         this.themeConfigs = {
             aurora: {
-                // New default aurora theme - dark glass with cyan/green accents
-                a: '08111F',      // Background color (deep navy)
-                b: 100,           // Background opacity
-                c: 'E2E8F0',      // Title and icons color (soft white)
-                d: 'F8FAFC',      // Group owner's msg, URL and background text color
-                e: '101A2D',      // Messages background color
-                f: 100,           // Messages background opacity
-                g: 'F8FAFC',      // Messages text color
-                h: '0F172A',      // Input background color
-                i: 100,           // Input background opacity
-                j: 'F8FAFC',      // Input text color
-                k: '22D3EE',      // Date color (cyan)
-                l: '34D399',      // Border color (emerald)
-                m: '22D3EE',      // Button color (cyan)
-                n: '08111F',      // Button text color (dark)
-                o: 100,           // Button opacity
-                p: '10',          // Font size
-                q: '34D399',      // Main border color (emerald)
-                r: 100,           // Main border visibility
-                s: 0,             // Rounded corners
-                t: 0,             // Messages sound toggle (off)
-                sbc: '7C8AA4',    // Scrollbar color
-                sba: 100,         // Scrollbar opacity
-                cvbg: '08111F',   // Collapsed view background
-                cvfg: 'E2E8F0'    // Collapsed view font/icon color
+                // Legacy alias retained for old saved settings; normalized to night.
+                a: '1e293b',
+                b: 100,
+                c: 'FFFFFF',
+                d: 'FFFFFF',
+                e: '1e293b',
+                f: 100,
+                g: 'FFFFFF',
+                h: '334155',
+                i: 100,
+                j: 'FFFFFF',
+                k: '38bdf8',
+                l: '334155',
+                m: '334155',
+                n: 'FFFFFF',
+                o: 100,
+                p: '10',
+                q: '334155',
+                r: 100,
+                s: 0,
+                t: 0,
+                sbc: '64748b',
+                sba: 100,
+                cvbg: '1e293b',
+                cvfg: 'FFFFFF'
             },
             'aurora-2': {
-                // Aurora 2.0 theme - sharper glass with brighter cyan/purple accents
-                a: '050B16',      // Background color (near-black navy)
-                b: 100,           // Background opacity
-                c: 'D8E3F3',      // Title and icons color
-                d: 'F8FAFC',      // Group owner's msg, URL and background text color
-                e: '0C1526',      // Messages background color
-                f: 100,           // Messages background opacity
-                g: 'F8FAFC',      // Messages text color
-                h: '07131B',      // Input background color
-                i: 100,           // Input background opacity
-                j: 'F8FAFC',      // Input text color
-                k: '67E8F9',      // Date color (cyan)
-                l: '67E8F9',      // Border color
-                m: '67E8F9',      // Button color
-                n: '050B16',      // Button text color
-                o: 100,           // Button opacity
-                p: '10',          // Font size
-                q: '67E8F9',      // Main border color
-                r: 100,           // Main border visibility
-                s: 0,             // Rounded corners
-                t: 0,             // Messages sound toggle (off)
-                sbc: '94A3B8',    // Scrollbar color
-                sba: 100,         // Scrollbar opacity
-                cvbg: '050B16',   // Collapsed view background
-                cvfg: 'D8E3F3'    // Collapsed view font/icon color
+                // Legacy alias retained for old saved settings; normalized to night.
+                a: '1e293b',
+                b: 100,
+                c: 'FFFFFF',
+                d: 'FFFFFF',
+                e: '1e293b',
+                f: 100,
+                g: 'FFFFFF',
+                h: '334155',
+                i: 100,
+                j: 'FFFFFF',
+                k: '38bdf8',
+                l: '334155',
+                m: '334155',
+                n: 'FFFFFF',
+                o: 100,
+                p: '10',
+                q: '334155',
+                r: 100,
+                s: 0,
+                t: 0,
+                sbc: '64748b',
+                sba: 100,
+                cvbg: '1e293b',
+                cvfg: 'FFFFFF'
             },
             night: {
-                // Default night mode - green branding
-                a: '13A318',      // Background color (green)
+                // Default night mode - neutral dark surfaces with green accents
+                a: '1e293b',      // Background color (dark card surface)
                 b: 100,           // Background opacity
                 c: 'FFFFFF',      // Title and icons color (white)
                 d: 'FFFFFF',      // Group owner's msg, URL and background text color
@@ -77,24 +77,24 @@ class ChatangoThemeAdapter {
                 h: '334155',      // Input background color (slate)
                 i: 100,           // Input background opacity
                 j: 'FFFFFF',      // Input text color (white)
-                k: '13A318',      // Date color (green)
-                l: '13A318',      // Border color (green)
-                m: '13A318',      // Button color (green)
+                k: '38bdf8',      // Date color (sky accent)
+                l: '334155',      // Border color (slate)
+                m: '334155',      // Button color (slate)
                 n: 'FFFFFF',      // Button text color (white)
                 o: 100,           // Button opacity
                 p: '10',          // Font size
-                q: '13A318',      // Main border color (green)
+                q: '334155',      // Main border color (slate)
                 r: 100,           // Main border visibility
                 s: 0,             // Rounded corners
                 t: 0,             // Messages sound toggle (off)
                 sbc: '64748b',    // Scrollbar color
                 sba: 100,         // Scrollbar opacity
-                cvbg: '13a318',   // Collapsed view background (green)
+                cvbg: '1e293b',   // Collapsed view background (dark card surface)
                 cvfg: 'FFFFFF'    // Collapsed view font/icon color (white)
             },
             day: {
                 // Day mode - light theme with green accents
-                a: '13A318',      // Background color (green)
+                a: 'f8fafc',      // Background color (light card surface)
                 b: 100,           // Background opacity
                 c: '1e293b',      // Title and icons color (dark)
                 d: '1e293b',      // Group owner's msg, URL text (dark)
@@ -104,19 +104,19 @@ class ChatangoThemeAdapter {
                 h: 'FFFFFF',      // Input background color (white)
                 i: 100,           // Input background opacity
                 j: '1e293b',      // Input text color (dark)
-                k: '0f8712',      // Date color (darker green)
-                l: '13A318',      // Border color (green)
-                m: '13A318',      // Button color (green)
+                k: '0284c7',      // Date color (blue accent)
+                l: 'cbd5e1',      // Border color (light slate)
+                m: 'cbd5e1',      // Button color (light slate)
                 n: 'FFFFFF',      // Button text color (white)
                 o: 100,           // Button opacity
                 p: '10',          // Font size
-                q: '13A318',      // Main border color (green)
+                q: 'cbd5e1',      // Main border color (light slate)
                 r: 100,           // Main border visibility
                 s: 0,             // Rounded corners
                 t: 0,             // Messages sound toggle (off)
                 sbc: 'cbd5e1',    // Scrollbar color (light gray)
                 sba: 100,         // Scrollbar opacity
-                cvbg: '13a318',   // Collapsed view background (green)
+                cvbg: 'f8fafc',   // Collapsed view background (light card surface)
                 cvfg: 'FFFFFF'    // Collapsed view font/icon color (white)
             },
             contrast: {
@@ -486,7 +486,15 @@ class ChatangoThemeAdapter {
 
     getCurrentTheme() {
         const themeAttr = document.documentElement.getAttribute('data-theme');
-        return themeAttr || 'night'; // Default to night if no theme set
+        return this.normalizeTheme(themeAttr || 'night');
+    }
+
+    normalizeTheme(theme) {
+        if (!theme) return 'night';
+        if (theme === 'aurora' || theme === 'aurora-2') return 'night';
+        if (theme === 'highcontrast' || theme === 'high-contrast') return 'contrast';
+        if (this.themeConfigs[theme]) return theme;
+        return 'night';
     }
 
     updateChatangoTheme() {
@@ -522,7 +530,8 @@ class ChatangoThemeAdapter {
      * This can be used to manually recreate the embed with new colors
      */
     getConfigForTheme(theme) {
-        return this.themeConfigs[theme] || this.themeConfigs.night || this.themeConfigs['vision-impaired'];
+        const normalizedTheme = this.normalizeTheme(theme);
+        return this.themeConfigs[normalizedTheme] || this.themeConfigs.night || this.themeConfigs['vision-impaired'];
     }
 
     /**
@@ -531,7 +540,7 @@ class ChatangoThemeAdapter {
      */
     generateEmbedCode(position = 'dashboard', theme = null) {
         // Use theme from config or current theme as fallback
-        theme = theme || (this.pluginConfig && this.pluginConfig.theme) || this.getCurrentTheme();
+        theme = this.normalizeTheme(theme || (this.pluginConfig && this.pluginConfig.theme) || this.getCurrentTheme());
         const themeStyles = this.getConfigForTheme(theme);
         
         // Get room handle from config or use default

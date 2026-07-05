@@ -15,9 +15,101 @@
             margin: 0;
         }
 
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .card {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .card {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] .card-header {
+            border-bottom-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .card-header {
+            border-bottom-color: #2b3552;
+        }
+
+        html[data-theme="day"] .form-control,
+        html[data-theme="day"] .btn-secondary,
+        html[data-theme="day"] .info-box,
+        html[data-theme="day"] .preview-container,
+        html[data-theme="day"] .embed-preview,
+        html[data-theme="day"] .code-block {
+            background: #fff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .form-control,
+        html[data-theme="night"] .btn-secondary,
+        html[data-theme="night"] .info-box,
+        html[data-theme="night"] .preview-container,
+        html[data-theme="night"] .embed-preview,
+        html[data-theme="night"] .code-block {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .form-control,
+        html[data-theme="vision-impaired"] .form-control,
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="contrast"] .info-box,
+        html[data-theme="vision-impaired"] .info-box,
+        html[data-theme="contrast"] .preview-container,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="contrast"] .embed-preview,
+        html[data-theme="vision-impaired"] .embed-preview,
+        html[data-theme="contrast"] .code-block,
+        html[data-theme="vision-impaired"] .code-block {
+            background: #050505;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .form-group label,
+        html[data-theme="vision-impaired"] .preview-title,
+        html[data-theme="vision-impaired"] .info-box h4,
+        html[data-theme="vision-impaired"] .info-box p {
+            color: #fff7cc;
+        }
+
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: none;
+            margin: 0;
         }
 
         .card {
@@ -295,6 +387,7 @@
                             <option value="night">Night (Dark)</option>
                             <option value="day">Day (Light)</option>
                             <option value="contrast">High Contrast</option>
+                            <option value="vision-impaired">Vision Impaired</option>
                         </select>
                     </div>
 

@@ -115,6 +115,13 @@
   const payToSkipEnabled = document.getElementById('pay-to-skip-enabled');
   const payToSkipGifts = document.getElementById('pay-to-skip-gifts');
   const giftCatalogList = document.getElementById('gift-catalog-list');
+  const giftCatalogSearch = document.getElementById('gift-catalog-search');
+  const giftCatalogRefresh = document.getElementById('gift-catalog-refresh');
+  const giftCatalogStatus = document.getElementById('gift-catalog-status');
+  const giftCatalogCount = document.getElementById('gift-catalog-count');
+  const giftCatalogApplyPayToPlay = document.getElementById('gift-catalog-apply-pay-to-play');
+  const giftCatalogApplyPayToSkip = document.getElementById('gift-catalog-apply-pay-to-skip');
+  const giftCatalogApplySkipImmunity = document.getElementById('gift-catalog-apply-skip-immunity');
   const likeGateEnabled = document.getElementById('like-gate-enabled');
   const minLikesPerUser = document.getElementById('min-likes-per-user');
   const overlayDesign = document.getElementById('overlay-design');
@@ -148,6 +155,15 @@
   let progressDuration = 0;
   let draggedQueueIndex = null;
   let giftCatalogTargetField = null;
+  let giftCatalogEntries = [];
+  let giftCatalogFilter = '';
+  let giftCatalogSelectedValues = new Set();
+  let giftCatalogMeta = {
+    locales: [],
+    region: null,
+    lastUpdate: null,
+    count: 0
+  };
   let currentSetupIssues = [];
   let currentOnboarding = { completed: false, completedAt: null };
 
@@ -423,13 +439,29 @@
   });
 
   giftCatalogList?.addEventListener('change', () => {
-    const selected = Array.from(giftCatalogList.selectedOptions || []).map((option) => option.value);
-    if (!selected.length) return;
-    const target = giftCatalogTargetField || payToPlayGifts;
-    if (!target) return;
-    const existing = parseList(target.value);
-    const merged = Array.from(new Set([...existing, ...selected]));
-    target.value = merged.join(', ');
+    const visibleOptions = Array.from(giftCatalogList.options || []).filter((option) => option.value);
+    visibleOptions.forEach((option) => {
+      if (option.selected) {
+        giftCatalogSelectedValues.add(option.value);
+      } else {
+        giftCatalogSelectedValues.delete(option.value);
+      }
+    });
+
+    const selected = collectGiftCatalogSelection();
+    if (!selected.length) {
+      renderGiftCatalogList();
+      return;
+    }
+
+    const target = giftCatalogTargetField;
+    if (target) {
+      const existing = parseList(target.value);
+      const merged = Array.from(new Set([...existing, ...selected]));
+      target.value = merged.join(', ');
+    }
+
+    renderGiftCatalogList();
   });
 
   payToPlayGifts?.addEventListener('focus', () => {
@@ -438,12 +470,63 @@
   payToSkipGifts?.addEventListener('focus', () => {
     giftCatalogTargetField = payToSkipGifts;
   });
+  skipImmunityGifts?.addEventListener('focus', () => {
+    giftCatalogTargetField = skipImmunityGifts;
+  });
+
+  const clearGiftTarget = (target) => {
+    if (giftCatalogTargetField === target) {
+      giftCatalogTargetField = null;
+    }
+  };
 
   payToPlayGifts?.addEventListener('blur', async () => {
     await post('/config', { monetization: { payToPlayGiftCatalog: parseList(payToPlayGifts.value) } });
+    clearGiftTarget(payToPlayGifts);
   });
   payToSkipGifts?.addEventListener('blur', async () => {
     await post('/config', { monetization: { payToSkipGiftCatalog: parseList(payToSkipGifts.value) } });
+    clearGiftTarget(payToSkipGifts);
+  });
+  skipImmunityGifts?.addEventListener('blur', async () => {
+    await post('/config', { giftIntegration: { skipImmunityGifts: parseList(skipImmunityGifts.value) } });
+    clearGiftTarget(skipImmunityGifts);
+  });
+
+  giftCatalogSearch?.addEventListener('input', () => {
+    giftCatalogFilter = giftCatalogSearch.value || '';
+    renderGiftCatalogList();
+  });
+
+  giftCatalogRefresh?.addEventListener('click', () => {
+    refreshGiftCatalog();
+  });
+
+  giftCatalogApplyPayToPlay?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      payToPlayGifts,
+      { monetization: { payToPlayGiftCatalog: parseList(payToPlayGifts.value) } },
+      'Pay-to-Play'
+    );
+  });
+
+  giftCatalogApplyPayToSkip?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      payToSkipGifts,
+      { monetization: { payToSkipGiftCatalog: parseList(payToSkipGifts.value) } },
+      'Pay-to-Skip'
+    );
+  });
+
+  giftCatalogApplySkipImmunity?.addEventListener('click', async () => {
+    giftCatalogSelectedValues = new Set(collectGiftCatalogSelection());
+    await applyGiftCatalogSelection(
+      skipImmunityGifts,
+      { giftIntegration: { skipImmunityGifts: parseList(skipImmunityGifts.value) } },
+      'Skip-Immunity'
+    );
   });
 
   function buildOverlayUrl() {
@@ -1129,6 +1212,187 @@
       .filter(Boolean);
   }
 
+  function normalizeGiftCatalogEntry(gift = {}) {
+    const name = String(gift.name || gift.giftName || gift.gift_name || '').trim();
+    if (!name) return null;
+
+    return {
+      name,
+      diamond_count: Number(gift.diamond_count || gift.diamondCount || gift.diamond) || 0
+    };
+  }
+
+  function extractGiftCatalogFromResponse(payload = {}) {
+    const collected = [];
+    const seen = new Set();
+
+    const addEntries = (entries) => {
+      if (!Array.isArray(entries)) return;
+      entries.forEach((gift) => {
+        const normalized = normalizeGiftCatalogEntry(gift);
+        if (!normalized || seen.has(normalized.name)) return;
+        seen.add(normalized.name);
+        collected.push(normalized);
+      });
+    };
+
+    addEntries(payload.catalog);
+
+    if (payload.catalogsByLocale && typeof payload.catalogsByLocale === 'object') {
+      Object.values(payload.catalogsByLocale).forEach(addEntries);
+    }
+
+    if (!collected.length) {
+      addEntries(payload?.data?.catalog);
+    }
+
+    if (!collected.length && Array.isArray(payload)) {
+      addEntries(payload);
+    }
+
+    return collected;
+  }
+
+  function getGiftCatalogMeta(payload = {}, catalog = []) {
+    const locales = Array.isArray(payload.locales) ? payload.locales.filter(Boolean) : [];
+    const lastUpdate = payload.lastUpdate || null;
+    const region = payload.region || null;
+    const count = Number(payload.count ?? payload.countByLocale ?? catalog.length) || catalog.length;
+
+    return {
+      locales,
+      lastUpdate,
+      region,
+      count
+    };
+  }
+
+  function formatGiftCatalogStatus() {
+    const uniqueCount = giftCatalogEntries.length;
+    const apiCount = giftCatalogMeta.count || uniqueCount;
+    const visible = giftCatalogFilter
+      ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(giftCatalogFilter.toLowerCase())).length
+      : uniqueCount;
+    const localeText = giftCatalogMeta.locales.length ? `Locales: ${giftCatalogMeta.locales.join(', ')}` : 'Locales: default';
+    const regionText = giftCatalogMeta.region ? `Region: ${giftCatalogMeta.region}` : null;
+    const updatedText = giftCatalogMeta.lastUpdate
+      ? `Aktualisiert: ${new Date(giftCatalogMeta.lastUpdate).toLocaleString()}`
+      : null;
+    const countText = apiCount !== uniqueCount
+      ? `${uniqueCount} Gifts geladen (${apiCount} API-Einträge)`
+      : `${uniqueCount} Gifts geladen`;
+
+    return [
+      `${visible}/${uniqueCount} Gifts sichtbar`,
+      countText,
+      localeText,
+      regionText,
+      updatedText
+    ].filter(Boolean).join(' · ');
+  }
+
+  function renderGiftCatalogList() {
+    if (!giftCatalogList) return;
+
+    const filter = giftCatalogFilter.trim().toLowerCase();
+    const visibleCatalog = filter
+      ? giftCatalogEntries.filter((gift) => gift.name.toLowerCase().includes(filter))
+      : giftCatalogEntries;
+
+    giftCatalogList.innerHTML = visibleCatalog.length
+      ? visibleCatalog
+        .map((gift) => `<option value="${escapeHtml(gift.name)}">${escapeHtml(gift.name)} (${gift.diamond_count}💎)</option>`)
+        .join('')
+      : '<option value="" disabled>Keine Gifts gefunden</option>';
+
+    Array.from(giftCatalogList.options).forEach((option) => {
+      option.selected = giftCatalogSelectedValues.has(option.value);
+    });
+
+    if (giftCatalogCount) {
+      giftCatalogCount.textContent = `${giftCatalogEntries.length} Gifts`;
+    }
+
+    if (giftCatalogStatus) {
+      giftCatalogStatus.textContent = formatGiftCatalogStatus();
+    }
+  }
+
+  function collectGiftCatalogSelection() {
+    return Array.from(giftCatalogSelectedValues);
+  }
+
+  async function applyGiftCatalogSelection(targetField, configBody, label) {
+    if (!targetField) return;
+
+    const selected = collectGiftCatalogSelection();
+    if (!selected.length) {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Bitte zuerst Gifts auswählen.';
+      }
+      return;
+    }
+
+    const existing = parseList(targetField.value);
+    targetField.value = Array.from(new Set([...existing, ...selected])).join(', ');
+
+    const response = await post('/config', configBody);
+    if (response?.success === false) {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = `${label} konnte nicht gespeichert werden.`;
+      }
+      return;
+    }
+
+    if (giftCatalogStatus) {
+      giftCatalogStatus.textContent = `${selected.length} Gifts in ${label} übernommen.`;
+    }
+    if (typeof showToast === 'function') {
+      showToast('success', 'Geschenkekatalog', `${label} aktualisiert.`);
+    }
+  }
+
+  async function refreshGiftCatalog() {
+    if (!giftCatalogList) return;
+    try {
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Geschenkekatalog wird geladen...';
+      }
+
+      const res = await fetch('/api/gift-catalog-manager/catalog?all=1');
+      const data = await res.json();
+      const previousSelection = new Set(giftCatalogSelectedValues);
+
+      giftCatalogEntries = extractGiftCatalogFromResponse(data);
+      giftCatalogMeta = getGiftCatalogMeta(data, giftCatalogEntries);
+      giftCatalogSelectedValues = new Set(
+        giftCatalogEntries
+          .filter((gift) => previousSelection.has(gift.name))
+          .map((gift) => gift.name)
+      );
+
+      renderGiftCatalogList();
+    } catch (_) {
+      giftCatalogEntries = [];
+      giftCatalogMeta = {
+        locales: [],
+        region: null,
+        lastUpdate: null,
+        count: 0
+      };
+      giftCatalogSelectedValues = new Set();
+      if (giftCatalogList) {
+        giftCatalogList.innerHTML = '';
+      }
+      if (giftCatalogStatus) {
+        giftCatalogStatus.textContent = 'Geschenkekatalog konnte nicht geladen werden.';
+      }
+      if (giftCatalogCount) {
+        giftCatalogCount.textContent = '0 Gifts';
+      }
+    }
+  }
+
   function clampSongDuration(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return DEFAULT_SONG_DURATION_LIMIT_SECONDS;
@@ -1148,9 +1412,12 @@
   async function refreshGiftCatalog() {
     if (!giftCatalogList) return;
     try {
-      const res = await fetch('/api/gift-catalog');
+      const res = await fetch('/api/gift-catalog-manager/catalog');
       const data = await res.json();
-      const gifts = Array.isArray(data?.catalog) ? data.catalog : [];
+      const gifts = extractGiftCatalogFromResponse(data).map((gift) => ({
+        name: getGiftName(gift),
+        diamond_count: Number(gift.diamond_count || gift.diamondCount || gift.diamond) || 0
+      }));
       giftCatalogList.innerHTML = gifts
         .slice(0, 200)
         .map((gift) => `<option value="${escapeHtml(gift.name)}">${escapeHtml(gift.name)} (${Number(gift.diamond_count) || 0}💎)</option>`)

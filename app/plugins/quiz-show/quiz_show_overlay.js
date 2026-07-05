@@ -1,6 +1,6 @@
-ï»¿// ============================================
+// ============================================
 // Quiz Show Overlay - Professional HUD System
-// VollstÃ¤ndig konfigurierbar mit Drag & Drop
+// Vollständig konfigurierbar mit Drag & Drop
 // ============================================
 
 (function() {
@@ -153,8 +153,6 @@
     function syncApplicationTheme() {
         // Map application themes to overlay themes
         const themeMapping = {
-          'aurora': 'dark',
-          'aurora-2': 'dark',
           'night': 'dark',
           'day': 'day',
           'contrast': 'contrast',
@@ -167,7 +165,7 @@
             const stored = localStorage.getItem('dashboard-theme');
             if (stored) appTheme = stored;
         } catch (e) {
-            // localStorage not available (OBS Browser Source sandbox) â€” use default
+            // localStorage not available (OBS Browser Source sandbox) — use default
             appTheme = 'night';
         }
         
@@ -178,6 +176,15 @@
             
             // Apply the application theme to the overlay
             overlay.setAttribute('data-theme', mappedTheme);
+            if (appTheme === 'vision-impaired') {
+                overlay.setAttribute('data-vision-impaired', 'true');
+                overlay.setAttribute('data-theme-preset', 'highContrast');
+                overlay.setAttribute('data-high-contrast', 'true');
+            } else {
+                overlay.removeAttribute('data-vision-impaired');
+                overlay.removeAttribute('data-theme-preset');
+                overlay.removeAttribute('data-high-contrast');
+            }
             
             console.log('Application theme synced:', appTheme, '->', mappedTheme);
         }
@@ -189,6 +196,11 @@
                     const newTheme = themeMapping[e.newValue] || 'dark';
                     if (overlay) {
                         overlay.setAttribute('data-theme', newTheme);
+                    if (e.newValue === 'vision-impaired') {
+                        overlay.setAttribute('data-vision-impaired', 'true');
+                    } else {
+                        overlay.removeAttribute('data-vision-impaired');
+                    }
                         console.log('Theme updated from storage:', e.newValue, '->', newTheme);
                     }
                 }
@@ -255,7 +267,14 @@
         if (hudSpecificThemes.includes(hudConfig.theme)) {
             // Apply HUD-specific custom theme
             overlay.setAttribute('data-theme', hudConfig.theme);
+            overlay.removeAttribute('data-vision-impaired');
             overlay.removeAttribute('data-theme-preset');
+            overlay.removeAttribute('data-high-contrast');
+        } else if (hudConfig.theme === 'vision-impaired') {
+            overlay.setAttribute('data-vision-impaired', 'true');
+            overlay.setAttribute('data-theme', 'contrast');
+            overlay.setAttribute('data-theme-preset', 'highContrast');
+            overlay.setAttribute('data-high-contrast', 'true');
         } else if (hudPresetThemes.includes(hudConfig.theme)) {
             // Apply theme-preset (minimal, retro, casino, highContrast)
             overlay.setAttribute('data-theme-preset', hudConfig.theme);
@@ -264,17 +283,21 @@
             }
             // Keep base theme as dark for preset styling
             overlay.setAttribute('data-theme', 'dark');
+            overlay.removeAttribute('data-vision-impaired');
         } else {
             // Use application theme
             const themeMapping = {
-              'aurora': 'dark',
-              'aurora-2': 'dark',
               'night': 'dark',
               'day': 'day',
               'contrast': 'contrast',
               'vision-impaired': 'contrast'
             };
             overlay.setAttribute('data-theme', themeMapping[appTheme] || 'dark');
+            if (appTheme === 'vision-impaired') {
+                overlay.setAttribute('data-vision-impaired', 'true');
+            } else {
+                overlay.removeAttribute('data-vision-impaired');
+            }
             overlay.removeAttribute('data-theme-preset');
         }
 
@@ -330,7 +353,7 @@
     }
 
     function applyElementPositions() {
-        // If a custom layout is active, skip Drag&Drop positions â€” the layout CSS variables take precedence
+        // If a custom layout is active, skip Drag&Drop positions — the layout CSS variables take precedence
         const overlay = document.getElementById('overlay-container');
         if (overlay && overlay.hasAttribute('data-custom-layout')) {
             return;
@@ -1165,7 +1188,7 @@
             
             // Build the popup content
             let popupHTML = `
-                <div class="correct-icon">âœ“</div>
+                <div class="correct-icon">?</div>
                 <div class="correct-text">Richtige Antwort: ${gameData.correctAnswerLetter || String.fromCharCode(65 + gameData.correctIndex)}</div>
             `;
             
@@ -1368,9 +1391,9 @@
 
         errorOverlay.innerHTML = `
             <div class="error-content" style="transform: scale(0); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);">
-                <div style="font-size: 3em; margin-bottom: 15px;">Â </div>
+                <div style="font-size: 3em; margin-bottom: 15px;"> </div>
                 <h2 style="font-size: 2em; margin-bottom: 10px; font-weight: bold;">${escapeHtml(message)}</h2>
-                <p style="font-size: 1.2em; opacity: 0.9;">Bitte fÃ¼gen Sie neue Fragen hinzu und starten Sie erneut.</p>
+                <p style="font-size: 1.2em; opacity: 0.9;">Bitte fügen Sie neue Fragen hinzu und starten Sie erneut.</p>
             </div>
         `;
 
@@ -1993,12 +2016,18 @@
 
     async function loadActiveLayout() {
         try {
-            const response = await fetch('/api/quiz-show/layouts/active');
+            const response = await fetch('/api/quiz-show/state');
             if (response.ok) {
                 const data = await response.json();
-                if (data.success && data.customLayoutEnabled && data.layout) {
-                    handleLayoutUpdated({ layout: data.layout, customLayoutEnabled: true });
-                    console.log('Active layout loaded:', data.layout.name);
+                if (data.success && data.config && data.config.customLayoutEnabled && data.config.activeLayoutId) {
+                    const layoutResponse = await fetch(`/api/quiz-show/layouts/${data.config.activeLayoutId}`);
+                    if (layoutResponse.ok) {
+                        const layoutData = await layoutResponse.json();
+                        if (layoutData.success && layoutData.layout) {
+                            handleLayoutUpdated({ layout: layoutData.layout, customLayoutEnabled: true });
+                            console.log('Active layout loaded:', layoutData.layout.name);
+                        }
+                    }
                 }
             }
         } catch (error) {
@@ -2250,5 +2279,10 @@
 
     console.log('Quiz Show Overlay loaded successfully');
 })();
+
+
+
+
+
 
 

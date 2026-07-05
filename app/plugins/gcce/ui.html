@@ -6,6 +6,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Chat Command Engine - Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+
+            function normalizeTheme(value) {
+                if (VALID_THEMES.has(value)) return value;
+                return null;
+            }
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        const normalizedParentTheme = normalizeTheme(parentTheme);
+                        if (normalizedParentTheme) return normalizedParentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const normalizedTheme = normalizeTheme(localStorage.getItem(key));
+                        if (normalizedTheme) return normalizedTheme;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+
+            syncTheme();
+
+            window.addEventListener('storage', (event) => {
+                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                    syncTheme();
+                }
+            });
+
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,6 +73,114 @@
             color: var(--color-text-primary);
             padding: 32px;
             min-height: 100vh;
+        }
+
+        html[data-theme="day"] body {
+            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
+            color: #10203a;
+        }
+
+        html[data-theme="night"] body {
+            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
+            color: #e5e7eb;
+        }
+
+        html[data-theme="day"] .header h1 {
+            color: #10203a;
+            -webkit-text-fill-color: #10203a;
+            background: none;
+        }
+
+        html[data-theme="night"] .header h1 {
+            color: #f8fafc;
+            -webkit-text-fill-color: #f8fafc;
+            background: none;
+        }
+
+        html[data-theme="day"] .header p,
+        html[data-theme="day"] .stat-label,
+        html[data-theme="day"] .config-description,
+        html[data-theme="day"] .form-label {
+            color: #42526b;
+        }
+
+        html[data-theme="night"] .header p,
+        html[data-theme="night"] .stat-label,
+        html[data-theme="night"] .config-description,
+        html[data-theme="night"] .form-label {
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        html[data-theme="day"] .card,
+        html[data-theme="day"] .stat-card {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="night"] .card,
+        html[data-theme="night"] .stat-card {
+            background: #11172a;
+            color: #e5e7eb;
+            border-color: #2b3552;
+        }
+
+        html[data-theme="day"] input[type="text"],
+        html[data-theme="day"] input[type="number"],
+        html[data-theme="day"] select,
+        html[data-theme="day"] .btn-secondary {
+            background: #fff;
+            color: #10203a;
+            border-color: #c7d2fe;
+        }
+
+        html[data-theme="night"] input[type="text"],
+        html[data-theme="night"] input[type="number"],
+        html[data-theme="night"] select,
+        html[data-theme="night"] .btn-secondary {
+            background: #0f172a;
+            color: #e5e7eb;
+            border-color: #334155;
+        }
+
+        html[data-theme="contrast"] body,
+        html[data-theme="vision-impaired"] body {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .card,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="contrast"] .stat-card,
+        html[data-theme="vision-impaired"] .stat-card {
+            background: #050505;
+            color: #fff;
+            border: 2px solid #facc15;
+        }
+
+        html[data-theme="contrast"] input[type="text"],
+        html[data-theme="contrast"] input[type="number"],
+        html[data-theme="contrast"] select,
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="vision-impaired"] input[type="text"],
+        html[data-theme="vision-impaired"] input[type="number"],
+        html[data-theme="vision-impaired"] select,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .header h1,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .stat-value {
+            color: #facc15;
         }
 
         .container {
@@ -671,6 +836,63 @@
             font-size: 0.75rem;
             color: var(--color-text-secondary);
             font-family: monospace;
+        }
+
+        html[data-theme="vision-impaired"] body {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .header h1 {
+            background: none;
+            -webkit-background-clip: initial;
+            -webkit-text-fill-color: #ffe66d;
+            text-shadow: 0 0 0 transparent;
+        }
+
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .stat-card,
+        html[data-theme="vision-impaired"] .realtime-log,
+        html[data-theme="vision-impaired"] .gift-catalog-grid,
+        html[data-theme="vision-impaired"] .selected-gift-preview {
+            background: #050505;
+            border-color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .nav-tab {
+            color: #f5f5f5;
+        }
+
+        html[data-theme="vision-impaired"] .nav-tab.active {
+            background: #ffe66d;
+            color: #000;
+            border-bottom-color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .action-btn,
+        html[data-theme="vision-impaired"] .btn,
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #000;
+            border: 2px solid #ffe66d;
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .action-btn:hover,
+        html[data-theme="vision-impaired"] .btn:hover,
+        html[data-theme="vision-impaired"] .btn-primary:hover {
+            background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .stat-value,
+        html[data-theme="vision-impaired"] .command-name,
+        html[data-theme="vision-impaired"] .log-user,
+        html[data-theme="vision-impaired"] .selected-gift-name {
+            color: #ffe66d;
+        }
+
+        html[data-theme="vision-impaired"] .error,
+        html[data-theme="vision-impaired"] .success {
+            background: #050505;
+            border-width: 2px;
         }
     </style>
 </head>

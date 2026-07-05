@@ -6,6 +6,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Control - Modern Configuration</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired']);
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+            }
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <script src="/js/i18n-client.js"></script>
     
     <style>
@@ -570,6 +606,61 @@
 
         .preview-warning i {
             font-size: 1.25rem;
+        }
+
+        html[data-theme="vision-impaired"] .header,
+        html[data-theme="vision-impaired"] .card,
+        html[data-theme="vision-impaired"] .preview-container,
+        html[data-theme="vision-impaired"] .stat-card {
+            background: #000;
+            color: #fff;
+            border: 3px solid #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] .header-title h1,
+        html[data-theme="vision-impaired"] .card-header h3,
+        html[data-theme="vision-impaired"] .stat-value,
+        html[data-theme="vision-impaired"] .preview-stat-value {
+            color: #facc15;
+            -webkit-text-fill-color: currentColor;
+            background: none;
+        }
+
+        html[data-theme="vision-impaired"] .stat-label,
+        html[data-theme="vision-impaired"] .preview-stat-label,
+        html[data-theme="vision-impaired"] .card p,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] .alert,
+        html[data-theme="vision-impaired"] .preview-warning {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            border: 3px solid #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .btn-primary {
+            background: #facc15;
+            color: #000;
+        }
+
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000;
+            color: #fff;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #000;
+            color: #fecaca;
+            border: 3px solid #ef4444;
+        }
+
+        html[data-theme="vision-impaired"] .btn-danger:hover {
+            background: #111;
+            color: #fff7cc;
+            border-color: #f87171;
         }
     </style>
 </head>
