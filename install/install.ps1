@@ -199,7 +199,7 @@ function Install-Deps {
                 return
             }
         }
-        if ($npmCommand) {
+        if ($npmCommand -and $npmCommand.Source -and $npmCommand.Source -notlike '*.ps1') {
             & $npmCommand.Source @npmArgs 2>&1 | Out-Null
             return
         }
