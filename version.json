@@ -1,10 +1,10 @@
 {
-  "version": "1.3.11",
+  "version": "1.3.12",
   "releaseDate": "2026-07-05",
   "status": "stable",
-  "downloadVersion": "1.3.11",
-  "downloadNote": "Windows installer now creates a Desktop shortcut and launches LTTH through the Cloud Launcher.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.11",
+  "downloadVersion": "1.3.12",
+  "downloadNote": "Windows installer now uses the canonical root launcher.exe for the Desktop shortcut.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.12",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,13 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.12": {
+      "date": "2026-07-05",
+      "changes": [
+        "FIXED: Windows one-line installer now keeps the canonical root launcher.exe instead of overwriting it with downloads/launcher.exe",
+        "FIXED: Desktop shortcut now targets the same launcher.exe used by the maintained LTTH launcher flow"
+      ]
+    },
     "1.3.11": {
       "date": "2026-07-05",
       "changes": [
