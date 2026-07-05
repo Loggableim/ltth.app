@@ -3809,6 +3809,27 @@ func (l *Launcher) rebuildNativeModulesWithPath(nodePath string) error {
 	return nil
 }
 
+func (l *Launcher) removeNativeModulePackage(packageName string) error {
+	packageName = strings.TrimSpace(packageName)
+	if packageName == "" {
+		return fmt.Errorf("native module package name is empty")
+	}
+	target := filepath.Join(l.appDir, "node_modules", packageName)
+	info, err := os.Stat(target)
+	if err != nil {
+		if os.IsNotExist(err) {
+			l.logAndSync("[INFO] Native module package %s is already absent", packageName)
+			return nil
+		}
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("native module path is not a directory: %s", target)
+	}
+	l.logAndSync("[INFO] Removing broken native module package before reinstall: %s", target)
+	return os.RemoveAll(target)
+}
+
 // ============================================================
 // Auto-Update (GitHub Releases)
 // ============================================================
@@ -4290,9 +4311,19 @@ func (l *Launcher) runLauncher() {
 	if err := l.verifyNativeModules(); err != nil {
 		l.logAndSync("[WARNING] Native module verification failed: %v", err)
 		l.updateProgressLocalized(82, "status.rebuilding_native", "Baue native Module neu (better-sqlite3)...")
+		reinstallNativeModule := false
 		if rebuildErr := l.rebuildNativeModules(); rebuildErr != nil {
 			l.logAndSync("[WARNING] Native module rebuild failed: %v", rebuildErr)
-			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhängigkeiten neu...")
+			reinstallNativeModule = true
+		} else if verifyErr := l.verifyNativeModules(); verifyErr != nil {
+			l.logAndSync("[WARNING] Native modules still fail after rebuild: %v", verifyErr)
+			reinstallNativeModule = true
+		}
+		if reinstallNativeModule {
+			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhaengigkeiten neu...")
+			if removeErr := l.removeNativeModulePackage("better-sqlite3"); removeErr != nil {
+				l.logAndSync("[WARNING] Could not remove broken better-sqlite3 package before reinstall: %v", removeErr)
+			}
 			if installErr := l.installDependencies(); installErr != nil {
 				l.logAndSync("[ERROR] Dependency reinstall after native module failure failed: %v", installErr)
 				l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
@@ -4309,7 +4340,6 @@ func (l *Launcher) runLauncher() {
 			os.Exit(1)
 		}
 	}
-
 	// Phase 3.5: Auto-fix common issues (80-89%)
 	l.updateProgressLocalized(82, "status.checking_config", "Prüfe Konfiguration...")
 	l.logger.Println("[Phase 3.5] Auto-fixing common issues...")
@@ -4861,16 +4891,17 @@ func main() {
 	})
 
 	http.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-
-		ip := net.ParseIP(host)
-		if ip == nil || !ip.IsLoopback() {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
+		if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+			if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+		} else if launcher.logger != nil {
+			launcher.logger.Printf("[WARNING] Could not parse /logs RemoteAddr %q: %v\n", r.RemoteAddr, err)
 		}
 
 		var parts []string
@@ -4881,6 +4912,7 @@ func main() {
 				parts = append(parts, fmt.Sprintf("=== Launcher Log ===\n%s", content))
 			} else if launcher.logger != nil {
 				launcher.logger.Printf("[WARNING] Could not read launcher log: %v\n", err)
+				parts = append(parts, fmt.Sprintf("=== Launcher Log Error ===\n%v", err))
 			}
 		}
 
@@ -4891,6 +4923,7 @@ func main() {
 				parts = append(parts, fmt.Sprintf("=== Server Log (%s) ===\n%s", filepath.Base(serverLogPath), content))
 			} else if launcher.logger != nil {
 				launcher.logger.Printf("[WARNING] Could not read server log: %v\n", err)
+				parts = append(parts, fmt.Sprintf("=== Server Log Error (%s) ===\n%v", filepath.Base(serverLogPath), err))
 			}
 		}
 
