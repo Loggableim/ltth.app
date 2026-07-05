@@ -205,7 +205,55 @@
         html[data-theme="vision-impaired"] .summary-item .lbl {
             color: #fff7cc;
         }
-        .container { width: 100%; max-width: 1240px; margin: 0 auto; }
+
+        html[data-theme="contrast"] .tab-btn,
+        html[data-theme="vision-impaired"] .tab-btn {
+            background: #000;
+            color: #fff7cc;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .tab-btn:hover,
+        html[data-theme="vision-impaired"] .tab-btn:hover {
+            background: #111;
+            color: #fff;
+        }
+
+        html[data-theme="contrast"] .tab-btn.active,
+        html[data-theme="vision-impaired"] .tab-btn.active {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .alert-success,
+        html[data-theme="vision-impaired"] .alert-success {
+            background: #000;
+            color: #86efac;
+            border-color: #22c55e;
+        }
+
+        html[data-theme="contrast"] .alert-error,
+        html[data-theme="vision-impaired"] .alert-error {
+            background: #000;
+            color: #fca5a5;
+            border-color: #ef4444;
+        }
+
+        html[data-theme="contrast"] .alert-warn,
+        html[data-theme="vision-impaired"] .alert-warn {
+            background: #000;
+            color: #fde68a;
+            border-color: #fbbf24;
+        }
+
+        html[data-theme="contrast"] .alert-info,
+        html[data-theme="vision-impaired"] .alert-info {
+            background: #000;
+            color: #bfdbfe;
+            border-color: #6366f1;
+        }
+        .container { width: 100%; max-width: none; margin: 0; }
         .header { text-align: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid var(--color-border, #2a2a3e); }
         .header h1 {
             font-size: 2.2rem; font-weight: 700; margin-bottom: 8px;
@@ -214,7 +262,7 @@
         }
         .header p { color: var(--color-text-muted, #888); font-size: 1rem; }
         /* Tabs */
-        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid var(--color-border, #2a2a3e); }
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid var(--color-border, #2a2a3e); flex-wrap: wrap; }
         .tab-btn {
             padding: 10px 20px; border: none; border-radius: 8px 8px 0 0; cursor: pointer;
             font-size: 0.95rem; font-weight: 600; background: transparent;

@@ -67,8 +67,8 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: none;
+            margin: 0;
         }
 
         .header {
@@ -281,10 +281,10 @@
             background: var(--color-bg-primary);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
-            max-width: 400px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal;
         }
 
         .copy-btn {
@@ -634,6 +634,17 @@
             border-color: #facc15;
         }
 
+        html[data-theme="contrast"] .subtitle,
+        html[data-theme="contrast"] .text-secondary,
+        html[data-theme="contrast"] .room-info-label,
+        html[data-theme="contrast"] .empty-state,
+        html[data-theme="contrast"] .empty-state p,
+        html[data-theme="contrast"] .form-label,
+        html[data-theme="contrast"] .text-muted {
+            color: #f8e7a1 !important;
+            font-size: 1rem;
+        }
+
         html[data-theme="contrast"] .btn-primary,
         html[data-theme="contrast"] .btn-success,
         html[data-theme="contrast"] .control-btn.active,
@@ -659,7 +670,7 @@
         }
 
         html[data-theme="vision-impaired"] .container {
-            max-width: 1500px;
+            max-width: none;
         }
 
         html[data-theme="vision-impaired"] .header,
