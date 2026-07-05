@@ -2218,11 +2218,16 @@ html[data-theme="vision-impaired"] .panel small {
     color: #fff;
 }
 
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) body {
+    font-size: 18px;
+    line-height: 1.75;
+}
+
 :is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .container {
     border: 4px solid #facc15;
     box-shadow: none;
-    font-size: 17px;
-    line-height: 1.65;
+    font-size: 18px;
+    line-height: 1.75;
     letter-spacing: 0.01em;
 }
 
@@ -2270,8 +2275,13 @@ html[data-theme="vision-impaired"] .panel small {
     min-height: 48px;
     padding: 12px 18px;
     border-width: 3px;
-    font-size: 15px;
+    font-size: 16px !important;
     font-weight: 800;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button span {
+    font-size: 16px !important;
+    line-height: 1.2;
 }
 
 :is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .tab-button.active,
@@ -2290,8 +2300,14 @@ html[data-theme="vision-impaired"] .panel small {
     padding: 14px 18px;
     border-width: 3px;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 16px !important;
     font-weight: 700;
+}
+
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .btn span,
+:is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .category-filter-button span {
+    font-size: 16px !important;
+    line-height: 1.2;
 }
 
 :is(html[data-theme="vision-impaired"], body[data-theme="vision-impaired"]) .question-text {
