@@ -93,6 +93,11 @@
             word-break: break-all;
             user-select: all;
         }
+        .install-cmd .command-text {
+            display: block;
+            white-space: normal;
+            word-break: break-all;
+        }
         .install-cmd .prompt {
             color: #8de88e;
             user-select: none;
@@ -270,7 +275,7 @@
                 </p>
                 <div class="install-cmd" id="cmd-windows">
                     <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iwr -useb https://ltth.app/install/install.ps1 | iex" data-i18n="install.copy">Kopieren</button>
-<span class="prompt">PS&gt;</span> iwr -useb https://ltth.app/install/install.ps1 | iex
+                    <span class="command-text">iwr -useb https://ltth.app/install/install.ps1 | iex</span>
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
                     ⚠ Falls Windows SmartScreen warnt: "Weitere Informationen" → "Trotzdem ausführen". Das Skript ist signiert und sicher.
@@ -287,7 +292,7 @@
                 </p>
                 <div class="install-cmd" id="cmd-macos">
                     <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-<span class="prompt">$</span> curl -fsSL https://ltth.app/install/install.sh | bash
+                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.macos.warn">
                     💡 Falls Node.js fehlt, wirst du aufgefordert, Homebrew zu installieren (https://brew.sh) — das ist eine einmalige Aktion.
@@ -304,7 +309,7 @@
                 </p>
                 <div class="install-cmd" id="cmd-linux">
                     <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
-<span class="prompt">$</span> curl -fsSL https://ltth.app/install/install.sh | bash
+                    <span class="command-text">curl -fsSL https://ltth.app/install/install.sh | bash</span>
                 </div>
                 <div class="os-warning" data-i18n="install.linux.warn">
                     💡 Das Skript nutzt sudo nur, falls Node.js über den Paketmanager installiert werden muss.
@@ -473,7 +478,8 @@
         btn.addEventListener('click', () => {
         const target = document.getElementById(btn.dataset.copyTarget);
         if (!target) return;
-            const sourceText = (btn.dataset.copyText || '').toString().trim() || (target.innerText || '');
+            const sourceText = (btn.dataset.copyText || '').toString().trim()
+                || ((target.innerText || '').replace(/^\s*.*\n/, '').trim());
             const copyText = sourceText
                 .replace(/[\r\n]+/g, ' ')
                 .replace(/^\s*(?:PS>|\$)\s*/, '')
