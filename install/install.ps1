@@ -1,6 +1,6 @@
 # ==============================================================================
 #  LTTH One-Line Installer (Windows PowerShell)
-#  PupCid's Little TikTool Helper — https://ltth.app
+#  PupCid's Little TikTool Helper ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â https://ltth.app
 #
 #  Verwendung (PowerShell):
 #    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
@@ -9,7 +9,7 @@
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
 #    $env:LTTH_DIR         - Installationsverzeichnis (Default: $env:LOCALAPPDATA\LTTH)
 #    $env:LTTH_PORT        - HTTP-Port (Default: 3000)
-#    $env:LTTH_NO_BROWSER  - Browser nach Start nicht öffnen
+#    $env:LTTH_NO_BROWSER  - Browser nach Start nicht ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶ffnen
 #    $env:LTTH_QUIET       - Reduzierte Ausgabe
 # ==============================================================================
 
@@ -30,6 +30,53 @@ function Log($msg)  { if ($LTTHQuiet -ne '1') { Write-Host "[ltth] $msg" -Foregr
 function Ok($msg)   { if ($LTTHQuiet -ne '1') { Write-Host "[OK] $msg" -ForegroundColor Green } }
 function Warn($msg) { Write-Host "[!] $msg" -ForegroundColor Yellow }
 function Err($msg)  { Write-Host "[X] $msg" -ForegroundColor Red }
+
+function Invoke-Git {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [string]$WorkingDirectory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+        $WorkingDirectory = (Get-Location).Path
+    }
+
+    $gitLogBase = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-git-" + [guid]::NewGuid().ToString('N'))
+    $stdoutLog = "$gitLogBase.out.log"
+    $stderrLog = "$gitLogBase.err.log"
+
+    try {
+        $proc = Start-Process -FilePath 'git' `
+                              -ArgumentList $Arguments `
+                              -WorkingDirectory $WorkingDirectory `
+                              -RedirectStandardOutput $stdoutLog `
+                              -RedirectStandardError $stderrLog `
+                              -NoNewWindow `
+                              -PassThru `
+                              -Wait
+    } catch {
+        throw "Git konnte nicht gestartet werden: $($_.Exception.Message)"
+    }
+
+    try {
+        if ($proc.ExitCode -ne 0) {
+            $stdoutRaw = if (Test-Path $stdoutLog) { Get-Content -Path $stdoutLog -Raw } else { '' }
+            $stderrRaw = if (Test-Path $stderrLog) { Get-Content -Path $stderrLog -Raw } else { '' }
+            $stdout = if ($null -ne $stdoutRaw) { $stdoutRaw.Trim() } else { '' }
+            $stderr = if ($null -ne $stderrRaw) { $stderrRaw.Trim() } else { '' }
+            $details = @($stderr, $stdout) | Where-Object { $_ }
+
+            if ($null -ne $details -and $details.Count -gt 0) {
+                throw ("git {0} fehlgeschlagen: {1}" -f ($Arguments -join ' '), ($details -join ' | '))
+            }
+
+            throw ("git {0} fehlgeschlagen (ExitCode {1})" -f ($Arguments -join ' '), $proc.ExitCode)
+        }
+    } finally {
+        Remove-Item -LiteralPath $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
+    }
+}
 
 # ---------- Version ermitteln ----------
 function Resolve-Version {
@@ -72,7 +119,7 @@ function Resolve-Version {
     }
 }
 
-# ---------- Git prüfen ----------
+# ---------- Git prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼fen ----------
 function Ensure-Git {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Err "Git ist nicht installiert."
@@ -82,7 +129,7 @@ function Ensure-Git {
     }
 }
 
-# ---------- Node.js prüfen / installieren ----------
+# ---------- Node.js prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼fen / installieren ----------
 function Ensure-Node {
     if (Get-Command node -ErrorAction SilentlyContinue) {
         $v = node --version
@@ -113,39 +160,37 @@ function Download-Source {
     $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
     if (Test-Path (Join-Path $LTTHDir '.git')) {
         Log "Bestehende Installation gefunden -- aktualisiere..."
-        Push-Location $LTTHDir
         try {
-            git fetch --tags --prune 2>&1 | Out-Null
+            Invoke-Git -Arguments @('fetch', '--tags', '--prune') -WorkingDirectory $LTTHDir
         } catch {
             Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
         }
         $tagCheckedOut = $false
         try {
-            git fetch --depth 1 origin "refs/tags/v$LTTHVersion:refs/tags/v$LTTHVersion" 2>&1 | Out-Null
-            git checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
+            Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
+            Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
             $tagCheckedOut = $true
         } catch {
         }
         if (-not $tagCheckedOut) {
             try {
-                git fetch --depth 1 origin "refs/tags/$LTTHVersion:refs/tags/$LTTHVersion" 2>&1 | Out-Null
-                git checkout --quiet "$LTTHVersion" 2>&1 | Out-Null
+                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
                 $tagCheckedOut = $true
             } catch {
             }
         }
         if (-not $tagCheckedOut) {
             try {
-                git checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
+                Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
                 $tagCheckedOut = $true
             } catch {
             }
         }
         if (-not $tagCheckedOut) {
             Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
-            git checkout --quiet main 2>&1 | Out-Null
+            Invoke-Git -Arguments @('checkout', '--quiet', 'main') -WorkingDirectory $LTTHDir
         }
-        Pop-Location
     } else {
         Log "Klone Repository nach $LTTHDir..."
         if (Test-Path $LTTHDir) {
@@ -154,27 +199,27 @@ function Download-Source {
         }
         New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
         try {
-            git clone --depth 1 $repoUrl $LTTHDir 2>&1 | Out-Null
+            Invoke-Git -Arguments @('clone', '--depth', '1', $repoUrl, $LTTHDir)
 
             try {
-                git -C $LTTHDir fetch --depth 1 origin "refs/tags/v$LTTHVersion:refs/tags/v$LTTHVersion" 2>&1 | Out-Null
-                git -C $LTTHDir checkout --quiet "v$LTTHVersion" 2>&1 | Out-Null
+                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
+                Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
             } catch {
                 try {
-                    git -C $LTTHDir fetch --depth 1 origin "refs/tags/$LTTHVersion:refs/tags/$LTTHVersion" 2>&1 | Out-Null
-                    git -C $LTTHDir checkout --quiet "$LTTHVersion" 2>&1 | Out-Null
+                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                    Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
                 } catch {
-                    Warn "Tag nicht verfügbar, nutze Standard-Branch..."
+                    Warn "Tag nicht verfÃƒÆ’Ã‚Â¼gbar, nutze Standard-Branch..."
                 }
             }
         } catch {
             Warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
             if (Test-Path $LTTHDir) {
-                Warn "Zielverzeichnis für Haupt-Branch bereinigen..."
+                Warn "Zielverzeichnis fÃƒÆ’Ã‚Â¼r Haupt-Branch bereinigen..."
                 Remove-Item -Path $LTTHDir -Recurse -Force
             }
             try {
-                git clone --depth 1 $repoUrl $LTTHDir
+                Invoke-Git -Arguments @('clone', '--depth', '1', $repoUrl, $LTTHDir)
             } catch {
                 Err "Repository konnte nicht geklont werden: $($_.Exception.Message)"
                 exit 1
@@ -183,7 +228,6 @@ function Download-Source {
     }
     Ok "Quellcode bereit in $LTTHDir"
 }
-
 # ---------- Dependencies ----------
 function Install-Deps {
     Log "Installiere npm-Abhaengigkeiten (kann einige Minuten dauern)..."
