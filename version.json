@@ -1,10 +1,10 @@
 {
-  "version": "1.3.9",
-  "releaseDate": "2026-07-04",
+  "version": "1.3.10",
+  "releaseDate": "2026-07-05",
   "status": "stable",
-  "downloadVersion": "1.3.9",
-  "downloadNote": "Plugin Store release - official LTTH store plus opt-in community registries.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/1.3.9",
+  "downloadVersion": "1.3.10",
+  "downloadNote": "Windows installer compatibility release for Node.js 24 and one-line installer reliability.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.10",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.10": {
+      "date": "2026-07-05",
+      "changes": [
+        "FIXED: Windows one-line installer errors stay visible with an installer log path instead of closing silently",
+        "FIXED: better-sqlite3 updated to 12.11.1 so Node.js 24 Windows installs can use prebuilt binaries without Visual Studio Build Tools",
+        "IMPROVED: Release metadata synchronized for the repository merge installer path"
+      ]
+    },
     "1.3.9": {
       "date": "2026-07-04",
       "changes": [
