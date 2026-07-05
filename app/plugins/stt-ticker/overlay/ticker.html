@@ -151,7 +151,8 @@
     /* Container für beide Modi */
     #lines {
       position: relative;
-      width: min(1200px, calc(100vw - 48px));
+      width: calc(100vw - 48px);
+      max-width: none;
       text-align: center;
       font-size: 72px;
       font-weight: 700;
@@ -176,7 +177,8 @@
     #multi-lines,
     #dual-lines {
       position: relative;
-      width: min(1200px, calc(100vw - 48px));
+      width: calc(100vw - 48px);
+      max-width: none;
       text-align: center;
       font-size: 48px;
       font-weight: 600;
@@ -284,7 +286,8 @@
           };
         case 'compact':
           return {
-            width: 'min(900px, calc(100vw - 40px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '14px 18px',
             borderRadius: '18px',
             backdropFilter: 'blur(10px)',
@@ -293,7 +296,8 @@
           };
         case 'modern':
           return {
-            width: 'min(1180px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '20px 30px',
             borderRadius: '28px',
             backdropFilter: 'blur(18px) saturate(115%)',
@@ -302,7 +306,8 @@
           };
         case 'glass':
           return {
-            width: 'min(1200px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '22px 30px',
             borderRadius: '28px',
             background: 'rgba(10, 18, 32, 0.52)',
@@ -313,7 +318,8 @@
           };
         case 'neon':
           return {
-            width: 'min(1200px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '24px 28px',
             borderRadius: '26px',
             background: 'rgba(0, 0, 0, 0.82)',
@@ -322,7 +328,8 @@
           };
         case 'cinematic':
           return {
-            width: 'min(1400px, calc(100vw - 32px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '18px 34px',
             borderRadius: '16px',
             textAlign: 'left',
@@ -332,7 +339,8 @@
         case 'scrolling':
         case 'fliessend':
           return {
-            width: 'min(1400px, calc(100vw - 24px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '18px 26px',
             borderRadius: '18px',
             textAlign: 'left',
@@ -340,7 +348,8 @@
           };
         case 'starwars':
           return {
-            width: 'min(1200px, calc(100vw - 32px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '22px 32px 30px',
             borderRadius: '12px',
             textAlign: 'left',
@@ -354,14 +363,16 @@
           };
         case 'ticker3':
           return {
-            width: 'min(1200px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '20px 28px',
             borderRadius: '24px',
             lineHeight: '1.15'
           };
         case 'karaoke':
           return {
-            width: 'min(1200px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '24px 28px',
             borderRadius: '26px',
             boxShadow: '0 14px 40px rgba(0,0,0,0.2)'
@@ -370,7 +381,8 @@
         case 'classic':
         default:
           return {
-            width: 'min(1200px, calc(100vw - 48px))',
+            width: 'calc(100vw - 48px)',
+            maxWidth: 'none',
             padding: '24px 28px',
             borderRadius: '26px'
           };
@@ -426,8 +438,8 @@
       document.documentElement.style.setProperty('--overlay-font-size', overlayConfig.fontSize);
 
       for (const panel of panels) {
-        panel.style.width = designStyles.width || 'min(1200px, calc(100vw - 48px))';
-        panel.style.maxWidth = designStyles.maxWidth || 'calc(100vw - 48px)';
+        panel.style.width = designStyles.width || 'calc(100vw - 48px)';
+        panel.style.maxWidth = designStyles.maxWidth || 'none';
         panel.style.padding = designStyles.padding || '24px 28px';
         panel.style.borderRadius = designStyles.borderRadius || '26px';
         panel.style.background = designStyles.background || themeStyles.background;
