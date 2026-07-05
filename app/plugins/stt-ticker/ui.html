@@ -30,7 +30,7 @@
       function syncTheme() {
         const theme = readTheme();
         document.documentElement.setAttribute('data-theme', theme);
-        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
       }
 
       syncTheme();
@@ -472,7 +472,7 @@
     <div id="tab-overlay" class="tab-content">
       <div class="card">
         <div class="card-title">Overlay (OBS Browser Source)</div>
-        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufügen:</p>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufï¿½gen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -516,7 +516,7 @@
         </div>
         <div class="btn-row">
           <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
-          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay öffnen</a>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay ï¿½ffnen</a>
         </div>
       </div>
     </div>
@@ -562,7 +562,7 @@
             <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
           </div>
-          <p class="help-text">Überschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+          <p class="help-text">ï¿½berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
         </div>
       </div>
 
@@ -582,7 +582,7 @@
           <div>
             <label>STT-Modell</label>
             <select id="asr-model-select">
-              <option value="">Modell wählen</option>
+              <option value="">Modell wï¿½hlen</option>
             </select>
           </div>
         </div>
@@ -688,7 +688,7 @@
             <select id="ml-default-lang"></select>
           </div>
           <div>
-            <label>Sprache hinzufügen</label>
+            <label>Sprache hinzufï¿½gen</label>
             <div class="inline-flex">
               <select id="ml-add-lang" style="flex:1;"></select>
               <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
@@ -833,10 +833,10 @@
     const LANGUAGE_OPTIONS = [
       ['de', 'Deutsch'],
       ['en', 'English'],
-      ['es', 'Español'],
-      ['fr', 'Français'],
+      ['es', 'Espaï¿½ol'],
+      ['fr', 'Franï¿½ais'],
       ['it', 'Italiano'],
-      ['pt', 'Português'],
+      ['pt', 'Portuguï¿½s'],
       ['nl', 'Nederlands'],
       ['pl', 'Polski'],
       ['ru', '???????'],
@@ -844,14 +844,14 @@
       ['ko', '???'],
       ['zh', '??'],
       ['ar', '???????'],
-      ['tr', 'Türkçe'],
+      ['tr', 'Tï¿½rkï¿½e'],
       ['sv', 'Svenska'],
       ['da', 'Dansk'],
       ['fi', 'Suomi'],
       ['no', 'Norsk'],
-      ['cs', 'Ceština'],
+      ['cs', 'Ceï¿½tina'],
       ['hu', 'Magyar'],
-      ['ro', 'Româna'],
+      ['ro', 'Romï¿½na'],
       ['uk', '??????????'],
       ['el', '????????'],
       ['he', '?????'],
@@ -867,7 +867,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache wählen...';
+        placeholder.textContent = 'Sprache wï¿½hlen...';
         select.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -896,7 +896,7 @@
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // STT-Modell-Dropdown befüllen (wird von loadAsrModels() gemacht)
+      // STT-Modell-Dropdown befï¿½llen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
       const modelSelect = document.getElementById('asr-model-select');
       if (modelSelect) {
@@ -1010,10 +1010,10 @@
     const LANG_NAMES = {
       'de': 'Deutsch',
       'en': 'English',
-      'es': 'Español',
-      'fr': 'Français',
+      'es': 'Espaï¿½ol',
+      'fr': 'Franï¿½ais',
       'it': 'Italiano',
-      'pt': 'Português',
+      'pt': 'Portuguï¿½s',
       'nl': 'Nederlands',
       'pl': 'Polski',
       'ru': '???????',
@@ -1021,14 +1021,14 @@
       'ko': '???',
       'zh': '??',
       'ar': '???????',
-      'tr': 'Türkçe',
+      'tr': 'Tï¿½rkï¿½e',
       'sv': 'Svenska',
       'da': 'Dansk',
       'fi': 'Suomi',
       'no': 'Norsk',
-      'cs': 'Ceština',
+      'cs': 'Ceï¿½tina',
       'hu': 'Magyar',
-      'ro': 'Româna',
+      'ro': 'Romï¿½na',
       'uk': '??????????',
       'el': '????????',
       'he': '?????',
@@ -1044,7 +1044,7 @@
       for (const lang of currentOutputLangs) {
         const tag = document.createElement('span');
         tag.className = 'lang-tag';
-        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">×</span>';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">ï¿½</span>';
         tag.addEventListener('click', () => {
           currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
           renderLangTags(currentOutputLangs);
@@ -1311,10 +1311,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1342,10 +1342,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key gültig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ungültig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {

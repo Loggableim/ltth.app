@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -34,7 +34,7 @@
 
       function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
-        document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
       }
 
       function syncTheme() {

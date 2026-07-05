@@ -37,7 +37,7 @@
             function syncTheme() {
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
             }
 
             syncTheme();

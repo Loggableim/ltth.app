@@ -105,7 +105,7 @@ class ThemeManager {
 
     root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
     root.setAttribute('data-theme', applied);
-    root.style.colorScheme = applied === 'day' ? 'light' : 'dark';
+    root.style.colorScheme = (applied === 'day' || applied === 'contrast' || applied === 'vision-impaired') ? 'light' : 'dark';
 
     setTimeout(() => {
       root.style.transition = '';
