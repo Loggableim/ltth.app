@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Overlays & HUD – OBS Overlays, Goals HUD, WebGPU Emoji Rain, Talking Heads, Fireworks und 13 Wettereffekte für TikTok LIVE Streamer.">
+    <meta name="description" content="Overlays & HUD – OBS Overlays: WebGPU Emoji Rain, Fireworks, Flame Overlay, Weather Engine (13 Effekte), Goals HUD, Talking Heads und Alert System für TikTok LIVE Streamer.">
     <title>Overlays &amp; HUD – PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#12a116">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Overlays & HUD – PupCid's Little TikTool Helper">
-    <meta property="og:description" content="OBS Overlays, Goals HUD, WebGPU Emoji Rain, Talking Heads, Fireworks und 13 Wettereffekte für TikTok LIVE.">
+    <meta property="og:description" content="OBS Overlays: WebGPU Emoji Rain, Fireworks, Flame Overlay, Weather Engine (13 Effekte), Goals HUD, Talking Heads und Alert System für TikTok LIVE.">
     <meta property="og:url" content="https://ltth.app/features/overlays.html">
     <meta property="og:image" content="https://ltth.app/assets/og-image.png">
     <link rel="canonical" href="https://ltth.app/features/overlays.html">
@@ -114,12 +114,12 @@
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🎯</div>
                         <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Goals HUD</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            Animierte Fortschrittsbalken für Follower-, Like- und Gift-Ziele. Gradient-Farben, Pulse-Animation bei Erreichen und Custom-CSS-Styles.
+                            Animierte Fortschrittsbalken für Coin-, Like-, Follower- und Custom Goals. 6 Overlay-Templates (Compact Bar, Full Width, Circular Progress, etc.) mit 8 Animationen. Per-Goal State Machine und WebSocket Live Updates.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">Animiert</span>
-                            <span class="feature-tag">Gradient</span>
-                            <span class="feature-tag">Custom CSS</span>
+                            <span class="feature-tag">6 Templates</span>
+                            <span class="feature-tag">8 Animationen</span>
+                            <span class="feature-tag">Flow-Integration</span>
                         </div>
                     </div>
 
@@ -156,20 +156,33 @@
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🎆</div>
                         <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Fireworks Overlay</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            Feuerwerks-Animation für besondere Momente: Ziel erreicht, Mega-Gift empfangen oder Stream-Meilensteine feiern mit spektakulären Effekten.
+                            GPU-beschleunigtes Feuerwerk mit Gift-Triggern, Combo-Streaks, Eskalationssystem und WebGL/Canvas Fallback. Custom Shapes, Audio-Effekte, Goal-Finales und Follower-Fireworks.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">Partikel</span>
-                            <span class="feature-tag">Events</span>
-                            <span class="feature-tag">Animiert</span>
+                            <span class="feature-tag">WebGL</span>
+                            <span class="feature-tag">Gift-Trigger</span>
+                            <span class="feature-tag">Combo-Streaks</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔥</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Flame Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            WebGL-Effekt-Overlay mit 4 visuellen Modi (Flames, Particle Burst, Energy Waves, Electric Lightning). TikTok LIVE Trigger für Gifts, Follows, Likes, Shares, Subs und Chat-Color-Commands. Kawase Bloom, Preset-System und Flow-Integration.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">4 Modi</span>
+                            <span class="feature-tag">4K Support</span>
+                            <span class="feature-tag">Kawase Bloom</span>
                         </div>
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🌦️</div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Weather Engine</h3>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Weather Control</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            13 atmosphärische Effekte: Aurora Borealis, Fireflies, Meteor Shower, Sakura Blossom, Snow, Rain, Fog und mehr. Jeder Effekt vollständig konfigurierbar.
+                            13 prozedurale Wettereffekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Glitchclouds, Aurora, Fireflies, Meteors, Sakura, Embers und Heatwave. Community Weather Gamification mit Quests, Streaks und Rewards.
                         </p>
                         <div class="feature-card-tags">
                             <span class="feature-tag">13 Effekte</span>

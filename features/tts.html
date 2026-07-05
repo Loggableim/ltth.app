@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="TTS Engine – 75+ Stimmen mit Azure TTS und ElevenLabs, Warteschlangen-Management, Filtersystem und per-User Voice Settings für TikTok LIVE.">
+    <meta name="description" content="TTS Engine – 580+ Stimmen über 7 Engines: TikTok TTS, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio und SiliconFlow. Queue-Management, Spracherkennung und per-User Voice Settings für TikTok LIVE.">
     <title>Text-to-Speech Engine – PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x" href="/assets/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#12a116">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Text-to-Speech Engine – PupCid's Little TikTool Helper">
-    <meta property="og:description" content="75+ Stimmen mit Azure TTS und ElevenLabs, Warteschlangen-Management, Filtersystem und per-User Voice Settings.">
+    <meta property="og:description" content="580+ Stimmen über 7 Engines: TikTok TTS, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio und SiliconFlow. Queue-Management, Spracherkennung und per-User Voice Settings.">
     <meta property="og:url" content="https://ltth.app/features/tts.html">
     <meta property="og:image" content="https://ltth.app/assets/og-image.png">
     <link rel="canonical" href="https://ltth.app/features/tts.html">
@@ -41,7 +41,7 @@
             <div class="container">
                 <span class="feature-hero-icon">🎙️</span>
                 <h1 class="feature-hero-title">Text-to-Speech Engine</h1>
-                <p class="feature-hero-subtitle">75+ natürlich klingende Stimmen, professionelle TTS-Anbieter und ein intelligentes Queue-System – deine Zuschauer werden gehört, ohne deinen Stream zu unterbrechen.</p>
+                <p class="feature-hero-subtitle">580+ Stimmen über 7 TTS-Engines, automatische Spracherkennung, intelligentes Queue-System und Team-Level-Berechtigungen – deine Zuschauer werden gehört, ohne deinen Stream zu unterbrechen.</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
                     <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
                     <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
@@ -68,19 +68,45 @@
         <!-- voice providers -->
         <section class="features-preview">
             <div class="container">
-                <h2 class="section-title">TTS-Anbieter</h2>
+                <h2 class="section-title">TTS-Engines</h2>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">☁️</div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Azure TTS</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎵</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">TikTok TTS <span style="font-size:0.75rem; color:var(--color-primary); font-weight:600;">Kostenlos · Default</span></h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            Microsoft Azure Cognitive Services bietet über 400 neuronale Stimmen in 140+ Sprachen. Hochqualitative, natürlich klingende Sprachausgabe mit SSML-Support.
+                            48 Stimmen inklusive Charakter-Stimmen (Ghostface, C3PO, Stitch, Rocket, Stormtrooper) und Standard-Stimmen in US/UK-Englisch, Deutsch, Französisch, Spanisch und mehr. Kostenlos, schnell, keine API-Keys nötig.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">400+ Stimmen</span>
-                            <span class="feature-tag">140+ Sprachen</span>
+                            <span class="feature-tag">48 Stimmen</span>
+                            <span class="feature-tag">Charakter-Stimmen</span>
+                            <span class="feature-tag">Kostenlos</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">☁️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Google Cloud TTS</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            380+ neuronale Stimmen inklusive 176 Chirp3-HD-Stimmen in 40+ Sprachen. Hochqualitative, natürlich klingende Sprachausgabe mit SSML-Support. Erfordert Google Cloud API-Key.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">380+ Stimmen</span>
+                            <span class="feature-tag">Chirp3-HD</span>
                             <span class="feature-tag">SSML</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🗣️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Speechify</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            200+ KI-Stimmen mit Voice-Cloning-Funktion. Natürlich klingende Sprachausgabe mit emotionaler Nuancierung. Erfordert Speechify API-Key.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">200+ Stimmen</span>
+                            <span class="feature-tag">Voice Cloning</span>
+                            <span class="feature-tag">KI-Stimmen</span>
                         </div>
                     </div>
 
@@ -88,7 +114,7 @@
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🎭</div>
                         <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ElevenLabs</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            State-of-the-Art KI-Stimmensynthese von ElevenLabs. Extrem realistische Stimmen mit emotionaler Nuancierung. Ideal für VTuber und Charakterstimmen.
+                            State-of-the-Art KI-Stimmensynthese von ElevenLabs. Extrem realistische Stimmen mit emotionaler Nuancierung. Ideal für VTuber und Charakterstimmen. Erfordert ElevenLabs API-Key.
                         </p>
                         <div class="feature-card-tags">
                             <span class="feature-tag">KI-Stimmen</span>
@@ -98,15 +124,39 @@
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">💻</div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">System TTS</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🤖</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">OpenAI TTS</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
-                            Offline-TTS über Windows SAPI und Web Speech API. Keine API-Kosten, immer verfügbar. Nutzt installierte System-Stimmen für lokale Sprachausgabe.
+                            HD-Qualität-Stimmen von OpenAI. Natürlich klingende Sprachausgabe mit mehreren Voice-Modellen. Erfordert OpenAI API-Key.
                         </p>
                         <div class="feature-card-tags">
-                            <span class="feature-tag">Offline</span>
-                            <span class="feature-tag">Kostenlos</span>
-                            <span class="feature-tag">Windows SAPI</span>
+                            <span class="feature-tag">HD-Qualität</span>
+                            <span class="feature-tag">OpenAI</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🐟</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Fish.audio</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            100+ Fish-Speech-Stimmen über die offizielle Fish.audio API. KI-generierte Stimmen mit Voice-Cloning-Support. Erfordert Fish.audio API-Key.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">100+ Stimmen</span>
+                            <span class="feature-tag">Voice Cloning</span>
+                            <span class="feature-tag">Fish Speech</span>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">SiliconFlow</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Fish Speech 1.5 über SiliconFlow-Infrastruktur. Kostengünstige Alternative zu Fish.audio mit gleicher Modell-Qualität. Erfordert SiliconFlow API-Key.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Fish Speech 1.5</span>
+                            <span class="feature-tag">Kostengünstig</span>
                         </div>
                     </div>
 
@@ -124,17 +174,17 @@
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">📋</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Queue Management</h3>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Priority Queue System</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Intelligente TTS-Warteschlange mit Prioritäten. Gifts werden bevorzugt, Spam wird gefiltert. Maximale Queue-Länge und Timeout konfigurierbar.
+                            Intelligente TTS-Warteschlange mit Prioritäten. Gifts und manuelle Trigger werden bevorzugt, Team-Level-Priority-Boost. Maximale Queue-Länge, Rate-Limiting und Backpressure konfigurierbar.
                         </p>
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🔇</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Voice Filter System</h3>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Profanity Filter</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Blocklist und Allowlist für Wörter und Phrasen. Regex-Support für komplexe Filter. Automatische Zensur von Beleidigungen und Spam-Patterns.
+                            Drei Modi (Aus, Moderat, Streng). Multi-Language-Support (EN, DE, ES, FR). Anpassbare Wortlisten. Replace- oder Drop-Policy für Beleidigungen und Spam.
                         </p>
                     </div>
 
@@ -142,7 +192,7 @@
                         <div style="font-size:2rem; margin-bottom:0.75rem;">👤</div>
                         <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Per-User Voice Settings</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Jeder Viewer kann eine eigene Stimme wählen. Persistente Einstellungen pro Username. Moderatoren können Stimmen zuweisen oder entziehen.
+                            Jeder Viewer kann eine eigene Stimme wählen. Persistente Einstellungen pro Username. Moderatoren können Stimmen zuweisen oder entziehen. Per-User Volume-Gain (0–300%).
                         </p>
                     </div>
 
@@ -155,18 +205,42 @@
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">💬</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Chat Commands</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌍</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Spracherkennung & Routing</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Viewer steuern TTS per Befehlen: <code style="background:rgba(18,161,22,0.1); padding:0.1rem 0.4rem; border-radius:0.25rem; font-size:0.85rem;">!voice [name]</code> zum Wechseln, <code style="background:rgba(18,161,22,0.1); padding:0.1rem 0.4rem; border-radius:0.25rem; font-size:0.85rem;">!tts off</code> zum Deaktivieren.
+                            Automatische Spracherkennung aus dem Text (franc-min). Auto-Routing zur passenden Stimme. Support für 15+ Sprachen. Per-User Sprach-Präferenzen.
                         </p>
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
                         <div style="font-size:2rem; margin-bottom:0.75rem;">🎚️</div>
-                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Pitch &amp; Speed Control</h3>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Volume, Speed & Pitch Control</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Globale und per-Stimme Lautstärke, Geschwindigkeit und Tonhöhe anpassbar. Live-Vorschau aller Änderungen ohne Neustart erforderlich.
+                            Globale und per-Stimme Lautstärke, Geschwindigkeit und Tonhöhe anpassbar. Audio-Ducking-Support. Live-Vorschau aller Änderungen ohne Neustart erforderlich.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔐</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Team-Level Berechtigungen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Mindest-Level-Anforderung für TTS-Nutzung. Manuelles Whitelist/Blacklist pro User. Voice-Assignment vergibt automatisch Berechtigung. Flexible Permission-Overrides.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💾</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Audio Caching</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Hash-basiertes Caching mit konfigurierbarem TTL (Default 24h). Automatische Cleanup-Routine. Cache-Statistiken und Verwaltung im Admin-Panel.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Engine Fallback & Circuit Breaker</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Automatisches Fallback zwischen Engines bei Fehlern. Circuit-Breaker-Schutz verhindert wiederholte Aufrufe fehlerhafter Engines. Konfigurierbare Cooldown-Phase.
                         </p>
                     </div>
 
@@ -181,20 +255,20 @@
             <div class="container">
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1.5rem; text-align:center;">
                     <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
-                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">75+</div>
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">580+</div>
                         <div style="color:var(--color-text-secondary); font-size:0.9rem;">Stimmen verfügbar</div>
                     </div>
                     <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
-                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">3</div>
-                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">TTS-Anbieter</div>
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">7</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">TTS-Engines</div>
+                    </div>
+                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
+                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">15+</div>
+                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Sprachen erkannt</div>
                     </div>
                     <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
                         <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">∞</div>
                         <div style="color:var(--color-text-secondary); font-size:0.9rem;">User-Stimmen</div>
-                    </div>
-                    <div style="padding:1.5rem; background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem;">
-                        <div style="font-size:2.5rem; font-weight:800; color:var(--color-primary); margin-bottom:0.25rem;">0ms</div>
-                        <div style="color:var(--color-text-secondary); font-size:0.9rem;">Offline-Latenz (SAPI)</div>
                     </div>
                 </div>
             </div>

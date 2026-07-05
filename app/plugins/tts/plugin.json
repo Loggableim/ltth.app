@@ -24,6 +24,9 @@
     "Google Cloud TTS Engine (Optional)",
     "Speechify TTS Engine (Optional)",
     "ElevenLabs TTS Engine (Optional)",
+    "OpenAI TTS Engine (Optional)",
+    "Fish.audio TTS Engine (Optional)",
+    "SiliconFlow TTS Engine (Optional)",
     "Team-level Permission System",
     "Manual Voice Assignment Whitelist",
     "Language Detection & Routing",
@@ -50,9 +53,9 @@
     "duckVolume": 0.3
   },
   "descriptions": {
-    "en": "Enterprise-grade TTS plugin with multi-engine support (TikTok, Google Cloud, Speechify, ElevenLabs), permission system, language detection, caching, and queue management.",
-    "de": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.",
-    "es": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs), sistema de permisos, detección de idioma, almacenamiento en caché y gestión de colas.",
-    "fr": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs), système de permissions, détection de langue, mise en cache et gestion de file d'attente."
+    "en": "Enterprise-grade TTS plugin with multi-engine support (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), permission system, language detection, caching, and queue management.",
+    "de": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.",
+    "es": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), sistema de permisos, detección de idioma, almacenamiento en caché y gestión de colas.",
+    "fr": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), système de permissions, détection de langue, mise en cache et gestion de file d'attente."
   }
 }

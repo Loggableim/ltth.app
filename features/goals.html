@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Goals System – 4 separate Ziel-Tracker für Likes, Follower, Subscriptions und Coins mit OBS Browser Source, anpassbaren Stilen und Auto-Modes.">
+    <meta name="description" content="Goals System – Unlimited Ziel-Tracker für Coins, Likes, Followers und Custom Goals mit OBS Browser Source, 6 Overlay-Templates, 8 Animationen und Flow-Integration.">
     <title>Goals System – PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#12a116">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Goals System – PupCid's Little TikTool Helper">
-    <meta property="og:description" content="4 separate Ziel-Tracker für Likes, Follower, Subscriptions und Coins mit OBS Browser Source und Auto-Modes.">
+    <meta property="og:description" content="Unlimited Ziel-Tracker für Coins, Likes, Followers und Custom Goals mit OBS Browser Source, 6 Templates, 8 Animationen und Flow-Integration.">
     <meta property="og:url" content="https://ltth.app/features/goals.html">
     <meta property="og:image" content="https://ltth.app/assets/og-image.png">
     <link rel="canonical" href="https://ltth.app/features/goals.html">
@@ -41,7 +41,7 @@
             <div class="container">
                 <span class="feature-hero-icon">🎯</span>
                 <h1 class="feature-hero-title">Goals System</h1>
-                <p class="feature-hero-subtitle">Motiviere deine Community mit vier unabhängigen Ziel-Trackern für Likes, Follower, Subscriptions und Coins – mit OBS Browser Source, anpassbaren Animationen und intelligenten Auto-Modes.</p>
+                <p class="feature-hero-subtitle">Motiviere deine Community mit unbegrenzten Ziel-Trackern für Coins, Likes, Followers und Custom Goals – mit OBS Browser Source, 6 Overlay-Templates, 8 Animationen und Flow-Integration.</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
                     <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
                     <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
@@ -68,9 +68,9 @@
         <!-- Goal Types -->
         <section class="features-preview">
             <div class="container">
-                <h2 class="section-title">4 Separate Ziel-Tracker</h2>
+                <h2 class="section-title">Ziel-Typen</h2>
                 <p style="color:var(--color-text-secondary); text-align:center; max-width:640px; margin:0 auto 2.5rem;">
-                    Jedes Ziel hat seine eigene Browser-Source-URL für OBS, sodass alle vier Ziele gleichzeitig oder einzeln im Stream angezeigt werden können.
+                    Unbegrenzte Anzahl an Ziel-Trackern. Jedes Ziel hat seine eigene Browser-Source-URL für OBS, sodass alle Ziele gleichzeitig oder einzeln im Stream angezeigt werden können.
                 </p>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
 
@@ -97,13 +97,13 @@
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">⭐</div>
-                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Subscriptions-Ziel</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Custom Goals</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Tracke neue Abonnements pro Session. Motiviere Zuschauer zu abonnieren mit sichtbarem Fortschrittsbalken und konfigurierbaren Belohnungen bei Erreichen des Ziels.
+                            Erstelle beliebig viele eigene Ziel-Typen. Verfolge beliebige Metriken über das Event API oder Flow-Aktionen. Flexibel für Subathons, Challenges und individuelle Stream-Konzepte.
                         </p>
                         <div style="margin-top:1rem; padding:0.75rem; background:rgba(18,161,22,0.1); border-radius:0.5rem; font-size:0.8rem; color:#12a116;">
-                            Browser Source: <code>/goals/subs</code>
+                            Flow Actions: <code>goals.set_value</code>, <code>goals.increment</code>, <code>goals.reset</code>, <code>goals.toggle</code>
                         </div>
                     </div>
 
@@ -122,36 +122,60 @@
             </div>
         </section>
 
-        <!-- Auto Modes -->
+        <!-- Templates & Animations -->
         <section style="padding: 3rem 0; background:var(--color-surface-alt, rgba(255,255,255,0.02));">
             <div class="container">
-                <h2 class="section-title">Auto-Modes</h2>
+                <h2 class="section-title">Templates & Animationen</h2>
                 <p style="color:var(--color-text-secondary); text-align:center; max-width:640px; margin:0 auto 2.5rem;">
-                    Intelligente Automatisierungsmodi, die das Ziel-Verhalten nach Erreichen des Ziels steuern.
+                    6 vorgefertigte Overlay-Templates und 8 Animationen für professionelle Goal-Overlays in OBS.
                 </p>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem;">
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">➕</div>
-                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Add Mode</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📐</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">6 Overlay-Templates</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Nach Erreichen des Ziels wird ein neues Ziel automatisch hinzugefügt. Der Fortschrittsbalken überschreitet 100% und läuft nahtlos weiter.
+                            Compact Bar, Full Width, Minimal Counter, Circular Progress, Floating Pill und Vertical Meter. Jedes Template voll anpassbar in Farben, Fonts und Größen.
                         </p>
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">✖️</div>
-                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Double Mode</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">✨</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">8 Animationen</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Das Ziel wird nach Erreichen automatisch verdoppelt. Ideal für Engagement-Challenges, bei denen die Community immer größere Ziele angeht.
+                            Smooth, Bounce, Glow, Celebration, Confetti, Pulse, Flash und weitere. Flüssige CSS-Animationen beim Fortschrittsupdate und konfigurierbare Feier bei Ziel-Erreichen.
                         </p>
                     </div>
 
                     <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
-                        <div style="font-size:2rem; margin-bottom:0.75rem;">👁️</div>
-                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Hide Mode</h3>
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Per-Goal State Machine</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
-                            Das Overlay wird nach Erreichen des Ziels automatisch ausgeblendet. Sauberes Display-Management ohne manuelle Eingriffe während des Streams.
+                            Jedes Goal hat eine eigene State Machine für präzises Tracking. Verhindert Doppelzählung und sorgt für konsistente Zustandsübergänge bei Events.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Flow & IFTTT Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Flow-Aktionen registriert: <code>goals.set_value</code>, <code>goals.increment</code>, <code>goals.reset</code>, <code>goals.toggle</code>. IFTTT-Engine-Integration für visuelle Flow-Editoren.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📡</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">WebSocket Live Updates</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Echtzeit-Updates über Socket.IO. Overlay-Änderungen werden sofort in OBS sichtbar. Live-Synchronisation der Likes-Goals mit aktuellen Stream-Stats.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎆</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">Fireworks Milestones</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Konfigurierbare Fireworks-Milestone-Feier bei Erreichen von Zwischenzielen. Integration mit dem Fireworks-Plugin für spektakuläre Ziel-Feiern.
                         </p>
                     </div>
 

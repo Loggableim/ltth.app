@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="OSC / VRChat Bridge – VRChat Integration, OSC Parameter Control, Avatar-Animationen via Chat und Gifts sowie OpenShock / PiShock Support.">
+    <meta name="description" content="OSC / VRChat Bridge – VRChat Integration, OSC Parameter Control, Avatar-Animationen via Chat und Gifts, Chatbox-Mirroring, Expression Menu und GCCE/Flow-Integration.">
     <title>OSC / VRChat Bridge – PupCid's Little TikTool Helper</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
@@ -12,7 +12,7 @@
     <meta name="theme-color" content="#12a116">
     <meta property="og:type" content="website">
     <meta property="og:title" content="OSC / VRChat Bridge – PupCid's Little TikTool Helper">
-    <meta property="og:description" content="VRChat Integration, OSC Parameter Control, Avatar-Animationen via TikTok Chat und Gifts sowie OpenShock / PiShock Support.">
+    <meta property="og:description" content="VRChat Integration, OSC Parameter Control, Avatar-Animationen via TikTok Chat und Gifts, Chatbox-Mirroring, Expression Menu und GCCE/Flow-Integration.">
     <meta property="og:url" content="https://ltth.app/features/osc-bridge.html">
     <meta property="og:image" content="https://ltth.app/assets/og-image.png">
     <link rel="canonical" href="https://ltth.app/features/osc-bridge.html">
@@ -41,7 +41,7 @@
             <div class="container">
                 <span class="feature-hero-icon">🥽</span>
                 <h1 class="feature-hero-title">OSC / VRChat Bridge</h1>
-                <p class="feature-hero-subtitle">Verbinde dein TikTok LIVE direkt mit VRChat. Lass deine Zuschauer deinen Avatar steuern, Animationen triggern und – mit OpenShock – sogar physisches Feedback senden.</p>
+                <p class="feature-hero-subtitle">Verbinde dein TikTok LIVE direkt mit VRChat. Lass deine Zuschauer deinen Avatar steuern, Animationen triggern, Chat-Nachrichten in die VRChat Chatbox spiegeln und Expression-Menüs fernsteuern.</p>
                 <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
                     <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
                     <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
@@ -111,14 +111,35 @@
                         </p>
                     </div>
 
-                    <div style="background:var(--color-surface); border:1px solid rgba(100,18,161,0.4); border-radius:1rem; padding:1.75rem;">
-                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
-                            <span style="font-size:2rem;">⚡</span>
-                            <span class="feature-tag feature-tag-new">NEU</span>
-                        </div>
-                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">OpenShock / PiShock</h3>
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">💬</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">VRChat Chatbox</h3>
                         <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
-                            Integration mit OpenShock und PiShock für haptisches Feedback. Gifts und Events können Vibrationen oder Impulse auslösen – für das ultimative interaktive Stream-Erlebnis.
+                            TikTok Chat-Nachrichten automatisch in die VRChat Chatbox spiegeln. Konfigurierbares Typing-Indikator-Verhalten. Nachrichten-Filterung und Längenbegrenzung.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">😊</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Expression Menu</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Expression Controller für VRChat Expression-Menüs. Trigger für Emotes und Expression-Types. Automatische Cleanup-Routine verhindert hängende Expression-Zustände.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔗</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">GCCE & Flow Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            GCCE-Commands für VRChat-Aktionen registriert (Wave, Celebrate, Dance, Hearts, Confetti). Flow-System-Integration für automatische Trigger über IFTTT-Aktionen.
+                        </p>
+                    </div>
+
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔍</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">OSCQuery Auto-Discovery</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6;">
+                            Automatische Erkennung von VRChat-Instanzen über OSCQuery. Keine manuelle Port-Konfiguration nötig. Validierte OSC-Nachrichten mit Rate-Limiting und IP-Whitelist.
                         </p>
                     </div>
 
