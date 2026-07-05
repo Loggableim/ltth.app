@@ -6,10 +6,10 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iwr -useb https://ltth.app/install/install.ps1 \| iex` |
-| 🍎 macOS (Terminal)     | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
-| 🐧 Linux (Bash)         | `curl -fsSL https://ltth.app/install/install.sh \| bash` |
-| 🌐 Beliebiges OS (Node) | `curl -fsSL https://ltth.app/install/install.js \| node` |
+| 🪟 Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 \| iex` |
+| 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
+| 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
+| 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js \| node` |
 
 ## Was passiert?
 
@@ -34,16 +34,16 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 ```bash
 # Andere Version installieren
-LTTH_VERSION=v1.3.5 curl -fsSL https://ltth.app/install/install.sh | bash
+LTTH_VERSION=v1.3.5 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # Anderes Verzeichnis
-LTTH_DIR=/opt/ltth curl -fsSL https://ltth.app/install/install.sh | bash
+LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # Anderer Port
-LTTH_PORT=8080 curl -fsSL https://ltth.app/install/install.sh | bash
+LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iwr -useb https://ltth.app/install/install.ps1 | iex
+$env:LTTH_PORT=8080; iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
 ```
 
 ## Updates
