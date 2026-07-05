@@ -64,9 +64,18 @@ detect_platform() {
 resolve_version() {
     if [ "$LTTH_VERSION" = "latest" ]; then
         log "Ermittle neueste Version von GitHub..."
-        LTTH_VERSION="$(curl -fsSL "https://api.github.com/repos/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}/releases/latest" \
-            | grep -m1 '"tag_name"' \
-            | sed -E 's/.*"tag_name":\s*"v?([^"]+)".*/\1/')"
+        local release_json
+        release_json="$(curl -fsSL "https://api.github.com/repos/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}/releases/latest")"
+        if echo "$release_json" | grep -q '"message"\s*:\s*"Not Found"'; then
+            warn "Kein GitHub Release gefunden; verwende neuesten Tag..."
+            LTTH_VERSION="$(curl -fsSL "https://api.github.com/repos/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}/tags?per_page=1" \
+                | grep -m1 '"name"' \
+                | sed -E 's/.*"name":\s*"v?([^"]+)".*/\1/')"
+        else
+            LTTH_VERSION="$(echo "$release_json" \
+                | grep -m1 '"tag_name"' \
+                | sed -E 's/.*"tag_name":\s*"v?([^"]+)".*/\1/')"
+        fi
         if [ -z "$LTTH_VERSION" ]; then
             err "Konnte neueste Version nicht ermitteln."
             return 1
