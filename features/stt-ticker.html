@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Live-Untertitel-Overlay für hörgeschädigte Zuschauer – Transkription in Echtzeit via Fish.audio, Deepgram Nova-2 oder ElevenLabs. Konfigurierbarer Ticker für OBS.">
+    <title>STT Ticker – Live-Untertitel-Overlay</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="STT Ticker – Live-Untertitel-Overlay">
+    <meta property="og:description" content="Live-Untertitel-Overlay für hörgeschädigte Zuschauer – Transkription in Echtzeit via Fish.audio, Deepgram Nova-2 oder ElevenLabs. Konfigurierbarer Ticker für OBS.">
+    <meta property="og:url" content="https://ltth.app/features/stt-ticker.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/stt-ticker.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">STT Ticker</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">📝</span>
+                <h1 class="feature-hero-title">Live-Untertitel-Overlay</h1>
+                <p class="feature-hero-subtitle">Transkribiere Live-Streams in Echtzeit und zeige sie als anpassbaren Ticker in OBS an. Unterstützt Fish.audio, Deepgram Nova‑2 und ElevenLabs – ideal für hörgeschädigte Zuschauer.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/assets/screenshots/stt-ticker.png"
+                         alt=""
+                         data-i18n-alt="screenshots.stt-ticker.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.stt-ticker.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ASR Providers -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">ASR-Provider</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+                    <!-- Fish.audio -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🐟</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Fish.audio (Default)</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Echtzeit-Transkription mit niedriger Latenz, unterstützt deutsche und englische Sprache. API-Key erforderlich.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Niedrige Latenz</span>
+                            <span class="feature-tag">Deutsch & Englisch</span>
+                            <span class="feature-tag">API-Key</span>
+                        </div>
+                    </div>
+                    <!-- Deepgram Nova-2 -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚡</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Deepgram Nova‑2</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Hochpräzise ASR, unterstützt mehrere Sprachen, inkl. Deutsch. Schnell und zuverlässig.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Hohe Genauigkeit</span>
+                            <span class="feature-tag">Mehrsprachig</span>
+                            <span class="feature-tag">API-Key</span>
+                        </div>
+                    </div>
+                    <!-- ElevenLabs -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🎙️</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ElevenLabs</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            KI‑basierte Transkription mit hoher Sprachqualität, unterstützt Deutsch und Englisch.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">KI‑Transkription</span>
+                            <span class="feature-tag">Deutsch & Englisch</span>
+                            <span class="feature-tag">API-Key</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Hauptfunktionen im Detail</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.5rem;">
+                    <!-- Voice Activity Detection -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔊</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Voice Activity Detection (VAD)</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Automatischer Start/Stop der Transkription basierend auf RMS‑Threshold. Reduziert Stille und Hintergrundgeräusche.
+                        </p>
+                    </div>
+                    <!-- Language Detection & Whitelist -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🌐</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Spracherkennung & Whitelist</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Automatische Spracherkennung mit Whitelist für Deutsch und Englisch. Unzulässige Sprachen werden ignoriert.
+                        </p>
+                    </div>
+                    <!-- Hallucination Filter -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🚫</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Halluzinations‑Filter</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Erkennung von CJK, Thai und Arabisch, um fehlerhafte Transkriptionen zu vermeiden.
+                        </p>
+                    </div>
+                    <!-- OBS Ticker Overlay -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🖥️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">OBS Ticker Overlay</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Konfigurierbarer Ticker (Position, Schriftgröße, Farbe, Transparenz) über OBS‑Websocket oder Web‑Socket‑API.
+                        </p>
+                    </div>
+                    <!-- Configurable Display -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⚙️</div>
+                        <h3 style="font-size:1rem; font-weight:700; margin-bottom:0.5rem;">Konfigurierbare Anzeige</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.9rem; line-height:1.6;">
+                            Einstellbare Zeilenlänge, Schriftart, Animationsgeschwindigkeit und mehr – alles per UI‑Konfiguration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- dev status -->
+        <section class="features-preview" style="padding-top:2rem;">
+            <div class="container">
+                <h2 class="section-title">Entwicklungsstatus</h2>
+                <p>Version 1.0.0 – working‑beta. Die Basisfunktionen sind bereits in Produktion, weitere Features folgen in kommenden Releases.</p>
+            </div>
+        </section>
+
+    </main>
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 ltth.app – Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+</body>
+</html>

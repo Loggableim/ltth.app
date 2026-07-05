@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Config Import – Vollständiges Konfigurations-Backup &amp; Restore-System. Export aller Einstellungen in ein ZIP-Archiv, Import aus einem Backup, Konflikt‑Vorschau und Migration von älteren Installationen. Version 2.0.0 – working‑beta. Utility Plugin mit routes & database Permissions.">
+    <title>Config Import – PupCid's Little TikTool Helper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Config Import – PupCid's Little TikTool Helper">
+    <meta property="og:description" content="Vollständiges Konfigurations-Backup &amp; Restore-System. Export aller Einstellungen in ein ZIP-Archiv, Import aus einem Backup, Konflikt‑Vorschau und Migration von älteren Installationen. Version 2.0.0 – working‑beta.">
+    <meta property="og:url" content="https://ltth.app/features/plugin-config-import.html">
+    <meta property="og:image" content="https://ltth.app/assets/og-image.png">
+    <link rel="canonical" href="https://ltth.app/features/plugin-config-import.html">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Config Import</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">⚙️</span>
+                <h1 class="feature-hero-title">Config Import – Backup &amp; Restore</h1>
+                <p class="feature-hero-subtitle">Exportiere, importiere und migriere deine komplette Plugin‑Konfiguration in wenigen Klicks. Version 2.0.0 – working‑beta.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html#config-import" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot placeholder -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/assets/screenshots/config-import.png"
+                         alt=""
+                         data-i18n-alt="screenshots.config-import.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.config-import.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- feature cards -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Funktionen im Detail</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+                    <!-- ZIP Export -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📦</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ZIP Export</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Exportiere sämtliche Plugin‑Einstellungen in ein komprimiertes ZIP‑Archiv. Inklusive aller Datenbanken und Konfigurationsdateien.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Export</span>
+                            <span class="feature-tag">ZIP</span>
+                        </div>
+                    </div>
+                    <!-- ZIP Import -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📦</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">ZIP Import</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Importiere ein zuvor exportiertes ZIP‑Archiv und überschreibe die aktuelle Konfiguration. Unterstützt sowohl neue als auch legacy‑Formate.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Import</span>
+                            <span class="feature-tag">ZIP</span>
+                        </div>
+                    </div>
+                    <!-- Conflict Preview -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔍</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Konflikt‑Vorschau</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Vor dem Import werden potenzielle Konflikte zwischen bestehender und neuer Konfiguration angezeigt. Du kannst entscheiden, welche Werte übernommen werden.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Vorschau</span>
+                            <span class="feature-tag">Konflikte</span>
+                        </div>
+                    </div>
+                    <!-- Legacy Migration -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔄</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Legacy Migration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Migriere Konfigurationen aus älteren Installationspfaden (z. B. vor Version 1.0) automatisch in das neue Format. Kompatibel mit allen bisherigen Versionen.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Migration</span>
+                            <span class="feature-tag">Legacy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- footer placeholder (optional) -->
+    </main>
+</body>
+</html>

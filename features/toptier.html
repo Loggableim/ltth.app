@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat – Top Tier Plugin. Version 2.0.0, Overlay. Permissions: tiktok-events, database.">
+    <title>Top Tier Plugin – Live Leaderboard & Overlay</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#12a116">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <main id="main-content">
+        <!-- breadcrumb -->
+        <section style="padding: 2rem 0 0;">
+            <div class="container">
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="/">Home</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <a href="/features/">Features</a>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current">Top Tier Plugin</span>
+                </nav>
+            </div>
+        </section>
+
+        <!-- hero -->
+        <section class="feature-hero">
+            <div class="container">
+                <span class="feature-hero-icon">🎉</span>
+                <h1 class="feature-hero-title">Top Tier Plugin</h1>
+                <p class="feature-hero-subtitle">Live Like & Gift Leaderboard, Decay Mechanik, Rang-Animationen, Combined View und Overlay-Varianten für Hochformat und Querformat – alles in einem Overlay.</p>
+                <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                    <a href="/download.html" class="btn btn-primary btn-large">Jetzt Herunterladen</a>
+                    <a href="/docs.html" class="btn btn-secondary btn-large">Dokumentation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- screenshot -->
+        <section class="features-preview" style="padding-top:0;">
+            <div class="container">
+                <div class="screenshot-container">
+                    <img src="/assets/screenshots/toptier.png"
+                         alt="Top Tier Overlay Screenshot"
+                         data-i18n-alt="screenshots.toptier.hero.alt"
+                         loading="lazy"
+                         class="feature-screenshot"
+                         onerror="this.style.display='none'" />
+                    <p class="screenshot-caption" data-i18n="screenshots.toptier.hero.caption"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- feature cards grid -->
+        <section class="features-preview">
+            <div class="container">
+                <h2 class="section-title">Features im Detail</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; margin-bottom:3rem;">
+
+                    <!-- Like & Gift Leaderboard -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🏆</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Like & Gift Leaderboard</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Echtzeit-Leaderboard für Likes und Geschenke, das die Top-Interaktionen der Zuschauer anzeigt und die Community-Interaktion steigert.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Echtzeit</span>
+                            <span class="feature-tag">Interaktiv</span>
+                            <span class="feature-tag">Community</span>
+                        </div>
+                    </div>
+
+                    <!-- Decay Mechanik -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">⏳</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Decay Mechanik</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Punkte und Rangwerte verlieren mit der Zeit, um die Aktivität kontinuierlich zu belohnen und die Leaderboard-Positionen dynamisch zu halten.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Dynamisch</span>
+                            <span class="feature-tag">Gamification</span>
+                        </div>
+                    </div>
+
+                    <!-- Rang-Animationen -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">✨</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Rang-Animationen</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Animationen, die Rangwechsel und Aufstiege visuell betonen – von sanften Übergängen bis zu auffälligen Pop‑Ups.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Animation</span>
+                            <span class="feature-tag">Visual</span>
+                        </div>
+                    </div>
+
+                    <!-- Combined View -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔗</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Combined View</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Kombinierte Anzeige von Likes, Geschenken und Ranglisten in einem kompakt gestalteten Overlay.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Kompakt</span>
+                            <span class="feature-tag">Übersichtlich</span>
+                        </div>
+                    </div>
+
+                    <!-- Hochformat/Querformat Overlays -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">📐</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Hochformat/Querformat Overlays</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Flexible Layouts, die sich automatisch an die Stream-Orientation anpassen – ideal für mobile Zuschauer und Desktop‑Streams.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">Responsive</span>
+                            <span class="feature-tag">Mobile</span>
+                        </div>
+                    </div>
+
+                    <!-- OBS Integration -->
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:1rem; padding:1.75rem;">
+                        <div style="font-size:2rem; margin-bottom:0.75rem;">🔧</div>
+                        <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">OBS Integration</h3>
+                        <p style="color:var(--color-text-secondary); font-size:0.95rem; line-height:1.6; margin-bottom:1rem;">
+                            Einfache Integration als Browser‑Source mit konfigurierbaren URLs, Auth‑Token und Live‑Updates ohne Neustart.
+                        </p>
+                        <div class="feature-card-tags">
+                            <span class="feature-tag">OBS</span>
+                            <span class="feature-tag">Browser‑Source</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 PupCid – Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
