@@ -1328,6 +1328,44 @@
     function refreshPreview() {
         const iframe = document.getElementById('overlayPreview');
         iframe.src = iframe.src;
+        syncPreviewScale();
+    }
+
+    let previewResizeObserver = null;
+
+    function getPreviewResolution() {
+        const width = hudConfig.streamWidth || 1920;
+        const height = hudConfig.streamHeight || 1080;
+        return `${width}x${height}`;
+    }
+
+    function syncPreviewScale() {
+        const wrapper = document.getElementById('previewWrapper');
+        if (!wrapper) return;
+        updatePreviewScale(getPreviewResolution());
+    }
+
+    function initPreviewResizeObserver() {
+        const wrapper = document.getElementById('previewWrapper');
+        if (!wrapper) return;
+
+        syncPreviewScale();
+        window.addEventListener('resize', syncPreviewScale);
+
+        if (typeof ResizeObserver === 'function') {
+            if (previewResizeObserver) {
+                previewResizeObserver.disconnect();
+            }
+            previewResizeObserver = new ResizeObserver(() => {
+                syncPreviewScale();
+            });
+            previewResizeObserver.observe(wrapper);
+        }
+
+        const iframe = document.getElementById('overlayPreview');
+        if (iframe) {
+            iframe.addEventListener('load', syncPreviewScale);
+        }
     }
 
     function updatePreviewScale(resolution) {
@@ -1374,6 +1412,8 @@
     if (document.getElementById('refreshPreviewBtn')) {
         document.getElementById('refreshPreviewBtn').addEventListener('click', refreshPreview);
     }
+
+    initPreviewResizeObserver();
 
     // Range sliders
     if (document.getElementById('animationSpeed')) {

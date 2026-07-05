@@ -34,7 +34,7 @@
             function syncTheme() {
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
             }
 
             syncTheme();
@@ -840,11 +840,35 @@
             border-color: #facc15;
         }
 
+        html[data-theme="contrast"] .help-text,
+        html[data-theme="contrast"] .volume-label,
+        html[data-theme="contrast"] .myinstants-result-url,
+        html[data-theme="contrast"] .gift-card-id,
+        html[data-theme="contrast"] .badge-gray,
+        html[data-theme="contrast"] #gif-search-status,
         html[data-theme="vision-impaired"] .help-text,
         html[data-theme="vision-impaired"] .volume-label,
+        html[data-theme="vision-impaired"] .myinstants-result-url,
+        html[data-theme="vision-impaired"] .gift-card-id,
         html[data-theme="vision-impaired"] .badge-gray,
-        html[data-theme="vision-impaired"] .gift-card-id {
+        html[data-theme="vision-impaired"] #gif-search-status {
             color: #fff7cc;
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.35;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="contrast"] .myinstants-result-url,
+        html[data-theme="vision-impaired"] .myinstants-result-url {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+        }
+
+        html[data-theme="contrast"] .volume-label,
+        html[data-theme="vision-impaired"] .volume-label {
+            min-width: 42px;
         }
 
         html[data-theme="vision-impaired"] .gift-card,

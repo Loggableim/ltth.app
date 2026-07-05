@@ -440,6 +440,7 @@ body[data-theme] {
 .help-text {
     color: var(--color-text-muted);
     font-size: 12px;
+    line-height: 1.45;
     margin-top: 4px;
 }
 
@@ -1249,6 +1250,80 @@ code {
 
 .info-box li {
     margin: 4px 0;
+}
+
+html[data-theme="night"] .info-message,
+html[data-theme="night"] .help-text,
+html[data-theme="night"] .warning-message,
+html[data-theme="night"] .info-box {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(148, 163, 184, 0.35) !important;
+}
+
+html[data-theme="night"] .info-message,
+html[data-theme="night"] .help-text,
+html[data-theme="night"] .info-box {
+    border-left-color: #60a5fa !important;
+}
+
+html[data-theme="night"] .warning-message {
+    background: #1f2937 !important;
+    border-left-color: #f59e0b !important;
+    color: #fef3c7 !important;
+}
+
+html[data-theme="contrast"] .info-message,
+html[data-theme="contrast"] .help-text,
+html[data-theme="contrast"] .warning-message,
+html[data-theme="contrast"] .info-box {
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #111 !important;
+}
+
+html[data-theme="contrast"] .info-message,
+html[data-theme="contrast"] .help-text,
+html[data-theme="contrast"] .info-box {
+    border-left-color: #111 !important;
+}
+
+html[data-theme="contrast"] .warning-message {
+    background: #fff !important;
+    border-left-color: #111 !important;
+    color: #111 !important;
+}
+
+html[data-theme="contrast"] .panel small,
+html[data-theme="night"] .panel small {
+    color: var(--color-text-secondary) !important;
+}
+
+html[data-theme="vision-impaired"] .info-message,
+html[data-theme="vision-impaired"] .help-text,
+html[data-theme="vision-impaired"] .warning-message,
+html[data-theme="vision-impaired"] .info-box {
+    background: #000 !important;
+    color: #fff !important;
+    border-color: #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] .info-message,
+html[data-theme="vision-impaired"] .help-text,
+html[data-theme="vision-impaired"] .info-box {
+    border-left-color: #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] .warning-message {
+    background: #111 !important;
+    color: #fff7cc !important;
+    border-left-color: #facc15 !important;
+}
+
+html[data-theme="vision-impaired"] .panel small {
+    color: #fff7cc !important;
+    font-size: 0.95rem !important;
+    line-height: 1.55 !important;
 }
 
 .progress-container {
