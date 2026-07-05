@@ -185,10 +185,41 @@ function Ensure-Node {
     }
 }
 
+# ---------- Launcher-Reparatur vor Git-Checkout ----------
+function Repair-LauncherFile {
+    $launcherPath = Join-Path $LTTHDir 'launcher.exe'
+    $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
+
+    if (-not (Test-Path $launcherPath) -or -not (Test-Path $downloadLauncherPath)) {
+        return
+    }
+
+    try {
+        $launcherHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $launcherPath).Hash
+        $downloadHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $downloadLauncherPath).Hash
+
+        if ($launcherHash -ne $downloadHash) {
+            return
+        }
+
+        Warn "Falscher downloads/launcher.exe im Root erkannt; repariere launcher.exe..."
+        $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
+        try {
+            Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/main/launcher.exe" -OutFile $tmpLauncher -TimeoutSec 60
+            Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
+        } finally {
+            Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        Warn "Launcher-Reparatur vor Update fehlgeschlagen: $($_.Exception.Message)"
+    }
+}
+
 # ---------- Download ----------
 function Download-Source {
     $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
     if (Test-Path (Join-Path $LTTHDir '.git')) {
+        Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
         try {
             Invoke-Git -Arguments @('fetch', '--tags', '--prune') -WorkingDirectory $LTTHDir
@@ -316,10 +347,16 @@ function Install-Deps {
 # ---------- Launcher ----------
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
+    $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
     $launcherUrl = 'https://github.com/Loggableim/ltth.app/raw/main/launcher.exe'
 
     try {
-        if (-not (Test-Path $launcherPath)) {
+        $launcherMatchesDownloads = $false
+        if ((Test-Path $launcherPath) -and (Test-Path $downloadLauncherPath)) {
+            $launcherMatchesDownloads = ((Get-FileHash -Algorithm SHA256 -LiteralPath $launcherPath).Hash -eq (Get-FileHash -Algorithm SHA256 -LiteralPath $downloadLauncherPath).Hash)
+        }
+
+        if ((-not (Test-Path $launcherPath)) -or $launcherMatchesDownloads) {
             Log "Lade LTTH Cloud Launcher herunter..."
             Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
         }
