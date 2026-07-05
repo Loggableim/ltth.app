@@ -500,7 +500,7 @@
         return map[category] || map.other || category;
     }
 
-    function createCard(plugin, locale) {
+        function createCard(plugin, locale) {
         const card = document.createElement('article');
         card.className = 'feature-card';
 
@@ -548,6 +548,25 @@
         actionRow.style.alignItems = 'center';
         actionRow.style.gap = '8px';
         actionRow.style.flexWrap = 'wrap';
+
+        const screenshotList = Array.isArray(plugin.screenshots) ? plugin.screenshots : [];
+        if (screenshotList.length > 0) {
+            const screenshot = document.createElement('div');
+            screenshot.style.marginTop = 'var(--space-4)';
+
+            const screenshotImage = document.createElement('img');
+            screenshotImage.src = screenshotList[0];
+            screenshotImage.alt = plugin.name || plugin.id;
+            screenshotImage.loading = 'lazy';
+            screenshotImage.style.width = '100%';
+            screenshotImage.style.maxWidth = '620px';
+            screenshotImage.style.borderRadius = 'var(--radius-md)';
+            screenshotImage.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+            screenshotImage.style.display = 'block';
+            screenshot.appendChild(screenshotImage);
+
+            card.appendChild(screenshot);
+        }
 
         if (plugin.packageUrl) {
             const link = document.createElement('a');
@@ -625,6 +644,7 @@
                     id: String(plugin.id || '').trim(),
                     name: localize(plugin.name, locale),
                     description: localize(plugin.description, locale),
+                    screenshots: Array.isArray(plugin.screenshots) ? plugin.screenshots : [],
                     version: plugin.version || '0.0.0',
                     category: String(plugin.category || 'other'),
                     sourceType: isCore ? 'core' : (isCommunity ? 'community' : 'official'),

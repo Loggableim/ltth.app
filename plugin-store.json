@@ -29,7 +29,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/advanced-timer.png"
+      ]
     },
     {
       "id": "animazingpal",
@@ -53,7 +56,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/animazingpal.png"
+      ]
     },
     {
       "id": "api-bridge",
@@ -77,7 +83,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/api-bridge-admin.png"
+      ]
     },
     {
       "id": "chatango",
@@ -103,7 +112,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/chatango.png"
+      ]
     },
     {
       "id": "clarityhud",
@@ -127,7 +139,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/clarityhud.png"
+      ]
     },
     {
       "id": "coinbattle",
@@ -151,7 +166,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/coinbattle.png"
+      ]
     },
     {
       "id": "config-import",
@@ -175,7 +193,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/config-import.png"
+      ]
     },
     {
       "id": "data-source",
@@ -196,7 +217,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/data-source.png"
+      ]
     },
     {
       "id": "fireworks",
@@ -217,7 +241,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/fireworks.png"
+      ]
     },
     {
       "id": "flame-overlay",
@@ -241,7 +268,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/flame-overlay.png"
+      ]
     },
     {
       "id": "game-engine",
@@ -265,7 +295,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/game-engine.png"
+      ]
     },
     {
       "id": "gcce",
@@ -289,7 +322,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/gcce.png"
+      ]
     },
     {
       "id": "gift-milestone",
@@ -313,7 +349,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/gift-milestone.png"
+      ]
     },
     {
       "id": "goals",
@@ -339,7 +378,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/goals.png"
+      ]
     },
     {
       "id": "interactive-story",
@@ -363,7 +405,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/interactive-story.png"
+      ]
     },
     {
       "id": "lastevent-spotlight",
@@ -389,7 +434,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/lastevent-spotlight.png"
+      ]
     },
     {
       "id": "milestone-leaderboard",
@@ -413,31 +461,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
-    },
-    {
-      "id": "minecraft-connect",
-      "name": {
-        "en": "Minecraft Connect"
       },
-      "description": {
-        "en": "Bidirectional real-time integration between TikTok Live events and Minecraft (Java Edition). WebSocket bridge server enables custom events, commands, and in-game interactions.",
-        "de": "Bidirektionale Echtzeit-Integration zwischen TikTok-Live-Events und Minecraft (Java Edition). WebSocket-Bridge-Server ermÃ¶glicht benutzerdefinierte Events, Befehle und In-Game-Interaktionen.",
-        "es": "IntegraciÃ³n bidireccional en tiempo real entre eventos en vivo de TikTok y Minecraft (Java Edition). El servidor puente WebSocket permite eventos personalizados, comandos e interacciones en el juego.",
-        "fr": "IntÃ©gration bidirectionnelle en temps rÃ©el entre Ã©vÃ©nements TikTok Live et Minecraft (Java Edition). Le serveur pont WebSocket permet Ã©vÃ©nements personnalisÃ©s, commandes et interactions en jeu."
-      },
-      "version": "1.0.0",
-      "author": "ltth.app Team",
-      "category": "integration",
-      "channel": "open-beta",
-      "badges": [],
-      "packageUrl": "https://ltth.app/plugin-store/packages/minecraft-connect-1.0.0.zip",
-      "sha256": "77d5a06cbd36eaec7160565d3912b97d761e44570843abdb3c2c9fa6289b7548",
-      "pricing": {
-        "type": "free",
-        "amount": 0,
-        "currency": "EUR"
-      }
+      "screenshots": [
+        "/assets/screenshots/milestone-leaderboard.png"
+      ]
     },
     {
       "id": "multicam",
@@ -461,7 +488,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/multicam.png"
+      ]
     },
     {
       "id": "music-bot",
@@ -482,7 +512,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/music-bot.png"
+      ]
     },
     {
       "id": "openshock",
@@ -506,7 +539,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/openshock.png"
+      ]
     },
     {
       "id": "osc-bridge",
@@ -530,7 +566,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/osc-bridge.png"
+      ]
     },
     {
       "id": "quiz-show",
@@ -554,7 +593,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/quiz-show.png"
+      ]
     },
     {
       "id": "sidekick",
@@ -578,7 +620,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/sidekick-dashboard.png"
+      ]
     },
     {
       "id": "soundboard",
@@ -604,7 +649,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/soundboard-detail.png"
+      ]
     },
     {
       "id": "streamalchemy",
@@ -628,7 +676,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/stream-alchemy.png"
+      ]
     },
     {
       "id": "stt-ticker",
@@ -650,7 +701,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/stt-ticker.png"
+      ]
     },
     {
       "id": "talking-heads",
@@ -672,7 +726,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/talking-heads.png"
+      ]
     },
     {
       "id": "thermal-printer",
@@ -696,7 +753,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/thermal-printer.png"
+      ]
     },
     {
       "id": "toptier",
@@ -719,7 +779,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/toptier.png"
+      ]
     },
     {
       "id": "tts",
@@ -745,7 +808,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/tts-admin.png"
+      ]
     },
     {
       "id": "vdoninja",
@@ -769,7 +835,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/vdoninja.png"
+      ]
     },
     {
       "id": "viewer-leaderboard",
@@ -793,7 +862,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/viewer-leaderboard.png"
+      ]
     },
     {
       "id": "viewer-profiles",
@@ -817,7 +889,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/viewer-profiles.png"
+      ]
     },
     {
       "id": "weather-control",
@@ -841,7 +916,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/weather-control.png"
+      ]
     },
     {
       "id": "webgpu-emoji-rain",
@@ -870,7 +948,10 @@
         "type": "free",
         "amount": 0,
         "currency": "EUR"
-      }
+      },
+      "screenshots": [
+        "/assets/screenshots/webgpu-emoji-rain.png"
+      ]
     }
   ]
 }
