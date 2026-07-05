@@ -316,13 +316,10 @@ function Install-Deps {
 # ---------- Launcher ----------
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
-    $repoLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
-    $launcherUrl = 'https://ltth.app/downloads/launcher.exe'
+    $launcherUrl = 'https://github.com/Loggableim/ltth.app/raw/main/launcher.exe'
 
     try {
-        if (Test-Path $repoLauncherPath) {
-            Copy-Item -LiteralPath $repoLauncherPath -Destination $launcherPath -Force
-        } elseif (-not (Test-Path $launcherPath)) {
+        if (-not (Test-Path $launcherPath)) {
             Log "Lade LTTH Cloud Launcher herunter..."
             Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
         }
