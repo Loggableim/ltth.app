@@ -16,8 +16,10 @@
       background: transparent;
       font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
       overflow: hidden;
-      width: var(--overlay-width, 1920px);
-      height: var(--overlay-height, 1080px);
+      width: 100vw;
+      height: 100vh;
+      min-width: var(--overlay-width, 1920px);
+      min-height: var(--overlay-height, 1080px);
     }
 
     /*
@@ -557,8 +559,10 @@
 
     /* Portrait orientation adjustments */
     body.portrait {
-      width: var(--overlay-width, 1080px);
-      height: var(--overlay-height, 1920px);
+      width: 100vw;
+      height: 100vh;
+      min-width: var(--overlay-width, 1080px);
+      min-height: var(--overlay-height, 1920px);
     }
 
     body.portrait #imageContainer {
