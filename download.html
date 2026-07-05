@@ -242,7 +242,7 @@
                     Öffne PowerShell (Rechtsklick → "Als Administrator ausführen" optional), kopiere den Befehl und drücke Enter.
                 </p>
                 <div class="install-cmd" id="cmd-windows">
-                    <button class="copy-btn" data-copy-target="cmd-windows" data-i18n="install.copy">Kopieren</button>
+                    <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iwr -useb https://ltth.app/install/install.ps1 | iex" data-i18n="install.copy">Kopieren</button>
 <span class="prompt">PS&gt;</span> iwr -useb https://ltth.app/install/install.ps1 | iex
                 </div>
                 <div class="os-warning" data-i18n="install.windows.warn">
@@ -259,7 +259,7 @@
                     Öffne Terminal (Spotlight → "Terminal"), kopiere den Befehl und drücke Enter.
                 </p>
                 <div class="install-cmd" id="cmd-macos">
-                    <button class="copy-btn" data-copy-target="cmd-macos" data-i18n="install.copy">Kopieren</button>
+                    <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
 <span class="prompt">$</span> curl -fsSL https://ltth.app/install/install.sh | bash
                 </div>
                 <div class="os-warning" data-i18n="install.macos.warn">
@@ -276,7 +276,7 @@
                     Öffne ein Terminal, kopiere den Befehl und drücke Enter. Getestet auf Ubuntu, Debian, Fedora, Arch.
                 </p>
                 <div class="install-cmd" id="cmd-linux">
-                    <button class="copy-btn" data-copy-target="cmd-linux" data-i18n="install.copy">Kopieren</button>
+                    <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
 <span class="prompt">$</span> curl -fsSL https://ltth.app/install/install.sh | bash
                 </div>
                 <div class="os-warning" data-i18n="install.linux.warn">
@@ -446,7 +446,11 @@
         btn.addEventListener('click', () => {
             const target = document.getElementById(btn.dataset.copyTarget);
             if (!target) return;
-            const text = target.innerText.replace(/^(PS>|\$)\s*/, '').trim();
+            const text = (btn.dataset.copyText || target.innerText)
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/^.*?(?:PS>|\\$)\s+/, '')
+                .replace(/^Kopieren\s*/i, '')
+                .trim();
             navigator.clipboard.writeText(text).then(() => {
                 const orig = btn.textContent;
                 btn.classList.add('copied');
