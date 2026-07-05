@@ -131,6 +131,10 @@ download_source() {
         git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" 2>/dev/null \
             || git -C "$LTTH_DIR" checkout "${LTTH_VERSION}"
     else
+        if [ -d "$LTTH_DIR" ]; then
+            warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
+            rm -rf "$LTTH_DIR"
+        fi
         mkdir -p "$(dirname "$LTTH_DIR")"
         git clone --branch "v${LTTH_VERSION}" --depth 1 \
             "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" \

@@ -126,8 +126,12 @@ async function ensureNode() {
 }
 
 async function downloadSource() {
-    fs.mkdirSync(cfg.dir, { recursive: true });
     const gitDir = path.join(cfg.dir, '.git');
+    if (fs.existsSync(cfg.dir) && !fs.existsSync(gitDir)) {
+        warn('Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige...');
+        fs.rmSync(cfg.dir, { recursive: true, force: true });
+    }
+    fs.mkdirSync(cfg.dir, { recursive: true });
     if (fs.existsSync(gitDir)) {
         log('Bestehende Installation gefunden -- aktualisiere...');
         try {

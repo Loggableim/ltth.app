@@ -106,6 +106,10 @@ function Download-Source {
         Pop-Location
     } else {
         Log "Klone Repository nach $LTTHDir..."
+        if (Test-Path $LTTHDir) {
+            Warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
+            Remove-Item -Path $LTTHDir -Recurse -Force
+        }
         New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
         $ok = $false
         try {
