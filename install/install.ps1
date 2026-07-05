@@ -10,6 +10,7 @@
 #    $env:LTTH_DIR         - Installationsverzeichnis (Default: $env:LOCALAPPDATA\LTTH)
 #    $env:LTTH_PORT        - HTTP-Port (Default: 3000)
 #    $env:LTTH_NO_BROWSER  - Browser nach Start nicht oeffnen
+#    $env:LTTH_NO_LAUNCHER - Launcher nach Installation nicht starten
 #    $env:LTTH_QUIET       - Reduzierte Ausgabe
 #    $env:LTTH_NO_PAUSE    - Bei Fehler nicht auf Enter warten
 # ==============================================================================
@@ -24,6 +25,7 @@ $script:LTTHVersion = $LTTHVersion
 $LTTHDir       = if ($env:LTTH_DIR)         { $env:LTTH_DIR         } else { Join-Path $env:LOCALAPPDATA 'LTTH' }
 $LTTHPort      = if ($env:LTTH_PORT)        { $env:LTTH_PORT        } else { '3000' }
 $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0' }
+$LTTHNoLauncher = if ($env:LTTH_NO_LAUNCHER) { $env:LTTH_NO_LAUNCHER } else { '0' }
 $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0' }
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
@@ -311,7 +313,95 @@ function Install-Deps {
     Ok "Abhaengigkeiten installiert"
 }
 
-# ---------- Start ----------
+# ---------- Launcher ----------
+function Install-Launcher {
+    $launcherPath = Join-Path $LTTHDir 'launcher.exe'
+    $repoLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
+    $launcherUrl = 'https://ltth.app/downloads/launcher.exe'
+
+    try {
+        if (Test-Path $repoLauncherPath) {
+            Copy-Item -LiteralPath $repoLauncherPath -Destination $launcherPath -Force
+        } elseif (-not (Test-Path $launcherPath)) {
+            Log "Lade LTTH Cloud Launcher herunter..."
+            Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
+        }
+
+        if (-not (Test-Path $launcherPath)) {
+            throw "Launcher-Datei fehlt nach Installation."
+        }
+
+        $launcherInfo = Get-Item -LiteralPath $launcherPath
+        if ($launcherInfo.Length -lt 1048576) {
+            throw "Launcher-Datei wirkt unvollstaendig ($($launcherInfo.Length) Bytes)."
+        }
+
+        Ok "Launcher bereit: $launcherPath"
+        return $launcherPath
+    } catch {
+        Warn "Launcher konnte nicht eingerichtet werden: $($_.Exception.Message)"
+        Warn "Verwende direkten Node-Start als Fallback."
+        return $null
+    }
+}
+
+function Create-DesktopShortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LauncherPath
+    )
+
+    try {
+        $desktopPath = [Environment]::GetFolderPath('DesktopDirectory')
+        if ([string]::IsNullOrWhiteSpace($desktopPath)) {
+            $desktopPath = Join-Path $env:USERPROFILE 'Desktop'
+        }
+        New-Item -ItemType Directory -Force -Path $desktopPath | Out-Null
+
+        $shortcutPath = Join-Path $desktopPath 'LTTH.lnk'
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = $LauncherPath
+        $shortcut.WorkingDirectory = $LTTHDir
+        $shortcut.IconLocation = $LauncherPath
+        $shortcut.Description = "PupCid's Little TikTool Helper"
+        $shortcut.Save()
+
+        Ok "Desktop-Verknuepfung erstellt: $shortcutPath"
+        return $shortcutPath
+    } catch {
+        Warn "Desktop-Verknuepfung konnte nicht erstellt werden: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Start-Launcher {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LauncherPath
+    )
+
+    if ($LTTHNoLauncher -eq '1') {
+        Warn "Launcher-Start uebersprungen (LTTH_NO_LAUNCHER=1)."
+        return $true
+    }
+
+    try {
+        Log "Starte LTTH Cloud Launcher..."
+        $p = Start-Process -FilePath $LauncherPath `
+                           -WorkingDirectory $LTTHDir `
+                           -WindowStyle Normal `
+                           -PassThru
+        Ok "Launcher gestartet (PID $($p.Id))"
+        return $true
+    } catch {
+        Warn "Launcher konnte nicht gestartet werden: $($_.Exception.Message)"
+        Warn "Verwende direkten Node-Start als Fallback."
+        return $false
+    }
+}
+
+# ---------- Fallback-Start ----------
 function Start-App {
     Log "Starte LTTH im Hintergrund auf Port $LTTHPort..."
     $appDir = Join-Path $LTTHDir 'app'
@@ -364,19 +454,36 @@ function Main {
     Resolve-Version
     Download-Source
     Install-Deps
-    Start-App
-    Open-Browser
+    $launcherPath = Install-Launcher
+    $shortcutPath = $null
+    $launcherStarted = $false
+
+    if ($launcherPath) {
+        $shortcutPath = Create-DesktopShortcut -LauncherPath $launcherPath
+        $launcherStarted = Start-Launcher -LauncherPath $launcherPath
+    }
+
+    if (-not $launcherStarted) {
+        Start-App
+        Open-Browser
+    }
 
     Write-Host ""
     Ok "Installation abgeschlossen!"
     Write-Host ""
-    Write-Host "  Dashboard:   http://localhost:$LTTHPort/dashboard.html"
-    Write-Host "  Log-Datei:   $LTTHDir\ltth.log"
-    Write-Host "  Stoppen:     Stop-Process -Id (Get-Content $LTTHDir\ltth.pid)"
-    Write-Host "  Updates:     cd $LTTHDir\app && git pull && npm install"
-    Write-Host ""
-    Write-Host "  Alternative (GUI):  Lade den LTTH Cloud Launcher herunter:" -ForegroundColor DarkGray
-    Write-Host "    https://ltth.app/downloads/launcher.exe" -ForegroundColor DarkGray
+    if ($launcherPath) {
+        Write-Host "  Launcher:   $launcherPath"
+    }
+    if ($shortcutPath) {
+        Write-Host "  Desktop:    $shortcutPath"
+        Write-Host "  Starten:    Doppelklick auf die Desktop-Verknuepfung 'LTTH'"
+    }
+    Write-Host "  App-Ordner: $LTTHDir"
+    Write-Host "  Dashboard:  http://localhost:$LTTHPort/dashboard.html"
+    if (-not $launcherStarted) {
+        Write-Host "  Log-Datei:  $LTTHDir\ltth.log"
+        Write-Host "  Stoppen:    Stop-Process -Id (Get-Content $LTTHDir\ltth.pid)"
+    }
     Write-Host ""
 }
 
