@@ -141,7 +141,11 @@ function Download-Source {
                 }
             }
         } catch {
-            Warn "Tag-basierter Clone fehlgeschlagen, klone main..."
+            Warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
+            if (Test-Path $LTTHDir) {
+                Warn "Zielverzeichnis für Haupt-Branch bereinigen..."
+                Remove-Item -Path $LTTHDir -Recurse -Force
+            }
             try {
                 git clone --depth 1 $repoUrl $LTTHDir
             } catch {

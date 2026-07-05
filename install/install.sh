@@ -146,6 +146,7 @@ download_source() {
             fi
         else
             warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
+            rm -rf "$LTTH_DIR"
             git clone --depth 1 "https://github.com/${LTTH_REPO_OWNER}/${LTTH_REPO_NAME}.git" "$LTTH_DIR"
         fi
     fi
