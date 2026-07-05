@@ -725,9 +725,8 @@ class Firework {
             particleCount = Math.min(particleCount, Math.floor(this.requestedParticleCount));
         }
         
-        // Get velocities from shape generator
-        const generator = ShapeGenerators[this.shape] || ShapeGenerators.burst;
-        const velocities = generator(particleCount, this.intensity);
+        // Get velocities from cached shape blueprints to avoid repeated generator spikes
+        const velocities = globalParticleBlueprintCache.getParticleBlueprint(this.shape, particleCount, this.intensity);
         
         // Create explosion particles
         for (let i = 0; i < velocities.length; i++) {
@@ -1262,6 +1261,40 @@ const ShapeGenerators = {
         return particles;
     }
 };
+
+class ParticleBlueprintCache {
+    constructor(maxEntries = 96) {
+        this.blueprintCache = new Map();
+        this.maxEntries = maxEntries;
+    }
+
+    getParticleBlueprint(shape, particleCount, intensity) {
+        const safeShape = ShapeGenerators[shape] ? shape : 'burst';
+        const countBucket = Math.max(1, Math.round(particleCount / 10) * 10);
+        const intensityBucket = Math.max(0.1, Math.round(intensity * 4) / 4);
+        const key = `${safeShape}:${countBucket}:${intensityBucket}`;
+
+        if (this.blueprintCache.has(key)) {
+            const cached = this.blueprintCache.get(key);
+            this.blueprintCache.delete(key);
+            this.blueprintCache.set(key, cached);
+            return cached;
+        }
+
+        const generator = ShapeGenerators[safeShape] || ShapeGenerators.burst;
+        const blueprint = generator(countBucket, intensityBucket);
+        this.blueprintCache.set(key, blueprint);
+
+        while (this.blueprintCache.size > this.maxEntries) {
+            const oldestKey = this.blueprintCache.keys().next().value;
+            this.blueprintCache.delete(oldestKey);
+        }
+
+        return blueprint;
+    }
+}
+
+const globalParticleBlueprintCache = new ParticleBlueprintCache();
 
 // ============================================================================
 // AUDIO MANAGER
@@ -2000,10 +2033,7 @@ class FireworksEngine {
             });
 
             this.socket.on('fireworks:trigger', (data) => {
-                this.prewarmTriggerAssets(data).catch((error) => {
-                    if (DEBUG) console.warn('[Fireworks] Asset prewarm failed:', error);
-                });
-                this.handleTrigger(data);
+                this.handleTriggerWithPrewarm(data);
             });
 
             this.socket.on('fireworks:finale', (data) => {
@@ -2553,6 +2583,30 @@ class FireworksEngine {
         if (prewarmTasks.length > 0) {
             await Promise.all(prewarmTasks);
         }
+    }
+
+    async handleTriggerWithPrewarm(data) {
+        const hasImageAssets = data && (data.giftImage || data.userAvatar);
+        if (!hasImageAssets) {
+            this.handleTrigger(data);
+            return;
+        }
+
+        let timeoutId = null;
+        const prewarmTask = this.prewarmTriggerAssets(data);
+        const timeoutTask = new Promise((resolve) => {
+            timeoutId = setTimeout(resolve, 80);
+        });
+
+        try {
+            await Promise.race([prewarmTask, timeoutTask]);
+        } catch (error) {
+            if (DEBUG) console.warn('[Fireworks] Asset prewarm failed:', error);
+        } finally {
+            clearTimeout(timeoutId);
+        }
+
+        this.handleTrigger(data);
     }
     
     /**

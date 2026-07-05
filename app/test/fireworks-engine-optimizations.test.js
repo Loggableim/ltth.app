@@ -210,7 +210,15 @@ describe('Fireworks Engine Optimizations', () => {
             expect(engineCode).toContain('prewarmTriggerAssets(data)');
             expect(engineCode).toContain('prewarmAtlasImage(\'gift:\' + data.giftImage, data.giftImage)');
             expect(engineCode).toContain('prewarmAtlasImage(\'avatar:\' + data.userAvatar, data.userAvatar)');
-            expect(engineCode).toContain('this.prewarmTriggerAssets(data).catch');
+            expect(engineCode).toContain('this.handleTriggerWithPrewarm(data)');
+            expect(engineCode).toContain('await Promise.race([prewarmTask, timeoutTask])');
+            expect(engineCode).toContain('clearTimeout(timeoutId)');
+        });
+
+        test('Fireworks engine caches reusable particle blueprints for repeated bursts', () => {
+            expect(engineCode).toContain('this.blueprintCache = new Map()');
+            expect(engineCode).toContain('getParticleBlueprint(shape, particleCount, intensity)');
+            expect(engineCode).toContain('const velocities = globalParticleBlueprintCache.getParticleBlueprint(this.shape, particleCount, this.intensity)');
         });
 
         test('Despawn is reserved for emergency overload after adaptive scaling', () => {
