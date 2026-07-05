@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,6 +50,12 @@ const (
 	versionFile     = "runtime/version.txt"
 	updateCheckFile = "runtime/last_update_check.txt"
 )
+
+//go:embed assets/launcher.html
+var embeddedLauncherHTML string
+
+//go:embed assets/launcher-logo.png
+var embeddedLauncherLogo []byte
 
 // NodeRelease represents a single entry from https://nodejs.org/dist/index.json
 type NodeRelease struct {
@@ -4734,8 +4741,16 @@ func main() {
 			launcher.loadUserProfiles()
 		}
 
-		// Parse template
-		tmpl, err := template.ParseFiles(templatePath)
+		// Parse template from disk when available, otherwise use the embedded launcher UI.
+		var tmpl *template.Template
+		var err error
+		if _, statErr := os.Stat(templatePath); statErr == nil {
+			tmpl, err = template.ParseFiles(templatePath)
+		} else if embeddedLauncherHTML != "" {
+			tmpl, err = template.New("launcher.html").Parse(embeddedLauncherHTML)
+		} else {
+			err = statErr
+		}
 		if err != nil {
 			launcher.logAndSync("[ERROR] Could not load template: %v", err)
 			http.Error(w, "Template error", http.StatusInternalServerError)
@@ -4812,6 +4827,13 @@ func main() {
 		theme := r.URL.Query().Get("theme")
 		if theme == "" {
 			theme = "night"
+		}
+
+		if len(embeddedLauncherLogo) > 0 {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			_, _ = w.Write(embeddedLauncherLogo)
+			return
 		}
 
 		for _, logoPath := range []string{
