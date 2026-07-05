@@ -147,6 +147,21 @@
             font-size: 0.85rem;
             font-weight: 700;
         }
+        .install-quick-steps {
+            margin: 0;
+            padding-left: 1.1rem;
+            color: var(--color-text-secondary);
+            line-height: 1.55;
+            font-size: 0.92rem;
+        }
+        .install-quick-steps li {
+            margin-bottom: 0.35rem;
+        }
+        .install-quick-note {
+            margin: 0.5rem 0 0;
+            color: #9ddc8f;
+            font-size: 0.85rem;
+        }
         .install-step-mini p {
             margin: 0;
             font-size: 0.85rem;
@@ -217,6 +232,18 @@
             Ein einziger Befehl. Windows, macOS, Linux. Lädt die neueste Version, installiert Abhängigkeiten und startet das Dashboard.
         </p>
 
+        <div class="install-card" style="max-width: 820px; margin-bottom: var(--space-5);">
+            <h2 style="margin-top: 0; margin-bottom: var(--space-2); color: #fff;">
+                So geht's (für Einsteiger)
+            </h2>
+            <ol class="install-quick-steps">
+                <li>Wähle oben dein Betriebssystem oder nutze die automatische Erkennung.</li>
+                <li>Klicke auf "Kopieren" und füge den Befehl in PowerShell/Terminal ein.</li>
+                <li>Drücke Enter und warte – der Installer kümmert sich um den Rest.</li>
+            </ol>
+            <p class="install-quick-note">Du musst nichts weiter einstellen. Git und Node.js werden automatisch geprüft.</p>
+        </div>
+
         <div class="os-tabs" role="tablist" aria-label="Betriebssystem wählen">
             <button class="os-tab" data-os="windows" role="tab" aria-selected="false">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5l7.5-1v8H3v-7zm0 13l7.5 1V12H3v6.5zM11.5 4.4L21 3v9.5h-9.5V4.4zm0 15.2V12H21v9l-9.5-1.4z"/></svg>
@@ -239,7 +266,7 @@
                     <span data-i18n="install.windows.title">Windows — PowerShell</span>
                 </h3>
                 <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.windows.desc">
-                    Öffne PowerShell (Rechtsklick → "Als Administrator ausführen" optional), kopiere den Befehl und drücke Enter.
+                    Öffne PowerShell, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-windows">
                     <button class="copy-btn" data-copy-target="cmd-windows" data-copy-text="iwr -useb https://ltth.app/install/install.ps1 | iex" data-i18n="install.copy">Kopieren</button>
@@ -256,7 +283,7 @@
                     <span data-i18n="install.macos.title">macOS — Terminal</span>
                 </h3>
                 <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.macos.desc">
-                    Öffne Terminal (Spotlight → "Terminal"), kopiere den Befehl und drücke Enter.
+                    Öffne das Terminal, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-macos">
                     <button class="copy-btn" data-copy-target="cmd-macos" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
@@ -273,7 +300,7 @@
                     <span data-i18n="install.linux.title">Linux — Bash</span>
                 </h3>
                 <p style="color: var(--color-text-secondary); margin-top:0;" data-i18n="install.linux.desc">
-                    Öffne ein Terminal, kopiere den Befehl und drücke Enter. Getestet auf Ubuntu, Debian, Fedora, Arch.
+                    Öffne ein Terminal, klicke auf "Kopieren" und füge den Befehl anschließend ein.
                 </p>
                 <div class="install-cmd" id="cmd-linux">
                     <button class="copy-btn" data-copy-target="cmd-linux" data-copy-text="curl -fsSL https://ltth.app/install/install.sh | bash" data-i18n="install.copy">Kopieren</button>
@@ -293,7 +320,7 @@
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step2.title">2. Laden</h4>
-                    <p data-i18n="install.step2.desc">Neueste LTTH-Version wird von GitHub nach ~/.local/share/ltth geklont.</p>
+                    <p data-i18n="install.step2.desc">Neueste LTTH-Version wird von GitHub heruntergeladen und vorbereitet.</p>
                 </div>
                 <div class="install-step-mini">
                     <h4 data-i18n="install.step3.title">3. Bauen</h4>
