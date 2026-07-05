@@ -84,28 +84,29 @@ async function resolveVersion() {
         return;
     }
     log('Ermittle neueste Version von GitHub...');
+    let release;
     try {
-        let data;
+        const data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/releases/latest`);
+        release = JSON.parse(data);
+        if (!release || !release.tag_name) {
+            throw new Error('Keine Release-Info vorhanden.');
+        }
+        cfg.version = release.tag_name.replace(/^v/, '');
+    } catch {
+        warn('Kein GitHub Release gefunden; verwende neuesten Tag...');
         try {
-            data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/releases/latest`);
-            const j = JSON.parse(data);
-            cfg.version = j.tag_name.replace(/^v/, '');
-        } catch (e) {
-            if (cfg.quiet ? false : true) {
-                warn('Kein GitHub Release gefunden; verwende neuesten Tag...');
-            }
-            data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/tags?per_page=1`);
+            const data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/tags?per_page=1`);
             const tags = JSON.parse(data);
             if (!Array.isArray(tags) || tags.length === 0) {
                 throw new Error('Keine Tags gefunden.');
             }
             cfg.version = tags[0].name.replace(/^v/, '');
+        } catch (e) {
+            err(`Konnte neueste Version nicht ermitteln: ${e.message}`);
+            process.exit(1);
         }
-        ok(`Neueste Version: v${cfg.version}`);
-    } catch (e) {
-        err(`Konnte neueste Version nicht ermitteln: ${e.message}`);
-        process.exit(1);
     }
+    ok(`Neueste Version: v${cfg.version}`);
 }
 
 async function ensureGit() {

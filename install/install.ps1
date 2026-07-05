@@ -34,23 +34,37 @@ function Err($msg)  { Write-Host "[X] $msg" -ForegroundColor Red }
 function Resolve-Version {
     if ($LTTHVersion -eq 'latest') {
         Log "Ermittle neueste Version von GitHub..."
+        $resolved = $false
+
         try {
-            try {
-                $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/releases/latest" -TimeoutSec 15
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/releases/latest" -TimeoutSec 15 -ErrorAction Stop
+            if ($release -and $release.tag_name) {
                 $LTTHVersion = $release.tag_name -replace '^v', ''
-            } catch {
-                Warn "Kein GitHub Release gefunden; verwende neuesten Tag..."
-                $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/tags?per_page=1" -TimeoutSec 15
+                $resolved = $true
+            }
+        } catch { }
+
+        if (-not $resolved) {
+            Warn "Kein GitHub Release gefunden; verwende neuesten Tag..."
+            try {
+                $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/tags?per_page=1" -TimeoutSec 15 -ErrorAction Stop
                 if ($null -eq $tags -or @($tags).Count -eq 0) {
                     throw "Keine Tags gefunden."
                 }
                 $LTTHVersion = $tags[0].name -replace '^v', ''
+                $resolved = $true
+            } catch {
+                Err "Konnte neueste Version nicht ermitteln: $_"
+                exit 1
             }
-            Ok "Neueste Version: v$LTTHVersion"
-        } catch {
-            Err "Konnte neueste Version nicht ermitteln: $_"
+        }
+
+        if (-not $resolved) {
+            Err "Konnte neueste Version nicht ermitteln."
             exit 1
         }
+
+        Ok "Neueste Version: v$LTTHVersion"
     } else {
         Ok "Verwende angegebene Version: v$LTTHVersion"
     }
