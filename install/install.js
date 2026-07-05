@@ -4,7 +4,7 @@
  *  PupCid's Little TikTool Helper — https://ltth.app
  *
  *  Verwendung:
- *    curl -fsSL https://ltth.app/install/install.js | node
+ *    curl -fsSL https://ltth.app/install.js | node
  *
  *  Optionale Umgebungsvariablen:
  *    LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -85,22 +85,9 @@ async function resolveVersion() {
     }
     log('Ermittle neueste Version von GitHub...');
     try {
-        let data;
-        try {
-            data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/releases/latest`);
-            const j = JSON.parse(data);
-            cfg.version = j.tag_name.replace(/^v/, '');
-        } catch (e) {
-            if (cfg.quiet ? false : true) {
-                warn('Kein GitHub Release gefunden; verwende neuesten Tag...');
-            }
-            data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/tags?per_page=1`);
-            const tags = JSON.parse(data);
-            if (!Array.isArray(tags) || tags.length === 0) {
-                throw new Error('Keine Tags gefunden.');
-            }
-            cfg.version = tags[0].name.replace(/^v/, '');
-        }
+        const data = await httpsGet(`https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/releases/latest`);
+        const j = JSON.parse(data);
+        cfg.version = j.tag_name.replace(/^v/, '');
         ok(`Neueste Version: v${cfg.version}`);
     } catch (e) {
         err(`Konnte neueste Version nicht ermitteln: ${e.message}`);
