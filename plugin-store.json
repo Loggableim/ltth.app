@@ -703,6 +703,8 @@
         "currency": "EUR"
       },
       "screenshots": [
+        "/screenshots/features/stt-ticker-overlay-url.png",
+        "/screenshots/features/stt-ticker-capture-obs-url.png",
         "/screenshots/features/stt-ticker.png"
       ]
     },

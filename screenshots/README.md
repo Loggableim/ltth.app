@@ -73,6 +73,24 @@ These screenshots document the theme variants that were checked during the UI au
 - Context: Accessibility variant with more generous spacing and clearer controls
 - Theme: Vision-Impaired
 
+**stt-ticker-overlay-url.png**
+- Shows: STT Ticker Overlay tab with dual-language design, top-right position, maxLines=2, and 42px font size encoded in the OBS URL
+- Context: Documents the verified OBS parameter wiring from the Admin UI into the Browser Source URL
+- Theme: Night
+- State: Overlay URL builder configured for OBS
+
+**stt-ticker-capture-obs-url.png**
+- Shows: STT Ticker Capture page with the OBS URL helper and Multi-Language preview
+- Context: Documents the standalone capture route used while streaming
+- Theme: Night
+- State: Capture idle, ready to start
+
+**stt-ticker-overlay-render.png**
+- Shows: Idle OBS overlay render with the configured top-right dual-language panel
+- Context: Documents the direct `/overlay/stt-ticker` render target before transcript data arrives
+- Theme: Night
+- State: OBS render idle
+
 **flame-overlay-night.png**
 - Shows: Flame Overlay settings in Night Mode
 - Context: Baseline rendering for the visual effects overlay admin screen

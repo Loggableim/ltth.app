@@ -127,7 +127,7 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 | `features/plugin-thermal-printer.html` | `/screenshots/features/thermal-printer.png` | ✅ Real screenshot |
 | `features/plugin-vulkan-rockets.html` | `/screenshots/features/fireworks.png` | ✅ Real screenshot |
 | `features/plugin-leaderboard.html` | `/screenshots/features/viewer-profiles-night.png`, `/screenshots/features/viewer-profiles-contrast.png`, `/screenshots/features/viewer-profiles-vision-impaired.png` | ✅ Accessibility audit screenshots |
-| `features/stt-ticker.html` | `/screenshots/features/stt-ticker-night.png`, `/screenshots/features/stt-ticker-vision-impaired.png` | ✅ Accessibility audit screenshots |
+| `features/stt-ticker.html` | `/screenshots/features/stt-ticker-night.png`, `/screenshots/features/stt-ticker-vision-impaired.png`, `/screenshots/features/stt-ticker-overlay-url.png`, `/screenshots/features/stt-ticker-capture-obs-url.png` | ✅ Accessibility and OBS parameter screenshots |
 | `features/flame-overlay.html` | `/screenshots/features/flame-overlay-night.png`, `/screenshots/features/flame-overlay-vision-impaired.png` | ✅ Accessibility audit screenshots |
 | `features/talking-heads.html` | `/screenshots/features/talking-heads.png` | ✅ Real screenshot |
 | `features/toptier.html` | `/screenshots/features/toptier.png` | ✅ Real screenshot |
