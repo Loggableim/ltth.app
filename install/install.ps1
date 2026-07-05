@@ -108,14 +108,24 @@ function Ensure-Node {
 
 # ---------- Download ----------
 function Download-Source {
+    $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
     if (Test-Path (Join-Path $LTTHDir '.git')) {
         Log "Bestehende Installation gefunden -- aktualisiere..."
         Push-Location $LTTHDir
         try {
             git fetch --tags --prune 2>&1 | Out-Null
+        } catch {
+            Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
+        }
+        try {
             git checkout "v$LTTHVersion" 2>&1 | Out-Null
         } catch {
-            git checkout $LTTHVersion 2>&1 | Out-Null
+            try {
+                git checkout $LTTHVersion 2>&1 | Out-Null
+            } catch {
+                Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
+                git checkout main 2>&1 | Out-Null
+            }
         }
         Pop-Location
     } else {
@@ -125,7 +135,6 @@ function Download-Source {
             Remove-Item -Path $LTTHDir -Recurse -Force
         }
         New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
-        $repoUrl = "https://github.com/$LTTHRepoOwner/$LTTHRepoName.git"
         try {
             git clone --depth 1 $repoUrl $LTTHDir 2>&1 | Out-Null
 

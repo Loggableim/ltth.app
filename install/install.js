@@ -137,9 +137,19 @@ async function downloadSource() {
         log('Bestehende Installation gefunden -- aktualisiere...');
         try {
             await exec('git', ['-C', cfg.dir, 'fetch', '--tags', '--prune']);
+        } catch {
+            warn('Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur...');
+        }
+
+        try {
             await exec('git', ['-C', cfg.dir, 'checkout', `v${cfg.version}`]);
         } catch {
-            await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
+            try {
+                await exec('git', ['-C', cfg.dir, 'checkout', cfg.version]);
+            } catch {
+                warn(`Gewuenschte Version nicht gefunden, nutze Standard-Branch main...`);
+                await exec('git', ['-C', cfg.dir, 'checkout', 'main']);
+            }
         }
     } else {
         log(`Klone Repository nach ${cfg.dir}...`);

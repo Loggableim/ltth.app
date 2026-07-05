@@ -127,9 +127,15 @@ download_source() {
     log "Klone Repository nach ${LTTH_DIR}..."
     if [ -d "$LTTH_DIR/.git" ]; then
         log "Bestehende Installation gefunden — aktualisiere..."
-        git -C "$LTTH_DIR" fetch --tags --prune
-        git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" 2>/dev/null \
-            || git -C "$LTTH_DIR" checkout "${LTTH_VERSION}"
+        if ! git -C "$LTTH_DIR" fetch --tags --prune; then
+            warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
+        fi
+        if ! git -C "$LTTH_DIR" checkout "v${LTTH_VERSION}" >/dev/null 2>&1; then
+            if ! git -C "$LTTH_DIR" checkout "${LTTH_VERSION}" >/dev/null 2>&1; then
+                warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
+                git -C "$LTTH_DIR" checkout main
+            fi
+        fi
     else
         if [ -d "$LTTH_DIR" ]; then
             warn "Bestehendes Zielverzeichnis gefunden, aber keine Git-Installation. Bereinige..."
