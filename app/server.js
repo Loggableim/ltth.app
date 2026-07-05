@@ -516,7 +516,7 @@ alerts.setPluginLoader(pluginLoader);
 let updateManager;
 try {
     updateManager = new UpdateManager(logger);
-    logger.info('Update Manager initialized (auto-update disabled)');
+    logger.info(`Update Manager initialized (${updateManager.isGitRepo ? 'git updates enabled' : 'git updates unavailable'})`);
 } catch (error) {
     logger.warn(`⚠️  Update Manager konnte nicht initialisiert werden: ${error.message}`);
     logger.info('   Update-Funktionen sind nicht verfügbar, aber der Server läuft normal weiter.');
@@ -652,7 +652,7 @@ app.post('/api/i18n/locale', (req, res) => {
 // ========== UPDATE API ROUTES ==========
 
 /**
- * GET /api/update/check - Update system is disabled for local snapshots
+ * GET /api/update/check - Check for GitHub releases and Git-backed updates
  */
 app.get('/api/update/check', apiLimiter, async (req, res) => {
     try {
@@ -678,12 +678,13 @@ app.get('/api/update/current', apiLimiter, (req, res) => {
 });
 
 /**
- * POST /api/update/download - Refuses update downloads for local snapshots
+ * POST /api/update/download - Apply the latest Git-backed update
  */
 app.post('/api/update/download', authLimiter, async (req, res) => {
     try {
         const result = await updateManager.performUpdate();
-        res.status(result.disabled ? 403 : 200).json(result);
+        const status = result.disabled ? 403 : result.success ? 200 : 409;
+        res.status(status).json(result);
     } catch (error) {
         logger.error(`Update download failed: ${error.message}`);
         res.status(500).json({
@@ -694,14 +695,15 @@ app.post('/api/update/download', authLimiter, async (req, res) => {
 });
 
 /**
- * GET /api/update/instructions - Reports that auto-update is disabled
+ * GET /api/update/instructions - Git update instructions
  */
 app.get('/api/update/instructions', apiLimiter, (req, res) => {
     const instructions = {
-        method: 'disabled',
+        method: 'git',
         steps: [
-            'Auto-update is disabled for this local snapshot.',
-            'Use backup export/import for settings migration instead of release ZIP updates.'
+            'Make sure the working tree is clean before updating.',
+            'Use the Update button or run `git pull --ff-only` in the repository root.',
+            'Restart the backend after the update completes.'
         ]
     };
 

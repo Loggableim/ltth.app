@@ -213,7 +213,7 @@
     "select_language": "Sélectionner la Langue",
     "obs": "Intégration OBS",
     "auto_connect": "Connexion automatique au dernier utilisateur TikTok au démarrage",
-    "auto_update_check": "Vérifier les mises à jour au démarrage",
+    "auto_update_check": "Vérification automatique des mises à jour au démarrage",
     "show_debug_info": "Afficher les informations de débogage",
     "enable_notifications": "Activer les notifications de bureau",
     "notification_volume": "Volume des Notifications",
@@ -229,7 +229,7 @@
     "diagnostics": "Diagnostic Système et Journalisation",
     "diagnostics_desc": "Surveillez les performances du système, l'état du GPU et consultez les journaux d'application pour le débogage.",
     "enable_logging": "Activer la Journalisation Complète",
-    "show_update_notifications": "Afficher les notifications de mise à jour",
+    "show_update_notifications": "Afficher les notifications de mise à jour dans le panneau des mises à jour",
     "enable_auto_start": "Activer le Démarrage Automatique"
   },
   "errors": {

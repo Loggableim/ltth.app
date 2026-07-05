@@ -213,7 +213,7 @@
     "select_language": "Seleccionar Idioma",
     "obs": "Integración con OBS",
     "auto_connect": "Conectarse automáticamente al último usuario de TikTok al inicio",
-    "auto_update_check": "Buscar actualizaciones al inicio",
+    "auto_update_check": "ComprobaciÃ³n automÃ¡tica de actualizaciones al iniciar",
     "show_debug_info": "Mostrar información de depuración",
     "enable_notifications": "Activar notificaciones de escritorio",
     "notification_volume": "Volumen de Notificaciones",
@@ -229,7 +229,7 @@
     "diagnostics": "Diagnóstico del Sistema y Registro",
     "diagnostics_desc": "Monitoree el rendimiento del sistema, el estado de la GPU y vea los registros de la aplicación para depuración.",
     "enable_logging": "Activar Registro Completo",
-    "show_update_notifications": "Mostrar notificaciones de actualización",
+    "show_update_notifications": "Mostrar notificaciones de actualizaciones en el panel de actualizaciones",
     "enable_auto_start": "Activar Inicio Automático"
   },
   "errors": {

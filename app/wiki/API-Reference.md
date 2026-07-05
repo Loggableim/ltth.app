@@ -996,10 +996,13 @@ Update-Check durchführen.
 ```json
 {
   "success": true,
-  "updateAvailable": true,
+  "available": true,
   "currentVersion": "1.0.2",
   "latestVersion": "1.0.3",
-  "changelog": "## [1.0.3]\n### Added\n- New feature..."
+  "releaseUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.0.3",
+  "updateMethod": "git",
+  "updateCommand": "git pull --ff-only",
+  "message": "Update available: 1.0.3."
 }
 ```
 
@@ -1007,8 +1010,12 @@ Update-Check durchführen.
 ```json
 {
   "success": true,
-  "updateAvailable": false,
-  "currentVersion": "1.0.2"
+  "available": false,
+  "currentVersion": "1.0.2",
+  "latestVersion": "1.0.2",
+  "updateMethod": "git",
+  "updateCommand": "git pull --ff-only",
+  "message": "Already up to date."
 }
 ```
 
@@ -1025,13 +1032,17 @@ Update durchführen.
 }
 ```
 
-**Methods:** `git` (git pull) oder `zip` (ZIP-Download)
+**Methods:** `git` (fast-forward update from the Git checkout)
 
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Update downloaded successfully. Please restart server."
+  "available": true,
+  "needsRestart": true,
+  "currentVersion": "1.0.2",
+  "updatedVersion": "1.0.3",
+  "message": "Update installed via Git."
 }
 ```
 
