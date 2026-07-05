@@ -187,24 +187,56 @@ function Download-Source {
 # ---------- Dependencies ----------
 function Install-Deps {
     Log "Installiere npm-Abhaengigkeiten (kann einige Minuten dauern)..."
-    Push-Location (Join-Path $LTTHDir 'app')
+    $appDir = Join-Path $LTTHDir 'app'
+    Push-Location $appDir
     try {
         $npmArgs = @('install', '--no-audit', '--no-fund', '--loglevel=error')
         $npmCommand = Get-Command npm -ErrorAction SilentlyContinue
+        $npmExecutable = $null
 
         if ($npmCommand -and $npmCommand.Source -like '*.ps1') {
             $npmCmdPath = Join-Path (Split-Path $npmCommand.Source) 'npm.cmd'
             if (Test-Path $npmCmdPath) {
-                & $npmCmdPath @npmArgs 2>&1 | Out-Null
-                return
+                $npmExecutable = $npmCmdPath
             }
         }
         if ($npmCommand -and $npmCommand.Source -and $npmCommand.Source -notlike '*.ps1') {
-            & $npmCommand.Source @npmArgs 2>&1 | Out-Null
-            return
+            $npmExecutable = $npmCommand.Source
+        }
+        if (-not $npmExecutable) {
+            $npmExecutable = 'npm.cmd'
         }
 
-        cmd /c "npm $($npmArgs -join ' ')" 2>&1 | Out-Null
+        $npmLogBase = Join-Path $LTTHDir ("ltth-npm-" + [guid]::NewGuid().ToString('N'))
+        $stdoutLog = "$npmLogBase.out.log"
+        $stderrLog = "$npmLogBase.err.log"
+
+        try {
+            $proc = Start-Process -FilePath $npmExecutable `
+                                  -ArgumentList $npmArgs `
+                                  -WorkingDirectory $appDir `
+                                  -RedirectStandardOutput $stdoutLog `
+                                  -RedirectStandardError $stderrLog `
+                                  -WindowStyle Hidden `
+                                  -PassThru `
+                                  -Wait
+        } catch {
+            Err "npm konnte nicht gestartet werden: $($_.Exception.Message)"
+            exit 1
+        }
+
+        if ($proc.ExitCode -ne 0) {
+            Err "npm install fehlgeschlagen (ExitCode $($proc.ExitCode))."
+            if (Test-Path $stderrLog) {
+                Get-Content $stderrLog -Tail 40 | ForEach-Object { Write-Host $_ }
+            }
+            if (Test-Path $stdoutLog) {
+                Get-Content $stdoutLog -Tail 20 | ForEach-Object { Write-Host $_ }
+            }
+            exit 1
+        }
+
+        Remove-Item -Path $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
     } finally {
         Pop-Location
     }
