@@ -1,10 +1,10 @@
 {
-  "version": "1.3.10",
+  "version": "1.3.11",
   "releaseDate": "2026-07-05",
   "status": "stable",
-  "downloadVersion": "1.3.10",
-  "downloadNote": "Windows installer compatibility release for Node.js 24 and one-line installer reliability.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.10",
+  "downloadVersion": "1.3.11",
+  "downloadNote": "Windows installer now creates a Desktop shortcut and launches LTTH through the Cloud Launcher.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.11",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,15 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.11": {
+      "date": "2026-07-05",
+      "changes": [
+        "IMPROVED: Windows one-line installer installs launcher.exe into the LTTH app folder",
+        "IMPROVED: Windows one-line installer creates an LTTH Desktop shortcut for noob-friendly startup",
+        "IMPROVED: Windows one-line installer starts LTTH through the Cloud Launcher so launcher update behavior is used",
+        "FIXED: Direct node launch is now only used as a fallback when the Launcher cannot be prepared or started"
+      ]
+    },
     "1.3.10": {
       "date": "2026-07-05",
       "changes": [
