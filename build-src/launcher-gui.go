@@ -4814,6 +4814,16 @@ func main() {
 			theme = "night"
 		}
 
+		for _, logoPath := range []string{
+			filepath.Join(launcher.exeDir, "build-src", "assets", "launcher-logo.png"),
+			filepath.Join(launcher.exeDir, "assets", "launcher-logo.png"),
+		} {
+			if info, err := os.Stat(logoPath); err == nil && !info.IsDir() {
+				http.ServeFile(w, r, logoPath)
+				return
+			}
+		}
+
 		// Determine logo path based on theme
 		var themeLogoPath string
 		switch theme {

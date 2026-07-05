@@ -9,998 +9,1057 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* ===== Design Tokens ===== */
         :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --primary-dark: #4f46e5;
-            --accent: #a78bfa;
-            --accent-gradient: linear-gradient(135deg, var(--primary), var(--accent));
-            
-            --bg-body: #0f172a;
-            --bg-surface: rgba(255, 255, 255, 0.06);
-            --bg-surface-solid: #1e293b;
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-default: rgba(255, 255, 255, 0.12);
-            
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            
-            --radius-sm: 6px;
-            --radius-md: 10px;
+            --bg-0: #02090b;
+            --bg-1: #061819;
+            --bg-2: #0a2422;
+            --surface: rgba(9, 27, 29, 0.78);
+            --surface-strong: rgba(14, 38, 40, 0.92);
+            --surface-soft: rgba(14, 45, 43, 0.58);
+            --surface-tail: rgba(4, 16, 17, 0.64);
+            --shell-a: rgba(8, 28, 29, 0.92);
+            --shell-b: rgba(3, 13, 15, 0.94);
+            --card-soft: rgba(4, 19, 21, 0.55);
+            --card-muted: rgba(4, 18, 20, 0.38);
+            --log-bg: rgba(0, 0, 0, 0.18);
+            --surface-hover: rgba(31, 73, 69, 0.72);
+            --line: rgba(124, 255, 193, 0.16);
+            --line-strong: rgba(90, 237, 164, 0.38);
+            --text: #f3f7f5;
+            --text-soft: #b7c5c1;
+            --muted: #7f928e;
+            --primary: #48e79a;
+            --primary-2: #16875a;
+            --primary-3: #0d5f46;
+            --danger: #ef4444;
+            --danger-2: #bd202b;
+            --warning: #f4b94a;
+            --shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+            --radius-xl: 22px;
             --radius-lg: 16px;
-            --radius-xl: 20px;
-            
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.25);
-            --shadow-lg: 0 8px 40px rgba(0,0,0,0.35);
-            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
-            
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            
-            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-sans);
-            background: var(--bg-body);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        body.theme-night {
-            --bg-body: #0b1120;
-            --bg-surface: rgba(255, 255, 255, 0.04);
-            --bg-surface-solid: #1a2332;
-            --border-subtle: rgba(255, 255, 255, 0.06);
-            --border-default: rgba(255, 255, 255, 0.10);
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            background: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.12), transparent 60%),
-                        radial-gradient(ellipse at 80% 80%, rgba(167, 139, 250, 0.08), transparent 50%),
-                        var(--bg-body);
+            --radius-md: 12px;
+            --radius-sm: 10px;
+            --font: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
         }
 
         body.theme-day {
-            --bg-body: #f1f5f9;
-            --bg-surface: rgba(255, 255, 255, 0.7);
-            --bg-surface-solid: #ffffff;
-            --border-subtle: rgba(0, 0, 0, 0.06);
-            --border-default: rgba(0, 0, 0, 0.10);
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
-            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+            --bg-0: #e9f7ef;
+            --bg-1: #f7fbf7;
+            --bg-2: #d9f4e7;
+            --surface: rgba(255, 255, 255, 0.78);
+            --surface-strong: rgba(255, 255, 255, 0.94);
+            --surface-soft: rgba(255, 255, 255, 0.62);
+            --surface-tail: rgba(226, 248, 237, 0.72);
+            --shell-a: rgba(255, 255, 255, 0.92);
+            --shell-b: rgba(222, 248, 235, 0.96);
+            --card-soft: rgba(255, 255, 255, 0.64);
+            --card-muted: rgba(230, 250, 241, 0.68);
+            --log-bg: rgba(255, 255, 255, 0.56);
+            --surface-hover: rgba(218, 251, 235, 0.86);
+            --line: rgba(10, 112, 78, 0.16);
+            --line-strong: rgba(10, 112, 78, 0.38);
+            --text: #10201d;
+            --text-soft: #41534e;
+            --muted: #64766f;
+            --shadow: 0 28px 90px rgba(22, 74, 54, 0.18);
         }
 
         body.theme-highcontrast {
-            --bg-body: #000;
-            --bg-surface: #111;
-            --bg-surface-solid: #000;
-            --border-subtle: #333;
-            --border-default: #fff;
-            --text-primary: #fff;
-            --text-secondary: #ccc;
-            --text-muted: #999;
-            background: #000;
+            --bg-0: #000;
+            --bg-1: #000;
+            --bg-2: #06110d;
+            --surface: rgba(0, 0, 0, 0.92);
+            --surface-strong: #000;
+            --surface-soft: rgba(0, 0, 0, 0.82);
+            --surface-tail: #000;
+            --shell-a: #000;
+            --shell-b: #000;
+            --card-soft: #000;
+            --card-muted: #000;
+            --log-bg: #000;
+            --surface-hover: rgba(0, 80, 50, 0.82);
+            --line: rgba(113, 255, 185, 0.42);
+            --line-strong: #71ffb9;
+            --text: #fff;
+            --text-soft: #e5fff3;
+            --muted: #b7ffdc;
+            --primary: #71ffb9;
+            --primary-2: #00c878;
+            --danger: #ff4d4d;
+            --shadow: 0 0 0 1px #71ffb9;
         }
 
-        /* ===== Glass Surface Mixin ===== */
-        .glass {
-            background: var(--bg-surface);
-            backdrop-filter: blur(24px) saturate(1.4);
-            -webkit-backdrop-filter: blur(24px) saturate(1.4);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            transition: background var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+        * {
+            box-sizing: border-box;
         }
 
-        .glass:hover {
-            border-color: var(--border-default);
-            box-shadow: var(--shadow-lg);
+        html,
+        body {
+            min-height: 100%;
         }
 
-        body.theme-highcontrast .glass {
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            border: 2px solid var(--border-default);
+        body {
+            margin: 0;
+            color: var(--text);
+            font-family: var(--font);
+            background:
+                radial-gradient(circle at 8% 0%, rgba(72, 231, 154, 0.18), transparent 32%),
+                radial-gradient(circle at 100% 92%, rgba(41, 190, 118, 0.2), transparent 30%),
+                linear-gradient(135deg, var(--bg-0), var(--bg-1) 42%, var(--bg-2));
+            overflow-x: hidden;
         }
 
-        /* ===== Layout ===== */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(circle at 50% 36%, #000 0%, transparent 72%);
+        }
+
+        a {
+            color: inherit;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
         .launcher-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            position: relative;
+            width: min(1580px, calc(100vw - 24px));
+            min-height: calc(100vh - 24px);
+            margin: 12px auto;
+            padding: 26px;
+            background:
+                linear-gradient(145deg, var(--shell-a), var(--shell-b)),
+                radial-gradient(circle at 74% 0%, rgba(72, 231, 154, 0.14), transparent 34%);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
 
-        /* ===== Header ===== */
+        .launcher-container::after {
+            content: "";
+            position: absolute;
+            right: -180px;
+            bottom: -180px;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(72, 231, 154, 0.2), transparent 66%);
+            pointer-events: none;
+        }
+
         .header {
-            composes: glass;
-            padding: 20px 24px;
-            display: flex;
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(290px, 1fr) auto;
             align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
+            gap: 22px;
+            margin-bottom: 26px;
         }
 
-        .logo-section {
+        .brand-block {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .logo-shell {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background:
+                linear-gradient(145deg, rgba(72, 231, 154, 0.26), rgba(15, 48, 48, 0.1)),
+                rgba(4, 12, 15, 0.62);
+            border: 1px solid var(--line-strong);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36), 0 0 34px rgba(72, 231, 154, 0.12);
+            overflow: hidden;
         }
 
         .logo {
-            width: 72px;
-            height: 72px;
-            border-radius: var(--radius-md);
-            object-fit: contain;
-            box-shadow: var(--shadow-sm);
+            width: 86px;
+            height: 86px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
         }
 
-        .app-title h1 {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .title-group h1 {
+            margin: 0;
+            font-size: clamp(30px, 3.1vw, 48px);
+            line-height: 1;
+            letter-spacing: -1.2px;
+            font-weight: 820;
         }
 
-        .app-title p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 2px;
+        .title-group .brand-accent {
+            color: var(--primary);
+            text-shadow: 0 0 22px rgba(72, 231, 154, 0.22);
         }
 
-        /* ===== Profile Selector ===== */
-        .profile-selector {
+        .tagline {
+            margin: 8px 0 0;
+            color: var(--text-soft);
+            font-size: 16px;
+            letter-spacing: 0.1px;
+        }
+
+        .top-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .control-cluster {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .profile-selector label {
-            color: var(--text-secondary);
-            font-weight: 600;
+        .control-label {
+            color: var(--text);
             font-size: 13px;
-            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .segmented {
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-btn,
+        .lang-btn,
+        .manual-btn,
+        .tab-button,
+        .app-link,
+        select,
+        input {
+            border: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018));
+            color: var(--text);
+            border-radius: var(--radius-sm);
+            min-height: 42px;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+        }
+
+        .theme-btn,
+        .lang-btn {
+            padding: 0 18px;
+            min-width: 68px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .theme-btn:hover,
+        .lang-btn:hover,
+        .manual-btn:hover:not(:disabled),
+        .tab-button:hover,
+        .app-link:hover:not(.disabled) {
+            transform: translateY(-1px);
+            border-color: var(--line-strong);
+            background: var(--surface-hover);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+        }
+
+        .theme-btn.active,
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--primary-2), var(--primary-3));
+            border-color: rgba(72, 231, 154, 0.72);
+            color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 24px rgba(72, 231, 154, 0.2);
         }
 
         .profile-selector select {
-            padding: 8px 14px;
-            border: 1.5px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-family: var(--font-sans);
-            color: var(--text-primary);
-            background: var(--bg-surface-solid);
-            cursor: pointer;
-            min-width: 180px;
-            transition: border-color var(--transition-fast);
+            width: 190px;
+            padding: 0 44px 0 16px;
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--text-soft) 50%),
+                linear-gradient(135deg, var(--text-soft) 50%, transparent 50%);
+            background-position:
+                calc(100% - 20px) 18px,
+                calc(100% - 14px) 18px;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
         }
 
-        .profile-selector select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        .flag {
+            width: 21px;
+            height: 14px;
+            display: inline-block;
+            border-radius: 2px;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.24);
+            vertical-align: -2px;
+            margin-right: 7px;
         }
 
-        .profile-selector select:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+        .flag-de { background: linear-gradient(#111 0 33%, #dd0000 33% 66%, #ffce00 66%); }
+        .flag-en { background: linear-gradient(90deg, #012169 0 100%); position: relative; }
+        .flag-en::before { content: ""; position: absolute; inset: 5px 0; background: #fff; box-shadow: 0 -5px 0 #c8102e, 0 5px 0 #c8102e; }
+        .flag-es { background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75%); }
+        .flag-fr { background: linear-gradient(90deg, #002395 0 33%, #fff 33% 66%, #ed2939 66%); }
 
-        /* ===== Language Selector ===== */
-        .language-selector {
-            display: flex;
-            gap: 4px;
-        }
-
-        .lang-btn {
-            padding: 5px 10px;
-            border: 1.5px solid transparent;
-            border-radius: var(--radius-sm);
-            background: rgba(99, 102, 241, 0.08);
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 12px;
-            font-family: var(--font-sans);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .lang-btn:hover {
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary-light);
-        }
-
-        .lang-btn.active {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: #fff;
-        }
-
-        /* ===== Main Content ===== */
-        .main-content {
+        .workspace {
+            position: relative;
+            z-index: 1;
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 224px minmax(0, 1fr);
             gap: 20px;
         }
 
-        /* ===== Tabs Section ===== */
-        .tabs-section {
-            composes: glass;
-            padding: 20px 24px;
+        .launcher-sidebar,
+        .glass-panel {
+            background: linear-gradient(155deg, var(--surface), var(--surface-tail));
+            border: 1px solid var(--line);
+            border-radius: var(--radius-xl);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+            backdrop-filter: blur(22px);
+        }
+
+        .launcher-sidebar {
+            min-height: 760px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border-subtle);
-            padding-bottom: 0;
+            display: grid;
+            gap: 10px;
         }
 
         .tab-button {
-            padding: 10px 18px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 14px;
-            font-weight: 600;
-            font-family: var(--font-sans);
-            cursor: pointer;
-            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-            transition: all var(--transition-fast);
-            position: relative;
-            display: inline-flex;
+            width: 100%;
+            padding: 17px 16px;
+            display: flex;
             align-items: center;
-            gap: 6px;
-        }
-
-        .tab-button:hover {
-            color: var(--text-primary);
-            background: rgba(99, 102, 241, 0.06);
+            gap: 12px;
+            color: var(--text);
+            text-align: left;
+            font-weight: 780;
+            cursor: pointer;
+            background: transparent;
         }
 
         .tab-button.active {
-            color: var(--primary-light);
+            background: linear-gradient(135deg, rgba(72, 231, 154, 0.28), rgba(16, 54, 48, 0.78));
+            border-color: rgba(72, 231, 154, 0.58);
+            box-shadow: inset 4px 0 0 var(--primary), 0 0 34px rgba(72, 231, 154, 0.1);
         }
 
-        .tab-button.active::after {
-            content: '';
+        .nav-icon,
+        .panel-icon,
+        .action-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-grid;
+            place-items: center;
+            color: var(--primary);
+            flex: 0 0 auto;
+        }
+
+        .nav-icon svg,
+        .panel-icon svg,
+        .action-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .side-spacer {
+            flex: 1;
+        }
+
+        .side-card {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: var(--card-soft);
+            padding: 14px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .toggle-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+        }
+
+        .hint {
+            margin: 12px 0 0;
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        input[type="checkbox"] {
+            appearance: none;
+            width: 46px;
+            height: 24px;
+            min-height: 24px;
+            border-radius: 999px;
+            padding: 0;
+            position: relative;
+            cursor: pointer;
+            background: rgba(0,0,0,0.26);
+        }
+
+        input[type="checkbox"]::after {
+            content: "";
+            width: 18px;
+            height: 18px;
             position: absolute;
-            bottom: 0;
-            left: 8px;
-            right: 8px;
-            height: 2.5px;
-            background: var(--accent-gradient);
-            border-radius: 2px 2px 0 0;
+            top: 2px;
+            left: 3px;
+            border-radius: 50%;
+            background: #e9eeec;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: transform 160ms ease;
+        }
+
+        input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, var(--primary-2), var(--primary));
+        }
+
+        input[type="checkbox"]:checked::after {
+            transform: translateX(20px);
+        }
+
+        .app-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 76px;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-weight: 850;
+            background: linear-gradient(135deg, rgba(72, 231, 154, 0.18), rgba(12, 55, 46, 0.68));
+        }
+
+        .app-link.disabled {
+            opacity: 0.52;
+            pointer-events: none;
+        }
+
+        .app-link-hint {
+            display: block;
+            margin-top: 8px;
+            color: var(--text-soft);
+            font-size: 13px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(360px, 510px);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .content-area {
+            min-width: 0;
         }
 
         .tab-content {
             display: none;
-            animation: fadeSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        .glass-panel {
+            padding: 24px;
+            min-width: 0;
         }
 
-        .tab-content h2 {
-            color: var(--text-primary);
-            margin-bottom: 16px;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .tab-content p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-
-        /* ===== Changelog ===== */
-        #changelog-content {
-            max-height: 500px;
-            overflow-y: auto;
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        #changelog-content h3 {
-            color: var(--primary-light);
-            margin-top: 16px;
-            margin-bottom: 8px;
-            font-size: 15px;
-        }
-
-        #changelog-content ul {
-            margin-left: 20px;
-            margin-bottom: 10px;
-        }
-
-        .changelog-version {
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 15px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-
-        /* ===== API Keys ===== */
-        .api-key-item {
-            background: rgba(99, 102, 241, 0.04);
-            border-left: 3px solid var(--primary);
-            padding: 16px;
-            margin-bottom: 14px;
-            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-        }
-
-        .api-key-item h3 {
-            color: var(--text-primary);
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 8px;
+        .section-heading {
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 20px;
         }
 
-        .api-key-item .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+        .section-heading h2,
+        .card-title {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.15;
+            font-weight: 850;
+            letter-spacing: -0.35px;
         }
 
-        .badge.freemium { background: #059669; color: #fff; }
-        .badge.paid { background: #d97706; color: #fff; }
-        .badge.mandatory { background: #dc2626; color: #fff; }
-
-        .api-key-item p {
-            color: var(--text-secondary);
-            font-size: 13px;
-            margin: 4px 0;
+        .section-heading p {
+            margin: 7px 0 0;
+            color: var(--text-soft);
+            font-size: 14px;
         }
 
-        .api-key-item a {
-            color: var(--primary-light);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .api-key-item a:hover {
-            text-decoration: underline;
-        }
-
-        .warning-box {
-            background: rgba(251, 191, 36, 0.1);
-            border-left: 3px solid #f59e0b;
-            padding: 14px 16px;
-            margin: 14px 0;
-            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-            color: var(--text-primary);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        /* ===== Community Links ===== */
-        .community-links {
+        .hero-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 12px;
-            margin-top: 20px;
-        }
-
-        .community-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
-            background: var(--accent-gradient);
-            color: #fff;
-            text-decoration: none;
-            border-radius: var(--radius-md);
-            transition: all var(--transition-base);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
-        }
-
-        .community-link:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
-        }
-
-        .community-link .icon {
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
-        }
-
-        .community-link .label {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        /* ===== Status Panel ===== */
-        .status-panel {
-            composes: glass;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .status-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-            padding-bottom: 12px;
-            border-bottom: 1.5px solid var(--border-subtle);
-        }
-
-        .status-text {
-            color: var(--text-secondary);
-            font-size: 13px;
-            line-height: 1.7;
-            flex: 1;
-            overflow-y: auto;
-            max-height: 400px;
-            padding-right: 8px;
-        }
-
-        /* ===== Progress Bar ===== */
-        .progress-bar-container {
-            background: var(--bg-surface-solid);
-            border-radius: 999px;
-            height: 36px;
-            overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-subtle);
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: var(--accent-gradient);
-            border-radius: 999px;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 13px;
-            box-shadow: var(--shadow-glow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-bar::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        body.theme-highcontrast .progress-bar {
-            background: #fff;
-            color: #000;
-            box-shadow: none;
-        }
-
-        body.theme-highcontrast .progress-bar::after {
-            display: none;
-        }
-
-        /* ===== Scrollbar ===== */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb {
-            background: var(--text-muted);
-            border-radius: 999px;
-        }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-
-        /* ===== Footer ===== */
-        .footer {
-            text-align: center;
-            padding: 16px;
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-
-        /* ===== Responsive ===== */
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            .community-links {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .launcher-container { padding: 16px; }
-            .header { flex-direction: column; align-items: stretch; }
-            .header > div:last-child { flex-wrap: wrap; justify-content: center; }
-            .logo { width: 56px; height: 56px; }
-            .app-title h1 { font-size: 18px; }
-        }
-
-        /* ===== Theme Selector ===== */
-        .theme-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .theme-selector label {
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .theme-btn {
-            padding: 5px 10px;
-            border: 1.5px solid transparent;
-            border-radius: var(--radius-sm);
-            background: rgba(99, 102, 241, 0.08);
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 11px;
-            font-family: var(--font-sans);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .theme-btn:hover {
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary-light);
-        }
-
-        .theme-btn.active {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: #fff;
-        }
-
-        /* ===== Launcher Options ===== */
-        .launcher-options {
-            composes: glass;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .option-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .option-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: var(--primary);
-            border-radius: 4px;
-        }
-
-        .option-checkbox label {
-            color: var(--text-primary);
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .option-hint {
-            color: var(--text-muted);
-            font-size: 11px;
-            font-style: italic;
-        }
-
-        .app-link-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .app-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 20px;
-            background: var(--accent-gradient);
-            color: #fff;
-            text-decoration: none;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: 13px;
-            font-family: var(--font-sans);
-            transition: all var(--transition-base);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-            cursor: pointer;
-            border: none;
-        }
-
-        .app-link:hover:not(.disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45);
-        }
-
-        .app-link.disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        .app-link-hint {
-            color: var(--text-muted);
-            font-size: 11px;
-            max-width: 200px;
-        }
-
-        /* ===== Manual Controls ===== */
-        .manual-controls {
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border-subtle);
-        }
-
-        .manual-controls-title {
-            color: var(--text-primary);
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .manual-port-row {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .manual-port-row input {
-            width: 100%;
-            padding: 9px 12px;
-            border: 1.5px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-family: var(--font-sans);
-            color: var(--text-primary);
-            background: var(--bg-surface-solid);
-            transition: border-color var(--transition-fast);
-        }
-
-        .manual-port-row input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-        }
-
-        .manual-button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            margin: 20px 0 30px;
         }
 
         .manual-btn {
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 9px 12px;
-            font-weight: 700;
-            font-size: 12px;
-            font-family: var(--font-sans);
+            min-height: 56px;
+            padding: 14px 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 830;
             cursor: pointer;
+            background: linear-gradient(135deg, var(--primary-2), var(--primary-3));
+            border-color: rgba(72, 231, 154, 0.48);
             color: #fff;
-            background: var(--primary);
-            transition: all var(--transition-fast);
-        }
-
-        .manual-btn:hover:not(:disabled) {
-            filter: brightness(1.15);
-            transform: translateY(-1px);
-        }
-
-        .manual-btn:active:not(:disabled) {
-            transform: translateY(0);
-            filter: brightness(0.95);
         }
 
         .manual-btn.secondary {
-            background: var(--text-muted);
-        }
-
-        .manual-btn.secondary:hover:not(:disabled) {
-            background: var(--text-secondary);
+            background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+            border-color: var(--line);
+            color: var(--text);
         }
 
         .manual-btn.danger {
-            background: #dc2626;
-        }
-
-        .manual-btn.danger:hover:not(:disabled) {
-            background: #ef4444;
+            background: linear-gradient(135deg, var(--danger), var(--danger-2));
+            border-color: rgba(255, 110, 110, 0.5);
+            color: #fff;
         }
 
         .manual-btn:disabled {
-            opacity: 0.4;
+            opacity: 0.48;
             cursor: not-allowed;
         }
 
-        .manual-status {
-            margin-top: 10px;
-            min-height: 18px;
-            color: var(--text-muted);
-            font-size: 12px;
-            line-height: 1.5;
+        .action-card {
+            min-height: 128px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
         }
 
-        /* ===== Maintenance ===== */
-        .maintenance-controls {
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-subtle);
+        .action-card .action-title {
+            font-weight: 850;
         }
 
-        .maintenance-note {
-            margin-top: 8px;
-            color: var(--text-muted);
+        .action-card small {
+            color: var(--text-soft);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+            padding: 4px 0 26px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 9px;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 780;
+        }
+
+        .info-dot {
+            width: 16px;
+            height: 16px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.16);
+            color: var(--text-soft);
             font-size: 11px;
-            line-height: 1.5;
+            font-weight: 900;
         }
 
-        /* ===== Log Viewer ===== */
-        .log-viewer {
-            background: #0a0f1a;
-            color: #a5f3fc;
-            padding: 14px;
-            border-radius: var(--radius-md);
-            font-family: var(--font-mono);
-            font-size: 12px;
-            line-height: 1.6;
-            border: 1px solid var(--border-subtle);
-            max-height: 480px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
+        .field-control select {
+            width: 100%;
+            padding: 0 16px;
+            min-height: 44px;
         }
 
-        body.theme-day .log-viewer {
-            background: #f8fafc;
-            color: #0f172a;
-            border-color: var(--border-default);
+        .maintenance-title {
+            margin: 22px 0 16px;
+            font-size: 19px;
+            font-weight: 850;
+            letter-spacing: -0.2px;
         }
 
-        body.theme-highcontrast .log-viewer {
-            background: #000;
-            color: #0ff;
-            border-color: #fff;
+        .maintenance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
         }
 
-        /* ===== Diagnostics ===== */
+        .diagnostics-shell {
+            margin-top: 28px;
+            padding: 16px 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: var(--card-muted);
+        }
+
+        .diagnostics-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 12px;
+            color: var(--text-soft);
+            font-size: 14px;
+        }
+
+        .system-stable {
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 750;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 16px rgba(72, 231, 154, 0.8);
+        }
+
         .diagnostics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 10px;
         }
 
         .diagnostic-item {
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            background: var(--bg-surface);
-            color: var(--text-primary);
+            border: 1px solid var(--line);
+            border-left-width: 4px;
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.035);
+            padding: 13px 14px;
         }
 
-        .diagnostic-item.ok { border-left: 3px solid #22c55e; }
-        .diagnostic-item.warning { border-left: 3px solid #f59e0b; }
-        .diagnostic-item.error { border-left: 3px solid #ef4444; }
-        .diagnostic-item.info { border-left: 3px solid var(--primary); }
+        .diagnostic-item.ok { border-left-color: var(--primary); }
+        .diagnostic-item.warning { border-left-color: var(--warning); }
+        .diagnostic-item.error { border-left-color: var(--danger); }
+        .diagnostic-item.info { border-left-color: #60a5fa; }
 
         .diagnostic-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 6px;
-            font-weight: 700;
-            font-size: 13px;
+            gap: 12px;
+            font-weight: 820;
         }
 
         .diagnostic-badge {
+            padding: 3px 8px;
             border-radius: 999px;
-            padding: 2px 8px;
-            font-size: 10px;
-            font-weight: 700;
-            color: #fff;
-            background: var(--text-muted);
+            background: rgba(72,231,154,0.16);
+            color: var(--primary);
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.08em;
         }
 
-        .diagnostic-item.ok .diagnostic-badge { background: #22c55e; }
-        .diagnostic-item.warning .diagnostic-badge { background: #f59e0b; }
-        .diagnostic-item.error .diagnostic-badge { background: #ef4444; }
-        .diagnostic-item.info .diagnostic-badge { background: var(--primary); }
-
         .diagnostic-message,
-        .diagnostic-details,
-        .plugin-failure-list {
-            font-size: 12px;
-            line-height: 1.4;
-            color: var(--text-secondary);
+        .diagnostic-details {
+            margin-top: 7px;
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
         }
 
         .diagnostic-details {
-            margin-top: 6px;
-            word-break: break-word;
+            white-space: pre-wrap;
+            color: var(--muted);
         }
 
-        .compact-row,
-        .settings-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .settings-row label {
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 700;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .settings-row select,
-        .settings-row input {
-            border: 1.5px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            padding: 8px;
-            font-size: 12px;
-            font-family: var(--font-sans);
-            color: var(--text-primary);
-            background: var(--bg-surface-solid);
-        }
-
-        .settings-row select:focus,
-        .settings-row input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        .plugin-failures {
+            margin-top: 14px;
         }
 
         .first-run-panel {
-            display: none;
-            border: 1px solid var(--primary);
-            border-radius: var(--radius-sm);
-            padding: 14px;
-            margin-bottom: 14px;
-            background: rgba(99, 102, 241, 0.08);
-            color: var(--text-primary);
-            font-size: 13px;
-            line-height: 1.5;
+            margin-bottom: 18px;
+            padding: 16px;
+            border: 1px solid rgba(244, 185, 74, 0.38);
+            border-radius: var(--radius-lg);
+            background: rgba(244, 185, 74, 0.1);
         }
 
-        /* ===== Theme Overrides ===== */
-        body.theme-night .header,
-        body.theme-night .tabs-section,
-        body.theme-night .status-panel,
-        body.theme-night .launcher-options {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(24px) saturate(1.4);
-            -webkit-backdrop-filter: blur(24px) saturate(1.4);
+        .first-run-panel h3 {
+            margin: 0 0 6px;
         }
 
-        body.theme-day .header,
-        body.theme-day .tabs-section,
-        body.theme-day .status-panel,
-        body.theme-day .launcher-options {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px) saturate(1.2);
-            -webkit-backdrop-filter: blur(20px) saturate(1.2);
+        .first-run-panel p {
+            margin: 0 0 12px;
+            color: var(--text-soft);
         }
 
-        body.theme-highcontrast .header,
-        body.theme-highcontrast .tabs-section,
-        body.theme-highcontrast .status-panel,
-        body.theme-highcontrast .launcher-options {
-            background: #000;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
-            border: 2px solid #fff;
+        .status-panel {
+            display: grid;
+            gap: 16px;
         }
 
-        body.theme-highcontrast .theme-btn,
-        body.theme-highcontrast .lang-btn {
-            border-color: #fff;
+        .status-card {
+            padding: 22px 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .card-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-soft);
+            font-size: 14px;
+        }
+
+        .progress-status {
+            min-height: 42px;
+            padding-top: 2px;
+            border-top: 1px solid var(--line);
+            color: var(--text-soft);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .progress-track {
+            position: relative;
+            width: 100%;
+            height: 42px;
+            margin: 18px 0 0;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.055);
+            border: 1px solid var(--line);
+            box-shadow: inset 0 4px 14px rgba(0,0,0,0.28);
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 56px;
+            border-radius: inherit;
             color: #fff;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            background: linear-gradient(90deg, var(--primary-2), var(--primary), #baffdb);
+            box-shadow: 0 0 28px rgba(72, 231, 154, 0.28);
+            transition: width 240ms ease;
         }
 
-        body.theme-highcontrast .theme-btn.active,
-        body.theme-highcontrast .lang-btn.active {
-            background: #fff;
-            color: #000;
+        .manual-controls {
+            display: grid;
+            gap: 14px;
         }
 
-        body.theme-highcontrast .progress-bar-container {
-            background: #111;
-            border: 1px solid #fff;
+        .manual-port-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 126px;
+            gap: 12px;
+        }
+
+        .manual-port-row input {
+            width: 100%;
+            padding: 0 14px;
+            font-weight: 700;
+        }
+
+        .manual-button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .db-actions {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 12px;
+        }
+
+        .db-actions .wide {
+            grid-column: 1 / -1;
+        }
+
+        .manual-status {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+        }
+
+        .content-card {
+            min-height: 720px;
+        }
+
+        .content-card h2 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .content-card p {
+            color: var(--text-soft);
+            line-height: 1.6;
+        }
+
+        .content-box {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.035);
+        }
+
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .link-grid a {
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            background: rgba(255,255,255,0.035);
+            font-weight: 780;
+        }
+
+        .logs-content,
+        #changelog-content {
+            margin-top: 18px;
+            max-height: 590px;
+            overflow: auto;
+            padding: 16px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--line);
+            background: var(--log-bg);
+            color: var(--text-soft);
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin: 18px -26px -26px;
+            padding: 16px 26px;
+            border-top: 1px solid var(--line);
+            color: var(--text-soft);
+            font-size: 13px;
+            background: rgba(0,0,0,0.14);
+        }
+
+        .footer-left,
+        .footer-center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .kbd-dot {
+            color: var(--muted);
+        }
+
+        @media (max-width: 1280px) {
+            .header {
+                grid-template-columns: 1fr;
+            }
+
+            .top-controls {
+                justify-content: flex-start;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .status-panel {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .status-card {
+                min-width: 0;
+            }
+        }
+
+        @media (max-width: 980px) {
+            .launcher-container {
+                width: min(100vw - 12px, 100%);
+                margin: 6px auto;
+                padding: 16px;
+            }
+
+            .brand-block {
+                align-items: flex-start;
+            }
+
+            .logo-shell {
+                width: 72px;
+                height: 72px;
+            }
+
+            .logo {
+                width: 66px;
+                height: 66px;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .launcher-sidebar {
+                min-height: auto;
+            }
+
+            .tabs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .side-spacer {
+                display: none;
+            }
+
+            .status-panel,
+            .hero-actions,
+            .maintenance-grid,
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .manual-button-row,
+            .manual-port-row,
+            .db-actions,
+            .link-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer {
+                margin: 16px -16px -16px;
+                padding: 14px 16px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .header,
+            .top-controls,
+            .control-cluster,
+            .segmented {
+                align-items: stretch;
+                width: 100%;
+            }
+
+            .top-controls,
+            .control-cluster {
+                flex-direction: column;
+            }
+
+            .segmented {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .theme-btn,
+            .lang-btn,
+            .profile-selector select {
+                width: 100%;
+            }
+
+            .tabs {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body class="theme-{{.CurrentTheme}}">
     <div class="launcher-container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo-section">
-                <img src="/logo?theme={{.CurrentTheme}}" alt="LTTH Logo" class="logo">
-                <div class="app-title">
-                    <h1>{{.AppName}}</h1>
-                    <p>{{.TagLine}}</p>
+        <header class="header">
+            <div class="brand-block">
+                <div class="logo-shell">
+                    <img src="/logo?theme={{.CurrentTheme}}" alt="LTTH Launcher Logo" class="logo">
+                </div>
+                <div class="title-group">
+                    <h1><span class="brand-accent">LTTH</span> Launcher</h1>
+                    <p class="tagline">{{.TagLine}}</p>
                 </div>
             </div>
-            
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <!-- Theme Selector -->
-                <div class="theme-selector">
-                    <label>{{.ThemeLabel}}:</label>
-                    <div style="display: flex; gap: 5px;">
-                        <button class="theme-btn {{if eq .CurrentTheme "night"}}active{{end}}" data-theme="night" id="theme-night">{{.ThemeNight}}</button>
-                        <button class="theme-btn {{if eq .CurrentTheme "day"}}active{{end}}" data-theme="day" id="theme-day">{{.ThemeDay}}</button>
-                        <button class="theme-btn {{if eq .CurrentTheme "highcontrast"}}active{{end}}" data-theme="highcontrast" id="theme-highcontrast">{{.ThemeHighContrast}}</button>
+
+            <div class="top-controls" aria-label="Launcher Einstellungen">
+                <div class="control-cluster theme-group">
+                    <span class="control-label">{{.ThemeLabel}}</span>
+                    <div class="segmented">
+                        <button class="theme-btn {{if eq .CurrentTheme "night"}}active{{end}}" id="theme-night" data-theme="night" type="button">Nacht</button>
+                        <button class="theme-btn {{if eq .CurrentTheme "day"}}active{{end}}" id="theme-day" data-theme="day" type="button">Tag</button>
+                        <button class="theme-btn {{if eq .CurrentTheme "highcontrast"}}active{{end}}" id="theme-highcontrast" data-theme="highcontrast" type="button">Kontrast</button>
                     </div>
                 </div>
-                
-                <!-- Profile Selector -->
-                <div class="profile-selector">
-                    <label>{{.ProfileLabel}}:</label>
+
+                <div class="control-cluster profile-selector">
+                    <label class="control-label" for="profileSelector">{{.ProfileLabel}}</label>
                     <select id="profileSelector" {{if not .HasProfiles}}disabled{{end}}>
                         {{if .HasProfiles}}
                             {{range .Profiles}}
@@ -1011,249 +1070,203 @@
                         {{end}}
                     </select>
                 </div>
-                
-                <!-- Language Selector -->
-                <div class="language-selector">
-                    <button class="lang-btn {{if eq .Locale "de"}}active{{end}}" data-lang="de">🇩🇪 DE</button>
-                    <button class="lang-btn {{if eq .Locale "en"}}active{{end}}" data-lang="en">🇬🇧 EN</button>
-                    <button class="lang-btn {{if eq .Locale "es"}}active{{end}}" data-lang="es">🇪🇸 ES</button>
-                    <button class="lang-btn {{if eq .Locale "fr"}}active{{end}}" data-lang="fr">🇫🇷 FR</button>
+
+                <div class="control-cluster language-selector">
+                    <div class="segmented">
+                        <button class="lang-btn {{if eq .Locale "de"}}active{{end}}" data-lang="de" type="button"><span class="flag flag-de"></span>DE</button>
+                        <button class="lang-btn {{if eq .Locale "en"}}active{{end}}" data-lang="en" type="button"><span class="flag flag-en"></span>EN</button>
+                        <button class="lang-btn {{if eq .Locale "es"}}active{{end}}" data-lang="es" type="button"><span class="flag flag-es"></span>ES</button>
+                        <button class="lang-btn {{if eq .Locale "fr"}}active{{end}}" data-lang="fr" type="button"><span class="flag flag-fr"></span>FR</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Launcher Options -->
-        <div class="launcher-options">
-            <div class="option-checkbox">
-                <input type="checkbox" id="keepLauncherOpen" {{if .KeepLauncherOpen}}checked{{end}}>
-                <label for="keepLauncherOpen">{{.KeepOpenLabel}}</label>
-                <span class="option-hint">({{.KeepOpenHint}})</span>
-            </div>
-            
-            <div class="app-link-container">
-                <a href="http://localhost:3000/dashboard.html" class="app-link disabled" id="appLink" target="_blank">
-                    <i data-lucide="rocket" style="width:16px;height:16px"></i>
-                    <span>{{.OpenAppLabel}}</span>
-                </a>
-                <span class="app-link-hint" id="appLinkHint">{{.AppNotReady}}</span>
-            </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Tabs Section -->
-            <div class="tabs-section">
-                <div class="tabs">
-                    <button class="tab-button active" data-tab="diagnostics"><i data-lucide="stethoscope" style="width:16px;height:16px"></i> Diagnose</button>
-                    <button class="tab-button" data-tab="changelog"><i data-lucide="file-text" style="width:16px;height:16px"></i> {{.TabChangelog}}</button>
-                    <button class="tab-button" data-tab="apikeys"><i data-lucide="key" style="width:16px;height:16px"></i> {{.TabApiKeys}}</button>
-                    <button class="tab-button" data-tab="community"><i data-lucide="heart" style="width:16px;height:16px"></i> {{.TabCommunity}}</button>
-                    <button class="tab-button" data-tab="logs"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> {{.TabLogs}}</button>
-                </div>
-                
-                <!-- Diagnostics Tab -->
-                <div id="tab-diagnostics" class="tab-content active">
-                    <div class="first-run-panel" id="firstRunPanel">
-                        <strong>Erster Start</strong>
-                        <p>Profil wählen, Diagnose prüfen, dann Server starten. Der Assistent verschwindet nach Abschluss.</p>
-                        <button class="manual-btn" id="firstRunDoneBtn" type="button">Assistent abschließen</button>
+        </header>
+
+        <div class="workspace">
+            <aside class="launcher-sidebar" aria-label="Launcher Navigation">
+                <nav class="tabs">
+                    <button class="tab-button active" data-tab="diagnostics" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span><span>Diagnose</span></button>
+                    <button class="tab-button" data-tab="changelog" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span>{{.TabChangelog}}</span></button>
+                    <button class="tab-button" data-tab="apikeys" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 7a5 5 0 1 0 1.5 3.5L21 5v4h-3V6"/></svg></span><span>{{.TabApiKeys}}</span></button>
+                    <button class="tab-button" data-tab="community" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.85"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>{{.TabCommunity}}</span></button>
+                    <button class="tab-button" data-tab="logs" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M10 8h4M10 12h4M10 16h2"/></svg></span><span>{{.TabLogs}}</span></button>
+                </nav>
+
+                <div class="side-spacer"></div>
+
+                <div class="side-card">
+                    <div class="toggle-row">
+                        <div class="toggle-title"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-5"/></svg></span><label for="keepLauncherOpen">{{.KeepOpenLabel}}</label></div>
+                        <input type="checkbox" id="keepLauncherOpen" {{if .KeepLauncherOpen}}checked{{end}}>
                     </div>
-                    <h2>Launcher-Diagnose</h2>
-                    <div class="compact-row">
-                        <button class="manual-btn secondary" id="refreshDiagnosticsBtn" type="button">Diagnose aktualisieren</button>
-                        <button class="manual-btn secondary" id="exportDiagnosticsBtn" type="button">Diagnosepaket exportieren</button>
-                        <button class="manual-btn secondary" id="adoptServerBtn" type="button">Laufenden Server übernehmen</button>
-                    </div>
-                    <div class="settings-row">
-                        <label>Update-Kanal
-                            <select id="updateChannel">
-                                <option value="local" {{if eq .UpdateChannel "local"}}selected{{end}}>Local Snapshot</option>
-                                <option value="stable" {{if eq .UpdateChannel "stable"}}selected{{end}}>Stable</option>
-                                <option value="beta" {{if eq .UpdateChannel "beta"}}selected{{end}}>Beta</option>
-                            </select>
-                        </label>
-                        <label>Safe Mode
-                            <input type="checkbox" id="safeModeToggle" {{if .SafeMode}}checked{{end}}>
-                        </label>
-                    </div>
-                    <div class="compact-row">
-                        <button class="manual-btn secondary" id="checkUpdateBtn" type="button">Update prüfen</button>
-                        <button class="manual-btn secondary" id="applyUpdateBtn" type="button">Update installieren</button>
-                        <button class="manual-btn secondary" id="rollbackUpdateBtn" type="button">Update zurückrollen</button>
-                        <button class="manual-btn secondary" id="nodeRepairBtn" type="button">Node reparieren</button>
-                        <button class="manual-btn secondary" id="nodeRemoveBtn" type="button">Portable Node entfernen</button>
-                    </div>
-                    <div class="diagnostics-grid" id="diagnosticsGrid"></div>
-                    <div class="plugin-failure-list" id="pluginFailures"></div>
+                    <p class="hint">{{.KeepOpenHint}}</p>
                 </div>
 
-                <!-- Changelog Tab -->
-                <div id="tab-changelog" class="tab-content">
-                    <h2>{{.ChangelogTitle}}</h2>
-                    <div id="changelog-content">
-                        <p style="color: #999;">{{.ChangelogLoading}}</p>
-                    </div>
+                <div class="side-card">
+                    <a href="http://localhost:3000/dashboard.html" class="app-link disabled" id="appLink" target="_blank">
+                        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M13 4c4 1 6 3 7 7l-6 6-7-7z"/><path d="M7 10l-3 3 4 1M14 17l1 4 3-3"/><path d="M11 13l-6 6"/></svg></span><span>{{.OpenAppLabel}}</span>
+                    </a>
+                    <span class="app-link-hint" id="appLinkHint">{{.AppNotReady}}</span>
                 </div>
-                
-                <!-- API Keys Tab -->
-                <div id="tab-apikeys" class="tab-content">
-                    <h2>{{.ApiKeysTitle}}</h2>
-                    <p>{{.ApiKeysIntro}}</p>
-                    
-                    <div class="warning-box">
-                        <strong>{{.MandatoryWarning}}</strong><br>
-                        {{.FallbackWarning}}
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            Eulerstream (TikTok LIVE API)
-                            <span class="badge mandatory">Essentiell</span>
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.EulerstreamDesc}}</p>
-                        <p><a href="https://www.eulerstream.com" target="_blank">https://www.eulerstream.com</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            OpenAI (GPT / TTS)
-                            <span class="badge paid">Paid</span>
-                        </h3>
-                        <p>{{.OpenAIDesc}}</p>
-                        <p><a href="https://platform.openai.com" target="_blank">https://platform.openai.com</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            SiliconFlow (AI / Image Gen)
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.SiliconFlowDesc}}</p>
-                        <p><a href="https://siliconflow.com" target="_blank">https://siliconflow.com</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            Fish Audio (TTS)
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.FishAudioDesc}}</p>
-                        <p><a href="https://fish.audio" target="_blank">https://fish.audio</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            ElevenLabs (TTS / STT)
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.ElevenLabsDesc}}</p>
-                        <p><a href="https://elevenlabs.io" target="_blank">https://elevenlabs.io</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            Deepgram (Speech-to-Text)
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.DeepgramDesc}}</p>
-                        <p><a href="https://deepgram.com" target="_blank">https://deepgram.com</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            Google Cloud (TTS / STT)
-                            <span class="badge freemium">Freemium</span>
-                        </h3>
-                        <p>{{.GoogleCloudDesc}}</p>
-                        <p><a href="https://cloud.google.com/text-to-speech" target="_blank">https://cloud.google.com/text-to-speech</a></p>
-                    </div>
-                    
-                    <div class="api-key-item">
-                        <h3>
-                            Ollama (Lokale KI)
-                            <span class="badge freemium">Kostenlos</span>
-                        </h3>
-                        <p>{{.OllamaDesc}}</p>
-                        <p><a href="https://ollama.com" target="_blank">https://ollama.com</a></p>
-                    </div>
-                </div>
-                
-                <!-- Community Tab -->
-                <div id="tab-community" class="tab-content">
-                    <h2>{{.CommunityTitle}}</h2>
-                    <p>{{.CommunityIntro}}</p>
-                    <p><strong>{{.HelpAppreciated}}</strong></p>
-                    
-                    <div class="community-links">
-                        <a href="https://github.com/Loggableim/ltth.app" target="_blank" class="community-link">
-                            <i data-lucide="package" class="icon"></i>
-                            <span class="label">{{.LinkRepo}}</span>
-                        </a>
-                        <a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank" class="community-link">
-                            <i data-lucide="message-circle" class="icon"></i>
-                            <span class="label">{{.LinkDiscussions}}</span>
-                        </a>
-                        <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank" class="community-link">
-                            <i data-lucide="bug" class="icon"></i>
-                            <span class="label">{{.LinkIssues}}</span>
-                        </a>
-                        <a href="https://discord.gg/pawsunited" target="_blank" class="community-link">
-                            <i data-lucide="gamepad-2" class="icon"></i>
-                            <span class="label">{{.LinkDiscord}}</span>
-                        </a>
-                    </div>
-                    
-                    <p style="margin-top: 20px;"><strong>{{.ContributeQuestion}}</strong></p>
-                    <p>{{.ContributeText}}</p>
+            </aside>
+
+            <main class="main-content">
+                <div class="content-area">
+                    <section id="tab-diagnostics" class="tab-content active glass-panel">
+                        <div id="firstRunPanel" class="first-run-panel" {{if .FirstRunComplete}}style="display:none"{{end}}>
+                            <h3>Erster Start</h3>
+                            <p>Der Launcher richtet LTTH ein und verwaltet danach Server, Updates und Diagnosen.</p>
+                            <button class="manual-btn" id="firstRunDoneBtn" type="button">Assistent abschliessen</button>
+                        </div>
+
+                        <div class="section-heading">
+                            <span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span>
+                            <div>
+                                <h2>Launcher-Diagnose</h2>
+                                <p>Alle Systeme im Blick. Halte deinen Server gesund.</p>
+                            </div>
+                        </div>
+
+                        <div class="hero-actions">
+                            <button class="manual-btn secondary action-card" id="refreshDiagnosticsBtn" type="button">
+                                <span class="action-icon"><svg viewBox="0 0 24 24"><path d="M20 6v6h-6"/><path d="M4 18v-6h6"/><path d="M19 12a7 7 0 0 0-12-5M5 12a7 7 0 0 0 12 5"/></svg></span>
+                                <span class="action-title">Diagnose aktualisieren</span>
+                                <small>Systemstatus neu laden</small>
+                            </button>
+                            <button class="manual-btn secondary action-card" id="exportDiagnosticsBtn" type="button">
+                                <span class="action-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4-8 4-8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg></span>
+                                <span class="action-title">Diagnosepaket exportieren</span>
+                                <small>Fuer Support & Analyse</small>
+                            </button>
+                            <button class="manual-btn secondary action-card" id="adoptServerBtn" type="button">
+                                <span class="action-icon"><svg viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0 0-10 7 7 0 0 0-13 3 4 4 0 0 0 1 7h12z"/><path d="M12 12v7M8 16l4-4 4 4"/></svg></span>
+                                <span class="action-title">Laufenden Server uebernehmen</span>
+                                <small>Bestehenden Prozess anheften</small>
+                            </button>
+                        </div>
+
+                        <div class="field-grid">
+                            <div class="field-control">
+                                <label class="field-label" for="updateChannel">Update-Kanal <span class="info-dot">i</span></label>
+                                <select id="updateChannel">
+                                    <option value="local" {{if eq .UpdateChannel "local"}}selected{{end}}>Local Snapshot</option>
+                                    <option value="stable" {{if eq .UpdateChannel "stable"}}selected{{end}}>Stable Release</option>
+                                    <option value="beta" {{if eq .UpdateChannel "beta"}}selected{{end}}>Beta Release</option>
+                                </select>
+                            </div>
+                            <div class="field-control">
+                                <label class="field-label" for="safeModeToggle">Safe Mode <span class="info-dot">i</span></label>
+                                <input type="checkbox" id="safeModeToggle" {{if .SafeMode}}checked{{end}}>
+                            </div>
+                        </div>
+
+                        <h3 class="maintenance-title">Wartungsaktionen</h3>
+                        <div class="maintenance-grid">
+                            <button class="manual-btn secondary" id="checkUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M20 6v6h-6"/><path d="M4 18v-6h6"/><path d="M19 12a7 7 0 0 0-12-5M5 12a7 7 0 0 0 12 5"/></svg></span><span>Update pruefen</span></button>
+                            <button class="manual-btn secondary" id="applyUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span><span>Update installieren</span></button>
+                            <button class="manual-btn secondary" id="rollbackUpdateBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></span><span>Update zurueckrollen</span></button>
+                            <button class="manual-btn secondary" id="nodeRepairBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18v3h3l6.7-6.7a4 4 0 0 0 5-5L15 12l-3-3z"/></svg></span><span>Node reparieren</span></button>
+                            <button class="manual-btn secondary" id="nodeRemoveBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M7 6l1 15h8l1-15"/></svg></span><span>Portable Node entfernen</span></button>
+                        </div>
+
+                        <div class="diagnostics-shell">
+                            <div class="diagnostics-status-row">
+                                <span>Keine Plugin-Startfehler erkannt.</span>
+                                <span class="system-stable"><span class="status-dot"></span>System stabil</span>
+                            </div>
+                            <div class="diagnostics-grid" id="diagnosticsGrid"></div>
+                            <div id="pluginFailures" class="plugin-failures"></div>
+                        </div>
+                    </section>
+
+                    <section id="tab-changelog" class="tab-content glass-panel content-card">
+                        <h2>{{.ChangelogTitle}}</h2>
+                        <p>{{.ChangelogLoading}}</p>
+                        <div id="changelog-content">{{.ChangelogLoading}}</div>
+                    </section>
+
+                    <section id="tab-apikeys" class="tab-content glass-panel content-card">
+                        <h2>{{.ApiKeysTitle}}</h2>
+                        <p>{{.ApiKeysIntro}}</p>
+                        <div class="content-box">
+                            <strong>{{.MandatoryWarning}}</strong>
+                            <p>{{.FallbackWarning}}</p>
+                        </div>
+                        <div class="content-box">
+                            <p><strong>ElevenLabs:</strong> {{.ElevenLabsDesc}}</p>
+                            <p><strong>OpenAI:</strong> {{.OpenAIDesc}}</p>
+                            <p><strong>SiliconFlow:</strong> {{.SiliconFlowDesc}}</p>
+                            <p><strong>FishAudio:</strong> {{.FishAudioDesc}}</p>
+                        </div>
+                    </section>
+
+                    <section id="tab-community" class="tab-content glass-panel content-card">
+                        <h2>{{.CommunityTitle}}</h2>
+                        <p>{{.CommunityIntro}}</p>
+                        <div class="content-box">
+                            <strong>{{.HelpAppreciated}}</strong>
+                            <p>{{.ContributeQuestion}}</p>
+                            <p>{{.ContributeText}}</p>
+                        </div>
+                        <div class="link-grid">
+                            <a href="https://github.com/Loggableim/ltth.app" target="_blank">{{.LinkRepo}}</a>
+                            <a href="https://github.com/Loggableim/ltth.app/discussions" target="_blank">{{.LinkDiscussions}}</a>
+                            <a href="https://github.com/Loggableim/ltth.app/issues" target="_blank">{{.LinkIssues}}</a>
+                            <a href="https://discord.gg/" target="_blank">{{.LinkDiscord}}</a>
+                        </div>
+                    </section>
+
+                    <section id="tab-logs" class="tab-content glass-panel content-card">
+                        <h2>{{.LogsTitle}}</h2>
+                        <p>{{.LogsIntro}}</p>
+                        <div id="logs-content" class="logs-content">{{.LogsLoading}}</div>
+                    </section>
                 </div>
 
-                <!-- Logs Tab -->
-                <div id="tab-logs" class="tab-content">
-                    <h2>{{.LogsTitle}}</h2>
-                    <p>{{.LogsIntro}}</p>
-                    <pre id="logs-content" class="log-viewer">{{.LogsLoading}}</pre>
-                </div>
-            </div>
-            
-            <!-- Status Panel -->
-            <div class="status-panel">
-                <div class="status-title">{{.StatusTitle}}</div>
-                <div class="status-text" id="status">{{.StatusInitializing}}</div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progressBar">0%</div>
-                </div>
-                <div class="manual-controls">
-                    <div class="manual-controls-title">Server-Start</div>
-                    <div class="manual-port-row">
-                        <input type="number" id="manualPort" min="1" max="65535" value="3000" aria-label="Port">
-                        <button class="manual-btn secondary" id="savePortBtn" type="button">Port setzen</button>
-                    </div>
-                    <div class="manual-button-row">
-                        <button class="manual-btn" id="manualStartBtn" type="button">Server starten</button>
-                        <button class="manual-btn secondary" id="manualOpenBtn" type="button">App öffnen</button>
-                        <button class="manual-btn danger" id="manualStopBtn" type="button">Server stoppen</button>
-                        <button class="manual-btn secondary" id="refreshStatusBtn" type="button">Status prüfen</button>
-                    </div>
-                    <div class="maintenance-controls">
-                        <div class="manual-controls-title">Datenbank-Wartung</div>
-                        <button class="manual-btn secondary" id="vacuumDbBtn" type="button">Datenbank bereinigen (VACUUM/90 Tage)</button>
-                        <button class="manual-btn secondary" id="profileRepairBtn" type="button">Profil reparieren</button>
-                        <button class="manual-btn secondary" id="profileRestoreBtn" type="button">Letztes Profil-Backup wiederherstellen</button>
-                        <div class="maintenance-note" id="vacuumHint">Server vorher stoppen. StandardmÃ¤ssig werden Nutzer mit InaktivitÃ¤t >90 Tage entfernt, danach VACUUM ausgefÃ¼hrt.</div>
-                    </div>
-                    <div class="manual-status" id="manualStatus">Port 3000 wird beim Launcher-Start fest verwendet; alte LTTH-Instanzen werden vorher gestoppt.</div>
-                </div>
-            </div>
+                <aside class="status-panel">
+                    <section class="glass-panel status-card">
+                        <div class="card-header">
+                            <div class="card-heading"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span><h2 class="card-title">{{.StatusTitle}}</h2></div>
+                            <span class="card-meta"><span class="status-dot"></span>Native Module</span>
+                        </div>
+                        <div class="progress-status" id="status">{{.StatusInitializing}}</div>
+                        <div class="progress-track"><div class="progress-bar" id="progressBar">0%</div></div>
+                    </section>
+
+                    <section class="glass-panel status-card manual-controls">
+                        <div class="card-heading"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v5H4zM4 14h16v5H4z"/><path d="M8 7h.01M8 16h.01"/></svg></span><h2 class="card-title">Server-Start</h2></div>
+                        <div class="manual-port-row">
+                            <input type="number" id="manualPort" min="1" max="65535" value="3000" aria-label="Port">
+                            <button class="manual-btn secondary" id="savePortBtn" type="button">Port setzen</button>
+                        </div>
+                        <div class="manual-button-row">
+                            <button class="manual-btn" id="manualStartBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg></span><span>Server starten</span></button>
+                            <button class="manual-btn secondary" id="manualOpenBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M21 3l-9 9"/><path d="M19 14v6H5V6h6"/></svg></span><span>App oeffnen</span></button>
+                            <button class="manual-btn danger" id="manualStopBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></span><span>Server stoppen</span></button>
+                            <button class="manual-btn secondary" id="refreshStatusBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></span><span>Status pruefen</span></button>
+                        </div>
+                    </section>
+
+                    <section class="glass-panel status-card">
+                        <div class="card-heading"><span class="panel-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span><h2 class="card-title">Datenbank-Wartung</h2></div>
+                        <div class="db-actions" style="margin-top:18px">
+                            <button class="manual-btn secondary" id="vacuumDbBtn" type="button">Datenbank bereinigen (VACUUM/90 Tage)</button>
+                            <button class="manual-btn secondary" id="profileRepairBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18v3h3l6.7-6.7a4 4 0 0 0 5-5L15 12l-3-3z"/></svg></span><span>Profil reparieren</span></button>
+                            <button class="manual-btn secondary wide" id="profileRestoreBtn" type="button"><span class="action-icon"><svg viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0 0-10 7 7 0 0 0-13 3 4 4 0 0 0 1 7h12z"/><path d="M12 12v7M8 16l4-4 4 4"/></svg></span><span>Letztes Profil-Backup wiederherstellen</span></button>
+                        </div>
+                        <p class="hint" id="vacuumHint">Server zuerst stoppen. VACUUM laeuft nur, wenn die Datenbank nicht aktiv ist.</p>
+                        <div class="manual-status" id="manualStatus">Port 3000 wird beim Launcher-Start fest verwendet; alte LTTH-Instanzen werden vorher gestoppt.</div>
+                    </section>
+                </aside>
+            </main>
         </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            {{.PoweredBy}} | Version {{.Version}}
-        </div>
+
+        <footer class="footer">
+            <div class="footer-left"><span class="status-dot"></span><strong>Bereit</strong><span class="kbd-dot">-</span><span>Serverprozesse werden ueberwacht</span></div>
+            <div class="footer-center"><span>{{.PoweredBy}}</span><span class="kbd-dot">-</span><span>Version {{.Version}}</span></div>
+        </footer>
     </div>
-    
-    <script>
+<script>
         const allowedThemes = ['night', 'day', 'highcontrast'];
         const LOG_POLL_INTERVAL_MS = 2000;
         const THEME_STORAGE_KEY = 'ltth-launcher-theme';
