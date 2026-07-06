@@ -9,14 +9,21 @@
     <link rel="stylesheet" href="/openshock/openshock.css">
     <script>
         (function () {
-            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const LOGO_BY_THEME = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/ltthwebsitelogo.png'
+            };
             function readTheme() {
                 try {
                     const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
                     if (VALID_THEMES.has(parentTheme)) return parentTheme;
                 } catch (error) {}
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (VALID_THEMES.has(value)) return value;
                     }
@@ -27,6 +34,10 @@
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('.brand-logo');
+                if (logo) {
+                    logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+                }
             }
             document.addEventListener('DOMContentLoaded', syncTheme);
             window.addEventListener('load', syncTheme);
@@ -98,10 +109,46 @@
             border: 2px solid #c7d2fe;
         }
 
+        html[data-theme="day"] .stat-card {
+            background: #ffffff !important;
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+            border: 1px solid #9db4f4 !important;
+        }
+
+        html[data-theme="day"] .stat-card * {
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+        }
+
+        html[data-theme="day"] .btn-primary {
+            background: #1d4ed8 !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            border-color: #1e40af !important;
+        }
+
+        html[data-theme="day"] .form-input,
+        html[data-theme="day"] select,
+        html[data-theme="day"] #testShockDevice {
+            background: #ffffff !important;
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+            border-color: #94a3ff !important;
+        }
+
         html[data-theme="night"] .status-badge {
             background: #0f172a;
             color: #e5e7eb;
             border: 2px solid #334155;
+        }
+
+        html[data-theme="day"] .tab-button.active,
+        html[data-theme="night"] .tab-button.active {
+            background: #1d4ed8 !important;
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+            border-color: #93c5fd !important;
         }
 
         html[data-theme="contrast"] body,
@@ -154,7 +201,9 @@
 
         html[data-theme="vision-impaired"] body {
             background: #000 !important;
-            color: #fff !important;
+            color: #fff7cc !important;
+            font-size: 18px !important;
+            line-height: 1.65 !important;
         }
 
         html[data-theme="vision-impaired"] .card,
@@ -162,7 +211,7 @@
         html[data-theme="vision-impaired"] .tabs,
         html[data-theme="vision-impaired"] .log-container {
             background: #000 !important;
-            color: #fff !important;
+            color: #fff7cc !important;
             border-color: #facc15 !important;
             box-shadow: none !important;
         }
@@ -174,6 +223,7 @@
             background: #000 !important;
             color: #fff7cc !important;
             border-color: #facc15 !important;
+            font-size: 1.02rem !important;
         }
 
         html[data-theme="vision-impaired"] .btn-primary,
@@ -186,6 +236,40 @@
             background: #000 !important;
             color: #fff7cc !important;
             border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="vision-impaired"] .tabs {
+            gap: 12px;
+        }
+
+        html[data-theme="vision-impaired"] .tab-button {
+            min-height: 46px;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .card-header h3,
+        html[data-theme="vision-impaired"] .section-title,
+        html[data-theme="vision-impaired"] .card-title,
+        html[data-theme="vision-impaired"] .brand h1 {
+            color: #facc15 !important;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 12px;
+        }
+
+        .brand-logo {
+            display: block;
+            width: min(360px, 72vw);
+            height: auto;
+            object-fit: contain;
+        }
+
+        html[data-theme="vision-impaired"] .brand-logo {
+            width: min(400px, 78vw);
         }
 
         @media (max-width: 800px) {
@@ -237,15 +321,163 @@
                 flex: 1 1 calc(50% - 8px);
             }
         }
+
+        @media (max-width: 800px) {
+            html[data-theme="vision-impaired"] .tabs,
+            html[data-theme="cid"] .tabs {
+                gap: 10px;
+            }
+
+            html[data-theme="vision-impaired"] .tab-button,
+            html[data-theme="vision-impaired"] .btn,
+            html[data-theme="cid"] .tab-button,
+            html[data-theme="cid"] .btn {
+                min-height: 44px;
+                border-width: 3px;
+            }
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+
+        html[data-theme="cid"] body {
+            background: #030603 !important;
+            color: #f4fff4 !important;
+        }
+
+        html[data-theme="cid"] .tabs,
+        html[data-theme="cid"] .tab-button,
+        html[data-theme="cid"] .log-container,
+        html[data-theme="cid"] .table,
+        html[data-theme="cid"] .table-scroll {
+            background: #071107 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        html[data-theme="cid"] .status-badge,
+        html[data-theme="cid"] .btn-danger,
+        html[data-theme="cid"] .btn-warning,
+        html[data-theme="cid"] .btn-primary {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        html[data-theme="cid"] .tab-button.active,
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .btn-warning {
+            background: #4ade80 !important;
+            color: #030603 !important;
+            border-color: #4ade80 !important;
+            -webkit-text-fill-color: #030603 !important;
+        }
+
+        html[data-theme="cid"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border-color: #ef4444 !important;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header>
-            <div>
-                <h1>⚡ OpenShock Control Panel</h1>
-                <p class="text-muted header-subtitle">TikTok Live Integration mit OpenShock API</p>
+            <div class="brand">
+                <img class="brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
                 <button id="headerEmergencyStop" class="btn btn-danger" title="Emergency Stop - Immediately stops all shocks and disables further commands">
@@ -1254,6 +1486,21 @@
 
     <!-- OpenShock UI JavaScript -->
     <script src="/openshock/ui.js"></script>
+
+<style id="final-late-day-device-control-contrast">
+html[data-theme="day"] #testShockDevice.form-input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border: 2px solid #64748b !important;
+}
+
+html[data-theme="day"] #refreshDevices.btn {
+  background: #047857 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #065f46 !important;
+}
+</style>
 </body>
 </html>
-

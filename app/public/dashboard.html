@@ -17,6 +17,7 @@
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
             const SIDEBAR_ICON_LOGO = '/ltthicon.png';
+            const SIDEBAR_CID_WIDE_LOGO = '/ltthwebsitelogo.png';
 
             function readTheme() {
                 try {
@@ -46,14 +47,15 @@
                 const wide = document.querySelector('.sidebar-logo-wide');
                 const mini = document.querySelector('.sidebar-logo-mini');
                 const topbar = document.querySelector('.topbar-logo-image');
+                const wideLogo = theme === 'cid' ? SIDEBAR_CID_WIDE_LOGO : SIDEBAR_WIDE_LOGO;
                 if (wide) {
-                    if (wide.getAttribute('src') !== SIDEBAR_WIDE_LOGO) wide.setAttribute('src', SIDEBAR_WIDE_LOGO);
+                    if (wide.getAttribute('src') !== wideLogo) wide.setAttribute('src', wideLogo);
                 }
                 if (mini) {
                     if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
                 }
                 if (topbar) {
-                    if (topbar.getAttribute('src') !== SIDEBAR_WIDE_LOGO) topbar.setAttribute('src', SIDEBAR_WIDE_LOGO);
+                    if (topbar.getAttribute('src') !== wideLogo) topbar.setAttribute('src', wideLogo);
                 }
             }
 

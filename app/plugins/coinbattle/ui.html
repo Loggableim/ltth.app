@@ -8,7 +8,14 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
-            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/ltthwebsitelogo.png'
+            };
             function readTheme() {
                 try {
                     if (window.parent && window.parent !== window) {
@@ -17,7 +24,7 @@
                     }
                 } catch (error) {}
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (validThemes.has(value)) return value;
                     }
@@ -28,6 +35,13 @@
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('.header-logo');
+                if (logo) {
+                    const nextSrc = logoByTheme[theme] || logoByTheme.night;
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
             }
             syncTheme();
             window.addEventListener('focus', syncTheme);
@@ -64,15 +78,36 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 24px;
         }
 
-        .header h1 {
+        .header-brand {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-logo {
+            display: block;
+            width: min(260px, 42vw);
+            height: auto;
+            object-fit: contain;
+        }
+
+        html[data-theme="vision-impaired"] .header-logo {
+            width: min(320px, 50vw);
+        }
+
+        html[data-theme="cid"] .header-logo {
+            width: min(240px, 38vw);
+        }
+
+        .header-copy h1 {
             font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+            color: var(--color-text-primary, #ffffff);
+            -webkit-text-fill-color: var(--color-text-primary, #ffffff);
+            background: none;
+            }
 
         .header-actions {
             display: flex;
@@ -265,6 +300,38 @@
 
         .btn-warning {
             background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        html[data-theme="day"] .btn {
+            background: #0f8712 !important;
+            color: #fff !important;
+            border: 1px solid #0f8712 !important;
+        }
+
+        html[data-theme="day"] .btn-secondary {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+        }
+
+        html[data-theme="day"] .btn-danger {
+            background: #b91c1c !important;
+            color: #fff !important;
+            border-color: #b91c1c !important;
+        }
+
+        html[data-theme="contrast"] .btn,
+        html[data-theme="vision-impaired"] .btn {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 2px solid #facc15 !important;
+        }
+
+        html[data-theme="contrast"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border-color: #facc15 !important;
         }
 
         .btn-sm {
@@ -624,6 +691,69 @@
             background: #facc15;
         }
 
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .header h1,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .tab.active {
+            color: #4ade80;
+            background: none;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .tabs,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] .loading,
+        html[data-theme="cid"] .label,
+        html[data-theme="cid"] .help-text {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] .btn {
+            background: #061006;
+            color: #f4fff4;
+            border: 1px solid #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .btn-warning {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+        }
+
+        html[data-theme="cid"] .btn-danger {
+            background: #7f1d1d;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        html[data-theme="cid"] .form-range::-webkit-slider-thumb,
+        html[data-theme="cid"] .form-range::-moz-range-thumb {
+            background: #4ade80;
+        }
+
         @media (max-width: 768px) {
             .grid-2, .grid-3, .grid-4 {
                 grid-template-columns: 1fr;
@@ -659,13 +789,47 @@
                 font-size: 2rem;
             }
         }
-    </style>
+    
+        /* Accessibility contrast pass: explicit readable controls in contrast modes */
+        html[data-theme="contrast"] .btn,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="contrast"] .btn-warning,
+        html[data-theme="contrast"] .tab.active,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #000 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="contrast"] .tab,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .tab {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff !important;
+        }</style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div>
-                <h1>🎮 CoinBattle</h1>
+            <div class="header-brand">
+            </div>
+            <div class="header-copy">
+                <h1>CoinBattle</h1>
                 <p>Live battle game management</p>
             </div>
             <div class="header-actions">
@@ -677,10 +841,10 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="control">🎮 Control</button>
-            <button class="tab" data-tab="settings">⚙️ Settings</button>
-            <button class="tab" data-tab="leaderboard">🏆 Leaderboard</button>
-            <button class="tab" data-tab="history">📊 History</button>
+            <button class="tab active" data-tab="control">ðŸŽ® Control</button>
+            <button class="tab" data-tab="settings">âš™ï¸ Settings</button>
+            <button class="tab" data-tab="leaderboard">ðŸ† Leaderboard</button>
+            <button class="tab" data-tab="history">ðŸ“Š History</button>
         </div>
 
         <!-- Control Tab -->
@@ -705,18 +869,18 @@
             </div>
 
             <div class="card">
-                <div class="card-title">⏱️ Match Timer</div>
+                <div class="card-title">â±ï¸ Match Timer</div>
                 <div class="timer-display" id="timer-display">00:00</div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-start-match">▶️ Start Match</button>
-                    <button class="btn btn-danger" id="btn-end-match" disabled>⏹️ End Match</button>
-                    <button class="btn btn-warning" id="btn-pause-match" disabled>⏸️ Pause</button>
-                    <button class="btn btn-warning" id="btn-extend-match" disabled>⏰ Extend +60s</button>
+                    <button class="btn btn-success" id="btn-start-match">â–¶ï¸ Start Match</button>
+                    <button class="btn btn-danger" id="btn-end-match" disabled>â¹ï¸ End Match</button>
+                    <button class="btn btn-warning" id="btn-pause-match" disabled>â¸ï¸ Pause</button>
+                    <button class="btn btn-warning" id="btn-extend-match" disabled>â° Extend +60s</button>
                 </div>
             </div>
 
             <div class="card" id="multiplier-card" style="display: none;">
-                <div class="card-title">✨ Active Multiplier</div>
+                <div class="card-title">âœ¨ Active Multiplier</div>
                 <div class="multiplier-indicator">
                     <div class="value" id="multiplier-value">2.0x</div>
                     <div class="label" id="multiplier-time">Ends in <span id="multiplier-remaining">--</span></div>
@@ -724,7 +888,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">🎯 Match Controls</div>
+                <div class="card-title">ðŸŽ¯ Match Controls</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label">Match Mode</label>
@@ -740,23 +904,23 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <button class="btn" id="btn-activate-multiplier">✨ Activate 2x Multiplier (30s)</button>
+                    <button class="btn" id="btn-activate-multiplier">âœ¨ Activate 2x Multiplier (30s)</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">🎪 Testing & Simulation</div>
+                <div class="card-title">ðŸŽª Testing & Simulation</div>
                 <div class="alert alert-info">
                     Test layouts and animations without TikTok Live connection
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="btn-start-simulation">🎲 Start Simulation</button>
-                    <button class="btn btn-danger" id="btn-stop-simulation" disabled>⏹️ Stop Simulation</button>
+                    <button class="btn btn-secondary" id="btn-start-simulation">ðŸŽ² Start Simulation</button>
+                    <button class="btn btn-danger" id="btn-stop-simulation" disabled>â¹ï¸ Stop Simulation</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">📺 Current Match Leaderboard</div>
+                <div class="card-title">ðŸ“º Current Match Leaderboard</div>
                 <div id="current-leaderboard">
                     <p class="loading">No active match</p>
                 </div>
@@ -766,7 +930,7 @@
         <!-- Settings Tab -->
         <div id="settings-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">⚙️ Gameplay Settings</div>
+                <div class="card-title">âš™ï¸ Gameplay Settings</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-checkbox">
@@ -806,7 +970,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">👥 Team Settings</div>
+                <div class="card-title">ðŸ‘¥ Team Settings</div>
                 <div class="form-group">
                     <label class="form-label">Team Assignment Method</label>
                     <select class="form-select" id="setting-team-assignment">
@@ -818,7 +982,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">❤️ Likes & Interactions as Points</div>
+                <div class="card-title">â¤ï¸ Likes & Interactions as Points</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Convert TikTok interactions (likes, shares, follows) into battle points during active matches.
                 </div>
@@ -851,12 +1015,12 @@
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-likes-settings">💾 Save Likes Settings</button>
+                    <button class="btn btn-success" id="btn-save-likes-settings">ðŸ’¾ Save Likes Settings</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">🔺 Pyramid Mode Settings</div>
+                <div class="card-title">ðŸ”º Pyramid Mode Settings</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Pyramid Mode: Players compete to climb the pyramid by sending gifts or likes. The leader can be knocked out!
                 </div>
@@ -913,7 +1077,7 @@
                 
                 <!-- XP Rewards Integration -->
                 <div class="alert alert-success" style="margin-top: 20px; margin-bottom: 16px;">
-                    <strong>🎮 XP Rewards Integration</strong><br>
+                    <strong>ðŸŽ® XP Rewards Integration</strong><br>
                     Automatically award XP points to pyramid winners via the Viewer XP System plugin
                 </div>
                 <div class="form-group">
@@ -955,25 +1119,26 @@
                     <label class="form-label">Pyramid Overlay URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="pyramid-overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-pyramid-url">📋 Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid">👁️ Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-pyramid-url">ðŸ“‹ Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-pyramid">ðŸ‘ï¸ Preview</button>
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-pyramid-settings">💾 Save Pyramid Settings</button>
-                    <button class="btn" id="btn-start-pyramid">▶️ Start Pyramid</button>
-                    <button class="btn btn-danger" id="btn-stop-pyramid" disabled>⏹️ Stop Pyramid</button>
+                    <button class="btn btn-success" id="btn-save-pyramid-settings">ðŸ’¾ Save Pyramid Settings</button>
+                    <button class="btn" id="btn-start-pyramid">â–¶ï¸ Start Pyramid</button>
+                    <button class="btn btn-danger" id="btn-stop-pyramid" disabled>â¹ï¸ Stop Pyramid</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">🎨 Display Settings</div>
+                <div class="card-title">ðŸŽ¨ Display Settings</div>
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label class="form-label">Theme</label>
                         <select class="form-select" id="setting-theme">
                             <option value="night">Night</option>
                             <option value="day">Day</option>
+                            <option value="cid">Cid</option>
                             <option value="contrast">High Contrast</option>
                             <option value="vision-impaired">Vision Impaired</option>
                         </select>
@@ -1039,7 +1204,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">🏆 Post-Match Display Settings</div>
+                <div class="card-title">ðŸ† Post-Match Display Settings</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Configure what to display after each match ends. Leaderboards and winner credits will show in the OBS overlay.
                 </div>
@@ -1109,20 +1274,20 @@
             </div>
 
             <div class="card">
-                <div class="card-title">📺 Overlay Configuration</div>
+                <div class="card-title">ðŸ“º Overlay Configuration</div>
                 <div class="form-group">
                     <label class="form-label">OBS Browser Source URL</label>
                     <div class="overlay-url">
                         <input type="text" class="form-input" id="overlay-url" readonly>
-                        <button class="btn btn-sm" id="btn-copy-url">📋 Copy</button>
-                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay">👁️ Preview</button>
+                        <button class="btn btn-sm" id="btn-copy-url">ðŸ“‹ Copy</button>
+                        <button class="btn btn-sm btn-secondary" id="btn-preview-overlay">ðŸ‘ï¸ Preview</button>
                     </div>
                 </div>
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-success" id="btn-save-settings">💾 Save Settings</button>
-                <button class="btn btn-secondary" id="btn-reset-settings">🔄 Reset to Defaults</button>
+                <button class="btn btn-success" id="btn-save-settings">ðŸ’¾ Save Settings</button>
+                <button class="btn btn-secondary" id="btn-reset-settings">ðŸ”„ Reset to Defaults</button>
             </div>
         </div>
 
@@ -1130,7 +1295,7 @@
         <div id="leaderboard-tab" class="tab-content">
             <!-- Season Management Card -->
             <div class="card">
-                <div class="card-title">🗓️ Season Configuration</div>
+                <div class="card-title">ðŸ—“ï¸ Season Configuration</div>
                 <div class="alert alert-info" style="margin-bottom: 16px;">
                     Configure season leaderboard date range. Only one season can be active at a time.
                 </div>
@@ -1154,18 +1319,18 @@
                     </div>
                 </div>
                 <div class="btn-group">
-                    <button class="btn btn-success" id="btn-save-season">💾 Create/Update Season</button>
+                    <button class="btn btn-success" id="btn-save-season">ðŸ’¾ Create/Update Season</button>
                 </div>
             </div>
 
             <!-- Leaderboard Type Selector -->
             <div class="card">
-                <div class="card-title">🏆 Leaderboards</div>
+                <div class="card-title">ðŸ† Leaderboards</div>
                 <div class="tabs" style="border-bottom: none; margin-bottom: 16px;">
-                    <button class="tab active" data-leaderboard="lifetime">📈 Lifetime</button>
-                    <button class="tab" data-leaderboard="weekly">📅 Weekly</button>
-                    <button class="tab" data-leaderboard="season">🏅 Season</button>
-                    <button class="tab" data-leaderboard="manage">👥 Manage Users</button>
+                    <button class="tab active" data-leaderboard="lifetime">ðŸ“ˆ Lifetime</button>
+                    <button class="tab" data-leaderboard="weekly">ðŸ“… Weekly</button>
+                    <button class="tab" data-leaderboard="season">ðŸ… Season</button>
+                    <button class="tab" data-leaderboard="manage">ðŸ‘¥ Manage Users</button>
                 </div>
 
                 <div id="lifetime-leaderboard-view" class="leaderboard-view">
@@ -1194,7 +1359,7 @@
 
                 <div id="manage-leaderboard-view" class="leaderboard-view" style="display: none;">
                     <div class="alert alert-warning" style="margin-bottom: 16px;">
-                        <strong>⚠️ Warning:</strong> Deleting a user will permanently remove them and all their data from all leaderboards. This action cannot be undone.
+                        <strong>âš ï¸ Warning:</strong> Deleting a user will permanently remove them and all their data from all leaderboards. This action cannot be undone.
                     </div>
                     <div id="users-list">
                         <p class="loading">Loading...</p>
@@ -1206,7 +1371,7 @@
         <!-- History Tab -->
         <div id="history-tab" class="tab-content">
             <div class="card">
-                <div class="card-title">📊 Match History</div>
+                <div class="card-title">ðŸ“Š Match History</div>
                 <div id="match-history">
                     <p class="loading">Loading...</p>
                 </div>
@@ -1217,5 +1382,3 @@
     <script src="/plugins/coinbattle/ui.js"></script>
 </body>
 </html>
-
-

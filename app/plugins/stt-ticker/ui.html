@@ -6,8 +6,15 @@
   <title>STT Ticker - Admin</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script>
-    (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      (function () {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const LOGO_BY_THEME = {
+        day: '/logo-wide.png',
+        night: '/logo-wide.png',
+        contrast: '/logo-wide.png',
+        'vision-impaired': '/logo-wide.png',
+        cid: '/ltthwebsitelogo.png'
+      };
 
       function readTheme() {
         try {
@@ -18,7 +25,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (VALID_THEMES.has(value)) return value;
           }
@@ -31,11 +38,13 @@
         const theme = readTheme();
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+        const logo = document.querySelector('[data-brand-logo]');
+        if (logo) logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
       }
 
       syncTheme();
       window.addEventListener('storage', (event) => {
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
           syncTheme();
         }
       });
@@ -57,14 +66,32 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
+      --stt-status-warning: #92400e;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #1a1a2e;
       color: #eee;
       padding: 16px;
     }
-    .container { width: 100%; max-width: none; margin: 0; }
+    .container {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 12px;
+    }
     h1 { color: #4CAF50; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; font-size: 22px; }
     .subtitle { color: #888; font-size: 13px; margin-bottom: 16px; }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 8px;
+    }
+    .brand-logo {
+      display: block;
+      width: min(360px, 72vw);
+      height: auto;
+      object-fit: contain;
+    }
 
     /* Tabs */
     .tabs {
@@ -90,6 +117,27 @@
     }
     .tab-btn:hover { color: #ccc; background: rgba(255,255,255,0.05); }
     .tab-btn.active { background: #4CAF50; color: #fff; }
+    html[data-theme="day"] .tab-btn {
+      background: #fff !important;
+      color: #334155 !important;
+      border: 1px solid #94a3b8 !important;
+    }
+    html[data-theme="day"] .tab-btn.active {
+      background: #0f8712 !important;
+      color: #fff !important;
+      border-color: #0f8712 !important;
+    }
+    html[data-theme="contrast"] .tab-btn,
+    html[data-theme="vision-impaired"] .tab-btn {
+      background: #000 !important;
+      color: #facc15 !important;
+      border: 2px solid #facc15 !important;
+    }
+    html[data-theme="contrast"] .tab-btn.active,
+    html[data-theme="vision-impaired"] .tab-btn.active {
+      background: #facc15 !important;
+      color: #000 !important;
+    }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -158,12 +206,28 @@
       font-size: 10px; font-weight: 700; margin-left: auto;
     }
     .badge-green { background: rgba(76,175,80,0.2); color: #4CAF50; }
-    .badge-yellow { background: rgba(255,193,7,0.2); color: #FFC107; }
+    .badge-yellow { background: #facc15; color: #111827; border: 1px solid #b45309; }
     .badge-gray { background: #444; color: #aaa; }
     .external-link {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px; background: #2196F3; color: white;
       text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
+    }
+    html[data-theme="night"] body,
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      --stt-status-warning: #facc15;
+    }
+    html[data-theme="day"] .external-link,
+    html[data-theme="night"] .external-link {
+      background: #2563eb !important;
+      color: #fff !important;
+    }
+    html[data-theme="contrast"] .external-link,
+    html[data-theme="vision-impaired"] .external-link {
+      background: #facc15 !important;
+      color: #000 !important;
+      border: 2px solid #facc15 !important;
     }
     .external-link:hover { background: #1976D2; }
     .inline-flex { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -188,6 +252,7 @@
     .key-section .key-header strong { color: #64B5F6; font-size: 12px; }
 
     html[data-theme="day"] body {
+      --stt-status-warning: #92400e;
       background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
       color: #10203a;
     }
@@ -215,6 +280,7 @@
     }
 
     html[data-theme="night"] body {
+      --stt-status-warning: #facc15;
       background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
       color: #e5e7eb;
     }
@@ -236,6 +302,7 @@
     }
 
     html[data-theme="contrast"] body {
+      --stt-status-warning: #facc15;
       background: #000;
       color: #fff;
     }
@@ -282,22 +349,82 @@
       color: #fff;
     }
 
+    html[data-theme="cid"] body {
+      --stt-status-warning: #92400e;
+      background: #030603;
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] h1,
+    html[data-theme="cid"] .card-title,
+    html[data-theme="cid"] .stat-value {
+      color: #4ade80;
+    }
+
+    html[data-theme="cid"] .subtitle,
+    html[data-theme="cid"] .help-text,
+    html[data-theme="cid"] .stat-label,
+    html[data-theme="cid"] .tab-content p,
+    html[data-theme="cid"] .info-box p,
+    html[data-theme="cid"] .key-section p,
+    html[data-theme="cid"] label {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .tabs {
+      background: #061006;
+      border: 1px solid #1e5b2a;
+    }
+
+    html[data-theme="cid"] .card,
+    html[data-theme="cid"] .stat,
+    html[data-theme="cid"] .btn-secondary,
+    html[data-theme="cid"] input,
+    html[data-theme="cid"] select,
+    html[data-theme="cid"] .key-section,
+    html[data-theme="cid"] .info-box {
+      background: #071107;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .tab-btn {
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .tab-btn:hover {
+      color: #f4fff4;
+      background: #0b1a0b;
+    }
+
+    html[data-theme="cid"] .tab-btn.active,
+    html[data-theme="cid"] .btn-primary {
+      background: #4ade80;
+      color: #030603;
+    }
+
     html[data-theme="vision-impaired"] body {
+      --stt-status-warning: #facc15;
       background: #000;
       color: #fff;
-      font-size: 1.08rem;
+      font-size: 1.12rem;
+      line-height: 1.75;
     }
 
     html[data-theme="vision-impaired"] .container {
       max-width: 100%;
-      padding-left: 28px;
-      padding-right: 28px;
+      padding-left: 40px;
+      padding-right: 40px;
     }
 
     html[data-theme="vision-impaired"] h1 {
       color: #facc15;
-      font-size: clamp(34px, 4vw, 44px);
-      letter-spacing: 0.02em;
+      font-size: clamp(40px, 4.8vw, 56px);
+      letter-spacing: 0.04em;
+    }
+
+    html[data-theme="vision-impaired"] .brand-logo {
+      width: min(400px, 78vw);
     }
 
     html[data-theme="vision-impaired"] .subtitle,
@@ -318,11 +445,20 @@
     html[data-theme="vision-impaired"] select,
     html[data-theme="vision-impaired"] .key-section,
     html[data-theme="vision-impaired"] .info-box {
-      background: #000;
+      background: #050505;
       color: #fff;
-      border: 5px solid #facc15;
-      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
-      box-shadow: 0 0 0 4px #facc15, 0 0 0 8px rgba(250, 204, 21, 0.45);
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px #facc15, 0 0 0 10px rgba(250, 204, 21, 0.34);
+    }
+    html[data-theme="vision-impaired"] .tabs {
+      gap: 10px;
+      padding: 8px;
+    }
+    html[data-theme="vision-impaired"] .card-title,
+    html[data-theme="vision-impaired"] .tab-content p,
+    html[data-theme="vision-impaired"] .info-box p,
+    html[data-theme="vision-impaired"] .key-section p {
+      color: #fff7cc;
     }
 
     html[data-theme="vision-impaired"] #overlay-url {
@@ -331,40 +467,47 @@
     }
 
     html[data-theme="vision-impaired"] .tab-btn {
-      color: #e5e7eb;
-      font-size: 16px;
-      padding: 14px 20px;
-      letter-spacing: 0.01em;
+      color: #fff7cc;
+      font-size: 17px;
+      padding: 16px 22px;
+      letter-spacing: 0.03em;
     }
 
     html[data-theme="vision-impaired"] .tab-btn.active {
       background: #facc15;
       color: #000;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.28);
     }
 
     html[data-theme="vision-impaired"] .card-title,
     html[data-theme="vision-impaired"] .stat-value {
       color: #facc15;
-      font-size: 1.28rem;
+      font-size: 1.34rem;
     }
 
     html[data-theme="vision-impaired"] .btn-primary {
       background: #facc15;
       color: #000;
+      font-size: 1.03rem;
+      padding: 12px 18px;
     }
 
     html[data-theme="vision-impaired"] .btn-secondary {
       background: #000;
       color: #fff;
-      border: 5px solid #facc15;
-      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.24);
+      font-size: 1.03rem;
+      padding: 12px 18px;
     }
 
     html[data-theme="vision-impaired"] .btn-danger {
       background: #7f1d1d;
       color: #fff;
-      border: 5px solid #facc15;
-      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.14);
+      border: 6px solid #facc15;
+      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.24);
+      font-size: 1.03rem;
+      padding: 12px 18px;
     }
 
     html[data-theme="vision-impaired"] .badge-green,
@@ -422,11 +565,13 @@
         font-size: 11px;
       }
     }
-  </style>
+    </style>
 </head>
 <body>
 <div class="container">
-    <h1>STT Ticker</h1>
+    <div class="brand-header">
+      <img class="brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+    </div>
     <p class="subtitle">Live-Untertitel-Overlay fuer gehoerlose und schwerhoerige Zuschauer</p>
 
     <!-- Tabs -->
@@ -472,7 +617,7 @@
     <div id="tab-overlay" class="tab-content">
       <div class="card">
         <div class="card-title">Overlay (OBS Browser Source)</div>
-        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzuf�gen:</p>
+        <p class="help-text" style="margin-bottom:8px;">Diese URL als Browser Source in OBS hinzufï¿½gen:</p>
         <input type="text" id="overlay-url" readonly style="font-family:monospace;font-size:12px;cursor:text;">
         <div class="grid-2" style="margin-top:10px;">
           <div>
@@ -516,7 +661,7 @@
         </div>
         <div class="btn-row">
           <button id="btn-update-url" class="btn btn-primary btn-sm">URL aktualisieren</button>
-          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay �ffnen</a>
+          <a id="open-overlay-btn" href="#" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Overlay ï¿½ffnen</a>
         </div>
       </div>
     </div>
@@ -562,7 +707,7 @@
             <input type="password" id="asr-fishaudioApiKey" placeholder="Fish.audio API key..." style="flex:1;min-width:200px;font-family:monospace;">
             <span id="fishaudio-test-status" style="font-size:11px;color:#888;">Fallback zum TTS-Plugin-Key</span>
           </div>
-          <p class="help-text">�berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
+          <p class="help-text">ï¿½berschreibt den Fish.audio-Key aus dem TTS-Plugin. <a href="https://docs.fish.audio" target="_blank" style="color:#64B5F6;">docs.fish.audio</a></p>
         </div>
       </div>
 
@@ -582,7 +727,7 @@
           <div>
             <label>STT-Modell</label>
             <select id="asr-model-select">
-              <option value="">Modell w�hlen</option>
+              <option value="">Modell wï¿½hlen</option>
             </select>
           </div>
         </div>
@@ -688,7 +833,7 @@
             <select id="ml-default-lang"></select>
           </div>
           <div>
-            <label>Sprache hinzuf�gen</label>
+            <label>Sprache hinzufï¿½gen</label>
             <div class="inline-flex">
               <select id="ml-add-lang" style="flex:1;"></select>
               <button id="btn-add-lang" class="btn btn-primary btn-sm">+</button>
@@ -729,7 +874,7 @@
         const s = data.status;
 
         document.getElementById('stat-enabled').textContent = s.enabled ? 'Active' : 'Disabled';
-        document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : '#FFC107';
+        document.getElementById('stat-enabled').style.color = s.enabled ? '#4CAF50' : 'var(--stt-status-warning, #facc15)';
 
         const asr = s.asr || {};
         const providerEl = document.getElementById('stat-provider');
@@ -755,10 +900,10 @@
           }
         } else if (asr.provider === 'fish.audio') {
           providerEl.textContent = 'Fish.audio';
-          providerEl.style.color = '#FFC107';
+          providerEl.style.color = 'var(--stt-status-warning, #facc15)';
           if (providerHintEl) {
             providerHintEl.style.background = 'rgba(255, 193, 7, 0.1)';
-            providerHintEl.style.color = '#FFC107';
+            providerHintEl.style.color = 'var(--stt-status-warning, #facc15)';
             providerHintEl.innerHTML = '<strong>Fish.audio aktiv</strong> - Token-Verbrauch sichtbar. Deepgram/ElevenLabs-Key spart Kosten.';
           }
         } else {
@@ -815,7 +960,7 @@
           keyStatus.style.color = '#4CAF50';
         } else {
           keyStatus.textContent = '(nicht gesetzt)';
-          keyStatus.style.color = '#FFC107';
+          keyStatus.style.color = 'var(--stt-status-warning, #facc15)';
         }
         await loadLanguages(tc.sourceLanguage || 'de', tc.targetLanguage || 'en');
         await loadModels(tc.model || 'nemotron-3-nano');
@@ -833,10 +978,10 @@
     const LANGUAGE_OPTIONS = [
       ['de', 'Deutsch'],
       ['en', 'English'],
-      ['es', 'Espa�ol'],
-      ['fr', 'Fran�ais'],
+      ['es', 'Espaï¿½ol'],
+      ['fr', 'Franï¿½ais'],
       ['it', 'Italiano'],
-      ['pt', 'Portugu�s'],
+      ['pt', 'Portuguï¿½s'],
       ['nl', 'Nederlands'],
       ['pl', 'Polski'],
       ['ru', '???????'],
@@ -844,14 +989,14 @@
       ['ko', '???'],
       ['zh', '??'],
       ['ar', '???????'],
-      ['tr', 'T�rk�e'],
+      ['tr', 'Tï¿½rkï¿½e'],
       ['sv', 'Svenska'],
       ['da', 'Dansk'],
       ['fi', 'Suomi'],
       ['no', 'Norsk'],
-      ['cs', 'Ce�tina'],
+      ['cs', 'Ceï¿½tina'],
       ['hu', 'Magyar'],
-      ['ro', 'Rom�na'],
+      ['ro', 'Romï¿½na'],
       ['uk', '??????????'],
       ['el', '????????'],
       ['he', '?????'],
@@ -867,7 +1012,7 @@
       if (includeEmpty) {
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Sprache w�hlen...';
+        placeholder.textContent = 'Sprache wï¿½hlen...';
         select.appendChild(placeholder);
       }
       for (const [code, label] of LANGUAGE_OPTIONS) {
@@ -896,7 +1041,7 @@
       const providerEl = document.getElementById('asr-provider');
       if (providerEl) providerEl.value = asr.provider || 'auto';
 
-      // STT-Modell-Dropdown bef�llen (wird von loadAsrModels() gemacht)
+      // STT-Modell-Dropdown befï¿½llen (wird von loadAsrModels() gemacht)
       // Gespeichertes Modell aus Config setzen
       const modelSelect = document.getElementById('asr-model-select');
       if (modelSelect) {
@@ -1010,10 +1155,10 @@
     const LANG_NAMES = {
       'de': 'Deutsch',
       'en': 'English',
-      'es': 'Espa�ol',
-      'fr': 'Fran�ais',
+      'es': 'Espaï¿½ol',
+      'fr': 'Franï¿½ais',
       'it': 'Italiano',
-      'pt': 'Portugu�s',
+      'pt': 'Portuguï¿½s',
       'nl': 'Nederlands',
       'pl': 'Polski',
       'ru': '???????',
@@ -1021,14 +1166,14 @@
       'ko': '???',
       'zh': '??',
       'ar': '???????',
-      'tr': 'T�rk�e',
+      'tr': 'Tï¿½rkï¿½e',
       'sv': 'Svenska',
       'da': 'Dansk',
       'fi': 'Suomi',
       'no': 'Norsk',
-      'cs': 'Ce�tina',
+      'cs': 'Ceï¿½tina',
       'hu': 'Magyar',
-      'ro': 'Rom�na',
+      'ro': 'Romï¿½na',
       'uk': '??????????',
       'el': '????????',
       'he': '?????',
@@ -1044,7 +1189,7 @@
       for (const lang of currentOutputLangs) {
         const tag = document.createElement('span');
         tag.className = 'lang-tag';
-        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">�</span>';
+        tag.innerHTML = (LANG_NAMES[lang] || lang.toUpperCase()) + ' <span class="remove">ï¿½</span>';
         tag.addEventListener('click', () => {
           currentOutputLangs = currentOutputLangs.filter(l => l !== lang);
           renderLangTags(currentOutputLangs);
@@ -1136,7 +1281,7 @@
 
       const statusEl = document.getElementById('asr-status');
       statusEl.textContent = 'Speichere...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
 
       try {
         const res = await fetch('/api/stt-ticker/asr/settings', {
@@ -1166,7 +1311,8 @@
       const maxLines = (document.getElementById('maxLines-input')?.value) || '2';
       const fontSize = (document.getElementById('fontSize-input')?.value) || '36px';
       const themeRaw = localStorage.getItem('dashboard-theme') || localStorage.getItem('theme') || localStorage.getItem('ui-theme') || 'night';
-      const theme = ['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid'.includes(themeRaw) ? themeRaw : 'night';
+      const validThemes = ['day', 'night', 'contrast', 'vision-impaired', 'cid'];
+      const theme = validThemes.includes(themeRaw) ? themeRaw : 'night';
       const url = BASE + '/overlay/stt-ticker?design=' + encodeURIComponent(design)
         + '&position=' + encodeURIComponent(position)
         + '&maxLines=' + encodeURIComponent(maxLines)
@@ -1302,7 +1448,7 @@
         return;
       }
       statusEl.textContent = 'Teste...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-deepgram', {
           method: 'POST',
@@ -1311,10 +1457,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key g�ltig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ung�ltig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {
@@ -1333,7 +1479,7 @@
         return;
       }
       statusEl.textContent = 'Teste...';
-      statusEl.style.color = '#FFC107';
+      statusEl.style.color = 'var(--stt-status-warning, #facc15)';
       try {
         const res = await fetch('/api/stt-ticker/asr/test-elevenlabs', {
           method: 'POST',
@@ -1342,10 +1488,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          statusEl.textContent = 'Key g�ltig!';
+          statusEl.textContent = 'Key gï¿½ltig!';
           statusEl.style.color = '#4CAF50';
         } else {
-          statusEl.textContent = data.message || data.error || 'Ung�ltig';
+          statusEl.textContent = data.message || data.error || 'Ungï¿½ltig';
           statusEl.style.color = '#f44336';
         }
       } catch (e) {

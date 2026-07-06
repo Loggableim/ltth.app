@@ -6,6 +6,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="chatango.title">Chatango Settings</title>
     <link rel="stylesheet" href="/css/themes.css">
+    <script>
+        (function () {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/ltthwebsitelogo.png'
+            };
+            const fileLogoByTheme = {
+                day: '../../public/logo-wide.png',
+                night: '../../public/logo-wide.png',
+                contrast: '../../public/logo-wide.png',
+                'vision-impaired': '../../public/logo-wide.png',
+                cid: '../../public/ltthwebsitelogo.png'
+            };
+
+            function readTheme() {
+                try {
+                    const current = document.documentElement?.getAttribute('data-theme');
+                    if (validThemes.has(current)) return current;
+                } catch (error) {}
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (validThemes.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (validThemes.has(value)) return value;
+                    }
+                } catch (error) {}
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) {
+                    const nextSrc = location.protocol === 'file:'
+                        ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+                        : (logoByTheme[theme] || logoByTheme.night);
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                }
+            }
+
+            syncTheme();
+            document.addEventListener('DOMContentLoaded', syncTheme);
+            window.addEventListener('focus', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -13,97 +90,6 @@
             color: var(--color-text-primary);
             padding: 20px;
             margin: 0;
-        }
-
-        html[data-theme="day"] body {
-            background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
-            color: #10203a;
-        }
-
-        html[data-theme="night"] body {
-            background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
-            color: #e5e7eb;
-        }
-
-        html[data-theme="day"] .card {
-            background: #ffffff;
-            color: #10203a;
-            border-color: #bfd0f7;
-        }
-
-        html[data-theme="night"] .card {
-            background: #11172a;
-            color: #e5e7eb;
-            border-color: #2b3552;
-        }
-
-        html[data-theme="day"] .card-header {
-            border-bottom-color: #bfd0f7;
-        }
-
-        html[data-theme="night"] .card-header {
-            border-bottom-color: #2b3552;
-        }
-
-        html[data-theme="day"] .form-control,
-        html[data-theme="day"] .btn-secondary,
-        html[data-theme="day"] .info-box,
-        html[data-theme="day"] .preview-container,
-        html[data-theme="day"] .embed-preview,
-        html[data-theme="day"] .code-block {
-            background: #fff;
-            color: #10203a;
-            border-color: #bfd0f7;
-        }
-
-        html[data-theme="night"] .form-control,
-        html[data-theme="night"] .btn-secondary,
-        html[data-theme="night"] .info-box,
-        html[data-theme="night"] .preview-container,
-        html[data-theme="night"] .embed-preview,
-        html[data-theme="night"] .code-block {
-            background: #0f172a;
-            color: #e5e7eb;
-            border-color: #334155;
-        }
-
-        html[data-theme="contrast"] body,
-        html[data-theme="vision-impaired"] body {
-            background: #000;
-            color: #fff;
-        }
-
-        html[data-theme="contrast"] .card,
-        html[data-theme="vision-impaired"] .card,
-        html[data-theme="contrast"] .form-control,
-        html[data-theme="vision-impaired"] .form-control,
-        html[data-theme="contrast"] .btn-secondary,
-        html[data-theme="vision-impaired"] .btn-secondary,
-        html[data-theme="contrast"] .info-box,
-        html[data-theme="vision-impaired"] .info-box,
-        html[data-theme="contrast"] .preview-container,
-        html[data-theme="vision-impaired"] .preview-container,
-        html[data-theme="contrast"] .embed-preview,
-        html[data-theme="vision-impaired"] .embed-preview,
-        html[data-theme="contrast"] .code-block,
-        html[data-theme="vision-impaired"] .code-block {
-            background: #050505;
-            color: #fff;
-            border: 2px solid #facc15;
-        }
-
-        html[data-theme="contrast"] .btn-primary,
-        html[data-theme="vision-impaired"] .btn-primary {
-            background: #facc15;
-            color: #000;
-        }
-
-        html[data-theme="vision-impaired"] .card-title,
-        html[data-theme="vision-impaired"] .form-group label,
-        html[data-theme="vision-impaired"] .preview-title,
-        html[data-theme="vision-impaired"] .info-box h4,
-        html[data-theme="vision-impaired"] .info-box p {
-            color: #fff7cc;
         }
 
         .container {
@@ -129,10 +115,48 @@
             border-bottom: 1px solid var(--color-border);
         }
 
+        .page-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .page-brand-logo {
+            width: min(280px, 48vw);
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        html[data-theme="vision-impaired"] .page-brand-logo {
+            width: min(340px, 56vw);
+        }
+
+        html[data-theme="cid"] .page-brand-logo {
+            width: min(260px, 44vw);
+        }
+
         .card-title {
             font-size: 1.5em;
             font-weight: 600;
             margin: 0;
+        }
+
+        .brand-card {
+            background: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-border);
+        }
+
+        .brand-card p {
+            margin-top: 12px;
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-width: 72ch;
         }
 
         .status-indicator {
@@ -340,10 +364,16 @@
 </head>
 <body>
     <div class="container">
+        <div class="brand-card">
+            <div class="page-brand">
+            </div>
+            <p>Chatango settings stay aligned with the active LTTH theme so the panel blends with the rest of the app across day, night, contrast, vision-impaired, and Cid modes.</p>
+        </div>
+
         <!-- Status Card -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">💬 Chatango Integration</h2>
+                <h2 class="card-title">ðŸ’¬ Chatango Integration</h2>
                 <div class="status-indicator" id="status-indicator">
                     <span class="status-dot"></span>
                     <span id="status-text">Active</span>
@@ -387,7 +417,6 @@
                             <option value="night">Night (Dark)</option>
                             <option value="day">Day (Light)</option>
                             <option value="contrast">High Contrast</option>
-                            <option value="vision-impaired">Vision Impaired</option>
                         </select>
                     </div>
 
@@ -493,11 +522,11 @@
 
             <h4 class="section-title">Dashboard Embed</h4>
             <div class="code-block" id="dashboard-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn">📋 Copy Code</button>
+            <button class="btn btn-secondary copy-btn" id="copy-dashboard-btn">ðŸ“‹ Copy Code</button>
 
             <h4 class="section-title">Widget Embed</h4>
             <div class="code-block" id="widget-embed-code">Loading...</div>
-            <button class="btn btn-secondary copy-btn" id="copy-widget-btn">📋 Copy Code</button>
+            <button class="btn btn-secondary copy-btn" id="copy-widget-btn">ðŸ“‹ Copy Code</button>
         </div>
 
         <!-- Preview Card -->
@@ -712,7 +741,7 @@
             wrapper.style.color = 'var(--color-text-muted)';
 
             const warning = document.createElement('p');
-            warning.textContent = '⚠️ Live preview requires the Chatango embed script to load.';
+            warning.textContent = 'âš ï¸ Live preview requires the Chatango embed script to load.';
             wrapper.appendChild(warning);
 
             const instructions = document.createElement('p');
