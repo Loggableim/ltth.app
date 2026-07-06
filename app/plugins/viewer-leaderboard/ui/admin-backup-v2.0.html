@@ -720,7 +720,7 @@
       background: var(--color-bg-tertiary);
       color: var(--color-text-secondary);
     }
-  </style>
+    </style>
 </head>
 <body>
   <div class="app-container">
@@ -1137,7 +1137,7 @@
             <span><span class="card-header-icon">🎨</span>Select Overlay</span>
           </div>
           <div class="card-body">
-            <div class="form-group" style="max-width: 500px;">
+            <div class="form-group" style="max-width: 800px;">
               <label class="form-label">Choose Overlay to Preview</label>
               <select class="form-control" id="overlaySelect" onchange="loadOverlayPreview()">
                 <option value="">-- Select an Overlay --</option>
@@ -1148,7 +1148,7 @@
               </select>
             </div>
 
-            <div class="form-group" style="max-width: 300px; margin-top: 16px;">
+            <div class="form-group" style="max-width: 480px; margin-top: 16px;">
               <label class="form-label">Preview Scale</label>
               <select class="form-control" id="previewScale" onchange="updatePreviewScale()">
                 <option value="0.5">50% (Small)</option>
@@ -1215,7 +1215,7 @@
             <div style="margin-top: 16px;">
               <label class="form-label">Test Username</label>
               <input type="text" class="form-control" id="testUsername" placeholder="Enter username for testing" 
-                style="max-width: 300px;">
+                style="max-width: 480px;">
             </div>
           </div>
         </div>
@@ -1364,7 +1364,7 @@
               </div>
             </div>
 
-            <div id="linearSettings" style="display: none; margin-top: 16px; max-width: 400px;">
+            <div id="linearSettings" style="display: none; margin-top: 16px; width: min(100%, 560px); max-width: none;">
               <div class="form-group">
                 <label class="form-label">XP Per Level</label>
                 <input type="number" class="form-control" id="xpPerLevel" value="1000" min="100">
@@ -1505,7 +1505,7 @@
           <p class="page-description">Manually award XP to viewers for special events or achievements</p>
         </div>
 
-        <div class="card" style="max-width: 600px;">
+        <div class="card" style="max-width: 1200px; width: min(96vw, 1200px);">
           <div class="card-header">
             <span><span class="card-header-icon">🎁</span>Award XP</span>
           </div>
@@ -1806,7 +1806,7 @@
             <span><span class="card-header-icon">📊</span>Viewer XP History</span>
           </div>
           <div class="card-body">
-            <div class="form-group" style="max-width: 500px;">
+            <div class="form-group" style="max-width: 800px;">
               <label class="form-label">Search Viewer</label>
               <div style="display: flex; gap: 12px;">
                 <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
