@@ -12,7 +12,6 @@ describe('Interactive Story UI - Collapsible Sections', () => {
 
   // Constants for test configuration
   const EXPECTED_SECTION_COUNT = 6; // Total number of collapsible sections in the UI
-  const ONCLICK_SEARCH_RADIUS = 500; // Characters to search before section title for onclick handler
 
   beforeAll(() => {
     // Load the UI HTML file
@@ -50,11 +49,10 @@ describe('Interactive Story UI - Collapsible Sections', () => {
 
   test('timing configuration section should have onclick handler', () => {
     // Check for Timing Configuration section with onclick handler
-    const hasTimingSection = uiHtml.includes('⏱️ Timing Configuration');
-    const hasOnclickBefore = uiHtml.indexOf('onclick="toggleConfigSection(this)"') > 0;
-    const timingIndex = uiHtml.indexOf('⏱️ Timing Configuration');
-    // Find the nearest onclick handler within ONCLICK_SEARCH_RADIUS characters before the section title
-    const nearbyOnclick = uiHtml.substring(Math.max(0, timingIndex - ONCLICK_SEARCH_RADIUS), timingIndex).includes('onclick="toggleConfigSection(this)"');
+    const hasTimingSection = uiHtml.includes('Timing Configuration');
+    const timingIndex = uiHtml.indexOf('Timing Configuration');
+    const timingSectionStart = uiHtml.lastIndexOf('<div class="config-section collapsed">', timingIndex);
+    const nearbyOnclick = uiHtml.substring(timingSectionStart, timingIndex).includes('onclick="toggleConfigSection(this)"');
     
     expect(hasTimingSection).toBe(true);
     expect(nearbyOnclick).toBe(true);
@@ -62,10 +60,10 @@ describe('Interactive Story UI - Collapsible Sections', () => {
 
   test('advanced settings section should have onclick handler', () => {
     // Check for Advanced Settings section with onclick handler
-    const hasAdvancedSection = uiHtml.includes('⚙️ Advanced Settings');
-    const advancedIndex = uiHtml.indexOf('⚙️ Advanced Settings');
-    // Find the nearest onclick handler within ONCLICK_SEARCH_RADIUS characters before the section title
-    const nearbyOnclick = uiHtml.substring(Math.max(0, advancedIndex - ONCLICK_SEARCH_RADIUS), advancedIndex).includes('onclick="toggleConfigSection(this)"');
+    const hasAdvancedSection = uiHtml.includes('Advanced Settings');
+    const advancedIndex = uiHtml.indexOf('Advanced Settings');
+    const advancedSectionStart = uiHtml.lastIndexOf('<div class="config-section collapsed">', advancedIndex);
+    const nearbyOnclick = uiHtml.substring(advancedSectionStart, advancedIndex).includes('onclick="toggleConfigSection(this)"');
     
     expect(hasAdvancedSection).toBe(true);
     expect(nearbyOnclick).toBe(true);
@@ -80,13 +78,13 @@ describe('Interactive Story UI - Collapsible Sections', () => {
 
   test('timing configuration should start collapsed', () => {
     // Find the Timing Configuration section
-    const timingSectionRegex = /<div class="config-section collapsed">[\s\S]*?⏱️ Timing Configuration/;
+    const timingSectionRegex = /<div class="config-section collapsed">[\s\S]*?Timing Configuration/;
     expect(uiHtml).toMatch(timingSectionRegex);
   });
 
   test('advanced settings should start collapsed', () => {
     // Find the Advanced Settings section  
-    const advancedSectionRegex = /<div class="config-section collapsed">[\s\S]*?⚙️ Advanced Settings/;
+    const advancedSectionRegex = /<div class="config-section collapsed">[\s\S]*?Advanced Settings/;
     expect(uiHtml).toMatch(advancedSectionRegex);
   });
 

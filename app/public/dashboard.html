@@ -15,9 +15,24 @@
     <script>
         (function () {
             const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
-            const SIDEBAR_WIDE_LOGO = '/ltthwebsitelogo.png';
+            const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
             const SIDEBAR_ICON_LOGO = '/ltthicon.png';
-            const SIDEBAR_CID_WIDE_LOGO = '/ltthwebsitelogo.png';
+            const GOALS_TOPBAR_LOGO = '/logo-wide.png';
+
+            function isGoalsView() {
+                try {
+                    if (window.NavigationManager?.getCurrentView?.() === 'goals') return true;
+                } catch (error) {}
+
+                const activeGoalsView = document.querySelector('#view-goals.active');
+                if (activeGoalsView) return true;
+
+                try {
+                    return localStorage.getItem('active-view') === 'goals';
+                } catch (error) {}
+
+                return false;
+            }
 
             function readTheme() {
                 try {
@@ -43,25 +58,25 @@
             }
 
             function syncLogos() {
-                const theme = readTheme();
                 const wide = document.querySelector('.sidebar-logo-wide');
                 const mini = document.querySelector('.sidebar-logo-mini');
                 const topbar = document.querySelector('.topbar-logo-image');
-                const wideLogo = theme === 'cid' ? SIDEBAR_CID_WIDE_LOGO : SIDEBAR_WIDE_LOGO;
                 if (wide) {
-                    if (wide.getAttribute('src') !== wideLogo) wide.setAttribute('src', wideLogo);
+                    if (wide.getAttribute('src') !== SIDEBAR_WIDE_LOGO) wide.setAttribute('src', SIDEBAR_WIDE_LOGO);
                 }
                 if (mini) {
                     if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
                 }
                 if (topbar) {
-                    if (topbar.getAttribute('src') !== wideLogo) topbar.setAttribute('src', wideLogo);
+                    const targetSrc = isGoalsView() ? GOALS_TOPBAR_LOGO : SIDEBAR_WIDE_LOGO;
+                    if (topbar.getAttribute('src') !== targetSrc) topbar.setAttribute('src', targetSrc);
                 }
             }
 
             document.addEventListener('DOMContentLoaded', syncLogos);
             window.addEventListener('load', syncLogos);
             window.addEventListener('focus', syncLogos);
+            window.addEventListener('ltth:view-changed', syncLogos);
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) syncLogos();
             });
@@ -445,6 +460,18 @@
             display: block;
         }
 
+        .plugin-store-card__media.is-brand {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(17, 24, 39, 0.96));
+        }
+
+        .plugin-store-card__media.is-brand img {
+            object-fit: contain;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.12), transparent 58%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
         .plugin-store-card__avatar {
             width: 100%;
             height: 100%;
@@ -460,19 +487,11 @@
         .plugin-store-card__avatar-icon {
             width: 42%;
             height: 42%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid currentColor;
-            border-radius: 18px;
-            font-size: 0.8rem;
-            font-weight: 900;
-            letter-spacing: 0.08em;
+            display: block;
+            background: currentColor;
+            -webkit-mask: url("/ltthicon.png") center / contain no-repeat;
+            mask: url("/ltthicon.png") center / contain no-repeat;
             filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
-        }
-
-        .plugin-store-card__avatar-icon::before {
-            content: "PLG";
         }
 
         .plugin-store-card__media-chip {
@@ -680,6 +699,18 @@
             display: block;
         }
 
+        .plugin-store-drawer__media.is-brand {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
+        .plugin-store-drawer__media.is-brand img {
+            object-fit: contain;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.12), transparent 58%),
+                linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(17, 24, 39, 0.98));
+        }
+
         .plugin-store-drawer__avatar {
             width: 100%;
             height: 100%;
@@ -695,19 +726,11 @@
         .plugin-store-drawer__avatar-icon {
             width: 58%;
             height: 58%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid currentColor;
-            border-radius: 24px;
-            font-size: 1.05rem;
-            font-weight: 900;
-            letter-spacing: 0.08em;
+            display: block;
+            background: currentColor;
+            -webkit-mask: url("/ltthicon.png") center / contain no-repeat;
+            mask: url("/ltthicon.png") center / contain no-repeat;
             filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.24));
-        }
-
-        .plugin-store-drawer__avatar-icon::before {
-            content: "PLG";
         }
 
         .plugin-store-drawer__title {
@@ -1559,7 +1582,7 @@
         <aside id="sidebar" class="sidebar sidebar-expanded">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <img src="/ltthwebsitelogo.png" alt="LTTH logo" class="sidebar-logo-wide">
+                    <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
                     <img id="sidebar-mini-icon" src="/ltthicon.png" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
                 <button id="sidebar-toggle" class="sidebar-toggle-btn">
@@ -1601,7 +1624,7 @@
                             <span class="sidebar-item-text" data-i18n="navigation.dashboard">Dashboard</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="clarityhud" data-plugin="clarityhud" data-tooltip="ClarityHUD">
-                            <i data-lucide="layout"></i>
+                            <img src="/plugins/clarityhud/assets/clarity-icon.png" alt="" class="sidebar-plugin-icon">
                             <span class="sidebar-item-text" data-i18n="navigation.clarityhud">ClarityHUD</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="lastevent-spotlight" data-plugin="lastevent-spotlight" data-tooltip="LastEvent">
@@ -1649,11 +1672,11 @@
                             <span class="sidebar-item-text" data-i18n="navigation.tts">TTS</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="music-bot" data-plugin="music-bot" data-tooltip="Music Bot">
-                            <i data-lucide="headphones"></i>
+                            <img src="/plugins/music-bot/assets/soundbot.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-music-bot">
                             <span class="sidebar-item-text" data-i18n="navigation.music_bot">Music Bot</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="soundboard" data-plugin="soundboard" data-tooltip="Soundboard">
-                            <i data-lucide="music"></i>
+                            <img src="/soundboard-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-soundboard">
                             <span class="sidebar-item-text" data-i18n="navigation.soundboard">Soundboard</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="talking-heads" data-plugin="talking-heads" data-tooltip="Talking Heads">
@@ -1661,7 +1684,7 @@
                             <span class="sidebar-item-text" data-i18n="navigation.talking_heads">Talking Heads</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="stt-ticker" data-plugin="stt-ticker" data-tooltip="STT Ticker">
-                            <i data-lucide="subtitles"></i>
+                            <img src="/ltthttsicon.png" alt="" class="sidebar-plugin-icon">
                             <span class="sidebar-item-text" data-i18n="navigation.stt_ticker">STT Ticker</span>
                         </a>
                         <a href="/stt-ticker/capture" target="_blank" class="sidebar-item" data-tooltip="STT Audio Capture (eigenes Fenster)">
@@ -1701,11 +1724,11 @@
                     </div>
                     <div class="sidebar-category-items">
                         <a href="#" class="sidebar-item" data-view="quiz-show" data-plugin="quiz-show" data-tooltip="Quiz Show">
-                            <i data-lucide="help-circle"></i>
+                            <img class="sidebar-plugin-icon" src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.quiz_show">Quiz Show</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="interactive-story" data-plugin="interactive-story" data-tooltip="Interactive Story">
-                            <i data-lucide="book-open"></i>
+                            <img class="sidebar-plugin-icon" src="/plugins/interactive-story/assets/interactive-story-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.interactive_story">Interactive Story</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="coinbattle" data-plugin="coinbattle" data-tooltip="CoinBattle">
@@ -1830,7 +1853,7 @@
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
                     <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
-                        <img src="/ltthicon.png" alt="LTTH" class="topbar-logo-image">
+                        <img src="/logo-wide.png" alt="LTTH" class="topbar-logo-image">
                     </div>
                 </div>
                 <div class="topbar-right">
@@ -2452,16 +2475,6 @@
                 <!-- View: Goals -->
                 <div id="view-goals" class="content-view" data-plugin="goals">
                     <section class="view-section">
-                        <div class="view-header">
-                            <h2 class="view-title">
-                                <i data-lucide="target"></i>
-                                Live Goals
-                            </h2>
-                            <a href="/goals/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
-                        </div>
                         <div class="iframe-container">
                             <iframe data-src="/goals/ui" title="Live Goals Configuration"></iframe>
                         </div>
@@ -2511,7 +2524,7 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="subtitles"></i>
+                                <img src="/ltthttsicon.png" alt="" class="view-plugin-icon">
                                 STT Ticker
                             </h2>
                             <a href="/stt-ticker/ui" target="_blank" class="btn btn-sm btn-ghost">
@@ -2530,7 +2543,7 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="headphones"></i>
+                                <img src="/plugins/music-bot/assets/soundbot.png" alt="" class="view-plugin-icon">
                                 Music Bot
                             </h2>
                             <a href="/plugins/music-bot/ui" target="_blank" class="btn btn-sm btn-ghost">
@@ -2549,13 +2562,9 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="music"></i>
+                                <img src="/soundboard-icon.png" alt="" class="view-plugin-icon view-plugin-icon-soundboard">
                                 Soundboard Configuration
                             </h2>
-                            <a href="/soundboard/ui" target="_blank" class="btn btn-sm btn-ghost">
-                                <i data-lucide="external-link"></i>
-                                Open in New Tab
-                            </a>
                         </div>
                         <div class="iframe-container">
                             <iframe data-src="/soundboard/ui" title="Soundboard Configuration"></iframe>
@@ -2758,7 +2767,7 @@
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
-                                <i data-lucide="help-circle"></i>
+                                <img class="view-plugin-icon" src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" aria-hidden="true">
                                 Quiz Show
                             </h2>
                             <a href="/quiz-show/ui" target="_blank" class="btn btn-sm btn-ghost">
@@ -3831,7 +3840,7 @@
                                     <i data-lucide="users"></i>
                                     Profile Management Tools
                                     <span class="profile-help-icon" data-tooltip="Tools to verify profile integrity, check migration status, and manage profiles" title="Tools to verify profile integrity, check migration status, and manage profiles">
-                                        <i data-lucide="help-circle"></i>
+                            <img src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-quiz-show">
                                     </span>
                                 </h3>
                                 <p class="text-sm text-gray-400 mb-4">

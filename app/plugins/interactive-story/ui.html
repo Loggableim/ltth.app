@@ -226,6 +226,1196 @@
 
     }
 
+    /* Dashboard rework */
+
+    .container {
+
+      max-width: 1760px;
+
+      margin: 0 auto;
+
+      padding: 20px 22px 32px;
+
+    }
+
+    .app-shell {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 22px;
+
+    }
+
+    .page-header {
+
+      border-radius: 24px;
+
+      padding: 18px 22px;
+
+      gap: 20px;
+
+      align-items: center;
+
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
+
+      backdrop-filter: blur(18px);
+
+    }
+
+    .page-brand-logo {
+
+      width: min(360px, 68vw);
+
+      margin-bottom: 10px;
+
+    }
+
+    .hero-banner {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: flex-end;
+
+      gap: 24px;
+
+      padding: 2px 6px 0;
+
+    }
+
+    .hero-copy {
+
+      min-width: 0;
+
+    }
+
+    .hero-heading-row {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 16px;
+
+      flex-wrap: wrap;
+
+    }
+
+    .hero-heading-row h1 {
+
+      margin: 0;
+
+      font-size: clamp(2.4rem, 3.8vw, 4.2rem);
+
+      line-height: 1;
+
+      letter-spacing: -0.04em;
+
+      font-weight: 800;
+
+    }
+
+    .hero-subtitle {
+
+      margin-top: 10px;
+
+      max-width: 760px;
+
+      color: var(--color-text-secondary, #cbd5e1);
+
+      font-size: 1.08rem;
+
+    }
+
+    .hero-state-badge {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      min-height: 40px;
+
+      padding: 10px 18px;
+
+      border-radius: 999px;
+
+      border: 1px solid rgba(34, 197, 94, 0.48);
+
+      background: rgba(16, 185, 129, 0.12);
+
+      color: #4ade80;
+
+      font-size: 0.92rem;
+
+      font-weight: 800;
+
+      letter-spacing: 0.01em;
+
+      white-space: nowrap;
+
+    }
+
+    .hero-actions {
+
+      display: flex;
+
+      align-items: flex-end;
+
+      justify-content: flex-end;
+
+      flex-shrink: 0;
+
+    }
+
+    .hero-overlay-btn {
+
+      min-width: 212px;
+
+      min-height: 52px;
+
+      padding: 14px 22px;
+
+      border-radius: 16px;
+
+      font-weight: 700;
+
+      letter-spacing: 0.01em;
+
+      background: linear-gradient(180deg, rgba(28, 42, 66, 0.95), rgba(14, 24, 39, 0.95));
+
+      border: 1px solid rgba(96, 165, 250, 0.25);
+
+      box-shadow: 0 14px 28px rgba(6, 11, 22, 0.25);
+
+    }
+
+    .hero-overlay-btn:hover {
+
+      transform: translateY(-1px);
+
+      border-color: rgba(96, 165, 250, 0.4);
+
+    }
+
+    .card {
+
+      border-radius: 20px;
+
+      overflow: hidden;
+
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+
+    }
+
+    .card-header {
+
+      min-height: 62px;
+
+      padding: 16px 20px;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 12px;
+
+      justify-content: space-between;
+
+      font-size: 0.82rem;
+
+      font-weight: 800;
+
+      letter-spacing: 0.08em;
+
+      text-transform: uppercase;
+
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+
+      color: var(--color-text-primary, #f8fafc);
+
+    }
+
+    .card-body {
+
+      padding: 20px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 18px;
+
+    }
+
+    .status-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      gap: 14px;
+
+    }
+
+    .status-item {
+
+      min-height: 86px;
+
+      border-radius: 16px;
+
+      padding: 14px 16px;
+
+      background: var(--color-bg-secondary, #1e293b);
+
+      border: 1px solid var(--color-border, #334155);
+
+      display: flex;
+
+      flex-direction: column;
+
+      justify-content: center;
+
+      gap: 6px;
+
+    }
+
+    .status-label {
+
+      letter-spacing: 0.04em;
+
+      text-transform: uppercase;
+
+      font-size: 0.73rem;
+
+      color: var(--color-text-muted, #94a3b8);
+
+    }
+
+    .status-value {
+
+      font-weight: 800;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      min-width: 0;
+
+    }
+
+    .status-pill-dot {
+
+      width: 10px;
+
+      height: 10px;
+
+      border-radius: 999px;
+
+      display: inline-block;
+
+      flex-shrink: 0;
+
+      background: #94a3b8;
+
+      box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
+
+    }
+
+    .status-pill-dot.is-on {
+
+      background: #22c55e;
+
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14);
+
+    }
+
+    .status-pill-dot.is-off {
+
+      background: #64748b;
+
+    }
+
+    .live-state {
+
+      padding: 16px 18px;
+
+      border-radius: 18px;
+
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(14, 165, 233, 0.05));
+
+      border: 1px solid rgba(34, 197, 94, 0.22);
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 6px;
+
+    }
+
+    .live-state__title {
+
+      color: #4ade80;
+
+      font-size: 1.14rem;
+
+      font-weight: 800;
+
+    }
+
+    .live-state__meta {
+
+      color: var(--color-text-muted, #94a3b8);
+
+      font-size: 0.92rem;
+
+    }
+
+    .quick-start-card {
+
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+
+      border: 1px solid rgba(16, 185, 129, 0.22);
+
+      border-radius: 18px;
+
+      padding: 20px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 14px;
+
+    }
+
+    .quick-start-card h4 {
+
+      color: #4ade80;
+
+      margin-bottom: 0;
+
+      font-size: 0.8rem;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.08em;
+
+    }
+
+    .quick-start-steps {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+
+      gap: 12px;
+
+    }
+
+    .quick-start-step {
+
+      display: flex;
+
+      align-items: flex-start;
+
+      gap: 10px;
+
+      min-width: 0;
+
+      padding: 14px;
+
+      background: var(--color-bg-secondary, #1e293b);
+
+      border: 1px solid var(--color-border, #334155);
+
+      border-radius: 16px;
+
+    }
+
+    .step-number {
+
+      background: var(--gradient-primary, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%));
+
+      color: white;
+
+      width: 30px;
+
+      height: 30px;
+
+      border-radius: 999px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-weight: 800;
+
+      font-size: 0.8rem;
+
+      flex-shrink: 0;
+
+    }
+
+    .step-content {
+
+      flex: 1;
+
+      min-width: 0;
+
+    }
+
+    .step-content strong {
+
+      display: block;
+
+      margin-bottom: 4px;
+
+    }
+
+    .step-content small {
+
+      color: var(--color-text-muted, #94a3b8);
+
+    }
+
+    .config-section {
+
+      border-radius: 16px;
+
+      margin-bottom: 14px;
+
+    }
+
+    .config-section-header {
+
+      padding: 14px 16px;
+
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+
+    }
+
+    .config-section-header h5 {
+
+      font-size: 0.92rem;
+
+      letter-spacing: 0.06em;
+
+      text-transform: uppercase;
+
+    }
+
+    .config-section-content {
+
+      padding: 16px;
+
+    }
+
+    .input-group {
+
+      display: grid;
+
+      grid-template-columns: minmax(0, 1fr) auto auto;
+
+      gap: 10px;
+
+      align-items: stretch;
+
+    }
+
+    .input-group input {
+
+      min-width: 0;
+
+    }
+
+    #overlayCard .input-group button {
+
+      min-width: 108px;
+
+    }
+
+    @media (max-width: 1600px) {
+
+      #overlayCard .input-group {
+
+        display: grid;
+
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+      }
+
+      #overlayCard .input-group input {
+
+        grid-column: 1 / -1;
+
+      }
+
+      #overlayCard .input-group button {
+
+        min-width: 0;
+
+      }
+
+      #copyOverlayUrlBtn {
+
+        grid-column: 1;
+
+      }
+
+      #openOverlayBtn {
+
+        grid-column: 2;
+
+      }
+
+    }
+
+    #overlayPreviewContainer > div {
+
+      border-radius: 18px !important;
+
+      border-width: 1px !important;
+
+    }
+
+    #startStoryBtn {
+
+      width: min(100%, 420px);
+
+      min-height: 56px;
+
+      padding: 14px 24px;
+
+      font-size: 1.02rem;
+
+      font-weight: 800;
+
+      letter-spacing: 0.01em;
+
+      background: linear-gradient(90deg, #22c55e 0%, #2dd4bf 45%, #8b5cf6 100%);
+
+      color: #04131c;
+
+      border: none;
+
+      box-shadow: 0 18px 34px rgba(34, 197, 94, 0.22);
+
+    }
+
+    #startStoryBtn:hover {
+
+      transform: translateY(-1px);
+
+      box-shadow: 0 22px 38px rgba(34, 197, 94, 0.28);
+
+    }
+
+    .story-chapter-card {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 18px;
+
+      padding: 22px;
+
+      border-radius: 22px;
+
+      background: linear-gradient(180deg, rgba(7, 15, 28, 0.92), rgba(12, 18, 32, 0.9));
+
+      border: 1px solid rgba(52, 211, 153, 0.16);
+
+      box-shadow: 0 20px 42px rgba(0, 0, 0, 0.2);
+
+    }
+
+    .story-chapter-card__header {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      gap: 16px;
+
+      align-items: flex-start;
+
+    }
+
+    .story-chapter-card__heading {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 8px;
+
+      min-width: 0;
+
+    }
+
+    .story-chapter-card__heading h3 {
+
+      margin: 0;
+
+      font-size: clamp(1.5rem, 2vw, 2.25rem);
+
+      line-height: 1.08;
+
+      letter-spacing: -0.03em;
+
+    }
+
+    .story-chapter-card__eyebrow {
+
+      font-size: 0.75rem;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.12em;
+
+      color: var(--color-text-muted, #94a3b8);
+
+      font-weight: 800;
+
+    }
+
+    .story-chapter-card__badge {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      min-height: 38px;
+
+      padding: 0 14px;
+
+      border-radius: 999px;
+
+      background: rgba(16, 185, 129, 0.12);
+
+      border: 1px solid rgba(34, 197, 94, 0.36);
+
+      color: #4ade80;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+
+    }
+
+    .story-chapter-card__progress {
+
+      height: 10px;
+
+      border-radius: 999px;
+
+      background: rgba(148, 163, 184, 0.12);
+
+      border: 1px solid rgba(148, 163, 184, 0.18);
+
+      overflow: hidden;
+
+    }
+
+    .story-chapter-card__progress span {
+
+      display: block;
+
+      height: 100%;
+
+      border-radius: inherit;
+
+      background: linear-gradient(90deg, #22d3ee 0%, #4ade80 45%, #8b5cf6 100%);
+
+    }
+
+    .story-chapter-card__body {
+
+      display: grid;
+
+      grid-template-columns: minmax(280px, 0.96fr) minmax(0, 1.04fr);
+
+      gap: 20px;
+
+      align-items: start;
+
+    }
+
+    .story-chapter-media {
+
+      min-width: 0;
+
+    }
+
+    .story-chapter-media img,
+    #storyImage {
+
+      display: block;
+
+      width: 100%;
+
+      height: auto;
+
+      border-radius: 20px;
+
+      object-fit: cover;
+
+      background: var(--color-bg-secondary, #1e293b);
+
+      border: 1px solid rgba(59, 130, 246, 0.18);
+
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+
+    }
+
+    .story-chapter-media__placeholder {
+
+      min-height: 100%;
+
+      border-radius: 20px;
+
+      padding: 22px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      justify-content: center;
+
+      gap: 8px;
+
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.08)), var(--color-bg-secondary, #1e293b);
+
+      border: 1px solid rgba(59, 130, 246, 0.16);
+
+    }
+
+    .story-chapter-media__eyebrow {
+
+      font-size: 0.75rem;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.12em;
+
+      color: var(--color-text-muted, #94a3b8);
+
+      font-weight: 800;
+
+    }
+
+    .story-chapter-media__placeholder strong {
+
+      font-size: 1.15rem;
+
+    }
+
+    .story-chapter-media__placeholder p {
+
+      color: var(--color-text-secondary, #cbd5e1);
+
+    }
+
+    .story-chapter-copy {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 16px;
+
+      min-width: 0;
+
+    }
+
+    .story-chapter-copy p {
+
+      color: var(--color-text-secondary, #cbd5e1);
+
+      font-size: 1.02rem;
+
+      line-height: 1.75;
+
+      white-space: pre-wrap;
+
+    }
+
+    .story-choice-list {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 12px;
+
+    }
+
+    .story-choice-row {
+
+      --choice-accent: #22d3ee;
+
+      display: grid;
+
+      grid-template-columns: 54px minmax(0, 1fr);
+
+      gap: 14px;
+
+      align-items: center;
+
+      width: 100%;
+
+      padding: 14px 16px;
+
+      border-radius: 16px;
+
+      background: rgba(255, 255, 255, 0.02);
+
+      border: 1px solid rgba(148, 163, 184, 0.16);
+
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+
+    }
+
+    .story-choice-row:hover {
+
+      transform: translateY(-1px);
+
+      border-color: var(--choice-accent);
+
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+
+    }
+
+    .story-choice-key {
+
+      width: 54px;
+
+      height: 54px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border-radius: 16px;
+
+      border: 1px solid var(--choice-accent);
+
+      color: var(--choice-accent);
+
+      font-weight: 900;
+
+      background: rgba(255, 255, 255, 0.03);
+
+      flex-shrink: 0;
+
+    }
+
+    .story-choice-copy {
+
+      font-size: 1.02rem;
+
+      font-weight: 700;
+
+      color: var(--color-text-primary, #f8fafc);
+
+      min-width: 0;
+
+    }
+
+    .story-vote-strip {
+
+      display: grid;
+
+      grid-template-columns: minmax(0, 1fr) auto;
+
+      gap: 18px;
+
+      align-items: center;
+
+      padding: 16px 18px;
+
+      border-radius: 18px;
+
+      background: var(--color-bg-secondary, #1e293b);
+
+      border: 1px solid var(--color-border, #334155);
+
+    }
+
+    .story-vote-strip__copy {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 4px;
+
+      min-width: 0;
+
+    }
+
+    .story-vote-strip__label {
+
+      font-weight: 800;
+
+      font-size: 0.96rem;
+
+    }
+
+    .story-vote-strip__meta {
+
+      color: var(--color-text-muted, #94a3b8);
+
+      font-size: 0.92rem;
+
+    }
+
+    .story-vote-strip__time {
+
+      font-size: 1.8rem;
+
+      font-weight: 900;
+
+      letter-spacing: -0.04em;
+
+    }
+
+    .story-vote-strip__track {
+
+      margin-top: -8px;
+
+      height: 10px;
+
+      border-radius: 999px;
+
+      background: rgba(148, 163, 184, 0.14);
+
+      border: 1px solid rgba(148, 163, 184, 0.18);
+
+      overflow: hidden;
+
+    }
+
+    .story-vote-strip__track span {
+
+      display: block;
+
+      height: 100%;
+
+      border-radius: inherit;
+
+      background: linear-gradient(90deg, #22d3ee 0%, #8b5cf6 100%);
+
+    }
+
+    .story-empty-state {
+
+      padding: 20px 22px;
+
+      border-radius: 18px;
+
+      border: 1px dashed rgba(148, 163, 184, 0.26);
+
+      background: rgba(255, 255, 255, 0.02);
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 8px;
+
+    }
+
+    .story-empty-state__eyebrow {
+
+      font-size: 0.75rem;
+
+      text-transform: uppercase;
+
+      letter-spacing: 0.12em;
+
+      color: var(--color-text-muted, #94a3b8);
+
+      font-weight: 800;
+
+    }
+
+    .story-empty-state h4 {
+
+      font-size: 1.15rem;
+
+      margin: 0;
+
+    }
+
+    .story-empty-state p {
+
+      color: var(--color-text-secondary, #cbd5e1);
+
+      margin: 0;
+
+    }
+
+    .story-empty-state--compact {
+
+      padding: 14px 16px;
+
+    }
+
+    @media (min-width: 1200px) {
+
+      .app-shell {
+
+        display: grid;
+
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+
+        gap: 24px;
+
+        align-items: start;
+
+      }
+
+      .page-header,
+      .hero-banner {
+
+        grid-column: 1 / -1;
+
+      }
+
+      #statusCard {
+
+        grid-column: span 3;
+
+      }
+
+      #configurationCard {
+
+        grid-column: span 6;
+
+      }
+
+      #overlayCard {
+
+        grid-column: span 3;
+
+      }
+
+      #storyControls {
+
+        grid-column: span 9;
+
+      }
+
+      #memoryCard {
+
+        grid-column: span 3;
+
+      }
+
+      #topVotersCard {
+
+        grid-column: span 3;
+
+      }
+
+      #debugLogCard {
+
+        grid-column: span 9;
+
+      }
+
+    }
+
+    @media (max-width: 1199px) {
+
+      .hero-banner {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+      }
+
+      .hero-actions {
+
+        width: 100%;
+
+        justify-content: flex-start;
+
+      }
+
+      .hero-overlay-btn {
+
+        width: 100%;
+
+      }
+
+    }
+
+    @media (max-width: 1100px) {
+
+      .story-chapter-card__body {
+
+        grid-template-columns: 1fr;
+
+      }
+
+      .story-vote-strip {
+
+        grid-template-columns: 1fr;
+
+      }
+
+    }
+
+    @media (max-width: 768px) {
+
+      .status-grid {
+
+        grid-template-columns: 1fr;
+
+      }
+
+      .quick-start-steps {
+
+        grid-template-columns: 1fr;
+
+      }
+
+      .input-group {
+
+        grid-template-columns: 1fr;
+
+      }
+
+      .story-choice-row {
+
+        grid-template-columns: 44px minmax(0, 1fr);
+
+      }
+
+      .story-choice-key {
+
+        width: 44px;
+
+        height: 44px;
+
+      }
+
+    }
+
 
 
     html[data-theme="day"] body {
@@ -1950,6 +3140,147 @@
             box-shadow: none !important;
         }
 
+        html[data-theme="day"] .hero-state-badge,
+        html[data-theme="day"] .live-state,
+        html[data-theme="day"] .quick-start-card,
+        html[data-theme="day"] .quick-start-step,
+        html[data-theme="day"] .config-section,
+        html[data-theme="day"] .story-chapter-card,
+        html[data-theme="day"] .story-choice-row,
+        html[data-theme="day"] .story-vote-strip,
+        html[data-theme="day"] .story-empty-state,
+        html[data-theme="day"] .story-chapter-media__placeholder {
+            background: #ffffff;
+            color: #10203a;
+            border-color: #bfd0f7;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        html[data-theme="day"] .story-chapter-card__progress,
+        html[data-theme="day"] .story-vote-strip__track {
+            background: #dbeafe;
+            border-color: #bfd0f7;
+        }
+
+        html[data-theme="day"] .story-choice-copy,
+        html[data-theme="day"] .story-chapter-copy p,
+        html[data-theme="day"] .story-empty-state p,
+        html[data-theme="day"] .story-vote-strip__meta,
+        html[data-theme="day"] .live-state__meta,
+        html[data-theme="day"] .step-content small {
+            color: #385170;
+        }
+
+        html[data-theme="day"] .story-choice-key,
+        html[data-theme="day"] .story-chapter-card__badge,
+        html[data-theme="day"] .story-empty-state__eyebrow,
+        html[data-theme="day"] .story-chapter-card__eyebrow,
+        html[data-theme="day"] .story-chapter-media__eyebrow {
+            color: #15803d;
+        }
+
+        html[data-theme="cid"] .hero-state-badge,
+        html[data-theme="cid"] .live-state,
+        html[data-theme="cid"] .quick-start-card,
+        html[data-theme="cid"] .quick-start-step,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .story-chapter-card,
+        html[data-theme="cid"] .story-choice-row,
+        html[data-theme="cid"] .story-vote-strip,
+        html[data-theme="cid"] .story-empty-state,
+        html[data-theme="cid"] .story-chapter-media__placeholder {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] .story-choice-key,
+        html[data-theme="cid"] .story-chapter-card__badge,
+        html[data-theme="cid"] .story-empty-state__eyebrow,
+        html[data-theme="cid"] .story-chapter-card__eyebrow,
+        html[data-theme="cid"] .story-chapter-media__eyebrow {
+            color: #4ade80;
+            border-color: #4ade80;
+        }
+
+        html[data-theme="cid"] .story-chapter-card__progress,
+        html[data-theme="cid"] .story-vote-strip__track {
+            background: #0a1a0d;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="contrast"] .hero-state-badge,
+        html[data-theme="contrast"] .live-state,
+        html[data-theme="contrast"] .quick-start-card,
+        html[data-theme="contrast"] .quick-start-step,
+        html[data-theme="contrast"] .config-section,
+        html[data-theme="contrast"] .story-chapter-card,
+        html[data-theme="contrast"] .story-choice-row,
+        html[data-theme="contrast"] .story-vote-strip,
+        html[data-theme="contrast"] .story-empty-state,
+        html[data-theme="contrast"] .story-chapter-media__placeholder,
+        html[data-theme="vision-impaired"] .hero-state-badge,
+        html[data-theme="vision-impaired"] .live-state,
+        html[data-theme="vision-impaired"] .quick-start-card,
+        html[data-theme="vision-impaired"] .quick-start-step,
+        html[data-theme="vision-impaired"] .config-section,
+        html[data-theme="vision-impaired"] .story-chapter-card,
+        html[data-theme="vision-impaired"] .story-choice-row,
+        html[data-theme="vision-impaired"] .story-vote-strip,
+        html[data-theme="vision-impaired"] .story-empty-state,
+        html[data-theme="vision-impaired"] .story-chapter-media__placeholder {
+            background: #000;
+            color: #fff;
+            border-color: #facc15;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] .story-choice-row,
+        html[data-theme="vision-impaired"] .story-choice-row {
+            --choice-accent: #facc15;
+        }
+
+        html[data-theme="contrast"] .story-choice-key,
+        html[data-theme="contrast"] .story-chapter-card__badge,
+        html[data-theme="contrast"] .story-empty-state__eyebrow,
+        html[data-theme="contrast"] .story-chapter-card__eyebrow,
+        html[data-theme="contrast"] .story-chapter-media__eyebrow,
+        html[data-theme="vision-impaired"] .story-choice-key,
+        html[data-theme="vision-impaired"] .story-chapter-card__badge,
+        html[data-theme="vision-impaired"] .story-empty-state__eyebrow,
+        html[data-theme="vision-impaired"] .story-chapter-card__eyebrow,
+        html[data-theme="vision-impaired"] .story-chapter-media__eyebrow {
+            color: #facc15;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] .story-chapter-card__progress,
+        html[data-theme="contrast"] .story-vote-strip__track,
+        html[data-theme="vision-impaired"] .story-chapter-card__progress,
+        html[data-theme="vision-impaired"] .story-vote-strip__track {
+            background: #111;
+            border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] #startStoryBtn,
+        html[data-theme="vision-impaired"] #startStoryBtn {
+            background: #facc15 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border: 3px solid #000 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] #heroOpenOverlayBtn,
+        html[data-theme="vision-impaired"] #heroOpenOverlayBtn {
+            background: #000 !important;
+            color: #facc15 !important;
+            -webkit-text-fill-color: #facc15 !important;
+            border: 3px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
 </style>
 
 </head>
@@ -1962,7 +3293,7 @@
 
       <div>
 
-        <img class="page-brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
+        <img class="page-brand-logo" data-brand-logo src="/plugins/interactive-story/assets/interactive-story-logo-wide.png" alt="Interactive Story Generator">
 
         <div class="page-meta">
 
@@ -1996,19 +3327,37 @@
 
     </header>
 
+    <section class="hero-banner">
+      <div class="hero-copy">
+        <div class="hero-heading-row">
+          <h1>Interactive Story</h1>
+          <span class="hero-state-badge" id="storyStateBadge">Bereit</span>
+        </div>
+        <p class="hero-subtitle">AI-generierte Stories mit Chat-Voting, Bildern, TTS und OBS-Overlay.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-secondary hero-overlay-btn" id="heroOpenOverlayBtn" data-i18n-key="cards.overlay.open">Open Overlay</button>
+      </div>
+    </section>
+
 
 
     <!-- Status Card -->
 
-    <div class="card">
+    <div class="card" id="statusCard">
 
       <div class="card-header" data-i18n-key="cards.status.title">
 
-        Status
+        Live Status
 
       </div>
 
       <div class="card-body">
+
+        <div class="live-state" id="liveStateCard">
+          <div class="live-state__title" id="liveStateTitle">Generation bereit</div>
+          <div class="live-state__meta" id="liveStateMeta">OpenAI • DALL-E • System TTS</div>
+        </div>
 
         <div class="status-grid">
 
@@ -2060,11 +3409,11 @@
 
     <!-- Configuration Card -->
 
-    <div class="card">
+    <div class="card" id="configurationCard">
 
       <div class="card-header" data-i18n-key="cards.configuration.title">
 
-        Configuration
+        Story Setup
 
       </div>
 
@@ -2162,9 +3511,9 @@
 
                 Configure your AI provider API keys in <strong>Settings</strong>:<br>
 
-                � <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
+                • <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
 
-                � <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
+                • <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
 
               </div>
 
@@ -2594,13 +3943,13 @@
 
                     <option value="English">English</option>
 
-                    <option value="Spanish">Español (Spanish)</option>
+                    <option value="Spanish">EspaÃ±ol (Spanish)</option>
 
-                    <option value="French">Français (French)</option>
+                    <option value="French">FranÃ§ais (French)</option>
 
                     <option value="Italian">Italiano (Italian)</option>
 
-                    <option value="Portuguese">Português (Portuguese)</option>
+                    <option value="Portuguese">PortuguÃªs (Portuguese)</option>
 
                   </select>
 
@@ -3076,7 +4425,7 @@
 
     <!-- OBS Overlay Preview Card -->
 
-    <div class="card">
+    <div class="card" id="overlayCard">
 
       <div class="card-header" data-i18n-key="cards.overlay.title">
 
@@ -3114,7 +4463,7 @@
 
           <button class="btn btn-secondary btn-sm" id="toggleOverlayPreviewBtn">
 
-            <span id="previewToggleIcon">▶</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
+            <span id="previewToggleIcon" aria-hidden="true">&#9654;</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
 
           </button>
 
@@ -3370,36 +4719,6 @@
 
     
 
-    <!-- Debug Logging Card -->
-
-    <div class="card" id="debugLogCard" style="display: none;">
-
-      <div class="card-header" data-i18n-key="cards.debug.title">
-
-        Debug Logs
-
-        <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="cards.debug.clear">
-
-          Clear
-
-        </button>
-
-      </div>
-
-      <div class="card-body">
-
-        <div id="debugLogDisplay" style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
-
-          <div class="text-muted" data-i18n-key="cards.debug.empty">No logs available yet</div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-
     <!-- Story Memory Card -->
 
     <div class="card" id="memoryCard" style="display: none;">
@@ -3424,7 +4743,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.locations">?? Locations</h6>
+            <h6 data-i18n-key="cards.memory.locations">Locations</h6>
 
             <div id="locationsList"></div>
 
@@ -3432,7 +4751,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.items">?? Items</h6>
+            <h6 data-i18n-key="cards.memory.items">Items</h6>
 
             <div id="itemsList"></div>
 
@@ -3459,6 +4778,36 @@
       <div class="card-body">
 
         <div id="topVotersList"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- Debug Logging Card -->
+
+    <div class="card" id="debugLogCard" style="display: none;">
+
+      <div class="card-header" data-i18n-key="cards.debug.title">
+
+        Debug Logs
+
+        <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="cards.debug.clear">
+
+          Clear
+
+        </button>
+
+      </div>
+
+      <div class="card-body">
+
+        <div id="debugLogDisplay" style="max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
+
+          <div class="text-muted" data-i18n-key="cards.debug.empty">No logs available yet</div>
+
+        </div>
 
       </div>
 
@@ -3524,7 +4873,7 @@
 
           eyebrow: 'AI Storytelling Control',
 
-          title: '?? Interactive Story Generator',
+          title: 'Interactive Story Generator',
 
           subtitle: 'Cinematic stories with live voting, TTS narration, and OBS overlays.',
 
@@ -3542,7 +4891,7 @@
 
           status: {
 
-            title: '?? Status',
+            title: 'Live Status',
 
             plugin: 'Plugin Status',
 
@@ -3570,11 +4919,11 @@
 
           configuration: {
 
-            title: '?? Configuration',
+            title: 'Story Setup',
 
             api_info: '<strong>API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br><strong>OpenAI</strong>: Settings > OpenAI API Configuration<br><strong>OpenRouter</strong>: Use an OpenRouter API key and select a free model router or free model variant<br><strong>Ollama</strong>: Use a local or cloud Ollama endpoint with an Ollama API key if required<br><strong>SiliconFlow</strong>: Settings > TTS API Keys > Fish Speech 1.5 API Key (SiliconFlow)',
 
-            test_api_key: '?? Test API Key',
+            test_api_key: 'Test API Key',
 
             test_hint: 'Click to validate your API key',
 
@@ -3582,7 +4931,7 @@
 
             providers: {
 
-              title: '?? AI Provider Selection',
+              title: 'AI Provider Selection',
 
               llm: 'LLM Provider',
 
@@ -3612,7 +4961,7 @@
 
             models: {
 
-              title: '?? Model Selection',
+              title: 'Model Selection',
 
               openai_llm: 'OpenAI LLM Model',
 
@@ -3656,7 +5005,7 @@
 
             story: {
 
-              title: '?? Story Generation Settings',
+              title: 'Story Generation Settings',
 
               language: 'Story Language',
 
@@ -3666,7 +5015,7 @@
 
             voting: {
 
-              title: '?? Voting & Generation Settings',
+              title: 'Voting & Generation Settings',
 
               duration: 'Voting Duration (seconds)',
 
@@ -3720,9 +5069,9 @@
 
             url_label: 'Overlay URL for OBS Browser Source:',
 
-            copy: '?? Copy',
+            copy: 'Copy',
 
-            open: '?? Open',
+            open: 'Open Overlay',
 
             hint: 'Add this URL as a Browser Source in OBS (Recommended size follows the selected overlay resolution.)',
 
@@ -3734,13 +5083,13 @@
 
             },
 
-            preview_hint: '?? This preview is rendered at 50% of the 1920x1080 overlay view.'
+            preview_hint: 'This preview is rendered at 50% of the 1920x1080 overlay view.'
 
           },
 
           story_controls: {
 
-            title: '?? Story Controls',
+            title: 'Story Controls',
 
             start_new: 'Start New Story',
 
@@ -3750,11 +5099,11 @@
 
             custom_outline_placeholder: 'Leave blank for auto-generated outline',
 
-            start_btn: '?? Start Story',
+            start_btn: 'Start Story',
 
             active_story: 'Active Story',
 
-            end_story: '?? End Story',
+            end_story: 'End Story',
 
             offline_title: 'Offline/Test Mode:',
 
@@ -3772,17 +5121,17 @@
 
             manual_voting_results: 'Current Voting Results:',
 
-            manual_advance: '?? Advance to Next Round',
+            manual_advance: 'Advance to Next Round',
 
-            manual_show_results: '?? Show Voting Results',
+            manual_show_results: 'Show Voting Results',
 
             force_vote: '? Force Vote End',
 
-            regenerate_image: '??? Regenerate Image',
+            regenerate_image: 'Regenerate Image',
 
             choices_title: 'Choices:',
 
-            option_label: '?? Option {{option}}: {{choice}}',
+            option_label: 'Option {{option}}: {{choice}}',
 
             chapter_badge: 'Chapter {{current}} / {{total}}'
 
@@ -3790,9 +5139,9 @@
 
           debug: {
 
-            title: '?? Debug Logs',
+            title: 'Debug Logs',
 
-            clear: '??? Clear',
+            clear: 'Clear',
 
             empty: 'No logs available yet'
 
@@ -3800,19 +5149,19 @@
 
           memory: {
 
-            title: '?? Story Memory / Lore Database',
+            title: 'Story Memory / Lore Database',
 
-            characters: '?? Characters',
+            characters: 'Characters',
 
-            locations: '?? Locations',
+            locations: 'Locations',
 
-            items: '?? Items'
+            items: 'Items'
 
           },
 
           voters: {
 
-            title: '?? Top Voters',
+            title: 'Top Voters',
 
             votes: '{{count}} votes'
 
@@ -3822,13 +5171,13 @@
 
         alerts: {
 
-          overlay_copied: '? Overlay URL copied!',
+          overlay_copied: 'Overlay URL copied!',
 
-          overlay_copy_failed: '?? Copy failed. Please select the text and press Ctrl+C / Cmd+C.',
+          overlay_copy_failed: 'Copy failed. Please select the text and press Ctrl+C / Cmd+C.',
 
-          overlay_missing: '? No URL available. Please reload the page.',
+          overlay_missing: 'No URL available. Please reload the page.',
 
-          overlay_blocked: '?? Popup was blocked! Allow popups or open manually:\n{{url}}',
+          overlay_blocked: 'Popup was blocked! Allow popups or open manually:\n{{url}}',
 
           overlay_open_error: '? Error opening overlay. Please open manually:\n{{url}}',
 
@@ -3868,11 +5217,11 @@
 
           eyebrow: 'AI Storytelling Steuerung',
 
-          title: '?? Interactive Story Generator',
+          title: 'Interaktiver Story-Generator',
 
           subtitle: 'Cinematische Stories mit Live-Voting, TTS und OBS-Overlays.',
 
-          status: { ready: 'Bereit f-r deinen n-chsten Stream' },
+          status: { ready: 'Bereit für deinen nächsten Stream' },
 
           theme_synced: 'Design mit Dashboard synchronisiert',
 
@@ -3886,7 +5235,7 @@
 
           status: {
 
-            title: '?? Status',
+            title: 'Live-Status',
 
             plugin: 'Plugin-Status',
 
@@ -3914,11 +5263,11 @@
 
           configuration: {
 
-            title: '?? Konfiguration',
+            title: 'Konfiguration',
 
             api_info: '<strong>API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br><strong>OpenAI</strong>: Settings > OpenAI API Configuration<br><strong>OpenRouter</strong>: Use an OpenRouter API key and select a free model router or free model variant<br><strong>Ollama</strong>: Use a local or cloud Ollama endpoint with an Ollama API key if required<br><strong>SiliconFlow</strong>: Settings > TTS API Keys > Fish Speech 1.5 API Key (SiliconFlow)',
 
-            test_api_key: '?? API-Key testen',
+            test_api_key: 'API-Key testen',
 
             test_hint: 'Klicke, um deinen API-Key zu pr-fen',
 
@@ -3926,7 +5275,7 @@
 
             providers: {
 
-              title: '?? KI-Provider Auswahl',
+              title: 'KI-Provider Auswahl',
 
               llm: 'LLM-Provider',
 
@@ -3956,7 +5305,7 @@
 
             models: {
 
-              title: '?? Modellauswahl',
+              title: 'Modellauswahl',
 
               openai_llm: 'OpenAI LLM Modell',
 
@@ -3976,7 +5325,7 @@
 
             overlay: {
 
-              title: '?? Overlay-Anpassung',
+              title: 'Overlay-Anpassung',
 
               orientation: 'Ausrichtung',
 
@@ -4000,7 +5349,7 @@
 
             story: {
 
-              title: '?? Story-Generierung',
+              title: 'Story-Generierung',
 
               language: 'Story-Sprache',
 
@@ -4010,7 +5359,7 @@
 
             voting: {
 
-              title: '?? Voting & Generierung',
+              title: 'Voting & Generierung',
 
               duration: 'Voting-Dauer (Sekunden)',
 
@@ -4052,7 +5401,7 @@
 
             },
 
-            save: '?? Konfiguration speichern',
+            save: 'Konfiguration speichern',
 
             generating: '? Generiere...'
 
@@ -4064,9 +5413,9 @@
 
             url_label: 'Overlay-URL f-r OBS Browser Source:',
 
-            copy: '?? Kopieren',
+            copy: 'Kopieren',
 
-            open: '?? -ffnen',
+            open: 'Overlay öffnen',
 
             hint: 'F-ge diese URL in OBS als Browser Source hinzu (Empfohlene Gr--e: 1920x1080)',
 
@@ -4078,13 +5427,13 @@
 
             },
 
-            preview_hint: '?? Diese Vorschau wird in 50% der 1920x1080-Ansicht dargestellt.'
+            preview_hint: 'Diese Vorschau wird in 50% der 1920x1080-Ansicht dargestellt.'
 
           },
 
           story_controls: {
 
-            title: '?? Story-Steuerung',
+            title: 'Story-Steuerung',
 
             start_new: 'Neue Story starten',
 
@@ -4094,11 +5443,11 @@
 
             custom_outline_placeholder: 'Leer lassen f-r automatisch generierte Outline',
 
-            start_btn: '?? Story starten',
+            start_btn: 'Story starten',
 
             active_story: 'Aktive Story',
 
-            end_story: '?? Story beenden',
+            end_story: 'Story beenden',
 
             offline_title: 'Offline/Test-Modus:',
 
@@ -4116,17 +5465,17 @@
 
             manual_voting_results: 'Aktuelle Voting-Ergebnisse:',
 
-            manual_advance: '?? Zur n-chsten Runde',
+            manual_advance: 'Zur nächsten Runde',
 
-            manual_show_results: '?? Voting-Ergebnisse anzeigen',
+            manual_show_results: 'Voting-Ergebnisse anzeigen',
 
             force_vote: '? Voting beenden',
 
-            regenerate_image: '??? Bild neu generieren',
+            regenerate_image: 'Bild neu generieren',
 
             choices_title: 'Optionen:',
 
-            option_label: '?? Option {{option}}: {{choice}}',
+            option_label: 'Option {{option}}: {{choice}}',
 
             chapter_badge: 'Kapitel {{current}} / {{total}}'
 
@@ -4134,9 +5483,9 @@
 
           debug: {
 
-            title: '?? Debug-Logs',
+            title: 'Debug-Logs',
 
-            clear: '??? Leeren',
+            clear: 'Leeren',
 
             empty: 'Keine Logs verf-gbar'
 
@@ -4144,19 +5493,19 @@
 
           memory: {
 
-            title: '?? Story-Speicher / Lore-Datenbank',
+            title: 'Story-Speicher / Lore-Datenbank',
 
-            characters: '?? Charaktere',
+            characters: 'Charaktere',
 
-            locations: '?? Orte',
+            locations: 'Orte',
 
-            items: '?? Gegenst-nde'
+            items: 'Gegenstände'
 
           },
 
           voters: {
 
-            title: '?? Top-Voter',
+            title: 'Top-Voter',
 
             votes: '{{count}} Stimmen'
 
@@ -4166,15 +5515,15 @@
 
         alerts: {
 
-          overlay_copied: '? Overlay-URL kopiert!',
+          overlay_copied: 'Overlay-URL kopiert!',
 
-          overlay_copy_failed: '?? Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C dr-cken.',
+          overlay_copy_failed: 'Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C drücken.',
 
-          overlay_missing: '? Keine URL verf-gbar. Bitte lade die Seite neu.',
+          overlay_missing: 'Keine URL verfügbar. Bitte lade die Seite neu.',
 
-          overlay_blocked: '?? Popup wurde blockiert! Erlaube Popups oder -ffne manuell:\n{{url}}',
+          overlay_blocked: 'Popup wurde blockiert! Erlaube Popups oder öffne manuell:\n{{url}}',
 
-          overlay_open_error: '? Fehler beim -ffnen des Overlays. Bitte manuell -ffnen:\n{{url}}',
+          overlay_open_error: 'Fehler beim Öffnen des Overlays. Bitte manuell öffnen:\n{{url}}',
 
           ui_missing: 'Fehler: UI-Elemente nicht gefunden. Bitte Seite neu laden.',
 
@@ -4184,7 +5533,7 @@
 
           config_save_error: 'Fehler beim Speichern der Konfiguration: {{message}}',
 
-          theme_required: 'Bitte zuerst ein Thema ausw-hlen!',
+          theme_required: 'Bitte zuerst ein Thema auswählen!',
 
           story_start_error: 'Fehler beim Starten der Story: {{message}}',
 
@@ -4198,7 +5547,7 @@
 
         prompts: {
 
-          confirm_choice: 'Bist du sicher, dass du Option {{option}} w-hlen m-chtest?',
+          confirm_choice: 'Bist du sicher, dass du Option {{option}} wählen möchtest?',
 
           confirm_end_story: 'M-chtest du die aktuelle Story wirklich beenden?'
 
@@ -4281,19 +5630,19 @@
     function updateThemeBadge(theme) {
 
       const logoByTheme = {
-        day: '/ltthicon.png',
-        night: '/ltthicon.png',
-        contrast: '/ltthicon.png',
-        'vision-impaired': '/ltthicon.png',
-        cid: '/ltthicon.png'
+        day: '/plugins/interactive-story/assets/interactive-story-logo-wide.png',
+        night: '/plugins/interactive-story/assets/interactive-story-logo-wide.png',
+        contrast: '/plugins/interactive-story/assets/interactive-story-logo-wide.png',
+        'vision-impaired': '/plugins/interactive-story/assets/interactive-story-logo-wide.png',
+        cid: '/plugins/interactive-story/assets/interactive-story-logo-wide.png'
       };
 
       const fileLogoByTheme = {
-        day: '../../../public/ltthicon.png',
-        night: '../../../public/ltthicon.png',
-        contrast: '../../../public/ltthicon.png',
-        'vision-impaired': '../../../public/ltthicon.png',
-        cid: '../../../public/ltthicon.png'
+        day: './assets/interactive-story-logo-wide.png',
+        night: './assets/interactive-story-logo-wide.png',
+        contrast: './assets/interactive-story-logo-wide.png',
+        'vision-impaired': './assets/interactive-story-logo-wide.png',
+        cid: './assets/interactive-story-logo-wide.png'
       };
 
       const badgeText = document.querySelector('#themeBadge span:last-child');
@@ -4313,7 +5662,7 @@
       const logo = document.querySelector('[data-brand-logo]');
       if (logo) {
         const nextSrc = location.protocol === 'file:'
-          new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+          ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
           : (logoByTheme[theme] || logoByTheme.night);
         if (logo.getAttribute('src') !== nextSrc) {
           logo.setAttribute('src', nextSrc);
@@ -4456,18 +5805,7 @@
       window.addEventListener('storage', (event) => {
 
         if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
-
-                try {
-        if (location.protocol === ''file:'') {
-          const logo = document.querySelector('.page-logo');
-          if (logo && logo.dataset.fileSrc) {
-            logo.src = new URL(logo.dataset.fileSrc, location.href).href;
-          }
-        }
-      } catch (error) {}
-
-      updateThemeBadge(readSharedTheme());
-
+          updateThemeBadge(readSharedTheme());
         }
 
       });
@@ -4483,18 +5821,7 @@
         mutations.forEach((mutation) => {
 
           if (mutation.attributeName === 'data-theme') {
-
-                  try {
-        if (location.protocol === ''file:'') {
-          const logo = document.querySelector('.page-logo');
-          if (logo && logo.dataset.fileSrc) {
-            logo.src = new URL(logo.dataset.fileSrc, location.href).href;
-          }
-        }
-      } catch (error) {}
-
-      updateThemeBadge(readSharedTheme());
-
+            updateThemeBadge(readSharedTheme());
           }
 
         });
@@ -4586,6 +5913,8 @@
       document.getElementById('copyOverlayUrlBtn')?.addEventListener('click', copyOverlayUrl);
 
       document.getElementById('openOverlayBtn')?.addEventListener('click', openOverlayInNewTab);
+
+      document.getElementById('heroOpenOverlayBtn')?.addEventListener('click', openOverlayInNewTab);
 
       document.getElementById('toggleOverlayPreviewBtn')?.addEventListener('click', toggleOverlayPreview);
 
@@ -4850,17 +6179,11 @@
         const llmProvider = document.getElementById('llmProvider')?.value || 'openai';
 
         const model = llmProvider === 'openai'
-
-          document.getElementById('openaiModel')?.value || 'gpt-5.2'
-
+          ? document.getElementById('openaiModel')?.value || 'gpt-5.2'
           : llmProvider === 'openrouter'
-
-            document.getElementById('openRouterModel')?.value || 'openrouter/free'
-
+            ? document.getElementById('openRouterModel')?.value || 'openrouter/free'
             : llmProvider === 'ollama'
-
-              document.getElementById('ollamaModel')?.value || 'qwen3.5:cloud'
-
+              ? document.getElementById('ollamaModel')?.value || 'qwen3.5:cloud'
               : document.getElementById('defaultModel')?.value || 'deepseek';
 
         
@@ -5217,7 +6540,7 @@
 
         updateOverlayPreviewSizing();
 
-        toggleIcon.textContent = '??';
+        toggleIcon.textContent = '▾';
 
         toggleText.textContent = t('cards.overlay.preview.hide');
 
@@ -5225,7 +6548,7 @@
 
         container.style.display = 'none';
 
-        toggleIcon.textContent = '??';
+        toggleIcon.textContent = '▸';
 
         toggleText.textContent = t('cards.overlay.preview.show');
 
@@ -5315,7 +6638,7 @@
 
         chapterNumber: 1,
 
-        title: '?? The Beginning of an Epic Adventure',
+        title: 'The Beginning of an Epic Adventure',
 
         content: 'Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.',
 
@@ -5655,7 +6978,7 @@
 
               if (result.details.keyLength !== 64 && result.provider && result.provider.toLowerCase() !== 'openai') {
 
-                html += ` <span style="color: #ffc107;">?? Expected: ~64 characters</span>`;
+                html += ` <span style="color: #ffc107;">Expected: ~64 characters</span>`;
 
               }
 
@@ -5665,7 +6988,7 @@
 
               if (result.details.hasWhitespace) {
 
-                html += `<span style="color: #ffc107;">?? API key contains whitespace!</span><br>`;
+                html += `<span style="color: #ffc107;">API key contains whitespace!</span><br>`;
 
               }
 
@@ -6551,7 +7874,7 @@
 
         col.className = 'col-md-4 mb-3';
 
-        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
+        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
 
         col.innerHTML = `
 
@@ -6647,7 +7970,7 @@
 
           col.className = 'col-md-4 mb-3';
 
-          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
+          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
 
           col.innerHTML = `
 
@@ -6715,7 +8038,7 @@
 
             col.className = 'col-md-4 mb-3';
 
-            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
+            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">Furry</span>' : '';
 
             col.innerHTML = `
 
@@ -6788,6 +8111,53 @@
       // Plugin status
 
       const statusEl = document.getElementById('pluginStatus');
+      const liveStateTitleEl = document.getElementById('liveStateTitle');
+      const liveStateMetaEl = document.getElementById('liveStateMeta');
+      const storyStateBadgeEl = document.getElementById('storyStateBadge');
+      const statusPillEl = document.getElementById('statusPill');
+      const startStoryBtn = document.getElementById('startStoryBtn');
+      const startStorySection = document.getElementById('startStorySection');
+      const activeStorySection = document.getElementById('activeStorySection');
+      const memoryCard = document.getElementById('memoryCard');
+      const topVotersCard = document.getElementById('topVotersCard');
+      const statusCard = document.getElementById('statusCard');
+      const isGerman = currentLocale === 'de';
+      const connectionText = currentStatus.configured
+        ? (isGerman ? 'Verbunden' : 'Connected')
+        : (isGerman ? 'Nicht verbunden' : 'Not connected');
+      const storyStateText = currentStatus.session
+        ? (isGerman ? 'Story aktiv' : 'Story active')
+        : (isGerman ? 'Bereit' : 'Ready');
+      const liveStateText = currentStatus.voting && currentStatus.voting.active
+        ? (isGerman ? 'Voting laeuft' : 'Voting running')
+        : (currentStatus.session
+          ? (isGerman ? 'Generation bereit' : 'Generation ready')
+          : (isGerman ? 'Bereit zum Start' : 'Ready to start'));
+      const providerNames = {
+        openai: 'OpenAI',
+        openrouter: 'OpenRouter',
+        ollama: 'Ollama',
+        siliconflow: 'SiliconFlow'
+      };
+      const imageProviderNames = {
+        openai: 'DALL-E',
+        siliconflow: 'FLUX'
+      };
+      const ttsProviderNames = {
+        system: 'System TTS',
+        openai: 'OpenAI TTS',
+        tiktok: 'TikTok TTS',
+        google: 'Google TTS',
+        elevenlabs: 'ElevenLabs',
+        speechify: 'Speechify',
+        siliconflow: 'SiliconFlow TTS',
+        fishaudio: 'Fish.audio'
+      };
+      const providerText = [
+        providerNames[currentStatus.config?.llmProvider] || 'OpenAI',
+        imageProviderNames[currentStatus.config?.imageProvider] || 'DALL-E',
+        ttsProviderNames[currentStatus.config?.ttsProvider] || 'System TTS'
+      ].join(' • ');
 
       if (currentStatus.configured) {
 
@@ -6797,6 +8167,22 @@
 
         statusEl.innerHTML = `<span class="status-indicator status-inactive"></span> ${t('cards.status.not_configured')}`;
 
+      }
+
+      if (statusPillEl) {
+        statusPillEl.innerHTML = `<span class="status-pill-dot ${currentStatus.configured ? 'is-on' : 'is-off'}"></span>${connectionText}`;
+      }
+
+      if (storyStateBadgeEl) {
+        storyStateBadgeEl.textContent = storyStateText;
+      }
+
+      if (liveStateTitleEl) {
+        liveStateTitleEl.textContent = liveStateText;
+      }
+
+      if (liveStateMetaEl) {
+        liveStateMetaEl.textContent = providerText;
       }
 
       
@@ -6809,10 +8195,8 @@
 
       // Chapter status
 
-      document.getElementById('chapterStatus').textContent = currentStatus.chapter 
-
-        `${t('cards.status.chapter_prefix')} ${currentStatus.chapter.chapterNumber}` 
-
+      document.getElementById('chapterStatus').textContent = currentStatus.chapter
+        ? `${t('cards.status.chapter_prefix')} ${currentStatus.chapter.chapterNumber}`
         : '-';
 
       
@@ -6843,23 +8227,27 @@
 
       if (currentStatus.session) {
 
-        document.getElementById('startStorySection').style.display = 'none';
+        startStorySection.style.display = 'none';
 
-        document.getElementById('activeStorySection').style.display = 'block';
+        activeStorySection.style.display = 'block';
 
-        document.getElementById('memoryCard').style.display = 'block';
+        memoryCard.style.display = 'block';
 
-        document.getElementById('topVotersCard').style.display = 'block';
+        topVotersCard.style.display = 'block';
 
-        
+
 
         if (currentStatus.chapter) {
 
           displayChapter(currentStatus.chapter);
 
+        } else {
+
+          renderChapterEmptyState();
+
         }
 
-        
+
 
         loadMemory();
 
@@ -6867,93 +8255,140 @@
 
       } else {
 
-        document.getElementById('startStorySection').style.display = 'block';
+        startStorySection.style.display = 'block';
 
-        document.getElementById('activeStorySection').style.display = 'none';
+        activeStorySection.style.display = 'none';
 
-        document.getElementById('memoryCard').style.display = 'none';
+        memoryCard.style.display = 'none';
 
-        document.getElementById('topVotersCard').style.display = 'none';
+        topVotersCard.style.display = 'none';
+
+        renderChapterEmptyState();
 
       }
 
     }
 
 
+    function formatCountdown(totalSeconds) {
+      const safeSeconds = Math.max(0, Math.ceil(Number(totalSeconds) || 0));
+      const minutes = Math.floor(safeSeconds / 60);
+      const seconds = safeSeconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function renderChapterEmptyState() {
+      const display = document.getElementById('currentChapterDisplay');
+
+      if (!display) {
+        return;
+      }
+
+      const isGerman = currentLocale === 'de';
+
+      display.innerHTML = `
+        <div class="story-empty-state">
+          <div class="story-empty-state__eyebrow">${isGerman ? 'Kapitel bereit' : 'Chapter ready'}</div>
+          <h4>${isGerman ? 'Noch keine aktive Story' : 'No active story yet'}</h4>
+          <p>${isGerman ? 'Starte eine Story, um Kapitel, Voting und Bild hier im Fokus zu sehen.' : 'Start a story to bring the chapter, voting, and image into focus.'}</p>
+        </div>
+      `;
+    }
 
     function displayChapter(chapter) {
 
       const display = document.getElementById('currentChapterDisplay');
 
-      
+      if (!display) {
+        return;
+      }
 
-      // Get config to show max chapters
-
-      const maxChapters = currentStatus?.config?.maxChapters || 5;
-
-      const progressPercent = Math.round((chapter.chapterNumber / maxChapters) * 100);
-
+      const isGerman = currentLocale === 'de';
+      const maxChapters = Math.max(1, currentStatus?.config?.maxChapters || 5);
+      const progressPercent = Math.min(100, Math.max(0, Math.round((chapter.chapterNumber / maxChapters) * 100)));
       const badgeLabel = t('cards.story_controls.chapter_badge', { current: chapter.chapterNumber, total: maxChapters });
+      const votePattern = currentStatus?.config?.voteKeywordPattern || '!letter';
+      const choices = Array.isArray(chapter.choices) ? chapter.choices : [];
+      const choiceAccents = ['#35e77b', '#2dd4ff', '#8b5cf6', '#ffb347', '#fb7185', '#60a5fa'];
+      const chapterContent = escapeHtml(chapter.content || '');
+      const votingDuration = Math.max(1, Number(currentStatus?.config?.votingDuration) || 60);
+      const votingRemaining = Math.max(0, Number(currentStatus?.voting?.timeRemaining) || 0);
+      const votingPercent = currentStatus?.voting?.active
+        ? Math.min(100, Math.round((votingRemaining / votingDuration) * 100))
+        : 0;
+      const votingLabel = currentStatus?.voting?.active
+        ? (isGerman ? 'Voting läuft' : 'Voting running')
+        : (isGerman ? 'Voting pausiert' : 'Voting idle');
+      const votingCountdown = currentStatus?.voting?.active ? formatCountdown(votingRemaining) : '00:00';
+      const choiceMarkup = choices.length > 0
+        ? choices.map((choice, index) => {
+            const voteKeyword = getVoteKeywordDisplay(index, votePattern);
+            const accent = choiceAccents[index % choiceAccents.length];
+            return `
+              <div class="story-choice-row" style="--choice-accent: ${accent};">
+                <span class="story-choice-key">${escapeHtml(voteKeyword)}</span>
+                <span class="story-choice-copy">${escapeHtml(choice)}</span>
+              </div>
+            `;
+          }).join('')
+        : `<div class="story-empty-state story-empty-state--compact">${isGerman ? 'Noch keine Optionen verfügbar.' : 'No choices available yet.'}</div>`;
 
-      
-
-      let html = `
-
-        <div class="mb-3">
-
-          <div class="d-flex justify-content-between align-items-center mb-2">
-
-            <h4 class="mb-0">${escapeHtml(chapter.title)}</h4>
-
-            <span class="badge bg-primary">${badgeLabel}</span>
-
-          </div>
-
-          <div class="progress" style="height: 8px;">
-
-            <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%" 
-
-                 aria-valuenow="${chapter.chapterNumber}" aria-valuemin="0" aria-valuemax="${maxChapters}"></div>
-
-          </div>
-
+      let imageMarkup = `
+        <div class="story-chapter-media__placeholder">
+          <span class="story-chapter-media__eyebrow">LTTH</span>
+          <strong>${isGerman ? 'Bild wird generiert' : 'Image pending'}</strong>
+          <p>${isGerman ? 'Das Kapitelbild erscheint hier, sobald es fertig ist.' : 'The chapter image appears here once it is ready.'}</p>
         </div>
-
       `;
-
-      
 
       if (chapter.imagePath) {
 
         const filename = chapter.imagePath.split('/').pop();
 
-        html += `<img id="storyImage" src="/api/interactive-story/image/${escapeHtml(filename)}" alt="Chapter Image">`;
+        imageMarkup = `<img id="storyImage" src="/api/interactive-story/image/${escapeHtml(filename)}" alt="${isGerman ? 'Kapitelbild' : 'Chapter image'}">`;
 
       }
 
-      
+      display.innerHTML = `
+        <section class="story-chapter-card">
+          <div class="story-chapter-card__header">
+            <div class="story-chapter-card__heading">
+              <div class="story-chapter-card__eyebrow">${isGerman ? 'Aktuelles Kapitel' : 'Current chapter'}</div>
+              <h3>${escapeHtml(chapter.title || '')}</h3>
+            </div>
+            <span class="story-chapter-card__badge">${escapeHtml(badgeLabel)}</span>
+          </div>
 
-      html += `<div class="chapter-preview">${escapeHtml(chapter.content)}</div>`;
+          <div class="story-chapter-card__progress" aria-hidden="true">
+            <span style="width: ${progressPercent}%"></span>
+          </div>
 
-      
+          <div class="story-chapter-card__body">
+            <div class="story-chapter-media">
+              ${imageMarkup}
+            </div>
 
-      html += `<h5 class="mt-3">${t('cards.story_controls.choices_title')}</h5>`;
+            <div class="story-chapter-copy">
+              <p>${chapterContent}</p>
+              <div class="story-choice-list">
+                ${choiceMarkup}
+              </div>
+            </div>
+          </div>
 
-      const votePattern = currentStatus?.config?.voteKeywordPattern || '!letter';
+          <div class="story-vote-strip">
+            <div class="story-vote-strip__copy">
+              <span class="story-vote-strip__label">${votingLabel}</span>
+              <span class="story-vote-strip__meta">${isGerman ? 'Live-Voting und Kapitelvisuals sind synchronisiert.' : 'Live voting and chapter visuals stay in sync.'}</span>
+            </div>
+            <div class="story-vote-strip__time">${votingCountdown}</div>
+          </div>
 
-      chapter.choices.forEach((choice, index) => {
-
-        const voteKeyword = getVoteKeywordDisplay(index, votePattern);
-
-        html += `<div class="choice-item"><strong>${voteKeyword}</strong> - ${escapeHtml(choice)}</div>`;
-
-      });
-
-      
-
-      display.innerHTML = html;
-
-      
+          <div class="story-vote-strip__track" aria-hidden="true">
+            <span style="width: ${votingPercent}%"></span>
+          </div>
+        </section>
+      `;
 
       // Update admin choice buttons if in offline mode
 
@@ -7341,7 +8776,7 @@
 
         charList.innerHTML = memory.characters.map(char => 
 
-          `<div class="memory-tag">?? ${char.name}</div>`
+          `<div class="memory-tag">• ${char.name}</div>`
 
         ).join('');
 
@@ -7353,7 +8788,7 @@
 
         locList.innerHTML = memory.locations.map(loc => 
 
-          `<div class="memory-tag">?? ${loc.name}</div>`
+          `<div class="memory-tag">• ${loc.name}</div>`
 
         ).join('');
 
@@ -7365,7 +8800,7 @@
 
         itemList.innerHTML = memory.items.map(item => 
 
-          `<div class="memory-tag">?? ${item.name}</div>`
+          `<div class="memory-tag">• ${item.name}</div>`
 
         ).join('');
 
@@ -7471,7 +8906,7 @@
 
       if (data.isTimeout || data.statusCode === 504) {
 
-        errorMsg = `?? API Timeout: The story generation took too long.
+        errorMsg = `API Timeout: The story generation took too long.
 
 
 

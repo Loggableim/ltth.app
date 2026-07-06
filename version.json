@@ -1,10 +1,10 @@
 {
-  "version": "1.3.14",
+  "version": "1.3.15",
   "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.14",
-  "downloadNote": "Launcher avoids repeated better-sqlite3 rebuilds and Fireworks settings no longer freeze in the dashboard.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.14",
+  "downloadVersion": "1.3.15",
+  "downloadNote": "Interactive Story now ships with a modern widescreen admin UI, dedicated branding assets, and theme-safe overlay controls.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.15",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.15": {
+      "date": "2026-07-07",
+      "changes": [
+        "IMPROVED: Interactive Story plugin admin UI reworked into a cleaner widescreen dashboard with clearer status, setup, overlay, and chapter areas",
+        "IMPROVED: Interactive Story branding now uses dedicated sidebar icon and in-app/app store logo assets",
+        "FIXED: Overlay URL controls and preview toggle remain readable and usable on narrower desktop monitors across all supported themes"
+      ]
+    },
     "1.3.14": {
       "date": "2026-07-07",
       "changes": [

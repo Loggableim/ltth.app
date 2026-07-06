@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "AI-powered interactive story generation with LLM, image generation, multi-voice TTS, voting mechanics, and OBS overlays",
   "author": "Pup Cid",
+  "icon": "/plugins/interactive-story/assets/interactive-story-icon.png",
+  "logo": "/plugins/interactive-story/assets/interactive-story-logo-wide.png",
   "entry": "main.js",
   "enabled": true,
   "type": "entertainment",
