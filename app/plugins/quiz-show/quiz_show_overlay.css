@@ -81,12 +81,12 @@
     --question-top: auto;
     --question-left: auto;
     --question-width: 100%;
-    --question-max-width: 1200px;
+    --question-max-width: 1440px;
 
     --answers-top: auto;
     --answers-left: auto;
     --answers-width: 100%;
-    --answers-max-width: 1200px;
+    --answers-max-width: 1440px;
     --answers-layout: grid; /* grid, vertical, horizontal */
 
     --timer-top: auto;
@@ -1924,13 +1924,13 @@ body {
 
     .question-section {
         width: 90%;
-        max-width: 1200px;
+        max-width: 1440px;
         margin: 50px auto 20px;
     }
 
     .answers-section {
         width: 90%;
-        max-width: 1200px;
+        max-width: 1440px;
         margin: 20px auto;
     }
 
@@ -1965,7 +1965,7 @@ body {
         left: 50%;
         transform: translate(-50%, -50%);
         width: 90%;
-        max-width: 1200px;
+        max-width: 1440px;
         max-height: 85vh;
     }
 
@@ -2049,7 +2049,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
-    max-width: 1200px;
+    max-width: 1440px;
     max-height: 85vh;
 }
 
