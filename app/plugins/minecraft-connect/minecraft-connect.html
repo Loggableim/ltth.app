@@ -8,6 +8,15 @@
     <link rel="stylesheet" href="/plugins/minecraft-connect/minecraft-connect.css?v=3">
     <link rel="stylesheet" href="/css/themes.css">
     <style>
+        .mc-hero-logo {
+            display: block;
+            width: min(360px, 72vw);
+            height: auto;
+            object-fit: contain;
+            margin-top: 2px;
+            margin-bottom: 12px;
+        }
+
         :root[data-theme='vision-impaired'] .mc-theme-switcher {
             background: #000 !important;
             border-color: var(--mc-border) !important;
@@ -46,9 +55,76 @@
             background: #facc15 !important;
             color: #000 !important;
         }
+
+        :root[data-theme='cid'] .mc-theme-switcher {
+            background: #071107 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        :root[data-theme='cid'] .mc-theme-chip {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            border: 1px solid #1e5b2a !important;
+        }
+
+        :root[data-theme='cid'] .mc-theme-chip.active {
+            background: #4ade80 !important;
+            color: #030603 !important;
+            border-color: #4ade80 !important;
+        }
+
+        :root[data-theme='cid'] .mc-tab {
+            background: #061006 !important;
+            color: #f4fff4 !important;
+            border: 1px solid #1e5b2a !important;
+        }
+
+        :root[data-theme='cid'] .mc-tab.active {
+            background: #4ade80 !important;
+            color: #030603 !important;
+        }
+
+        :root[data-theme='cid'] .mc-btn-secondary,
+        :root[data-theme='cid'] .mc-input,
+        :root[data-theme='cid'] .mc-card,
+        :root[data-theme='cid'] .mc-metric-card,
+        :root[data-theme='cid'] .mc-panel,
+        :root[data-theme='cid'] .mc-modal-content {
+            background: #071107 !important;
+            color: #f4fff4 !important;
+            border-color: #1e5b2a !important;
+        }
+
+        :root[data-theme='cid'] .mc-btn-primary {
+            background: #4ade80 !important;
+            color: #030603 !important;
+        }
+
+        :root[data-theme='cid'] .mc-text-muted,
+        :root[data-theme='cid'] .mc-card-note,
+        :root[data-theme='cid'] .mc-metric-label,
+        :root[data-theme='cid'] .mc-status-meta {
+            color: #d1e7d1 !important;
+        }
+
+        :root[data-theme='vision-impaired'] .mc-hero-logo {
+            width: min(400px, 78vw);
+        }
+
+        :root[data-theme='cid'] .mc-hero-logo {
+            width: min(380px, 74vw);
+        }
+
+        .minecraft-connect-container {
+            max-width: 2200px;
+            margin: 0 auto;
+            padding: 0 12px;
+        }
     </style>
     <script>
         (function () {
+            const LOGO_SRC = '/logo-wide.png';
+
             function applyVisionImpairedChrome() {
                 if (document.documentElement.getAttribute('data-theme') !== 'vision-impaired') return;
 
@@ -78,12 +154,30 @@
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', applyVisionImpairedChrome);
-            window.addEventListener('load', applyVisionImpairedChrome);
-            window.addEventListener('focus', applyVisionImpairedChrome);
+            function syncBrandLogo() {
+                const theme = document.documentElement.getAttribute('data-theme') || 'night';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) logo.src = LOGO_SRC;
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                applyVisionImpairedChrome();
+                syncBrandLogo();
+            });
+            window.addEventListener('load', () => {
+                applyVisionImpairedChrome();
+                syncBrandLogo();
+            });
+            window.addEventListener('focus', () => {
+                applyVisionImpairedChrome();
+                syncBrandLogo();
+            });
 
             try {
-                new MutationObserver(applyVisionImpairedChrome).observe(document.documentElement, {
+                new MutationObserver(() => {
+                    applyVisionImpairedChrome();
+                    syncBrandLogo();
+                }).observe(document.documentElement, {
                     attributes: true,
                     attributeFilter: ['data-theme']
                 });
@@ -95,8 +189,8 @@
     <div class="minecraft-connect-container">
         <header class="mc-hero">
             <div class="mc-hero-copy">
+                <img class="mc-hero-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
                 <p class="mc-kicker">Minecraft Connect</p>
-                <h1>Commands, Chat, Gift bars, Setup</h1>
                 <p class="mc-hero-subtitle">A LTTH control surface for TikTok to Minecraft automation, powered by the existing bridge, queue, and mapping engine.</p>
                 <div class="mc-status-row">
                     <div class="mc-status-indicator">
@@ -110,6 +204,7 @@
                 <div class="mc-theme-switcher" aria-label="Theme switcher">
                     <button class="mc-theme-chip" data-theme-option="day">Day</button>
                     <button class="mc-theme-chip" data-theme-option="night">Night</button>
+                    <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
                     <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
                     <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
                 </div>
@@ -358,6 +453,7 @@
                                 <div class="mc-theme-switcher">
                                     <button class="mc-theme-chip" data-theme-option="day">Day</button>
                                     <button class="mc-theme-chip" data-theme-option="night">Night</button>
+                                    <button class="mc-theme-chip" data-theme-option="cid">Cid</button>
                                     <button class="mc-theme-chip" data-theme-option="contrast">High Contrast</button>
                                     <button class="mc-theme-chip" data-theme-option="vision-impaired">Vision Impaired</button>
                                 </div>
@@ -426,3 +522,4 @@
     <script src="/plugins/minecraft-connect/minecraft-connect.js?v=2"></script>
 </body>
 </html>
+
