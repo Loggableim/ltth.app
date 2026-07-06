@@ -162,6 +162,7 @@
 
                     body {
                         display: block !important;
+                        padding: clamp(0.75rem, 1vw, 1.25rem) !important;
                     }
 
                     body > *,
@@ -203,8 +204,8 @@
                         max-width: none !important;
                         margin-left: 0 !important;
                         margin-right: 0 !important;
-                        padding-left: 0 !important;
-                        padding-right: 0 !important;
+                        padding-left: clamp(0.75rem, 1vw, 1.25rem) !important;
+                        padding-right: clamp(0.75rem, 1vw, 1.25rem) !important;
                         box-sizing: border-box !important;
                     }
                 `;
@@ -1016,7 +1017,7 @@
             goodbye.innerHTML = `
                 <div class="shutdown-goodbye-content">
                     <div class="shutdown-goodbye-logo">
-                        <img src="/cid-logo.png" alt="Cid" class="shutdown-goodbye-img">
+                        <img src="/ltthicon.png" alt="LTTH" class="shutdown-goodbye-img">
                     </div>
                     <h1 class="shutdown-goodbye-title">Auf Wiedersehen! 👋</h1>
                     <p class="shutdown-goodbye-subtitle">Der Server wird heruntergefahren...</p>

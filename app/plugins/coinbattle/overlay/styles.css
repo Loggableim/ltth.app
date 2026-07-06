@@ -1636,8 +1636,8 @@ body.layout-compact .entry-coins {
 @media (orientation: landscape) {
   /* Ensure pyramid is properly sized for landscape */
   .pyramid-container {
-    max-width: 800px;
-    width: min(800px, 50vw);
+    max-width: none;
+    width: min(92vw, 1000px);
   }
 
   /* Adjust pyramid for wider screens */
@@ -1720,8 +1720,8 @@ body.layout-compact .entry-coins {
 .post-match-content {
   position: relative;
   z-index: 1;
-  width: 90%;
-  max-width: 800px;
+  width: min(96vw, 1200px);
+  max-width: none;
   max-height: 80vh;
   padding: 40px;
   background: linear-gradient(135deg, rgba(26, 31, 54, 0.9) 0%, rgba(15, 20, 41, 0.95) 100%);
@@ -1846,7 +1846,7 @@ body.layout-compact .entry-coins {
   left: 50%;
   transform: translateX(-50%);
   width: 80%;
-  max-width: 600px;
+  max-width: 900px;
   animation: creditsScroll 20s linear forwards;
 }
 
