@@ -47,6 +47,21 @@
     --mc-shadow: 0 28px 80px rgba(1, 5, 14, 0.48);
 }
 
+:root[data-theme='cid'] {
+    --mc-bg: #030603;
+    --mc-bg-2: #071107;
+    --mc-surface: rgba(7, 17, 7, 0.84);
+    --mc-surface-strong: rgba(6, 16, 6, 0.96);
+    --mc-border: rgba(74, 222, 128, 0.28);
+    --mc-border-strong: rgba(74, 222, 128, 0.5);
+    --mc-text: #f4fff4;
+    --mc-muted: #d1e7d1;
+    --mc-accent: #4ade80;
+    --mc-accent-2: #22c55e;
+    --mc-accent-3: #86efac;
+    --mc-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+}
+
 :root[data-theme='contrast'] {
     --mc-bg: #050505;
     --mc-bg-2: #000000;
@@ -127,7 +142,7 @@ body::before {
 
 .minecraft-connect-container {
     position: relative;
-    padding: 24px;
+    padding: 18px;
     width: 100%;
     max-width: none;
     margin: 0;
@@ -150,8 +165,8 @@ body::before {
 .mc-hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 20px;
-    padding: 28px;
+    gap: 18px;
+    padding: 22px 24px;
     border: 1px solid var(--mc-border);
     border-radius: var(--mc-radius-xl);
     background: linear-gradient(135deg, rgba(20, 30, 48, 0.86), rgba(10, 16, 28, 0.7));
@@ -269,6 +284,7 @@ body::before {
 }
 
 :root[data-theme='day'] .mc-theme-switcher,
+:root[data-theme='cid'] .mc-theme-switcher,
 :root[data-theme='contrast'] .mc-theme-switcher,
 :root[data-theme='vision-impaired'] .mc-theme-switcher {
     background: color-mix(in srgb, var(--mc-surface) 70%, transparent);
@@ -944,7 +960,7 @@ body::before {
 
 @media (max-width: 780px) {
     .minecraft-connect-container {
-        padding: 16px;
+        padding: 14px;
     }
 
     .mc-hero-panel {

@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-    const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+    const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
     const state = {
         socket: null,
@@ -66,7 +66,7 @@
             }
         } catch (error) {}
         window.addEventListener('storage', (event) => {
-            if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+            if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
                 syncThemeFromEnvironment();
             }
         });
@@ -99,7 +99,7 @@
         } catch (error) {}
 
         try {
-            for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                 const value = localStorage.getItem(key);
                 if (VALID_THEMES.has(value)) {
                     return value;
@@ -310,7 +310,7 @@
         const value = normalizeTheme(theme);
 
         try {
-            for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+            for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                 localStorage.setItem(key, value);
             }
         } catch (error) {}

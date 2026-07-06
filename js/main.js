@@ -1,5 +1,5 @@
 /**
- * PupCid's Little TikTool Helper - ltth.app
+ * LTTH - ltth.app
  * Main JavaScript for Website Interactivity
  */
 

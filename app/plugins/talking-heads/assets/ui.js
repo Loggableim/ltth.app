@@ -1195,7 +1195,7 @@ function stopLogPolling() {
 function showNotification(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `alert ${type === 'error' ? 'alert-warning' : 'alert-info'}`;
-  toast.style.cssText = 'position: fixed; right: 20px; bottom: 20px; z-index: 9999; min-width: 320px; max-width: min(520px, calc(100vw - 40px)); animation: slideIn 0.3s ease-out;';
+  toast.style.cssText = 'position: fixed; right: 20px; bottom: 20px; z-index: 9999; min-width: 360px; max-width: min(640px, calc(100vw - 40px)); animation: slideIn 0.3s ease-out;';
   toast.textContent = message;
   
   document.body.appendChild(toast);

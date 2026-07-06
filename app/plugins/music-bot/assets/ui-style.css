@@ -203,7 +203,7 @@ html[data-theme="vision-impaired"] .section-title {
 }
 
 .header-logo {
-  width: min(280px, 64vw);
+  width: min(112px, 22vw);
   height: auto;
   display: block;
   object-fit: contain;
@@ -1137,7 +1137,7 @@ html[data-theme="vision-impaired"] .section-title {
   }
 
   html[data-theme="vision-impaired"] .header-logo {
-    width: min(76vw, 300px);
+    width: min(124px, 24vw);
   }
 
   html[data-theme="vision-impaired"] .tab {
@@ -1146,7 +1146,7 @@ html[data-theme="vision-impaired"] .section-title {
   }
 
   html[data-theme="cid"] .header-logo {
-    width: min(72vw, 280px);
+    width: min(116px, 22vw);
   }
 
   html[data-theme="cid"] .tab {

@@ -69,4 +69,30 @@ describe('Official plugin store registry', () => {
       assert.strictEqual(plugin.pricing?.currency, 'EUR', `${plugin.id} free price currency must be EUR`);
     }
   });
+
+  it('marks invite-only and admin-only store entries with access metadata', () => {
+    const registryPath = path.join(repoRoot, 'plugin-store.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    const byId = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
+    const closedBetaIds = [
+      'animazingpal',
+      'interactive-story',
+      'openshock',
+      'sidekick',
+      'streamalchemy'
+    ];
+
+    for (const id of closedBetaIds) {
+      const plugin = byId.get(id);
+      assert(plugin, `${id} must exist in the official store registry`);
+      assert.strictEqual(plugin.access?.type, 'closed-beta', `${id} must be closed beta`);
+      assert(plugin.badges.includes('closed-beta'), `${id} must include the closed-beta badge`);
+    }
+
+    const adminPlugin = byId.get('store-admin');
+    assert(adminPlugin, 'store-admin must exist in the official store registry');
+    assert.strictEqual(adminPlugin.access?.type, 'admin');
+    assert.strictEqual(adminPlugin.access?.hidden, true);
+    assert(adminPlugin.badges.includes('admin-only'));
+  });
 });

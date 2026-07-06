@@ -43,7 +43,7 @@
     "viewer_xp": "Zuschauer XP",
     "weather_control": "Wetterkontrolle",
     "minecraft_connect": "Minecraft-Connect",
-    "plugin_manager": "Plugin Store",
+    "plugin_manager": "App Store",
     "automations": "Automatisierungen",
     "overlays": "Overlays",
     "effects": "Interaktive Effekte",
@@ -55,7 +55,7 @@
     "thermal_printer": "Thermaldrucker",
     "config_import": "Konfiguration Importieren",
     "animazingpal": "AnimazingPal",
-    "plugins": "Plugin Store",
+    "plugins": "App Store",
     "wiki": "Wiki",
     "settings": "Einstellungen",
     "toptier": "Top Tier",
@@ -335,7 +335,7 @@
     "sequential": "Sequenziell"
   },
   "plugins": {
-    "title": "Plugin Store",
+    "title": "App Store",
     "installed": "Installiert",
     "available": "Verfügbar",
     "enabled": "Aktiviert",
@@ -578,7 +578,7 @@
     "plugin_disabled_title": "Plugin deaktiviert",
     "plugin_disabled_heading": "🔌 Plugin ist deaktiviert",
     "plugin_disabled_message": "Das Plugin \"{pluginName}\" ist derzeit deaktiviert.",
-    "plugin_disabled_reason": "Du kannst dieses Plugin im Plugin Store aktivieren oder auf die Schaltfläche unten klicken.",
+    "plugin_disabled_reason": "Du kannst dieses Plugin im App Store aktivieren oder auf die Schaltfläche unten klicken.",
     "plugin_load_failed_title": "Plugin konnte nicht geladen werden",
     "plugin_load_failed_heading": "⚠️ Plugin konnte nicht geladen werden",
     "plugin_load_failed_message": "Das Plugin \"{pluginName}\" ist aktiviert, konnte aber nicht geladen werden.",
@@ -587,7 +587,7 @@
     "enabling_plugin": "Wird aktiviert...",
     "plugin_enabled_success": "Plugin aktiviert! Weiterleitung...",
     "plugin_enabled_error": "Plugin konnte nicht aktiviert werden. Bitte erneut versuchen.",
-    "go_to_plugin_manager": "Zum Plugin Store"
+    "go_to_plugin_manager": "Zum App Store"
   },
   "tts": {
     "title": "Text-zu-Sprache",

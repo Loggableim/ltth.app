@@ -1,3 +1,82 @@
+<style id="coinbattle-overlay-editor-theme-safety">
+  .config-subsection {
+    background: var(--color-bg-card, #ffffff);
+    color: var(--color-text-primary, #10203a);
+    border: 1px solid var(--color-border, #cbd5e1);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .config-subsection .panel,
+  .config-subsection .form-group,
+  .config-subsection .grid-layout-editor {
+    background: var(--color-bg-card, #ffffff);
+    color: var(--color-text-primary, #10203a);
+    border: 1px solid var(--color-border, #cbd5e1);
+  }
+  .config-subsection label,
+  .config-subsection .panel,
+  .config-subsection .panel * {
+    color: var(--color-text-primary, #10203a);
+    -webkit-text-fill-color: var(--color-text-primary, #10203a);
+  }
+  html[data-theme="night"] .config-subsection,
+  html[data-theme="night"] .config-subsection .panel,
+  html[data-theme="night"] .config-subsection .form-group,
+  html[data-theme="night"] .config-subsection .grid-layout-editor {
+    background: #111827;
+    color: #f8fafc;
+    border-color: #334155;
+  }
+  html[data-theme="night"] .config-subsection label,
+  html[data-theme="night"] .config-subsection .panel,
+  html[data-theme="night"] .config-subsection .panel * {
+    color: #f8fafc;
+    -webkit-text-fill-color: #f8fafc;
+  }
+  html[data-theme="contrast"] .config-subsection,
+  html[data-theme="vision-impaired"] .config-subsection,
+  html[data-theme="contrast"] .config-subsection .panel,
+  html[data-theme="vision-impaired"] .config-subsection .panel,
+  html[data-theme="contrast"] .config-subsection .form-group,
+  html[data-theme="vision-impaired"] .config-subsection .form-group,
+  html[data-theme="contrast"] .config-subsection .grid-layout-editor,
+  html[data-theme="vision-impaired"] .config-subsection .grid-layout-editor {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 3px solid #ffffff !important;
+  }
+  html[data-theme="contrast"] .config-subsection label,
+  html[data-theme="vision-impaired"] .config-subsection label,
+  html[data-theme="contrast"] .config-subsection .panel,
+  html[data-theme="vision-impaired"] .config-subsection .panel,
+  html[data-theme="contrast"] .config-subsection .panel *,
+  html[data-theme="vision-impaired"] .config-subsection .panel * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  /* coinbattle-overlay-editor-form-control-contrast */
+  html[data-theme="night"] .config-subsection .form-control,
+  html[data-theme="night"] .config-subsection input,
+  html[data-theme="night"] .config-subsection select {
+    background: #111827 !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    border: 2px solid #64748b !important;
+  }
+
+  html[data-theme="contrast"] .config-subsection .form-control,
+  html[data-theme="vision-impaired"] .config-subsection .form-control,
+  html[data-theme="contrast"] .config-subsection input,
+  html[data-theme="vision-impaired"] .config-subsection input,
+  html[data-theme="contrast"] .config-subsection select,
+  html[data-theme="vision-impaired"] .config-subsection select {
+    background: #000000 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border: 3px solid #ffd400 !important;
+    min-height: 44px;
+  }
+</style>
 <!-- CoinBattle Overlay Editor -->
 <div class="config-subsection">
   <h3>🎨 Overlay Editor</h3>

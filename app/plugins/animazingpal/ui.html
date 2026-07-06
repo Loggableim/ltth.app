@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
       function readTheme() {
         try {
@@ -20,7 +20,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (VALID_THEMES.has(value)) return value;
           }
@@ -37,7 +37,7 @@
 
       syncTheme();
       window.addEventListener('storage', (event) => {
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
           syncTheme();
         }
       });
@@ -198,18 +198,18 @@
     }
 
     html[data-theme] .btn-primary {
-      background: var(--color-accent-primary) !important;
-      color: #000 !important;
+      background: #0f8712 !important;
+      color: #fff !important;
     }
 
     html[data-theme] .btn-success {
-      background: var(--color-accent-success) !important;
-      color: #000 !important;
+      background: #047857 !important;
+      color: #fff !important;
     }
 
     html[data-theme] .btn-danger {
-      background: var(--color-accent-danger) !important;
-      color: #000 !important;
+      background: #b91c1c !important;
+      color: #fff !important;
     }
 
     html[data-theme] .btn-secondary {
@@ -249,6 +249,35 @@
       color: var(--color-text-secondary) !important;
       background: var(--color-bg-secondary) !important;
       border-color: var(--color-border) !important;
+    }
+
+    html[data-theme="day"] .text-yellow-300,
+    html[data-theme="day"] .text-yellow-100 {
+      color: #92400e !important;
+      -webkit-text-fill-color: #92400e !important;
+    }
+
+    html[data-theme="night"] .text-yellow-300,
+    html[data-theme="night"] .text-yellow-100,
+    html[data-theme="contrast"] .text-yellow-300,
+    html[data-theme="contrast"] .text-yellow-100,
+    html[data-theme="vision-impaired"] .text-yellow-300,
+    html[data-theme="vision-impaired"] .text-yellow-100 {
+      color: #facc15 !important;
+      -webkit-text-fill-color: #facc15 !important;
+    }
+
+    html[data-theme] .text-green-400,
+    html[data-theme] .text-green-300,
+    html[data-theme] .text-green-200 {
+      color: #22c55e !important;
+      -webkit-text-fill-color: #22c55e !important;
+    }
+
+    html[data-theme] .text-red-400,
+    html[data-theme] .text-red-300 {
+      color: #f87171 !important;
+      -webkit-text-fill-color: #f87171 !important;
     }
 
     html[data-theme="vision-impaired"] body {
@@ -291,10 +320,104 @@
     html[data-theme="vision-impaired"] .text-gray-500 {
       color: #fff7cc !important;
     }
-  </style>
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
-  <div class="container mx-auto p-6 max-w-6xl">
+  <div class="container mx-auto w-full max-w-none p-6">
     <!-- Header -->
     <div class="card flex items-center justify-between">
       <div class="flex items-center gap-4">
@@ -1120,4 +1243,3 @@
   <script src="/plugins/animazingpal/live-host-ui.js"></script>
 </body>
 </html>
-

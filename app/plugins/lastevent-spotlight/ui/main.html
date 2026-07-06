@@ -9,7 +9,7 @@
   <script>
     // Apply and keep theme in sync with the dashboard
     (function() {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
       function readTheme() {
         try {
@@ -60,8 +60,9 @@
     }
 
     .lastevent-container {
-      padding: 20px;
-      max-width: 1400px;
+      padding: 20px 24px;
+      width: 100%;
+      max-width: none;
       margin: 0 auto;
     }
 
@@ -82,7 +83,7 @@
 
     .overlay-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
       gap: 20px;
       margin-bottom: 30px;
     }
@@ -197,7 +198,8 @@
       margin: 2% auto;
       padding: 0;
       border-radius: 8px;
-      max-width: 900px;
+      width: min(96vw, 1200px);
+      max-width: none;
       max-height: 90vh;
       overflow: hidden;
       display: flex;
@@ -313,11 +315,12 @@
       border-radius: 8px;
       overflow: hidden;
       background: var(--color-bg-primary);
+      width: 100%;
     }
 
     .preview-frame {
       width: 100%;
-      height: 300px;
+      height: 560px;
       border: none;
     }
 
@@ -376,7 +379,7 @@
     }
 
     html[data-theme="vision-impaired"] .lastevent-container {
-      padding: 28px;
+      padding: 28px 30px;
     }
 
     html[data-theme="vision-impaired"] .lastevent-header h1 {
@@ -392,6 +395,7 @@
 
     html[data-theme="vision-impaired"] .overlay-grid {
       gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
     }
 
     html[data-theme="vision-impaired"] .overlay-card,
@@ -399,6 +403,7 @@
       background: #000;
       border: 3px solid #facc15;
       box-shadow: none;
+      max-width: none;
     }
 
     html[data-theme="vision-impaired"] .overlay-card {
@@ -467,7 +472,123 @@
     html[data-theme="vision-impaired"] .modal-body {
       padding: 24px;
     }
-  </style>
+
+    html[data-theme="cid"] .lastevent-container {
+      width: 100%;
+      max-width: none;
+      padding: 20px 24px;
+    }
+
+    html[data-theme="cid"] .overlay-grid {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    }
+
+    html[data-theme="cid"] .overlay-card,
+    html[data-theme="cid"] .modal-content {
+      background: #071107;
+      border-color: #1e5b2a;
+      color: #f4fff4;
+      max-width: none;
+    }
+
+    html[data-theme="cid"] .preview-frame {
+      height: 620px;
+    }
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
 </head>
 <body>
   <div class="lastevent-container">
@@ -520,6 +641,15 @@
   <div id="toast" class="toast"></div>
 
   <script src="/plugins/lastevent-spotlight/ui/main.js"></script>
+
+<style id="final-lastevent-preview-button-contrast">
+html[data-theme="night"] .btn-info,
+html[data-theme="contrast"] .btn-info {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 2px solid #93c5fd !important;
+}
+</style>
 </body>
 </html>
-

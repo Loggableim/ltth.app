@@ -22,6 +22,21 @@
   --shadow-color: rgba(0,0,0,0.5);
 }
 
+[data-theme="cid"] {
+  --bg-primary: #030603;
+  --bg-secondary: #061006;
+  --bg-card: #071107;
+  --text-primary: #f4fff4;
+  --text-secondary: #d1e7d1;
+  --border-color: #1e5b2a;
+  --accent-primary: #4ade80;
+  --accent-secondary: #22c55e;
+  --success-color: #4ade80;
+  --error-color: #ef4444;
+  --warning-color: #86efac;
+  --shadow-color: rgba(0,0,0,0.5);
+}
+
 [data-theme="light"] {
   --bg-primary: #ffffff;
   --bg-secondary: #f7fafc;
@@ -292,7 +307,8 @@ body {
 
 .empty-state-description {
   font-size: 14px;
-  max-width: 400px;
+  width: min(92vw, 560px);
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -633,3 +649,9 @@ body {
 .font-bold { font-weight: 700; }
 .font-extrabold { font-weight: 800; }
 .font-black { font-weight: 900; }
+
+/* final iframe full-width container fix */
+body .container {
+  width: 100% !important;
+  max-width: none !important;
+}

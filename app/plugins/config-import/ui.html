@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
-            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             function readTheme() {
                 try {
                     if (window.parent && window.parent !== window) {
@@ -17,7 +17,7 @@
                     }
                 } catch (error) {}
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (validThemes.has(value)) return value;
                     }
@@ -188,11 +188,20 @@
             border-color: #facc15;
         }
 
+        html[data-theme="contrast"] .header h1,
         html[data-theme="vision-impaired"] .header h1,
         html[data-theme="vision-impaired"] .card h2,
         html[data-theme="vision-impaired"] .section-title,
         html[data-theme="vision-impaired"] .preview-title {
             color: #facc15;
+            background: none;
+            -webkit-text-fill-color: #facc15;
+        }
+
+        html[data-theme="cid"] .header h1 {
+            color: var(--color-accent-primary);
+            background: none;
+            -webkit-text-fill-color: var(--color-accent-primary);
         }
 
         html[data-theme="vision-impaired"] .header p,
@@ -1261,4 +1270,3 @@
 </script>
 </body>
 </html>
-

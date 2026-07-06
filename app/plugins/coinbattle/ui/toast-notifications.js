@@ -43,7 +43,29 @@ class ToastNotificationSystem {
    */
   updateContainerPosition() {
     if (!this.container) return;
-    
+
+    const readTheme = () => {
+      try {
+        const theme = document.documentElement?.getAttribute('data-theme');
+        if (theme) return theme;
+      } catch (error) {}
+      try {
+        for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+          const value = localStorage.getItem(key);
+          if (value) return value;
+        }
+      } catch (error) {}
+      return 'night';
+    };
+
+    const theme = readTheme();
+    const isVision = theme === 'vision-impaired';
+    const isCid = theme === 'cid';
+    const width = isVision ? 'min(92vw, 640px)' : isCid ? 'min(92vw, 560px)' : 'min(92vw, 460px)';
+    const background = isVision ? '#000' : isCid ? 'rgba(7, 17, 7, 0.94)' : 'var(--color-bg-secondary, #1f2937)';
+    const color = isVision ? '#fff7cc' : isCid ? '#f4fff4' : '#f9fafb';
+    const border = isVision ? '3px solid #facc15' : isCid ? '2px solid rgba(74, 222, 128, 0.35)' : '1px solid #4b5563';
+
     const positions = {
       'top-right': 'top: 20px; right: 20px;',
       'top-left': 'top: 20px; left: 20px;',
@@ -58,8 +80,13 @@ class ToastNotificationSystem {
       display: flex;
       flex-direction: ${this.config.stackDirection === 'up' ? 'column-reverse' : 'column'};
       gap: 12px;
-      min-width: 300px;
-      max-width: 400px;
+      width: ${width};
+      max-width: none;
+      background: ${background};
+      color: ${color};
+      border: ${border};
+      border-radius: 8px;
+      box-shadow: ${isVision || isCid ? 'none' : '0 10px 25px rgba(0, 0, 0, 0.5)'};
       pointer-events: none;
     `;
   }
@@ -129,7 +156,7 @@ class ToastNotificationSystem {
     // Styling
     toast.style.cssText = `
       background: var(--toast-bg-${type}, rgba(0,0,0,0.9));
-      color: white;
+      color: var(--toast-fg-${type}, #ffffff);
       padding: 16px 20px;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -327,12 +354,16 @@ if (typeof document !== 'undefined') {
     :root {
       --toast-bg-success: #10b981;
       --toast-bg-error: #ef4444;
-      --toast-bg-warning: #f59e0b;
+      --toast-bg-warning: #facc15;
       --toast-bg-info: #3b82f6;
       --toast-border-success: #059669;
       --toast-border-error: #dc2626;
       --toast-border-warning: #d97706;
       --toast-border-info: #2563eb;
+      --toast-fg-success: #ffffff;
+      --toast-fg-error: #ffffff;
+      --toast-fg-warning: #111827;
+      --toast-fg-info: #ffffff;
     }
   `;
   document.head.appendChild(style);

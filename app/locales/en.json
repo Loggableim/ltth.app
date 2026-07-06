@@ -53,8 +53,8 @@
     "thermal_printer": "Thermal Printer",
     "config_import": "Config Import",
     "animazingpal": "AnimazingPal",
-    "plugin_manager": "Plugin Store",
-    "plugins": "Plugin Store",
+    "plugin_manager": "App Store",
+    "plugins": "App Store",
     "wiki": "Wiki",
     "settings": "Settings",
     "toptier": "Top Tier",
@@ -110,9 +110,9 @@
       "cache_duration": "Avatars are removed after this duration"
     },
     "alerts": {
-      "api_key_warning": "<strong>?? No API key configured!</strong><br>Configure the correct key for the selected engine:<br>- <strong>OpenAI</strong>: Dashboard ? Settings ? OpenAI API Configuration<br>- <strong>SiliconFlow</strong>: Dashboard ? Settings ? TTS API Keys ? SiliconFlow API Key<br><small>The API key is managed centrally and shared with other plugins.</small>",
-      "image_generation_info": "<strong>?? Image generation</strong><br>The plugin supports <strong>OpenAI (DALL-E 3)</strong> and <strong>SiliconFlow (FLUX.1)</strong>. Store the API key in the global settings and select your preferred engine here.",
-      "debug_log": "<strong>?? Debug log</strong><br>Live logs appear below when debug logging is enabled. Disable debug logging after troubleshooting to avoid noise."
+      "api_key_warning": "<strong>Warning: No API key configured!</strong><br>Configure the correct key for the selected engine:<br>- <strong>OpenAI</strong>: Dashboard > Settings > OpenAI API Configuration<br>- <strong>SiliconFlow</strong>: Dashboard > Settings > TTS API Keys > SiliconFlow API Key<br><small>The API key is managed centrally and shared with other plugins.</small>",
+      "image_generation_info": "<strong>Info: Image generation</strong><br>The plugin supports <strong>OpenAI (DALL-E 3)</strong> and <strong>SiliconFlow (FLUX.1)</strong>. Store the API key in the global settings and select your preferred engine here.",
+      "debug_log": "<strong>Debug log</strong><br>Live logs appear below when debug logging is enabled. Disable debug logging after troubleshooting to avoid noise."
     },
     "buttons": {
       "test_api": "Test API",
@@ -334,7 +334,7 @@
     "sequential": "Sequential"
   },
   "plugins": {
-    "title": "Plugin Store",
+    "title": "App Store",
     "installed": "Installed",
     "available": "Available",
     "enabled": "Enabled",
@@ -577,7 +577,7 @@
     "plugin_disabled_title": "Plugin Disabled",
     "plugin_disabled_heading": "?? Plugin is Disabled",
     "plugin_disabled_message": "The \"{pluginName}\" plugin is currently disabled.",
-    "plugin_disabled_reason": "You can enable this plugin in the Plugin Store or click the button below.",
+    "plugin_disabled_reason": "You can enable this plugin in the App Store or click the button below.",
     "plugin_load_failed_title": "Plugin Failed to Load",
     "plugin_load_failed_heading": "?? Plugin Failed to Load",
     "plugin_load_failed_message": "The \"{pluginName}\" plugin is enabled but failed to load.",
@@ -586,7 +586,7 @@
     "enabling_plugin": "Enabling...",
     "plugin_enabled_success": "Plugin enabled! Redirecting...",
     "plugin_enabled_error": "Failed to enable plugin. Please try again.",
-    "go_to_plugin_manager": "Go to Plugin Store"
+    "go_to_plugin_manager": "Go to App Store"
   },
   "tts": {
     "title": "Text-to-Speech",

@@ -79,7 +79,7 @@ launcher/
 ├── build.sh             # Linux Build Script (Cross-Compile)
 ├── README.md            # Diese Dokumentation
 ├── assets/
-│   └── icon.png         # App Icon (von ltth.app/assets/ltthicon.png)
+│   └── icon.png         # App Icon (von ltth.app/assets/launcherlogo.png)
 └── docs/
     ├── ARCHITECTURE.md  # Technische Details
     ├── SECURITY.md      # Sicherheitskonzept

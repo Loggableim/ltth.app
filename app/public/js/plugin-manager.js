@@ -29,6 +29,7 @@ class PluginManager {
         this.currentStoreCategory = 'all';
         this.selectedStorePlugin = null;
         this.currentAppVersion = null;
+        this.storeAccount = window.StoreAuth?.account || null;
         this.currentStoreFilters = {
             official: false,
             free: false,
@@ -63,8 +64,6 @@ class PluginManager {
         const fileInput = document.getElementById('plugin-file-input');
         const reloadBtn = document.getElementById('reload-plugins-btn');
         const modeBtns = document.querySelectorAll('.plugin-mode-btn, .plugin-tab-btn');
-        const enableCommunityBtn = document.getElementById('enable-community-store-btn');
-        const addCommunityBtn = document.getElementById('add-community-source-btn');
 
         if (uploadBtn) {
             uploadBtn.addEventListener('click', () => {
@@ -95,14 +94,6 @@ class PluginManager {
                 this.closeStorePluginDetail();
             }
         });
-
-        if (enableCommunityBtn) {
-            enableCommunityBtn.addEventListener('click', () => this.enableCommunitySources());
-        }
-
-        if (addCommunityBtn) {
-            addCommunityBtn.addEventListener('click', () => this.addCommunitySource());
-        }
 
         // Search functionality
         const searchInput = document.getElementById('plugin-search');
@@ -185,6 +176,19 @@ class PluginManager {
 
         // Note: Plugin loading is now triggered by navigation.js handleViewChange()
         // when switching to the plugins view
+        if (window.StoreAuth && typeof window.StoreAuth.onChange === 'function') {
+            window.StoreAuth.onChange((state) => {
+                this.storeAccount = state.account || null;
+                if (state.signedIn) {
+                    this.loadPlugins();
+                } else {
+                    this.storePlugins = [];
+                    this.filteredStorePlugins = [];
+                    this.renderStoreShell();
+                }
+            });
+        }
+
         this.updateStoreModeControls();
         this.renderStoreCategoryChips();
         this.loadCurrentAppVersion();
@@ -245,12 +249,6 @@ class PluginManager {
     }
 
     applyStoreFiltersAndSort() {
-        if (this.currentStoreMode === 'sources') {
-            this.filteredStorePlugins = [];
-            this.renderStoreShell();
-            return;
-        }
-
         const query = String(this.searchQuery || '').trim();
         const filtered = [];
 
@@ -297,7 +295,7 @@ class PluginManager {
     }
 
     setStoreMode(mode) {
-        const nextMode = ['store', 'installed', 'updates', 'sources'].includes(mode) ? mode : 'store';
+        const nextMode = ['store', 'installed', 'updates'].includes(mode) ? mode : 'store';
         this.currentStoreMode = nextMode;
         this.currentTab = nextMode;
 
@@ -311,7 +309,7 @@ class PluginManager {
         });
 
         this.updateStoreModeControls();
-        if (this.currentStoreMode === 'installed' || this.currentStoreMode === 'sources') {
+        if (this.currentStoreMode === 'installed') {
             this.closeStorePluginDetail();
         }
 
@@ -345,8 +343,18 @@ class PluginManager {
 
     async loadStorePlugins(showErrors = true) {
         try {
+            const hasStoreAuth = await this.requireStoreAuth(showErrors);
+            if (!hasStoreAuth) {
+                this.storePlugins = [];
+                this.filteredStorePlugins = [];
+                this.renderStoreShell();
+                return;
+            }
+
             const locale = window.i18n?.currentLocale || localStorage.getItem('app_locale') || 'en';
-            const response = await fetch(`/api/plugin-store?locale=${encodeURIComponent(locale)}`);
+            const response = await fetch(`/api/plugin-store?locale=${encodeURIComponent(locale)}`, {
+                headers: await this.getStoreAuthHeaders()
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -355,15 +363,109 @@ class PluginManager {
                 this.storeErrors = data.errors || [];
                 this.storeNotices = data.notices || [];
                 this.communityEnabled = data.communityEnabled === true;
-                this.updateCommunityPanel();
+            } else if (data.code === 'AUTH_REQUIRED') {
+                window.StoreAuth?.showSignIn?.();
             } else if (showErrors) {
-                this.showError(data.error || 'Plugin store could not be loaded');
+                this.showError(data.error || 'App Store could not be loaded');
             }
         } catch (error) {
-            console.error('Error loading plugin store:', error);
+            console.error('Error loading App Store:', error);
             if (showErrors) {
-                this.showError('Error loading plugin store: ' + error.message);
+                this.showError('Error loading App Store: ' + error.message);
             }
+        }
+    }
+
+    async requireStoreAuth(showErrors = true) {
+        if (!window.StoreAuth || typeof window.StoreAuth.requireAuth !== 'function') {
+            return true;
+        }
+
+        try {
+            return await window.StoreAuth.requireAuth();
+        } catch (error) {
+            console.warn('App Store auth is unavailable:', error);
+            if (showErrors) {
+                this.showError('App Store login is unavailable: ' + error.message);
+            }
+            return false;
+        }
+    }
+
+    async getStoreAuthHeaders() {
+        if (!window.StoreAuth || typeof window.StoreAuth.getToken !== 'function') {
+            return {};
+        }
+
+        const token = await window.StoreAuth.getToken();
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    hasStoreLicense() {
+        return this.storeAccount?.license?.active === true;
+    }
+
+    hasClosedBetaPluginAccess(plugin) {
+        if (plugin?.access?.type !== 'closed-beta') {
+            return true;
+        }
+
+        const access = this.storeAccount?.access || {};
+        const groups = Array.isArray(access.groups) ? access.groups : [];
+        const closedBetaPlugins = Array.isArray(access.closedBetaPlugins) ? access.closedBetaPlugins : [];
+        const normalizedGroups = groups.map(group => String(group || '').toLowerCase());
+        const normalizedPlugins = closedBetaPlugins.map(pluginId => String(pluginId || '').toLowerCase());
+        const pluginId = String(plugin.id || '').toLowerCase();
+
+        return normalizedGroups.includes('admin') ||
+            normalizedGroups.includes('closed-beta') ||
+            normalizedPlugins.includes(pluginId);
+    }
+
+    getStoreLicense() {
+        return this.storeAccount?.license || {
+            active: false,
+            status: 'missing',
+            plan: null,
+            licenseId: null
+        };
+    }
+
+    async claimBetaLicense() {
+        const hasStoreAuth = await this.requireStoreAuth(true);
+        if (!hasStoreAuth) {
+            return false;
+        }
+
+        try {
+            this.showInfo('Claiming free beta license...');
+            const response = await fetch('/api/plugin-store/license/claim', {
+                method: 'POST',
+                headers: await this.getStoreAuthHeaders()
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                this.showError(data.error || 'Beta license could not be claimed.');
+                return false;
+            }
+
+            if (window.StoreAuth && typeof window.StoreAuth.refreshAccount === 'function') {
+                this.storeAccount = await window.StoreAuth.refreshAccount();
+            } else {
+                this.storeAccount = {
+                    ...(this.storeAccount || {}),
+                    license: data.license
+                };
+            }
+
+            this.showSuccess('Free LTTH beta license activated.');
+            this.renderStoreShell();
+            return true;
+        } catch (error) {
+            console.error('Error claiming beta license:', error);
+            this.showError('Beta license claim failed: ' + error.message);
+            return false;
         }
     }
 
@@ -377,7 +479,7 @@ class PluginManager {
                 this.applyFiltersAndSort();
             }
         } catch (error) {
-            console.warn('Could not load current app version for plugin store compatibility filters:', error);
+            console.warn('Could not load current app version for App Store compatibility filters:', error);
         }
     }
 
@@ -396,24 +498,8 @@ class PluginManager {
         return 0;
     }
 
-    updateCommunityPanel() {
-        const disabledPanel = document.getElementById('plugin-community-disabled');
-        const enabledPanel = document.getElementById('plugin-community-enabled');
-
-        if (disabledPanel) {
-            disabledPanel.style.display = this.communityEnabled ? 'none' : 'flex';
-        }
-
-        if (enabledPanel) {
-            enabledPanel.style.display = this.communityEnabled ? 'block' : 'none';
-        }
-
-        this.renderSourcesPanel();
-    }
-
     updateStoreModeControls() {
         const installedMode = this.currentStoreMode === 'installed';
-        const sourcesMode = this.currentStoreMode === 'sources';
         const storeMode = this.currentStoreMode === 'store';
 
         ['upload-plugin-btn', 'reload-plugins-btn', 'compact-mode-toggle'].forEach(id => {
@@ -441,14 +527,9 @@ class PluginManager {
             categoryChips.style.display = storeMode ? 'flex' : 'none';
         }
 
-        const sourcesPanel = document.getElementById('plugin-store-sources-panel');
-        if (sourcesPanel) {
-            sourcesPanel.style.display = sourcesMode ? 'block' : 'none';
-        }
-
         const pluginsContainer = document.getElementById('plugins-container');
         if (pluginsContainer) {
-            pluginsContainer.style.display = sourcesMode ? 'none' : '';
+            pluginsContainer.style.display = '';
         }
 
         this.syncStoreControls();
@@ -696,37 +777,6 @@ class PluginManager {
         });
     }
 
-    renderSourcesPanel() {
-        const sourceList = document.getElementById('plugin-store-source-list');
-        const errorBox = document.getElementById('plugin-store-source-errors');
-
-        if (errorBox) {
-            if (this.storeErrors.length > 0) {
-                errorBox.style.display = 'block';
-                errorBox.innerHTML = this.storeErrors.map(error => `
-                    <div style="padding: 0.75rem 1rem; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12); border-radius: 8px; color: #fbbf24; font-size: 0.9rem; margin-bottom: 0.5rem;">
-                        ${this.escapeHtml(error.message || error.error || 'A store source could not be loaded.')}
-                    </div>
-                `).join('');
-            } else {
-                errorBox.style.display = 'none';
-                errorBox.innerHTML = '';
-            }
-        }
-
-        if (!sourceList) return;
-
-        const sources = this.storeSources || [];
-        sourceList.innerHTML = sources.length === 0
-            ? '<div style="color: var(--color-text-muted); font-size: 0.9rem;">No community sources added yet.</div>'
-            : sources.map(source => `
-                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 0.85rem; background: var(--color-bg-secondary);">
-                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px;">${this.escapeHtml(source.name || source.id)}</div>
-                    <div style="font-size: 0.78rem; color: var(--color-text-muted); font-family: monospace; overflow-wrap: anywhere;">${this.escapeHtml(source.url || '')}</div>
-                </div>
-            `).join('');
-    }
-
     /**
      * Updates plugin statistics
      */
@@ -790,10 +840,6 @@ class PluginManager {
 
         this.updateStoreModeControls();
         this.renderStoreCategoryChips();
-        if (this.currentStoreMode === 'sources') {
-            this.renderSourcesPanel();
-            return;
-        }
 
         container.className = 'plugin-store-shell';
 
@@ -801,7 +847,7 @@ class PluginManager {
             ? `
                 <div class="plugin-store-warning">
                     <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
-                    <span>Some community store sources could not be loaded. Check Sources for details.</span>
+                    <span>The official store catalog is using fallback data. Some metadata may be delayed.</span>
                 </div>
             `
             : '';
@@ -847,13 +893,25 @@ class PluginManager {
             ? 'Plugin Updates'
             : this.currentStoreMode === 'installed'
                 ? 'Installed Plugins'
-                : 'Official LTTH Plugin Store';
+                : 'Official LTTH App Store';
         const subtitle = this.currentStoreMode === 'updates'
             ? 'Review available upgrades before you install them.'
             : this.currentStoreMode === 'installed'
                 ? 'Manage local plugins, reload dev builds, and review status.'
-                : 'Browse official LTTH plugins first. Community sources stay in Sources until you opt in.';
-        const actionHtml = this.currentStoreMode === 'updates' && updates > 0
+                : 'Browse the closed official LTTH catalog. A Clerk account is required for installs and updates.';
+        const license = this.getStoreLicense();
+        const licenseMeta = this.hasStoreLicense()
+            ? this.renderStoreBadge('Beta license active', 'badge-check')
+            : this.renderStoreBadge('Beta license required', 'badge-alert');
+        const licenseActionHtml = !this.hasStoreLicense() && this.currentStoreMode !== 'installed'
+            ? `
+                <button type="button" class="plugin-store-update-all" data-store-license-claim="true">
+                    <i data-lucide="badge-check" style="width: 15px; height: 15px;"></i>
+                    Claim free beta license
+                </button>
+            `
+            : '';
+        const updateActionHtml = this.currentStoreMode === 'updates' && updates > 0
             ? `
                 <button type="button" class="plugin-store-update-all" data-update-all-store-plugins="true">
                     <i data-lucide="download" style="width: 15px; height: 15px;"></i>
@@ -861,12 +919,19 @@ class PluginManager {
                 </button>
             `
             : '';
+        const actionHtml = [licenseActionHtml, updateActionHtml].filter(Boolean).join('');
         const trustHtml = this.currentAppVersion
             ? `<span class="plugin-store-inline-note">Current LTTH version: v${this.escapeHtml(this.currentAppVersion)}</span>`
             : '<span class="plugin-store-inline-note">Version check pending</span>';
+        const licenseHintHtml = this.hasStoreLicense()
+            ? `<span class="plugin-store-inline-note">License: ${this.escapeHtml(license.plan || 'beta-free')}</span>`
+            : '<span class="plugin-store-inline-note">Claim a free beta license to install or update plugins.</span>';
 
         return `
             <section class="plugin-store-header">
+                <div class="plugin-store-header__brand">
+                    <img src="/appstore-logo.png" alt="LTTH AppStore logo" class="plugin-store-header__logo" loading="lazy">
+                </div>
                 <div class="plugin-store-header__title">
                     <div class="plugin-store-header__title-row">
                         <i data-lucide="${this.currentStoreMode === 'updates' ? 'download' : this.currentStoreMode === 'installed' ? 'hard-drive' : 'shopping-bag'}" style="width: 22px; height: 22px; color: var(--color-accent-primary);"></i>
@@ -877,8 +942,10 @@ class PluginManager {
                         ${this.renderStoreBadge(`${total} total`, 'package')}
                         ${this.renderStoreBadge(`${installed} installed`, 'check-circle')}
                         ${this.renderStoreBadge(`${updates} updates`, 'download')}
-                        ${this.renderStoreBadge(this.communityEnabled ? 'Community enabled' : 'Community off', 'users')}
+                        ${this.renderStoreBadge('Official catalog', 'shield-check')}
+                        ${licenseMeta}
                         ${trustHtml}
+                        ${licenseHintHtml}
                     </div>
                 </div>
                 <div class="plugin-store-header__actions">
@@ -1013,8 +1080,6 @@ class PluginManager {
         const pricing = this.getStorePluginPricing(plugin);
         const badgeHtml = this.renderStorePluginBadges(plugin);
         const category = this.getStorePluginCategoryLabel(plugin);
-        const iconText = this.getStorePluginInitials(plugin);
-        const accent = this.getStorePluginAccent(plugin);
         const media = this.getStorePluginMedia(plugin, compact);
         const versionSummary = this.getStorePluginVersionSummary(plugin);
         const trustSummary = this.getStorePluginTrustSummary(plugin);
@@ -1053,7 +1118,7 @@ class PluginManager {
                 </div>
                 <div class="plugin-store-card__footer">
                     <div class="plugin-store-card__footer-meta">
-                        <span>${this.escapeHtml(plugin.sourceName || (plugin.official ? 'Official LTTH' : 'Community source'))}</span>
+                        <span>${this.escapeHtml(plugin.sourceName || (plugin.official ? 'Official LTTH' : 'External source'))}</span>
                         ${plugin.installed ? `<span>${plugin.updateAvailable ? `Installed ${this.escapeHtml(plugin.installedVersion || '')}` : 'Installed'}</span>` : '<span>Ready to install</span>'}
                     </div>
                     <button
@@ -1100,6 +1165,11 @@ class PluginManager {
         if (updateAllButton) {
             updateAllButton.addEventListener('click', () => this.updateAllStorePlugins());
         }
+
+        const claimLicenseButton = container.querySelector('[data-store-license-claim]');
+        if (claimLicenseButton) {
+            claimLicenseButton.addEventListener('click', () => this.claimBetaLicense());
+        }
     }
 
     findStorePlugin(sourceId, pluginId) {
@@ -1115,6 +1185,12 @@ class PluginManager {
         }
         if (this.getStorePluginPricing(plugin).type === 'paid' && !plugin.owned) {
             return { label: 'Buy', icon: 'shopping-cart', disabled: true };
+        }
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+            return { label: 'Invite required', icon: 'lock', disabled: true };
+        }
+        if (!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable)) {
+            return { label: 'Claim License', icon: 'badge-check', disabled: false };
         }
         if (plugin.installed && plugin.updateAvailable) {
             return { label: 'Update', icon: 'download', disabled: false };
@@ -1133,6 +1209,16 @@ class PluginManager {
 
         if (this.getStorePluginPricing(plugin).type === 'paid' && !plugin.owned) {
             this.openStorePluginDetail(plugin.sourceId, plugin.id);
+            return;
+        }
+
+        if ((!plugin.installed || plugin.updateAvailable) && plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+            this.openStorePluginDetail(plugin.sourceId, plugin.id);
+            return;
+        }
+
+        if (!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable)) {
+            await this.claimBetaLicense();
             return;
         }
 
@@ -1185,10 +1271,14 @@ class PluginManager {
 
         badges.push(plugin.official
             ? '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(59, 130, 246, 0.14); color: #60a5fa; font-size: 0.7rem;">Official</span>'
-            : '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Community</span>');
+            : '<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">External</span>');
 
         if (plugin.channel === 'open-beta' || rawBadges.includes('open-beta')) {
             badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(251, 191, 36, 0.14); color: #fbbf24; font-size: 0.7rem;">Open Beta</span>');
+        }
+
+        if (plugin.access?.type === 'closed-beta' || rawBadges.includes('closed-beta')) {
+            badges.push('<span style="padding: 3px 8px; border-radius: 999px; background: rgba(244, 114, 182, 0.14); color: #f472b6; font-size: 0.7rem;">Closed Beta</span>');
         }
 
         if (plugin.sha256) {
@@ -1213,44 +1303,41 @@ class PluginManager {
         return category.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
     }
 
-    getStorePluginInitials(plugin) {
-        const name = String(plugin.name || plugin.id || 'LT').trim();
-        const words = name.split(/\s+/).filter(Boolean);
-        if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-        return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
-    }
-
     getStorePluginAccent(plugin) {
         const category = this.getStorePluginCategoryLabel(plugin).toLowerCase();
-        if (category.includes('audio')) return { background: 'rgba(16, 185, 129, 0.14)', border: 'rgba(16, 185, 129, 0.35)', color: '#34d399' };
-        if (category.includes('game')) return { background: 'rgba(244, 114, 182, 0.14)', border: 'rgba(244, 114, 182, 0.35)', color: '#f472b6' };
-        if (category.includes('integration')) return { background: 'rgba(96, 165, 250, 0.14)', border: 'rgba(96, 165, 250, 0.35)', color: '#60a5fa' };
-        if (category.includes('overlay')) return { background: 'rgba(251, 191, 36, 0.14)', border: 'rgba(251, 191, 36, 0.35)', color: '#fbbf24' };
-        return { background: 'rgba(148, 163, 184, 0.14)', border: 'rgba(148, 163, 184, 0.35)', color: '#cbd5e1' };
+        if (category.includes('audio')) return { background: 'rgba(52, 211, 153, 0.14)', border: 'rgba(52, 211, 153, 0.34)', color: '#34d399' };
+        if (category.includes('game')) return { background: 'rgba(244, 114, 182, 0.14)', border: 'rgba(244, 114, 182, 0.34)', color: '#f472b6' };
+        if (category.includes('integration')) return { background: 'rgba(96, 165, 250, 0.14)', border: 'rgba(96, 165, 250, 0.34)', color: '#60a5fa' };
+        if (category.includes('overlay')) return { background: 'rgba(251, 191, 36, 0.14)', border: 'rgba(251, 191, 36, 0.34)', color: '#fbbf24' };
+        return { background: 'rgba(203, 213, 225, 0.14)', border: 'rgba(203, 213, 225, 0.34)', color: '#cbd5e1' };
+    }
+
+    getStorePluginAccentStyle(plugin) {
+        const accent = this.getStorePluginAccent(plugin);
+        return `--store-icon-bg: ${accent.background}; --store-icon-border: ${accent.border}; --store-icon-color: ${accent.color};`;
     }
 
     getStorePluginMedia(plugin, compact = false) {
         const thumbnail = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
             ? plugin.screenshots[0]
             : '';
-        const accent = this.getStorePluginAccent(plugin);
-        const iconText = this.getStorePluginInitials(plugin);
+        const accentStyle = this.getStorePluginAccentStyle(plugin);
 
         if (thumbnail) {
             return `
                 <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
                     <img src="${this.escapeHtml(thumbnail)}" alt="" loading="lazy" />
-                    <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'Community')}</span>
+                    <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'External')}</span>
                 </div>
             `;
         }
 
         return `
             <div class="plugin-store-card__media ${compact ? 'is-compact' : ''}">
-                <div class="plugin-store-card__avatar" style="background: ${accent.background}; border-color: ${accent.border}; color: ${accent.color};">
-                    ${this.escapeHtml(iconText)}
+                <div class="plugin-store-card__avatar" style="${accentStyle}" role="img" aria-label="LTTH app icon">
+                    <span class="plugin-store-card__avatar-icon" aria-hidden="true"></span>
                 </div>
-                <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'Community')}</span>
+                <span class="plugin-store-card__media-chip">${this.escapeHtml(plugin.official ? 'Official' : 'External')}</span>
             </div>
         `;
     }
@@ -1270,7 +1357,7 @@ class PluginManager {
     getStorePluginTrustSummary(plugin) {
         const summary = [];
 
-        summary.push(plugin.official ? 'Official source' : 'Community source');
+        summary.push(plugin.official ? 'Official source' : 'External source');
         if (plugin.sha256) {
             summary.push('SHA-256 verified');
         }
@@ -1295,12 +1382,131 @@ class PluginManager {
             : `Requires LTTH ${plugin.minLtthVersion}+`;
     }
 
+    renderStoreQualitySignals(plugin) {
+        const quality = plugin.quality || {};
+        const badges = Array.isArray(quality.badges) ? quality.badges : [];
+        const level = quality.level || plugin.devStatus || 'beta';
+        const signals = [
+            `Quality level: ${level}`,
+            ...(badges.length > 0 ? badges.map(badge => badge.replace(/-/g, ' ')) : ['Signed official package'])
+        ];
+
+        return `
+            <section class="plugin-store-drawer__section">
+                <div class="plugin-store-drawer__section-title">
+                    <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i>
+                    <span>Quality signals</span>
+                </div>
+                <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                    ${signals.map(signal => this.renderStoreBadge(signal, 'badge-check')).join('')}
+                </div>
+            </section>
+        `;
+    }
+
+    renderStoreRequirements(plugin) {
+        const requirements = plugin.requirements || {};
+        const secrets = Array.isArray(requirements.secrets) ? requirements.secrets : [];
+        const externalAccounts = Array.isArray(requirements.externalAccounts) ? requirements.externalAccounts : [];
+        const items = [
+            ...secrets.map(secret => `Secret: ${secret}`),
+            ...externalAccounts.map(account => `Account: ${account}`)
+        ];
+
+        if (items.length === 0) {
+            items.push('No external account setup required');
+        }
+
+        return `
+            <section class="plugin-store-drawer__section">
+                <div class="plugin-store-drawer__section-title">
+                    <i data-lucide="list-checks" style="width: 15px; height: 15px;"></i>
+                    <span>Setup requirements</span>
+                </div>
+                <div style="display: grid; gap: 0.45rem;">
+                    ${items.map(item => `<p class="plugin-store-drawer__notes">- ${this.escapeHtml(item)}</p>`).join('')}
+                </div>
+            </section>
+        `;
+    }
+
+    renderStoreUpdateNotes(plugin, changelogSummary) {
+        const changelog = Array.isArray(plugin.changelog) ? plugin.changelog.slice(0, 4) : [];
+        const notes = changelog.length > 0
+            ? changelog.map(item => {
+                const version = item.version ? `v${item.version}: ` : '';
+                const summary = item.summary || item.notes || item.title || '';
+                return `${version}${summary}`;
+            }).filter(Boolean)
+            : [changelogSummary];
+
+        return `
+            <section class="plugin-store-drawer__section">
+                <div class="plugin-store-drawer__section-title">
+                    <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
+                    <span>Update notes</span>
+                </div>
+                <div style="display: grid; gap: 0.45rem;">
+                    ${notes.map(note => `<p class="plugin-store-drawer__notes">${this.escapeHtml(note)}</p>`).join('')}
+                    ${plugin.minLtthVersion ? `<p class="plugin-store-drawer__notes">Requires LTTH v${this.escapeHtml(plugin.minLtthVersion)} or newer.</p>` : ''}
+                </div>
+            </section>
+        `;
+    }
+
+    renderStoreHealthNotice(plugin) {
+        const rollbackProtected = plugin.updateSafety?.rollbackProtected !== false;
+        const support = plugin.support || {};
+        const feedbackEnabled = support.feedbackEnabled !== false;
+
+        return `
+            <section class="plugin-store-drawer__section">
+                <div class="plugin-store-drawer__section-title">
+                    <i data-lucide="activity" style="width: 15px; height: 15px;"></i>
+                    <span>Store health</span>
+                </div>
+                <p class="plugin-store-drawer__notes">${rollbackProtected ? 'Rollback protected: failed updates restore the previous local plugin copy.' : 'Rollback protected: unavailable for this package.'}</p>
+                <p class="plugin-store-drawer__notes">${feedbackEnabled ? 'Review telemetry and feedback are stored locally for admin review.' : 'Feedback is disabled for this listing.'}</p>
+            </section>
+        `;
+    }
+
+    renderStoreFeedbackSection(plugin) {
+        if (plugin.support?.feedbackEnabled === false) {
+            return '';
+        }
+
+        return `
+            <section class="plugin-store-drawer__section">
+                <div class="plugin-store-drawer__section-title">
+                    <i data-lucide="message-square" style="width: 15px; height: 15px;"></i>
+                    <span>Review / Feedback</span>
+                </div>
+                <div style="display: grid; gap: 0.65rem;">
+                    <select data-store-feedback-rating style="padding: 0.65rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text-primary);">
+                        <option value="5">5 - Works well</option>
+                        <option value="4">4 - Good with small issues</option>
+                        <option value="3">3 - Needs polish</option>
+                        <option value="2">2 - Hard to use</option>
+                        <option value="1">1 - Broken for me</option>
+                    </select>
+                    <textarea data-store-feedback-message rows="3" placeholder="Short feedback for ${this.escapeHtml(plugin.name || plugin.id)}" style="resize: vertical; padding: 0.75rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text-primary);"></textarea>
+                    <button type="button" data-store-feedback-submit class="btn btn-ghost">
+                        <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+                        Send feedback
+                    </button>
+                </div>
+            </section>
+        `;
+    }
+
     openStorePluginDetail(sourceId, pluginId) {
         const plugin = this.findStorePlugin(sourceId, pluginId);
         if (!plugin) return;
 
         this.selectedStorePlugin = plugin;
         this.renderStorePluginDetail(plugin);
+        this.recordStoreTelemetry(plugin.id, 'detail_open', { sourceId: plugin.sourceId });
     }
 
     closeStorePluginDetail() {
@@ -1326,6 +1532,7 @@ class PluginManager {
         const versionSummary = this.getStorePluginVersionSummary(plugin);
         const trustSummary = this.getStorePluginTrustSummary(plugin);
         const compatibilitySummary = this.getStorePluginCompatibilitySummary(plugin);
+        const accentStyle = this.getStorePluginAccentStyle(plugin);
         const changelogSummary = plugin.installed && plugin.updateAvailable
             ? `Update available from v${this.escapeHtml(plugin.installedVersion || 'unknown')} to v${this.escapeHtml(plugin.version || '0.0.0')}.`
             : `Latest store package: v${this.escapeHtml(plugin.version || '0.0.0')}.`;
@@ -1340,7 +1547,7 @@ class PluginManager {
                         <div class="plugin-store-drawer__media">
                             ${primaryScreenshot
                                 ? `<img src="${this.escapeHtml(primaryScreenshot)}" alt="" loading="lazy" />`
-                                : `<div class="plugin-store-drawer__avatar">${this.escapeHtml(this.getStorePluginInitials(plugin))}</div>`}
+                                : `<div class="plugin-store-drawer__avatar" style="${accentStyle}" role="img" aria-label="Plugin icon"><span class="plugin-store-drawer__avatar-icon" aria-hidden="true"></span></div>`}
                         </div>
                         <div class="plugin-store-drawer__title">
                             <h3>${this.escapeHtml(plugin.name || plugin.id)}</h3>
@@ -1356,7 +1563,7 @@ class PluginManager {
                 ${plugin.official ? '' : `
                     <div class="plugin-store-drawer__warning">
                         <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
-                        <span>Community plugin. Only install if you trust the source.</span>
+                        <span>Non-official plugin entry. Only install if you trust the source.</span>
                     </div>
                 `}
 
@@ -1371,14 +1578,10 @@ class PluginManager {
                     ${this.renderStoreDetailField('Compatibility', compatibilitySummary)}
                 </div>
 
-                <section class="plugin-store-drawer__section">
-                    <div class="plugin-store-drawer__section-title">
-                        <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
-                        <span>Version notes</span>
-                    </div>
-                    <p class="plugin-store-drawer__notes">${this.escapeHtml(changelogSummary)}</p>
-                    ${plugin.minLtthVersion ? `<p class="plugin-store-drawer__notes">Requires LTTH v${this.escapeHtml(plugin.minLtthVersion)} or newer.</p>` : ''}
-                </section>
+                ${this.renderStoreQualitySignals(plugin)}
+                ${this.renderStoreRequirements(plugin)}
+                ${this.renderStoreUpdateNotes(plugin, changelogSummary)}
+                ${this.renderStoreHealthNotice(plugin)}
 
                 <section class="plugin-store-drawer__section">
                     <div class="plugin-store-drawer__section-title">
@@ -1397,6 +1600,8 @@ class PluginManager {
                     </div>
                 </section>
 
+                ${this.renderStoreFeedbackSection(plugin)}
+
                 <button type="button" data-store-drawer-action class="btn btn-primary plugin-store-drawer__action" ${action.disabled ? 'disabled' : ''}>
                     <i data-lucide="${action.icon}"></i>
                     ${action.label}
@@ -1404,12 +1609,15 @@ class PluginManager {
 
                 ${!plugin.packageUrl ? '<div class="plugin-store-drawer__hint">This store entry does not provide an install package yet.</div>' : ''}
                 ${pricing.type === 'paid' ? '<div class="plugin-store-drawer__hint">Paid plugin checkout is reserved for a later store release.</div>' : ''}
+                ${plugin.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin) ? '<div class="plugin-store-drawer__hint">Invite required. This plugin is in closed beta and must be enabled for your account first.</div>' : ''}
+                ${!this.hasStoreLicense() && (!plugin.installed || plugin.updateAvailable) ? '<div class="plugin-store-drawer__hint">Beta license required. Claim the free LTTH beta license to install or update this plugin.</div>' : ''}
             </aside>
         `;
 
         drawer.querySelector('[data-store-drawer-backdrop]')?.addEventListener('click', () => this.closeStorePluginDetail());
         drawer.querySelector('[data-store-drawer-close]')?.addEventListener('click', () => this.closeStorePluginDetail());
         drawer.querySelector('[data-store-drawer-action]')?.addEventListener('click', () => this.handleStorePluginAction(plugin));
+        drawer.querySelector('[data-store-feedback-submit]')?.addEventListener('click', () => this.submitStoreFeedback(plugin));
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -1932,22 +2140,42 @@ class PluginManager {
 
         try {
             const plugin = this.storePlugins.find(item => item.sourceId === sourceId && item.id === pluginId);
-            if (plugin && plugin.community) {
-                const confirmMsg = `Install community plugin "${plugin.name}" from "${plugin.sourceName}"?`;
-                if (!confirm(confirmMsg)) {
-                    return;
+            const hasStoreAuth = await this.requireStoreAuth(!silent);
+            if (!hasStoreAuth) {
+                return false;
+            }
+
+            if (!this.hasStoreLicense()) {
+                if (!silent) {
+                    this.showError('Beta license required. Claim the free LTTH beta license before installing plugins.');
+                    this.renderStoreShell();
                 }
+                return false;
+            }
+
+            if (plugin?.access?.type === 'closed-beta' && !this.hasClosedBetaPluginAccess(plugin)) {
+                if (!silent) {
+                    this.showError('Invite required. This closed beta plugin must be enabled for your account first.');
+                    this.renderStoreShell();
+                }
+                return false;
             }
 
             if (!silent) {
                 this.showInfo(plugin && plugin.updateAvailable ? `Updating ${plugin.name || pluginId}...` : 'Installing plugin...');
             }
             const response = await fetch(`/api/plugin-store/${encodeURIComponent(sourceId)}/${encodeURIComponent(pluginId)}/install`, {
-                method: 'POST'
+                method: 'POST',
+                headers: await this.getStoreAuthHeaders()
             });
             const data = await response.json();
 
             if (data.success) {
+                await this.recordStoreTelemetry(pluginId, 'install_success', {
+                    sourceId,
+                    version: data.plugin?.version || plugin?.version || null,
+                    rollbackProtected: data.rollbackProtected === true
+                });
                 if (!silent) {
                     this.showSuccess(`Plugin "${data.plugin.name}" installed`);
                 }
@@ -1961,13 +2189,31 @@ class PluginManager {
                 }
                 return true;
             } else {
+                await this.recordStoreTelemetry(pluginId, data.rollbackApplied ? 'rollback_applied' : 'install_failure', {
+                    sourceId,
+                    code: data.code || null,
+                    rollbackApplied: data.rollbackApplied === true
+                });
                 if (!silent) {
-                    this.showError('Install failed: ' + data.error);
+                    if (data.code === 'BETA_LICENSE_REQUIRED') {
+                        this.showError('Beta license required. Claim the free LTTH beta license before installing plugins.');
+                    } else if (data.code === 'CLOSED_BETA_INVITE_REQUIRED') {
+                        this.showError('Invite required. This closed beta plugin must be enabled for your account first.');
+                    } else if (data.code === 'ADMIN_ACCESS_REQUIRED') {
+                        this.showError('Admin access required for this store plugin.');
+                    } else {
+                        this.showError('Install failed: ' + data.error);
+                    }
                 }
                 return false;
             }
         } catch (error) {
             console.error('Error installing plugin:', error);
+            await this.recordStoreTelemetry(pluginId, error.rollbackApplied ? 'rollback_applied' : 'install_failure', {
+                sourceId,
+                error: error.message,
+                rollbackApplied: error.rollbackApplied === true
+            });
             if (!silent) {
                 this.showError('Install failed: ' + error.message);
             }
@@ -1976,18 +2222,21 @@ class PluginManager {
     }
 
     async updateAllStorePlugins() {
+        if (!this.hasStoreLicense()) {
+            this.showInfo('Claim the free LTTH beta license before updating store plugins.');
+            this.renderStoreShell();
+            return;
+        }
+
         const updatePlugins = this.storePlugins.filter(plugin => plugin.installed && plugin.updateAvailable && plugin.packageUrl);
         const officialUpdates = updatePlugins.filter(plugin => plugin.official);
-        const communityUpdates = updatePlugins.filter(plugin => plugin.community);
 
         if (officialUpdates.length === 0) {
             this.showInfo('No official updates available.');
             return;
         }
 
-        const confirmMsg = communityUpdates.length > 0
-            ? `Update ${officialUpdates.length} official plugin${officialUpdates.length === 1 ? '' : 's'} now? ${communityUpdates.length} community update${communityUpdates.length === 1 ? '' : 's'} are left untouched.`
-            : `Update ${officialUpdates.length} official plugin${officialUpdates.length === 1 ? '' : 's'} now?`;
+        const confirmMsg = `Update ${officialUpdates.length} official plugin${officialUpdates.length === 1 ? '' : 's'} now?`;
 
         if (!confirm(confirmMsg)) {
             return;
@@ -2018,66 +2267,66 @@ class PluginManager {
         }
     }
 
-    async enableCommunitySources() {
-        const confirmMsg = 'Enable community plugin sources? Only add registries you trust.';
-        if (!confirm(confirmMsg)) {
-            return;
-        }
+    async submitStoreFeedback(plugin) {
+        const drawer = document.getElementById('plugin-store-detail-drawer');
+        const rating = parseInt(drawer?.querySelector('[data-store-feedback-rating]')?.value || '5', 10);
+        const message = drawer?.querySelector('[data-store-feedback-message]')?.value || '';
 
         try {
-            const response = await fetch('/api/plugin-store/community/enable', {
-                method: 'POST'
+            const hasStoreAuth = await this.requireStoreAuth(true);
+            if (!hasStoreAuth) {
+                return false;
+            }
+
+            const response = await fetch('/api/plugin-store/feedback', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    ...(await this.getStoreAuthHeaders())
+                },
+                body: JSON.stringify({
+                    pluginId: plugin.id,
+                    sourceId: plugin.sourceId,
+                    rating,
+                    message,
+                    kind: 'review'
+                })
             });
             const data = await response.json();
 
-            if (data.success) {
-                this.communityEnabled = data.communityEnabled === true;
-                this.storeSources = data.sources || [];
-                this.updateCommunityPanel();
-                this.applyFiltersAndSort();
-                this.showSuccess('Community plugin sources enabled');
-            } else {
-                this.showError('Could not enable community sources: ' + data.error);
+            if (!data.success) {
+                this.showError(data.error || 'Feedback could not be saved.');
+                return false;
             }
+
+            await this.recordStoreTelemetry(plugin.id, 'feedback_submitted', { sourceId: plugin.sourceId, rating });
+            this.showSuccess('Feedback saved.');
+            const textarea = drawer?.querySelector('[data-store-feedback-message]');
+            if (textarea) textarea.value = '';
+            return true;
         } catch (error) {
-            console.error('Error enabling community sources:', error);
-            this.showError('Could not enable community sources: ' + error.message);
+            console.error('Error submitting App Store feedback:', error);
+            this.showError('Feedback could not be saved: ' + error.message);
+            return false;
         }
     }
 
-    async addCommunitySource() {
-        const idInput = document.getElementById('community-source-id');
-        const nameInput = document.getElementById('community-source-name');
-        const urlInput = document.getElementById('community-source-url');
-
-        const payload = {
-            id: idInput ? idInput.value.trim() : '',
-            name: nameInput ? nameInput.value.trim() : '',
-            url: urlInput ? urlInput.value.trim() : ''
-        };
-
+    async recordStoreTelemetry(pluginId, event, metadata = {}) {
         try {
-            const response = await fetch('/api/plugin-store/sources', {
+            await fetch('/api/plugin-store/telemetry', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'content-type': 'application/json',
+                    ...(await this.getStoreAuthHeaders())
+                },
+                body: JSON.stringify({
+                    pluginId,
+                    event,
+                    metadata
+                })
             });
-            const data = await response.json();
-
-            if (data.success) {
-                this.storeSources = data.sources || [];
-                if (idInput) idInput.value = '';
-                if (nameInput) nameInput.value = '';
-                if (urlInput) urlInput.value = '';
-                await this.loadStorePlugins(false);
-                this.applyFiltersAndSort();
-                this.showSuccess('Community source added');
-            } else {
-                this.showError('Could not add source: ' + data.error);
-            }
         } catch (error) {
-            console.error('Error adding community source:', error);
-            this.showError('Could not add source: ' + error.message);
+            console.warn('App Store telemetry could not be recorded:', error);
         }
     }
 

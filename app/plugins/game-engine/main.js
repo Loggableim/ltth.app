@@ -427,10 +427,10 @@ class GameEnginePlugin {
     if (Number(stored?.maxLives) === 2500 || Number(stored?.maxLives) === 6000 || Number(stored?.maxLives) === 9000) {
       config.maxLives = this.defaultConfigs.arena.maxLives;
     }
-    if ([0.7, 0.42, 0.82].includes(Number(stored?.playerAbsorbMassRatio))) {
+    if ([0.7, 0.42, 0.82, 0.9].includes(Number(stored?.playerAbsorbMassRatio))) {
       config.playerAbsorbMassRatio = this.defaultConfigs.arena.playerAbsorbMassRatio;
     }
-    if ([0.7, 0.55, 0.84].includes(Number(stored?.playerAbsorbLifeStealRatio))) {
+    if ([0.7, 0.55, 0.84, 0.9].includes(Number(stored?.playerAbsorbLifeStealRatio))) {
       config.playerAbsorbLifeStealRatio = this.defaultConfigs.arena.playerAbsorbLifeStealRatio;
     }
     if ([12, 8, 16].includes(Number(stored?.deathFoodDropCount))) {
@@ -568,10 +568,16 @@ class GameEnginePlugin {
         };
       }
 
-      if (Number(movement.largeMassSpeedPenalty) === 0.48) {
+      if (Number(movement.largeMassSpeedPenalty) === 0.48 || Number(movement.largeMassSpeedPenalty) === 0.62) {
         config.movement = {
           ...config.movement,
           largeMassSpeedPenalty: this.defaultConfigs.arena.movement.largeMassSpeedPenalty
+        };
+      }
+      if (Number(movement.minMassSpeedMultiplier) === 0.55) {
+        config.movement = {
+          ...config.movement,
+          minMassSpeedMultiplier: this.defaultConfigs.arena.movement.minMassSpeedMultiplier
         };
       }
     }

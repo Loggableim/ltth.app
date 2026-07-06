@@ -9,18 +9,18 @@
         (function() {
             const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const logoByTheme = {
-                day: '/logo-wide.png',
-                night: '/logo-wide.png',
-                contrast: '/logo-wide.png',
-                'vision-impaired': '/logo-wide.png',
-                cid: '/ltthwebsitelogo.png'
+                day: '/ltthicon.png',
+                night: '/ltthicon.png',
+                contrast: '/ltthicon.png',
+                'vision-impaired': '/ltthicon.png',
+                cid: '/ltthicon.png'
             };
             const fileLogoByTheme = {
-                day: '../../../public/logo-wide.png',
-                night: '../../../public/logo-wide.png',
-                contrast: '../../../public/logo-wide.png',
-                'vision-impaired': '../../../public/logo-wide.png',
-                cid: '../../../public/ltthwebsitelogo.png'
+                day: '../../../public/ltthicon.png',
+                night: '../../../public/ltthicon.png',
+                contrast: '../../../public/ltthicon.png',
+                'vision-impaired': '../../../public/ltthicon.png',
+                cid: '../../../public/ltthicon.png'
             };
             function readTheme() {
                 try {
@@ -93,18 +93,18 @@
         }
 
         .page-brand-logo {
-            width: min(260px, 46vw);
+            width: min(112px, 22vw);
             height: auto;
             object-fit: contain;
             display: block;
         }
 
         html[data-theme="vision-impaired"] .page-brand-logo {
-            width: min(330px, 56vw);
+            width: min(120px, 24vw);
         }
 
         html[data-theme="cid"] .page-brand-logo {
-            width: min(240px, 42vw);
+            width: min(108px, 20vw);
         }
         
         h1 {
@@ -1529,7 +1529,7 @@
 <body>
     <div class="container control-room-shell">
         <div class="page-brand">
-            <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+            <img class="page-brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
         </div>
         <h1>TikTok Visual Effects Overlay</h1>
         <p class="subtitle">Broadcast-safe WebGL overlay mit klarer Layer-Hierarchie, gezielten Trigger-Akzenten und Live-Preview fuer TikTok und OBS.</p>

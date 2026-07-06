@@ -1,34 +1,63 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STT Ticker - Audio Capture</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (() => {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const STORAGE_KEYS = ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'];
+      function readTheme() {
+        try {
+          const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+          if (VALID_THEMES.has(parentTheme)) return parentTheme;
+        } catch (_) {}
+        for (const key of STORAGE_KEYS) {
+          const stored = localStorage.getItem(key);
+          if (VALID_THEMES.has(stored)) return stored;
+        }
+        return 'night';
+      }
+      function applyTheme(theme) {
+        const active = VALID_THEMES.has(theme) ? theme : 'night';
+        document.documentElement.setAttribute('data-theme', active);
+        document.documentElement.style.colorScheme = (active === 'day' || active === 'contrast' || active === 'vision-impaired') ? 'light' : 'dark';
+      }
+      applyTheme(readTheme());
+      window.addEventListener('message', (event) => {
+        const theme = event.data?.theme || event.data?.payload?.theme;
+        if (VALID_THEMES.has(theme)) applyTheme(theme);
+      });
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #eee;
+      background: var(--color-bg-primary, linear-gradient(135deg, #1a1a2e 0%, #16213e 100%));
+      color: var(--color-text-primary, #eee);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       padding: 20px;
     }
-    h1 { color: #4CAF50; margin-bottom: 4px; font-size: 26px; }
-    .subtitle { color: #aaa; margin-bottom: 20px; font-size: 13px; }
+    h1 { color: var(--color-accent-success, #4CAF50); margin-bottom: 4px; font-size: 26px; text-align: center; }
+    .subtitle { color: var(--color-text-secondary, #aaa); margin-bottom: 20px; font-size: 13px; text-align: center; }
     .container {
-      max-width: 700px;
+      max-width: none;
       width: 100%;
-      background: #2a2a3e;
+      background: var(--color-bg-card, #2a2a3e);
+      border: 1px solid var(--color-border, rgba(255,255,255,0.12));
       border-radius: 12px;
       padding: 24px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     .status {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 12px;
       padding: 16px;
       margin-bottom: 16px;
@@ -151,7 +180,7 @@
       font-size: 14px;
       margin-bottom: 8px;
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 8px;
     }
     .preview-line {
@@ -163,7 +192,7 @@
       line-height: 1.3;
       min-height: 20px;
       display: flex;
-      align-items: center;
+      align-items: stretch;
       gap: 8px;
     }
     .preview-line .lang-badge {
@@ -195,7 +224,7 @@
     .settings-row {
       display: flex;
       gap: 10px;
-      align-items: center;
+      align-items: stretch;
       margin-bottom: 8px;
       flex-wrap: wrap;
     }
@@ -209,7 +238,7 @@
       background: #3a3a4e;
       border: 1px solid #555;
       border-radius: 6px;
-      color: #eee;
+      color: var(--color-text-primary, #eee);
       font-size: 13px;
     }
     .settings-row select:focus, .settings-row input:focus {
@@ -218,7 +247,7 @@
     }
     .lang-tag {
       display: inline-flex;
-      align-items: center;
+      align-items: stretch;
       gap: 4px;
       padding: 4px 8px;
       background: rgba(100, 181, 246, 0.2);
@@ -247,7 +276,100 @@
     .info-box strong { color: #64B5F6; }
     .info-box .accent-green { color: #4CAF50; }
     .info-box .accent-yellow { color: #FFC107; }
-  </style>
+    
+    /* stt final theme overrides */
+    html[data-theme="day"] .status.idle,
+    html[data-theme="day"] .stat,
+    html[data-theme="day"] .settings-row select,
+    html[data-theme="day"] .settings-row input {
+      background: #f8fafc;
+      color: #10203a;
+      border-color: #cbd5e1;
+    }
+
+    html[data-theme="day"] .log-box,
+    html[data-theme="day"] .preview-line {
+      background: #eef2f7;
+      color: #10203a;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      background: #000 !important;
+      color: #fff !important;
+      font-size: 18px;
+    }
+
+    html[data-theme="contrast"] .container,
+    html[data-theme="vision-impaired"] .container,
+    html[data-theme="contrast"] .status,
+    html[data-theme="vision-impaired"] .status,
+    html[data-theme="contrast"] .stat,
+    html[data-theme="vision-impaired"] .stat,
+    html[data-theme="contrast"] .settings-section,
+    html[data-theme="vision-impaired"] .settings-section,
+    html[data-theme="contrast"] .preview-line,
+    html[data-theme="vision-impaired"] .preview-line,
+    html[data-theme="contrast"] .log-box,
+    html[data-theme="vision-impaired"] .log-box {
+      background: #000 !important;
+      color: #fff !important;
+      border: 3px solid #fff !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn,
+    html[data-theme="contrast"] .btn {
+      min-height: 48px;
+      border: 3px solid #fff;
+    }
+
+    html[data-theme="vision-impaired"] .btn-primary,
+    html[data-theme="contrast"] .btn-primary {
+      background: #ffd400 !important;
+      color: #000 !important;
+      -webkit-text-fill-color: #000 !important;
+      border-color: #ffd400 !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-danger,
+    html[data-theme="contrast"] .btn-danger {
+      background: #7f1d1d !important;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      border-color: #fff !important;
+    }
+
+    html[data-theme="vision-impaired"] .settings-row select,
+    html[data-theme="vision-impaired"] .settings-row input,
+    html[data-theme="contrast"] .settings-row select,
+    html[data-theme="contrast"] .settings-row input {
+      background: #000 !important;
+      color: #fff !important;
+      -webkit-text-fill-color: #fff !important;
+      border: 3px solid #ffd400 !important;
+      min-height: 44px;
+    }
+  
+    /* stt night idle contrast fix */
+    html[data-theme="night"] .status.idle {
+      background: #1f2937;
+      color: #e5e7eb;
+    }
+  /* stt settings label contrast fix */
+    html[data-theme="day"] .settings-section,
+    html[data-theme="night"] .settings-section {
+      background: #111827;
+      border: 1px solid #334155;
+    }
+
+    html[data-theme="day"] .settings-section label,
+    html[data-theme="night"] .settings-section label {
+      color: #f8fafc;
+      -webkit-text-fill-color: #f8fafc;
+    }
+
+</style>
 </head>
 <body>
   <h1>STT Ticker - Audio Capture</h1>
@@ -430,9 +552,9 @@
       ['da', 'Dansk'],
       ['fi', 'Suomi'],
       ['no', 'Norsk'],
-      ['cs', 'Čeština'],
+      ['cs', 'Ceština'],
       ['hu', 'Magyar'],
-      ['ro', 'Română'],
+      ['ro', 'Româna'],
       ['uk', 'Українська'],
       ['el', 'Ελληνικά'],
       ['he', 'עברית'],

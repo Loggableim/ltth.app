@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": {
     "id": "official",
-    "name": "Official LTTH Plugin Store",
+    "name": "Official LTTH App Store",
     "homepage": "https://ltth.app/plugins.html",
     "trusted": true
   },
@@ -49,7 +49,12 @@
       "author": "copilot",
       "category": "integration",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "closed-beta"
+      ],
+      "access": {
+        "type": "closed-beta"
+      },
       "packageUrl": "https://ltth.app/plugin-store/packages/animazingpal-1.4.0.zip",
       "sha256": "15951a3f7752ebbb317b2f1c31b11c2feb427dc82e4683e938e14b23b60ae693",
       "pricing": {
@@ -398,7 +403,12 @@
       "author": "Pup Cid",
       "category": "entertainment",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "closed-beta"
+      ],
+      "access": {
+        "type": "closed-beta"
+      },
       "packageUrl": "https://ltth.app/plugin-store/packages/interactive-story-1.0.0.zip",
       "sha256": "650ab7fc925a487fc4467bbdb99ae3cfed8b5135fe48bdea6eb640d3903daaae",
       "pricing": {
@@ -532,7 +542,12 @@
       "author": "ltth.app Team",
       "category": "integration",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "closed-beta"
+      ],
+      "access": {
+        "type": "closed-beta"
+      },
       "packageUrl": "https://ltth.app/plugin-store/packages/openshock-1.1.0.zip",
       "sha256": "494d5541e6b0cd2d36cd93bb0cae5533d057d7ade9925abe54ccb871c9675a38",
       "pricing": {
@@ -613,7 +628,12 @@
       "author": "Pup Cid",
       "category": "tool",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "closed-beta"
+      ],
+      "access": {
+        "type": "closed-beta"
+      },
       "packageUrl": "https://ltth.app/plugin-store/packages/sidekick-1.0.0.zip",
       "sha256": "8c0940d3fe3541ea19d5b280fb7cafbf07189d2c6859f01a548526ee393d0fad",
       "pricing": {
@@ -669,7 +689,12 @@
       "author": "Pup Cid",
       "category": "plugin",
       "channel": "open-beta",
-      "badges": [],
+      "badges": [
+        "closed-beta"
+      ],
+      "access": {
+        "type": "closed-beta"
+      },
       "packageUrl": "https://ltth.app/plugin-store/packages/streamalchemy-1.0.0.zip",
       "sha256": "100e98aa4e8b6df3f435502686e120c2f7949edd275503897e3478a325fe6fe3",
       "pricing": {
@@ -680,6 +705,40 @@
       "screenshots": [
         "/screenshots/features/stream-alchemy.png"
       ]
+    },
+    {
+      "id": "store-admin",
+      "name": {
+        "en": "LTTH App Store Admin",
+        "de": "LTTH App Store Admin",
+        "es": "LTTH App Store Admin",
+        "fr": "LTTH App Store Admin"
+      },
+      "description": {
+        "en": "Admin-only user and beta access management for the LTTH App Store.",
+        "de": "Admin-only Nutzer- und Beta-Freigabenverwaltung fuer den LTTH App Store.",
+        "es": "Gestion de usuarios y accesos beta solo para administradores del LTTH App Store.",
+        "fr": "Gestion des utilisateurs et des acces beta reservee aux administrateurs du LTTH App Store."
+      },
+      "version": "1.0.0",
+      "author": "ltth.app Team",
+      "category": "utility",
+      "channel": "open-beta",
+      "badges": [
+        "admin-only"
+      ],
+      "access": {
+        "type": "admin",
+        "hidden": true
+      },
+      "packageUrl": "https://ltth.app/plugin-store/packages/store-admin-1.0.0.zip",
+      "sha256": "bb91df4fd32ac3dc23281db16a61771bbdd4a2e6e73b3d4f58efdf378d4b5900",
+      "pricing": {
+        "type": "free",
+        "amount": 0,
+        "currency": "EUR"
+      },
+      "screenshots": []
     },
     {
       "id": "stt-ticker",

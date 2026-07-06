@@ -130,6 +130,73 @@ describe('ArenaGame', () => {
     expect(decision.vector.x).toBeGreaterThan(0);
   });
 
+  it('slows heavy arena players and raises the bar for borderline absorbs', () => {
+    const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
+    const config = arena.getConfig();
+
+    expect(arena._movementMassMultiplier({ mass: 220 }, config)).toBeLessThan(0.4);
+
+    const predator = movementPlayer(arena, config, 'borderline_predator', 54, {
+      x: 320,
+      y: 300,
+      lives: 180
+    });
+    const prey = movementPlayer(arena, config, 'borderline_prey', 40, {
+      x: 420,
+      y: 300,
+      lives: 120
+    });
+
+    expect(arena._playerAbsorbContext(predator, prey, config).canAbsorb).toBe(false);
+  });
+
+  it('applies immediate stream surges and temporary boosts for likes and gifts', () => {
+    let now = 1000;
+    const { arena, io } = createArena({
+      maxFood: 0,
+      maxWeaponPickups: 0,
+      giftWeaponMappings: {
+        boost_gift: {
+          weaponType: 'speed',
+          tier: 'small',
+          power: 1.2,
+          durationMs: 5000,
+          growthBonus: 2
+        }
+      }
+    }, { now: () => now, random: () => 0.5 });
+
+    arena.handleActivity({ uniqueId: 'stream_boost', nickname: 'Stream Boost' }, 'like');
+    const player = arena.players.get('stream_boost');
+
+    expect(io.emit).toHaveBeenCalledWith('arena:stream-surge', expect.objectContaining({
+      username: 'stream_boost',
+      kind: 'like'
+    }));
+    expect(player.effects.streamBoostUntil).toBeGreaterThan(now);
+    expect(arena._statusSpeedMultiplier(player)).toBeGreaterThan(1);
+    expect(arena._personalityTraits(player).aggression).toBeGreaterThan(player.personality.aggression);
+
+    io.emit.mockClear();
+
+    const giftResult = arena.handleGift({
+      uniqueId: 'stream_boost',
+      nickname: 'Stream Boost',
+      giftName: 'Boost Gift',
+      giftId: 'boost_gift',
+      diamondCount: 12,
+      repeatCount: 2
+    });
+
+    expect(giftResult.success).toBe(true);
+    expect(io.emit).toHaveBeenCalledWith('arena:stream-surge', expect.objectContaining({
+      username: 'stream_boost',
+      kind: 'gift'
+    }));
+    expect(arena._statusSpeedMultiplier(player)).toBeGreaterThan(1.05);
+    expect(arena._personalityTraits(player).weaponFocus).toBeGreaterThan(player.personality.weaponFocus);
+  });
+
   it('lets chat strategy hunt bias an otherwise cautious player toward prey', () => {
     const { arena } = createArena({ maxFood: 0, maxWeaponPickups: 0 }, { random: () => 0.5 });
     const config = arena.getConfig();
@@ -4916,8 +4983,8 @@ describe('ArenaGame', () => {
     expect(config.maxFoodRender).toBeLessThanOrEqual(72);
     expect(config.foodValue).toBeLessThan(2.25);
     expect(config.likeFoodValue).toBeGreaterThanOrEqual(1);
-    expect(config.playerAbsorbMassRatio).toBeGreaterThanOrEqual(0.88);
-    expect(config.playerAbsorbLifeStealRatio).toBeGreaterThanOrEqual(0.88);
+    expect(config.playerAbsorbMassRatio).toBeGreaterThanOrEqual(0.8);
+    expect(config.playerAbsorbLifeStealRatio).toBeGreaterThanOrEqual(0.8);
     expect(config.deathFoodDropCount).toBeGreaterThanOrEqual(18);
     expect(config.deathFoodDropValue).toBeGreaterThanOrEqual(1.3);
   });
@@ -6658,6 +6725,7 @@ describe('GameEnginePlugin arena integration', () => {
         foodSenseDistance: 460,
         steeringStrength: 0.24,
         randomTurn: 0.08,
+        largeMassSpeedPenalty: 0.62,
         fleeMassRatio: 1.08,
         huntMassRatio: 1.1,
         huntLeadSeconds: 0.45,
@@ -6670,6 +6738,7 @@ describe('GameEnginePlugin arena integration', () => {
       huntDistance: 520,
       steeringStrength: 0.3,
       randomTurn: 0.032,
+      largeMassSpeedPenalty: 0.72,
       fleeMassRatio: 0.98,
       huntMassRatio: 1.02,
       threatLookaheadSeconds: 0.9,
@@ -7037,6 +7106,13 @@ describe('Arena overlay rendering contract', () => {
     expect(overlay).toContain("socket.on('arena:player-absorbed'");
     expect(overlay).toContain("reason: 'absorbed'");
     expect(overlay).toContain('const radius = Math.max(10,');
+  });
+
+  it('renders immediate stream surge pulses for likes and gifts', () => {
+    const overlay = readOverlay();
+
+    expect(overlay).toContain("socket.on('arena:stream-surge'");
+    expect(overlay).toContain("kind === 'gift' ? 'rgba(250, 204, 21, 0.96)' : 'rgba(34, 197, 94, 0.96)'");
   });
 
   it('renders configurable arena field frame styles outside the canvas renderer', () => {

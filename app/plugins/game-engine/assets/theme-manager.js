@@ -1,11 +1,11 @@
 /**
  * Theme Manager for LTTH Game Engine
- * Supports day/night/contrast/vision-impaired plus system fallback.
+ * Supports day/night/contrast/vision-impaired/cid plus system fallback.
  */
 
 class ThemeManager {
   constructor() {
-    this.themes = ['day', 'night', 'contrast', 'vision-impaired', 'system'];
+    this.themes = ['day', 'night', 'contrast', 'vision-impaired', 'cid', 'system'];
     this.currentTheme = null;
     this.systemThemeListener = null;
     this.parentThemeObserver = null;

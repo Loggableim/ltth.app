@@ -10,11 +10,11 @@
         (function() {
             const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
             const logoByTheme = {
-                day: '/logo-wide.png',
-                night: '/logo-wide.png',
-                contrast: '/logo-wide.png',
-                'vision-impaired': '/logo-wide.png',
-                cid: '/ltthwebsitelogo.png'
+                day: '/ltthicon.png',
+                night: '/ltthicon.png',
+                contrast: '/ltthicon.png',
+                'vision-impaired': '/ltthicon.png',
+                cid: '/ltthicon.png'
             };
             function readTheme() {
                 try {
@@ -82,6 +82,13 @@
             color: #ffd700;
             border-bottom: 2px solid rgba(255, 215, 0, 0.3);
             padding-bottom: 0.5rem;
+        }
+
+        .top-logo {
+            width: min(112px, 22vw);
+            height: auto;
+            object-fit: contain;
+            max-width: 100%;
         }
         
         .toggle-switch {
@@ -488,13 +495,11 @@
         }
 
         html[data-theme="vision-impaired"] .top-logo {
-            width: min(560px, 86vw) !important;
-            max-width: 100%;
+            width: min(124px, 24vw) !important;
         }
 
         html[data-theme="cid"] .top-logo {
-            width: min(500px, 82vw) !important;
-            max-width: 100%;
+            width: min(120px, 22vw) !important;
         }
 
         @media (max-width: 900px) {
@@ -667,7 +672,7 @@
         <!-- Header -->
         <header class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-4">
-                <img class="top-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+                <img class="top-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
             </div>
             <div class="flex items-center gap-4">
                 <button id="test-btn" class="btn-primary px-6 py-3 rounded-lg font-bold">
@@ -1495,15 +1500,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Ultra Preset -->
                     <div class="card rounded-xl p-6 border-2 border-purple-500/30 hover:border-purple-500/60 transition cursor-pointer preset-card" data-preset="ultra">
+                        <div class="flex items-center justify-between mb-4">
                             <h3 class="text-xl font-bold text-purple-400">Ultra</h3>
+                            <span class="text-xs bg-purple-500/20 px-2 py-1 rounded">4K</span>
+                        </div>
+                        <div class="space-y-2 text-sm text-gray-300">
                             <div>Resolution: 4K (3840x2160)</div>
                             <div>Max Particles: 3000</div>
                             <div>Target FPS: 60</div>
                             <div>Effects: All Enabled</div>
                             <div>GPU: WebGL</div>
-                            <div>- Target FPS: 60</div>
-                            <div>- Effects: All Enabled</div>
-                            <div>- GPU: WebGL</div>
                         </div>
                         <button class="w-full mt-4 bg-purple-500 hover:bg-purple-600 py-2 rounded-lg font-bold transition" data-i18n="fireworks.presets.apply">
                             Anwenden

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en">
 
@@ -1962,7 +1962,7 @@
 
       <div>
 
-        <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+        <img class="page-brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
 
         <div class="page-meta">
 
@@ -2162,9 +2162,9 @@
 
                 Configure your AI provider API keys in <strong>Settings</strong>:<br>
 
-                • <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
+                � <strong>OpenAI</strong>: Settings &gt; OpenAI API Configuration<br>
 
-                • <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
+                � <strong>SiliconFlow</strong>: Settings &gt; TTS API Keys &gt; Fish Speech 1.5 API Key (SiliconFlow)
 
               </div>
 
@@ -2594,13 +2594,13 @@
 
                     <option value="English">English</option>
 
-                    <option value="Spanish">EspaÃ±ol (Spanish)</option>
+                    <option value="Spanish">Español (Spanish)</option>
 
-                    <option value="French">FranÃ§ais (French)</option>
+                    <option value="French">Français (French)</option>
 
                     <option value="Italian">Italiano (Italian)</option>
 
-                    <option value="Portuguese">PortuguÃªs (Portuguese)</option>
+                    <option value="Portuguese">Português (Portuguese)</option>
 
                   </select>
 
@@ -3114,7 +3114,7 @@
 
           <button class="btn btn-secondary btn-sm" id="toggleOverlayPreviewBtn">
 
-            <span id="previewToggleIcon">â–¶</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
+            <span id="previewToggleIcon">▶</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
 
           </button>
 
@@ -4281,19 +4281,19 @@
     function updateThemeBadge(theme) {
 
       const logoByTheme = {
-        day: '/logo-wide.png',
-        night: '/logo-wide.png',
-        contrast: '/logo-wide.png',
-        'vision-impaired': '/logo-wide.png',
-        cid: '/ltthwebsitelogo.png'
+        day: '/ltthicon.png',
+        night: '/ltthicon.png',
+        contrast: '/ltthicon.png',
+        'vision-impaired': '/ltthicon.png',
+        cid: '/ltthicon.png'
       };
 
       const fileLogoByTheme = {
-        day: '../../../public/logo-wide.png',
-        night: '../../../public/logo-wide.png',
-        contrast: '../../../public/logo-wide.png',
-        'vision-impaired': '../../../public/logo-wide.png',
-        cid: '../../../public/ltthwebsitelogo.png'
+        day: '../../../public/ltthicon.png',
+        night: '../../../public/ltthicon.png',
+        contrast: '../../../public/ltthicon.png',
+        'vision-impaired': '../../../public/ltthicon.png',
+        cid: '../../../public/ltthicon.png'
       };
 
       const badgeText = document.querySelector('#themeBadge span:last-child');
@@ -4459,7 +4459,7 @@
 
                 try {
         if (location.protocol === ''file:'') {
-          const logo = document.querySelector(''.page-logo'');
+          const logo = document.querySelector('.page-logo');
           if (logo && logo.dataset.fileSrc) {
             logo.src = new URL(logo.dataset.fileSrc, location.href).href;
           }
@@ -4486,7 +4486,7 @@
 
                   try {
         if (location.protocol === ''file:'') {
-          const logo = document.querySelector(''.page-logo'');
+          const logo = document.querySelector('.page-logo');
           if (logo && logo.dataset.fileSrc) {
             logo.src = new URL(logo.dataset.fileSrc, location.href).href;
           }

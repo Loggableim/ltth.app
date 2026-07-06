@@ -27,10 +27,18 @@ header {
     border-bottom: 2px solid var(--color-border, #374151);
 }
 
-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--color-accent-primary, #60a5fa);
+header .brand {
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+}
+
+.brand-logo {
+    display: block;
+    height: 56px;
+    width: auto;
+    max-width: min(42vw, 240px);
+    object-fit: contain;
 }
 
 .header-subtitle {
@@ -72,8 +80,10 @@ header h1 {
 }
 
 .tab-button.active {
-    color: var(--color-accent-primary, #60a5fa);
-    background: rgba(96, 165, 250, 0.15);
+    color: #ffffff;
+    background: #1d4ed8;
+    border: 1px solid #93c5fd;
+    -webkit-text-fill-color: #ffffff;
 }
 
 /* Tab Content */
@@ -244,8 +254,9 @@ header h1 {
 }
 
 .btn-danger {
-    background: var(--color-accent-danger, #ef4444);
-    color: white;
+    background: #b91c1c;
+    color: #ffffff;
+    border: 1px solid #fca5a5;
 }
 
 .btn-danger:hover {
@@ -919,7 +930,8 @@ input[type="range"]::-moz-range-thumb {
     display: flex;
     align-items: center;
     gap: 12px;
-    max-width: 400px;
+    width: min(92vw, 640px);
+    max-width: none;
 }
 
 @keyframes slideIn {
@@ -940,6 +952,31 @@ input[type="range"]::-moz-range-thumb {
 .toast-message {
     flex: 1;
     color: #f9fafb;
+}
+
+html[data-theme="vision-impaired"] .toast {
+    background: #000;
+    color: #fff7cc;
+    border: 3px solid #facc15;
+    box-shadow: none;
+    width: min(92vw, 600px);
+}
+
+html[data-theme="vision-impaired"] .toast-message {
+    color: #fff7cc;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+html[data-theme="cid"] .toast {
+    background: rgba(7, 17, 7, 0.94);
+    color: #f4fff4;
+    border: 2px solid rgba(74, 222, 128, 0.35);
+    box-shadow: none;
+}
+
+html[data-theme="cid"] .toast-message {
+    color: #f4fff4;
 }
 
 /* Utility Classes */
@@ -1906,9 +1943,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .badge-primary {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: #1d4ed8;
+    color: #ffffff;
+    border: 1px solid #93c5fd;
 }
 
 .badge-secondary {
@@ -1918,9 +1955,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .badge-success {
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: #047857;
+    color: #ffffff;
+    border: 1px solid #34d399;
 }
 
 .badge-warning {
@@ -1930,13 +1967,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .badge-danger {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: #b91c1c;
+    color: #ffffff;
+    border: 1px solid #fca5a5;
 }
 
 .badge-info {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: #1d4ed8;
+    color: #ffffff;
+    border: 1px solid #93c5fd;
 }

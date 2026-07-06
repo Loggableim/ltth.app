@@ -81,7 +81,7 @@
 .pattern-name {
     font-size: 1.1em;
     font-weight: 600;
-    color: #fff;
+    color: var(--color-text-primary, #fff);
     margin: 0;
 }
 
@@ -109,7 +109,7 @@
 
 .pattern-duration {
     font-size: 0.9em;
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
 }
 
 .pattern-actions {
@@ -161,7 +161,7 @@
 
 .form-label {
     display: block;
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
     font-size: 0.95em;
     margin-bottom: 8px;
     font-weight: 500;
@@ -174,7 +174,7 @@
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
-    color: #fff;
+    color: var(--color-text-primary, #fff);
     font-size: 14px;
     transition: border-color 0.3s;
 }
@@ -192,7 +192,7 @@
 .form-select option {
     padding: 8px;
     background: #1a1a2e;
-    color: #fff;
+    color: var(--color-text-primary, #fff);
 }
 
 .slider-label {
@@ -260,7 +260,7 @@
 }
 
 .input-unit {
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
     font-weight: 600;
 }
 
@@ -360,7 +360,7 @@
 }
 
 .status-label {
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
     font-size: 0.9em;
 }
 
@@ -407,7 +407,7 @@
 
 .btn-secondary {
     background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    color: var(--color-text-primary, #fff);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -447,11 +447,11 @@
 
 /* Utility Classes */
 .text-gray-400 {
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
 }
 
 .text-white {
-    color: #fff;
+    color: var(--color-text-primary, #fff);
 }
 
 .text-green-400 {
@@ -510,5 +510,27 @@
 .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #aaa;
+    color: var(--color-text-secondary, #aaa);
+}
+
+/* pattern editor solid input contrast */
+html[data-theme="night"] .form-input,
+html[data-theme="night"] .form-select,
+html[data-theme="cid"] .form-input,
+html[data-theme="cid"] .form-select {
+    background: #111827 !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+html[data-theme="contrast"] .form-input,
+html[data-theme="contrast"] .form-select,
+html[data-theme="vision-impaired"] .form-input,
+html[data-theme="vision-impaired"] .form-select {
+    background: #000 !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    border: 3px solid #ffd400 !important;
+    min-height: 44px;
 }

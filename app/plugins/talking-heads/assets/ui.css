@@ -3,19 +3,21 @@
  */
 
 body {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-primary, #f5f5f5);
+  color: var(--color-text-primary, #111827);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .card {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border: none;
+  border: 1px solid var(--color-border, #e9ecef);
   margin-bottom: 1rem;
 }
 
 .card-header {
-  background-color: #fff;
-  border-bottom: 2px solid #e9ecef;
+  background-color: var(--color-bg-card, #fff);
+  color: var(--color-text-primary, #111827);
+  border-bottom: 2px solid var(--color-border, #e9ecef);
   font-weight: 600;
 }
 
@@ -72,4 +74,29 @@ body {
 .alert.position-fixed {
   min-width: 300px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* talking-heads contrast-safe legacy overrides */
+html[data-theme="contrast"] body,
+html[data-theme="vision-impaired"] body {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+html[data-theme="contrast"] .card,
+html[data-theme="vision-impaired"] .card,
+html[data-theme="contrast"] .card-header,
+html[data-theme="vision-impaired"] .card-header,
+html[data-theme="contrast"] .list-group-item,
+html[data-theme="vision-impaired"] .list-group-item {
+  background: #000 !important;
+  color: #fff !important;
+  border: 3px solid #fff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="vision-impaired"] .btn,
+html[data-theme="contrast"] .btn {
+  min-height: 44px;
+  border-width: 3px;
 }

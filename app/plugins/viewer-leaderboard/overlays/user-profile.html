@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -262,7 +262,7 @@
     .profile-card.hide {
       animation: fadeOut 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
     }
-  </style>
+    </style>
 </head>
 <body>
   <div id="profileCard" class="profile-card">
@@ -510,3 +510,43 @@
   </script>
 </body>
 </html>
+
+    html[data-theme="cid"] body {
+      background: transparent;
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] .profile-card {
+      background: rgba(7, 17, 7, 0.95);
+      border-image: none;
+      border-color: #1e5b2a;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    html[data-theme="vision-impaired"] body {
+      background: transparent;
+      color: #fff7cc;
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    html[data-theme="vision-impaired"] .profile-card {
+      background: #000;
+      border: 3px solid #facc15;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 10px 30px rgba(0, 0, 0, 0.65);
+      width: min(96vw, 1300px);
+    }
+
+    html[data-theme="vision-impaired"] .profile-username,
+    html[data-theme="vision-impaired"] .stat-value,
+    html[data-theme="vision-impaired"] .profile-level {
+      color: #fff7cc;
+      text-shadow: 0 2px 0 rgba(0,0,0,1);
+    }
+
+    html[data-theme="vision-impaired"] .profile-title,
+    html[data-theme="vision-impaired"] .stat-label,
+    html[data-theme="vision-impaired"] .xp-progress-label,
+    html[data-theme="vision-impaired"] .footer {
+      color: #fff7cc;
+    }

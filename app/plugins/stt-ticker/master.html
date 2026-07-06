@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
       function readTheme() {
         try {
@@ -18,7 +18,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (VALID_THEMES.has(value)) return value;
           }
@@ -35,7 +35,7 @@
 
       syncTheme();
       window.addEventListener('storage', (event) => {
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
           syncTheme();
         }
       });
@@ -184,22 +184,24 @@
     }
 
     html[data-theme="vision-impaired"] body {
-      font-size: 1.08rem;
+      font-size: 1.12rem;
+      line-height: 1.72;
     }
 
     html[data-theme="vision-impaired"] .topbar {
       height: auto;
-      min-height: 82px;
-      padding: 16px 18px;
+      min-height: 92px;
+      padding: 18px 20px;
     }
 
     html[data-theme="vision-impaired"] .brand h1 {
-      font-size: 22px;
+      font-size: 28px;
+      letter-spacing: 0.02em;
     }
 
     html[data-theme="vision-impaired"] .btn {
-      font-size: 14px;
-      padding: 10px 14px;
+      font-size: 15px;
+      padding: 12px 16px;
     }
 
     html[data-theme="vision-impaired"] .tabs {
@@ -207,17 +209,36 @@
     }
 
     html[data-theme="vision-impaired"] .tab-btn {
-      font-size: 14px;
-      padding: 10px 14px;
+      font-size: 15px;
+      padding: 12px 16px;
     }
 
     html[data-theme="vision-impaired"] .capture-panel {
-      gap: 18px;
-      padding: 32px;
+      gap: 22px;
+      padding: 36px 40px;
     }
 
     html[data-theme="vision-impaired"] .capture-panel h2 {
-      font-size: clamp(2rem, 3vw, 3.2rem);
+      font-size: clamp(2.2rem, 3.4vw, 3.6rem);
+    }
+
+    html[data-theme="cid"] .frame-wrap {
+      padding: 16px;
+    }
+
+    html[data-theme="cid"] .capture-panel {
+      background: #071107;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .capture-panel p {
+      max-width: none;
+      color: #d1e7d1;
+    }
+
+    html[data-theme="cid"] .frame-shell {
+      border-color: #1e5b2a;
     }
 
     .topbar {
@@ -335,7 +356,7 @@
       right: 0;
       top: 112px;
       bottom: 0;
-      padding: 10px;
+      padding: 12px 16px;
       background: var(--bg);
     }
 
@@ -395,7 +416,8 @@
 
     .capture-panel p {
       margin: 0;
-      max-width: 760px;
+      max-width: none;
+      width: 100%;
       font-size: 1.02rem;
       line-height: 1.7;
       color: var(--text-main);
@@ -414,7 +436,24 @@
       font-size: 11px;
       margin-left: 6px;
     }
-  </style>
+    /* stt master day night button contrast */
+    html[data-theme="day"] .btn.accent,
+    html[data-theme="night"] .btn.accent {
+      background: #047857;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border: 2px solid #86efac;
+    }
+
+    html[data-theme="day"] .btn.warn,
+    html[data-theme="night"] .btn.warn {
+      background: #b91c1c;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border: 2px solid #fecaca;
+    }
+
+</style>
 </head>
 <body>
   <div class="topbar">
@@ -516,4 +555,3 @@
   </script>
 </body>
 </html>
-

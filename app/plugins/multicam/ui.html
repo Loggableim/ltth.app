@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
-            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
             function readTheme() {
                 try {
@@ -17,7 +17,7 @@
                 } catch (error) {}
 
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (VALID_THEMES.has(value)) return value;
                     }
@@ -121,11 +121,11 @@
         }
         button:hover { background: var(--color-bg-hover); border-color: var(--color-accent-primary); }
         button:active { transform: scale(0.98); }
-        button.primary { background: var(--color-accent-primary); border-color: var(--color-accent-primary); }
+        button.primary { background: #0f8712; border-color: #0f8712; color: #fff; }
         button.primary:hover { filter: brightness(1.1); }
-        button.danger { background: var(--color-accent-danger); border-color: var(--color-accent-danger); }
+        button.danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
         button.danger:hover { filter: brightness(1.1); }
-        button.success { background: var(--color-accent-success); border-color: var(--color-accent-success); }
+        button.success { background: #047857; border-color: #047857; color: #fff; }
         button.success:hover { filter: brightness(1.1); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -167,7 +167,7 @@
 
         .gift-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 12px;
         }
 
@@ -291,7 +291,8 @@
         html[data-theme="day"] select {
             background: #fff;
             color: #10203a;
-            border-color: #c7d2fe;
+            -webkit-text-fill-color: #10203a;
+            border-color: #64748b;
         }
 
         html[data-theme="night"] button,
@@ -358,7 +359,8 @@
         html[data-theme="day"] input {
             background: #fff;
             color: #10203a;
-            border-color: #c7d2fe;
+            -webkit-text-fill-color: #10203a;
+            border-color: #64748b;
         }
 
         html[data-theme="day"] button.primary {
@@ -618,7 +620,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .scene-switcher-compact select { width: auto; min-width: 180px; }
+        .scene-switcher-compact select { width: auto; min-width: 220px; }
         .hot-buttons {
             display: flex;
             gap: 8px;
@@ -677,11 +679,121 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .gift-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .gift-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
             .gift-card .gift-image { height: 80px; }
             .status-bar { flex-direction: column; align-items: flex-start; }
         }
-    </style>
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    
+        /* final day action button text overrides */
+        html[data-theme="day"] button.primary,
+        html[data-theme="day"] button.success,
+        html[data-theme="day"] button.danger {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+        }
+
+        html[data-theme="day"] #refreshCatalogBtn {
+            background: #e2e8f0 !important;
+            color: #10203a !important;
+            -webkit-text-fill-color: #10203a !important;
+            border: 2px solid #64748b !important;
+        }
+
+</style>
 </head>
 <body>
     <div class="container">
@@ -791,4 +903,3 @@
     <script src="/plugins/multicam/ui.js"></script>
 </body>
 </html>
-

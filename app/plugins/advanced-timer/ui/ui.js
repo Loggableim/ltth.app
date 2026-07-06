@@ -15,7 +15,7 @@ const _saveProfileBtnBound = new WeakSet();
 // ---------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!window.i18n.initialized) await window.i18n.init();
+    await waitForI18nReady();
     window.i18n.onLanguageChange(() => renderTimers());
     socket.on('locale-changed', async (locale) => {
         await window.i18n.changeLanguage(locale);
@@ -28,6 +28,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadGiftCatalog();
     loadProfiles();
 });
+
+async function waitForI18nReady() {
+    if (!window.i18n) {
+        return;
+    }
+
+    if (window.i18n.initialized) {
+        return;
+    }
+
+    if (window.i18n.ready && typeof window.i18n.ready.then === 'function') {
+        await window.i18n.ready;
+        return;
+    }
+
+    await window.i18n.init();
+}
 
 // ---------------------------------------------------------------------------
 // Navigation

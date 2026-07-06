@@ -22,6 +22,8 @@ let currentFilter = 'all';
 let voices = {};
 let queuePollInterval = null;
 let statsPollInterval = null;
+let userSearchDebounce = null;
+let currentUserResultsTotal = 0;
 
 // Debug logs state
 let debugLogs = [];
@@ -206,18 +208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadVoices();
         console.log('✓ Voices loaded');
 
-        // Load users (non-critical)
-        if (statusEl) statusEl.textContent = 'Loading users...';
-        try {
-            await loadUsers();
-            console.log('✓ Users loaded');
-        } catch (error) {
-            if (!isPageUnloading && error.name !== 'AbortError') {
-                console.error('✗ Users load failed:', error);
-                showNotification('Failed to load users (non-critical)', 'warning');
-            }
-        }
-
         // Load statistics (non-critical)
         if (statusEl) statusEl.textContent = 'Loading statistics...';
         try {
@@ -381,6 +371,7 @@ function switchTab(tabName) {
     // Refresh recent users when switching to users tab
     if (tabName === 'users') {
         loadRecentUsers().catch(err => console.error('Failed to refresh recent users:', err));
+        loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => console.error('Failed to load users:', err));
     }
 
     // Load voice clones when switching to voice-clones tab
@@ -1019,15 +1010,32 @@ async function assignManualVoice() {
 
 async function loadUsers(filter = null) {
     try {
-        const filterParam = filter && filter !== 'all' ? `?filter=${filter}` : '';
-        const data = await fetchJSON(`/api/tts/users${filterParam}`);
+        const searchInput = document.getElementById('userSearchInput');
+        const limitInput = document.getElementById('userResultsLimit');
+        const search = searchInput ? searchInput.value.trim() : '';
+        const limit = Math.max(1, Math.min(250, parseInt(limitInput?.value || '50', 10) || 50));
+        const params = new URLSearchParams();
+
+        if (filter && filter !== 'all') {
+            params.set('filter', filter);
+        }
+
+        if (search) {
+            params.set('search', search);
+        }
+
+        params.set('limit', String(limit));
+
+        const data = await fetchJSON(`/api/tts/users?${params.toString()}`);
 
         if (!data.success) {
             throw new Error(data.error || 'Failed to load users');
         }
 
         currentUsers = data.users || [];
+        currentUserResultsTotal = Number.isFinite(data.total) ? data.total : currentUsers.length;
         renderUsers();
+        updateUserResultsInfo();
 
     } catch (error) {
         console.error('Failed to load users:', error);
@@ -1087,6 +1095,27 @@ function filterUsers(filter) {
     });
 }
 
+function updateUserResultsInfo() {
+    const info = document.getElementById('userResultsInfo');
+    if (!info) return;
+
+    const shown = currentUsers.length;
+    const total = Number.isFinite(currentUserResultsTotal) ? currentUserResultsTotal : shown;
+    const search = document.getElementById('userSearchInput')?.value.trim() || '';
+    const limit = Math.max(1, Math.min(250, parseInt(document.getElementById('userResultsLimit')?.value || '50', 10) || 50));
+
+    if (shown === 0) {
+        info.textContent = search
+            ? `No users found for "${search}".`
+            : 'No users found.';
+        return;
+    }
+
+    const searchSuffix = search ? ` for "${search}"` : '';
+    const limitSuffix = total > shown ? ` (limit ${limit})` : '';
+    info.textContent = `Showing ${shown} of ${total} users${searchSuffix}${limitSuffix}`;
+}
+
 function renderUsers() {
     const list = document.getElementById('userList');
     if (!list) return;
@@ -1109,7 +1138,7 @@ function renderUsers() {
     list.innerHTML = filtered.map(user => {
         const allowButton = !user.allow_tts
             ? `<button class="user-action-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm" data-action="allow" data-user-id="${user.user_id}" data-username="${user.username}">Allow</button>`
-            : `<button class="user-action-btn bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm" data-action="deny" data-user-id="${user.user_id}" data-username="${user.username}">Revoke</button>`;
+            : `<button class="user-action-btn tts-btn-warning bg-yellow-600 hover:bg-yellow-700 text-black px-3 py-1 rounded text-sm" data-action="deny" data-user-id="${user.user_id}" data-username="${user.username}">Revoke</button>`;
 
         const blacklistButton = !user.is_blacklisted
             ? `<button class="user-action-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" data-action="blacklist" data-user-id="${user.user_id}" data-username="${user.username}">Blacklist</button>`
@@ -1182,6 +1211,8 @@ function renderUsers() {
     list.querySelectorAll('.user-gain-reset').forEach(btn => {
         btn.addEventListener('click', handleUserGainReset);
     });
+
+    updateUserResultsInfo();
 }
 
 async function handleUserAction(event) {
@@ -1926,6 +1957,39 @@ function setupEventListeners() {
     const assignManualVoiceBtn = document.getElementById('assignManualVoiceBtn');
     if (assignManualVoiceBtn) {
         assignManualVoiceBtn.addEventListener('click', assignManualVoice);
+    }
+
+    const refreshUsersBtn = document.getElementById('refreshUsersBtn');
+    if (refreshUsersBtn) {
+        refreshUsersBtn.addEventListener('click', () => {
+            loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                console.error('Manual user refresh failed:', err);
+            });
+        });
+    }
+
+    const userSearchInput = document.getElementById('userSearchInput');
+    if (userSearchInput) {
+        userSearchInput.addEventListener('input', () => {
+            if (userSearchDebounce) {
+                clearTimeout(userSearchDebounce);
+            }
+
+            userSearchDebounce = setTimeout(() => {
+                loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                    console.error('User search failed:', err);
+                });
+            }, 250);
+        });
+    }
+
+    const userResultsLimit = document.getElementById('userResultsLimit');
+    if (userResultsLimit) {
+        userResultsLimit.addEventListener('change', () => {
+            loadUsers(currentFilter === 'all' ? null : currentFilter).catch(err => {
+                console.error('User limit refresh failed:', err);
+            });
+        });
     }
 
     // Allow Enter key in username field to trigger assignment
@@ -2857,12 +2921,12 @@ function showNotification(message, type = 'info') {
     const colors = {
         success: 'bg-green-600',
         error: 'bg-red-600',
-        warning: 'bg-yellow-600',
+        warning: 'tts-toast-warning bg-yellow-300 text-black border border-yellow-900',
         info: 'bg-blue-600'
     };
 
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-xl z-50 fade-in`;
+    notification.className = `fixed top-4 right-4 ${colors[type]} px-6 py-3 rounded-lg shadow-xl z-50 fade-in`;
     notification.textContent = message;
 
     document.body.appendChild(notification);
@@ -2983,16 +3047,16 @@ function formatDebugLog(log) {
     const categoryColors = {
         'INIT': 'text-blue-400',
         'TIKTOK_EVENT': 'text-purple-400',
-        'SPEAK_START': 'text-green-400',
-        'SPEAK_STEP1': 'text-yellow-300',
-        'SPEAK_STEP2': 'text-yellow-300',
-        'SPEAK_STEP3': 'text-yellow-300',
-        'SPEAK_STEP4': 'text-yellow-300',
-        'SPEAK_STEP5': 'text-yellow-300',
-        'SPEAK_STEP6': 'text-yellow-300',
-        'SPEAK_SUCCESS': 'text-green-500',
-        'SPEAK_DENIED': 'text-red-400',
-        'SPEAK_ERROR': 'text-red-600',
+        'SPEAK_START': 'tts-debug-success',
+        'SPEAK_STEP1': 'tts-debug-step',
+        'SPEAK_STEP2': 'tts-debug-step',
+        'SPEAK_STEP3': 'tts-debug-step',
+        'SPEAK_STEP4': 'tts-debug-step',
+        'SPEAK_STEP5': 'tts-debug-step',
+        'SPEAK_STEP6': 'tts-debug-step',
+        'SPEAK_SUCCESS': 'tts-debug-success',
+        'SPEAK_DENIED': 'tts-debug-error',
+        'SPEAK_ERROR': 'tts-debug-error',
         'PLAYBACK': 'text-cyan-400'
     };
 
@@ -3105,13 +3169,13 @@ function updateDebugModeUI() {
 
     if (statusEl) {
         statusEl.textContent = debugEnabled ? 'Enabled' : 'Disabled';
-        statusEl.className = debugEnabled ? 'ml-2 font-bold text-green-500' : 'ml-2 font-bold text-red-500';
+        statusEl.className = debugEnabled ? 'ml-2 font-bold tts-debug-success' : 'ml-2 font-bold tts-debug-error';
     }
 
     if (liveUpdateStatus) {
         if (debugEnabled && socket) {
             liveUpdateStatus.textContent = 'Active';
-            liveUpdateStatus.className = 'ml-2 font-bold text-green-500 pulse';
+            liveUpdateStatus.className = 'ml-2 font-bold tts-debug-success pulse';
         } else {
             liveUpdateStatus.textContent = 'Inactive';
             liveUpdateStatus.className = 'ml-2 font-bold text-gray-500';

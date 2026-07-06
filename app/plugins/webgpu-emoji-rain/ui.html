@@ -35,11 +35,11 @@
                 const logo = document.querySelector('[data-brand-logo]');
                 if (logo) {
                     const logoByTheme = {
-                        day: '/logo-wide.png',
-                        night: '/logo-wide.png',
-                        contrast: '/logo-wide.png',
-                        'vision-impaired': '/logo-wide.png',
-                        cid: '/ltthwebsitelogo.png'
+                        day: '/ltthicon.png',
+                        night: '/ltthicon.png',
+                        contrast: '/ltthicon.png',
+                        'vision-impaired': '/ltthicon.png',
+                        cid: '/ltthicon.png'
                     };
                     logo.src = logoByTheme[theme] || logoByTheme.night;
                 }
@@ -124,7 +124,7 @@
         }
 
         html[data-theme="vision-impaired"] .brand-logo {
-            width: min(400px, 78vw);
+            width: min(420px, 78vw);
         }
 
         .nav-button {
@@ -632,12 +632,8 @@
             border-color: #facc15;
         }
 
-        html[data-theme="vision-impaired"] .brand-logo {
-            width: min(360px, 72vw);
-        }
-
         html[data-theme="cid"] .brand-logo {
-            width: min(340px, 64vw);
+            width: min(360px, 72vw);
         }
 
         html[data-theme="vision-impaired"] .nav-button-primary {
@@ -789,7 +785,7 @@
 <body>
     <div class="container">
         <div class="brand-header">
-            <img class="brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+            <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
         </div>
         <p class="subtitle">Physik-basierte Emoji-Animationen für TikTok Events</p>
 

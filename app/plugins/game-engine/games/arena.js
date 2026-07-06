@@ -26,8 +26,8 @@ const PREVIOUS_DEFAULT_PLAYER_ABSORB_MASS_RATIO = 0.7;
 const PREVIOUS_DEFAULT_PLAYER_ABSORB_LIFE_STEAL_RATIO = 0.7;
 const PREVIOUS_LOW_PLAYER_ABSORB_MASS_RATIO = 0.42;
 const PREVIOUS_LOW_PLAYER_ABSORB_LIFE_STEAL_RATIO = 0.55;
-const PREVIOUS_ACTION_PLAYER_ABSORB_MASS_RATIO = 0.82;
-const PREVIOUS_ACTION_PLAYER_ABSORB_LIFE_STEAL_RATIO = 0.84;
+const PREVIOUS_ACTION_PLAYER_ABSORB_MASS_RATIO = 0.9;
+const PREVIOUS_ACTION_PLAYER_ABSORB_LIFE_STEAL_RATIO = 0.9;
 const PREVIOUS_DEFAULT_DEATH_FOOD_DROP_COUNT = 12;
 const PREVIOUS_DEFAULT_DEATH_FOOD_DROP_VALUE = 1.15;
 const PREVIOUS_LOW_DEATH_FOOD_DROP_COUNT = 8;
@@ -253,8 +253,8 @@ const DEFAULT_CONFIG = {
   maxFoodBurstPerEvent: 24,
   giftExtraLifeValue: 1,
   playerAbsorbOverlapRatio: 0.65,
-  playerAbsorbMassRatio: 0.9,
-  playerAbsorbLifeStealRatio: 0.9,
+    playerAbsorbMassRatio: 0.82,
+    playerAbsorbLifeStealRatio: 0.84,
   tickRateMs: DEFAULT_TICK_RATE_MS,
   stateEmitIntervalMs: 66,
   feverIntervalMs: 180000,
@@ -286,8 +286,8 @@ const DEFAULT_CONFIG = {
     huntStrikeDistance: 260,
     huntStrikeBoost: 1.18,
     smallMassSpeedBoost: 0.35,
-    largeMassSpeedPenalty: 0.62,
-    minMassSpeedMultiplier: 0.55,
+    largeMassSpeedPenalty: 0.72,
+    minMassSpeedMultiplier: 0.38,
     maxMassSpeedMultiplier: 1.35,
     boundaryAvoidanceDistance: 90,
     boundaryAvoidanceStrength: 0.8,
@@ -741,6 +741,7 @@ class ArenaGame {
           timestamp: now
         });
       }
+      this._applyStreamActivityBoost(player, 'gift', this._giftLifeGain(data || {}, config));
       this.emitState('gift-respawn', { force: true });
       return { success: true, respawned: true, player: this._serializePlayer(player, config), weapon: player.weapon };
     }
@@ -4564,6 +4565,7 @@ class ArenaGame {
         Math.max(Number(data && (data.likeCount || data.count)) || multiplier || 1, 1),
         Number(config.maxLikeLifeBatch) || DEFAULT_CONFIG.maxLikeLifeBatch
       );
+      this._applyStreamActivityBoost(player, 'like', likeCount, config);
       const interval = Math.max(1, Number(config.likeFoodSpawnInterval) || DEFAULT_CONFIG.likeFoodSpawnInterval);
       const burstCount = Math.min(
         Number(config.maxFoodBurstPerEvent) || DEFAULT_CONFIG.maxFoodBurstPerEvent,
@@ -4577,7 +4579,10 @@ class ArenaGame {
           spread: Math.max(40, player.radius * 3)
         });
       }
+    } else if (activityType === 'gift') {
+      this._applyStreamActivityBoost(player, 'gift', this._giftLifeGain(data, config), config);
     }
+
   }
 
   _activityMultiplier(data, activityType) {
@@ -4708,6 +4713,97 @@ class ArenaGame {
       timestamp: this.now()
     });
     return granted;
+  }
+
+  _applyStreamActivityBoost(player, activityType, intensity) {
+    if (!player) return null;
+    const now = this.now();
+    if (!player.effects || typeof player.effects !== 'object') {
+      player.effects = {};
+    }
+
+    const kind = activityType === 'gift' ? 'gift' : 'like';
+    const value = Math.max(1, Number(intensity) || 1);
+    const baseDurationMs = kind === 'gift' ? 4200 : 2200;
+    const maxDurationMs = kind === 'gift' ? 12000 : 6400;
+    const durationMs = Math.round(this._clamp(
+      baseDurationMs + Math.log1p(value) * (kind === 'gift' ? 480 : 260),
+      baseDurationMs,
+      maxDurationMs
+    ));
+    const speedMultiplier = this._clamp(
+      1 + Math.log1p(value) * (kind === 'gift' ? 0.024 : 0.016),
+      kind === 'gift' ? 1.08 : 1.04,
+      kind === 'gift' ? 1.22 : 1.13
+    );
+    const aggressionBoost = this._clamp(
+      (kind === 'gift' ? 0.11 : 0.05) + Math.log1p(value) * (kind === 'gift' ? 0.012 : 0.007),
+      0.05,
+      kind === 'gift' ? 0.24 : 0.14
+    );
+    const foodFocusBoost = this._clamp(
+      (kind === 'gift' ? 0.07 : 0.06) + Math.log1p(value) * (kind === 'gift' ? 0.008 : 0.006),
+      0.04,
+      kind === 'gift' ? 0.18 : 0.14
+    );
+    const weaponFocusBoost = this._clamp(
+      (kind === 'gift' ? 0.12 : 0.03) + Math.log1p(value) * (kind === 'gift' ? 0.009 : 0.004),
+      0.03,
+      kind === 'gift' ? 0.24 : 0.08
+    );
+    const commitmentBoost = this._clamp(
+      (kind === 'gift' ? 0.06 : 0.03) + Math.log1p(value) * (kind === 'gift' ? 0.006 : 0.003),
+      0.02,
+      kind === 'gift' ? 0.16 : 0.08
+    );
+    const riskToleranceBoost = this._clamp(
+      (kind === 'gift' ? 0.08 : 0.03) + Math.log1p(value) * (kind === 'gift' ? 0.007 : 0.004),
+      0.02,
+      kind === 'gift' ? 0.18 : 0.09
+    );
+
+    player.effects.streamBoostUntil = Math.max(Number(player.effects.streamBoostUntil) || 0, now + durationMs);
+    player.effects.streamBoostKind = kind;
+    player.effects.streamBoostMultiplier = Math.max(Number(player.effects.streamBoostMultiplier) || 1, speedMultiplier);
+    player.effects.streamAggressionBoost = Math.max(Number(player.effects.streamAggressionBoost) || 0, aggressionBoost);
+    player.effects.streamFoodFocusBoost = Math.max(Number(player.effects.streamFoodFocusBoost) || 0, foodFocusBoost);
+    player.effects.streamWeaponFocusBoost = Math.max(Number(player.effects.streamWeaponFocusBoost) || 0, weaponFocusBoost);
+    player.effects.streamCommitmentBoost = Math.max(Number(player.effects.streamCommitmentBoost) || 0, commitmentBoost);
+    player.effects.streamRiskToleranceBoost = Math.max(Number(player.effects.streamRiskToleranceBoost) || 0, riskToleranceBoost);
+
+    this._emitStreamSurge(player, kind, value, {
+      durationMs: kind === 'gift' ? 760 : 520,
+      speedMultiplier
+    });
+
+    return {
+      kind,
+      durationMs,
+      speedMultiplier,
+      aggressionBoost,
+      foodFocusBoost,
+      weaponFocusBoost,
+      commitmentBoost,
+      riskToleranceBoost
+    };
+  }
+
+  _emitStreamSurge(player, kind, intensity, options = {}) {
+    if (!player) return;
+    const durationMs = Math.max(240, Number(options.durationMs) || 520);
+    const speedMultiplier = this._clamp(Number(options.speedMultiplier) || 1, 1, 1.35);
+    this.io.emit('arena:stream-surge', {
+      username: player.username,
+      nickname: player.nickname,
+      kind,
+      intensity: Math.round(Math.max(1, Number(intensity) || 1)),
+      x: Math.round((Number(player.x) || 0) * 100) / 100,
+      y: Math.round((Number(player.y) || 0) * 100) / 100,
+      radius: Math.round(Math.max(16, (Number(player.radius) || 16) * (kind === 'gift' ? 1.45 : 1.2)) * 100) / 100,
+      speedMultiplier: Math.round(speedMultiplier * 1000) / 1000,
+      durationMs,
+      timestamp: this.now()
+    });
   }
 
   _finiteOrDefault(value, fallback) {
@@ -5090,7 +5186,8 @@ class ArenaGame {
 
     const range = Math.max(1, maxMass - baseMass);
     const t = (mass - baseMass) / range;
-    return this._clamp(1 - maxPenalty * t, minMultiplier, 1);
+    const bulkDrag = Math.pow(t, 1.4) * 0.1;
+    return this._clamp(1 - maxPenalty * t - bulkDrag, minMultiplier, 1);
   }
 
   _effectiveMovementSpeed(player, behavior, config = this.getConfig()) {
@@ -6214,8 +6311,10 @@ class ArenaGame {
       : player && player.personality;
     const traits = this._normalizePersonality(base);
     const strategy = player && player.strategyOverride;
+    let adjusted = traits;
+
     if (strategy === 'hunt' || strategy === 'attack') {
-      return this._normalizePersonality({
+      adjusted = this._normalizePersonality({
         ...traits,
         aggression: traits.aggression + 0.36,
         fear: traits.fear - 0.22,
@@ -6224,9 +6323,8 @@ class ArenaGame {
         commitment: traits.commitment + 0.18,
         riskTolerance: traits.riskTolerance + 0.32
       });
-    }
-    if (strategy === 'flee') {
-      return this._normalizePersonality({
+    } else if (strategy === 'flee') {
+      adjusted = this._normalizePersonality({
         ...traits,
         aggression: traits.aggression - 0.28,
         fear: traits.fear + 0.36,
@@ -6235,9 +6333,8 @@ class ArenaGame {
         commitment: traits.commitment + 0.12,
         riskTolerance: traits.riskTolerance - 0.3
       });
-    }
-    if (strategy === 'farm') {
-      return this._normalizePersonality({
+    } else if (strategy === 'farm') {
+      adjusted = this._normalizePersonality({
         ...traits,
         aggression: traits.aggression - 0.26,
         fear: traits.fear + 0.08,
@@ -6247,7 +6344,37 @@ class ArenaGame {
         riskTolerance: traits.riskTolerance - 0.12
       });
     }
-    return traits;
+
+    const streamBoost = this._streamActivityBoost(player);
+    if (!streamBoost) {
+      return adjusted;
+    }
+
+    return this._normalizePersonality({
+      ...adjusted,
+      aggression: adjusted.aggression + streamBoost.aggressionBoost,
+      fear: adjusted.fear - Math.min(0.18, streamBoost.aggressionBoost * 0.42),
+      weaponFocus: adjusted.weaponFocus + streamBoost.weaponFocusBoost,
+      foodFocus: adjusted.foodFocus + streamBoost.foodFocusBoost,
+      commitment: adjusted.commitment + streamBoost.commitmentBoost,
+      riskTolerance: adjusted.riskTolerance + streamBoost.riskToleranceBoost
+    });
+  }
+
+  _streamActivityBoost(player) {
+    const now = this.now();
+    if (!player || !player.effects || typeof player.effects !== 'object') return null;
+    if (!player.effects.streamBoostUntil || now >= player.effects.streamBoostUntil) return null;
+
+    return {
+      kind: player.effects.streamBoostKind || 'like',
+      speedMultiplier: this._clamp(Number(player.effects.streamBoostMultiplier) || 1, 1, 1.35),
+      aggressionBoost: this._clamp(Number(player.effects.streamAggressionBoost) || 0, 0, 0.35),
+      foodFocusBoost: this._clamp(Number(player.effects.streamFoodFocusBoost) || 0, 0, 0.35),
+      weaponFocusBoost: this._clamp(Number(player.effects.streamWeaponFocusBoost) || 0, 0, 0.35),
+      commitmentBoost: this._clamp(Number(player.effects.streamCommitmentBoost) || 0, 0, 0.25),
+      riskToleranceBoost: this._clamp(Number(player.effects.streamRiskToleranceBoost) || 0, 0, 0.3)
+    };
   }
 
   _normalizePersonality(profile = {}) {
@@ -7152,14 +7279,28 @@ class ArenaGame {
       delete player.effects.slowedUntil;
       delete player.effects.slowMultiplier;
     }
+    if (player.effects.streamBoostUntil && now >= player.effects.streamBoostUntil) {
+      delete player.effects.streamBoostUntil;
+      delete player.effects.streamBoostKind;
+      delete player.effects.streamBoostMultiplier;
+      delete player.effects.streamAggressionBoost;
+      delete player.effects.streamFoodFocusBoost;
+      delete player.effects.streamWeaponFocusBoost;
+      delete player.effects.streamCommitmentBoost;
+      delete player.effects.streamRiskToleranceBoost;
+    }
   }
 
   _statusSpeedMultiplier(player) {
     const now = this.now();
-    if (player.effects?.slowedUntil && now < player.effects.slowedUntil) {
-      return this._clamp(Number(player.effects.slowMultiplier) || 1, 0.15, 1);
+    let streamMultiplier = 1;
+    if (player.effects?.streamBoostUntil && now < player.effects.streamBoostUntil) {
+      streamMultiplier = this._clamp(Number(player.effects.streamBoostMultiplier) || 1, 1, 1.35);
     }
-    return 1;
+    if (player.effects?.slowedUntil && now < player.effects.slowedUntil) {
+      return this._clamp(Number(player.effects.slowMultiplier) || 1, 0.15, 1) * streamMultiplier;
+    }
+    return streamMultiplier;
   }
 
   _distance(a, b) {
@@ -7288,6 +7429,12 @@ class ArenaGame {
     ) {
       config.playerAbsorbMassRatio = DEFAULT_CONFIG.playerAbsorbMassRatio;
     }
+    if (Number(stored?.playerAbsorbMassRatio) === 0.9) {
+      config.playerAbsorbMassRatio = DEFAULT_CONFIG.playerAbsorbMassRatio;
+    }
+    if (Number(stored?.playerAbsorbLifeStealRatio) === 0.9) {
+      config.playerAbsorbLifeStealRatio = DEFAULT_CONFIG.playerAbsorbLifeStealRatio;
+    }
     if (
       Number(stored?.playerAbsorbLifeStealRatio) === PREVIOUS_DEFAULT_PLAYER_ABSORB_LIFE_STEAL_RATIO ||
       Number(stored?.playerAbsorbLifeStealRatio) === PREVIOUS_LOW_PLAYER_ABSORB_LIFE_STEAL_RATIO ||
@@ -7415,7 +7562,7 @@ class ArenaGame {
         };
       }
 
-      if (Number(movement.largeMassSpeedPenalty) === 0.48) {
+      if (Number(movement.largeMassSpeedPenalty) === 0.48 || Number(movement.largeMassSpeedPenalty) === 0.62) {
         config.movement = {
           ...config.movement,
           largeMassSpeedPenalty: DEFAULT_CONFIG.movement.largeMassSpeedPenalty

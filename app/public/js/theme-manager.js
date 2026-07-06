@@ -258,11 +258,18 @@ class ThemeManager {
     }
 
     updateSidebarLogo(theme) {
+        const wideLogo = document.querySelector('.sidebar-logo-wide');
         const miniIcon = document.getElementById('sidebar-mini-icon');
+        const topbarLogo = document.querySelector('.topbar-logo-image');
 
-        // Update mini logo icon
+        if (wideLogo) {
+            wideLogo.src = '/ltthwebsitelogo.png';
+        }
         if (miniIcon) {
-            miniIcon.src = '/cid-logo.png';
+            miniIcon.src = '/ltthicon.png';
+        }
+        if (topbarLogo) {
+            topbarLogo.src = '/ltthicon.png';
         }
     }
 

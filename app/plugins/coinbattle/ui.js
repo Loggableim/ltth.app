@@ -22,7 +22,7 @@
   let translations = {};
   let currentLanguage = 'en';
 
-  const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+  const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
   const LEGACY_THEME_MAP = {
     dark: 'night',
     light: 'day',

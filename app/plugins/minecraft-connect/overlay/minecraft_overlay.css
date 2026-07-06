@@ -178,6 +178,28 @@ body {
     border: 1px solid rgba(126, 164, 255, 0.18);
 }
 
+:root[data-theme='cid'] .mc-notification {
+    background: linear-gradient(135deg, #071107 0%, #030603 100%);
+    color: #f4fff4;
+    border: 2px solid rgba(74, 222, 128, 0.6);
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.42), 0 0 22px rgba(74, 222, 128, 0.16);
+}
+
+:root[data-theme='cid'] .mc-notification-title {
+    color: #4ade80;
+    text-shadow: none;
+}
+
+:root[data-theme='cid'] .mc-notification-icon {
+    background: rgba(74, 222, 128, 0.18);
+    color: #86efac;
+}
+
+:root[data-theme='cid'] .mc-notification-action,
+:root[data-theme='cid'] .mc-notification-user {
+    color: #d1e7d1;
+}
+
 :root[data-theme='contrast'] .mc-notification,
 :root[data-theme='vision-impaired'] .mc-notification {
     background: #000;

@@ -4078,23 +4078,42 @@ func (l *Launcher) createDesktopShortcut() {
 		return
 	}
 	desktop := filepath.Join(os.Getenv("USERPROFILE"), "Desktop", "LTTH.lnk")
-	if _, err := os.Stat(desktop); err == nil {
-		return // already exists
+	shortcutIcon := ""
+	for _, iconPath := range []string{
+		filepath.Join(l.exeDir, "build-src", "icon.ico"),
+		filepath.Join(l.exeDir, "icon.ico"),
+	} {
+		if info, err := os.Stat(iconPath); err == nil && !info.IsDir() {
+			shortcutIcon = iconPath
+			break
+		}
 	}
-	script := fmt.Sprintf(`
+	var script string
+	if shortcutIcon != "" {
+		script = fmt.Sprintf(`
+$s = (New-Object -COM WScript.Shell).CreateShortcut('%s')
+$s.TargetPath = '%s'
+$s.WorkingDirectory = '%s'
+$s.IconLocation = '%s'
+$s.Description = "PupCid's Little TikTool Helper"
+$s.Save()
+`, desktop, exePath, filepath.Dir(exePath), shortcutIcon)
+	} else {
+		script = fmt.Sprintf(`
 $s = (New-Object -COM WScript.Shell).CreateShortcut('%s')
 $s.TargetPath = '%s'
 $s.WorkingDirectory = '%s'
 $s.Description = "PupCid's Little TikTool Helper"
 $s.Save()
 `, desktop, exePath, filepath.Dir(exePath))
+	}
 	tmp := filepath.Join(l.exeDir, "_sc.ps1")
 	if err := os.WriteFile(tmp, []byte(script), 0644); err != nil {
 		return
 	}
 	hiddenCommand("powershell", "-ExecutionPolicy", "Bypass", "-NonInteractive", "-File", tmp).Run()
 	os.Remove(tmp)
-	l.logAndSync("[INFO] Desktop shortcut created: %s", desktop)
+	l.logAndSync("[INFO] Desktop shortcut ensured: %s", desktop)
 }
 
 func (l *Launcher) startTrayMenu(launcherURL string) {
@@ -4813,6 +4832,9 @@ func main() {
 		if theme == "" {
 			theme = "night"
 		}
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
 
 		for _, logoPath := range []string{
 			filepath.Join(launcher.exeDir, "build-src", "assets", "launcher-logo.png"),
