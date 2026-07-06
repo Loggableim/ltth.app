@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>XP Event Ticker</title>
   <script src="/socket.io/socket.io.js"></script>
+  <script>
+    (function () {
+      const THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          const parentTheme = window.parent?.document?.documentElement?.getAttribute('data-theme');
+          if (THEMES.has(parentTheme)) return parentTheme;
+        } catch (error) {}
+
+        try {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+            const value = localStorage.getItem(key);
+            if (THEMES.has(value)) return value;
+          }
+        } catch (error) {}
+
+        return 'night';
+      }
+
+      function applyTheme(theme) {
+        const next = THEMES.has(theme) ? theme : 'night';
+        document.documentElement.dataset.theme = next;
+      }
+
+      function syncTheme() {
+        applyTheme(readTheme());
+      }
+
+      document.addEventListener('DOMContentLoaded', syncTheme);
+      window.addEventListener('load', syncTheme);
+      window.addEventListener('focus', syncTheme);
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
   <style>
     * {
       margin: 0;
@@ -18,6 +61,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
       padding: 10px;
+      color: #e5e7eb;
     }
 
     .ticker-container {
@@ -28,7 +72,7 @@
 
     .ticker-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      color: #f8fafc;
       padding: 8px 15px;
       border-radius: 8px 8px 0 0;
       font-weight: bold;
@@ -50,9 +94,9 @@
     }
 
     .events-list {
-      max-height: 400px;
+      max-height: 520px;
       overflow-y: auto;
-      background: rgba(0, 0, 0, 0.9);
+      background: rgba(10, 14, 30, 0.94);
       border-radius: 0 0 8px 8px;
       padding: 5px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -77,7 +121,7 @@
     }
 
     .event-item {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.06);
       border-left: 3px solid #4CAF50;
       padding: 10px 12px;
       margin: 5px 0;
@@ -136,7 +180,7 @@
     }
 
     .event-time {
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.72);
       font-size: 11px;
     }
 
@@ -144,7 +188,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: rgba(255, 255, 255, 0.9);
+      color: #f8fafc;
       font-size: 13px;
     }
 
@@ -155,7 +199,7 @@
     }
 
     .event-type {
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(255, 255, 255, 0.88);
       font-size: 12px;
       text-transform: capitalize;
     }
@@ -167,7 +211,7 @@
     .empty-message {
       text-align: center;
       padding: 30px;
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.82);
       font-size: 14px;
     }
 
@@ -183,7 +227,7 @@
     .settings-panel label {
       display: block;
       margin: 8px 0 4px;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.9);
     }
 
     .settings-panel input,
@@ -229,6 +273,101 @@
 
     .connection-status.disconnected {
       color: #FF6B6B;
+    }
+
+    html[data-theme="day"] body {
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .ticker-header {
+      background: linear-gradient(135deg, #5b8cff 0%, #8b5cf6 100%);
+      color: #ffffff;
+    }
+
+    html[data-theme="day"] .events-list,
+    html[data-theme="day"] .settings-panel {
+      background: rgba(255, 255, 255, 0.96);
+      color: #10203a;
+    }
+
+    html[data-theme="day"] .event-item {
+      background: rgba(15, 23, 42, 0.05);
+    }
+
+    html[data-theme="day"] .event-username,
+    html[data-theme="day"] .event-details,
+    html[data-theme="day"] .event-type,
+    html[data-theme="day"] .empty-message,
+    html[data-theme="day"] .settings-panel label {
+      color: #10203a;
+    }
+
+    html[data-theme="cid"] body {
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] .ticker-header,
+    html[data-theme="cid"] .events-list,
+    html[data-theme="cid"] .settings-panel {
+      background: rgba(7, 17, 7, 0.95);
+      color: #f4fff4;
+      border: 1px solid #1e5b2a;
+    }
+
+    html[data-theme="cid"] .event-item {
+      background: rgba(21, 40, 21, 0.88);
+      border-left-color: #4ade80;
+    }
+
+    html[data-theme="cid"] .event-username,
+    html[data-theme="cid"] .event-details,
+    html[data-theme="cid"] .event-type,
+    html[data-theme="cid"] .empty-message,
+    html[data-theme="cid"] .settings-panel label {
+      color: #f4fff4;
+    }
+
+    html[data-theme="contrast"] body,
+    html[data-theme="vision-impaired"] body {
+      color: #fff7cc;
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    html[data-theme="contrast"] .ticker-container,
+    html[data-theme="vision-impaired"] .ticker-container {
+      width: min(96vw, 1280px);
+    }
+
+    html[data-theme="contrast"] .ticker-header,
+    html[data-theme="vision-impaired"] .ticker-header,
+    html[data-theme="contrast"] .events-list,
+    html[data-theme="vision-impaired"] .events-list,
+    html[data-theme="contrast"] .settings-panel,
+    html[data-theme="vision-impaired"] .settings-panel {
+      background: #000;
+      border: 3px solid #facc15;
+      color: #fff7cc;
+      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 10px 30px rgba(0, 0, 0, 0.65);
+    }
+
+    html[data-theme="contrast"] .event-item,
+    html[data-theme="vision-impaired"] .event-item {
+      background: rgba(0, 0, 0, 0.88);
+      border-left-color: #facc15;
+    }
+
+    html[data-theme="contrast"] .event-username,
+    html[data-theme="vision-impaired"] .event-username,
+    html[data-theme="contrast"] .event-details,
+    html[data-theme="vision-impaired"] .event-details,
+    html[data-theme="contrast"] .event-type,
+    html[data-theme="vision-impaired"] .event-type,
+    html[data-theme="contrast"] .empty-message,
+    html[data-theme="vision-impaired"] .empty-message,
+    html[data-theme="contrast"] .settings-panel label,
+    html[data-theme="vision-impaired"] .settings-panel label {
+      color: #fff7cc;
     }
   </style>
 </head>
@@ -276,6 +415,8 @@
     const eventsList = document.getElementById('eventsList');
     const connectionStatus = document.getElementById('connectionStatus');
     let events = [];
+
+    renderEvents();
 
     // Event type icons and colors
     const eventIcons = {
