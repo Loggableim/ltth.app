@@ -110,6 +110,7 @@
             background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 10px 20px;
+            max-width: min(92vw, 720px);
             border-radius: 25px;
             font-size: 18px;
             font-weight: bold;
@@ -607,6 +608,22 @@
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         }
 
+        html[data-theme="cid"] .gift-popup {
+            background: rgba(7, 17, 7, 0.95);
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+        }
+
+        html[data-theme="vision-impaired"] .gift-popup {
+            background: rgba(0, 0, 0, 0.98);
+            color: #fff7cc;
+            border-color: #facc15;
+            box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18), 0 8px 28px rgba(0, 0, 0, 0.65);
+            font-size: 20px;
+            padding: 12px 24px;
+        }
+
         .follower-avatar-container {
             margin-bottom: 20px;
         }
@@ -630,6 +647,7 @@
         .follower-text {
             color: white;
             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+            width: 100%;
         }
 
         .thank-you-text {
@@ -645,6 +663,35 @@
             font-weight: 600;
             color: #ffd700;
             text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        html[data-theme="cid"] .follower-content {
+            background: rgba(7, 17, 7, 0.94);
+            color: #f4fff4;
+            border: 2px solid #1e5b2a;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.48);
+            width: min(96vw, 1200px);
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] .follower-content {
+            background: rgba(0, 0, 0, 0.97);
+            color: #fff7cc;
+            border: 3px solid #facc15;
+            box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18), 0 16px 48px rgba(0, 0, 0, 0.68);
+            width: min(96vw, 1200px);
+            max-width: none;
+        }
+
+        html[data-theme="vision-impaired"] .thank-you-text {
+            font-size: 42px;
+            letter-spacing: 0.03em;
+        }
+
+        html[data-theme="vision-impaired"] .follower-username {
+            font-size: 34px;
+            color: #fde047;
+            text-shadow: 0 0 16px rgba(250, 204, 21, 0.4), 2px 2px 10px rgba(0, 0, 0, 0.95);
         }
 
         @keyframes pulse {
@@ -682,6 +729,7 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
             text-align: center;
+            max-width: none;
         }
 
         /* Debug panel */
