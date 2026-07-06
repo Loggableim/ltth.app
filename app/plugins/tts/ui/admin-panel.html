@@ -7,9 +7,16 @@
     <title data-i18n="tts.admin_panel.title">TTS Admin Panel</title>
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/themes.css">
-    <script>
-        (function() {
-            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+    <script>function() {
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/logo-wide.png'
+            };
+            let isApplyingTheme = false;
 
             function readTheme() {
                 try {
@@ -20,7 +27,7 @@
                 } catch (error) {}
 
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (validThemes.has(value)) return value;
                     }
@@ -30,21 +37,43 @@
             }
 
             function syncTheme() {
+                if (isApplyingTheme) return;
+                isApplyingTheme = true;
+
                 const theme = readTheme();
-                document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                try {
+                    const root = document.documentElement;
+                    if (root.getAttribute('data-theme') !== theme) {
+                        root.setAttribute('data-theme', theme);
+                    }
+                    root.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                    const logo = document.querySelector('.tts-logo');
+                    if (logo) {
+                        const nextSrc = logoByTheme[theme] || logoByTheme.night;
+                        if (logo.getAttribute('src') !== nextSrc) {
+                            logo.setAttribute('src', nextSrc);
+                        }
+                    }
+                } finally {
+                    isApplyingTheme = false;
+                }
             }
 
             syncTheme();
             window.addEventListener('focus', syncTheme);
-            window.addEventListener('storage', (event) => {
-                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+            window.addEventListener('storage', (event) =>if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
                     syncTheme();
                 }
             });
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) syncTheme();
+            document.addEventListener('visibilitychange', () =>if (!document.hidden) syncTheme();
             });
+
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
 
             try {
                 if (window.parent && window.parent !== window) {
@@ -56,8 +85,7 @@
             } catch (error) {}
         })();
     </script>
-    <style>
-        /* Custom animations */
+    <style>Custom animations */
         .fade-in {
             animation: fadeIn 0.3s ease-in;
         }
@@ -166,6 +194,56 @@
             color: #000 !important;
         }
 
+        html[data-theme="day"] .bg-yellow-600,
+        html[data-theme="night"] .bg-yellow-600,
+        html[data-theme="contrast"] .bg-yellow-600,
+        html[data-theme] .tts-btn-warning,
+        html[data-theme] .tts-toast-warning {
+            background-color: #facc15 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="day"] .tts-debug-step,
+        html[data-theme="day"] .text-yellow-300,
+        html[data-theme="day"] .text-yellow-400,
+        html[data-theme="day"] .text-yellow-500 {
+            color: #92400e !important;
+            -webkit-text-fill-color: #92400e !important;
+        }
+
+        html[data-theme="night"] .tts-debug-step,
+        html[data-theme="contrast"] .tts-debug-step,
+        html[data-theme="vision-impaired"] .tts-debug-step,
+        html[data-theme="night"] .text-yellow-300,
+        html[data-theme="contrast"] .text-yellow-300,
+        html[data-theme="vision-impaired"] .text-yellow-300,
+        html[data-theme="night"] .text-yellow-400,
+        html[data-theme="contrast"] .text-yellow-400,
+        html[data-theme="vision-impaired"] .text-yellow-400,
+        html[data-theme="night"] .text-yellow-500,
+        html[data-theme="contrast"] .text-yellow-500,
+        html[data-theme="vision-impaired"] .text-yellow-500 {
+            color: #facc15 !important;
+            -webkit-text-fill-color: #facc15 !important;
+        }
+
+        html[data-theme] .tts-debug-success,
+        html[data-theme] .text-green-400,
+        html[data-theme] .text-green-500 {
+            color: #22c55e !important;
+            -webkit-text-fill-color: #22c55e !important;
+        }
+
+        html[data-theme] .tts-debug-error,
+        html[data-theme] .text-red-400,
+        html[data-theme] .text-red-500,
+        html[data-theme] .text-red-600 {
+            color: #f87171 !important;
+            -webkit-text-fill-color: #f87171 !important;
+        }
+
         html[data-theme="vision-impaired"] .tab-button {
             background: #000 !important;
             color: #fff7cc !important;
@@ -197,7 +275,7 @@
                 gap: 16px;
             }
 
-            .mb-8.flex.justify-between.items-start > div:last-child {
+            .mb-8.flex.justify-between.items-start >div:last-child {
                 width: 100%;
             }
 
@@ -222,17 +300,17 @@
                 flex: 1 1 calc(50% - 8px) !important;
             }
 
-            .container > .grid[class*="lg:grid-cols-2"],
-            .container > .grid[class*="lg:grid-cols-3"],
-            .container > .grid[class*="md:grid-cols-2"],
-            .container > .grid[class*="md:grid-cols-3"],
-            .container > .grid[class*="md:grid-cols-4"] {
+            .container >grid[class*="lg:grid-cols-2"],
+            .container >grid[class*="lg:grid-cols-3"],
+            .container >grid[class*="md:grid-cols-2"],
+            .container >grid[class*="md:grid-cols-3"],
+            .container >grid[class*="md:grid-cols-4"] {
                 grid-template-columns: 1fr !important;
                 width: 100% !important;
                 min-width: 0 !important;
             }
 
-            .container > .grid > div {
+            .container >grid >div {
                 min-width: 0 !important;
                 width: 100% !important;
             }
@@ -248,22 +326,20 @@
                 gap: 12px;
             }
 
-            .flex.items-center.justify-between.mb-4 > *,
-            .flex.items-center.justify-between.mb-3 > * {
-                width: 100%;
+            .flex.items-center.justify-between.mb-4 >flex.items-center.justify-between.mb-3 >width: 100%;
             }
 
-            #fishCustomVoicesList > div {
+            #fishCustomVoicesList >div {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 12px;
             }
 
-            #fishCustomVoicesList > div > .flex-1 {
+            #fishCustomVoicesList >div >flex-1 {
                 width: 100%;
             }
 
-            #fishCustomVoicesList > div > button {
+            #fishCustomVoicesList >div >button {
                 margin-left: 0;
                 width: 100%;
             }
@@ -273,25 +349,124 @@
                 grid-template-columns: 1fr !important;
             }
         }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert,
+        html[data-theme="cid"] .bg-gray-800,
+        html[data-theme="cid"] .bg-gray-700,
+        html[data-theme="cid"] .bg-gray-900,
+        html[data-theme="cid"] .bg-gray-850,
+        html[data-theme="cid"] .bg-gray-700\/50 {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .text-gray-300,
+        html[data-theme="cid"] .text-gray-400,
+        html[data-theme="cid"] .text-gray-500,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
     </style>
 </head>
 <body style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
     <!-- Debug Info (will be hidden once JS loads) -->
-    <div id="debug-info" class="fixed top-0 left-0 right-0 bg-yellow-600 text-black p-2 text-center z-50">
-        ⚠️ Loading TTS Admin Panel... If this message persists, check browser console (F12)
+    <div id="debug-info" class="fixed top-0 left-0 right-0 bg-yellow-600 text-black p-2 text-center z-50">Loading TTS Admin Panel... If this message persists, check browser console (F12)
     </div>
 
-    <div class="container mx-auto p-6 max-w-7xl">
+    <div class="container mx-auto w-full max-w-none p-6">
         <!-- Header -->
         <div class="mb-8 flex justify-between items-start">
             <div>
-                <h1 class="text-4xl font-bold mb-2" data-i18n="tts.admin_panel.title">🔊 TTS Admin Panel</h1>
-                <p class="text-gray-400" data-i18n="tts.admin_panel.subtitle">Text-to-Speech System v2.0</p>
+                <img class="tts-logo" data-brand-logo src="/logo-wide.png" alt="LTTH" style="display:block;width:min(320px,60vw);height:auto;object-fit:contain;margin-bottom:14px;">
                 <div id="init-status" class="text-sm text-gray-500 mt-2" data-i18n="tts.admin_panel.initializing">Initializing...</div>
             </div>
             <div>
-                <button id="saveConfigBtnTop" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">
-                    💾 Save Configuration
+                <button id="saveConfigBtnTop" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">Save Configuration
                 </button>
             </div>
         </div>
@@ -301,19 +476,19 @@
             <nav class="flex space-x-4">
                 <button data-tab="config" id="tab-config" class="tab-button px-4 py-2 font-medium border-b-2 border-blue-500 text-blue-400" data-i18n="tts.admin_panel.tabs.config">Configuration</button>
                 <button data-tab="users" id="tab-users" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.users">User Management</button>
-                <button data-tab="event-triggers" id="tab-event-triggers" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.event_triggers">🎉 Event Triggers</button>
+                <button data-tab="event-triggers" id="tab-event-triggers" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.event_triggers">Event Triggers</button>
                 <button data-tab="queue" id="tab-queue" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.queue">Queue & Playback</button>
                 <button data-tab="stats" id="tab-stats" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.stats">Statistics</button>
-                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">🐛 Debug Logs</button>
+                <button data-tab="debug" id="tab-debug" class="tab-button px-4 py-2 font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-300" data-i18n="tts.admin_panel.tabs.debug">Debug Logs</button>
             </nav>
         </div>
 
         <!-- Configuration Tab -->
         <div id="content-config" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
                 <!-- Engine Settings -->
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🎙️ Engine Settings</h2>
+                    <h2 class="text-2xl font-bold mb-4">Engine Settings</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -327,7 +502,7 @@
                                 <option value="fishaudio">Fish.audio TTS (Official API)</option>
                                 <option value="siliconflow">SiliconFlow TTS (Fish Speech 1.5)</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">The primary TTS engine to use. TikTok TTS is free and requires no API key. Other engines require API keys configured in the API Keys section below.</p>
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                         </div>
 
                         <div>
@@ -338,29 +513,29 @@
                         </div>
 
                         <div id="defaultEmotionContainer" style="display: none;">
-                            <label class="block text-sm font-medium mb-2">🎭 Default Emotion (Speechify only)</label>
+                <label class="block text-sm font-bold mb-2">Emotion (Speechify only)</label>
                             <select id="defaultEmotion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
                                 <option value="">None (Neutral)</option>
-                                <option value="angry">😡 Angry - Forceful, intense</option>
-                                <option value="cheerful">😄 Cheerful - Upbeat, positive</option>
-                                <option value="sad">😢 Sad - Downcast, melancholic</option>
-                                <option value="terrified">😱 Terrified - Extreme fear</option>
-                                <option value="relaxed">😌 Relaxed - Calm, at-ease</option>
-                                <option value="fearful">😰 Fearful - Anxious, worried</option>
-                                <option value="surprised">😲 Surprised - Astonished</option>
-                                <option value="calm">😊 Calm - Tranquil, peaceful</option>
-                                <option value="assertive">💪 Assertive - Confident, authoritative</option>
-                                <option value="energetic">⚡ Energetic - Dynamic, lively</option>
-                                <option value="warm">❤️ Warm - Friendly, inviting</option>
-                                <option value="direct">➡️ Direct - Straightforward, clear</option>
-                                <option value="bright">☀️ Bright - Optimistic, cheerful</option>
+                                <option value="angry">Angry - Forceful, intense</option>
+                                <option value="cheerful">Cheerful - Upbeat, positive</option>
+                                <option value="sad">Sad - Downcast, melancholic</option>
+                                <option value="terrified">Terrified - Extreme fear</option>
+                                <option value="relaxed">Relaxed - Calm, at-ease</option>
+                                <option value="fearful">Fearful - Anxious, worried</option>
+                                <option value="surprised">Surprised - Astonished</option>
+                                <option value="calm">Calm - Tranquil, peaceful</option>
+                                <option value="assertive">Assertive - Confident, authoritative</option>
+                                <option value="energetic">Energetic - Dynamic, lively</option>
+                                <option value="warm">Warm - Friendly, inviting</option>
+                                <option value="direct">Direct - Straightforward, clear</option>
+                                <option value="bright">Bright - Optimistic, cheerful</option>
                             </select>
                             <p class="text-xs text-gray-400 mt-1">Add emotional expression to Speechify voices. Works best with shorter sentences.</p>
                         </div>
 
                         <!-- Fallback Engines Activation -->
                         <div class="border-t border-gray-700 pt-4 mt-4">
-                            <label class="block text-sm font-medium mb-3">🔄 Enabled Fallback Engines</label>
+                            <label class="block text-sm font-medium mb-3">Enabled Fallback Engines</label>
                             <p class="text-xs text-gray-400 mb-3">Select which engines should be available as fallbacks when the main engine fails. Only enabled engines will be loaded (saves system resources).</p>
                             
                             <div class="grid grid-cols-2 gap-3">
@@ -414,18 +589,17 @@
                                     </label>
                                 </div>
                             </div>
-                            <p class="text-xs text-yellow-500 mt-2">⚠️ Engines with API keys require corresponding keys in the API Keys section. TikTok TTS is free and requires no API key.</p>
+                            <p class="text-xs text-yellow-500 mt-2">Engines with API keys require corresponding keys in the API Keys section. TikTok TTS is free and requires no API key.</p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium mb-2">Performance Mode</label>
                             <select id="performanceMode" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
-                                <option value="fast">🚀 Fast (Low-Resource / Toaster PCs)</option>
-                                <option value="balanced">⚖️ Balanced (Default)</option>
-                                <option value="quality">🎯 Quality (High-Resource)</option>
+                                <option value="fast">Fast (Low-Resource / Toaster PCs)</option>
+                                <option value="balanced">Balanced (Default)</option>
+                                <option value="quality">Quality (High-Resource)</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">
-                                Fast mode is optimized for low-end PCs with faster timeouts (5s) and fewer retries (1). 
+                            <p class="text-xs text-gray-400 mt-1">Fast mode is optimized for low-end PCs with faster timeouts (5s) and fewer retries (1). 
                                 Balanced mode is recommended for most users (10s timeout, 2 retries). 
                                 Quality mode provides maximum reliability for high-end PCs (20s timeout, 3 retries).
                             </p>
@@ -433,9 +607,9 @@
                     </div>
                 </div>
 
-                <!-- Audio Settings -->
+                    <h2 class="text-2xl font-bold mb-4">Audio Settings</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🎚️ Audio Settings</h2>
+                    <h2 class="text-2xl font-bold mb-4">Audio Settings</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -460,9 +634,9 @@
                     </div>
                 </div>
 
-                <!-- Permission Settings -->
+                    <h2 class="text-2xl font-bold mb-4">Permission Settings</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🔒 Permission Settings</h2>
+                    <h2 class="text-2xl font-bold mb-4">Permission Settings</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -507,9 +681,9 @@
                     </div>
                 </div>
 
-                <!-- Language Detection Settings -->
+                    <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🌍 Language Detection</h2>
+                    <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -530,10 +704,10 @@
                                 <option value="nl">Nederlands (Dutch)</option>
                                 <option value="pl">Polski (Polish)</option>
                                 <option value="vi">Tiếng Việt (Vietnamese)</option>
-                                <option value="th">ภาษาไทย (Thai)</option>
+                                <option value="th">ไทย (Thai)</option>
                                 <option value="id">Bahasa Indonesia (Indonesian)</option>
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">Used when language detection confidence is below threshold or text is too short</p>
+                    <h2 class="text-2xl font-bold mb-4">Language Detection</h2>
                         </div>
 
                         <div>
@@ -550,15 +724,15 @@
                     </div>
                 </div>
 
-                <!-- Fish.audio Custom Voices -->
+                    <h2 class="text-2xl font-bold mb-4">Fish.audio Custom Voices</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🐟 Fish.audio Custom Voices</h2>
+                    <h2 class="text-2xl font-bold mb-4">Fish.audio Custom Voices</h2>
                     <p class="text-gray-400 text-sm mb-4">Add your own Fish.audio custom voice models by reference ID</p>
 
                     <div class="space-y-4">
                         <!-- Add Custom Voice Form -->
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
-                            <h3 class="text-lg font-semibold mb-3">➕ Add New Custom Voice</h3>
+                                <h3 class="text-lg font-semibold mb-3">Add New Custom Voice</h3>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                                 <div>
                                     <label class="block text-sm font-medium mb-2">Voice Name *</label>
@@ -575,19 +749,18 @@
                                     <select id="fishCustomVoiceLang" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm">
                                         <option value="de">Deutsch (German)</option>
                                         <option value="en">English</option>
-                                        <option value="es">Español (Spanish)</option>
-                                        <option value="fr">Français (French)</option>
+                                <option value="es">Español (Spanish)</option>
+                                <option value="fr">Français (French)</option>
                                         <option value="it">Italiano (Italian)</option>
-                                        <option value="pt">Português (Portuguese)</option>
-                                        <option value="ja">日本語 (Japanese)</option>
-                                        <option value="ko">한국어 (Korean)</option>
-                                        <option value="zh">中文 (Chinese)</option>
-                                        <option value="ru">Русский (Russian)</option>
+                                <option value="pt">Português (Portuguese)</option>
+                                <option value="ja">日本語 (Japanese)</option>
+                                <option value="ko">한국어 (Korean)</option>
+                                <option value="zh">中文 (Chinese)</option>
+                                <option value="ru">Русский (Russian)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <button id="addFishCustomVoiceBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition text-sm">
-                                        ➕ Add Voice
+                                        Add Voice
                                     </button>
                                 </div>
                             </div>
@@ -603,11 +776,11 @@
 
                         <!-- Help Text -->
                         <div class="bg-blue-900/20 border border-blue-500/30 rounded p-3 mt-4">
-                            <p class="text-sm text-gray-300 mb-2"><strong>💡 How to find Fish.audio voice IDs:</strong></p>
+                            <p class="text-sm text-gray-300 mb-2"><strong>How to find Fish.audio voice IDs:</strong></p>
                             <ol class="text-xs text-gray-400 space-y-1 ml-4 list-decimal">
                                 <li>Go to <a href="https://fish.audio/discovery" target="_blank" class="text-blue-400 hover:text-blue-300 underline">fish.audio/discovery</a></li>
                                 <li>Find a voice you like and click on it</li>
-                                <li>Look in the URL: <code class="bg-gray-800 px-1 py-0.5 rounded text-xs">fish.audio/model/<strong class="text-blue-400">[reference_id]</strong></code></li>
+                                <li>Look in the URL: <code class="bg-gray-800 px-1 py-0.5 rounded text-xs">fish.audio/model/<strong class="text-blue-400">reference_id]</strong></code></li>
                                 <li>Copy the 32-character hexadecimal ID and paste it above</li>
                             </ol>
                             <p class="text-xs text-gray-500 mt-2 italic">Alternatively, you can use voice IDs directly in the "Default Voice" field without adding them here.</p>
@@ -615,9 +788,9 @@
                     </div>
                 </div>
 
-                <!-- Rate Limiting & Queue -->
+                    <h2 class="text-2xl font-bold mb-4">Rate Limiting & Queue</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">⏱️ Rate Limiting & Queue</h2>
+                    <h2 class="text-2xl font-bold mb-4">Rate Limiting & Queue</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -642,9 +815,9 @@
                     </div>
                 </div>
 
-                <!-- Profanity Filter -->
+                    <h2 class="text-2xl font-bold mb-4">Profanity Filter</h2>
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🚫 Profanity Filter</h2>
+                    <h2 class="text-2xl font-bold mb-4">Profanity Filter</h2>
 
                     <div class="space-y-4">
                         <div>
@@ -658,27 +831,25 @@
                     </div>
                 </div>
 
-                <!-- API Keys Notice -->
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6 shadow-xl lg:col-span-2">
-                    <h2 class="text-2xl font-bold mb-4">🔑 API Keys</h2>
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                     <div class="flex items-start gap-4">
                         <div class="flex-shrink-0 mt-1">
                             <i class="fas fa-info-circle text-blue-400 text-2xl"></i>
                         </div>
                         <div>
                             <p class="text-gray-300 mb-3">
-                                <strong>API keys are now managed in the global Settings panel.</strong>
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                             </p>
-                            <p class="text-gray-400 text-sm mb-4">
-                                To configure your TTS engine API keys (Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), please go to:
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                             </p>
                             <ol class="text-gray-400 text-sm space-y-2 mb-4">
-                                <li>1. Click <strong>Settings</strong> in the left sidebar</li>
-                                <li>2. Scroll down to the <strong>"API Keys"</strong> section</li>
-                                <li>3. Enter your API keys and click <strong>Save</strong></li>
+                                <li>1. Click <strong>Settings</strong>in the left sidebar</li>
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                             </ol>
-                            <p class="text-gray-500 text-xs italic">
-                                This centralized approach makes it easier to manage all your API keys in one place.
+                    <h2 class="text-2xl font-bold mb-4">API Keys</h2>
                             </p>
                         </div>
                     </div>
@@ -687,8 +858,7 @@
             </div>
 
             <div class="mt-6">
-                <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">
-                    💾 Save Configuration
+                <button id="saveConfigBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">Save Configuration
                 </button>
             </div>
         </div>
@@ -697,7 +867,7 @@
         <div id="content-event-triggers" class="tab-content hidden">
             <!-- Basic Event TTS Settings -->
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
-                <h2 class="text-2xl font-bold mb-4">🎉 Event TTS - Automatische Event-Ansagen</h2>
+                <h2 class="text-2xl font-bold mb-4">Event TTS - Automatische Event-Ansagen</h2>
                 <p class="text-gray-400 text-sm mb-4">TikTok Events automatisch vorlesen lassen (Gifts, Follows, Shares, etc.)</p>
 
                 <div class="space-y-6">
@@ -717,9 +887,9 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Volume -->
                             <div>
-                                <label class="block text-sm font-medium mb-2">Lautstärke: <span id="eventTTSVolumeValue">80</span>%</label>
+                                <label class="block text-sm font-medium mb-2">Lautstärke: <span id="eventTTSVolumeValue">50%</span></label>
                                 <input type="range" id="eventTTSVolume" min="0" max="100" value="80" class="w-full">
-                                <p class="text-xs text-gray-400 mt-1">Unabhängig von Chat-TTS Lautstärke</p>
+                                <label class="block text-sm font-medium mb-2">Lautstärke: <span id="eventTTSVolumeValue">50%</span></label>
                             </div>
 
                             <!-- Voice Selection -->
@@ -732,10 +902,10 @@
                                 <p class="text-xs text-gray-400 mt-1">Leer = Default Voice nutzen</p>
                             </div>
 
-                            <!-- Priority -->
+                                    <label for="eventTTSPriority" class="text-sm">Priorität über Chat-TTS</label>
                             <div class="flex flex-col space-y-2">
                                 <div class="flex items-center space-x-2">
-                                    <input type="checkbox" id="eventTTSPriority" class="w-4 h-4">
+                                    <label for="eventTTSPriority" class="text-sm">Priorität über Chat-TTS</label>
                                     <label for="eventTTSPriority" class="text-sm">Priorität über Chat-TTS</label>
                                 </div>
                                 <p class="text-xs text-gray-400">Events werden vor Chat-Nachrichten abgespielt</p>
@@ -750,10 +920,10 @@
 
                     <!-- Event Type Settings -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- Gift Events -->
+                                <h3 class="text-md font-semibold">Gift Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">🎁 Gift Events</h3>
+                                <h3 class="text-md font-semibold">Gift Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSGiftEnabled" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -776,17 +946,16 @@
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testGiftBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testGiftBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Follow Events -->
+                                <h3 class="text-md font-semibold">Follow Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">👥 Follow Events</h3>
+                                <h3 class="text-md font-semibold">Follow Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSFollowEnabled" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -803,17 +972,16 @@
                                     <input type="number" id="eventTTSFollowCooldown" value="5" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testFollowBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testFollowBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Share Events -->
+                                <h3 class="text-md font-semibold">Share Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">📤 Share Events</h3>
+                                <h3 class="text-md font-semibold">Share Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSShareEnabled" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -830,17 +998,16 @@
                                     <input type="number" id="eventTTSShareCooldown" value="10" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testShareBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testShareBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Subscribe Events -->
+                                <h3 class="text-md font-semibold">Subscribe Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">⭐ Subscribe Events</h3>
+                                <h3 class="text-md font-semibold">Subscribe Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSSubscribeEnabled" class="sr-only peer" checked>
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -857,17 +1024,16 @@
                                     <input type="number" id="eventTTSSubscribeCooldown" value="0" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testSubscribeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testSubscribeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Like Events -->
+                                <h3 class="text-md font-semibold">Like Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">❤️ Like Events</h3>
+                                <h3 class="text-md font-semibold">Like Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSLikeEnabled" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -890,17 +1056,16 @@
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testLikeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testLikeBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Join Events -->
+                                <h3 class="text-md font-semibold">Join Events</h3>
                         <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-md font-semibold">🚪 Join Events</h3>
+                                <h3 class="text-md font-semibold">Join Events</h3>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="eventTTSJoinEnabled" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -917,8 +1082,7 @@
                                     <input type="number" id="eventTTSJoinCooldown" value="60" min="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                 </div>
                                 <div class="mt-2">
-                                    <button id="testJoinBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">
-                                        🧪 Test
+                                    <button id="testJoinBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded transition">Test
                                     </button>
                                 </div>
                             </div>
@@ -929,15 +1093,14 @@
 
             <!-- Advanced Features Section -->
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
-                <h2 class="text-2xl font-bold mb-4">⚡ Advanced Event Triggers</h2>
+                <h2 class="text-2xl font-bold mb-4">Advanced Event Triggers</h2>
                 <p class="text-gray-400 text-sm mb-4">Erweiterte Trigger-Funktionen für spezielle Event-Szenarien</p>
 
                 <div class="space-y-6">
-                    <!-- Tiered Gift TTS -->
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold">🎯 Tiered Gift TTS</h3>
+                                <h3 class="text-lg font-semibold">Tiered Gift TTS</h3>
                                 <p class="text-sm text-gray-400">Unterschiedliche TTS-Nachrichten je nach Gift-Wert (4 Stufen)</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -946,7 +1109,7 @@
                             </label>
                         </div>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 2xl:grid-cols-2 gap-4">
                             <!-- Tier 1 -->
                             <div class="bg-gray-800/50 rounded p-3 border border-gray-600">
                                 <div class="flex items-center justify-between mb-2">
@@ -1007,7 +1170,7 @@
                                 <div class="space-y-2">
                                     <div>
                                         <label class="block text-xs font-medium mb-1">Template</label>
-                                        <input type="text" id="tier3Template" value="Wow! {username} schenkt {giftName}! Das ist großzügig!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
+                                        <input type="text" id="tier3Template" value="Wow! {username} schenkt {giftName}! Das ist groÃƒÅ¸zÃƒÂ¼gig!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium mb-1">Voice (optional)</label>
@@ -1031,7 +1194,7 @@
                                 <div class="space-y-2">
                                     <div>
                                         <label class="block text-xs font-medium mb-1">Template</label>
-                                        <input type="text" id="tier4Template" value="UNGLAUBLICH! {username} schenkt {giftName} für {coins} Coins! WAHNSINN!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
+                                        <input type="text" id="tier4Template" value="UNGLAUBLICH! {username} schenkt {giftName} fÃƒÂ¼r {coins} Coins! WAHNSINN!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium mb-1">Voice (optional)</label>
@@ -1046,11 +1209,11 @@
                         <p class="text-xs text-gray-400 mt-3">Variablen: {username}, {nickname}, {giftName}, {giftCount}, {coins}</p>
                     </div>
 
-                    <!-- Specific Gift Name Triggers -->
+                                <h3 class="text-lg font-semibold">Specific Gift Name Triggers</h3>
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold">🎁 Specific Gift Name Triggers</h3>
+                                <h3 class="text-lg font-semibold">Specific Gift Name Triggers</h3>
                                 <p class="text-sm text-gray-400">Spezielle TTS-Nachrichten für bestimmte Gift-Namen</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -1063,17 +1226,16 @@
                             <!-- Dynamic gift rules will be added here -->
                         </div>
 
-                        <button id="addGiftRuleBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm transition">
-                            ➕ Add Gift Rule
+                            Add Gift Rule
                         </button>
                         <p class="text-xs text-gray-400 mt-3">Variablen: {username}, {nickname}, {giftName}, {giftCount}, {coins}</p>
                     </div>
 
-                    <!-- Gift Combo Streak -->
+                                <h3 class="text-lg font-semibold">Gift Combo Streak</h3>
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold">🔥 Gift Combo Streak</h3>
+                                <h3 class="text-lg font-semibold">Gift Combo Streak</h3>
                                 <p class="text-sm text-gray-400">TTS bei mehreren Gifts vom selben User in kurzer Zeit</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -1086,12 +1248,12 @@
                             <div>
                                 <label class="block text-sm font-medium mb-2">Threshold (Gifts)</label>
                                 <input type="number" id="comboStreakThreshold" value="3" min="2" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
-                                <p class="text-xs text-gray-400 mt-1">Anzahl Gifts für Combo</p>
+                                        <p class="text-xs text-gray-400 mt-1">Anzahl Gifts für Combo</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-2">Time Window (Sekunden)</label>
                                 <input type="number" id="comboStreakTimeWindow" value="30" min="5" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
-                                <p class="text-xs text-gray-400 mt-1">Zeitfenster für Combo</p>
+                                        <p class="text-xs text-gray-400 mt-1">Zeitfenster für Combo</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-2">Voice (optional)</label>
@@ -1108,12 +1270,12 @@
                         </div>
                     </div>
 
-                    <!-- Top Gifter Announcement -->
+                                <h3 class="text-lg font-semibold">Top Gifter Announcement</h3>
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold">🏆 Top Gifter Announcement</h3>
-                                <p class="text-sm text-gray-400">Ansage des Top-Gifters (manuell über Button)</p>
+                                <h3 class="text-lg font-semibold">Top Gifter Announcement</h3>
+                                <p class="text-sm text-gray-400">Ansage des Top-Gifters (manuell über Events)</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="topGifterEnabled" class="sr-only peer">
@@ -1124,7 +1286,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Template</label>
-                                <input type="text" id="topGifterTemplate" value="Unser Top Gifter ist {username} mit {totalCoins} Coins! Danke für die Unterstützung!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
+                                <input type="text" id="topGifterTemplate" value="Unser Top Gifter ist {username} mit {totalCoins} Coins! Danke fÃƒÂ¼r die UnterstÃƒÂ¼tzung!" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm">
                                 <p class="text-xs text-gray-400 mt-1">Variablen: {username}, {nickname}, {totalCoins}, {giftCount}</p>
                             </div>
                             <div>
@@ -1136,8 +1298,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <button id="announceTopGifterBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition">
-                                📢 Announce Top Gifter
+                                Announce Top Gifter
                             </button>
                         </div>
                     </div>
@@ -1145,14 +1306,13 @@
                     <!-- Top-N Gifter TTS Access -->
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600 mt-4">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-md font-semibold">🏆 Top-Gifter TTS-Zugang</h3>
+                            <h3 class="text-md font-semibold">Top-Gifter TTS-Zugang</h3>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="topGifterTTSAccessEnabled" class="sr-only peer">
                                 <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                             </label>
                         </div>
-                        <p class="text-xs text-gray-400 mb-3">
-                            Nur die Top-N Schenker der Session erhalten Zugang zum Chat-TTS. Wird beim Stream-Start zurückgesetzt.
+                        <p class="text-xs text-gray-400 mb-3">Nur die Top-N Schenker der Session erhalten Zugang zum Chat-TTS. Wird beim Stream-Start zurÃƒÂ¼ckgesetzt.
                             Blacklistete User werden weiterhin blockiert.
                         </p>
                         <div class="grid grid-cols-2 gap-4">
@@ -1161,25 +1321,24 @@
                                 <input type="number" id="topGifterTTSAccessTopN"
                                        class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white text-sm"
                                        min="1" max="100" value="3" placeholder="3">
-                                <p class="text-xs text-gray-400 mt-1">z.B. 3 = nur Top 3 Schenker dürfen TTS nutzen</p>
+                                <p class="text-xs text-gray-400 mt-1">z.B. 3 = nur Top 3 Schenker dÃƒÂ¼rfen TTS nutzen</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-1">Aktuelle Top-Gifter (Live)</label>
                                 <div id="topGifterTTSLiveList" class="bg-gray-800 rounded p-2 text-xs text-gray-300 min-h-[60px]">
                                     <span class="text-gray-500">Noch keine Gifter in dieser Session.</span>
                                 </div>
-                                <button id="refreshTopGifterListBtn" class="mt-1 text-xs text-purple-400 hover:text-purple-300">
-                                    🔄 Aktualisieren
+                                    Aktualisieren
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Periodic Reminder -->
+                                <h3 class="text-lg font-semibold">Periodic Reminder</h3>
                     <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold">⏰ Periodic Reminder</h3>
+                                <h3 class="text-lg font-semibold">Periodic Reminder</h3>
                                 <p class="text-sm text-gray-400">Automatische TTS-Nachrichten in festgelegten Intervallen</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -1208,8 +1367,7 @@
                             <div id="periodicReminderMessagesList" class="space-y-2 mb-2">
                                 <!-- Dynamic message list will be added here -->
                             </div>
-                            <button id="addPeriodicReminderMessageBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm transition">
-                                ➕ Add Message
+                                Add Message
                             </button>
                         </div>
                         <p class="text-xs text-gray-400">Nachrichten werden in der Reihenfolge durchrotiert</p>
@@ -1218,17 +1376,16 @@
             </div>
 
             <div class="mt-6">
-                <button id="saveEventTriggersBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition">
-                    💾 Save Event Triggers
+                    Save Event Triggers
                 </button>
             </div>
         </div>
 
         <!-- User Management Tab -->
         <div id="content-users" class="tab-content hidden">
-            <!-- Manual Voice Assignment -->
+                <h2 class="text-2xl font-bold mb-4">Manual Voice Assignment</h2>
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
-                <h2 class="text-2xl font-bold mb-4">🎤 Manual Voice Assignment</h2>
+                <h2 class="text-2xl font-bold mb-4">Manual Voice Assignment</h2>
                 <p class="text-gray-400 text-sm mb-4">Assign a voice to a user directly by entering their username</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1262,8 +1419,7 @@
                     </div>
 
                     <div class="flex items-end">
-                        <button id="assignManualVoiceBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition">
-                            Assign Voice
+                <h2 class="text-2xl font-bold">Assign Voice</h2>
                         </button>
                     </div>
                 </div>
@@ -1272,13 +1428,34 @@
             <!-- User List -->
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">👥 User Management</h2>
+                    <h2 class="text-2xl font-bold">User Management</h2>
                     <div class="space-x-2">
                         <button data-filter="all" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">All</button>
                         <button data-filter="whitelisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Whitelisted</button>
                         <button data-filter="blacklisted" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Blacklisted</button>
                         <button data-filter="voice_assigned" class="filter-btn px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">Voice Assigned</button>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+                    <div class="lg:col-span-2">
+                        <label class="block text-sm font-medium mb-2" for="userSearchInput">Search Users</label>
+                        <input id="userSearchInput" type="search" placeholder="Search by username or user ID..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2" for="userResultsLimit">Results Limit</label>
+                        <select id="userResultsLimit" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="25">25 users</option>
+                            <option value="50" selected>50 users</option>
+                            <option value="100">100 users</option>
+                            <option value="250">250 users</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 mb-4 text-sm text-gray-400">
+                    <div id="userResultsInfo">Loading users...</div>
+                    <button id="refreshUsersBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm">Refresh</button>
                 </div>
 
                 <div id="userList" class="space-y-2">
@@ -1289,10 +1466,10 @@
 
         <!-- Queue Tab -->
         <div id="content-queue" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">📋 Current Queue</h2>
+                        <h2 class="text-2xl font-bold">Current Queue</h2>
                         <button id="clearQueueBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Clear Queue</button>
                     </div>
 
@@ -1302,23 +1479,20 @@
                 </div>
 
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">🎵 Now Playing</h2>
+                    <h2 class="text-2xl font-bold mb-4">Now Playing</h2>
 
-                    <div id="nowPlaying" class="text-center text-gray-400">
-                        No audio playing
+                    <div id="nowPlaying" class="text-center text-gray-400">No audio playing
                     </div>
 
                     <div class="mt-6">
-                        <button id="skipCurrentBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
-                            ⏭️ Skip Current
+                        <button id="skipCurrentBtn" class="w-full tts-btn-warning bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-4 rounded">Skip Current
                         </button>
                     </div>
 
                     <div class="mt-6">
-                        <h3 class="text-xl font-bold mb-2">🎤 Test TTS</h3>
+                        <h3 class="text-xl font-bold mb-2">Test TTS</h3>
                         <input type="text" id="testText" placeholder="Enter test text..." class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 mb-2">
-                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                            🔊 Speak
+                        <button id="testTTSBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Speak
                         </button>
                     </div>
                 </div>
@@ -1327,10 +1501,10 @@
 
         <!-- Statistics Tab -->
         <div id="content-stats" class="tab-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
                 <!-- Queue Stats -->
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h3 class="text-lg font-bold mb-4">📊 Queue Statistics</h3>
+                    <h3 class="text-lg font-bold mb-4">Queue Statistics</h3>
                     <div id="queueStats" class="space-y-2">
                         <!-- Populated dynamically -->
                     </div>
@@ -1338,7 +1512,7 @@
 
                 <!-- Permission Stats -->
                 <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                    <h3 class="text-lg font-bold mb-4">🔒 Permission Statistics</h3>
+                    <h3 class="text-lg font-bold mb-4">Permission Statistics</h3>
                     <div id="permissionStats" class="space-y-2">
                         <!-- Populated dynamically -->
                     </div>
@@ -1351,13 +1525,13 @@
         <div id="content-debug" class="tab-content hidden">
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl mb-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">🐛 Debug Logs - Live TTS Pipeline Tracking</h2>
+                    <h2 class="text-2xl font-bold">Debug Logs - Live TTS Pipeline Tracking</h2>
                     <div class="flex items-center space-x-2">
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" id="autoScrollLogs" checked class="w-4 h-4">
                             <span class="text-sm">Auto-scroll</span>
                         </label>
-                        <button id="clearLogsBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Clear Logs</button>
+                        <button id="clearLogsBtn" class="tts-btn-warning bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-2 px-4 rounded">Clear Logs</button>
                         <button id="toggleDebugBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                             <span id="debugToggleText">Disable Debug</span>
                         </button>
@@ -1409,35 +1583,35 @@
 
             <!-- Help Section -->
             <div class="bg-gray-800 rounded-lg p-6 shadow-xl">
-                <h3 class="text-xl font-bold mb-3">📖 Debug Log Categories</h3>
+                <h3 class="text-xl font-bold mb-3">Debug Log Categories</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                        <strong class="text-blue-400">INIT:</strong> Plugin initialization events
+                        <strong class="text-blue-400">INIT:</strong>Plugin initialization events
                     </div>
                     <div>
-                        <strong class="text-purple-400">TIKTOK_EVENT:</strong> TikTok chat messages received
+                        <strong class="text-purple-400">TIKTOK_EVENT:</strong>TikTok chat messages received
                     </div>
                     <div>
-                        <strong class="text-green-400">SPEAK_START:</strong> speak() method called
+                        <strong class="text-green-400">SPEAK_START:</strong>speak() method called
                     </div>
                     <div>
-                        <strong class="text-yellow-400">SPEAK_STEP1-6:</strong> Each pipeline step (permissions, profanity, validation, voice selection, synthesis, queue)
+                        <strong class="text-yellow-400">SPEAK_STEP1-6:</strong>Each pipeline step (permissions, profanity, validation, voice selection, synthesis, queue)
                     </div>
                     <div>
-                        <strong class="text-green-500">SPEAK_SUCCESS:</strong> TTS successfully queued
+                        <strong class="text-green-500">SPEAK_SUCCESS:</strong>TTS successfully queued
                     </div>
                     <div>
-                        <strong class="text-red-400">SPEAK_DENIED:</strong> TTS request denied (permissions/rate limit)
+                        <strong class="text-red-400">SPEAK_DENIED:</strong>TTS request denied (permissions/rate limit)
                     </div>
                     <div>
-                        <strong class="text-red-600">SPEAK_ERROR:</strong> Errors during processing
+                        <strong class="text-red-600">SPEAK_ERROR:</strong>Errors during processing
                     </div>
                     <div>
-                        <strong class="text-cyan-400">PLAYBACK:</strong> Audio playback events
+                        <strong class="text-cyan-400">PLAYBACK:</strong>Audio playback events
                     </div>
                 </div>
                 <div class="mt-4 p-3 bg-gray-900 rounded">
-                    <strong class="text-yellow-500">💡 Tip:</strong> If TTS works in test mode but not live, check for TIKTOK_EVENT logs. If missing, the TikTok integration isn't receiving events. If present but no SPEAK_START, permission checks may be blocking.
+                    <strong class="text-yellow-500">Tip:</strong>If TTS works in test mode but not live, check the event mapping and queue state.
                 </div>
             </div>
         </div>
@@ -1447,8 +1621,8 @@
     <div id="voiceAssignmentModal" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center hidden" style="z-index: 2000;">
         <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto relative" tabindex="-1">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">🎤 Assign Voice</h2>
-                <button id="modalCloseX" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                <h2 class="text-2xl font-bold">Assign Voice</h2>
+                <button id="modalCloseX" class="text-gray-400 hover:text-white text-2xl">times;</button>
             </div>
 
             <div class="mb-4">
@@ -1470,34 +1644,33 @@
 
             <!-- Emotion Selection (Speechify only) -->
             <div id="modalEmotionContainer" class="mb-4" style="display: none;">
-                <label class="block text-sm font-bold mb-2">🎭 Emotion (Speechify only)</label>
+                <label class="block text-sm font-bold mb-2">Emotion (Speechify only)</label>
                 <select id="modalEmotion" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
                     <option value="">None (Neutral)</option>
-                    <option value="angry">😡 Angry</option>
-                    <option value="cheerful">😄 Cheerful</option>
-                    <option value="sad">😢 Sad</option>
-                    <option value="terrified">😱 Terrified</option>
-                    <option value="relaxed">😌 Relaxed</option>
-                    <option value="fearful">😰 Fearful</option>
-                    <option value="surprised">😲 Surprised</option>
-                    <option value="calm">😊 Calm</option>
-                    <option value="assertive">💪 Assertive</option>
-                    <option value="energetic">⚡ Energetic</option>
-                    <option value="warm">❤️ Warm</option>
-                    <option value="direct">➡️ Direct</option>
-                    <option value="bright">☀️ Bright</option>
+                    <option value="angry">Angry</option>
+                    <option value="cheerful">Cheerful</option>
+                    <option value="sad">Sad</option>
+                    <option value="terrified">Terrified</option>
+                    <option value="relaxed">Relaxed</option>
+                    <option value="fearful">Fearful</option>
+                    <option value="surprised">Surprised</option>
+                    <option value="calm">Calm</option>
+                    <option value="assertive">Assertive</option>
+                    <option value="energetic">Energetic</option>
+                    <option value="warm">Warm</option>
+                    <option value="direct">Direct</option>
+                    <option value="bright">Bright</option>
                 </select>
             </div>
 
             <!-- Volume Gain Control -->
             <div class="mb-4">
-                <label class="block text-sm font-bold mb-2">🔊 Volume Gain (0-300%)</label>
+                <label class="block text-sm font-bold mb-2">Volume Gain (0-300%)</label>
                 <div class="flex items-center gap-4">
                     <input type="range" id="modalVolumeGainSlider" min="0" max="300" step="5" value="100" class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     <input type="number" id="modalVolumeGainInput" min="0" max="300" step="1" value="100" class="w-20 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-center">
                     <span class="text-gray-400">%</span>
-                    <button id="modalVolumeGainReset" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm">
-                        Reset
+                    <button id="modalVolumeGainReset" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm">Reset
                     </button>
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Adjust volume for this user (100% = normal, 300% = maximum)</p>
@@ -1516,11 +1689,9 @@
             </div>
 
             <div class="flex justify-end space-x-3">
-                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
-                    Cancel
+                <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Cancel
                 </button>
-                <button id="confirmVoiceAssignment" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                    Assign Voice
+                <h2 class="text-2xl font-bold">Assign Voice</h2>
                 </button>
             </div>
         </div>
@@ -1530,17 +1701,13 @@
     <script src="/js/i18n-client.js"></script>
     <script src="/js/theme-manager.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // Initialize i18n before loading TTS admin
-        (async () => {
-            if (typeof I18nClient !== 'undefined') {
+    <script>Initialize i18n before loading TTS admin
+        (async () =>if (typeof I18nClient !== 'undefined') {
                 window.i18n = new I18nClient();
                 await window.i18n.init();
                 
                 // Apply translations to elements with data-i18n attributes
-                const applyTranslations = () => {
-                    document.querySelectorAll('[data-i18n]').forEach(el => {
-                        const key = el.getAttribute('data-i18n');
+                const applyTranslations = () =>document.querySelectorAll('[data-i18n]').forEach(el =>const key = el.getAttribute('data-i18n');
                         const translation = window.i18n.t(key);
                         if (translation !== key) {
                             // For input placeholders
@@ -1559,15 +1726,16 @@
                 applyTranslations();
                 
                 // Re-apply when language changes
-                window.i18n.onLanguageChange(() => {
-                    applyTranslations();
+                window.i18n.onLanguageChange(() =>applyTranslations();
                 });
                 
-                console.log('✅ TTS Admin Panel: i18n initialized');
+            console.log('TTS Admin Panel: i18n initialized');
             }
         })();
     </script>
     <script src="/plugins/tts/ui/tts-admin-production.js"></script>
 </body>
 </html>
+
+
 

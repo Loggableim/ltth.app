@@ -1,55 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎮 Viewer XP & Leaderboard - Admin Panel</title>
+  <title>Viewer XP & Leaderboard - Admin Panel</title>
+  <title>ðŸŽ® Viewer XP & Leaderboard - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
-  <script>
-    (function() {
-      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
-
-      function readTheme() {
-        try {
-          if (window.parent && window.parent !== window) {
-            const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
-            if (validThemes.has(parentTheme)) return parentTheme;
-          }
-        } catch (error) {}
-
-        try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
-            const value = localStorage.getItem(key);
-            if (validThemes.has(value)) return value;
-          }
-        } catch (error) {}
-
-        return 'night';
-      }
-
-      function syncTheme() {
-        const theme = readTheme();
-        document.documentElement.setAttribute('data-theme', theme);
-        document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
-      }
-
-      syncTheme();
-      window.addEventListener('focus', syncTheme);
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) syncTheme();
-      });
-
-      try {
-        if (window.parent && window.parent !== window) {
-          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-          });
-        }
-      } catch (error) {}
-    })();
-  </script>
   <link href="/css/vendor/bootstrap.min.css" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,7 +42,14 @@
       margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+    }
+
+    .sidebar-brand-logo {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      flex-shrink: 0;
+      -webkit-text-fill-color: initial;
     }
 
     .sidebar-subtitle {
@@ -671,41 +634,8 @@
 
       .sidebar {
         width: 100%;
-        padding: 16px 14px;
         border-right: none;
         border-bottom: 1px solid var(--color-border);
-      }
-
-      .sidebar-logo {
-        font-size: 1.25rem;
-        margin-bottom: 4px;
-      }
-
-      .sidebar-subtitle {
-        margin-bottom: 16px;
-      }
-
-      .sidebar nav {
-        display: grid;
-        gap: 12px;
-      }
-
-      .nav-section {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        margin-bottom: 0;
-      }
-
-      .nav-section-title {
-        grid-column: 1 / -1;
-        margin-bottom: 4px;
-      }
-
-      .nav-item {
-        margin-bottom: 0;
-        padding: 10px 12px;
-        font-size: 0.92rem;
       }
 
       .main-content {
@@ -714,57 +644,6 @@
 
       .stats-grid {
         grid-template-columns: 1fr;
-      }
-
-      html[data-theme="vision-impaired"] .sidebar {
-        width: 100% !important;
-        padding: 16px 14px !important;
-      }
-
-      html[data-theme="vision-impaired"] .sidebar-logo {
-        font-size: 1.3rem !important;
-        margin-bottom: 4px !important;
-      }
-
-      html[data-theme="vision-impaired"] .sidebar-subtitle {
-        font-size: 0.95rem !important;
-        margin-bottom: 16px !important;
-      }
-
-      html[data-theme="vision-impaired"] .sidebar nav {
-        display: grid !important;
-        gap: 12px !important;
-      }
-
-      html[data-theme="vision-impaired"] .nav-section {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px !important;
-        margin-bottom: 0 !important;
-      }
-
-      html[data-theme="vision-impaired"] .nav-section-title {
-        grid-column: 1 / -1 !important;
-        margin-bottom: 4px !important;
-      }
-
-      html[data-theme="vision-impaired"] .nav-item {
-        margin-bottom: 0 !important;
-        padding: 10px 12px !important;
-        font-size: 0.92rem !important;
-        min-height: auto !important;
-      }
-
-      html[data-theme="vision-impaired"] .main-content {
-        padding: 16px !important;
-      }
-
-      html[data-theme="vision-impaired"] .page-title {
-        font-size: 1.8rem !important;
-      }
-
-      html[data-theme="vision-impaired"] .stat-card {
-        padding: 18px !important;
       }
     }
 
@@ -848,181 +727,6 @@
       background: var(--color-bg-tertiary);
       color: var(--color-text-secondary);
     }
-
-    html[data-theme="day"] body {
-      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
-      color: #10203a;
-    }
-
-    html[data-theme="night"] body {
-      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
-      color: #e5e7eb;
-    }
-
-    html[data-theme="contrast"] body,
-    html[data-theme="vision-impaired"] body {
-      background: #000;
-      color: #fff;
-    }
-
-    html[data-theme="contrast"] .sidebar,
-    html[data-theme="vision-impaired"] .sidebar,
-    html[data-theme="contrast"] .card,
-    html[data-theme="vision-impaired"] .card,
-    html[data-theme="contrast"] .stat-card,
-    html[data-theme="vision-impaired"] .stat-card {
-      background: #000;
-      color: #fff;
-      border-color: #facc15;
-    }
-
-    html[data-theme="vision-impaired"] .sidebar-logo,
-    html[data-theme="vision-impaired"] .page-title,
-    html[data-theme="vision-impaired"] .stat-card-value,
-    html[data-theme="vision-impaired"] .card-header,
-    html[data-theme="vision-impaired"] .nav-item.active {
-      color: #facc15;
-      -webkit-text-fill-color: currentColor;
-      background: none;
-    }
-
-    html[data-theme="vision-impaired"] .sidebar {
-      width: 320px;
-      padding: 28px 22px;
-    }
-
-    html[data-theme="vision-impaired"] .sidebar-logo {
-      font-size: 1.8rem;
-      line-height: 1.1;
-    }
-
-    html[data-theme="vision-impaired"] .sidebar-subtitle {
-      font-size: 1rem;
-      color: #fff7cc;
-      margin-bottom: 40px;
-    }
-
-    html[data-theme="vision-impaired"] .nav-section-title {
-      color: #facc15;
-      font-size: 0.85rem;
-      letter-spacing: 0.08em;
-    }
-
-    html[data-theme="vision-impaired"] .nav-item {
-      padding: 14px 16px;
-      font-size: 1rem;
-      min-height: 52px;
-    }
-
-    html[data-theme="vision-impaired"] .main-content {
-      padding: 36px;
-    }
-
-    html[data-theme="vision-impaired"] .page-title {
-      font-size: 2.5rem;
-      line-height: 1.05;
-    }
-
-    html[data-theme="vision-impaired"] .page-description {
-      font-size: 1.12rem;
-      color: #fff7cc;
-    }
-
-    html[data-theme="vision-impaired"] .stat-card {
-      background: #050505;
-      border: 3px solid #facc15;
-      padding: 28px;
-      box-shadow: none;
-    }
-
-    html[data-theme="vision-impaired"] .stat-card-icon {
-      font-size: 2.4rem;
-    }
-
-    html[data-theme="vision-impaired"] .stat-card-value {
-      font-size: 2.35rem;
-      line-height: 1;
-    }
-
-    html[data-theme="vision-impaired"] .stat-card-label,
-    html[data-theme="vision-impaired"] .stat-card-change,
-    html[data-theme="vision-impaired"] .form-text,
-    html[data-theme="vision-impaired"] .empty-state-description {
-      font-size: 0.98rem;
-      color: #fff7cc;
-    }
-
-    html[data-theme="vision-impaired"] .card {
-      background: #050505;
-      border: 3px solid #facc15;
-      box-shadow: none;
-      margin-bottom: 28px;
-    }
-
-    html[data-theme="vision-impaired"] .card-header {
-      background: #000;
-      border-bottom: 3px solid #facc15;
-      padding: 20px 28px;
-      font-size: 1.2rem;
-    }
-
-    html[data-theme="vision-impaired"] .card-body {
-      padding: 28px;
-    }
-
-    html[data-theme="vision-impaired"] .overlay-card,
-    html[data-theme="vision-impaired"] .modal-content {
-      background: #050505;
-      border: 3px solid #facc15;
-      box-shadow: none;
-    }
-
-    html[data-theme="vision-impaired"] .nav-item,
-    html[data-theme="vision-impaired"] .btn,
-    html[data-theme="vision-impaired"] .badge {
-      border-width: 3px;
-    }
-
-    html[data-theme="vision-impaired"] .btn-warning {
-      background: #000 !important;
-      color: #facc15 !important;
-      border-color: #facc15 !important;
-      box-shadow: inset 0 0 0 1px #facc15;
-    }
-
-    html[data-theme="vision-impaired"] .btn-warning:hover {
-      background: #111 !important;
-      color: #fff7cc !important;
-      border-color: #fff7cc !important;
-    }
-
-    html[data-theme="vision-impaired"] .btn-success {
-      background: #000 !important;
-      color: #facc15 !important;
-      border-color: #facc15 !important;
-      box-shadow: inset 0 0 0 1px #facc15;
-    }
-
-    html[data-theme="vision-impaired"] .btn-success:hover {
-      background: #111 !important;
-      color: #fff7cc !important;
-      border-color: #fff7cc !important;
-    }
-
-    html[data-theme="vision-impaired"] .btn {
-      min-height: 46px;
-      font-size: 1rem;
-      font-weight: 800;
-    }
-
-    html[data-theme="vision-impaired"] .btn-sm {
-      min-height: 40px;
-      font-size: 0.92rem;
-    }
-
-    html[data-theme="vision-impaired"] .badge {
-      font-size: 0.82rem;
-    }
   </style>
 </head>
 <body>
@@ -1030,27 +734,27 @@
     <!-- Sidebar Navigation -->
     <div class="sidebar">
       <div class="sidebar-logo">
-        🎮 XP System
+        <img class="sidebar-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
       </div>
       <div class="sidebar-subtitle">Viewer Gamification & Leaderboards</div>
 
       <nav>
         <div class="nav-section">
-          <div class="nav-section-title">⭐ v2.1.0 Features</div>
+          <div class="nav-section-title">v2.1.0 Features</div>
           <a href="#" class="nav-item active" data-page="overview">
-            <span class="nav-icon">📊</span>
+            <span class="nav-icon">O</span>
             <span>Overview</span>
           </a>
           <a href="#" class="nav-item" data-page="user-detail">
-            <span class="nav-icon">👤</span>
+            <span class="nav-icon">U</span>
             <span>User Detail</span>
           </a>
           <a href="#" class="nav-item" data-page="config">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon">C</span>
             <span>Configuration</span>
           </a>
           <a href="#" class="nav-item" data-page="logs">
-            <span class="nav-icon">📝</span>
+            <span class="nav-icon">L</span>
             <span>Event Logs</span>
           </a>
         </div>
@@ -1058,11 +762,11 @@
         <div class="nav-section">
           <div class="nav-section-title">Classic Views</div>
           <a href="#" class="nav-item" data-page="dashboard">
-            <span class="nav-icon">📈</span>
+            <span class="nav-icon">D</span>
             <span>Dashboard</span>
           </a>
           <a href="#" class="nav-item" data-page="leaderboard">
-            <span class="nav-icon">🏆</span>
+            <span class="nav-icon">B</span>
             <span>Leaderboard</span>
           </a>
         </div>
@@ -1070,11 +774,11 @@
         <div class="nav-section">
           <div class="nav-section-title">OBS Overlays</div>
           <a href="#" class="nav-item" data-page="obs-panel">
-            <span class="nav-icon">🎬</span>
+            <span class="nav-icon">P</span>
             <span>OBS Panel</span>
           </a>
           <a href="#" class="nav-item" data-page="overlay-preview">
-            <span class="nav-icon">👁️</span>
+            <span class="nav-icon">V</span>
             <span>Live Preview</span>
           </a>
         </div>
@@ -1082,15 +786,15 @@
         <div class="nav-section">
           <div class="nav-section-title">XP Management</div>
           <a href="#" class="nav-item" data-page="xp-settings">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon">X</span>
             <span>XP Settings</span>
           </a>
           <a href="#" class="nav-item" data-page="level-config">
-            <span class="nav-icon">📈</span>
+            <span class="nav-icon">N</span>
             <span>Level Config</span>
           </a>
           <a href="#" class="nav-item" data-page="manual-award">
-            <span class="nav-icon">🎁</span>
+            <span class="nav-icon">A</span>
             <span>Manual Award</span>
           </a>
         </div>
@@ -1098,11 +802,11 @@
         <div class="nav-section">
           <div class="nav-section-title">Tools</div>
           <a href="#" class="nav-item" data-page="spin-settings">
-            <span class="nav-icon">🎰</span>
+            <span class="nav-icon">S</span>
             <span>Spin Wheel</span>
           </a>
           <a href="#" class="nav-item" data-page="import-export">
-            <span class="nav-icon">💾</span>
+            <span class="nav-icon">D</span>
             <span>Import/Export</span>
           </a>
         </div>
@@ -1114,7 +818,7 @@
       <!-- NEW: Overview Page (v2.1.0) -->
       <div id="page-overview" class="tab-content active">
         <div class="page-header">
-          <h1 class="page-title">📊 Overview</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">System overview with real-time statistics and leaderboard</p>
         </div>
 
@@ -1122,7 +826,7 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">👥</span>
+              <span class="stat-card-icon">Users</span>
             </div>
             <div class="stat-card-value" id="overview-total-viewers">-</div>
             <div class="stat-card-label">Total Viewers</div>
@@ -1130,7 +834,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">⭐</span>
+              <span class="stat-card-icon">XP</span>
             </div>
             <div class="stat-card-value" id="overview-total-xp">-</div>
             <div class="stat-card-label">Total XP Awarded</div>
@@ -1138,7 +842,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">📝</span>
+              <span class="stat-card-icon">Events</span>
             </div>
             <div class="stat-card-value" id="overview-total-events">-</div>
             <div class="stat-card-label">XP Events Today</div>
@@ -1146,7 +850,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">🔥</span>
+              <span class="stat-card-icon">Today</span>
             </div>
             <div class="stat-card-value" id="overview-avg-level">-</div>
             <div class="stat-card-label">Average Level</div>
@@ -1156,7 +860,7 @@
         <!-- Search Bar -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🔍</span>Search Users</span>
+            <span><span class="card-header-icon">SEARCH</span>Search Users</span>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -1169,7 +873,7 @@
         <!-- Top Leaderboard -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🏆</span>Top Viewers</span>
+            <span><span class="card-header-icon">TOP</span>Top Viewers</span>
             <select id="overview-period-filter" class="form-select" style="width: auto; padding: 6px 12px;">
               <option value="">All Time</option>
               <option value="7">Last 7 Days</option>
@@ -1201,14 +905,14 @@
       <!-- NEW: User Detail Page (v2.1.0) -->
       <div id="page-user-detail" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">👤 User Detail</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">View and manage individual user information</p>
         </div>
 
         <!-- User Search -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🔍</span>Find User</span>
+            <span><span class="card-header-icon">Find</span>Find User</span>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -1223,7 +927,7 @@
           <!-- User Profile Card -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">👤</span><span id="user-detail-username">User</span></span>
+              <span><span class="card-header-icon">User</span><span id="user-detail-username">User</span></span>
               <button id="user-detail-opt-out-toggle" class="btn btn-sm btn-warning">Toggle Opt-Out</button>
             </div>
             <div class="card-body">
@@ -1257,7 +961,7 @@
 
               <!-- Opt-Out Status -->
               <div id="user-detail-opt-out-status" class="badge badge-danger" style="display: none; margin-top: 12px;">
-                ❌ User has opted out of XP tracking
+                âŒ User has opted out of XP tracking
               </div>
             </div>
           </div>
@@ -1265,7 +969,7 @@
           <!-- Badges -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">🏆</span>Badges</span>
+              <span><span class="card-header-icon">Badges</span>Badges</span>
             </div>
             <div class="card-body" id="user-detail-badges">
               <p style="color: var(--color-text-muted);">No badges yet</p>
@@ -1275,7 +979,7 @@
           <!-- Recent Events -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📝</span>Recent XP Events</span>
+              <span><span class="card-header-icon">XP</span>Recent XP Events</span>
             </div>
             <div class="card-body">
               <table class="modern-table">
@@ -1301,14 +1005,14 @@
       <!-- NEW: Configuration Page (v2.1.0) -->
       <div id="page-config" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">⚙️ Advanced Configuration</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">Configure XP multipliers, rate limits, and system settings</p>
         </div>
 
         <!-- XP Multipliers -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⭐</span>XP Multipliers</span>
+            <span><span class="card-header-icon">XP</span>XP Multipliers</span>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -1336,7 +1040,7 @@
         <!-- Rate Limits -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🚦</span>Rate Limiting</span>
+            <span><span class="card-header-icon">Rate</span>Rate Limiting</span>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -1360,7 +1064,7 @@
         <!-- Event Caps -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🛡️</span>Event Caps (Max XP per Event)</span>
+            <span><span class="card-header-icon">Caps</span>Event Caps (Max XP per Event)</span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
@@ -1395,7 +1099,7 @@
         <!-- Streak Configuration -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🔥</span>Streak Bonuses</span>
+            <span><span class="card-header-icon">Streaks</span>Streak Bonuses</span>
           </div>
           <div class="card-body">
             <div class="form-group">
@@ -1420,7 +1124,7 @@
         <div class="card">
           <div class="card-body">
             <button id="config-save-btn" class="btn btn-primary btn-lg" style="width: 100%;">
-              💾 Save Configuration
+              ðŸ’¾ Save Configuration
             </button>
             <div id="config-save-status" style="margin-top: 12px; text-align: center;"></div>
           </div>
@@ -1430,14 +1134,14 @@
       <!-- NEW: Event Logs Page (v2.1.0) -->
       <div id="page-logs" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">📝 Event Logs</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">View and filter all XP events with full transparency</p>
         </div>
 
         <!-- Filters -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🔍</span>Filters</span>
+            <span><span class="card-header-icon">Filter</span>Filters</span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
@@ -1474,7 +1178,7 @@
             <div style="display: flex; gap: 12px; margin-top: 12px;">
               <button id="logs-apply-filter-btn" class="btn btn-primary">Apply Filters</button>
               <button id="logs-reset-filter-btn" class="btn btn-secondary">Reset</button>
-              <button id="logs-export-btn" class="btn btn-success">📥 Export to JSON</button>
+              <button id="logs-export-btn" class="btn btn-success">ðŸ“¥ Export to JSON</button>
             </div>
           </div>
         </div>
@@ -1482,7 +1186,7 @@
         <!-- Events Table -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">📊</span>Event History</span>
+            <span><span class="card-header-icon">History</span>Event History</span>
             <span id="logs-total-count" style="color: var(--color-text-muted); font-size: 0.875rem;">-</span>
           </div>
           <div class="card-body">
@@ -1510,9 +1214,9 @@
         <div class="card">
           <div class="card-body">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <button id="logs-prev-btn" class="btn btn-secondary" disabled>← Previous</button>
+              <button id="logs-prev-btn" class="btn btn-secondary" disabled>â† Previous</button>
               <span id="logs-page-info" style="color: var(--color-text-muted);">Page 1</span>
-              <button id="logs-next-btn" class="btn btn-secondary" disabled>Next →</button>
+              <button id="logs-next-btn" class="btn btn-secondary" disabled>Next â†’</button>
             </div>
           </div>
         </div>
@@ -1521,7 +1225,7 @@
       <!-- Dashboard Page -->
       <div id="page-dashboard" class="tab-content active">
         <div class="page-header">
-          <h1 class="page-title">📊 Dashboard</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">Overview of viewer engagement and XP statistics</p>
         </div>
 
@@ -1529,7 +1233,7 @@
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">👥</span>
+              <span class="stat-card-icon">Users</span>
             </div>
             <div class="stat-card-value" id="totalViewers">-</div>
             <div class="stat-card-label">Total Viewers</div>
@@ -1540,7 +1244,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">⭐</span>
+              <span class="stat-card-icon">XP</span>
             </div>
             <div class="stat-card-value" id="totalXP">-</div>
             <div class="stat-card-label">Total XP Earned</div>
@@ -1548,7 +1252,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">📊</span>
+              <span class="stat-card-icon">Events</span>
             </div>
             <div class="stat-card-value" id="avgLevel">-</div>
             <div class="stat-card-label">Average Level</div>
@@ -1556,7 +1260,7 @@
 
           <div class="stat-card">
             <div class="stat-card-header">
-              <span class="stat-card-icon">🔥</span>
+              <span class="stat-card-icon">Today</span>
             </div>
             <div class="stat-card-value" id="activeToday">-</div>
             <div class="stat-card-label">Active Today</div>
@@ -1566,21 +1270,21 @@
         <!-- Quick Actions -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚡</span>Quick Actions</span>
+            <span><span class="card-header-icon">ACT</span>Quick Actions</span>
           </div>
           <div class="card-body">
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
               <button class="btn btn-primary" data-action="navigateTo" data-arg="manual-award">
-                🎁 Award XP
+                Award XP
               </button>
               <button class="btn btn-success" data-action="navigateTo" data-arg="obs-panel">
-                🎬 Setup OBS Overlays
+                Setup OBS Overlays
               </button>
               <button class="btn btn-secondary" data-action="navigateTo" data-arg="import-export">
-                💾 Export Data
+                Export Data
               </button>
               <button class="btn btn-secondary" data-action="refreshData">
-                🔄 Refresh Stats
+                Refresh Stats
               </button>
             </div>
           </div>
@@ -1589,7 +1293,7 @@
         <!-- Recent Activity -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">📈</span>Recent Activity</span>
+            <span><span class="card-header-icon">ACTV</span>Recent Activity</span>
             <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.875rem;" id="activityFilter">
               <option value="all">All Activity</option>
               <option value="chat">Chat Messages</option>
@@ -1601,7 +1305,7 @@
           <div class="card-body">
             <div id="recentActivityContainer">
               <div class="empty-state">
-                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-icon">ACT</div>
                 <div class="empty-state-text">No recent activity</div>
                 <div class="empty-state-description">Activity will appear here as viewers interact</div>
               </div>
@@ -1613,7 +1317,7 @@
       <!-- Leaderboard Page -->
       <div id="page-leaderboard" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🏆 Leaderboard</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">Top viewers ranked by XP and engagement</p>
         </div>
 
@@ -1626,14 +1330,14 @@
                 <option value="7">Last 7 Days</option>
                 <option value="30">Last 30 Days</option>
               </select>
-              <button class="btn btn-sm btn-secondary" data-action="refreshLeaderboard">
-                🔄 Refresh
+                <button class="btn btn-sm btn-secondary" data-action="refreshLeaderboard">Refresh</button>
+                ðŸ”„ Refresh
               </button>
             </div>
           </div>
           <div class="card-body">
             <div class="search-box">
-              <span class="search-icon">🔍</span>
+              <span class="search-icon">Search</span>
               <input type="text" class="form-control" id="leaderboardSearch" placeholder="Search viewers...">
             </div>
             <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
@@ -1653,7 +1357,7 @@
                   <tr>
                     <td colspan="7">
                       <div class="empty-state">
-                        <div class="empty-state-icon">🏆</div>
+                        <div class="empty-state-icon">Trophy</div>
                         <div class="empty-state-text">Loading leaderboard...</div>
                       </div>
                     </td>
@@ -1668,12 +1372,12 @@
       <!-- OBS Panel Page -->
       <div id="page-obs-panel" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎬 OBS Overlay Panel</h1>
+          <h1 class="page-title">Overview</h1>
           <p class="page-description">Setup and manage OBS Browser Source overlays</p>
         </div>
 
         <div class="alert alert-info">
-          <span>💡</span>
+          <span>ðŸ’¡</span>
           <div>
             <strong>Quick Setup:</strong> Copy the URL below and add it as a Browser Source in OBS Studio. 
             Set width to 1920 and height according to your needs. Check "Shutdown source when not visible" for better performance.
@@ -1683,7 +1387,7 @@
         <!-- XP Bar Overlay -->
         <div class="overlay-card">
           <div class="overlay-card-title">
-            ⭐ XP Bar Overlay
+            â­ XP Bar Overlay
           </div>
           <p class="form-text" style="margin-bottom: 12px;">
             Displays real-time XP progress with animated level-ups and badges. Perfect for showing individual viewer progress.
@@ -1692,7 +1396,7 @@
           <div class="overlay-url-box">
             <span class="url-text" id="xpBarUrl">http://localhost:3000/overlay/viewer-xp/xp-bar</span>
             <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="xpBarUrl">
-              📋 Copy
+              ðŸ“‹ Copy
             </button>
           </div>
 
@@ -1712,10 +1416,10 @@
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="xpBar">
-              ✅ Update URL
+              âœ… Update URL
             </button>
             <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="xp-bar">
-              👁️ Test Overlay
+              ðŸ‘ï¸ Test Overlay
             </button>
           </div>
         </div>
@@ -1723,16 +1427,16 @@
         <!-- Leaderboard Overlay -->
         <div class="overlay-card">
           <div class="overlay-card-title">
-            🏆 Leaderboard Overlay
+            ðŸ† Leaderboard Overlay
           </div>
           <p class="form-text" style="margin-bottom: 12px;">
-            Shows top viewers ranked by XP. Combines session and all-time stats with smooth animations.
+          <p class="page-description">Top viewers ranked by XP and engagement</p>
           </p>
           
           <div class="overlay-url-box">
             <span class="url-text" id="leaderboardOverlayUrl">http://localhost:3000/overlay/viewer-xp/leaderboard</span>
             <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="leaderboardOverlayUrl">
-              📋 Copy
+              ðŸ“‹ Copy
             </button>
           </div>
 
@@ -1773,10 +1477,10 @@
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="leaderboard">
-              ✅ Update URL
+              âœ… Update URL
             </button>
             <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="leaderboard">
-              👁️ Test Overlay
+              ðŸ‘ï¸ Test Overlay
             </button>
           </div>
         </div>
@@ -1784,7 +1488,7 @@
         <!-- Level-Up Animation Overlay -->
         <div class="overlay-card">
           <div class="overlay-card-title">
-            🎉 Level-Up Animation Overlay
+            ðŸŽ‰ Level-Up Animation Overlay
           </div>
           <p class="form-text" style="margin-bottom: 12px;">
             Celebration animation when viewers level up. Shows confetti, new level, and unlocked rewards.
@@ -1793,7 +1497,7 @@
           <div class="overlay-url-box">
             <span class="url-text" id="levelUpUrl">http://localhost:3000/overlay/viewer-xp/level-up</span>
             <button class="btn btn-sm btn-primary copy-btn" data-action="copyToClipboard" data-arg="levelUpUrl">
-              📋 Copy
+              ðŸ“‹ Copy
             </button>
           </div>
 
@@ -1818,10 +1522,10 @@
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn btn-sm btn-success" data-action="updateOverlayUrl" data-arg="levelUp">
-              ✅ Update URL
+              âœ… Update URL
             </button>
             <button class="btn btn-sm btn-secondary" data-action="testOverlay" data-arg="level-up">
-              👁️ Test Overlay
+              ðŸ‘ï¸ Test Overlay
             </button>
           </div>
         </div>
@@ -1829,7 +1533,7 @@
         <!-- OBS Setup Guide -->
         <div class="card">
           <div class="card-header">
-            <span class="card-header-icon">📖</span> OBS Setup Guide
+            <span><span class="card-header-icon">Guide</span> OBS Setup Guide</span>
           </div>
           <div class="card-body">
             <ol style="line-height: 1.8; color: var(--color-text-secondary);">
@@ -1844,7 +1548,7 @@
               <li>Resize and position as needed in your scene</li>
             </ol>
             <div class="alert alert-warning" style="margin-top: 16px;">
-              <span>⚠️</span>
+              <span>âš ï¸</span>
               <div>
                 <strong>Important:</strong> The overlays require an active connection to the server. 
                 Make sure the server is running before starting your stream.
@@ -1857,17 +1561,17 @@
       <!-- Additional pages will be loaded here -->
       <div id="page-overlay-preview" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">👁️ Live Preview</h1>
+          <h1 class="page-title">XP Settings</h1>
           <p class="page-description">Preview how overlays look before adding them to OBS</p>
         </div>
 
         <!-- Overlay Selection -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎨</span>Select Overlay</span>
+            <span><span class="card-header-icon">Overlay</span>Select Overlay</span>
           </div>
           <div class="card-body">
-            <div class="form-group" style="max-width: none;">
+            <div class="form-group" style="max-width: 500px;">
               <label class="form-label">Choose Overlay to Preview</label>
               <select class="form-control" id="overlaySelect" onchange="loadOverlayPreview()">
                 <option value="">-- Select an Overlay --</option>
@@ -1878,7 +1582,7 @@
               </select>
             </div>
 
-            <div class="form-group" style="max-width: none; margin-top: 16px;">
+            <div class="form-group" style="max-width: 300px; margin-top: 16px;">
               <label class="form-label">Preview Scale</label>
               <select class="form-control" id="previewScale" onchange="updatePreviewScale()">
                 <option value="0.5">50% (Small)</option>
@@ -1889,10 +1593,10 @@
 
             <div style="margin-top: 16px;">
               <button class="btn btn-success" data-action="refreshPreview">
-                🔄 Refresh Preview
+                ðŸ”„ Refresh Preview
               </button>
               <button class="btn btn-secondary" data-action="copyOverlayURL">
-                📋 Copy OBS URL
+                ðŸ“‹ Copy OBS URL
               </button>
             </div>
 
@@ -1902,7 +1606,7 @@
                 <input type="text" class="form-control" id="overlayURLInput" readonly 
                   style="font-family: monospace; font-size: 0.9rem;">
                 <button class="btn btn-sm btn-secondary" data-action="copyToClipboard" data-source-id="overlayURLInput">
-                  📋 Copy
+                  ðŸ“‹ Copy
                 </button>
               </div>
               <small class="form-text">Add this URL as a Browser Source in OBS</small>
@@ -1913,7 +1617,7 @@
         <!-- Preview Container -->
         <div class="card" id="previewCard" style="display: none;">
           <div class="card-header">
-            <span><span class="card-header-icon">👁️</span>Live Preview</span>
+            <span><span class="card-header-icon">Preview</span>Live Preview</span>
           </div>
           <div class="card-body" style="background: #1a1a1a; min-height: 400px; display: flex; align-items: center; justify-content: center;">
             <div id="previewContainer" style="width: 100%; height: 100%; position: relative; transform-origin: top left;">
@@ -1925,21 +1629,21 @@
         <!-- Test Controls -->
         <div class="card" id="testControls" style="display: none;">
           <div class="card-header">
-            <span><span class="card-header-icon">🎮</span>Test Controls</span>
+            <span><span class="card-header-icon">Test</span>Test Controls</span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
               <button class="btn btn-primary" data-action="testLevelUp">
-                ⬆️ Test Level Up
+                â¬†ï¸ Test Level Up
               </button>
               <button class="btn btn-primary" data-action="testXPGain">
-                ⭐ Test XP Gain
+                â­ Test XP Gain
               </button>
               <button class="btn btn-primary" data-action="refreshLeaderboardPreview">
-                📊 Refresh Leaderboard
+                ðŸ“Š Refresh Leaderboard
               </button>
               <button class="btn btn-primary" data-action="testUserProfile">
-                👤 Test User Profile
+                ðŸ‘¤ Test User Profile
               </button>
             </div>
             <div style="margin-top: 16px;">
@@ -1953,14 +1657,14 @@
 
       <div id="page-xp-settings" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">⚙️ XP Settings</h1>
+          <h1 class="page-title">XP Settings</h1>
           <p class="page-description">Configure XP rewards for viewer actions</p>
         </div>
 
         <!-- XP Actions Configuration -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚡</span>XP Action Configuration</span>
+            <span><span class="card-header-icon">XP</span>XP Action Configuration</span>
           </div>
           <div class="card-body">
             <div class="table-responsive">
@@ -1978,7 +1682,7 @@
                   <tr>
                     <td colspan="5">
                       <div class="empty-state">
-                        <div class="empty-state-icon">⚙️</div>
+                        <div class="empty-state-icon">XP</div>
                         <div class="empty-state-text">Loading actions...</div>
                       </div>
                     </td>
@@ -1992,7 +1696,7 @@
         <!-- General Settings -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎛️</span>General Settings</span>
+            <span><span class="card-header-icon">Settings</span>General Settings</span>
           </div>
           <div class="card-body">
             <form id="generalSettingsForm">
@@ -2002,7 +1706,7 @@
                     <input type="checkbox" class="form-check-input" id="enableDailyBonus" checked>
                     <label class="form-check-label" for="enableDailyBonus">
                       <strong>Enable Daily Bonus</strong>
-                      <div class="form-text">Award XP to viewers on their first visit each day</div>
+                Award XP
                     </label>
                   </div>
                   
@@ -2018,7 +1722,7 @@
                     <input type="checkbox" class="form-check-input" id="enableWatchTime" checked>
                     <label class="form-check-label" for="enableWatchTime">
                       <strong>Enable Watch Time XP</strong>
-                      <div class="form-text">Award XP based on viewing duration</div>
+                Award XP
                     </label>
                   </div>
                 </div>
@@ -2027,7 +1731,7 @@
                   <div class="form-group">
                     <label class="form-label">Watch Time Interval (minutes)</label>
                     <input type="number" class="form-control" id="watchTimeInterval" min="1" max="60" value="5">
-                    <small class="form-text">Award XP every X minutes of watching</small>
+                Award XP
                   </div>
                   
                   <div class="form-check" style="margin-top: 16px;">
@@ -2042,10 +1746,10 @@
 
               <div style="margin-top: 24px;">
                 <button type="submit" class="btn btn-success">
-                  💾 Save Settings
+                  ðŸ’¾ Save Settings
                 </button>
                 <button type="button" class="btn btn-secondary" data-action="resetSettings">
-                  🔄 Reset to Defaults
+                  ðŸ”„ Reset to Defaults
                 </button>
               </div>
             </form>
@@ -2055,14 +1759,14 @@
 
       <div id="page-level-config" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">📈 Level Configuration</h1>
+          <h1 class="page-title">XP Settings</h1>
           <p class="page-description">Customize level progression and rewards</p>
         </div>
 
         <!-- Progression Type Selection -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">⚙️</span>Progression Type</span>
+            <span><span class="card-header-icon">âš™ï¸</span>Progression Type</span>
           </div>
           <div class="card-body">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
@@ -2104,7 +1808,7 @@
 
             <div style="margin-top: 16px;">
               <button class="btn btn-success" data-action="saveLevelTypeSettings">
-                💾 Save Progression Settings
+                ðŸ’¾ Save Progression Settings
               </button>
             </div>
           </div>
@@ -2113,7 +1817,7 @@
         <!-- Level Generator -->
         <div class="card" id="levelGeneratorCard">
           <div class="card-header">
-            <span><span class="card-header-icon">🔧</span>Level Generator</span>
+            <span><span class="card-header-icon">ðŸ”§</span>Level Generator</span>
           </div>
           <div class="card-body">
             <p style="margin-bottom: 16px;">Generate custom level configurations with automatic rewards</p>
@@ -2142,10 +1846,10 @@
 
             <div style="margin-top: 16px;">
               <button class="btn btn-primary" data-action="generateLevelConfigs">
-                🎲 Generate Levels
+                ðŸŽ² Generate Levels
               </button>
               <button class="btn btn-secondary" data-action="previewLevelProgression">
-                📊 Preview Progression
+                ðŸ“Š Preview Progression
               </button>
             </div>
 
@@ -2172,15 +1876,15 @@
         <!-- Level Rewards Configuration -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">🎁</span>Level Rewards</span>
+            <span><span class="card-header-icon">ðŸŽ</span>Level Rewards</span>
           </div>
           <div class="card-body">
             <div style="margin-bottom: 16px;">
               <button class="btn btn-primary" data-action="addLevelReward">
-                ➕ Add Reward Tier
+                âž• Add Reward Tier
               </button>
               <button class="btn btn-secondary" data-action="loadLevelRewards">
-                🔄 Refresh
+                ðŸ”„ Refresh
               </button>
             </div>
 
@@ -2200,7 +1904,7 @@
                   <tr>
                     <td colspan="6">
                       <div class="empty-state">
-                        <div class="empty-state-icon">🎁</div>
+                        <div class="empty-state-icon">ðŸŽ</div>
                         <div class="empty-state-text">No rewards configured yet</div>
                         <div class="empty-state-description">Add milestone rewards for reaching specific levels</div>
                       </div>
@@ -2215,12 +1919,12 @@
         <!-- Current Level Distribution -->
         <div class="card">
           <div class="card-header">
-            <span><span class="card-header-icon">📊</span>Level Distribution</span>
+            <span><span class="card-header-icon">ðŸ“Š</span>Level Distribution</span>
           </div>
           <div class="card-body">
             <div id="levelDistributionChart" style="min-height: 200px;">
               <div class="empty-state">
-                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-icon">ðŸ“Š</div>
                 <div class="empty-state-text">Level distribution chart</div>
                 <div class="empty-state-description">Shows how many viewers are at each level range</div>
               </div>
@@ -2231,17 +1935,17 @@
 
       <div id="page-manual-award" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎁 Manual Award</h1>
-          <p class="page-description">Manually award XP to viewers for special events or achievements</p>
+          <h1 class="page-title">XP Settings</h1>
+                Award XP
         </div>
 
         <div class="card" style="max-width: 600px;">
           <div class="card-header">
-            <span><span class="card-header-icon">🎁</span>Award XP</span>
+                Award XP
           </div>
           <div class="card-body">
             <div class="alert alert-info">
-              <span>💡</span>
+              <span>ðŸ’¡</span>
               <div>
                 <strong>Tip:</strong> Use this to reward viewers for special contributions, milestones, or community events.
                 The XP will be added immediately and a level-up animation will trigger if they reach a new level.
@@ -2253,7 +1957,7 @@
                 <label class="form-label">Username *</label>
                 <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required>
                 <datalist id="viewerSuggestions"></datalist>
-                <small class="form-text">The TikTok username of the viewer to award XP</small>
+                Award XP
               </div>
 
               <div class="form-group">
@@ -2270,10 +1974,10 @@
 
               <div style="display: flex; gap: 12px;">
                 <button type="submit" class="btn btn-success">
-                  ✅ Award XP
+                Award XP
                 </button>
                 <button type="button" class="btn btn-secondary" data-action="clearAwardForm">
-                  🔄 Clear Form
+                  ðŸ”„ Clear Form
                 </button>
               </div>
 
@@ -2285,7 +1989,7 @@
         <!-- Recent Manual Awards -->
         <div class="card" style="margin-top: 24px;">
           <div class="card-header">
-            <span><span class="card-header-icon">📜</span>Recent Manual Awards</span>
+            <span><span class="card-header-icon">ðŸ“œ</span>Recent Manual Awards</span>
           </div>
           <div class="card-body">
             <div class="table-responsive">
@@ -2302,7 +2006,7 @@
                   <tr>
                     <td colspan="4">
                       <div class="empty-state">
-                        <div class="empty-state-icon">📜</div>
+                        <div class="empty-state-icon">ðŸ“œ</div>
                         <div class="empty-state-text">No manual awards yet</div>
                         <div class="empty-state-description">Recent manual XP awards will appear here</div>
                       </div>
@@ -2318,7 +2022,7 @@
       <!-- Spin Wheel Settings Page -->
       <div id="page-spin-settings" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">🎰 Spin Wheel Settings</h1>
+          <h1 class="page-title">XP Settings</h1>
           <p class="page-description">Configure the lucky wheel game for viewers</p>
         </div>
 
@@ -2326,7 +2030,7 @@
           <!-- Spin Configuration -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">⚙️</span>Wheel Configuration</span>
+              <span><span class="card-header-icon">âš™ï¸</span>Wheel Configuration</span>
             </div>
             <div class="card-body">
               <form id="spinConfigForm">
@@ -2373,20 +2077,20 @@
                 </div>
 
                 <div class="alert alert-info">
-                  <span>💡</span>
+                  <span>ðŸ’¡</span>
                   <div>
                     <strong>How it works:</strong><br>
-                    • Viewers use /spin to bet the default amount or /spin &lt;amount&gt; to bet a custom amount<br>
-                    • They spin the wheel and land on a random field<br>
-                    • Positive fields = win that amount of XP<br>
-                    • Negative fields = lose that amount of XP (plus their bet)<br>
-                    • Example: Bet 5000, land on +10000 = net gain +5000 XP<br>
-                    • Example: Bet 5000, land on -2000 = net loss -7000 XP
+                    â€¢ Viewers use /spin to bet the default amount or /spin &lt;amount&gt; to bet a custom amount<br>
+                    â€¢ They spin the wheel and land on a random field<br>
+                    â€¢ Positive fields = win that amount of XP<br>
+                    â€¢ Negative fields = lose that amount of XP (plus their bet)<br>
+                    â€¢ Example: Bet 5000, land on +10000 = net gain +5000 XP<br>
+                    â€¢ Example: Bet 5000, land on -2000 = net loss -7000 XP
                   </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="saveSpinConfigBtn">
-                  💾 Save Spin Configuration
+                  ðŸ’¾ Save Spin Configuration
                 </button>
               </form>
             </div>
@@ -2395,7 +2099,7 @@
           <!-- Wheel Preview -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">👁️</span>Wheel Preview</span>
+              <span><span class="card-header-icon">ðŸ‘ï¸</span>Wheel Preview</span>
             </div>
             <div class="card-body">
               <div id="wheelPreviewContainer" style="text-align: center; padding: 20px;">
@@ -2412,15 +2116,15 @@
           <!-- Spin History -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📊</span>Recent Spins</span>
+              <span><span class="card-header-icon">ðŸ“Š</span>Recent Spins</span>
               <button type="button" class="btn btn-secondary" id="refreshSpinHistoryBtn">
-                🔄 Refresh
+                ðŸ”„ Refresh
               </button>
             </div>
             <div class="card-body">
               <div id="spinHistoryContainer">
                 <div class="empty-state">
-                  <div class="empty-state-icon">🎰</div>
+                  <div class="empty-state-icon">ðŸŽ°</div>
                   <div class="empty-state-text">No spin history yet</div>
                   <div class="empty-state-description">Spins will appear here once viewers start playing</div>
                 </div>
@@ -2431,7 +2135,7 @@
           <!-- Spin Statistics -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📈</span>Statistics</span>
+              <span><span class="card-header-icon">ðŸ“ˆ</span>Statistics</span>
             </div>
             <div class="card-body">
               <div id="spinStatsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
@@ -2467,7 +2171,7 @@
 
       <div id="page-import-export" class="tab-content">
         <div class="page-header">
-          <h1 class="page-title">💾 Import/Export</h1>
+          <h1 class="page-title">XP Settings</h1>
           <p class="page-description">Backup and restore viewer data</p>
         </div>
 
@@ -2475,7 +2179,7 @@
           <!-- Export Section -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📤</span>Export Data</span>
+              <span><span class="card-header-icon">Data</span>Export Data</span>
             </div>
             <div class="card-body">
               <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
@@ -2484,7 +2188,7 @@
               </p>
               
               <div class="alert alert-info">
-                <span>💡</span>
+                <span>ðŸ’¡</span>
                 <div>
                   <strong>What's included:</strong>
                   <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
@@ -2497,7 +2201,7 @@
               </div>
 
               <button type="button" class="btn btn-success" id="exportDataBtn" data-action="exportData">
-                📥 Download Export File
+                ðŸ“¥ Download Export File
               </button>
               <div id="exportStatus" style="margin-top: 16px;"></div>
             </div>
@@ -2506,7 +2210,7 @@
           <!-- Import Section -->
           <div class="card">
             <div class="card-header">
-              <span><span class="card-header-icon">📥</span>Import Data</span>
+              <span><span class="card-header-icon">ðŸ“¥</span>Import Data</span>
             </div>
             <div class="card-body">
               <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
@@ -2515,7 +2219,7 @@
               </p>
 
               <div class="alert alert-warning">
-                <span>⚠️</span>
+                <span>âš ï¸</span>
                 <div>
                   <strong>Warning:</strong> Importing data will update existing viewer profiles with the same username.
                   Make sure to back up your current data before importing.
@@ -2529,7 +2233,7 @@
               </div>
 
               <button type="button" class="btn btn-warning" id="importDataBtn" data-action="importData">
-                📤 Import Data
+                ðŸ“¤ Import Data
               </button>
               <div id="importStatus" style="margin-top: 16px;"></div>
             </div>
@@ -2539,7 +2243,7 @@
         <!-- Viewer History Lookup -->
         <div class="card" style="margin-top: 24px;">
           <div class="card-header">
-            <span><span class="card-header-icon">📊</span>Viewer XP History</span>
+            <span><span class="card-header-icon">ðŸ“Š</span>Viewer XP History</span>
           </div>
           <div class="card-body">
             <div class="form-group" style="max-width: 500px;">
@@ -2547,7 +2251,7 @@
               <div style="display: flex; gap: 12px;">
                 <input type="text" class="form-control" id="historyUsername" placeholder="Enter username">
                 <button class="btn btn-primary" data-action="loadViewerHistory" style="white-space: nowrap;">
-                  🔍 Load History
+                  ðŸ” Load History
                 </button>
               </div>
             </div>
@@ -2628,7 +2332,7 @@
         // Show success feedback
         const btn = event.target.closest('button');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '✅ Copied!';
+        btn.innerHTML = 'âœ… Copied!';
         btn.style.background = 'var(--color-accent-success)';
         
         setTimeout(() => {
@@ -2692,7 +2396,7 @@
       document.getElementById(urlElementIds[overlayType]).textContent = fullUrl;
       
       // Show success message
-      alert('✅ URL updated! Copy it to use in OBS.');
+      alert('âœ… URL updated! Copy it to use in OBS.');
     }
 
     // Test overlay in new window
@@ -2773,7 +2477,7 @@
             <tr>
               <td colspan="7">
                 <div class="empty-state">
-                  <div class="empty-state-icon">🏆</div>
+                  <div class="empty-state-icon">ðŸ†</div>
                   <div class="empty-state-text">No viewers yet</div>
                   <div class="empty-state-description">Viewers will appear here as they earn XP</div>
                 </div>
@@ -2786,7 +2490,7 @@
         tbody.innerHTML = leaderboard.map((viewer, index) => {
           const rank = index + 1;
           const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-default';
-          const rankIcon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+          const rankIcon = rank === 1 ? 'ðŸ‘‘' : rank === 2 ? 'ðŸ¥ˆ' : rank === 3 ? 'ðŸ¥‰' : rank;
           
           const progress = typeof viewer.xp_progress_percent === 'number'
             ? viewer.xp_progress_percent
@@ -2837,7 +2541,7 @@
       message.style.zIndex = '9999';
       message.style.maxWidth = '400px';
       message.innerHTML = `
-        <span>💡</span>
+        <span>ðŸ’¡</span>
         <div>
           <strong>Coming Soon!</strong><br>
           Detailed viewer profile for ${escapeHtml(username)} will be available in the next update.
@@ -2908,7 +2612,7 @@
     socket.on('viewer-xp:level-up', (data) => {
       // Show toast notification for level ups
       if (data && data.username && data.newLevel) {
-        showToast(`🎉 ${data.username} leveled up to Level ${data.newLevel}!`, 'success');
+        showToast(`ðŸŽ‰ ${data.username} leveled up to Level ${data.newLevel}!`, 'success');
       }
     });
 
@@ -2940,7 +2644,7 @@
                 </td>
                 <td>
                   <button class="btn btn-sm btn-primary" data-action="updateAction" data-arg="${action.action_type}">
-                    💾 Save
+                    ðŸ’¾ Save
                   </button>
                 </td>
               </tr>
@@ -2951,7 +2655,7 @@
             <tr>
               <td colspan="5">
                 <div class="empty-state">
-                  <div class="empty-state-icon">⚙️</div>
+                  <div class="empty-state-icon">âš™ï¸</div>
                   <div class="empty-state-text">No actions configured</div>
                 </div>
               </td>
@@ -3034,7 +2738,7 @@
           let configHtml = `
             <div class="card">
               <div class="card-header">
-                <span><span class="card-header-icon">📊</span>Current Level Configuration</span>
+                <span><span class="card-header-icon">ðŸ“Š</span>Current Level Configuration</span>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
@@ -3056,7 +2760,7 @@
                 <td><strong>${config.level}</strong></td>
                 <td>${config.xp_required.toLocaleString()} XP</td>
                 <td>${config.title || 'N/A'}</td>
-                <td><span style="color: ${config.name_color || '#FFFFFF'}">●</span> ${config.name_color || 'Default'}</td>
+                <td><span style="color: ${config.name_color || '#FFFFFF'}">â—</span> ${config.name_color || 'Default'}</td>
               </tr>
             `;
           });
@@ -3084,11 +2788,11 @@
         const page = document.getElementById('page-level-config');
         page.innerHTML = `
           <div class="page-header">
-            <h1 class="page-title">📈 Level Configuration</h1>
+          <h1 class="page-title">XP Settings</h1>
             <p class="page-description">Customize level progression and rewards</p>
           </div>
           <div class="alert alert-warning">
-            <span>⚠️</span>
+            <span>âš ï¸</span>
             <div>
               <strong>Loading Error:</strong> Could not load level configuration data.
             </div>
@@ -3149,7 +2853,7 @@
       toast.style.maxWidth = '400px';
       toast.style.boxShadow = 'var(--shadow-lg)';
       
-      const icon = type === 'success' ? '✅' : type === 'danger' ? '❌' : '💡';
+      const icon = type === 'success' ? 'âœ…' : type === 'danger' ? 'âŒ' : 'ðŸ’¡';
       toast.innerHTML = `
         <span>${icon}</span>
         <div>${message}</div>
@@ -3187,7 +2891,7 @@
         if (response.ok) {
           resultDiv.innerHTML = `
             <div class="alert alert-success">
-              <span>✅</span>
+              <span>âœ…</span>
               <div>
                 <strong>Success!</strong> Awarded ${amount} XP to ${username}.
                 ${result.leveledUp ? ` They leveled up to Level ${result.newLevel}!` : ''}
@@ -3198,12 +2902,12 @@
           loadRecentAwards();
           showToast(`Successfully awarded ${amount} XP to ${username}!`);
         } else {
-          throw new Error(result.error || 'Failed to award XP');
+                Award XP
         }
       } catch (error) {
         resultDiv.innerHTML = `
           <div class="alert alert-danger">
-            <span>❌</span>
+            <span>âŒ</span>
             <div><strong>Error:</strong> ${error.message}</div>
           </div>
         `;
@@ -3261,7 +2965,7 @@
             <tr>
               <td colspan="4">
                 <div class="empty-state">
-                  <div class="empty-state-icon">📜</div>
+                  <div class="empty-state-icon">ðŸ“œ</div>
                   <div class="empty-state-text">No manual awards yet</div>
                 </div>
               </td>
@@ -3308,20 +3012,20 @@
         const viewerCount = Array.isArray(data.profiles) ? data.profiles.length : 0;
         status.innerHTML = `
           <div class="alert alert-success">
-            <span>✅</span>
+            <span>âœ…</span>
             <div><strong>Success!</strong> Export file downloaded. Exported ${viewerCount} viewers.</div>
           </div>
         `;
       } catch (error) {
         status.innerHTML = `
           <div class="alert alert-danger">
-            <span>❌</span>
+            <span>âŒ</span>
             <div><strong>Error:</strong> ${error.message}</div>
           </div>
         `;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '📥 Download Export File';
+        btn.innerHTML = 'ðŸ“¥ Download Export File';
       }
     }
 
@@ -3333,7 +3037,7 @@
       if (!fileInput.files || !fileInput.files[0]) {
         status.innerHTML = `
           <div class="alert alert-warning">
-            <span>⚠️</span>
+            <span>âš ï¸</span>
             <div>Please select a file to import.</div>
           </div>
         `;
@@ -3360,7 +3064,7 @@
         if (response.ok) {
           status.innerHTML = `
             <div class="alert alert-success">
-              <span>✅</span>
+              <span>âœ…</span>
               <div>
                 <strong>Success!</strong> Imported ${result.imported} viewers.
                 ${result.updated ? ` Updated ${result.updated} existing profiles.` : ''}
@@ -3375,13 +3079,13 @@
       } catch (error) {
         status.innerHTML = `
           <div class="alert alert-danger">
-            <span>❌</span>
+            <span>âŒ</span>
             <div><strong>Error:</strong> ${error.message}</div>
           </div>
         `;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '📤 Import Data';
+        btn.innerHTML = 'ðŸ“¤ Import Data';
       }
     }
 
@@ -3397,7 +3101,7 @@
           <tr>
             <td colspan="4">
               <div class="alert alert-warning">
-                <span>⚠️</span>
+                <span>âš ï¸</span>
                 <div>Please enter a username to search</div>
               </div>
             </td>
@@ -3416,7 +3120,7 @@
             <tr>
               <td colspan="4">
                 <div class="empty-state">
-                  <div class="empty-state-icon">📊</div>
+                  <div class="empty-state-icon">ðŸ“Š</div>
                   <div class="empty-state-text">No history found</div>
                   <div class="empty-state-description">No XP transactions for this viewer</div>
                 </div>
@@ -3458,7 +3162,7 @@
           <tr>
             <td colspan="4">
               <div class="alert alert-danger">
-                <span>❌</span>
+                <span>âŒ</span>
                 <div><strong>Error:</strong> Failed to load viewer history. ${error.message}</div>
               </div>
             </td>
@@ -3554,7 +3258,7 @@
     function copyToClipboard(text) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast('✅ URL copied to clipboard!');
+          showToast('âœ… URL copied to clipboard!');
         }).catch(err => {
           console.error('Failed to copy:', err);
           fallbackCopyToClipboard(text);
@@ -3576,13 +3280,13 @@
       try {
         const successful = document.execCommand('copy');
         if (successful) {
-          showToast('✅ URL copied to clipboard!');
+          showToast('âœ… URL copied to clipboard!');
         } else {
-          showToast('❌ Failed to copy URL - please copy manually');
+          showToast('âŒ Failed to copy URL - please copy manually');
         }
       } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('❌ Failed to copy URL - please copy manually');
+        showToast('âŒ Failed to copy URL - please copy manually');
       }
       
       document.body.removeChild(textArea);
@@ -3596,14 +3300,14 @@
         newLevel: TEST_LEVEL + 1,
         rewards: {
           title: 'Rising Star',
-          badge: '⭐',
+          badge: 'â­',
           announcement_message: `Congratulations ${username}! You've reached Level ${TEST_LEVEL + 1}!`
         }
       };
       
-      console.log('🧪 Testing Level Up:', testData);
+      console.log('ðŸ§ª Testing Level Up:', testData);
       socket.emit('viewer-xp:level-up', testData);
-      showToast('✅ Level Up test event sent!', 'success');
+      showToast('âœ… Level Up test event sent!', 'success');
     }
     
     function testXPGain() {
@@ -3627,19 +3331,19 @@
         }
       };
       
-      console.log('🧪 Testing XP Gain:', testData);
+      console.log('ðŸ§ª Testing XP Gain:', testData);
       socket.emit('viewer-xp:update', testData);
-      showToast('✅ XP Gain test event sent!', 'success');
+      showToast('âœ… XP Gain test event sent!', 'success');
     }
     
     function refreshLeaderboardPreview() {
       // Request actual leaderboard data from the server
-      console.log('🧪 Requesting leaderboard data...');
+      console.log('ðŸ§ª Requesting leaderboard data...');
       socket.emit('viewer-xp:get-leaderboard', {
         limit: 10,
         days: null
       });
-      showToast('✅ Leaderboard refresh requested!', 'success');
+      showToast('âœ… Leaderboard refresh requested!', 'success');
     }
     
     function testUserProfile() {
@@ -3657,15 +3361,15 @@
         rank: 42,
         title: 'Rising Star',
         name_color: '#FFD700',
-        badges: ['🎮', '⭐', '🏆'],
+        badges: ['ðŸŽ®', 'â­', 'ðŸ†'],
         streak_days: 7,
         watch_time_minutes: 180,
         last_seen: new Date().toISOString()
       };
       
-      console.log('🧪 Testing User Profile:', testData);
+      console.log('ðŸ§ª Testing User Profile:', testData);
       socket.emit('viewer-xp:show-user-profile', testData);
-      showToast('✅ User Profile test event sent!', 'success');
+      showToast('âœ… User Profile test event sent!', 'success');
     }
 
     // ========== LEVEL CONFIGURATION FUNCTIONS ==========
@@ -3695,13 +3399,13 @@
         });
         
         if (response.ok) {
-          showToast('✅ Progression settings saved!');
+          showToast('âœ… Progression settings saved!');
         } else {
           throw new Error('Failed to save settings');
         }
       } catch (error) {
         console.error('Error saving level type:', error);
-        showToast('❌ Failed to save settings');
+        showToast('âŒ Failed to save settings');
       }
     }
     
@@ -3767,14 +3471,14 @@
         
         if (response.ok) {
           const configs = await response.json();
-          showToast(`✅ Generated ${configs.length} level configurations!`);
+          showToast(`âœ… Generated ${configs.length} level configurations!`);
           previewLevelProgression();
         } else {
           throw new Error('Failed to generate configs');
         }
       } catch (error) {
         console.error('Error generating levels:', error);
-        showToast('❌ Failed to generate level configurations');
+        showToast('âŒ Failed to generate level configurations');
       }
     }
     
@@ -3787,7 +3491,7 @@
           <tr>
             <td colspan="6">
               <div class="empty-state">
-                <div class="empty-state-icon">🎁</div>
+                <div class="empty-state-icon">ðŸŽ</div>
                 <div class="empty-state-text">No rewards configured yet</div>
                 <div class="empty-state-description">Add milestone rewards for reaching specific levels</div>
               </div>
@@ -3805,8 +3509,8 @@
           <td><input type="text" class="form-control" value="${reward.announcement_message || ''}" placeholder="Custom emote or message" data-field="announcement_message"></td>
           <td><input type="text" class="form-control" value="${reward.special_effects?.animation || ''}" placeholder="Animation key" data-field="animation"></td>
           <td>
-            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}">💾 Save</button>
-            <button class="btn btn-sm btn-danger" data-action="deleteLevelReward" data-arg="${reward.level}">🗑️</button>
+            <button class="btn btn-sm btn-success" data-action="saveLevelReward" data-arg="${reward.level}">ðŸ’¾ Save</button>
+            <button class="btn btn-sm btn-danger" data-action="deleteLevelReward" data-arg="${reward.level}">ðŸ—‘ï¸</button>
           </td>
         </tr>
       `).join('');
@@ -3825,10 +3529,10 @@
         const response = await fetch('/api/viewer-xp/level-rewards');
         currentLevelRewards = await response.json();
         renderLevelRewards(currentLevelRewards);
-        showToast('✅ Level rewards loaded', 'success');
+        showToast('âœ… Level rewards loaded', 'success');
       } catch (error) {
         console.error('Error loading level rewards:', error);
-        showToast('❌ Failed to load level rewards', 'danger');
+        showToast('âŒ Failed to load level rewards', 'danger');
       }
     }
 
@@ -3860,7 +3564,7 @@
         }
       } catch (error) {
         console.error('Error saving reward:', error);
-        showToast('❌ Failed to save reward', 'danger');
+        showToast('âŒ Failed to save reward', 'danger');
       }
     }
 
@@ -3878,7 +3582,7 @@
         }
       } catch (error) {
         console.error('Error deleting reward:', error);
-        showToast('❌ Failed to delete reward', 'danger');
+        showToast('âŒ Failed to delete reward', 'danger');
       }
     }
 
@@ -3996,7 +3700,7 @@
       wheelPreviewCtx.fillStyle = '#000';
       wheelPreviewCtx.textAlign = 'center';
       wheelPreviewCtx.textBaseline = 'middle';
-      wheelPreviewCtx.fillText('🎰', centerX, centerY);
+      wheelPreviewCtx.fillText('ðŸŽ°', centerX, centerY);
     }
 
     // Save spin configuration
@@ -4081,7 +3785,7 @@
                     <td><strong>${spin.username}</strong></td>
                     <td>${formatNumber(spin.bet_amount)}</td>
                     <td>${fieldSign}${formatNumber(spin.field_value)}</td>
-                    <td style="color: ${changeColor}; font-weight: bold;">${isWin ? '🎉 WIN' : '😢 LOSS'}</td>
+                    <td style="color: ${changeColor}; font-weight: bold;">${isWin ? 'ðŸŽ‰ WIN' : 'ðŸ˜¢ LOSS'}</td>
                     <td style="color: ${changeColor}; font-weight: bold;">${changeSign}${formatNumber(spin.xp_change)}</td>
                     <td>${new Date(spin.timestamp).toLocaleString()}</td>
                   </tr>
@@ -4135,7 +3839,7 @@
     // Load spin config when spin settings page is shown
     document.addEventListener('click', function(event) {
       const navItem = event.target.closest('.nav-item[data-page="spin-settings"]');
-      if (navItem) {
+            <span class="nav-icon">S</span>
         setTimeout(() => {
           loadSpinConfig();
         }, 100);
@@ -4339,7 +4043,7 @@
 
         tbody.innerHTML = leaderboard.map((viewer, index) => {
           const rank = index + 1;
-          const rankIcon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+          const rankIcon = rank === 1 ? 'ðŸ‘‘' : rank === 2 ? 'ðŸ¥ˆ' : rank === 3 ? 'ðŸ¥‰' : rank;
           return `
             <tr>
               <td><strong>${rankIcon} ${rank}</strong></td>
@@ -4466,7 +4170,7 @@
         const badgesContainer = document.getElementById('user-detail-badges');
         if (data.profile.badges && data.profile.badges.length > 0) {
           badgesContainer.innerHTML = data.profile.badges.map(badge => 
-            `<span class="badge badge-success" style="margin: 4px;">🏆 ${escapeHtml(badge)}</span>`
+            `<span class="badge badge-success" style="margin: 4px;">ðŸ† ${escapeHtml(badge)}</span>`
           ).join('');
         } else {
           badgesContainer.innerHTML = '<p style="color: var(--color-text-muted);">No badges yet</p>';
@@ -4612,7 +4316,7 @@
           }
         }
         
-        status.textContent = '✅ Configuration saved successfully!';
+        status.textContent = 'âœ… Configuration saved successfully!';
         status.style.color = 'var(--color-accent-success)';
         
         setTimeout(() => {
@@ -4621,7 +4325,7 @@
       } catch (error) {
         console.error('Error saving config:', error);
         const status = document.getElementById('config-save-status');
-        status.textContent = '❌ Error saving configuration';
+        status.textContent = 'âŒ Error saving configuration';
         status.style.color = 'var(--color-accent-danger)';
       }
     });
@@ -4799,4 +4503,3 @@
   </script>
 </body>
 </html>
-

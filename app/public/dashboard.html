@@ -4,15 +4,84 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="app.name">PupCid's Little TikTool Helper</title>
+    <title data-i18n="app.name">LTTH.app</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" href="/cid-icon.png">
+    <link rel="icon" type="image/png" href="/ltthicon.png">
     <link rel="stylesheet" href="/css/tailwind.output.css">
     <link rel="stylesheet" href="/css/navigation.css">
     <link rel="stylesheet" href="/css/wiki.css">
     <link rel="stylesheet" href="/css/themes.css">
     <link rel="stylesheet" href="/css/profile-manager.css">
     <link rel="stylesheet" href="/css/profile-management-ui.css">
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const SIDEBAR_WIDE_LOGO = '/logo-wide.png';
+            const SIDEBAR_ICON_LOGO = '/ltthicon.png';
+
+            function readTheme() {
+                try {
+                    const current = document.documentElement.getAttribute('data-theme');
+                    if (VALID_THEMES.has(current)) return current;
+                } catch (error) {}
+
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncLogos() {
+                const theme = readTheme();
+                const wide = document.querySelector('.sidebar-logo-wide');
+                const mini = document.querySelector('.sidebar-logo-mini');
+                const topbar = document.querySelector('.topbar-logo-image');
+                if (wide) {
+                    if (wide.getAttribute('src') !== SIDEBAR_WIDE_LOGO) wide.setAttribute('src', SIDEBAR_WIDE_LOGO);
+                }
+                if (mini) {
+                    if (mini.getAttribute('src') !== SIDEBAR_ICON_LOGO) mini.setAttribute('src', SIDEBAR_ICON_LOGO);
+                }
+                if (topbar) {
+                    if (topbar.getAttribute('src') !== SIDEBAR_WIDE_LOGO) topbar.setAttribute('src', SIDEBAR_WIDE_LOGO);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', syncLogos);
+            window.addEventListener('load', syncLogos);
+            window.addEventListener('focus', syncLogos);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncLogos();
+            });
+
+            try {
+                new MutationObserver(syncLogos).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
+
+            try {
+                if (window.parent && window.parent !== window) {
+                    new MutationObserver(syncLogos).observe(window.parent.document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['data-theme']
+                    });
+                }
+            } catch (error) {}
+        })();
+    </script>
     <style>
         /* Plugin Manager Modern Styles - Theme-Aware */
         .plugin-card {
@@ -25,7 +94,7 @@
             border-color: var(--color-active-border) !important;
         }
 
-        /* Plugin Store marketplace styling */
+        /* App Store marketplace styling */
         .plugin-store-shell {
             display: flex;
             flex-direction: column;
@@ -35,14 +104,30 @@
         .plugin-store-header {
             display: flex;
             justify-content: space-between;
-            gap: 1rem;
-            align-items: flex-start;
+            gap: 1rem 1.25rem;
+            align-items: center;
             flex-wrap: wrap;
             padding: 1.1rem 1.2rem;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.92) 100%);
             border: 1px solid var(--color-border);
             border-radius: 18px;
             box-shadow: var(--shadow-sm);
+        }
+
+        .plugin-store-header__brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 1 390px;
+            min-width: 240px;
+        }
+
+        .plugin-store-header__logo {
+            display: block;
+            width: min(100%, 390px);
+            max-height: 112px;
+            object-fit: contain;
+            filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
         }
 
         .plugin-store-header__title {
@@ -123,6 +208,91 @@
             background: rgba(251, 191, 36, 0.12);
             color: #fbbf24;
             font-size: 0.9rem;
+        }
+
+        .plugin-store-mode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .plugin-store-auth-root {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.28), transparent 32%),
+                radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.22), transparent 30%),
+                rgba(2, 6, 23, 0.88);
+            backdrop-filter: blur(18px);
+        }
+
+        .plugin-store-auth-card {
+            width: min(100%, 540px);
+            padding: 1.6rem;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.95));
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+            color: var(--color-text-primary);
+        }
+
+        .plugin-store-auth-card__eyebrow {
+            display: inline-flex;
+            margin-bottom: 0.75rem;
+            padding: 0.35rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            color: #93c5fd;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .plugin-store-auth-card h3 {
+            margin: 0 0 0.6rem;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 900;
+        }
+
+        .plugin-store-auth-card p {
+            margin: 0 0 1rem;
+            color: var(--color-text-muted);
+            line-height: 1.55;
+        }
+
+        .plugin-store-auth-card code {
+            display: block;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            color: #bfdbfe;
+            overflow-wrap: anywhere;
+        }
+
+        .plugin-store-auth-card__actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-store-auth-card__mount {
+            min-height: 320px;
+        }
+
+        .plugin-store-account-menu {
+            min-width: 44px;
+            display: flex;
+            justify-content: flex-end;
         }
 
         .plugin-store-discovery {
@@ -280,9 +450,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
+            position: relative;
+            color: var(--store-icon-color, var(--color-accent-primary));
+            background: var(--store-icon-bg, rgba(16, 185, 129, 0.12));
+            box-shadow: inset 0 0 0 1px var(--store-icon-border, rgba(16, 185, 129, 0.24));
+        }
+
+        .plugin-store-card__avatar-icon {
+            width: 42%;
+            height: 42%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid currentColor;
+            border-radius: 18px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
+        }
+
+        .plugin-store-card__avatar-icon::before {
+            content: "PLG";
         }
 
         .plugin-store-card__media-chip {
@@ -496,10 +685,28 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            position: relative;
+            color: var(--store-icon-color, var(--color-accent-primary));
+            background: var(--store-icon-bg, rgba(16, 185, 129, 0.12));
+            box-shadow: inset 0 0 0 1px var(--store-icon-border, rgba(16, 185, 129, 0.24));
+        }
+
+        .plugin-store-drawer__avatar-icon {
+            width: 58%;
+            height: 58%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid currentColor;
+            border-radius: 24px;
+            font-size: 1.05rem;
             font-weight: 900;
-            color: var(--color-accent-primary);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(147, 51, 234, 0.16));
+            letter-spacing: 0.08em;
+            filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.24));
+        }
+
+        .plugin-store-drawer__avatar-icon::before {
+            content: "PLG";
         }
 
         .plugin-store-drawer__title {
@@ -634,6 +841,17 @@
             .plugin-store-header,
             .plugin-store-drawer__header {
                 flex-direction: column;
+            }
+
+            .plugin-store-header__brand {
+                justify-content: flex-start;
+                min-width: 0;
+                width: 100%;
+            }
+
+            .plugin-store-header__logo {
+                width: min(100%, 320px);
+                max-height: 92px;
             }
 
             .plugin-store-card__summary,
@@ -1079,8 +1297,8 @@
             background: var(--color-modal-bg);
             border: 2px solid var(--color-accent-primary);
             border-radius: 12px;
-            max-width: 800px;
-            width: 100%;
+            width: min(96vw, 1120px);
+            max-width: none;
             max-height: 80vh;
             display: flex;
             flex-direction: column;
@@ -1187,7 +1405,7 @@
             border: 1px solid var(--color-accent-danger);
             border-radius: 16px;
             padding: 2rem 2.5rem;
-            max-width: 420px;
+            max-width: 560px;
             width: 90%;
             text-align: center;
             box-shadow: var(--shadow-lg);
@@ -1340,7 +1558,8 @@
         <aside id="sidebar" class="sidebar sidebar-expanded">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <img id="sidebar-mini-icon" src="/cid-logo.png" alt="Cid Logo" class="sidebar-logo-mini">
+                    <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
+                    <img id="sidebar-mini-icon" src="/ltthicon.png" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
                 <button id="sidebar-toggle" class="sidebar-toggle-btn">
                     <i data-lucide="panel-left"></i>
@@ -1584,9 +1803,9 @@
                         <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
                     </div>
                     <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="Plugin Store">
+                        <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="App Store">
                             <i data-lucide="plug"></i>
-                            <span class="sidebar-item-text" data-i18n="navigation.plugins">Plugin Store</span>
+                            <span class="sidebar-item-text" data-i18n="navigation.plugins">App Store</span>
                         </a>
                         <a href="#" class="sidebar-item" data-view="wiki" data-tooltip="Wiki">
                             <i data-lucide="book-open"></i>
@@ -1609,7 +1828,9 @@
                 <!-- Drag region for moving frameless window -->
                 <div class="topbar-drag-region"></div>
                 <div class="topbar-left">
-                    <h1 class="topbar-title" data-i18n="app.name">Pup Cid's Little TikTool Helper</h1>
+                    <div class="topbar-brand" aria-label="Pup Cid's Little TikTool Helper">
+                        <img src="/logo-wide.png" alt="LTTH" class="topbar-logo-image">
+                    </div>
                 </div>
                 <div class="topbar-right">
                     <div class="topbar-status">
@@ -2863,13 +3084,13 @@
                     </section>
                 </div>
 
-                <!-- View: Plugin Store -->
+                <!-- View: App Store -->
                 <div id="view-plugins" class="content-view">
                     <section class="view-section">
                         <div class="view-header">
                             <h2 class="view-title">
                                 <i data-lucide="package"></i>
-                                Plugin Store
+                                App Store
                             </h2>
                             <div style="display: flex; gap: 12px;">
                                 <button id="upload-plugin-btn" class="btn btn-primary">
@@ -2915,75 +3136,25 @@
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                            <button class="plugin-mode-btn active" data-plugin-mode="store" style="padding: 0.75rem 1.15rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Store
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="installed" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Installed
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="updates" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Updates
-                            </button>
-                            <button class="plugin-mode-btn" data-plugin-mode="sources" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
-                                <i data-lucide="database" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                Sources
-                            </button>
-                        </div>
-
-                        <div id="plugin-store-sources-panel" style="display: none; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
-                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
-                                        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--color-accent-success);"></i>
-                                        Official LTTH Store
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Official plugins are available by default and remain the primary catalog.</div>
-                                </div>
-                                <div style="border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; background: var(--color-bg-secondary);">
-                                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 6px;">
-                                        <i data-lucide="users" style="width: 18px; height: 18px; color: var(--color-accent-warning);"></i>
-                                        Community Sources
-                                    </div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Community plugin sources can install code from third-party registries. Only add sources you trust.</div>
-                                </div>
-                            </div>
-                            <div id="plugin-store-source-errors" style="display: none; margin-bottom: 1rem;"></div>
-                            <div id="plugin-community-disabled" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem;">
-                                <div>
-                                    <div style="font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px;">Community plugin sources are disabled</div>
-                                    <div style="font-size: 0.9rem; color: var(--color-text-muted);">Enable this only if you want to add plugin registries outside the official LTTH store.</div>
-                                </div>
-                                <button id="enable-community-store-btn" class="btn btn-ghost">
-                                    <i data-lucide="unlock"></i>
-                                    Enable Community Sources
+                        <div class="plugin-store-mode-row">
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="plugin-mode-btn active" data-plugin-mode="store" style="padding: 0.75rem 1.15rem; background: var(--color-active-bg); border: 1px solid var(--color-active-border); border-radius: 8px; color: var(--color-accent-primary); font-size: 0.9rem; cursor: pointer;">
+                                    <i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Store
+                                </button>
+                                <button class="plugin-mode-btn" data-plugin-mode="installed" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                    <i data-lucide="hard-drive" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Installed
+                                </button>
+                                <button class="plugin-mode-btn" data-plugin-mode="updates" style="padding: 0.75rem 1.15rem; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text-muted); font-size: 0.9rem; cursor: pointer;">
+                                    <i data-lucide="download" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                    Updates
                                 </button>
                             </div>
-                            <div id="plugin-community-enabled" style="display: none; border-top: 1px solid var(--color-border); padding-top: 1rem;">
-                                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: end;">
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 180px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Source ID
-                                        <input id="community-source-id" type="text" placeholder="creator-name" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 200px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Name
-                                        <input id="community-source-name" type="text" placeholder="Creator Plugin Repo" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <label style="display: flex; flex-direction: column; gap: 0.35rem; flex: 2; min-width: 280px; font-size: 0.85rem; color: var(--color-text-muted);">
-                                        Registry URL
-                                        <input id="community-source-url" type="url" placeholder="https://example.com/store.json" style="padding: 0.7rem; background: var(--color-input-bg); border: 1px solid var(--color-input-border); border-radius: 8px; color: var(--color-input-text);">
-                                    </label>
-                                    <button id="add-community-source-btn" class="btn btn-primary">
-                                        <i data-lucide="plus"></i>
-                                        Add Source
-                                    </button>
-                                </div>
-                                <div id="plugin-store-source-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; margin-top: 1rem;"></div>
-                            </div>
+                            <div id="plugin-store-account-menu" class="plugin-store-account-menu"></div>
                         </div>
+
+                        <div id="plugin-store-auth-root" class="plugin-store-auth-root" aria-hidden="true" style="display: none;"></div>
 
                         <!-- Filters and Search -->
                         <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
@@ -4117,7 +4288,7 @@
                                     <span>Über die App / About</span>
                                 </h3>
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-                                    <h4 class="text-lg font-semibold mb-2">PupCid's Little TikTool Helper (LTTH)</h4>
+                                    <h4 class="text-lg font-semibold mb-2">LTTH.app (LTTH)</h4>
                                     <p class="text-sm text-gray-300 mb-3">
                                         Professional TikTok-compatible LIVE streaming tool for creators
                                     </p>
@@ -4143,7 +4314,7 @@
                                         <div>
                                             <h4 class="text-sm font-semibold text-yellow-300 mb-2">Wichtiger Hinweis / Important Notice</h4>
                                             <p class="text-xs text-gray-300 mb-2">
-                                                <strong>PupCid's Little TikTool Helper ist ein unabhängiges Analyse- und Creator-Tool.</strong>
+                                                <strong>LTTH ist ein unabhängiges Analyse- und Creator-Tool.</strong>
                                                 Es besteht keine geschäftliche, partnerschaftliche oder technische Verbindung zu TikTok oder ByteDance.
                                             </p>
                                             <p class="text-xs text-gray-300">
@@ -4217,7 +4388,7 @@
 
     <!-- Modal: Flow Wizard -->
     <div id="flow-wizard-modal" class="modal">
-        <div class="modal-content" style="max-width:760px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
                     🧙 Flow Wizard
@@ -4240,7 +4411,7 @@
 
     <!-- Modal: Flow Presets -->
     <div id="flow-presets-modal" class="modal">
-        <div class="modal-content" style="max-width:860px;width:95vw;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="modal-content" style="width:min(96vw,1120px);max-width:none;max-height:90vh;display:flex;flex-direction:column;">
             <div class="modal-header" style="flex-shrink:0;">
                 <h3 class="modal-title">
                     📦 Flow Presets / Vorlagen
@@ -4286,6 +4457,7 @@
     <script src="/js/profile-manager.js"></script>
     <script src="/js/profile-management-ui.js"></script>
     <!-- vdoninja-dashboard.js is now lazy-loaded when VDO.Ninja view is accessed -->
+    <script src="/js/clerk-store-auth.js"></script>
     <script src="/js/plugin-manager.js"></script>
     <script src="/js/update-checker.js"></script>
     <script src="/js/audio-settings.js"></script>

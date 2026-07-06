@@ -136,6 +136,22 @@
 
     }
 
+    .page-brand-logo {
+      display: block;
+      width: min(320px, 60vw);
+      height: auto;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+
+    html[data-theme="vision-impaired"] .page-brand-logo {
+      width: min(360px, 72vw);
+    }
+
+    html[data-theme="cid"] .page-brand-logo {
+      width: min(300px, 58vw);
+    }
+
 
 
     .page-meta {
@@ -1080,6 +1096,20 @@
 
     }
 
+    html[data-theme="day"] .btn-secondary {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      border-color: #64748b !important;
+    }
+
+    html[data-theme="vision-impaired"] .btn-secondary {
+      background: #000 !important;
+      color: #facc15 !important;
+      -webkit-text-fill-color: #facc15 !important;
+      border: 3px solid #facc15 !important;
+    }
+
 
 
     .btn-outline-primary {
@@ -1772,7 +1802,155 @@
 
     }
 
-  </style>
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="contrast"] .btn.btn-primary,
+        html[data-theme="vision-impaired"] .btn.btn-primary {
+            background: #facc15 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border-color: #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="day"] .form-check-input {
+            accent-color: #0f8712 !important;
+            border-color: #0f8712 !important;
+        }
+
+        html[data-theme="contrast"] .form-check-input,
+        html[data-theme="vision-impaired"] .form-check-input {
+            accent-color: #facc15 !important;
+            border-color: #facc15 !important;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    
+        /* final vision/day button contrast overrides */
+        html[data-theme="vision-impaired"] .btn.btn-primary {
+            background: #facc15 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border: 3px solid #facc15 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="day"] .btn.btn-outline-primary {
+            background: #fff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border-color: #64748b !important;
+        }
+
+/* final admin route contrast hardening */
+        html[data-theme="day"] #toggleOverlayPreviewBtn.btn.btn-secondary {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            border: 2px solid #64748b !important;
+        }
+
+        html[data-theme="vision-impaired"] .btn.btn-primary,
+        html[data-theme="vision-impaired"] button.btn-primary {
+            background: #ffd400 !important;
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+            border: 3px solid #000 !important;
+            box-shadow: none !important;
+        }
+
+</style>
 
 </head>
 
@@ -1784,15 +1962,7 @@
 
       <div>
 
-        <div class="eyebrow" data-i18n-key="hero.eyebrow">AI Storytelling Control</div>
-
-        <h1 class="page-title" data-i18n-key="hero.title">📖 Interactive Story Generator</h1>
-
-        <p class="page-subtitle" data-i18n-key="hero.subtitle">
-
-          Cinematic stories with live voting, TTS narration, and OBS overlays.
-
-        </p>
+        <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
 
         <div class="page-meta">
 
@@ -1834,7 +2004,7 @@
 
       <div class="card-header" data-i18n-key="cards.status.title">
 
-        ℹ️ Status
+        Status
 
       </div>
 
@@ -1850,7 +2020,7 @@
 
               <span class="status-indicator status-inactive"></span>
 
-              <span data-i18n-key="cards.status.loading">Loading…</span>
+              <span data-i18n-key="cards.status.loading">Loading...</span>
 
             </span>
 
@@ -1894,7 +2064,7 @@
 
       <div class="card-header" data-i18n-key="cards.configuration.title">
 
-        ⚙️ Configuration
+        Configuration
 
       </div>
 
@@ -1904,7 +2074,7 @@
 
         <div class="quick-start-card">
 
-          <h4>🚀 Quick Start</h4>
+          <h4>Quick Start</h4>
 
           <div class="quick-start-steps">
 
@@ -1978,9 +2148,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>🔑 API Configuration</h5>
+              <h5>API Configuration</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -1988,13 +2158,13 @@
 
               <div class="alert alert-info mb-3" data-i18n-key="cards.configuration.api_info">
 
-                <strong>ℹ️ API Key Configuration</strong><br>
+                <strong>?? API Key Configuration</strong><br>
 
                 Configure your AI provider API keys in <strong>Settings</strong>:<br>
 
-                • <strong>OpenAI</strong>: Settings → OpenAI API Configuration<br>
+                � <strong>OpenAI</strong>: Settings ? OpenAI API Configuration<br>
 
-                • <strong>SiliconFlow</strong>: Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)
+                � <strong>SiliconFlow</strong>: Settings ? TTS API Keys ? Fish Speech 1.5 API Key (SiliconFlow)
 
               </div>
 
@@ -2004,7 +2174,7 @@
 
                 <button type="button" class="btn btn-primary" id="testApiKeyBtn" data-i18n-key="cards.configuration.test_api_key">
 
-                  🔍 Test API Key
+                  ?? Test API Key
 
                 </button>
 
@@ -2234,9 +2404,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>🎙️ TTS Voice Configuration</h5>
+              <h5>TTS Voice Configuration</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -2404,9 +2574,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>📝 Story & Voting Settings</h5>
+              <h5>Story & Voting Settings</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -2528,9 +2698,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>🎨 Overlay Customization</h5>
+              <h5>Overlay Customization</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -2690,9 +2860,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>⏱️ Timing Configuration</h5>
+              <h5>Timing Configuration</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -2798,9 +2968,9 @@
 
             <div class="config-section-header" onclick="toggleConfigSection(this)">
 
-              <h5>⚙️ Advanced Settings</h5>
+              <h5>Advanced Settings</h5>
 
-              <span class="config-section-toggle">▼</span>
+              <span class="config-section-toggle">?</span>
 
             </div>
 
@@ -2892,7 +3062,7 @@
 
           <button type="submit" class="btn btn-primary" data-i18n-key="cards.configuration.save">
 
-            💾 Save Configuration
+            ?? Save Configuration
 
           </button>
 
@@ -2910,7 +3080,7 @@
 
       <div class="card-header" data-i18n-key="cards.overlay.title">
 
-        📺 OBS Overlay
+        ?? OBS Overlay
 
       </div>
 
@@ -2924,9 +3094,9 @@
 
             <input type="text" class="form-control" id="overlayUrl" readonly value="">
 
-            <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="cards.overlay.copy">📋 Copy</button>
+            <button class="btn btn-outline-primary" id="copyOverlayUrlBtn" data-i18n-key="cards.overlay.copy">?? Copy</button>
 
-            <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="cards.overlay.open">🔗 Open</button>
+            <button class="btn btn-primary" id="openOverlayBtn" data-i18n-key="cards.overlay.open">?? Open</button>
 
           </div>
 
@@ -2944,7 +3114,7 @@
 
           <button class="btn btn-secondary btn-sm" id="toggleOverlayPreviewBtn">
 
-            <span id="previewToggleIcon">▶️</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
+            <span id="previewToggleIcon">▶</span> <span id="previewToggleText" data-i18n-key="cards.overlay.preview.show">Show preview</span>
 
           </button>
 
@@ -2972,7 +3142,7 @@
 
           <small class="text-muted d-block mt-2" data-i18n-key="cards.overlay.preview_hint">
 
-            ℹ️ This preview is rendered at 50% of the 1920x1080 overlay view.
+            ?? This preview is rendered at 50% of the 1920x1080 overlay view.
 
           </small>
 
@@ -2982,7 +3152,7 @@
 
           <div class="mt-3">
 
-            <h6 class="mb-2">🧪 Test Overlay Display</h6>
+            <h6 class="mb-2">?? Test Overlay Display</h6>
 
             <div class="d-flex gap-2 flex-wrap">
 
@@ -3014,7 +3184,7 @@
 
             <small class="text-muted d-block mt-2">
 
-              ℹ️ These buttons send test data to the overlay for preview purposes
+              ?? These buttons send test data to the overlay for preview purposes
 
             </small>
 
@@ -3034,7 +3204,7 @@
 
       <div class="card-header" data-i18n-key="cards.story_controls.title">
 
-        ▶️ Story Controls
+        ?? Story Controls
 
       </div>
 
@@ -3074,7 +3244,7 @@
 
           <button class="btn btn-success btn-lg" id="startStoryBtn" data-i18n-key="cards.story_controls.start_btn">
 
-            🚀 Start Story
+            ?? Start Story
 
           </button>
 
@@ -3090,7 +3260,7 @@
 
             <button class="btn btn-danger" id="endStoryBtn" data-i18n-key="cards.story_controls.end_story">
 
-              ⏹️ End Story
+              ?? End Story
 
             </button>
 
@@ -3108,7 +3278,7 @@
 
             <div class="alert alert-info">
 
-              🎮 <strong data-i18n-key="cards.story_controls.manual_title">Manual Mode:</strong> <span data-i18n-key="cards.story_controls.manual_body">Manually advance through each round</span>
+              ?? <strong data-i18n-key="cards.story_controls.manual_title">Manual Mode:</strong> <span data-i18n-key="cards.story_controls.manual_body">Manually advance through each round</span>
 
             </div>
 
@@ -3144,13 +3314,13 @@
 
               <button class="btn btn-primary" id="manualAdvanceBtn" disabled data-i18n-key="cards.story_controls.manual_advance">
 
-                ⏭️ Advance to Next Round
+                ?? Advance to Next Round
 
               </button>
 
               <button class="btn btn-secondary" id="manualShowResultsBtn" data-i18n-key="cards.story_controls.manual_show_results">
 
-                📊 Show Voting Results
+                ?? Show Voting Results
 
               </button>
 
@@ -3166,7 +3336,7 @@
 
             <div class="alert alert-info">
 
-              👤 <strong data-i18n-key="cards.story_controls.offline_title">Offline/Test Mode:</strong> <span data-i18n-key="cards.story_controls.offline_body">Choose the next path manually</span>
+              ?? <strong data-i18n-key="cards.story_controls.offline_title">Offline/Test Mode:</strong> <span data-i18n-key="cards.story_controls.offline_body">Choose the next path manually</span>
 
             </div>
 
@@ -3180,13 +3350,13 @@
 
             <button class="btn btn-primary" id="forceVoteEndBtn" style="display: none;" data-i18n-key="cards.story_controls.force_vote">
 
-              ✓ Force Vote End
+              ? Force Vote End
 
             </button>
 
             <button class="btn btn-secondary" id="regenerateImageBtn" data-i18n-key="cards.story_controls.regenerate_image">
 
-              🖼️ Regenerate Image
+              ??? Regenerate Image
 
             </button>
 
@@ -3206,11 +3376,11 @@
 
       <div class="card-header" data-i18n-key="cards.debug.title">
 
-        🐛 Debug Logs
+        ?? Debug Logs
 
         <button class="btn btn-sm btn-outline-light float-end" id="clearLogsBtn" data-i18n-key="cards.debug.clear">
 
-          🗑️ Clear
+          ??? Clear
 
         </button>
 
@@ -3236,7 +3406,7 @@
 
       <div class="card-header" data-i18n-key="cards.memory.title">
 
-        🧠 Story Memory / Lore Database
+        ?? Story Memory / Lore Database
 
       </div>
 
@@ -3246,7 +3416,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.characters">👥 Characters</h6>
+            <h6 data-i18n-key="cards.memory.characters">?? Characters</h6>
 
             <div id="charactersList"></div>
 
@@ -3254,7 +3424,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.locations">📍 Locations</h6>
+            <h6 data-i18n-key="cards.memory.locations">?? Locations</h6>
 
             <div id="locationsList"></div>
 
@@ -3262,7 +3432,7 @@
 
           <div class="col-md-4">
 
-            <h6 data-i18n-key="cards.memory.items">💎 Items</h6>
+            <h6 data-i18n-key="cards.memory.items">?? Items</h6>
 
             <div id="itemsList"></div>
 
@@ -3282,7 +3452,7 @@
 
       <div class="card-header" data-i18n-key="cards.voters.title">
 
-        🏆 Top Voters
+        ?? Top Voters
 
       </div>
 
@@ -3354,7 +3524,7 @@
 
           eyebrow: 'AI Storytelling Control',
 
-          title: '📖 Interactive Story Generator',
+          title: '?? Interactive Story Generator',
 
           subtitle: 'Cinematic stories with live voting, TTS narration, and OBS overlays.',
 
@@ -3372,11 +3542,11 @@
 
           status: {
 
-            title: 'ℹ️ Status',
+            title: '?? Status',
 
             plugin: 'Plugin Status',
 
-            loading: 'Loading…',
+            loading: 'Loading�',
 
             session: 'Active Session',
 
@@ -3400,19 +3570,19 @@
 
           configuration: {
 
-            title: '⚙️ Configuration',
+            title: '?? Configuration',
 
-            api_info: '<strong>ℹ️ API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br>• <strong>OpenAI</strong>: Settings → OpenAI API Configuration<br>• <strong>OpenRouter</strong>: Use an OpenRouter API key and select a free model router or free model variant<br>• <strong>Ollama</strong>: Use a local or cloud Ollama endpoint with an Ollama API key if required<br>• <strong>SiliconFlow</strong>: Settings → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)',
+            api_info: '<strong>API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br><strong>OpenAI</strong>: Settings > OpenAI API Configuration<br><strong>OpenRouter</strong>: Use an OpenRouter API key and select a free model router or free model variant<br><strong>Ollama</strong>: Use a local or cloud Ollama endpoint with an Ollama API key if required<br><strong>SiliconFlow</strong>: Settings > TTS API Keys > Fish Speech 1.5 API Key (SiliconFlow)',
 
-            test_api_key: '🔍 Test API Key',
+            test_api_key: '?? Test API Key',
 
             test_hint: 'Click to validate your API key',
 
-            testing: '⏳ Testing...',
+            testing: '? Testing...',
 
             providers: {
 
-              title: '🤖 AI Provider Selection',
+              title: '?? AI Provider Selection',
 
               llm: 'LLM Provider',
 
@@ -3442,7 +3612,7 @@
 
             models: {
 
-              title: '🎯 Model Selection',
+              title: '?? Model Selection',
 
               openai_llm: 'OpenAI LLM Model',
 
@@ -3462,7 +3632,7 @@
 
             overlay: {
 
-              title: '🎨 Overlay Customization',
+              title: 'Overlay Customization',
 
               orientation: 'Orientation',
 
@@ -3486,7 +3656,7 @@
 
             story: {
 
-              title: '📝 Story Generation Settings',
+              title: '?? Story Generation Settings',
 
               language: 'Story Language',
 
@@ -3496,7 +3666,7 @@
 
             voting: {
 
-              title: '⚙️ Voting & Generation Settings',
+              title: '?? Voting & Generation Settings',
 
               duration: 'Voting Duration (seconds)',
 
@@ -3538,21 +3708,21 @@
 
             },
 
-            save: '💾 Save Configuration',
+            save: 'Save Configuration',
 
-            generating: '⏳ Generating...'
+            generating: '? Generating...'
 
           },
 
           overlay: {
 
-            title: '📺 OBS Overlay',
+            title: 'OBS Overlay',
 
             url_label: 'Overlay URL for OBS Browser Source:',
 
-            copy: '📋 Copy',
+            copy: '?? Copy',
 
-            open: '🔗 Open',
+            open: '?? Open',
 
             hint: 'Add this URL as a Browser Source in OBS (Recommended size follows the selected overlay resolution.)',
 
@@ -3564,13 +3734,13 @@
 
             },
 
-            preview_hint: 'ℹ️ This preview is rendered at 50% of the 1920x1080 overlay view.'
+            preview_hint: '?? This preview is rendered at 50% of the 1920x1080 overlay view.'
 
           },
 
           story_controls: {
 
-            title: '▶️ Story Controls',
+            title: '?? Story Controls',
 
             start_new: 'Start New Story',
 
@@ -3580,11 +3750,11 @@
 
             custom_outline_placeholder: 'Leave blank for auto-generated outline',
 
-            start_btn: '🚀 Start Story',
+            start_btn: '?? Start Story',
 
             active_story: 'Active Story',
 
-            end_story: '⏹️ End Story',
+            end_story: '?? End Story',
 
             offline_title: 'Offline/Test Mode:',
 
@@ -3602,17 +3772,17 @@
 
             manual_voting_results: 'Current Voting Results:',
 
-            manual_advance: '⏭️ Advance to Next Round',
+            manual_advance: '?? Advance to Next Round',
 
-            manual_show_results: '📊 Show Voting Results',
+            manual_show_results: '?? Show Voting Results',
 
-            force_vote: '✓ Force Vote End',
+            force_vote: '? Force Vote End',
 
-            regenerate_image: '🖼️ Regenerate Image',
+            regenerate_image: '??? Regenerate Image',
 
             choices_title: 'Choices:',
 
-            option_label: '➡️ Option {{option}}: {{choice}}',
+            option_label: '?? Option {{option}}: {{choice}}',
 
             chapter_badge: 'Chapter {{current}} / {{total}}'
 
@@ -3620,9 +3790,9 @@
 
           debug: {
 
-            title: '🐛 Debug Logs',
+            title: '?? Debug Logs',
 
-            clear: '🗑️ Clear',
+            clear: '??? Clear',
 
             empty: 'No logs available yet'
 
@@ -3630,19 +3800,19 @@
 
           memory: {
 
-            title: '🧠 Story Memory / Lore Database',
+            title: '?? Story Memory / Lore Database',
 
-            characters: '👥 Characters',
+            characters: '?? Characters',
 
-            locations: '📍 Locations',
+            locations: '?? Locations',
 
-            items: '💎 Items'
+            items: '?? Items'
 
           },
 
           voters: {
 
-            title: '🏆 Top Voters',
+            title: '?? Top Voters',
 
             votes: '{{count}} votes'
 
@@ -3652,15 +3822,15 @@
 
         alerts: {
 
-          overlay_copied: '✅ Overlay URL copied!',
+          overlay_copied: '? Overlay URL copied!',
 
-          overlay_copy_failed: '⚠️ Copy failed. Please select the text and press Ctrl+C / Cmd+C.',
+          overlay_copy_failed: '?? Copy failed. Please select the text and press Ctrl+C / Cmd+C.',
 
-          overlay_missing: '❌ No URL available. Please reload the page.',
+          overlay_missing: '? No URL available. Please reload the page.',
 
-          overlay_blocked: '⚠️ Popup was blocked! Allow popups or open manually:\n{{url}}',
+          overlay_blocked: '?? Popup was blocked! Allow popups or open manually:\n{{url}}',
 
-          overlay_open_error: '❌ Error opening overlay. Please open manually:\n{{url}}',
+          overlay_open_error: '? Error opening overlay. Please open manually:\n{{url}}',
 
           ui_missing: 'Error: UI elements not found. Please reload the page.',
 
@@ -3698,11 +3868,11 @@
 
           eyebrow: 'AI Storytelling Steuerung',
 
-          title: '📖 Interactive Story Generator',
+          title: '?? Interactive Story Generator',
 
           subtitle: 'Cinematische Stories mit Live-Voting, TTS und OBS-Overlays.',
 
-          status: { ready: 'Bereit für deinen nächsten Stream' },
+          status: { ready: 'Bereit f�r deinen n�chsten Stream' },
 
           theme_synced: 'Design mit Dashboard synchronisiert',
 
@@ -3716,11 +3886,11 @@
 
           status: {
 
-            title: 'ℹ️ Status',
+            title: '?? Status',
 
             plugin: 'Plugin-Status',
 
-            loading: 'Lade…',
+            loading: 'Lade�',
 
             session: 'Aktive Session',
 
@@ -3744,19 +3914,19 @@
 
           configuration: {
 
-            title: '⚙️ Konfiguration',
+            title: '?? Konfiguration',
 
-            api_info: '<strong>ℹ️ API-Key Konfiguration</strong><br>Konfiguriere deine KI-Provider-Schlüssel in <strong>Einstellungen</strong>:<br>• <strong>OpenAI</strong>: Einstellungen → OpenAI API Konfiguration<br>• <strong>OpenRouter</strong>: Verwende einen OpenRouter API-Key und wähle einen Free-Router oder ein freies Modell<br>• <strong>Ollama</strong>: Nutze einen lokalen oder Cloud-Ollama-Endpunkt mit API-Key, falls nötig<br>• <strong>SiliconFlow</strong>: Einstellungen → TTS API Keys → Fish Speech 1.5 API Key (SiliconFlow)',
+            api_info: '<strong>API Key Configuration</strong><br>Configure your AI provider API keys in <strong>Settings</strong>:<br><strong>OpenAI</strong>: Settings > OpenAI API Configuration<br><strong>OpenRouter</strong>: Use an OpenRouter API key and select a free model router or free model variant<br><strong>Ollama</strong>: Use a local or cloud Ollama endpoint with an Ollama API key if required<br><strong>SiliconFlow</strong>: Settings > TTS API Keys > Fish Speech 1.5 API Key (SiliconFlow)',
 
-            test_api_key: '🔍 API-Key testen',
+            test_api_key: '?? API-Key testen',
 
-            test_hint: 'Klicke, um deinen API-Key zu prüfen',
+            test_hint: 'Klicke, um deinen API-Key zu pr�fen',
 
-            testing: '⏳ Test läuft...',
+            testing: '? Test l�uft...',
 
             providers: {
 
-              title: '🤖 KI-Provider Auswahl',
+              title: '?? KI-Provider Auswahl',
 
               llm: 'LLM-Provider',
 
@@ -3774,23 +3944,23 @@
 
             provider_help: {
 
-              openai: 'OpenAI verwendet den globalen API-Key aus den Einstellungen. Wähle ein Standard-GPT-Modell, wenn du möglichst vorhersehbares Verhalten willst.\nGut für direkte OpenAI-Nutzung und das einfachste Setup.',
+              openai: 'OpenAI verwendet den globalen API-Key aus den Einstellungen. W�hle ein Standard-GPT-Modell, wenn du m�glichst vorhersehbares Verhalten willst.\nGut f�r direkte OpenAI-Nutzung und das einfachste Setup.',
 
-              openrouter: 'OpenRouter nutzt die OpenAI-kompatible API. Verwende `openrouter/free` für Zero-Cost-Routing oder ein konkretes `:free`-Modell, wenn du das Verhalten festlegen willst.\nEin OpenRouter-Key ist nötig, und das Modellfeld akzeptiert freie Modell-IDs.',
+              openrouter: 'OpenRouter nutzt die OpenAI-kompatible API. Verwende `openrouter/free` f�r Zero-Cost-Routing oder ein konkretes `:free`-Modell, wenn du das Verhalten festlegen willst.\nEin OpenRouter-Key ist n�tig, und das Modellfeld akzeptiert freie Modell-IDs.',
 
-              ollama: 'Ollama kann lokal oder über die ollama.com-Cloud laufen. Nutze eine lokale Base-URL wie `http://127.0.0.1:11434/v1` oder die Cloud-API-URL und wähle dann das gewünschte Modell.\nEin API-Key ist lokal optional und bei manchen Cloud-Setups erforderlich.',
+              ollama: 'Ollama kann lokal oder �ber die ollama.com-Cloud laufen. Nutze eine lokale Base-URL wie `http://127.0.0.1:11434/v1` oder die Cloud-API-URL und w�hle dann das gew�nschte Modell.\nEin API-Key ist lokal optional und bei manchen Cloud-Setups erforderlich.',
 
-              siliconflow: 'SiliconFlow bleibt der Legacy-Pfad für dieses Plugin. Nutze ihn, wenn du bereits ein funktionierendes SiliconFlow-Setup hast und den bestehenden Pipeline-Weg behalten willst.\nEr wird weiter unterstützt, aber die neuen OpenAI-kompatiblen Provider sind meist einfacher zu konfigurieren.'
+              siliconflow: 'SiliconFlow bleibt der Legacy-Pfad f�r dieses Plugin. Nutze ihn, wenn du bereits ein funktionierendes SiliconFlow-Setup hast und den bestehenden Pipeline-Weg behalten willst.\nEr wird weiter unterst�tzt, aber die neuen OpenAI-kompatiblen Provider sind meist einfacher zu konfigurieren.'
 
             },
 
             models: {
 
-              title: '🎯 Modellauswahl',
+              title: '?? Modellauswahl',
 
               openai_llm: 'OpenAI LLM Modell',
 
-              openai_hint: 'GPT-5.2 ist das intelligenteste OpenAI-Modell mit besserem Befolgen von Anweisungen und Multimodalität.',
+              openai_hint: 'GPT-5.2 ist das intelligenteste OpenAI-Modell mit besserem Befolgen von Anweisungen und Multimodalit�t.',
 
               openrouter_llm: 'OpenRouter Modell',
 
@@ -3806,11 +3976,11 @@
 
             overlay: {
 
-              title: '🎨 Overlay-Anpassung',
+              title: '?? Overlay-Anpassung',
 
               orientation: 'Ausrichtung',
 
-              resolution: 'Auflösung',
+              resolution: 'Aufl�sung',
 
               display_mode: 'Darstellungsmodus',
 
@@ -3818,9 +3988,9 @@
 
               font_family: 'Schriftfamilie',
 
-              text_size: 'Textgröße (em)',
+              text_size: 'Textgr��e (em)',
 
-              title_size: 'Titelgröße (em)',
+              title_size: 'Titelgr��e (em)',
 
               text_color: 'Textfarbe',
 
@@ -3830,17 +4000,17 @@
 
             story: {
 
-              title: '📝 Story-Generierung',
+              title: '?? Story-Generierung',
 
               language: 'Story-Sprache',
 
-              language_hint: 'Sprache für Story und TTS-Erzählung'
+              language_hint: 'Sprache f�r Story und TTS-Erz�hlung'
 
             },
 
             voting: {
 
-              title: '⚙️ Voting & Generierung',
+              title: '?? Voting & Generierung',
 
               duration: 'Voting-Dauer (Sekunden)',
 
@@ -3852,17 +4022,17 @@
 
               auto_images: 'Bilder automatisch generieren',
 
-              pattern: 'Voting-Schlüsselwortmuster',
+              pattern: 'Voting-Schl�sselwortmuster',
 
               pattern_hint: 'Wie Zuschauer im Chat abstimmen',
 
               auto_tts: 'TTS automatisch generieren',
 
-              case_sensitive: 'Groß-/Kleinschreibung beachten',
+              case_sensitive: 'Gro�-/Kleinschreibung beachten',
 
               offline_mode: 'Offline/Test-Modus',
 
-              offline_hint: 'Admin wählt Pfad (kein Live-Chat nötig)',
+              offline_hint: 'Admin w�hlt Pfad (kein Live-Chat n�tig)',
 
               manual_mode: 'Manueller Modus',
 
@@ -3882,23 +4052,23 @@
 
             },
 
-            save: '💾 Konfiguration speichern',
+            save: '?? Konfiguration speichern',
 
-            generating: '⏳ Generiere...'
+            generating: '? Generiere...'
 
           },
 
           overlay: {
 
-            title: '📺 OBS Overlay',
+            title: 'OBS Overlay',
 
-            url_label: 'Overlay-URL für OBS Browser Source:',
+            url_label: 'Overlay-URL f�r OBS Browser Source:',
 
-            copy: '📋 Kopieren',
+            copy: '?? Kopieren',
 
-            open: '🔗 Öffnen',
+            open: '?? �ffnen',
 
-            hint: 'Füge diese URL in OBS als Browser Source hinzu (Empfohlene Größe: 1920x1080)',
+            hint: 'F�ge diese URL in OBS als Browser Source hinzu (Empfohlene Gr��e: 1920x1080)',
 
             preview: {
 
@@ -3908,31 +4078,31 @@
 
             },
 
-            preview_hint: 'ℹ️ Diese Vorschau wird in 50% der 1920x1080-Ansicht dargestellt.'
+            preview_hint: '?? Diese Vorschau wird in 50% der 1920x1080-Ansicht dargestellt.'
 
           },
 
           story_controls: {
 
-            title: '▶️ Story-Steuerung',
+            title: '?? Story-Steuerung',
 
             start_new: 'Neue Story starten',
 
-            select_theme: 'Thema auswählen:',
+            select_theme: 'Thema ausw�hlen:',
 
             custom_outline: 'Eigene Outline (optional)',
 
-            custom_outline_placeholder: 'Leer lassen für automatisch generierte Outline',
+            custom_outline_placeholder: 'Leer lassen f�r automatisch generierte Outline',
 
-            start_btn: '🚀 Story starten',
+            start_btn: '?? Story starten',
 
             active_story: 'Aktive Story',
 
-            end_story: '⏹️ Story beenden',
+            end_story: '?? Story beenden',
 
             offline_title: 'Offline/Test-Modus:',
 
-            offline_body: 'Wähle den nächsten Pfad manuell',
+            offline_body: 'W�hle den n�chsten Pfad manuell',
 
             manual_title: 'Manueller Modus:',
 
@@ -3946,17 +4116,17 @@
 
             manual_voting_results: 'Aktuelle Voting-Ergebnisse:',
 
-            manual_advance: '⏭️ Zur nächsten Runde',
+            manual_advance: '?? Zur n�chsten Runde',
 
-            manual_show_results: '📊 Voting-Ergebnisse anzeigen',
+            manual_show_results: '?? Voting-Ergebnisse anzeigen',
 
-            force_vote: '✓ Voting beenden',
+            force_vote: '? Voting beenden',
 
-            regenerate_image: '🖼️ Bild neu generieren',
+            regenerate_image: '??? Bild neu generieren',
 
             choices_title: 'Optionen:',
 
-            option_label: '➡️ Option {{option}}: {{choice}}',
+            option_label: '?? Option {{option}}: {{choice}}',
 
             chapter_badge: 'Kapitel {{current}} / {{total}}'
 
@@ -3964,29 +4134,29 @@
 
           debug: {
 
-            title: '🐛 Debug-Logs',
+            title: '?? Debug-Logs',
 
-            clear: '🗑️ Leeren',
+            clear: '??? Leeren',
 
-            empty: 'Keine Logs verfügbar'
+            empty: 'Keine Logs verf�gbar'
 
           },
 
           memory: {
 
-            title: '🧠 Story-Speicher / Lore-Datenbank',
+            title: '?? Story-Speicher / Lore-Datenbank',
 
-            characters: '👥 Charaktere',
+            characters: '?? Charaktere',
 
-            locations: '📍 Orte',
+            locations: '?? Orte',
 
-            items: '💎 Gegenstände'
+            items: '?? Gegenst�nde'
 
           },
 
           voters: {
 
-            title: '🏆 Top-Voter',
+            title: '?? Top-Voter',
 
             votes: '{{count}} Stimmen'
 
@@ -3996,15 +4166,15 @@
 
         alerts: {
 
-          overlay_copied: '✅ Overlay-URL kopiert!',
+          overlay_copied: '? Overlay-URL kopiert!',
 
-          overlay_copy_failed: '⚠️ Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C drücken.',
+          overlay_copy_failed: '?? Kopieren fehlgeschlagen. Bitte Text markieren und Strg+C / Cmd+C dr�cken.',
 
-          overlay_missing: '❌ Keine URL verfügbar. Bitte lade die Seite neu.',
+          overlay_missing: '? Keine URL verf�gbar. Bitte lade die Seite neu.',
 
-          overlay_blocked: '⚠️ Popup wurde blockiert! Erlaube Popups oder öffne manuell:\n{{url}}',
+          overlay_blocked: '?? Popup wurde blockiert! Erlaube Popups oder �ffne manuell:\n{{url}}',
 
-          overlay_open_error: '❌ Fehler beim Öffnen des Overlays. Bitte manuell öffnen:\n{{url}}',
+          overlay_open_error: '? Fehler beim �ffnen des Overlays. Bitte manuell �ffnen:\n{{url}}',
 
           ui_missing: 'Fehler: UI-Elemente nicht gefunden. Bitte Seite neu laden.',
 
@@ -4014,7 +4184,7 @@
 
           config_save_error: 'Fehler beim Speichern der Konfiguration: {{message}}',
 
-          theme_required: 'Bitte zuerst ein Thema auswählen!',
+          theme_required: 'Bitte zuerst ein Thema ausw�hlen!',
 
           story_start_error: 'Fehler beim Starten der Story: {{message}}',
 
@@ -4028,9 +4198,9 @@
 
         prompts: {
 
-          confirm_choice: 'Bist du sicher, dass du Option {{option}} wählen möchtest?',
+          confirm_choice: 'Bist du sicher, dass du Option {{option}} w�hlen m�chtest?',
 
-          confirm_end_story: 'Möchtest du die aktuelle Story wirklich beenden?'
+          confirm_end_story: 'M�chtest du die aktuelle Story wirklich beenden?'
 
         }
 
@@ -4110,17 +4280,45 @@
 
     function updateThemeBadge(theme) {
 
+      const logoByTheme = {
+        day: '/logo-wide.png',
+        night: '/logo-wide.png',
+        contrast: '/logo-wide.png',
+        'vision-impaired': '/logo-wide.png',
+        cid: '/logo-wide.png'
+      };
+
+      const fileLogoByTheme = {
+        day: '../../../public/logo-wide.png',
+        night: '../../../public/logo-wide.png',
+        contrast: '../../../public/logo-wide.png',
+        'vision-impaired': '../../../public/logo-wide.png',
+        cid: '../../../public/logo-wide.png'
+      };
+
       const badgeText = document.querySelector('#themeBadge span:last-child');
 
       if (badgeText) {
 
-        const themeName = t(`hero.theme_name.${theme}`) || theme;
+        const themeKey = `hero.theme_name.${theme}`;
+        const localizedThemeName = t(themeKey);
+        const themeName = (!localizedThemeName || localizedThemeName === themeKey) ? theme : localizedThemeName;
 
-        badgeText.textContent = `${t('hero.theme_synced')} · ${themeName}`;
+        badgeText.textContent = `${t('hero.theme_synced')} � ${themeName}`;
 
       }
 
       document.documentElement.setAttribute('data-theme', theme);
+
+      const logo = document.querySelector('[data-brand-logo]');
+      if (logo) {
+        const nextSrc = location.protocol === 'file:'
+          ? new URL(fileLogoByTheme[theme] || fileLogoByTheme.night, location.href).href
+          : (logoByTheme[theme] || logoByTheme.night);
+        if (logo.getAttribute('src') !== nextSrc) {
+          logo.setAttribute('src', nextSrc);
+        }
+      }
 
       document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
 
@@ -4130,7 +4328,7 @@
 
     function readSharedTheme() {
 
-      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
       try {
 
@@ -4144,7 +4342,7 @@
 
       try {
 
-        for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+        for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
 
           const value = localStorage.getItem(key);
 
@@ -4251,16 +4449,24 @@
       }
 
 
-
       updateThemeBadge(readSharedTheme());
 
 
 
       window.addEventListener('storage', (event) => {
 
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
 
-          updateThemeBadge(readSharedTheme());
+                try {
+        if (location.protocol === ''file:'') {
+          const logo = document.querySelector(''.page-logo'');
+          if (logo && logo.dataset.fileSrc) {
+            logo.src = new URL(logo.dataset.fileSrc, location.href).href;
+          }
+        }
+      } catch (error) {}
+
+      updateThemeBadge(readSharedTheme());
 
         }
 
@@ -4278,7 +4484,16 @@
 
           if (mutation.attributeName === 'data-theme') {
 
-            updateThemeBadge(readSharedTheme());
+                  try {
+        if (location.protocol === ''file:'') {
+          const logo = document.querySelector(''.page-logo'');
+          if (logo && logo.dataset.fileSrc) {
+            logo.src = new URL(logo.dataset.fileSrc, location.href).href;
+          }
+        }
+      } catch (error) {}
+
+      updateThemeBadge(readSharedTheme());
 
           }
 
@@ -4778,7 +4993,7 @@
 
           endBtn.disabled = true;
 
-          endBtn.innerHTML = '⏳ Ending...';
+          endBtn.innerHTML = '? Ending...';
 
           
 
@@ -4806,7 +5021,7 @@
 
             // Show success message briefly
 
-            endBtn.innerHTML = '✅ Story Ended';
+            endBtn.innerHTML = '? Story Ended';
 
             setTimeout(() => {
 
@@ -4866,7 +5081,7 @@
 
       } catch (eventListenerError) {
 
-        console.error('❌ Error setting up event listeners:', eventListenerError);
+        console.error('? Error setting up event listeners:', eventListenerError);
 
         // Show error to user but don't break the entire UI
 
@@ -5002,7 +5217,7 @@
 
         updateOverlayPreviewSizing();
 
-        toggleIcon.textContent = '⏸️';
+        toggleIcon.textContent = '??';
 
         toggleText.textContent = t('cards.overlay.preview.hide');
 
@@ -5010,7 +5225,7 @@
 
         container.style.display = 'none';
 
-        toggleIcon.textContent = '▶️';
+        toggleIcon.textContent = '??';
 
         toggleText.textContent = t('cards.overlay.preview.show');
 
@@ -5100,7 +5315,7 @@
 
         chapterNumber: 1,
 
-        title: '🌟 The Beginning of an Epic Adventure',
+        title: '?? The Beginning of an Epic Adventure',
 
         content: 'Our hero awakens in a mysterious forest, surrounded by ancient trees whispering secrets of old.',
 
@@ -5396,7 +5611,7 @@
 
           resultDiv.innerHTML = `
 
-            <strong>✅ ${result.message}</strong><br>
+            <strong>? ${result.message}</strong><br>
 
             <small>
 
@@ -5416,7 +5631,7 @@
 
           resultDiv.className = 'alert alert-danger mt-2';
 
-          let html = `<strong>❌ ${result.message}</strong><br>`;
+          let html = `<strong>? ${result.message}</strong><br>`;
 
           
 
@@ -5440,7 +5655,7 @@
 
               if (result.details.keyLength !== 64 && result.provider && result.provider.toLowerCase() !== 'openai') {
 
-                html += ` <span style="color: #ffc107;">⚠️ Expected: ~64 characters</span>`;
+                html += ` <span style="color: #ffc107;">?? Expected: ~64 characters</span>`;
 
               }
 
@@ -5450,7 +5665,7 @@
 
               if (result.details.hasWhitespace) {
 
-                html += `<span style="color: #ffc107;">⚠️ API key contains whitespace!</span><br>`;
+                html += `<span style="color: #ffc107;">?? API key contains whitespace!</span><br>`;
 
               }
 
@@ -5488,7 +5703,7 @@
 
         resultDiv.innerHTML = `
 
-          <strong>❌ ${t('alerts.api_test_error')}</strong><br>
+          <strong>? ${t('alerts.api_test_error')}</strong><br>
 
           <small>${error.message}</small><br>
 
@@ -6336,7 +6551,7 @@
 
         col.className = 'col-md-4 mb-3';
 
-        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+        const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
 
         col.innerHTML = `
 
@@ -6432,7 +6647,7 @@
 
           col.className = 'col-md-4 mb-3';
 
-          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+          const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
 
           col.innerHTML = `
 
@@ -6500,7 +6715,7 @@
 
             col.className = 'col-md-4 mb-3';
 
-            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">🐾 Furry</span>' : '';
+            const furryBadge = theme.furry ? '<span class="badge bg-primary ms-2">?? Furry</span>' : '';
 
             col.innerHTML = `
 
@@ -7126,7 +7341,7 @@
 
         charList.innerHTML = memory.characters.map(char => 
 
-          `<div class="memory-tag">👤 ${char.name}</div>`
+          `<div class="memory-tag">?? ${char.name}</div>`
 
         ).join('');
 
@@ -7138,7 +7353,7 @@
 
         locList.innerHTML = memory.locations.map(loc => 
 
-          `<div class="memory-tag">📍 ${loc.name}</div>`
+          `<div class="memory-tag">?? ${loc.name}</div>`
 
         ).join('');
 
@@ -7150,7 +7365,7 @@
 
         itemList.innerHTML = memory.items.map(item => 
 
-          `<div class="memory-tag">💎 ${item.name}</div>`
+          `<div class="memory-tag">?? ${item.name}</div>`
 
         ).join('');
 
@@ -7256,19 +7471,19 @@
 
       if (data.isTimeout || data.statusCode === 504) {
 
-        errorMsg = `⏱️ API Timeout: The story generation took too long.
+        errorMsg = `?? API Timeout: The story generation took too long.
 
 
 
-💡 Suggestions:
+?? Suggestions:
 
-• Wait a few minutes and try again (API may be overloaded)
+� Wait a few minutes and try again (API may be overloaded)
 
-• Use the "End Story" button to stop the current story
+� Use the "End Story" button to stop the current story
 
-• Consider switching to a faster model in configuration
+� Consider switching to a faster model in configuration
 
-• Reduce max_chapters for shorter stories
+� Reduce max_chapters for shorter stories
 
 
 
@@ -7436,9 +7651,45 @@ You can still manually end the story and start a new one.`;
 
   </script>
 
+
+<style id="final-late-vision-primary-contrast">
+html[data-theme="vision-impaired"] .btn.btn-primary,
+html[data-theme="vision-impaired"] button.btn-primary,
+html[data-theme="vision-impaired"] #testApiKeyBtn,
+html[data-theme="vision-impaired"] #openOverlayBtn {
+  background: #ffd400 !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  border: 3px solid #000000 !important;
+  box-shadow: none !important;
+}
+</style>
+<style id="final-interactive-story-quick-start-day-contrast">
+html[data-theme="day"] .quick-start-step {
+  background: #ffffff !important;
+  color: #10203a !important;
+  -webkit-text-fill-color: #10203a !important;
+  border: 1px solid #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="day"] .quick-start-step .step-content strong {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html[data-theme="day"] .quick-start-step .step-content small {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+</style>
 </body>
 
 </html>
+
+
 
 
 

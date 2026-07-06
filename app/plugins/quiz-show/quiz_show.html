@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -9,11 +9,58 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/lucide.min.js"></script>
+    <script>
+        (function () {
+            const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const LOGO_BY_THEME = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/logo-wide.png'
+            };
+
+            function readTheme() {
+                try {
+                    if (window.parent && window.parent !== window) {
+                        const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
+                        if (VALID_THEMES.has(parentTheme)) return parentTheme;
+                    }
+                } catch (error) {}
+
+                try {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
+                        const value = localStorage.getItem(key);
+                        if (VALID_THEMES.has(value)) return value;
+                    }
+                } catch (error) {}
+
+                return 'night';
+            }
+
+            function syncTheme() {
+                const theme = readTheme();
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) logo.src = LOGO_BY_THEME[theme] || LOGO_BY_THEME.night;
+            }
+
+            syncTheme();
+            window.addEventListener('focus', syncTheme);
+            window.addEventListener('storage', syncTheme);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) syncTheme();
+            });
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1> Pup Cid's Little Quiz Show Plugin</h1>
+            <div class="header-brand">
+                <img class="quiz-header-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+            </div>
             <div class="header-status">
                 <div id="connectionStatus" class="status-badge status-connected">Verbunden</div>
                 <div id="quizStatus" class="status-badge status-idle">Bereit</div>
