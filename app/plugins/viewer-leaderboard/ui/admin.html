@@ -1706,7 +1706,6 @@
                     <input type="checkbox" class="form-check-input" id="enableDailyBonus" checked>
                     <label class="form-check-label" for="enableDailyBonus">
                       <strong>Enable Daily Bonus</strong>
-                Award XP
                     </label>
                   </div>
                   
@@ -1722,7 +1721,6 @@
                     <input type="checkbox" class="form-check-input" id="enableWatchTime" checked>
                     <label class="form-check-label" for="enableWatchTime">
                       <strong>Enable Watch Time XP</strong>
-                Award XP
                     </label>
                   </div>
                 </div>
@@ -1731,7 +1729,6 @@
                   <div class="form-group">
                     <label class="form-label">Watch Time Interval (minutes)</label>
                     <input type="number" class="form-control" id="watchTimeInterval" min="1" max="60" value="5">
-                Award XP
                   </div>
                   
                   <div class="form-check" style="margin-top: 16px;">
@@ -1936,12 +1933,11 @@
       <div id="page-manual-award" class="tab-content">
         <div class="page-header">
           <h1 class="page-title">XP Settings</h1>
-                Award XP
         </div>
 
         <div class="card" style="max-width: 1200px; width: min(96vw, 1200px);">
           <div class="card-header">
-                Award XP
+            Award XP
           </div>
           <div class="card-body">
             <div class="alert alert-info">
@@ -1957,7 +1953,6 @@
                 <label class="form-label">Username *</label>
                 <input type="text" class="form-control" id="awardUsername" placeholder="Enter viewer username" list="viewerSuggestions" autocomplete="off" required>
                 <datalist id="viewerSuggestions"></datalist>
-                Award XP
               </div>
 
               <div class="form-group">
@@ -1974,7 +1969,7 @@
 
               <div style="display: flex; gap: 12px;">
                 <button type="submit" class="btn btn-success">
-                Award XP
+                  Award XP
                 </button>
                 <button type="button" class="btn btn-secondary" data-action="clearAwardForm">
                   ðŸ”„ Clear Form
@@ -2902,7 +2897,7 @@
           loadRecentAwards();
           showToast(`Successfully awarded ${amount} XP to ${username}!`);
         } else {
-                Award XP
+          showToast(`Failed to award ${amount} XP to ${username}`, 'error');
         }
       } catch (error) {
         resultDiv.innerHTML = `
