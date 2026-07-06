@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/themes.css">
   <script>
     (function () {
-      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
 
       function readTheme() {
         try {
@@ -18,7 +18,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (validThemes.has(value)) return value;
           }
@@ -93,6 +93,20 @@
       background: rgba(148, 163, 184, 0.12);
       border-color: var(--color-border, rgba(148, 163, 184, 0.25));
     }
+    html[data-theme="day"] .nav button.active,
+    html[data-theme="night"] .nav button.active {
+      background: #1d4ed8;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      border-color: #93c5fd;
+    }
+    html[data-theme="contrast"] .nav button.active,
+    html[data-theme="vision-impaired"] .nav button.active {
+      background: #facc15;
+      color: #000;
+      -webkit-text-fill-color: #000;
+      border-color: #facc15;
+    }
     main { min-width: 0; padding: 28px; }
     .topline {
       display: flex;
@@ -103,7 +117,7 @@
     }
     .topline h2 { margin: 0; font-size: 1.45rem; line-height: 1.25; }
     .topline p {
-      max-width: 760px;
+      max-width: 1300px;
       margin: 7px 0 0;
       color: var(--color-text-secondary, #a7b0c0);
       font-size: 0.92rem;
@@ -424,6 +438,75 @@
       color: #facc15;
     }
 
+    html[data-theme="vision-impaired"] .button,
+    html[data-theme="vision-impaired"] .notice,
+    html[data-theme="vision-impaired"] .metric,
+    html[data-theme="vision-impaired"] .panel,
+    html[data-theme="vision-impaired"] .item,
+    html[data-theme="vision-impaired"] .recipe,
+    html[data-theme="vision-impaired"] .job,
+    html[data-theme="vision-impaired"] .preset-card,
+    html[data-theme="vision-impaired"] input,
+    html[data-theme="vision-impaired"] select {
+      box-shadow: none;
+      border-width: 3px;
+    }
+
+    html[data-theme="vision-impaired"] .notice.error {
+      background: #2a0000;
+      color: #fff7cc;
+      border-color: #f87171;
+    }
+
+    html[data-theme="vision-impaired"] .status.ready,
+    html[data-theme="vision-impaired"] .status.succeeded,
+    html[data-theme="vision-impaired"] .status.installed,
+    html[data-theme="vision-impaired"] .status.recommended {
+      background: rgba(34, 197, 94, 0.25);
+      color: #bbf7d0;
+    }
+
+    html[data-theme="vision-impaired"] .status.failed,
+    html[data-theme="vision-impaired"] .status.unreachable,
+    html[data-theme="vision-impaired"] .status.missing_api_key,
+    html[data-theme="vision-impaired"] .status.missing,
+    html[data-theme="vision-impaired"] .status.not_recommended {
+      background: rgba(239, 68, 68, 0.35);
+      color: #fecaca;
+    }
+
+    html[data-theme="cid"] body {
+      background: #030603;
+      color: #f4fff4;
+    }
+
+    html[data-theme="cid"] .sidebar,
+    html[data-theme="cid"] .metric,
+    html[data-theme="cid"] .panel,
+    html[data-theme="cid"] .item,
+    html[data-theme="cid"] .recipe,
+    html[data-theme="cid"] .job,
+    html[data-theme="cid"] .preset-card,
+    html[data-theme="cid"] .button,
+    html[data-theme="cid"] input,
+    html[data-theme="cid"] select {
+      background: rgba(7, 17, 7, 0.96);
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+
+    html[data-theme="cid"] .nav button:hover,
+    html[data-theme="cid"] .nav button.active {
+      background: #0f2b14;
+      color: #4ade80;
+    }
+
+    html[data-theme="cid"] .notice.error {
+      background: rgba(66, 10, 10, 0.92);
+      color: #fff7cc;
+      border-color: #f87171;
+    }
+
     html[data-theme="vision-impaired"] .muted,
     html[data-theme="vision-impaired"] .model-help,
     html[data-theme="vision-impaired"] .manual-steps,
@@ -497,7 +580,148 @@
       .item-frame { width: 58px; height: 58px; padding: 4px; }
       .item-frame img { width: 48px; height: 48px; }
     }
-  </style>
+  
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .shell {
+            display: grid !important;
+            grid-template-columns: 292px minmax(0, 1fr) !important;
+        }
+
+        html[data-theme="cid"] .sidebar {
+            width: 292px !important;
+            min-width: 292px !important;
+            max-width: 292px !important;
+            padding: 28px 20px !important;
+        }
+
+        html[data-theme="cid"] .brand h1 {
+            font-size: 1.2rem;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="cid"] .brand p {
+            color: #b9d7bd;
+            font-size: 0.9rem;
+        }
+
+        html[data-theme="cid"] .nav {
+            gap: 10px;
+        }
+
+        html[data-theme="cid"] .nav button {
+            min-height: 46px;
+            padding: 11px 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            letter-spacing: 0.01em;
+        }
+
+        html[data-theme="vision-impaired"] .topline p {
+            max-width: 100%;
+            color: #fff7cc;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        html[data-theme="vision-impaired"] .nav button,
+        html[data-theme="vision-impaired"] .button {
+            min-height: 46px;
+            border-width: 2px;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    </style>
 </head>
 <body>
   <div class="shell">
@@ -1147,4 +1371,3 @@
   </script>
 </body>
 </html>
-
