@@ -8,9 +8,20 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function() {
-            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/logo-wide.png'
+            };
 
             function readTheme() {
+                try {
+                    const selfTheme = document.documentElement?.getAttribute('data-theme');
+                    if (validThemes.has(selfTheme)) return selfTheme;
+                } catch (error) {}
                 try {
                     if (window.parent && window.parent !== window) {
                         const parentTheme = window.parent.document?.documentElement?.getAttribute('data-theme');
@@ -19,7 +30,7 @@
                 } catch (error) {}
 
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (validThemes.has(value)) return value;
                     }
@@ -30,8 +41,18 @@
 
             function syncTheme() {
                 const theme = readTheme();
-                document.documentElement.setAttribute('data-theme', theme);
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logos = document.querySelectorAll('[data-brand-logo]');
+                logos.forEach((logo) => {
+                    const nextSrc = logoByTheme[theme] || logoByTheme.night;
+                    if (logo.getAttribute('src') !== nextSrc) {
+                        logo.setAttribute('src', nextSrc);
+                    }
+                });
             }
 
             syncTheme();
@@ -39,6 +60,13 @@
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) syncTheme();
             });
+
+            try {
+                new MutationObserver(syncTheme).observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['data-theme']
+                });
+            } catch (error) {}
 
             try {
                 if (window.parent && window.parent !== window) {
@@ -74,6 +102,29 @@
         }
         .main-content { flex: 1; padding: 24px 28px; overflow-y: auto; }
 
+        .page-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 18px;
+            min-height: 72px;
+        }
+
+        .page-brand-logo {
+            width: min(250px, 42vw);
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        html[data-theme="vision-impaired"] .page-brand-logo {
+            width: min(300px, 50vw);
+        }
+
+        html[data-theme="cid"] .page-brand-logo {
+            width: min(230px, 38vw);
+        }
+
         .logo { 
             font-size: 1.3rem; 
             font-weight: 700; 
@@ -99,6 +150,17 @@
         }
         .nav-btn:hover { background: var(--color-active-bg); }
         .nav-btn.active { background: var(--color-accent-primary); color: white; }
+        html[data-theme="day"] .nav-btn.active,
+        html[data-theme="night"] .nav-btn.active {
+            background: #0f8712;
+            color: #fff;
+        }
+        html[data-theme="contrast"] .nav-btn.active,
+        html[data-theme="vision-impaired"] .nav-btn.active {
+            background: #facc15;
+            color: #000;
+            border-color: #facc15;
+        }
 
         .btn { 
             padding: 8px 16px; 
@@ -112,7 +174,7 @@
         .btn-primary { background: var(--color-accent-primary); color: white; }
         .btn-primary:hover { filter: brightness(1.1); }
         .btn-success { background: var(--color-accent-success); color: white; }
-        .btn-warning { background: var(--color-accent-warning); color: white; }
+        .btn-warning { background: var(--color-accent-warning); color: #111827; }
         .btn-danger { background: var(--color-accent-danger); color: white; }
         .btn-secondary { 
             background: var(--color-btn-secondary-bg); 
@@ -121,7 +183,7 @@
         .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
         .btn-xs { padding: 3px 8px; font-size: 0.75rem; }
 
-        /* ── Timer Card ───────────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Timer Card Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .timer-card { 
             background: var(--color-bg-card); 
             border-radius: 14px; 
@@ -165,13 +227,13 @@
             font-weight: 600;
         }
         .state-running { background: var(--color-accent-success); color: white; }
-        .state-paused { background: var(--color-accent-warning); color: white; }
+        .state-paused { background: var(--color-accent-warning); color: #111827; }
         .state-stopped { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
         .state-completed { background: var(--color-accent-primary); color: white; }
 
         .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
 
-        /* ── Overlay URL inline ───────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Overlay URL inline Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .overlay-row {
             display: flex;
             align-items: center;
@@ -190,7 +252,7 @@
             min-width: 0;
         }
 
-        /* ── Collapsible sections ────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Collapsible sections Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .section-toggle {
             width: 100%;
             display: flex;
@@ -212,7 +274,7 @@
         .section-body { display: none; padding: 12px 0 4px 0; }
         .section-body.open { display: block; }
 
-        /* ── Interactions grid ─────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Interactions grid Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .interactions-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -257,7 +319,7 @@
         }
         .save-indicator.show { opacity: 1; }
 
-        /* ── Multiplier ───────────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Multiplier Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .multiplier-row {
             display: flex;
             align-items: center;
@@ -291,7 +353,7 @@
         input:checked + .toggle-slider { background: var(--color-accent-primary); }
         input:checked + .toggle-slider:before { transform: translateX(18px); }
 
-        /* ── Shortcuts ────────────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Shortcuts Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .shortcuts-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -314,7 +376,7 @@
         }
         .shortcut-input:focus { outline: none; border-color: var(--color-accent-primary); }
 
-        /* ── Activity Log ─────────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Activity Log Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .log-entry {
             padding: 8px 0;
             border-bottom: 1px solid var(--color-border);
@@ -329,7 +391,7 @@
         .log-change.positive { color: var(--color-accent-success); }
         .log-change.negative { color: var(--color-accent-danger); }
 
-        /* ── Settings section ────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Settings section Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .settings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -353,7 +415,7 @@
         }
         .field-input:focus { outline: none; border-color: var(--color-accent-primary); }
 
-        /* ── Form (Create) ───────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Form (Create) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .form-group { margin-bottom: 18px; }
         .form-label { display: block; font-weight: 600; margin-bottom: 6px; }
         .form-control { 
@@ -381,7 +443,7 @@
         .empty-state-icon { font-size: 3.5rem; margin-bottom: 14px; opacity: 0.3; }
         .empty-state-text { font-size: 1rem; margin-bottom: 20px; }
 
-        /* ── Profiles ────────────────────────────────────────────── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Profiles Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
         .profile-card {
             background: var(--color-bg-card);
             border-radius: 10px;
@@ -405,7 +467,7 @@
         }
         .adv-events-link:hover { text-decoration: underline; }
 
-        /* ── Rotator + Threshold Settings (new sections) ── */
+        /* Ã¢â€â‚¬Ã¢â€â‚¬ Rotator + Threshold Settings (new sections) Ã¢â€â‚¬Ã¢â€â‚¬ */
         .rotator-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -652,34 +714,199 @@
                 align-items: stretch;
             }
         }
-    </style>
+
+        @media (max-width: 800px) {
+            html[data-theme="vision-impaired"] .sidebar {
+                border-bottom: 3px solid #facc15;
+            }
+
+            html[data-theme="vision-impaired"] .theme-toggle-container,
+            html[data-theme="vision-impaired"] .nav-btn,
+            html[data-theme="vision-impaired"] .btn {
+                border-width: 3px;
+            }
+
+            html[data-theme="vision-impaired"] .page-title {
+                font-size: 2rem;
+                line-height: 1.2;
+            }
+
+            html[data-theme="vision-impaired"] .timer-title,
+            html[data-theme="vision-impaired"] .timer-display {
+                letter-spacing: 0.01em;
+            }
+
+            html[data-theme="cid"] .sidebar {
+                border-bottom: 2px solid #1e5b2a;
+            }
+
+            html[data-theme="cid"] .theme-toggle-container,
+            html[data-theme="cid"] .nav-btn,
+            html[data-theme="cid"] .btn {
+                border-width: 2px;
+            }
+
+            html[data-theme="cid"] .page-title {
+                font-size: 1.85rem;
+                line-height: 1.2;
+            }
+        }
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    
+        /* Accessibility contrast pass: keep action buttons readable in contrast modes */
+        html[data-theme="contrast"] .nav-btn.active,
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="contrast"] .btn-warning,
+        html[data-theme="vision-impaired"] .nav-btn.active,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .btn-warning {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #000 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-secondary {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff !important;
+        }</style>
 </head>
 <body>
 <div class="app-container">
     <!-- Sidebar -->
     <div class="sidebar">
-        <div class="logo">⏱️ Advanced Timer</div>
-        <button class="nav-btn active" data-tab="timers">📊 Timers</button>
-        <button class="nav-btn" data-tab="create">➕ Create Timer</button>
-        <button class="nav-btn" data-tab="profiles">💾 Profiles</button>
-        <button class="nav-btn" data-tab="help">❓ Help</button>
+        <button class="nav-btn active" data-tab="timers">Timers</button>
+        <button class="nav-btn" data-tab="create">Create Timer</button>
+        <button class="nav-btn" data-tab="profiles">Profiles</button>
+        <button class="nav-btn" data-tab="help">Help</button>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
 
-        <!-- ── Timers Tab ─────────────────────────────── -->
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬ Timers Tab Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
         <div id="tab-timers" class="tab-content active">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>Active Timers</h1>
-                <button class="btn btn-primary" data-tab="create">➕ New Timer</button>
+                <div class="page-brand">
+                    <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+                </div>
+                <button class="btn btn-primary" data-tab="create">New Timer</button>
             </div>
             <div id="timers-container"></div>
         </div>
 
-        <!-- ── Create Timer Tab ───────────────────────── -->
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬ Create Timer Tab Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
         <div id="tab-create" class="tab-content" style="display:none;">
-            <h1 style="margin-bottom:20px;">Create New Timer</h1>
+            <div class="page-brand" style="margin-bottom:20px;">
+                <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+            </div>
             <form id="timer-form">
                 <div class="form-group">
                     <label class="form-label">Timer Name</label>
@@ -688,11 +915,11 @@
                 <div class="form-group">
                     <label class="form-label">Timer Mode</label>
                     <select class="form-control" id="timer-mode" required>
-                        <option value="countdown">Countdown – count down from a time</option>
-                        <option value="countup">Count Up – count up to a target</option>
-                        <option value="stopwatch">Stopwatch – count up indefinitely</option>
-                        <option value="loop">Loop – repeat countdown continuously</option>
-                        <option value="interval">Interval – repeat up to target</option>
+                        <option value="countdown">Countdown Ã¢â‚¬â€œ count down from a time</option>
+                        <option value="countup">Count Up Ã¢â‚¬â€œ count up to a target</option>
+                        <option value="stopwatch">Stopwatch Ã¢â‚¬â€œ count up indefinitely</option>
+                        <option value="loop">Loop Ã¢â‚¬â€œ repeat countdown continuously</option>
+                        <option value="interval">Interval Ã¢â‚¬â€œ repeat up to target</option>
                     </select>
                 </div>
                 <div class="form-row">
@@ -706,8 +933,8 @@
                     </div>
                 </div>
                 <div class="info-box">
-                    <div class="info-box-title">💡 Quick Setup</div>
-                    <p>After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card — no separate event rules needed for basic interactions.</p>
+                    <div class="info-box-title">Ã°Å¸â€™Â¡ Quick Setup</div>
+                    <p>After creating the timer you can set Per Coin, Per Like, Per Follow etc. directly on the timer card Ã¢â‚¬â€ no separate event rules needed for basic interactions.</p>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:20px;">
                     <button type="submit" class="btn btn-primary">Create Timer</button>
@@ -716,37 +943,41 @@
             </form>
         </div>
 
-        <!-- ── Profiles Tab ───────────────────────────── -->
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬ Profiles Tab Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
         <div id="tab-profiles" class="tab-content" style="display:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h1>Timer Profiles</h1>
-                <button class="btn btn-primary" id="save-profile-btn">💾 Save Current Setup</button>
+                <div class="page-brand">
+                    <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+                </div>
+                <button class="btn btn-primary" id="save-profile-btn">Save Current Setup</button>
             </div>
             <div id="profiles-container"></div>
         </div>
 
-        <!-- ── Help Tab ───────────────────────────────── -->
+        <!-- Ã¢â€â‚¬Ã¢â€â‚¬ Help Tab Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
         <div id="tab-help" class="tab-content" style="display:none;">
-            <h1 style="margin-bottom:20px;">Help & Documentation</h1>
+            <div class="page-brand" style="margin-bottom:20px;">
+                <img class="page-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+            </div>
             <div class="info-box">
-                <div class="info-box-title">🎯 Timer Modes</div>
-                <p><strong>Countdown:</strong> Counts down to zero – great for subathon timers</p>
+                <div class="info-box-title">Ã°Å¸Å½Â¯ Timer Modes</div>
+                <p><strong>Countdown:</strong> Counts down to zero Ã¢â‚¬â€œ great for subathon timers</p>
                 <p><strong>Count Up:</strong> Counts up to a target value</p>
                 <p><strong>Stopwatch:</strong> Counts up indefinitely</p>
                 <p><strong>Loop:</strong> Continuously repeats countdown</p>
                 <p><strong>Interval:</strong> Counts up to target, then resets and repeats</p>
             </div>
             <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">⚡ Direct Interactions</div>
+                <div class="info-box-title">Ã¢Å¡Â¡ Direct Interactions</div>
                 <p>Set <em>Per Coin, Per Follow, Per Share, Per Subscribe, Per Like, Per Chat Message</em> directly on each timer card. Use positive values to add time, negative to reduce.</p>
-                <p style="margin-top:6px;">Enable the <strong>x Multiplier</strong> to multiply all interaction values by a factor (e.g. ×10 for events).</p>
+                <p style="margin-top:6px;">Enable the <strong>x Multiplier</strong> to multiply all interaction values by a factor (e.g. Ãƒâ€”10 for events).</p>
             </div>
             <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">🔗 Advanced Event Rules</div>
+                <div class="info-box-title">Ã°Å¸â€â€” Advanced Event Rules</div>
                 <p>Need gift-name filters or chat-command matching? Use the <em>Advanced Event Rules</em> link on each timer card to configure per-gift / per-command rules.</p>
             </div>
             <div class="info-box" style="margin-top:14px;">
-                <div class="info-box-title">📊 OBS Overlay</div>
+                <div class="info-box-title">Ã°Å¸â€œÅ  OBS Overlay</div>
                 <p>Each timer card shows its overlay URL. Add it as a Browser Source in OBS.</p>
             </div>
         </div>

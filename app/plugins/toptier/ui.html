@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Top Tier – Admin</title>
+  <title>Top Tier - Admin</title>
   <link rel="stylesheet" href="/css/themes.css">
   <script src="/socket.io/socket.io.js"></script>
   <script>
     (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const BRAND_LOGO_BY_THEME = {
+        day: '/logo-wide.png',
+        night: '/logo-wide.png',
+        contrast: '/logo-wide.png',
+        'vision-impaired': '/logo-wide.png',
+        cid: '/logo-wide.png'
+      };
 
       function readTheme() {
         try {
@@ -19,7 +26,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (VALID_THEMES.has(value)) return value;
           }
@@ -33,13 +40,22 @@
         document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
       }
 
+      function syncBrandLogo(theme) {
+        const el = document.querySelector('[data-brand-logo]');
+        if (!el) return;
+        const resolvedTheme = VALID_THEMES.has(theme) ? theme : 'night';
+        el.src = BRAND_LOGO_BY_THEME[resolvedTheme] || BRAND_LOGO_BY_THEME.night;
+      }
+
       function syncTheme() {
-        applyTheme(readTheme());
+        const theme = readTheme();
+        applyTheme(theme);
+        syncBrandLogo(theme);
       }
 
       syncTheme();
       window.addEventListener('storage', (event) => {
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
           syncTheme();
         }
       });
@@ -72,6 +88,18 @@
       width: 100%;
       margin: 0;
       padding: 24px 24px 32px;
+    }
+    .tt-brand {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 8px;
+    }
+    .tt-brand-logo {
+      display: block;
+      width: min(320px, 62vw);
+      height: auto;
+      object-fit: contain;
     }
     h1 { font-size: 1.6em; margin-bottom: 4px; }
     h1 span { font-size: 0.6em; opacity: 0.5; font-weight: 400; }
@@ -335,43 +363,111 @@
       color: #fff;
       border: 1px solid #fff;
     }
-  </style>
+    html[data-theme='cid'] body {
+      background: #030603;
+      color: #f4fff4;
+    }
+    html[data-theme='cid'] .tt-app {
+      max-width: none;
+      width: 100%;
+      margin: 0;
+      padding: 24px 24px 32px;
+    }
+    html[data-theme='cid'] h1,
+    html[data-theme='cid'] h2,
+    html[data-theme='cid'] h3,
+    html[data-theme='cid'] label,
+    html[data-theme='cid'] th {
+      color: #d1e7d1;
+    }
+    html[data-theme='cid'] h1,
+    html[data-theme='cid'] h1 span {
+      color: #4ade80;
+      opacity: 1;
+    }
+    html[data-theme='cid'] .tt-panel,
+    html[data-theme='cid'] .tt-tab.active,
+    html[data-theme='cid'] .tt-url-box,
+    html[data-theme='cid'] .tt-info-box,
+    html[data-theme='cid'] input[type="text"],
+    html[data-theme='cid'] input[type="number"],
+    html[data-theme='cid'] input[type="color"],
+    html[data-theme='cid'] select,
+    html[data-theme='cid'] textarea {
+      background: #071107;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+    html[data-theme='cid'] .tt-tab {
+      background: #061006;
+      color: #d1e7d1;
+      border-color: #1e5b2a;
+    }
+    html[data-theme='cid'] .tt-tab:hover {
+      background: #0b1a0b;
+      border-color: #4ade80;
+    }
+    html[data-theme='cid'] .tt-tab.active,
+    html[data-theme='cid'] .tt-btn-primary {
+      background: #4ade80;
+      color: #030603;
+      border-color: #4ade80;
+    }
+    html[data-theme='cid'] .tt-btn-secondary,
+    html[data-theme='cid'] .tt-variant-option {
+      background: #061006;
+      color: #f4fff4;
+      border-color: #1e5b2a;
+    }
+    html[data-theme='cid'] .tt-variant-option.selected {
+      background: rgba(74, 222, 128, 0.14);
+      border-color: #4ade80;
+    }
+    html[data-theme='vision-impaired'] .tt-brand-logo {
+      width: min(360px, 72vw);
+    }
+    html[data-theme='cid'] .tt-brand-logo {
+      width: min(340px, 64vw);
+    }
+    </style>
 </head>
 <body>
 <div class="tt-app">
-  <h1>🏆 Top Tier <span>v2.0.0</span></h1>
+  <div class="tt-brand">
+    <img class="tt-brand-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
+  </div>
   <p style="font-size:0.85em;opacity:0.6;margin-bottom:16px;">Live-Leaderboard f&uuml;r TikTok LIVE Likes &amp; Geschenke &mdash; Session-basiert, Coins = Punkte</p>
 
   <!-- Tabs -->
   <div class="tt-tabs">
-    <div class="tt-tab active" data-tab="live">📊 Live Boards</div>
-    <div class="tt-tab" data-tab="obs">🎬 OBS URLs</div>
-    <div class="tt-tab" data-tab="likes-cfg">❤️ Likes</div>
-    <div class="tt-tab" data-tab="gifts-cfg">🎁 Gifts</div>
-    <div class="tt-tab" data-tab="decay-cfg">📉 Decay</div>
-    <div class="tt-tab" data-tab="overlay-cfg">🎨 Overlay</div>
-    <div class="tt-tab" data-tab="sound-chat">🔊 Sound &amp; Chat</div>
-    <div class="tt-tab" data-tab="controls">⚙️ Controls</div>
+    <div class="tt-tab active" data-tab="live">Live Boards</div>
+    <div class="tt-tab" data-tab="obs">OBS URLs</div>
+    <div class="tt-tab" data-tab="likes-cfg">Likes</div>
+    <div class="tt-tab" data-tab="gifts-cfg">Gifts</div>
+    <div class="tt-tab" data-tab="decay-cfg">Decay</div>
+    <div class="tt-tab" data-tab="overlay-cfg">Overlay</div>
+    <div class="tt-tab" data-tab="sound-chat">Sound &amp; Chat</div>
+    <div class="tt-tab" data-tab="controls">Controls</div>
   </div>
 
-  <!-- ==================== LIVE BOARDS ==================== -->
+    <div class="tt-tab active" data-tab="live">Live Boards</div>
   <div class="tt-panel active" id="panel-live">
     <h2>Live Leaderboards</h2>
     <div class="tt-info-box">Session-basiert: Boards werden nur bei einem neuen Stream zur&uuml;ckgesetzt. Kurzzeitige Reconnects behalten die Daten.</div>
     <div class="tt-row">
       <div>
-        <h3>❤️ Likes Board</h3>
+        <h3>Likes Board</h3>
         <table><thead><tr><th>#</th><th>User</th><th>Score</th></tr></thead><tbody id="likes-tbody"></tbody></table>
       </div>
       <div>
-        <h3>🎁 Gifts Board</h3>
+        <h3>Gifts Board</h3>
         <table><thead><tr><th>#</th><th>User</th><th>Coins</th></tr></thead><tbody id="gifts-tbody"></tbody></table>
       </div>
     </div>
     <p style="font-size:0.75em;opacity:0.4;margin-top:8px;">Aktualisiert sich automatisch via Socket.IO</p>
   </div>
 
-  <!-- ==================== OBS URLS ==================== -->
+    <div class="tt-tab" data-tab="obs">OBS URLs</div>
   <div class="tt-panel" id="panel-obs">
     <h2>OBS Overlay URLs</h2>
     <p style="font-size:0.82em;opacity:0.6;margin-bottom:12px;">Kopiere eine URL und f&uuml;ge sie als Browser-Quelle in OBS ein. W&auml;hle Hochformat (Portrait) f&uuml;r vertikale Streams oder Querformat (Landscape) f&uuml;r normale Streams.</p>
@@ -382,7 +478,7 @@
       </div>
       <div>
         <label for="obs-theme">Theme</label>
-        <select id="obs-theme"><option value="night" selected>Nacht</option><option value="day">Tag</option><option value="contrast">High Contrast</option><option value="vision-impaired">Vision Impaired</option></select>
+        <select id="obs-theme"><option value="night" selected>Nacht</option><option value="day">Tag</option><option value="contrast">High Contrast</option><option value="vision-impaired">Vision Impaired</option><option value="cid">Cid</option></select>
       </div>
     </div>
     <div id="obs-urls-container"></div>
@@ -390,7 +486,7 @@
 
   <!-- ==================== LIKES CONFIG ==================== -->
   <div class="tt-panel" id="panel-likes-cfg">
-    <h2>❤️ Likes Board Konfiguration</h2>
+    <h2>Likes Board Konfiguration</h2>
     <div class="tt-toggle"><input type="checkbox" id="likes-enabled"><label for="likes-enabled">Board aktiviert</label></div>
     <label for="likes-count">Anzahl angezeigte Eintr&auml;ge</label>
     <input type="number" id="likes-count" min="1" max="50" value="5">
@@ -400,7 +496,7 @@
 
   <!-- ==================== GIFTS CONFIG ==================== -->
   <div class="tt-panel" id="panel-gifts-cfg">
-    <h2>🎁 Gifts Board Konfiguration</h2>
+    <h2>Gifts Board Konfiguration</h2>
     <div class="tt-toggle"><input type="checkbox" id="gifts-enabled"><label for="gifts-enabled">Board aktiviert</label></div>
     <label for="gifts-count">Anzahl angezeigte Eintr&auml;ge</label>
     <input type="number" id="gifts-count" min="1" max="50" value="5">
@@ -412,7 +508,7 @@
 
   <!-- ==================== DECAY CONFIG ==================== -->
   <div class="tt-panel" id="panel-decay-cfg">
-    <h2>📉 Decay Konfiguration</h2>
+    <h2>Decay Konfiguration</h2>
     <div class="tt-toggle"><input type="checkbox" id="decay-enabled"><label for="decay-enabled">Decay aktiviert</label></div>
     <label for="decay-type">Decay-Typ</label>
     <select id="decay-type">
@@ -440,13 +536,13 @@
 
   <!-- ==================== OVERLAY CONFIG ==================== -->
   <div class="tt-panel" id="panel-overlay-cfg">
-    <h2>🎨 Overlay Konfiguration</h2>
+    <h2>Overlay Konfiguration</h2>
     <h3>Variante</h3>
     <div class="tt-variant-grid" id="variant-grid"></div>
     <div class="tt-row" style="margin-top:14px;">
       <div>
         <label for="ov-theme">Theme</label>
-        <select id="ov-theme"><option value="night">Nacht</option><option value="day">Tag</option><option value="contrast">High Contrast</option><option value="vision-impaired">Vision Impaired</option></select>
+        <select id="ov-theme"><option value="night">Nacht</option><option value="day">Tag</option><option value="contrast">High Contrast</option><option value="vision-impaired">Vision Impaired</option><option value="cid">Cid</option></select>
       </div>
       <div>
         <label for="ov-orientation">Ausrichtung</label>
@@ -483,7 +579,7 @@
 
   <!-- ==================== SOUND & CHAT ==================== -->
   <div class="tt-panel" id="panel-sound-chat">
-    <h2>🔊 Sound &amp; Chat</h2>
+    <div class="tt-tab" data-tab="sound-chat">Sound &amp; Chat</div>
     <h3>Sound-Benachrichtigungen</h3>
     <div class="tt-toggle"><input type="checkbox" id="snd-leader"><label for="snd-leader">Sound bei neuem Leader</label></div>
     <div class="tt-toggle"><input type="checkbox" id="snd-rank"><label for="snd-rank">Sound bei Rang-Wechsel</label></div>
@@ -495,7 +591,7 @@
 
   <!-- ==================== CONTROLS ==================== -->
   <div class="tt-panel" id="panel-controls">
-    <h2>⚙️ Steuerung</h2>
+    <h2>Steuerung</h2>
     <h3>Board zur&uuml;cksetzen</h3>
     <div class="tt-btn-group">
       <button class="tt-btn tt-btn-danger" id="reset-likes">Reset Likes</button>
@@ -513,7 +609,7 @@
 
   <!-- SAVE -->
   <div style="margin-top:20px;text-align:right;">
-    <button class="tt-btn tt-btn-primary" id="save-config">💾 Konfiguration speichern</button>
+    <button class="tt-btn tt-btn-primary" id="save-config">Konfiguration speichern</button>
   </div>
 </div>
 
@@ -538,6 +634,7 @@
     if (value === 'night' || value === 'dark' || value === 'minimal') return 'night';
     if (value === 'contrast' || value === 'neon') return 'contrast';
     if (value === 'vision-impaired') return 'vision-impaired';
+    if (value === 'cid') return 'cid';
     return 'night';
   }
 
@@ -595,7 +692,7 @@
   }
 
   // ==============================
-  // OBS URLs
+    <div class="tt-tab" data-tab="obs">OBS URLs</div>
   // ==============================
   function buildObsUrls() {
     var container = document.getElementById('obs-urls-container');
@@ -627,7 +724,7 @@
     }
   }
 
-  // Rebuild OBS URLs when orientation/theme changes
+    <div class="tt-tab" data-tab="obs">OBS URLs</div>
   document.getElementById('obs-orientation').addEventListener('change', buildObsUrls);
   document.getElementById('obs-theme').addEventListener('change', buildObsUrls);
 
@@ -857,4 +954,3 @@
 </script>
 </body>
 </html>
-

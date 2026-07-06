@@ -4,11 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Music Bot</title>
-  <link rel="stylesheet" href="/css/themes.css">
-  <link rel="stylesheet" href="/plugins/music-bot/assets/ui-style.css">
-  <script>
+    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/plugins/music-bot/assets/ui-style.css">
+    <script>
     (function () {
-      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+      const logoByTheme = {
+        day: '/logo-wide.png',
+        night: '/logo-wide.png',
+        contrast: '/logo-wide.png',
+        'vision-impaired': '/logo-wide.png',
+        cid: '/logo-wide.png'
+      };
 
       function readTheme() {
         try {
@@ -19,7 +26,7 @@
         } catch (error) {}
 
         try {
-          for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+          for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
             const value = localStorage.getItem(key);
             if (VALID_THEMES.has(value)) return value;
           }
@@ -32,12 +39,20 @@
         const theme = readTheme();
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+        const logo = document.querySelector('[data-brand-logo]');
+        if (logo) {
+          const nextSrc = logoByTheme[theme] || logoByTheme.night;
+          if (logo.getAttribute('src') !== nextSrc) {
+            logo.setAttribute('src', nextSrc);
+          }
+        }
       }
 
       syncTheme();
+      window.addEventListener('DOMContentLoaded', syncTheme, { once: true });
 
       window.addEventListener('storage', (event) => {
-        if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+        if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
           syncTheme();
         }
       });
@@ -58,12 +73,11 @@
     })();
   </script>
 </head>
-<body>
+  <body>
   <div class="container">
     <header class="header">
-      <div>
-        <p class="eyebrow">LTTH Plugin</p>
-        <h1>Music Bot</h1>
+      <div class="header-brand">
+        <img class="header-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
         <p class="subtitle">Viewer-controlled Song Requests via TikTok Chat</p>
       </div>
       <div class="status" id="playback-state">Idle</div>
@@ -98,48 +112,48 @@
     </section>
 
     <div id="setup-issues-banner" class="setup-banner" style="display:none;">
-      <h3>âš ï¸ Music Bot â€“ Einrichtung erforderlich</h3>
+      <h3>Warnung: Music Bot - Einrichtung erforderlich</h3>
       <div id="setup-issues-list"></div>
     </div>
 
     <nav class="tab-bar" id="tab-bar">
-      <button class="tab active" data-tab="player">ðŸŽµ Player</button>
-      <button class="tab" data-tab="queue">ðŸ“‹ Queue</button>
-      <button class="tab" data-tab="settings">âš™ï¸ Einstellungen</button>
-      <button class="tab" data-tab="autodj">ðŸ¤– Auto-DJ</button>
-      <button class="tab" data-tab="aliases">ðŸ’¬ Aliases</button>
-      <button class="tab" data-tab="moderation">ðŸ›¡ï¸ Moderation</button>
-      <button class="tab" data-tab="overlay">ðŸ“º Overlay</button>
-      <button class="tab" data-tab="history">ðŸ“œ History</button>
+      <button class="tab active" data-tab="player">Player</button>
+      <button class="tab" data-tab="queue">Queue</button>
+      <button class="tab" data-tab="settings">Einstellungen</button>
+      <button class="tab" data-tab="autodj">Auto-DJ</button>
+      <button class="tab" data-tab="aliases">Aliases</button>
+      <button class="tab" data-tab="moderation">Moderation</button>
+      <button class="tab" data-tab="overlay">Overlay</button>
+      <button class="tab" data-tab="history">History</button>
     </nav>
 
     <section class="card player-card tab-content active" data-tab-content="player">
       <div class="card-header">
         <div>
           <h2>Player &amp; Suche</h2>
-          <p class="text-secondary">YouTube-Link einfÃ¼gen oder Stichwort suchen</p>
+          <p class="text-secondary">YouTube-Link einfuegen oder Stichwort suchen</p>
         </div>
         <div class="pill" id="preview-source">YouTube</div>
       </div>
 
       <div class="player-search-bar">
-        <input type="text" id="search-input" placeholder="YouTube-Link einfÃ¼gen oder Suchwort eingeben..." autocomplete="off">
-        <button id="search-btn" class="btn ghost" type="button">ðŸ”&nbsp;Suchen</button>
-        <button id="request-btn" class="btn primary" type="button">ï¼‹&nbsp;Zur Queue</button>
+        <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
+        <button id="search-btn" class="btn ghost" type="button">Suchen</button>
+        <button id="request-btn" class="btn primary" type="button">Zur Queue</button>
       </div>
       <div id="search-feedback" class="feedback"></div>
 
       <div class="player-embed-wrapper">
         <div class="player-frame" id="player-frame-box">
           <div class="player-placeholder" id="player-placeholder">
-            <span>ðŸŽµ YouTube-Link einfÃ¼gen oder oben suchen</span>
+            <span>YouTube-Link einfuegen oder oben suchen</span>
           </div>
           <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
       </div>
 
       <div id="now-playing" class="now-playing empty">
-        <p>Aktuell lÃ¤uft nichts.</p>
+        <p>Aktuell laeuft nichts.</p>
       </div>
       <div class="np-progress-wrapper" id="np-progress-wrapper" style="display:none">
         <div class="np-progress-bar">
@@ -154,14 +168,14 @@
       <div class="player-bottom">
         <div class="player-sliders">
           <div class="slider-group">
-            <label for="master-volume-input">ðŸ”Š Master Volume</label>
+            <label for="master-volume-input">Master Volume</label>
             <div class="slider-row">
               <input type="range" id="master-volume-input" min="0" max="100" value="100">
               <span id="master-volume-value">100</span>
             </div>
           </div>
           <div class="slider-group">
-            <label for="volume-input">ðŸŽšï¸ Source Volume</label>
+            <label for="volume-input">Source Volume</label>
             <div class="slider-row">
               <input type="range" id="volume-input" min="0" max="100" value="50">
               <span id="volume-value">50</span>
@@ -176,10 +190,10 @@
           </div>
         </div>
         <div class="player-controls">
-          <button id="pause-btn" class="btn ghost">â¸&nbsp;Pause</button>
-          <button id="resume-btn" class="btn">â–¶&nbsp;Resume</button>
-          <button id="skip-btn" class="btn danger">â­&nbsp;Skip</button>
-          <button id="clear-btn" class="btn ghost">ðŸ—‘&nbsp;Queue leeren</button>
+          <button id="pause-btn" class="btn ghost">Pause</button>
+          <button id="resume-btn" class="btn">Resume</button>
+          <button id="skip-btn" class="btn danger">Skip</button>
+          <button id="clear-btn" class="btn ghost">Queue leeren</button>
         </div>
       </div>
 
@@ -220,19 +234,19 @@
                 <input type="number" id="cooldown-seconds" min="0" value="30">
               </label>
               <label class="field">
-                <span>Maximale Songlänge (Sekunden)</span>
+                <span>Maximale SonglÃƒÂ¤nge (Sekunden)</span>
                 <input type="number" id="max-song-duration-seconds" min="30" max="7200" value="360">
                 <small class="text-secondary">Blockiert zu lange Songs vor dem Queue-Add.</small>
               </label>
               <label class="field">
                 <span>yt-dlp Pfad</span>
                 <input type="text" id="ytdlp-path" placeholder="z.B. /usr/local/bin/yt-dlp">
-                <small class="text-secondary">Benötigt für YouTube/SoundCloud. Standard: yt-dlp</small>
+                <small class="text-secondary">BenÃƒÂ¶tigt fÃƒÂ¼r YouTube/SoundCloud. Standard: yt-dlp</small>
               </label>
               <label class="field">
                 <span>mpv Pfad</span>
                 <input type="text" id="mpv-path" placeholder="z.B. C:\tools\mpv\mpv.exe oder /usr/bin/mpv">
-                <small class="text-secondary">Benötigt für die Audio-Wiedergabe. Standard: mpv</small>
+                <small class="text-secondary">BenÃƒÂ¶tigt fÃƒÂ¼r die Audio-Wiedergabe. Standard: mpv</small>
               </label>
             </div>
           </section>
@@ -247,7 +261,7 @@
             <div class="settings-grid">
               <label class="checkbox-field span-2">
                 <input type="checkbox" id="cooldown-bypass-gifts">
-                <span>Cooldown für Gifts überspringen</span>
+                <span>Cooldown fÃƒÂ¼r Gifts ÃƒÂ¼berspringen</span>
               </label>
               <label class="field span-2">
                 <span>Skip-Immunity Gifts (Komma oder Zeile)</span>
@@ -255,11 +269,11 @@
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="require-superfan">
-                <span>Nur Superfans dürfen Songs anfragen 🌟</span>
+                <span>Nur Superfans dÃƒÂ¼rfen Songs anfragen Ã°Å¸Å’Å¸</span>
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="like-gate-enabled">
-                <span>Like-Gating für !sr aktivieren</span>
+                <span>Like-Gating fÃƒÂ¼r !sr aktivieren</span>
               </label>
               <label class="field">
                 <span>Mindestanzahl Likes pro User</span>
@@ -267,7 +281,7 @@
               </label>
               <label class="checkbox-field">
                 <input type="checkbox" id="pay-to-play-enabled">
-                <span>Pay-to-Play aktivieren (Gift/Coin Pflicht für !sr)</span>
+                <span>Pay-to-Play aktivieren (Gift/Coin Pflicht fÃƒÂ¼r !sr)</span>
               </label>
               <label class="field span-2">
                 <span>Pay-to-Play Gifts (Komma oder Zeile)</span>
@@ -293,7 +307,7 @@
           <div class="settings-section-header">
             <div>
               <h3>Geschenkekatalog</h3>
-              <p class="text-secondary">Wähle Gifts aus und übernimm sie gezielt in die Regeln links</p>
+              <p class="text-secondary">WÃƒÂ¤hle Gifts aus und ÃƒÂ¼bernimm sie gezielt in die Regeln links</p>
             </div>
             <div class="catalog-meta">
               <span id="gift-catalog-count" class="pill">0 Gifts</span>
@@ -317,7 +331,7 @@
           <label class="field catalog-list-field">
             <span>Geschenkekatalog (Mehrfachauswahl)</span>
             <select id="gift-catalog-list" size="12" multiple></select>
-            <small class="text-secondary">Mehrfachauswahl funktioniert mit Strg/Shift. Die Buttons übernehmen die Auswahl in die passende Regel.</small>
+            <small class="text-secondary">Mehrfachauswahl funktioniert mit Strg/Shift. Die Buttons ÃƒÂ¼bernehmen die Auswahl in die passende Regel.</small>
           </label>
         </aside>
       </div>
@@ -331,8 +345,8 @@
     <section class="card tab-content" data-tab-content="overlay">
       <div class="card-header">
         <div>
-          <h2>ðŸ“º OBS Overlay</h2>
-          <p class="text-secondary">Browser Source URL fÃ¼r OBS / Streamlabs</p>
+          <h2>OBS Overlay</h2>
+          <p class="text-secondary">Browser Source URL fuer OBS / Streamlabs</p>
         </div>
       </div>
       <div class="form-grid">
@@ -342,7 +356,7 @@
             <option value="compact">Compact (Standard)</option>
             <option value="fullwidth">Fullwidth (Banner)</option>
             <option value="minimal">Minimal (Text)</option>
-            <option value="card">Card (GroÃŸes Widget)</option>
+            <option value="card">Card (Grosses Widget)</option>
           </select>
         </label>
         <label class="field">
@@ -369,8 +383,8 @@
           <span>Overlay-URL</span>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="text" id="overlay-url" readonly style="flex:1;font-size:12px">
-            <button id="overlay-copy" class="btn ghost" type="button">ðŸ“‹ Kopieren</button>
-            <button id="overlay-open" class="btn ghost" type="button">ðŸ”— Ã–ffnen</button>
+            <button id="overlay-copy" class="btn ghost" type="button">Kopieren</button>
+            <button id="overlay-open" class="btn ghost" type="button">Oeffnen</button>
           </div>
         </label>
       </div>
@@ -380,7 +394,7 @@
       <div class="card-header">
         <div>
           <h2>Auto-DJ</h2>
-          <p class="text-secondary">FÃ¼llt die Queue automatisch</p>
+          <p class="text-secondary">Fuellt die Queue automatisch</p>
         </div>
         <span id="auto-dj-status" class="pill">Deaktiviert</span>
       </div>
@@ -407,12 +421,12 @@
         </label>
         <label class="checkbox-field">
           <input type="checkbox" id="auto-dj-announce">
-          <span>Chat-Ansage fÃ¼r Auto-DJ</span>
+          <span>Chat-Ansage fuer Auto-DJ</span>
         </label>
       </div>
       <div class="actions">
         <button id="auto-dj-save" class="btn primary">Speichern</button>
-        <button id="auto-dj-skip" class="btn ghost">NÃ¤chster Auto-DJ Track</button>
+        <button id="auto-dj-skip" class="btn ghost">Naechster Auto-DJ Track</button>
       </div>
     </section>
 
@@ -527,7 +541,7 @@
         </label>
       </div>
       <div class="actions">
-        <button id="ban-add" class="btn primary" type="button">Ban hinzufÃ¼gen</button>
+        <button id="ban-add" class="btn primary" type="button">Ban hinzufuegen</button>
         <div id="ban-feedback" class="feedback"></div>
       </div>
       <div class="table-wrapper">
@@ -563,5 +577,4 @@
   <script src="/plugins/music-bot/assets/ui.js"></script>
 </body>
 </html>
-
 

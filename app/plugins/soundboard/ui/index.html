@@ -11,7 +11,14 @@
     <script>
         // Apply shared theme immediately to prevent flash
         (function() {
-            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid'], 'cid');
+            const validThemes = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+            const logoByTheme = {
+                day: '/logo-wide.png',
+                night: '/logo-wide.png',
+                contrast: '/logo-wide.png',
+                'vision-impaired': '/logo-wide.png',
+                cid: '/logo-wide.png'
+            };
 
             function readTheme() {
                 try {
@@ -22,7 +29,7 @@
                 } catch (error) {}
 
                 try {
-                    for (const key of ['dashboard-theme', 'theme', 'ui-theme']) {
+                    for (const key of ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme']) {
                         const value = localStorage.getItem(key);
                         if (validThemes.has(value)) return value;
                     }
@@ -35,12 +42,14 @@
                 const theme = readTheme();
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
+                const logo = document.querySelector('[data-brand-logo]');
+                if (logo) logo.src = logoByTheme[theme] || logoByTheme.night;
             }
 
             syncTheme();
             window.addEventListener('focus', syncTheme);
             window.addEventListener('storage', (event) => {
-                if (event && ['dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
+                if (event && ['ltth-theme', 'app-theme', 'dashboard-theme', 'theme', 'ui-theme'].includes(event.key)) {
                     syncTheme();
                 }
             });
@@ -86,6 +95,13 @@
             font-weight: 600;
             color: var(--color-text-primary);
             text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+            flex: 1 1 auto;
+        }
+        .standalone-logo {
+            display: block;
+            width: min(320px, 62vw);
+            height: auto;
+            object-fit: contain;
         }
         .back-link {
             display: inline-flex;
@@ -98,6 +114,7 @@
             color: var(--color-text-primary);
             text-decoration: none;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
         .back-link:hover {
             background: var(--color-active-bg);
@@ -556,8 +573,8 @@
             background: var(--color-bg-primary);
             border: 2px solid var(--color-accent-primary);
             border-radius: 12px;
-            max-width: 800px;
-            width: 100%;
+            width: min(96vw, 1120px);
+            max-width: none;
             max-height: 80vh;
             display: flex;
             flex-direction: column;
@@ -604,6 +621,15 @@
 
         html[data-theme="vision-impaired"] .modal-close:hover {
             background: #111;
+        }
+
+        html[data-theme="vision-impaired"] .modal-content {
+            background: #000;
+            color: #fff7cc;
+            border: 3px solid #facc15;
+            box-shadow: none;
+            width: min(96vw, 1200px);
+            max-width: none;
         }
         
         .modal-body {
@@ -756,6 +782,12 @@
             font-size: 32px;
             line-height: 1.08;
         }
+        html[data-theme="vision-impaired"] .standalone-logo {
+            width: min(360px, 72vw);
+        }
+        html[data-theme="cid"] .standalone-logo {
+            width: min(340px, 64vw);
+        }
 
         html[data-theme="contrast"] .back-link,
         html[data-theme="vision-impaired"] .back-link {
@@ -843,6 +875,40 @@
             background: #facc15;
             color: #000;
             border-color: #facc15;
+        }
+
+        html[data-theme="contrast"] button[data-action="test-sound"],
+        html[data-theme="contrast"] button[data-action="preview-animation"],
+        html[data-theme="contrast"] button[data-action="edit-gift"],
+        html[data-theme="vision-impaired"] button[data-action="test-sound"],
+        html[data-theme="vision-impaired"] button[data-action="preview-animation"],
+        html[data-theme="vision-impaired"] button[data-action="edit-gift"] {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 2px solid #facc15 !important;
+            font-weight: 900;
+            text-shadow: none;
+            box-shadow: none;
+        }
+
+        html[data-theme="contrast"] button[data-action="delete-gift"],
+        html[data-theme="vision-impaired"] button[data-action="delete-gift"] {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 2px solid #facc15 !important;
+            font-weight: 900;
+            text-shadow: none;
+            box-shadow: none;
+        }
+
+        html[data-theme="vision-impaired"] button[data-action="test-sound"],
+        html[data-theme="vision-impaired"] button[data-action="preview-animation"],
+        html[data-theme="vision-impaired"] button[data-action="edit-gift"],
+        html[data-theme="vision-impaired"] button[data-action="delete-gift"] {
+            min-height: 38px;
+            padding: 8px 12px !important;
+            font-size: 1rem !important;
+            line-height: 1.25;
         }
 
         html[data-theme="contrast"] .help-text,
@@ -1084,7 +1150,7 @@
 
         .gift-workspace-panel > .collapsible-content.active {
             display: grid;
-            grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.25fr);
+            grid-template-columns: minmax(360px, 0.95fr) minmax(560px, 1.35fr);
             gap: 16px;
             align-items: start;
         }
@@ -1118,7 +1184,7 @@
         }
 
         .gift-catalog-grid {
-            max-height: 420px;
+            max-height: 560px;
             overflow: auto;
             padding-right: 4px;
         }
@@ -1291,14 +1357,161 @@
                 display: flex;
             }
         }
-    </style>
+    
+        /* Cid theme alignment */
+        html[data-theme="cid"] body {
+            background: #030603;
+            color: #f4fff4;
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .main-content {
+            width: 100%;
+            max-width: none;
+        }
+
+        html[data-theme="cid"] body {
+            padding: 16px;
+        }
+
+        html[data-theme="cid"] .standalone-header,
+        html[data-theme="cid"] .collapsible-header,
+        html[data-theme="cid"] .collapsible-content,
+        html[data-theme="cid"] .modal-header,
+        html[data-theme="cid"] .modal-body {
+            padding: 16px;
+        }
+
+        html[data-theme="cid"] .modal-content {
+            max-width: none;
+            width: min(100%, 1280px);
+        }
+
+        html[data-theme="cid"] .container,
+        html[data-theme="cid"] .app,
+        html[data-theme="cid"] .panel,
+        html[data-theme="cid"] .card,
+        html[data-theme="cid"] .section,
+        html[data-theme="cid"] .settings-section,
+        html[data-theme="cid"] .config-section,
+        html[data-theme="cid"] .stat-card,
+        html[data-theme="cid"] .modal,
+        html[data-theme="cid"] .modal-content,
+        html[data-theme="cid"] .sidebar,
+        html[data-theme="cid"] .main-content,
+        html[data-theme="cid"] .info-box,
+        html[data-theme="cid"] .alert {
+            background: #071107;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+            box-shadow: none;
+        }
+
+        html[data-theme="cid"] h1,
+        html[data-theme="cid"] h2,
+        html[data-theme="cid"] h3,
+        html[data-theme="cid"] .logo,
+        html[data-theme="cid"] .brand h1,
+        html[data-theme="cid"] .title,
+        html[data-theme="cid"] .section-title,
+        html[data-theme="cid"] .card-title,
+        html[data-theme="cid"] .stat-value,
+        html[data-theme="cid"] .active,
+        html[data-theme="cid"] .selected {
+            color: #4ade80;
+            -webkit-text-fill-color: #4ade80;
+        }
+
+        html[data-theme="cid"] p,
+        html[data-theme="cid"] label,
+        html[data-theme="cid"] .subtitle,
+        html[data-theme="cid"] .description,
+        html[data-theme="cid"] .help-text,
+        html[data-theme="cid"] .muted,
+        html[data-theme="cid"] .text-muted,
+        html[data-theme="cid"] .stat-label,
+        html[data-theme="cid"] .form-label,
+        html[data-theme="cid"] .form-help,
+        html[data-theme="cid"] small {
+            color: #d1e7d1;
+            opacity: 1;
+        }
+
+        html[data-theme="cid"] input,
+        html[data-theme="cid"] select,
+        html[data-theme="cid"] textarea,
+        html[data-theme="cid"] .form-input,
+        html[data-theme="cid"] .form-select,
+        html[data-theme="cid"] .search-input {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] button,
+        html[data-theme="cid"] .btn,
+        html[data-theme="cid"] .tab,
+        html[data-theme="cid"] .nav-item {
+            background: #061006;
+            color: #f4fff4;
+            border-color: #1e5b2a;
+        }
+
+        html[data-theme="cid"] .btn-primary,
+        html[data-theme="cid"] .btn-success,
+        html[data-theme="cid"] .tab.active,
+        html[data-theme="cid"] button.active,
+        html[data-theme="cid"] .nav-item.active {
+            background: #4ade80;
+            color: #030603;
+            border-color: #4ade80;
+            -webkit-text-fill-color: #030603;
+        }
+    
+        /* Accessibility contrast pass: explicit readable controls in contrast modes */
+        html[data-theme="contrast"] .btn-primary,
+        html[data-theme="contrast"] .btn-success,
+        html[data-theme="contrast"] .category-btn.active,
+        html[data-theme="contrast"] .soundboard-nav-btn.active,
+        html[data-theme="vision-impaired"] .btn-primary,
+        html[data-theme="vision-impaired"] .btn-success,
+        html[data-theme="vision-impaired"] .category-btn.active,
+        html[data-theme="vision-impaired"] .soundboard-nav-btn.active {
+            background: #facc15 !important;
+            color: #000 !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #000 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="contrast"] .btn-secondary,
+        html[data-theme="contrast"] .btn-ghost,
+        html[data-theme="contrast"] .category-btn,
+        html[data-theme="contrast"] .soundboard-nav-btn,
+        html[data-theme="vision-impaired"] .btn-secondary,
+        html[data-theme="vision-impaired"] .btn-ghost,
+        html[data-theme="vision-impaired"] .category-btn,
+        html[data-theme="vision-impaired"] .soundboard-nav-btn {
+            background: #000 !important;
+            color: #fff7cc !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff7cc !important;
+        }
+
+        html[data-theme="contrast"] .btn-danger,
+        html[data-theme="vision-impaired"] .btn-danger {
+            background: #7f1d1d !important;
+            color: #fff !important;
+            border: 3px solid #facc15 !important;
+            -webkit-text-fill-color: #fff !important;
+        }</style>
 </head>
 <body>
     <!-- Standalone Header -->
     <div class="standalone-header">
         <div class="standalone-title">
-            <i data-lucide="music"></i>
-            Soundboard Configuration
+            <img class="standalone-logo" data-brand-logo src="/logo-wide.png" alt="LTTH">
         </div>
         <a href="/dashboard.html#soundboard" class="back-link">
             <i data-lucide="arrow-left"></i>
@@ -1416,7 +1629,7 @@
                 <div style="display: flex; align-items: flex-start; gap: 8px;">
                     <i data-lucide="info" style="color: #3b82f6; width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;"></i>
                     <span style="font-size: 0.85rem; color: var(--color-text-secondary);">
-                        <strong>How to use:</strong> In OBS, add a Browser Source → paste this URL → set width to 1920, height to 1080 → check "Transparent Background".
+                        <strong>How to use:</strong> In OBS, add a Browser Source -> paste this URL -> preview it in the canvas.
                         Animations will play automatically when configured gifts are received.
                     </span>
                 </div>
@@ -2103,4 +2316,3 @@
     <script src="/js/dashboard-soundboard.js"></script>
 </body>
 </html>
-
