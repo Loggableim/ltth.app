@@ -8,12 +8,21 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: transparent;
-    color: #fff;
+    color: var(--color-text-primary, #fff);
     overflow: hidden;
 }
 
+html[data-theme="day"] body {
+    color: #10203a;
+}
+
+html[data-theme="contrast"] body,
+html[data-theme="vision-impaired"] body {
+    color: #fff7cc;
+}
+
 .container {
-    width: 450px;
+    width: min(96vw, 640px);
     min-height: 600px;
     max-height: 800px;
     border-radius: 20px;
