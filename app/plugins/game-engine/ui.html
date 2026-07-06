@@ -20,277 +20,16 @@
       min-height: 100vh;
     }
 
-    html[data-theme="day"] body {
-      background: linear-gradient(180deg, #eef4ff 0%, #e8eefc 100%);
-      color: #10203a;
-    }
-
-    html[data-theme="day"] h1,
-    html[data-theme="day"] h2,
-    html[data-theme="day"] h3,
-    html[data-theme="day"] label,
-    html[data-theme="day"] .theme-toggle-label,
-    html[data-theme="day"] .stat-label {
-      color: #10203a;
-    }
-
-    html[data-theme="day"] .card,
-    html[data-theme="day"] .status-bar,
-    html[data-theme="day"] .stat-card,
-    html[data-theme="day"] .trigger-item,
-    html[data-theme="day"] .tabs {
-      background: #fff;
-      border-color: #c7d2fe;
-      color: #10203a;
-    }
-
-    html[data-theme="day"] .tab.active,
-    html[data-theme="day"] .theme-toggle-btn.active {
-      background: #4f7cff;
-      color: #fff;
-      border-color: #4f7cff;
-    }
-
-    html[data-theme="day"] button,
-    html[data-theme="day"] .theme-toggle-btn,
-    html[data-theme="day"] .tab {
-      background: #eef4ff;
-      color: #10203a;
-      border-color: #c7d2fe;
-    }
-
-    html[data-theme="night"] body {
-      background: linear-gradient(180deg, #0b1020 0%, #111827 100%);
-      color: #e5e7eb;
-    }
-
-    html[data-theme="night"] h1,
-    html[data-theme="night"] h2,
-    html[data-theme="night"] h3,
-    html[data-theme="night"] label,
-    html[data-theme="night"] .theme-toggle-label,
-    html[data-theme="night"] .stat-label {
-      color: #e5e7eb;
-    }
-
-    html[data-theme="night"] .card,
-    html[data-theme="night"] .status-bar,
-    html[data-theme="night"] .stat-card,
-    html[data-theme="night"] .trigger-item,
-    html[data-theme="night"] .tabs {
-      background: #11172a;
-      border-color: #2b3552;
-      color: #e5e7eb;
-    }
-
-    html[data-theme="night"] .tab.active,
-    html[data-theme="night"] .theme-toggle-btn.active {
-      background: #4caf50;
-      color: #fff;
-      border-color: #4caf50;
-    }
-
-    html[data-theme="night"] button,
-    html[data-theme="night"] .theme-toggle-btn,
-    html[data-theme="night"] .tab {
-      background: #1e293b;
-      color: #e5e7eb;
-      border-color: #334155;
-    }
-
-    html[data-theme="contrast"] body {
-      background: #000;
-      color: #fff;
-    }
-
-    html[data-theme="vision-impaired"] body {
-      background:
-        radial-gradient(circle at top left, rgba(34, 211, 238, 0.18), transparent 28%),
-        radial-gradient(circle at top right, rgba(250, 204, 21, 0.14), transparent 24%),
-        linear-gradient(180deg, #020617 0%, #0f172a 100%);
-      color: #f8fafc;
-      font-size: 1.08rem;
-      line-height: 1.55;
-      letter-spacing: 0.01em;
-    }
-
-    html[data-theme="contrast"] h1,
-    html[data-theme="contrast"] h2,
-    html[data-theme="contrast"] h3,
-    html[data-theme="contrast"] label,
-    html[data-theme="contrast"] .theme-toggle-label,
-    html[data-theme="contrast"] .stat-label {
-      color: #fff;
-    }
-
-    html[data-theme="vision-impaired"] h1,
-    html[data-theme="vision-impaired"] h2,
-    html[data-theme="vision-impaired"] h3,
-    html[data-theme="vision-impaired"] label,
-    html[data-theme="vision-impaired"] .theme-toggle-label,
-    html[data-theme="vision-impaired"] .stat-label {
-      color: #f8fafc;
-      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
-    }
-
-    html[data-theme="contrast"] .card,
-    html[data-theme="contrast"] .status-bar,
-    html[data-theme="contrast"] .stat-card,
-    html[data-theme="contrast"] .trigger-item,
-    html[data-theme="contrast"] .tabs {
-      background: #0a0a0a;
-      border-color: #facc15;
-      color: #fff;
-    }
-
-    html[data-theme="vision-impaired"] .card,
-    html[data-theme="vision-impaired"] .status-bar,
-    html[data-theme="vision-impaired"] .stat-card,
-    html[data-theme="vision-impaired"] .trigger-item {
-      background: #000;
-      border-color: #facc15;
-      color: #f8fafc;
-      box-shadow:
-        0 0 0 2px rgba(250, 204, 21, 0.28),
-        0 0 0 6px rgba(250, 204, 21, 0.12);
-    }
-
-    html[data-theme="vision-impaired"] .tabs {
-      background: #000;
-      border-color: #facc15;
-      color: #f8fafc;
-    }
-
-    html[data-theme="contrast"] .tab.active,
-    html[data-theme="contrast"] button,
-    html[data-theme="contrast"] .theme-toggle-btn.active {
-      background: #facc15;
-      color: #000;
-      border-color: #facc15;
-    }
-
-    html[data-theme="vision-impaired"] .tab.active,
-    html[data-theme="vision-impaired"] button,
-    html[data-theme="vision-impaired"] .theme-toggle-btn.active {
-      background: #facc15;
-      color: #000;
-      border-color: #facc15;
-      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22);
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-btn,
-    html[data-theme="vision-impaired"] .tab,
-    html[data-theme="vision-impaired"] button.secondary,
-    html[data-theme="vision-impaired"] button.danger,
-    html[data-theme="vision-impaired"] .column-button,
-    html[data-theme="vision-impaired"] .btn-secondary {
-      background: #000;
-      color: #fff;
-      border: 2px solid #facc15;
-      font-size: 0.98rem;
-      padding: 0.78rem 1.05rem;
-      min-height: 48px;
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-btn.active,
-    html[data-theme="vision-impaired"] .tab.active,
-    html[data-theme="vision-impaired"] button:not(.secondary):not(.danger):not(.theme-toggle-btn):not(.tab) {
-      background: #facc15;
-      color: #000;
-      border-color: #facc15;
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-btn:hover,
-    html[data-theme="vision-impaired"] .tab:hover,
-    html[data-theme="vision-impaired"] button.secondary:hover,
-    html[data-theme="vision-impaired"] button.danger:hover,
-    html[data-theme="vision-impaired"] .column-button:hover,
-    html[data-theme="vision-impaired"] .btn-secondary:hover {
-      background: #111;
-      color: #fff;
-      border-color: #facc15;
-      transform: translateY(-1px);
-    }
-
-    html[data-theme="contrast"] input,
-    html[data-theme="contrast"] select,
-    html[data-theme="vision-impaired"] input,
-    html[data-theme="vision-impaired"] select {
-      background: #000;
-      color: #fff;
-      border-color: #facc15;
-    }
-
-    html[data-theme="day"] .container [style*="background: #3a3a4e"],
-    html[data-theme="day"] .container [style*="background:#3a3a4e"],
-    html[data-theme="day"] .container [style*="background: #1a1a2e"],
-    html[data-theme="day"] .container [style*="background:#1a1a2e"] {
-      background: #eef2ff !important;
-      color: #0f172a !important;
-      border-color: #cbd5e1 !important;
-    }
-
-    html[data-theme="contrast"] .container [style*="background: #3a3a4e"],
-    html[data-theme="contrast"] .container [style*="background:#3a3a4e"],
-    html[data-theme="contrast"] .container [style*="background: #1a1a2e"],
-    html[data-theme="contrast"] .container [style*="background:#1a1a2e"],
-    html[data-theme="vision-impaired"] .container [style*="background: #3a3a4e"],
-    html[data-theme="vision-impaired"] .container [style*="background:#3a3a4e"],
-    html[data-theme="vision-impaired"] .container [style*="background: #1a1a2e"],
-    html[data-theme="vision-impaired"] .container [style*="background:#1a1a2e"] {
-      background: #000 !important;
-      color: #fff !important;
-      border-color: #facc15 !important;
-    }
-
-    html[data-theme="day"] .container [style*="color: #aaa"],
-    html[data-theme="day"] .container [style*="color:#aaa"],
-    html[data-theme="day"] .container [style*="color: #666"],
-    html[data-theme="day"] .container [style*="color:#666"] {
-      color: #475569 !important;
-    }
-
-    html[data-theme="contrast"] .container [style*="color: #aaa"],
-    html[data-theme="contrast"] .container [style*="color:#aaa"],
-    html[data-theme="contrast"] .container [style*="color: #666"],
-    html[data-theme="contrast"] .container [style*="color:#666"],
-    html[data-theme="vision-impaired"] .container [style*="color: #aaa"],
-    html[data-theme="vision-impaired"] .container [style*="color:#aaa"],
-    html[data-theme="vision-impaired"] .container [style*="color: #666"],
-    html[data-theme="vision-impaired"] .container [style*="color:#666"] {
-      color: #f8fafc !important;
-    }
-
-    html[data-theme="vision-impaired"] .tab,
-    html[data-theme="vision-impaired"] .theme-toggle-btn {
-      box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.12);
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-container {
-      gap: 0.9rem;
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-label {
-      font-size: 1rem;
-      letter-spacing: 0.02em;
-    }
-
-    html[data-theme="vision-impaired"] .tab,
-    html[data-theme="vision-impaired"] button {
-      min-height: 50px;
-      font-weight: 700;
-    }
-
     .container {
+      max-width: 2200px;
+      margin: 0 auto;
       width: 100%;
-      max-width: none;
-      margin: 0;
     }
 
     /* Widescreen responsive layout */
     @media (min-width: 1920px) {
       .container {
-        max-width: none;
+        max-width: 2200px;
       }
     }
 
@@ -944,60 +683,8 @@
       color: white;
     }
 
-    html[data-theme="vision-impaired"] .theme-toggle-btn {
-      background: #000 !important;
-      color: #fff !important;
-      border: 2px solid #facc15 !important;
-    }
-
-    html[data-theme="vision-impaired"] .theme-toggle-btn.active {
-      background: #facc15 !important;
-      border-color: #facc15 !important;
-      color: #000 !important;
-      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.35);
-    }
-
     .theme-icon {
       font-size: 16px;
-    }
-
-    @media (max-width: 720px) {
-      body {
-        padding: 14px;
-      }
-
-      .header-container {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .header-left {
-        min-width: 0;
-      }
-
-      .theme-toggle-container {
-        width: 100%;
-        flex-wrap: wrap;
-        align-items: stretch;
-      }
-
-      .theme-toggle-label {
-        width: 100%;
-      }
-
-      .theme-toggle-btn {
-        flex: 1 1 calc(50% - 10px);
-        justify-content: center;
-      }
-
-      .tabs {
-        gap: 8px;
-      }
-
-      .tab {
-        flex: 1 1 calc(50% - 8px);
-        text-align: center;
-      }
     }
 
     /* Toggle Switch Styles */
@@ -1074,42 +761,29 @@
   <div class="container">
     <div class="header-container">
       <div class="header-left">
-        <h1>🎮 LTTH Game Engine</h1>
+        <h1>LTTH Game Engine</h1>
         <p>Interaktive Spiele für TikTok LIVE Streams</p>
       </div>
       <div class="theme-toggle-container">
         <span class="theme-toggle-label">Theme:</span>
-        <button class="theme-toggle-btn" id="theme-day" data-theme="day">
-          <span class="theme-icon">☀️</span>
-          <span>Day</span>
-        </button>
-        <button class="theme-toggle-btn" id="theme-night" data-theme="night">
-          <span class="theme-icon">🌙</span>
-          <span>Night</span>
-        </button>
-        <button class="theme-toggle-btn" id="theme-contrast" data-theme="contrast">
-          <span class="theme-icon">◩</span>
-          <span>High Contrast</span>
-        </button>
-        <button class="theme-toggle-btn" id="theme-vision" data-theme="vision-impaired">
-          <span class="theme-icon">◧</span>
-          <span>Vision Impaired</span>
-        </button>
+        <button class="theme-toggle-btn" id="theme-night" data-theme="night"><span>Night</span></button>
+        <button class="theme-toggle-btn" id="theme-day" data-theme="day"><span>Day</span></button>
+        <button class="theme-toggle-btn" id="theme-contrast" data-theme="contrast"><span>Contrast</span></button><button class="theme-toggle-btn" id="theme-vision" data-theme="vision-impaired"><span>Vision Impaired</span></button><button class="theme-toggle-btn" id="theme-cid" data-theme="cid"><span>Cid</span></button>
       </div>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-tab="active-game">Aktives Spiel</button>
-      <button class="tab" data-tab="manual-mode">🧪 Manual Mode</button>
+      <button class="tab" data-tab="manual-mode">Manual Mode</button>
       <button class="tab" data-tab="connect4">Connect4</button>
-      <button class="tab" data-tab="chess">♟️ Blitzschach</button>
-      <button class="tab" data-tab="plinko">🎰 Plinko</button>
-      <button class="tab" data-tab="plinko-test">🧪 Plinko Test</button>
-      <button class="tab" data-tab="wheel">🎡 Glücksrad</button>
-      <button class="tab" data-tab="slot">🎰 Slot Machine</button>
+      <button class="tab" data-tab="chess">Blitzschach</button>
+      <button class="tab" data-tab="plinko">Plinko</button>
+      <button class="tab" data-tab="plinko-test">Plinko Test</button>
+      <button class="tab" data-tab="wheel">Glücksrad</button>
+      <button class="tab" data-tab="slot">Slot Machine</button>
       <button class="tab" data-tab="arena">Live Arena</button>
       <button class="tab" data-tab="overlays">OBS Overlays</button>
-      <button class="tab" data-tab="overlay-settings">⚙️ Overlay Mode</button>
+      <button class="tab" data-tab="overlay-settings">Overlay Mode</button>
       <button class="tab" data-tab="triggers">Trigger</button>
       <button class="tab" data-tab="xp-rewards">XP-Belohnungen</button>
       <button class="tab" data-tab="elo">ELO System</button>
@@ -1421,7 +1095,7 @@
     <div class="tab-content" id="tab-chess">
       <div class="card">
         <h2>♟️ Blitzschach Einstellungen</h2>
-        <p>Konfiguriere Schachspiele für TikTok LIVE Streams</p>
+        <p>Interaktive Spiele für TikTok LIVE Streams</p>
 
         <h3>⚙️ Spiel-Einstellungen</h3>
         
@@ -1714,7 +1388,7 @@
       
       <div class="card">
         <h2>🎰 Plinko Einstellungen</h2>
-        <p>Konfiguriere das physikbasierte Plinko-Spiel für TikTok LIVE Streams</p>
+        <p>Interaktive Spiele für TikTok LIVE Streams</p>
 
         <h3>🎯 Slot-Konfiguration</h3>
         <p style="color: #888; font-size: 14px; margin-bottom: 10px;">
@@ -4070,29 +3744,6 @@
             btn.classList.add('active');
           } else {
             btn.classList.remove('active');
-          }
-
-          if (theme === 'vision-impaired') {
-            const isActive = btn.dataset.theme === theme;
-            btn.style.backgroundColor = isActive ? '#facc15' : '#000';
-            btn.style.backgroundImage = 'none';
-            btn.style.color = isActive ? '#000' : '#fff';
-            btn.style.borderColor = '#facc15';
-            btn.style.boxShadow = isActive ? '0 0 0 2px rgba(250, 204, 21, 0.35)' : 'none';
-            btn.querySelectorAll('span').forEach((span) => {
-              span.style.color = isActive ? '#000' : '#fff';
-              span.style.opacity = '1';
-            });
-          } else {
-            btn.style.background = '';
-            btn.style.backgroundImage = '';
-            btn.style.color = '';
-            btn.style.borderColor = '';
-            btn.style.boxShadow = '';
-            btn.querySelectorAll('span').forEach((span) => {
-              span.style.color = '';
-              span.style.opacity = '';
-            });
           }
         });
       }
@@ -9566,5 +9217,3 @@
   </script>
 </body>
 </html>
-
-
