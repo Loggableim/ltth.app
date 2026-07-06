@@ -141,18 +141,29 @@ body {
 .sidebar-logo {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 0.85rem;
-    width: 100%;
+    justify-content: center;
+    gap: 0;
+    width: auto;
     min-width: 0;
     padding: 0;
 }
 
+.sidebar-logo-wide {
+    display: block;
+    width: 160px;
+    max-width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    transition: all var(--transition-speed) ease;
+    object-fit: contain;
+}
+
 /* Mini logo - responsive sizing based on screen size */
 .sidebar-logo-mini {
+    display: none;
     height: 52px;
-    width: auto;
-    max-width: 112px;
+    width: 52px;
+    max-width: 52px;
     flex-shrink: 0;
     transition: all var(--transition-speed) ease;
     object-fit: contain;
@@ -174,10 +185,18 @@ body {
     width: 100%;
 }
 
+.sidebar-collapsed .sidebar-logo-wide {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-logo-mini {
+    display: block;
+}
+
 .sidebar-collapsed .sidebar-logo-mini {
     height: 44px;
-    width: auto;
-    max-width: 72px;
+    width: 44px;
+    max-width: 44px;
 }
 
 .sidebar-collapsed .sidebar-toggle-btn {
@@ -297,6 +316,10 @@ body {
 
 /* Responsive: smaller logo on small screens (tablets and below) */
 @media (max-width: 1024px) {
+    .sidebar-logo-wide {
+        width: 132px;
+    }
+
     .sidebar-logo-mini {
         min-height: 32px;
         min-width: 32px;
@@ -319,6 +342,10 @@ body {
 
 /* Responsive: very small screens (mobile) */
 @media (max-width: 480px) {
+    .sidebar-logo-wide {
+        width: 112px;
+    }
+
     .sidebar-logo-mini {
         min-height: 28px;
         min-width: 28px;
@@ -340,14 +367,7 @@ body {
 }
 
 .sidebar-logo-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    opacity: 1;
-    transition: opacity var(--transition-speed) ease;
+    display: none !important;
 }
 
 /* Responsive: smaller text on small screens */
@@ -680,10 +700,23 @@ body {
 }
 
 .topbar-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
+    display: none !important;
+}
+
+.topbar-brand {
+    display: inline-flex;
+    align-items: center;
     min-width: 0;
+    width: 72px;
+    max-width: 72px;
+}
+
+.topbar-logo-image {
+    display: block;
+    width: 64px;
+    height: 64px;
+    max-width: 100%;
+    object-fit: contain;
 }
 
 .topbar-right {
@@ -843,7 +876,7 @@ body {
 }
 
 .content-view[data-plugin] {
-    padding: 0.5rem;
+    padding: 10px 10px 14px;
 }
 
 .content-view.active {
@@ -891,7 +924,7 @@ body {
 
 .dashboard-cockpit-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+    grid-template-columns: minmax(0, 1.3fr) minmax(400px, 0.95fr);
     gap: 1.5rem;
     align-items: start;
     width: 100%;
@@ -1559,6 +1592,10 @@ input:checked + .toggle-slider:before {
 
 .content-view[data-plugin] .view-section {
     padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: hidden;
 }
 
 .content-view[data-plugin] .iframe-container {
@@ -2039,6 +2076,12 @@ input:checked + .toggle-slider:before {
     background: var(--color-bg-secondary);
 }
 
+.content-view[data-plugin] .iframe-container {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
 /* Loading state for lazy-loaded iframes */
 .iframe-container::before {
     content: 'Loading...';
@@ -2414,9 +2457,15 @@ input:checked + .toggle-slider:before {
         width: 100%;
     }
 
-    .topbar-title {
+    .topbar-title,
+    .topbar-brand {
         overflow-wrap: anywhere;
         line-height: 1.25;
+    }
+
+    .topbar-logo-image {
+        width: 38px;
+        height: 38px;
     }
 
     .topbar-right {
@@ -2463,6 +2512,16 @@ input:checked + .toggle-slider:before {
 
     .topbar-title {
         font-size: 1rem;
+    }
+
+    .topbar-brand {
+        width: 38px;
+        max-width: 38px;
+    }
+
+    .topbar-logo-image {
+        width: 34px;
+        height: 34px;
     }
 
     .topbar-status .status-badge span,
@@ -2527,6 +2586,14 @@ input:checked + .toggle-slider:before {
 
     .topbar-title {
         font-size: 0.875rem;
+    }
+
+    .topbar-brand {
+        max-width: 150px;
+    }
+
+    .topbar-logo-image {
+        height: 30px;
     }
 
     .topbar-right {
