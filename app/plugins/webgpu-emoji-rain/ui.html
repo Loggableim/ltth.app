@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGPU Emoji Rain Konfiguration - TikTok Stream Tool</title>
+    <title>Emoji Rain Konfiguration - TikTok Stream Tool</title>
     <link rel="stylesheet" href="/css/themes.css">
     <script>
         (function () {
@@ -35,11 +35,11 @@
                 const logo = document.querySelector('[data-brand-logo]');
                 if (logo) {
                     const logoByTheme = {
-                        day: '/ltthicon.png',
-                        night: '/ltthicon.png',
-                        contrast: '/ltthicon.png',
-                        'vision-impaired': '/ltthicon.png',
-                        cid: '/ltthicon.png'
+                        day: '/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png',
+                        night: '/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png',
+                        contrast: '/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png',
+                        'vision-impaired': '/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png',
+                        cid: '/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png'
                     };
                     logo.src = logoByTheme[theme] || logoByTheme.night;
                 }
@@ -780,20 +780,385 @@
             font-size: 1.12em;
             box-shadow: none !important;
         }
+
+        .hero-shell {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 24px 28px;
+            margin-bottom: 18px;
+            border: 1px solid var(--color-border);
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 28%), var(--color-bg-card);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(16px) saturate(140%);
+        }
+
+        .hero-brand {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .hero-icon {
+            width: 92px;
+            height: 92px;
+            flex: 0 0 auto;
+            object-fit: contain;
+            border-radius: 22px;
+            filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.22));
+        }
+
+        .hero-copy {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .hero-title-row {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .hero-logo {
+            width: min(560px, 100%);
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .hero-subtitle {
+            margin: 10px 0 0;
+            text-align: left;
+            max-width: 72ch;
+            font-size: 1.02rem;
+        }
+
+        .hero-status-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: var(--brand-primary-light);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            font-size: 0.98rem;
+            font-weight: 700;
+        }
+
+        .status-pill-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--brand-primary);
+            box-shadow: 0 0 0 5px rgba(18, 161, 22, 0.16);
+        }
+
+        .status-pill[data-state="off"] {
+            background: rgba(148, 163, 184, 0.14);
+            border-color: rgba(148, 163, 184, 0.28);
+        }
+
+        .status-pill[data-state="off"] .status-pill-dot {
+            background: var(--color-text-muted);
+            box-shadow: 0 0 0 5px rgba(148, 163, 184, 0.16);
+        }
+
+        .hero-meta {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .hero-actions {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .nav-buttons.hero-actions {
+            text-align: right;
+            margin-bottom: 0;
+        }
+
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin: 0 0 22px;
+            grid-column: 1 / -1;
+        }
+
+        .summary-card {
+            padding: 18px 20px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent), var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(14px) saturate(130%);
+        }
+
+        .summary-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--color-text-primary);
+            font-size: 1.15rem;
+            line-height: 1.2;
+        }
+
+        .summary-note {
+            display: block;
+            color: var(--color-text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
+
+        .toggle-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 24px 26px;
+            text-align: left;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent), var(--color-bg-card);
+        }
+
+        .toggle-container h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 0;
+        }
+
+        .config-section {
+            padding: 24px 26px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent), var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(14px) saturate(130%);
+        }
+
+        .config-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            font-size: 1.22rem;
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .config-section h2::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--color-border), transparent);
+        }
+
+        .form-grid {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            min-height: 46px;
+            padding: 12px 14px;
+            border-radius: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 112px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .nav-button {
+            min-height: 46px;
+            padding: 12px 18px;
+            border-radius: 14px;
+        }
+
+        .nav-button-primary {
+            background: linear-gradient(135deg, var(--brand-primary), var(--color-accent-primary));
+        }
+
+        .button-group {
+            justify-content: flex-start;
+            padding-top: 8px;
+            grid-column: 1 / -1;
+        }
+
+        .button-group button {
+            min-height: 50px;
+            border-radius: 14px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            align-items: start;
+            grid-column: 1 / -1;
+        }
+
+        .settings-grid > .toggle-section,
+        .settings-grid > .button-group {
+            grid-column: 1 / -1;
+        }
+
+        .settings-grid > .config-section {
+            margin-bottom: 0;
+        }
+
+        .info-box,
+        .tip-box,
+        .upload-progress,
+        .emoji-preview,
+        #uploaded-images-grid,
+        #user-emoji-mappings {
+            border-radius: 14px;
+        }
+
+        @media (max-width: 1280px) {
+            .hero-shell,
+            .toggle-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-buttons.hero-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .summary-strip {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1799px) {
+            .settings-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 1199px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        html[data-theme="vision-impaired"] .hero-shell,
+        html[data-theme="vision-impaired"] .summary-card,
+        html[data-theme="vision-impaired"] .toggle-section,
+        html[data-theme="vision-impaired"] .config-section {
+            background: #000;
+            border-color: #facc15;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        html[data-theme="vision-impaired"] .summary-label,
+        html[data-theme="vision-impaired"] .summary-note,
+        html[data-theme="vision-impaired"] .hero-meta,
+        html[data-theme="vision-impaired"] .subtitle,
+        html[data-theme="vision-impaired"] .form-group label,
+        html[data-theme="vision-impaired"] .help-text,
+        html[data-theme="vision-impaired"] .info-box strong,
+        html[data-theme="vision-impaired"] .tip-box strong {
+            color: #fff7cc;
+        }
+
+        html[data-theme="vision-impaired"] .status-pill {
+            background: #111;
+            border-color: #facc15;
+        }
+
+        html[data-theme="vision-impaired"] .status-pill-dot {
+            background: #facc15;
+            box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
+        }
+
+        html[data-theme="contrast"] .hero-shell,
+        html[data-theme="contrast"] .summary-card,
+        html[data-theme="contrast"] .toggle-section,
+        html[data-theme="contrast"] .config-section {
+            backdrop-filter: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="brand-header">
-            <img class="brand-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
-        </div>
-        <p class="subtitle">Physik-basierte Emoji-Animationen für TikTok Events</p>
+        <header class="hero-shell">
+            <div class="hero-brand">
+                <img class="hero-icon" src="/plugins/webgpu-emoji-rain/assets/sidebar-icon.png" alt="Emoji Rain Icon">
+                <div class="hero-copy">
+                    <div class="hero-title-row">
+                        <img class="brand-logo hero-logo" data-brand-logo src="/plugins/webgpu-emoji-rain/assets/sidebar-logo-wide.png" alt="Emoji Rain">
+                    </div>
+                    <p class="subtitle hero-subtitle">Physik-basierte Emoji-Animationen f&uuml;r TikTok Events</p>
+                    <div class="hero-status-row">
+                        <span class="status-pill"><span class="status-pill-dot"></span><span id="enabled-status">Deaktiviert</span></span>
+                        <span class="hero-meta">Optimiert f&uuml;r Day / Night / CID / Vision / High Contrast</span>
+                    </div>
+                </div>
+            </div>
 
-        <div class="nav-buttons">
-            <a href="/dashboard.html" class="nav-button">← Zurück zum Dashboard</a>
-            <a href="/webgpu-emoji-rain/obs-hud" class="nav-button nav-button-primary" target="_blank">🎮 OBS HUD öffnen</a>
-        </div>
+            <div class="hero-actions nav-buttons">
+                <a href="/dashboard.html" class="nav-button">&larr; Zur&uuml;ck zum Dashboard</a>
+                <a href="/webgpu-emoji-rain/obs-hud" class="nav-button nav-button-primary" target="_blank">OBS HUD &ouml;ffnen</a>
+            </div>
+        </header>
 
+        <section class="summary-strip" aria-label="Emoji Rain Schnellstatus">
+            <div class="summary-card">
+                <span class="summary-label">Visueller Modus</span>
+                <strong id="hero-visual-mode" class="summary-value">Premium Stage</strong>
+                <span class="summary-note">Look, Intensit&auml;t und Performance</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">OBS HUD</span>
+                <strong id="hero-obs-size" class="summary-value">1920 &times; 1080</strong>
+                <span id="hero-obs-state" class="summary-note">Aktiviert</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Performance</span>
+                <strong id="hero-performance" class="summary-value">-- FPS</strong>
+                <span id="hero-performance-detail" class="summary-note">-- aktive Emojis</span>
+            </div>
+        </section>
+
+        <div class="settings-grid">
         <!-- Enable/Disable Toggle -->
         <div class="toggle-section">
             <div class="toggle-container">
@@ -1556,6 +1921,7 @@
             <button class="secondary" id="test-emoji-rain-btn">🧪 Emoji Rain testen</button>
             <button class="secondary" id="test-gift-ball-btn">🎁 Geschenk-Kugel testen</button>
             <button class="secondary" id="test-heart-balloons-btn">&hearts; Herzballons testen</button>
+        </div>
         </div>
     </div>
 

@@ -559,6 +559,12 @@
         currentView = viewName;
         localStorage.setItem('active-view', viewName);
 
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ltth:view-changed', {
+                detail: { view: viewName }
+            }));
+        }
+
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -636,7 +642,7 @@
             { icon: 'eye', label: 'LastEvent', view: 'lastevent-spotlight', plugin: 'lastevent-spotlight' },
             { icon: 'mic', label: 'TTS', view: 'tts', plugin: 'tts' },
             { icon: 'music', label: 'Soundboard', view: 'soundboard', plugin: 'soundboard' },
-            { icon: 'zap', label: 'WebGPU Emoji Rain', view: 'webgpu-emoji-rain', plugin: 'webgpu-emoji-rain' },
+            { icon: 'zap', label: 'Emoji Rain', view: 'webgpu-emoji-rain', plugin: 'webgpu-emoji-rain' },
             { icon: 'users', label: 'Multi-Guest', view: 'multi-guest', plugin: 'vdoninja' },
             { icon: 'gift', label: 'Gift Milestone', view: 'gift-milestone', plugin: 'gift-milestone' },
             { icon: 'video', label: 'Multi-Cam', view: 'multicam', plugin: 'multicam' },

@@ -1,7 +1,7 @@
 {
   "id": "webgpu-emoji-rain",
-  "name": "WebGPU Emoji Rain",
-  "version": "2.0.0",
+  "name": "Emoji Rain",
+  "version": "2.0.1",
   "description": "GPU-accelerated emoji rain effect using WebGPU instanced rendering. 1:1 port of emoji-rain with better performance. Features custom emoji sets, user mappings, file uploads, SuperFan bursts, and full TikTok integration.",
   "author": "Pup Cid",
   "entry": "main.js",
