@@ -52,10 +52,26 @@ html[data-theme="day"] .pill {
   color: #42526b;
 }
 
+html[data-theme="day"] .pill {
+  background: #e2e8f0;
+  color: #10203a;
+  -webkit-text-fill-color: #10203a;
+  border-color: #64748b;
+}
+
 html[data-theme="night"] .subtitle,
 html[data-theme="night"] .text-secondary,
 html[data-theme="night"] .pill {
   color: rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="night"] .pill,
+html[data-theme="contrast"] .pill,
+html[data-theme="vision-impaired"] .pill {
+  background: #000;
+  color: #facc15;
+  -webkit-text-fill-color: #facc15;
+  border-color: #facc15;
 }
 
 html[data-theme="day"] .btn.ghost,
@@ -124,6 +140,22 @@ html[data-theme="vision-impaired"] .tab.active {
   border-color: #facc15;
 }
 
+html[data-theme="contrast"] .btn:not(.danger),
+html[data-theme="vision-impaired"] .btn:not(.danger) {
+  background: #facc15;
+  color: #000;
+  -webkit-text-fill-color: #000;
+  border-color: #facc15;
+}
+
+html[data-theme="contrast"] .btn.danger,
+html[data-theme="vision-impaired"] .btn.danger {
+  background: #7f1d1d;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  border-color: #fca5a5;
+}
+
 html[data-theme="contrast"] input,
 html[data-theme="vision-impaired"] input,
 html[data-theme="contrast"] select,
@@ -160,6 +192,21 @@ html[data-theme="vision-impaired"] .section-title {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 24px;
+}
+
+.header-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.header-logo {
+  width: min(280px, 64vw);
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .eyebrow {
@@ -267,31 +314,33 @@ html[data-theme="vision-impaired"] .section-title {
 
 .setup-banner {
   margin-bottom: 20px;
-  padding: 16px;
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  padding: 14px 16px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
   border-left: 4px solid var(--musicbot-warning);
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.04));
 }
 
 .setup-banner h3 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--musicbot-warning);
   font-size: 16px;
 }
 
 .setup-issue {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.1);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.18);
 }
 
 .setup-issue + .setup-issue {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .setup-issue.error {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .setup-issue ul {
@@ -335,7 +384,7 @@ html[data-theme="vision-impaired"] .section-title {
   margin-bottom: 16px;
 }
 
-/* ── Player search bar ── */
+/* â”€â”€ Player search bar â”€â”€ */
 .player-search-bar {
   display: flex;
   gap: 8px;
@@ -354,7 +403,7 @@ html[data-theme="vision-impaired"] .section-title {
   font-size: 15px;
 }
 
-/* ── Embedded player ── */
+/* â”€â”€ Embedded player â”€â”€ */
 .player-embed-wrapper {
   margin: 12px 0;
 }
@@ -393,7 +442,7 @@ html[data-theme="vision-impaired"] .section-title {
   border: none;
 }
 
-/* ── Now playing bar ── */
+/* â”€â”€ Now playing bar â”€â”€ */
 .now-playing {
   padding: 12px 16px;
   border-radius: 8px;
@@ -414,7 +463,7 @@ html[data-theme="vision-impaired"] .section-title {
   font-size: 13px;
 }
 
-/* ── Bottom controls row ── */
+/* â”€â”€ Bottom controls row â”€â”€ */
 .player-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -466,7 +515,7 @@ html[data-theme="vision-impaired"] .section-title {
   flex-wrap: wrap;
 }
 
-/* ── Kept for legacy/volume ── */
+/* â”€â”€ Kept for legacy/volume â”€â”€ */
 .volume-control {
   display: flex;
   align-items: center;
@@ -496,7 +545,7 @@ html[data-theme="vision-impaired"] .section-title {
 
 .settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -791,7 +840,7 @@ html[data-theme="vision-impaired"] .section-title {
   align-items: flex-start;
 }
 
-/* ── Tab navigation ── */
+/* â”€â”€ Tab navigation â”€â”€ */
 .tab-bar {
   display: flex;
   gap: 4px;
@@ -829,13 +878,13 @@ html[data-theme="vision-impaired"] .section-title {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ── Progress bar ── */
+/* â”€â”€ Progress bar â”€â”€ */
 .np-progress-wrapper { margin-top: 8px; margin-bottom: 12px; }
 .np-progress-bar { height: 4px; background: var(--color-bg-primary); border-radius: 2px; overflow: hidden; }
 .np-progress-fill { height: 100%; background: var(--musicbot-accent); border-radius: 2px; width: 0%; transition: width 1s linear; }
 .np-time { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
 
-/* ── Queue items with thumbnails ── */
+/* â”€â”€ Queue items with thumbnails â”€â”€ */
 .queue-item {
   display: flex;
   align-items: center;
@@ -952,8 +1001,9 @@ html[data-theme="vision-impaired"] .section-title {
 }
 
 .musicbot-toast {
-  min-width: 260px;
-  max-width: 360px;
+  min-width: 0;
+  width: min(92vw, 560px);
+  max-width: none;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--musicbot-accent);
@@ -1085,6 +1135,23 @@ html[data-theme="vision-impaired"] .section-title {
     max-width: none;
     width: 100%;
   }
+
+  html[data-theme="vision-impaired"] .header-logo {
+    width: min(76vw, 300px);
+  }
+
+  html[data-theme="vision-impaired"] .tab {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  html[data-theme="cid"] .header-logo {
+    width: min(72vw, 280px);
+  }
+
+  html[data-theme="cid"] .tab {
+    min-height: 42px;
+  }
 }
 
 html[data-theme="vision-impaired"] body {
@@ -1102,6 +1169,10 @@ html[data-theme="vision-impaired"] .container {
 html[data-theme="vision-impaired"] .header {
   align-items: flex-start;
   gap: 18px;
+}
+
+html[data-theme="vision-impaired"] .header-logo {
+  width: min(300px, 72vw);
 }
 
 html[data-theme="vision-impaired"] .eyebrow {
@@ -1265,3 +1336,68 @@ html[data-theme="vision-impaired"] .queue-meta,
 html[data-theme="vision-impaired"] .queue-by {
   color: #fff7cc;
 }
+
+html[data-theme="cid"] .header-logo {
+  filter: saturate(1.04) brightness(0.98);
+}
+
+/* Cid theme alignment */
+html[data-theme="cid"] body,
+[data-theme="cid"] {
+  background: #030603;
+  color: #f4fff4;
+}
+
+        html[data-theme="cid"] .container,
+html[data-theme="cid"] .panel,
+html[data-theme="cid"] .card,
+html[data-theme="cid"] .section,
+html[data-theme="cid"] .info-message,
+html[data-theme="cid"] .warning-message,
+html[data-theme="cid"] .help-message,
+[data-theme="cid"] .overlay-container,
+[data-theme="cid"] .quiz-container,
+[data-theme="cid"] .question-card,
+[data-theme="cid"] .answer-option {
+  background: #071107;
+  color: #f4fff4;
+  border-color: #1e5b2a;
+  box-shadow: none;
+}
+
+html[data-theme="cid"] h1,
+html[data-theme="cid"] h2,
+html[data-theme="cid"] h3,
+html[data-theme="cid"] .title,
+html[data-theme="cid"] .card-title,
+html[data-theme="cid"] .stat-value,
+[data-theme="cid"] .quiz-logo,
+[data-theme="cid"] .logo-text {
+  color: #4ade80;
+}
+
+html[data-theme="cid"] p,
+html[data-theme="cid"] label,
+html[data-theme="cid"] .muted,
+html[data-theme="cid"] .help-text,
+html[data-theme="cid"] .description {
+  color: #d1e7d1;
+  opacity: 1;
+}
+
+html[data-theme="cid"] button,
+html[data-theme="cid"] .btn,
+[data-theme="cid"] .answer-option.selected {
+  background: #4ade80;
+  color: #030603;
+  border-color: #4ade80;
+}
+
+/* final vision ghost button contrast overrides */
+html[data-theme="vision-impaired"] .btn.ghost {
+  background: #000 !important;
+  color: #facc15 !important;
+  -webkit-text-fill-color: #facc15 !important;
+  border: 3px solid #facc15 !important;
+}
+
