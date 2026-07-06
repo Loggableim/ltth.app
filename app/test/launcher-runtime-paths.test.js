@@ -1,4 +1,6 @@
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const Launcher = require('../modules/launcher');
 
 describe('launcher runtime toolchain', () => {
@@ -28,5 +30,35 @@ describe('launcher runtime toolchain', () => {
     expect(sanitized.NPM_CONFIG_NODE_OPTIONS).toBeUndefined();
     const pathKey = process.platform === 'win32' ? 'Path' : 'PATH';
     expect(sanitized[pathKey].split(path.delimiter)[0]).toBe(path.dirname(process.execPath));
+  });
+  test('repairs missing native binding with dependency install before rebuild', async () => {
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-native-'));
+    const launcher = new Launcher();
+    launcher.projectRoot = projectRoot;
+    launcher.log = {
+      warn: jest.fn(),
+      info: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      newLine: jest.fn(),
+      spinner: jest.fn(() => ({ stop: jest.fn() }))
+    };
+    const missingBindingError = new Error('native check failed');
+    missingBindingError.stderr = 'Error: Could not locate the bindings file. Tried: build\\Release\\better_sqlite3.node';
+
+    launcher.verifyNativeModules = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        throw missingBindingError;
+      })
+      .mockReturnValueOnce('native-modules-ok');
+    launcher.installDependencies = jest.fn(async () => {});
+    launcher.rebuildNativeModules = jest.fn();
+
+    await launcher.checkNativeModules();
+
+    expect(launcher.installDependencies).toHaveBeenCalledTimes(1);
+    expect(launcher.rebuildNativeModules).not.toHaveBeenCalled();
+    expect(launcher.verifyNativeModules).toHaveBeenCalledTimes(2);
   });
 });

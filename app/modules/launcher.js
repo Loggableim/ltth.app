@@ -447,6 +447,16 @@ class Launcher {
         });
     }
 
+    isMissingNativeBindingError(error) {
+        const detail = [
+            error && error.stderr,
+            error && error.stdout,
+            error && error.message
+        ].filter(Boolean).join('\n');
+
+        return /Could not locate the bindings file|better_sqlite3\.node|MODULE_NOT_FOUND/i.test(detail);
+    }
+
     async checkNativeModules() {
         this.log.info('Prüfe native Node-Module...');
         try {
@@ -456,6 +466,19 @@ class Launcher {
         } catch (error) {
             this.log.warn('Native Module passen nicht zur aktuellen Node.js-Version.');
             this.log.warn(error.stderr || error.message);
+
+            if (this.isMissingNativeBindingError(error)) {
+                this.log.warn('Native Module oder AbhÃ¤ngigkeiten fehlen. Repariere Dependencies...');
+                await this.installDependencies();
+                try {
+                    const verifyOutput = this.verifyNativeModules();
+                    this.log.success(`Native Module repariert: ${verifyOutput}`);
+                    return;
+                } catch (verifyError) {
+                    this.log.warn('Dependency-Reparatur hat native Module nicht behoben. Versuche npm rebuild...');
+                    this.log.warn(verifyError.stderr || verifyError.message);
+                }
+            }
         }
 
         try {

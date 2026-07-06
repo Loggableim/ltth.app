@@ -37,7 +37,9 @@
             }
             function syncTheme() {
                 const theme = readTheme();
-                document.documentElement.setAttribute('data-theme', theme);
+                if (document.documentElement.getAttribute('data-theme') !== theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
                 const logo = document.querySelector('.top-logo');
                 if (logo) {

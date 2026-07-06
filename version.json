@@ -1,10 +1,10 @@
 {
-  "version": "1.3.13",
-  "releaseDate": "2026-07-05",
+  "version": "1.3.14",
+  "releaseDate": "2026-07-07",
   "status": "stable",
-  "downloadVersion": "1.3.13",
-  "downloadNote": "Windows installer repairs installations where downloads/launcher.exe was accidentally copied over root launcher.exe.",
-  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.13",
+  "downloadVersion": "1.3.14",
+  "downloadNote": "Launcher avoids repeated better-sqlite3 rebuilds and Fireworks settings no longer freeze in the dashboard.",
+  "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.14",
   "oneLineInstaller": {
     "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
@@ -19,6 +19,14 @@
     "linux-arm64"
   ],
   "changelog": {
+    "1.3.14": {
+      "date": "2026-07-07",
+      "changes": [
+        "FIXED: Fireworks settings iframe no longer freezes the dashboard through a self-triggering theme MutationObserver loop",
+        "FIXED: Launcher repairs missing better-sqlite3 binding files with dependency install before falling back to native rebuild",
+        "IMPROVED: Native module repair tests cover missing binding files separately from ABI mismatch rebuilds"
+      ]
+    },
     "1.3.13": {
       "date": "2026-07-05",
       "changes": [

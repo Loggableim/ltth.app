@@ -2630,6 +2630,27 @@ func (l *Launcher) verifyNativeModules() error {
 	return l.verifyNativeModulesWithPath(l.nodePath)
 }
 
+func nativeModuleFailureSuggestsDependencyInstall(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	detail := err.Error()
+	patterns := []string{
+		"could not locate the bindings file",
+		"better_sqlite3.node",
+		"module_not_found",
+		"cannot find module",
+	}
+	lowerDetail := strings.ToLower(detail)
+	for _, pattern := range patterns {
+		if strings.Contains(lowerDetail, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
 func (l *Launcher) installDependencies() error {
 	l.logger.Println("[INFO] Starting npm install...")
 	l.updateProgressLocalized(45, "status.npm_install_start", "npm install wird gestartet...")
@@ -4301,6 +4322,22 @@ func (l *Launcher) runLauncher() {
 	l.logger.Println("[Phase 3.1] Verifying native Node modules...")
 	if err := l.verifyNativeModules(); err != nil {
 		l.logAndSync("[WARNING] Native module verification failed: %v", err)
+		if nativeModuleFailureSuggestsDependencyInstall(err) {
+			l.logAndSync("[WARNING] Native module file is missing; repairing dependencies before rebuild.")
+			l.updateProgressLocalized(83, "status.reinstalling_dependencies", "Installiere Abhängigkeiten neu...")
+			if installErr := l.installDependencies(); installErr != nil {
+				l.logAndSync("[ERROR] Dependency reinstall after missing native module failed: %v", installErr)
+				l.updateProgressLocalized(95, "status.installation_failed", "FEHLER: %v", installErr)
+				time.Sleep(5 * time.Second)
+				l.closeLogging()
+				os.Exit(1)
+			}
+			if verifyErr := l.verifyNativeModules(); verifyErr == nil {
+				goto nativeModulesReady
+			} else {
+				l.logAndSync("[WARNING] Native modules still fail after dependency repair: %v", verifyErr)
+			}
+		}
 		l.updateProgressLocalized(82, "status.rebuilding_native", "Baue native Module neu (better-sqlite3)...")
 		if rebuildErr := l.rebuildNativeModules(); rebuildErr != nil {
 			l.logAndSync("[WARNING] Native module rebuild failed: %v", rebuildErr)
@@ -4322,6 +4359,7 @@ func (l *Launcher) runLauncher() {
 		}
 	}
 
+nativeModulesReady:
 	// Phase 3.5: Auto-fix common issues (80-89%)
 	l.updateProgressLocalized(82, "status.checking_config", "Prüfe Konfiguration...")
 	l.logger.Println("[Phase 3.5] Auto-fixing common issues...")

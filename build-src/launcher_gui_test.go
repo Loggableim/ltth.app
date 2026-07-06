@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net"
 	"net/http"
@@ -389,6 +390,22 @@ func TestBackendPortConfigPinsMaxPortToPreferredPort(t *testing.T) {
 	preferred, maxPort = backendPortConfig(4321)
 	if preferred != 4321 || maxPort != 4321 {
 		t.Fatalf("expected manual preferred port to be fixed, got %d/%d", preferred, maxPort)
+	}
+}
+
+func TestNativeModuleFailureSuggestsDependencyInstallForMissingBinding(t *testing.T) {
+	err := fmt.Errorf("exit status 1\nError: Could not locate the bindings file. Tried:\n -> build\\Release\\better_sqlite3.node")
+
+	if !nativeModuleFailureSuggestsDependencyInstall(err) {
+		t.Fatal("missing better-sqlite3 binding should trigger dependency install before rebuild")
+	}
+}
+
+func TestNativeModuleFailureDoesNotSuggestDependencyInstallForAbiMismatch(t *testing.T) {
+	err := fmt.Errorf("Error: The module was compiled against a different Node.js version using NODE_MODULE_VERSION 115")
+
+	if nativeModuleFailureSuggestsDependencyInstall(err) {
+		t.Fatal("ABI mismatch should use native rebuild path")
 	}
 }
 
