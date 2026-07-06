@@ -46,8 +46,6 @@ structure:
   launcher:
     - build-src/
     - launcher.exe
-    - launcher-console.exe
-    - dev_launcher.exe
 
 notes:
   - Root package.json is a command wrapper only.

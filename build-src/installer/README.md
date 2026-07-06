@@ -2,14 +2,13 @@
 
 This directory contains everything needed to build a professional Windows installer for PupCid's Little TikTool Helper (LTTH).
 
-> Status: legacy fallback path. The preferred end-user install flow is now the thin bootstrapper (`ltth-bootstrapper.exe`) plus release payload manifest. Keep this NSIS path for support, offline scenarios, or explicit fallback packaging.
+> Status: legacy fallback path. The maintained Windows launcher is `launcher.exe`; keep this NSIS path for support, offline scenarios, or explicit fallback packaging.
 
 ## 📋 Overview
 
 The NSIS installer creates a complete setup package that installs:
 - LTTH Backend (`app/` directory with all modules and plugins)
 - Go Launcher (`launcher.exe`)
-- Optional: `ltthgit.exe` (cloud launcher)
 - Optional: Portable Node.js runtime
 - Desktop and Start Menu shortcuts
 - Professional uninstaller with complete cleanup
@@ -91,9 +90,8 @@ build-src/
 │   │   ├── node.exe                ← Node.js executable
 │   │   ├── npm                     ← NPM package manager
 │   │   └── node_modules/           ← Node.js core modules
-│   └── splash.html                 ← Existing splash (for ltthgit.exe)
+│   └── splash.html                 ← Existing splash (legacy reference)
 ├── launcher.exe                    ← Local launcher (existing)
-├── ltthgit.exe                     ← Cloud launcher (existing)
 └── icon.ico                        ← Application icon (existing)
 ```
 
@@ -227,7 +225,6 @@ When a user runs the installer, they can choose to install:
   - All files from `app/` directory
   - `launcher.exe` (main launcher)
   - `icon.ico` (application icon)
-  - `ltthgit.exe` (if available)
   - Uninstaller
 
 ### Optional:

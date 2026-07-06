@@ -110,7 +110,6 @@ Wenn Benutzer den Installer ausführen:
 
 - `app/` Verzeichnis (alle Backend-Dateien)
 - `launcher.exe` (Go Launcher)
-- `ltthgit.exe` (falls vorhanden)
 - `node/` Verzeichnis (falls Node.js gewählt)
 - Desktop Shortcut
 - Startmenü Shortcuts

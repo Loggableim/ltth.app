@@ -98,16 +98,12 @@ From root:
 
 ```bash
 npm run build:launcher:win
-npm run build:launcher:console
-npm run build:launcher:dev
 ```
 
 Or from `build-src/`:
 
 ```bash
 go build -o ../launcher.exe -ldflags "-H windowsgui -s -w" launcher-gui.go
-go build -o ../launcher-console.exe -ldflags "-s -w" launcher.go
-go build -o ../dev_launcher.exe -ldflags "-s -w" dev-launcher.go
 ```
 
 ## Electron

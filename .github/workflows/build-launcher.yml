@@ -52,20 +52,7 @@ jobs:
         working-directory: ./build-src
         run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../launcher.exe launcher-gui.go
 
-      - name: Build Windows console launcher
-        working-directory: ./build-src
-        run: GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../launcher-console.exe launcher.go
-
-      - name: Build Windows dev launcher
-        working-directory: ./build-src
-        run: GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../dev_launcher.exe dev-launcher.go
-
-      - name: Build Windows thin bootstrapper
-        working-directory: ./build-src
-        run: GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../ltth-bootstrapper.exe bootstrapper.go
-
       - name: Write launcher release metadata
-        if: startsWith(github.ref, 'refs/tags/launcher-')
         shell: bash
         run: |
           cat > launcher-release.json <<EOF
@@ -80,12 +67,8 @@ jobs:
       - name: Upload launchers
         uses: actions/upload-artifact@v4
         with:
-          name: launchers-windows
-          path: |
-            launcher.exe
-            launcher-console.exe
-            dev_launcher.exe
-            ltth-bootstrapper.exe
+          name: launcher-windows
+          path: launcher.exe
 
       - name: Create release for launcher tag
         if: startsWith(github.ref, 'refs/tags/launcher-')
@@ -97,9 +80,6 @@ jobs:
             Version: `v${{ steps.version.outputs.version }}`
           files: |
             launcher.exe
-            launcher-console.exe
-            dev_launcher.exe
-            ltth-bootstrapper.exe
             launcher-release.json
           draft: false
           prerelease: ${{ steps.channel.outputs.channel == 'beta' }}

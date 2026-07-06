@@ -114,7 +114,7 @@ screenshots/       ← website screenshots (de/, features/, live-check/)
 install/           ← one-line installer scripts (install.js, install.sh, install.ps1)
 plugin-store.json  ← official plugin store registry (36 entries)
 plugin-store/      ← pre-packaged plugin ZIPs (packages/*.zip)
-build-src/         ← Go launcher sources (launcher-gui.go, bootstrapper.go, etc.)
+  build-src/         ← Go launcher sources (launcher-gui.go)
 runtime/           ← runtime state (launcher_settings.json, node/)
 scripts/           ← release and test scripts
 new_patch/         ← release staging area
@@ -219,9 +219,7 @@ npm run dev
 npm test
 npm run build:css
 npm run build:launcher:win    # builds launcher.exe
-npm run build:launcher:console # builds launcher-console.exe
-npm run build:launcher:dev    # builds dev_launcher.exe
-npm run build:bootstrapper:win # builds ltth-bootstrapper.exe
+npm run build:launcher:win     # builds launcher.exe
 ```
 
 ## Working Standards

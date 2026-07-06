@@ -46,7 +46,7 @@ Do not confuse this snapshot with older LTTH repositories or stale archive refer
 - Website screenshots: `screenshots/`
 - Release staging: `new_patch/` + `released_patches/` + `scripts/release_from_new_patch.py`
 - Go launcher sources: `build-src/`
-- Compiled launcher binaries: `launcher.exe`, `launcher-console.exe`, `dev_launcher.exe`, `ltth-bootstrapper.exe` (root)
+- Compiled launcher binaries: `launcher.exe` (root)
 - Runtime state: `runtime/`
 - Repository identity: `REPOSITORY_IDENTITY.md`
 - Developer onboarding: `AGENTS.md` and `infos/llm_start_here.md`
@@ -112,14 +112,11 @@ This is a purely client-side solution — no server-side rendering required. Wor
 
 ## Go Launcher Build System
 
-`build-src/` contains Go sources for four launcher binaries:
+`build-src/` contains the maintained launcher source plus legacy reference code:
 
 | Binary | Source | Purpose |
 |---|---|---|
 | `launcher.exe` | `launcher-gui.go` (170 KB) | GUI launcher (Windows, `-H windowsgui`) |
-| `launcher-console.exe` | `launcher.go` (38 KB) | Console launcher |
-| `dev_launcher.exe` | `dev-launcher.go` (38 KB) | Dev launcher with terminal output |
-| `ltth-bootstrapper.exe` | `bootstrapper.go` (31 KB) | Thin installer/bootstrapper |
 
 Go module: `github.com/Loggableim/ltth.app`, Go 1.24.10.
 
@@ -127,7 +124,6 @@ Key launcher features:
 - Port fallback: tries range `3000–3050`, writes actual port to `.ltth_port`.
 - `netstat -ano` diagnostics on Windows for port conflicts.
 - Detailed startup diagnostics in `app/logs/launcher_*.log`.
-- `ltthgit.go` — Git operations module for cloud launcher.
 - `launcher_gui_test.go` (24 KB) — GUI launcher tests.
 
 CI workflows:

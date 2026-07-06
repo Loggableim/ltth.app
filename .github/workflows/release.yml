@@ -9,11 +9,9 @@ permissions:
   contents: write
 
 env:
-  NODE_RUNTIME_VERSION: 22.14.0
-
 jobs:
   build_windows_release_assets:
-    name: Build Windows bootstrapper + payload
+    name: Build Windows launcher asset
     runs-on: windows-latest
 
     steps:
@@ -32,22 +30,11 @@ jobs:
         with:
           go-version: '1.24.10'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       - name: Build Windows launcher
         working-directory: ./build-src
         shell: bash
         run: |
           GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../launcher.exe launcher-gui.go sysproc_windows.go
-
-      - name: Build Windows thin bootstrapper
-        working-directory: ./build-src
-        shell: bash
-        run: |
-          GOOS=windows GOARCH=amd64 go build -ldflags="-H windowsgui -s -w" -o ../ltth-bootstrapper.exe bootstrapper.go
 
       - name: Import Windows signing certificate
         if: ${{ secrets.WINDOWS_SIGN_CERT_BASE64 != '' && secrets.WINDOWS_SIGN_CERT_PASSWORD != '' }}
@@ -68,33 +55,25 @@ jobs:
             throw 'signtool.exe not found on runner.'
           }
           & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /a launcher.exe
-          & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /a ltth-bootstrapper.exe
 
-      - name: Install production app dependencies
-        working-directory: ./app
+      - name: Write launcher release metadata
         shell: bash
         run: |
-          npm ci
-          npm run build:css
-          npm prune --omit=dev
-
-      - name: Assemble Windows payload
-        shell: powershell
-        run: |
-          $signedArgs = @()
-          if ('${{ secrets.WINDOWS_SIGN_CERT_BASE64 }}' -ne '' -and '${{ secrets.WINDOWS_SIGN_CERT_PASSWORD }}' -ne '') {
-            $signedArgs += '-PayloadSigned'
+          cat > launcher-release.json <<EOF
+          {
+            "component": "launcher.exe",
+            "version": "v${{ steps.version.outputs.version }}",
+            "tag": "${GITHUB_REF_NAME}"
           }
-          .\build-src\scripts\package-windows-bootstrap-release.ps1 -Version '${{ steps.version.outputs.version }}' -Repository '${{ github.repository }}' -NodeRuntimeVersion '${{ env.NODE_RUNTIME_VERSION }}' @signedArgs
+          EOF
 
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
           name: release-assets
           path: |
-            dist/ltth-bootstrapper.exe
-            dist/ltth-payload-windows-amd64-*.zip
-            dist/stable.json
+            launcher.exe
+            launcher-release.json
 
   publish_release:
     name: Publish GitHub release
@@ -126,7 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-assets
-          path: dist
+          path: .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -135,9 +114,8 @@ jobs:
           name: Stable release v${{ steps.version.outputs.VERSION }}
           body_path: release-notes.md
           files: |
-            dist/ltth-bootstrapper.exe
-            dist/ltth-payload-windows-amd64-*.zip
-            dist/stable.json
+            launcher.exe
+            launcher-release.json
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -146,4 +124,4 @@ jobs:
 
       - name: Release created successfully
         run: |
-          echo "Stable release v${{ steps.version.outputs.VERSION }} published with bootstrapper, Windows payload and stable release manifest."
+          echo "Stable release v${{ steps.version.outputs.VERSION }} published with launcher.exe."
