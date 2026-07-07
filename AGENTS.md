@@ -12,6 +12,7 @@ This file is the first stop for future agents working on this LTTH snapshot.
 - `docs_archive/` is historical reference only. Prefer `README.md`, `DOCUMENTATION_INDEX.md`, `infos/`, and `docs/SNAPSHOT_STATUS.md`.
 - The published one-line installer uses `main/install/install.*`; `LTTH_REPO_BRANCH` exists only for explicit overrides.
 - On Windows, the PowerShell installer self-elevates on first run and auto-installs missing Git/Node prerequisites before cloning the repo.
+- The Bash installer auto-installs Git and current Node LTS on macOS/Linux, and the Node fallback installer auto-installs Git where possible.
 
 ## Before Editing
 

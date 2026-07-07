@@ -82,6 +82,336 @@ function httpsGet(url) {
     });
 }
 
+function downloadFile(url, destination) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'ltth-installer' } }, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                const nextUrl = new URL(res.headers.location, url).toString();
+                res.resume();
+                return downloadFile(nextUrl, destination).then(resolve, reject);
+            }
+
+            if (res.statusCode !== 200) {
+                res.resume();
+                return reject(new Error(`HTTP ${res.statusCode} fuer ${url}`));
+            }
+
+            const file = fs.createWriteStream(destination);
+            res.pipe(file);
+            file.on('finish', () => {
+                file.close(resolve);
+            });
+            file.on('error', (error) => {
+                file.close(() => reject(error));
+            });
+        }).on('error', reject);
+    });
+}
+
+function probeExecutable(executable) {
+    if (!executable) {
+        return null;
+    }
+
+    try {
+        const version = execFileSync(executable, ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        if (!version) {
+            return null;
+        }
+
+        return {
+            path: executable,
+            version
+        };
+    } catch {
+        return null;
+    }
+}
+
+function commandExists(command) {
+    return probeExecutable(command) !== null;
+}
+
+function prependPathEntries(entries) {
+    const current = process.env.PATH || '';
+    const nextEntries = [];
+    const seen = new Set();
+
+    for (const entry of entries) {
+        if (!entry) {
+            continue;
+        }
+
+        const normalized = path.resolve(entry);
+        if (seen.has(normalized)) {
+            continue;
+        }
+        seen.add(normalized);
+        nextEntries.push(normalized);
+    }
+
+    if (nextEntries.length > 0) {
+        process.env.PATH = [...nextEntries, current].filter(Boolean).join(path.delimiter);
+    }
+}
+
+function findGitExecutable() {
+    const direct = probeExecutable('git');
+    if (direct) {
+        return direct;
+    }
+
+    const candidates = [];
+    if (process.platform === 'win32') {
+        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+        const programFiles = [process.env.ProgramFiles, process.env['ProgramFiles(x86)']].filter(Boolean);
+        for (const root of [localAppData, ...programFiles]) {
+            candidates.push(
+                path.join(root, 'Programs', 'Git', 'cmd', 'git.exe'),
+                path.join(root, 'Programs', 'Git', 'bin', 'git.exe'),
+                path.join(root, 'Programs', 'Git', 'usr', 'bin', 'git.exe'),
+                path.join(root, 'Git', 'cmd', 'git.exe'),
+                path.join(root, 'Git', 'bin', 'git.exe'),
+                path.join(root, 'Git', 'usr', 'bin', 'git.exe')
+            );
+        }
+    } else if (process.platform === 'darwin') {
+        candidates.push('/opt/homebrew/bin/git', '/usr/local/bin/git', '/usr/bin/git');
+    } else {
+        candidates.push('/usr/bin/git', '/usr/local/bin/git', '/bin/git', '/snap/bin/git');
+    }
+
+    for (const candidate of candidates) {
+        const info = probeExecutable(candidate);
+        if (info) {
+            return info;
+        }
+    }
+
+    return null;
+}
+
+function getBrewExecutable() {
+    const direct = probeExecutable('brew');
+    if (direct) {
+        return direct;
+    }
+
+    for (const candidate of ['/opt/homebrew/bin/brew', '/usr/local/bin/brew']) {
+        const info = probeExecutable(candidate);
+        if (info) {
+            return info;
+        }
+    }
+
+    return null;
+}
+
+async function ensureHomebrew() {
+    if (process.platform !== 'darwin') {
+        return false;
+    }
+
+    const brewInfo = getBrewExecutable();
+    if (brewInfo) {
+        prependPathEntries([path.dirname(brewInfo.path)]);
+        return true;
+    }
+
+    log('Installiere Homebrew automatisch...');
+    try {
+        await exec('/bin/bash', ['-lc', 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"']);
+    } catch (error) {
+        warn(`Homebrew-Installation fehlgeschlagen: ${error.message}`);
+        return false;
+    }
+
+    const installedBrew = getBrewExecutable();
+    if (installedBrew) {
+        prependPathEntries([path.dirname(installedBrew.path)]);
+        return true;
+    }
+
+    warn('Homebrew wurde installiert, konnte aber nicht in PATH gefunden werden.');
+    return false;
+}
+
+async function installGitOnWindows() {
+    if (commandExists('winget')) {
+        log('Installiere Git via winget...');
+        try {
+            await exec('winget', [
+                'install',
+                '--id', 'Git.Git',
+                '-e',
+                '--source', 'winget',
+                '--silent',
+                '--accept-package-agreements',
+                '--accept-source-agreements'
+            ]);
+        } catch (error) {
+            warn(`winget-Git-Installation fehlgeschlagen: ${error.message}`);
+        }
+
+        const wingetGit = findGitExecutable();
+        if (wingetGit) {
+            return wingetGit;
+        }
+    }
+
+    log('Installiere Git ueber die offizielle Git-for-Windows-Quelle...');
+    const installPage = await httpsGet('https://git-scm.com/install/windows');
+    const archPattern = process.arch === 'arm64'
+        ? /https:\/\/github\.com\/git-for-windows\/git\/releases\/download\/[^"]+\/Git-[^"]+-arm64\.exe/
+        : /https:\/\/github\.com\/git-for-windows\/git\/releases\/download\/[^"]+\/Git-[^"]+-64-bit\.exe/;
+    const match = installPage.match(archPattern);
+    if (!match) {
+        throw new Error('Konnte den offiziellen Git-for-Windows-Downloadlink nicht ermitteln.');
+    }
+
+    const installerUrl = match[0];
+    const installerPath = path.join(os.tmpdir(), `git-installer-${Date.now()}-${Math.random().toString(16).slice(2)}.exe`);
+    const installDir = path.join(process.env.LOCALAPPDATA || os.homedir(), 'Programs', 'Git');
+
+    try {
+        await downloadFile(installerUrl, installerPath);
+        await exec(installerPath, [
+            '/VERYSILENT',
+            '/NORESTART',
+            '/NOCANCEL',
+            '/SP-',
+            '/CLOSEAPPLICATIONS',
+            '/RESTARTAPPLICATIONS',
+            '/COMPONENTS=icons,ext\\reg\\shellhere,assoc,assoc_sh',
+            `/DIR=${installDir}`
+        ]);
+    } finally {
+        fs.rmSync(installerPath, { force: true });
+    }
+
+    return findGitExecutable();
+}
+
+async function installGitOnMac() {
+    if (!await ensureHomebrew()) {
+        return null;
+    }
+
+    log('Installiere Git via Homebrew...');
+    try {
+        await exec('brew', ['install', 'git']);
+    } catch (error) {
+        warn(`Homebrew-Git-Installation fehlgeschlagen: ${error.message}`);
+        return null;
+    }
+
+    const gitInfo = findGitExecutable();
+    if (gitInfo && path.isAbsolute(gitInfo.path)) {
+        prependPathEntries([path.dirname(gitInfo.path)]);
+    }
+
+    return gitInfo;
+}
+
+async function installGitOnLinux() {
+    const packageManagers = [
+        {
+            command: 'apt-get',
+            setup: async () => {
+                const args = ['install', '-y', 'git'];
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['apt-get', 'update']);
+                    await exec('sudo', args);
+                } else {
+                    await exec('apt-get', ['update']);
+                    await exec('apt-get', args);
+                }
+            }
+        },
+        {
+            command: 'dnf',
+            setup: async () => {
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['dnf', 'install', '-y', 'git']);
+                } else {
+                    await exec('dnf', ['install', '-y', 'git']);
+                }
+            }
+        },
+        {
+            command: 'yum',
+            setup: async () => {
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['yum', 'install', '-y', 'git']);
+                } else {
+                    await exec('yum', ['install', '-y', 'git']);
+                }
+            }
+        },
+        {
+            command: 'pacman',
+            setup: async () => {
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['pacman', '-Sy', '--noconfirm', 'git']);
+                } else {
+                    await exec('pacman', ['-Sy', '--noconfirm', 'git']);
+                }
+            }
+        },
+        {
+            command: 'zypper',
+            setup: async () => {
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['zypper', 'install', '-y', 'git']);
+                } else {
+                    await exec('zypper', ['install', '-y', 'git']);
+                }
+            }
+        },
+        {
+            command: 'apk',
+            setup: async () => {
+                if (commandExists('sudo') && typeof process.getuid === 'function' && process.getuid() !== 0) {
+                    await exec('sudo', ['apk', 'add', 'git']);
+                } else {
+                    await exec('apk', ['add', 'git']);
+                }
+            }
+        }
+    ];
+
+    for (const manager of packageManagers) {
+        if (!commandExists(manager.command)) {
+            continue;
+        }
+
+        log(`Installiere Git via ${manager.command}...`);
+        try {
+            await manager.setup();
+        } catch (error) {
+            warn(`${manager.command}-Git-Installation fehlgeschlagen: ${error.message}`);
+            continue;
+        }
+
+        return findGitExecutable();
+    }
+
+    return null;
+}
+
+async function installGitAutomatically() {
+    if (process.platform === 'win32') {
+        return installGitOnWindows();
+    }
+    if (process.platform === 'darwin') {
+        return installGitOnMac();
+    }
+    if (process.platform === 'linux') {
+        return installGitOnLinux();
+    }
+    return null;
+}
+
 // ---------- Schritte ----------
 async function resolveVersion() {
     if (!useLatestBranch) {
@@ -106,11 +436,28 @@ async function resolveVersion() {
 }
 
 async function ensureGit() {
-    try { execFileSync('git', ['--version'], { stdio: 'ignore' }); }
-    catch {
-        err('Git fehlt. Bitte installiere git (https://git-scm.com).');
-        process.exit(1);
+    const gitInfo = findGitExecutable();
+    if (gitInfo) {
+        if (path.isAbsolute(gitInfo.path)) {
+            prependPathEntries([path.dirname(gitInfo.path)]);
+        }
+        ok(`Git ${gitInfo.version} gefunden`);
+        return;
     }
+
+    log('Git fehlt - installiere es automatisch...');
+    const installedGit = await installGitAutomatically();
+    if (installedGit) {
+        if (path.isAbsolute(installedGit.path)) {
+            prependPathEntries([path.dirname(installedGit.path)]);
+        }
+        ok(`Git ${installedGit.version} gefunden`);
+        return;
+    }
+
+    err('Git konnte nicht automatisch installiert werden.');
+    err('Bitte installiere Git manuell: https://git-scm.com/downloads');
+    process.exit(1);
 }
 
 async function ensureNode() {

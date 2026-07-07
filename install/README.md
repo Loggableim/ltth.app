@@ -22,6 +22,10 @@ Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfunge
 
 Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js als Fallback.
 
+Der Bash-One-Liner installiert fehlendes Git automatisch nach und zieht Node.js auf eine aktuelle LTS-Version nach; auf macOS wird Homebrew bei Bedarf automatisch eingerichtet.
+
+Der Node-Fallback (`install.js`) benoetigt einen vorhandenen Node-Interpreter zum Start, installiert aber fehlendes Git automatisch nach.
+
 Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-LTS-Builds (18/20/22/24) und umgeht Node.js 23.x, damit native Module ohne Visual-Studio-Build-Tools installiert werden koennen.
 
 ## Umgebungsvariablen

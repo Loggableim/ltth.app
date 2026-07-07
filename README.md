@@ -90,6 +90,7 @@ npm run lint
 
 The published one-line installers use the `main/install/install.*` endpoints and the installer defaults to `main` unless `LTTH_REPO_BRANCH` is set explicitly.
 On Windows, the PowerShell installer self-elevates on first run and auto-installs missing Git/Node prerequisites before cloning the repo.
+The Bash installer auto-installs Git and current Node LTS on macOS/Linux, and the Node fallback auto-installs Git where possible.
 
 ## Deployment
 

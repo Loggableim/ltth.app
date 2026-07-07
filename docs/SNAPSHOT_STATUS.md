@@ -99,6 +99,7 @@ Cross-platform one-line installer system:
 - **Integration:** `version.json` contains `oneLineInstaller` commands for Windows/macOS/Linux/Universal.
 - **Default release branch:** `main` (override with `LTTH_REPO_BRANCH` only for legacy/custom installs).
 - **Windows bootstrap:** the PowerShell installer requests admin elevation on first run and auto-installs missing Git and Node dependencies before cloning the repo.
+- **Unix/bootstrap:** `install/install.sh` auto-installs Git and current Node LTS on macOS/Linux, and `install/install.js` auto-installs Git where possible while still requiring a compatible Node runtime to launch.
 
 ## Shared Website Layout
 

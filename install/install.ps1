@@ -100,8 +100,8 @@ function Restart-InstallerAsAdministrator {
                 '-EncodedCommand',
                 $encodedCommand
             ) `
-            -WindowStyle Hidden `
             | Out-Null
+        Warn "Admin-Fenster gestartet. Die Installation laeuft dort weiter."
     } catch {
         Fail "Admin-Freigabe abgebrochen oder Elevation fehlgeschlagen: $($_.Exception.Message)"
     }

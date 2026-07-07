@@ -45,6 +45,25 @@ need_cmd() {
     }
 }
 
+is_root() {
+    [ "$(id -u)" -eq 0 ]
+}
+
+run_privileged() {
+    if is_root; then
+        "$@"
+        return
+    fi
+
+    if command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+        return
+    fi
+
+    err "sudo ist nicht verfuegbar und der aktuelle Benutzer ist kein Administrator."
+    return 1
+}
+
 # ---------- Plattform-Erkennung ----------
 detect_platform() {
     local os arch
@@ -65,6 +84,48 @@ detect_platform() {
     esac
 
     echo "$os-$arch"
+}
+
+ensure_homebrew() {
+    if command -v brew >/dev/null 2>&1; then
+        return 0
+    fi
+
+    local platform
+    platform="$(detect_platform | cut -d- -f1)"
+    if [ "$platform" != "macos" ]; then
+        return 1
+    fi
+
+    log "Homebrew fehlt - installiere es automatisch..."
+    if ! /bin/bash -lc 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'; then
+        err "Homebrew konnte nicht installiert werden."
+        return 1
+    fi
+
+    if [ -x /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
+    command -v brew >/dev/null 2>&1
+}
+
+latest_node_lts_major() {
+    local version_json major
+    if ! version_json="$(curl -fsSL https://nodejs.org/dist/index.json)"; then
+        printf '24'
+        return 0
+    fi
+    major="$(printf '%s' "$version_json" | grep -m1 '"lts":' | sed -E 's/.*"version":\s*"v([0-9]+)\..*/\1/')"
+
+    if [ -n "$major" ]; then
+        printf '%s' "$major"
+        return 0
+    fi
+
+    printf '24'
 }
 
 # ---------- Version ermitteln ----------
@@ -101,18 +162,43 @@ ensure_node() {
         warn "Node.js ${v} ausserhalb des unterstuetzten LTS-Bereichs (18/20/22/24)"
     fi
 
-    log "Installiere Node.js LTS via NodeSource..."
-    if [ "$(detect_platform | cut -d- -f1)" = "macos" ]; then
-        if ! command -v brew >/dev/null 2>&1; then
-            err "Bitte installiere Homebrew (https://brew.sh) oder Node.js manuell."
+    local platform node_major
+    platform="$(detect_platform | cut -d- -f1)"
+    node_major="$(latest_node_lts_major)"
+
+    log "Installiere Node.js LTS ${node_major}.x automatisch..."
+    if [ "$platform" = "macos" ]; then
+        if ! ensure_homebrew; then
+            err "Homebrew konnte nicht installiert werden."
             return 1
         fi
-        brew install node@22
-        brew link --force --overwrite node@22
+
+        if ! brew install "node@${node_major}"; then
+            warn "node@${node_major} ist bei Homebrew nicht verfuegbar, nutze das Standardformular als Fallback."
+            if ! brew install node; then
+                err "Node.js konnte via Homebrew nicht installiert werden."
+                return 1
+            fi
+        else
+            brew link --force --overwrite "node@${node_major}" || true
+        fi
     else
-        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-        sudo apt-get install -y nodejs
+        if is_root; then
+            curl -fsSL "https://deb.nodesource.com/setup_${node_major}.x" | bash -
+            apt-get install -y nodejs
+        else
+            curl -fsSL "https://deb.nodesource.com/setup_${node_major}.x" | sudo -E bash -
+            sudo apt-get install -y nodejs
+        fi
     fi
+
+    if command -v node >/dev/null 2>&1; then
+        ok "Node.js $(node --version | sed 's/^v//') gefunden"
+        return 0
+    fi
+
+    err "Node.js konnte nicht automatisch installiert werden."
+    return 1
 }
 
 # ---------- Git pruefen ----------
@@ -120,7 +206,46 @@ ensure_git() {
     if command -v git >/dev/null 2>&1; then
         return 0
     fi
-    err "Git fehlt. Bitte installiere git (z.B. 'sudo apt install git' oder 'brew install git')."
+
+    local platform
+    platform="$(detect_platform | cut -d- -f1)"
+
+    log "Git fehlt - installiere es automatisch..."
+    if [ "$platform" = "macos" ]; then
+        if ! ensure_homebrew; then
+            err "Homebrew konnte nicht installiert werden."
+            return 1
+        fi
+        brew install git
+    elif [ "$platform" = "linux" ]; then
+        if command -v apt-get >/dev/null 2>&1; then
+            run_privileged apt-get update
+            run_privileged apt-get install -y git
+        elif command -v dnf >/dev/null 2>&1; then
+            run_privileged dnf install -y git
+        elif command -v yum >/dev/null 2>&1; then
+            run_privileged yum install -y git
+        elif command -v pacman >/dev/null 2>&1; then
+            run_privileged pacman -Sy --noconfirm git
+        elif command -v zypper >/dev/null 2>&1; then
+            run_privileged zypper install -y git
+        elif command -v apk >/dev/null 2>&1; then
+            run_privileged apk add git
+        else
+            err "Kein unterstuetzter Paketmanager fuer Git gefunden."
+            return 1
+        fi
+    else
+        err "Nicht unterstuetzte Plattform fuer die Git-Installation: $platform"
+        return 1
+    fi
+
+    if command -v git >/dev/null 2>&1; then
+        ok "Git $(git --version | sed 's/^git version //') gefunden"
+        return 0
+    fi
+
+    err "Git konnte nicht automatisch installiert werden."
     return 1
 }
 
