@@ -1223,7 +1223,7 @@
       </div>
 
       <!-- Dashboard Page -->
-      <div id="page-dashboard" class="tab-content active">
+      <div id="page-dashboard" class="tab-content">
         <div class="page-header">
           <h1 class="page-title">Overview</h1>
           <p class="page-description">Overview of viewer engagement and XP statistics</p>
@@ -3834,7 +3834,7 @@
     // Load spin config when spin settings page is shown
     document.addEventListener('click', function(event) {
       const navItem = event.target.closest('.nav-item[data-page="spin-settings"]');
-            <span class="nav-icon">S</span>
+      if (navItem) {
         setTimeout(() => {
           loadSpinConfig();
         }, 100);
