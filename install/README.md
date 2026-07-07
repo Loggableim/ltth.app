@@ -13,12 +13,14 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 ## Was passiert?
 
-1. **Prüfen** — Git und Node.js (>=18 <25) werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
+1. **Prüfen** — Git und Node.js (18/20/22/24 LTS) werden erkannt. Fehlende Tools werden via Homebrew/winget/NodeSource/apt automatisch installiert.
 2. **Laden** — Das Repository wird von GitHub nach `~/.local/share/ltth` (Linux/macOS) bzw. `%LOCALAPPDATA%\LTTH` (Windows) geklont oder aktualisiert.
 3. **Bauen** — `npm install` richtet alle 36 Plugins und Module ein.
 4. **Starten** — Das Dashboard öffnet sich unter `http://localhost:3000/dashboard.html`.
 
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
+
+Hinweis fuer Windows: Der PowerShell-Installer bevorzugt unterstuetzte Node.js-LTS-Builds (18/20/22/24) und umgeht Node.js 23.x, damit native Module ohne Visual-Studio-Build-Tools installiert werden koennen.
 
 ## Umgebungsvariablen
 
@@ -94,7 +96,7 @@ Der Uninstaller fragt vor dem Loeschen der lokalen Daten und Configs nach. Stand
 |---|---|---|
 | `install.sh` | Linux + macOS | Bash >= 4.0 |
 | `install.ps1` | Windows | PowerShell >= 5.0 |
-| `install.js` | Plattformunabhängig | Node.js 18+ |
+| `install.js` | Plattformunabhängig | Node.js 18/20/22/24 LTS |
 | `uninstall.sh` | Linux + macOS | Bash >= 4.0 |
 | `uninstall.ps1` | Windows | PowerShell >= 5.0 |
 

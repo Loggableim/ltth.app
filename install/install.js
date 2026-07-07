@@ -53,6 +53,10 @@ const ok   = (m) => { if (!cfg.quiet) console.log(`${c('green', '[OK]')}  ${m}`)
 const warn = (m) => console.warn(`${c('yellow', '[!]')}  ${m}`);
 const err  = (m) => console.error(`${c('red', '[X]')}  ${m}`);
 
+function isSupportedNodeMajor(major) {
+    return major >= 18 && major < 25 && major % 2 === 0;
+}
+
 function exec(cmd, args, opts = {}) {
     return new Promise((resolve, reject) => {
         const child = execFile(cmd, args, { ...opts, stdio: cfg.quiet ? 'ignore' : 'inherit' }, (e) => {
@@ -119,8 +123,9 @@ async function ensureGit() {
 
 async function ensureNode() {
     const major = parseInt(process.versions.node.split('.')[0], 10);
-    if (major < 18 || major >= 25) {
-        err(`Node.js ${process.versions.node} ausserhalb des unterstützten Bereichs (>=18 <25).`);
+    if (!isSupportedNodeMajor(major)) {
+        err(`Node.js ${process.versions.node} ist fuer einen frischen LTTH-Installationslauf nicht geeignet.`);
+        err('Bitte installiere Node.js 18/20/22/24 LTS oder nutze den passenden LTTH-Installer fuer dein Betriebssystem.');
         process.exit(1);
     }
     ok(`Node.js ${process.versions.node} gefunden`);

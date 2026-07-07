@@ -92,11 +92,11 @@ ensure_node() {
         local v
         v="$(node --version | sed 's/^v//')"
         local major="${v%%.*}"
-        if [ "$major" -ge 18 ] && [ "$major" -lt 25 ]; then
+        if [ "$major" -ge 18 ] && [ $((major % 2)) -eq 0 ]; then
             ok "Node.js ${v} gefunden"
             return 0
         fi
-        warn "Node.js ${v} ausserhalb des unterstützten Bereichs (>=18 <25)"
+        warn "Node.js ${v} ausserhalb des unterstützten LTS-Bereichs (18/20/22/24)"
     fi
 
     log "Installiere Node.js LTS via NodeSource..."
