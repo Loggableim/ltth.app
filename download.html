@@ -358,6 +358,50 @@
                 </a>
             </div>
         </div>
+
+        <div class="install-card" style="max-width: 820px; margin-top: var(--space-5);">
+            <h2 style="margin-top: 0; margin-bottom: var(--space-2); color: #fff;">
+                Deinstallation
+            </h2>
+            <p style="color: var(--color-text-secondary); margin-top: 0;">
+                Der Uninstaller entfernt die LTTH-Installation. Vor dem Loeschen der lokalen Daten und Configs fragt er, ob du sie behalten willst oder alles weg soll.
+            </p>
+
+            <div class="install-steps" style="margin-top: var(--space-4);">
+                <div class="install-step-mini">
+                    <h4>1. Stoppen</h4>
+                    <p>Aktive LTTH-Prozesse werden beendet, damit Dateien sauber geloescht werden koennen.</p>
+                </div>
+                <div class="install-step-mini">
+                    <h4>2. Nachfragen</h4>
+                    <p>Du entscheidest im Terminal, ob die lokale LTTH-Konfiguration erhalten bleibt oder mit entfernt wird.</p>
+                </div>
+                <div class="install-step-mini">
+                    <h4>3. Entfernen</h4>
+                    <p>Die Installation wird geloescht. Bei Bestätigung werden auch die aktiven Configs und lokalen Daten entfernt.</p>
+                </div>
+            </div>
+
+            <div class="install-cmd" id="cmd-uninstall-windows" style="margin-top: var(--space-5);">
+                <button class="copy-btn" data-copy-target="cmd-uninstall-windows" data-copy-text="iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.ps1 | iex">Kopieren</button>
+                <span class="comment">Windows · PowerShell</span>
+                <span class="command-text">iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.ps1 | iex</span>
+            </div>
+
+            <div class="install-cmd" id="cmd-uninstall-unix">
+                <button class="copy-btn" data-copy-target="cmd-uninstall-unix" data-copy-text="curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash">Kopieren</button>
+                <span class="comment">macOS · Linux · Bash</span>
+                <span class="command-text">curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/uninstall.sh | bash</span>
+            </div>
+
+            <details style="margin-top: var(--space-4);">
+                <summary style="cursor:pointer; font-weight:600; color:#fff;">Alles inkl. Configs loeschen</summary>
+                <p style="margin-top: var(--space-2); color: var(--color-text-secondary);">
+                    Bestätige im Uninstaller mit „Ja“ oder setze <code>LTTH_REMOVE_DATA=1</code> vor dem Befehl.
+                    Mit <code>LTTH_KEEP_DATA=1</code> bleibt die Konfiguration explizit erhalten.
+                </p>
+            </details>
+        </div>
     </div>
 </section>
 
@@ -377,7 +421,7 @@
             <div>
                 <h3 style="color:var(--color-primary);" data-i18n="install.req.runtime">⚙️ Runtime</h3>
                 <ul class="requirements-list">
-                    <li>Node.js 18, 20 oder 22 LTS</li>
+                    <li>Node.js 18, 20, 22 oder 24 LTS</li>
                     <li>Git 2.20+</li>
                     <li>~500 MB freier Festplattenspeicher</li>
                 </ul>

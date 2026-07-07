@@ -343,7 +343,7 @@ function renderHero(lang, page, itemCount, screenshotCount) {
         <p class="catalog-hero__lead">${escapeHtml(page.intro)}</p>
         <div class="catalog-stats" aria-label="${escapeAttr(page.itemListName)}">
           <div class="catalog-stat">
-            <strong>${itemCount}</strong>
+            <strong>${escapeHtml(page.heroAppsValue || itemCount)}</strong>
             <span>${escapeHtml(page.heroAppsLabel)}</span>
           </div>
           <div class="catalog-stat">
@@ -365,7 +365,7 @@ function renderHero(lang, page, itemCount, screenshotCount) {
         <h2>${escapeHtml(page.itemListName)}</h2>
         <p>${escapeHtml(page.itemListDescription)}</p>
         <ul class="catalog-hero__notes">
-          <li>${itemCount} ${escapeHtml(page.heroAppsLabel)}</li>
+          <li>${escapeHtml(page.heroAppsValue || itemCount)} ${escapeHtml(page.heroAppsLabel)}</li>
           <li>${escapeHtml(page.heroScreenshotsLabel)}</li>
           <li>${escapeHtml(page.heroLanguagesLabel)}: DE / EN / ES / FR</li>
         </ul>
@@ -387,7 +387,7 @@ function renderToolbar(lang, page, itemCount, grouped) {
         <input id="catalog-search-input" type="search" data-catalog-search-input aria-label="${escapeAttr(page.searchLabel)}" placeholder="${escapeAttr(page.searchPlaceholder)}">
         <button type="button" class="btn btn-secondary" data-catalog-clear hidden>${escapeHtml(page.clearSearch)}</button>
       </form>
-      <p class="catalog-results" aria-live="polite"><strong data-catalog-results>${itemCount}</strong> ${escapeHtml(page.resultsLabel)}</p>
+      <p class="catalog-results" aria-live="polite"><strong data-catalog-results hidden>${itemCount}</strong> <span data-catalog-results-label>${escapeHtml(page.catalogReadyLabel)}</span></p>
       <nav class="catalog-jump" aria-label="${escapeAttr(page.jumpLabel)}">
         ${jumpLinks}
       </nav>
@@ -518,7 +518,7 @@ function renderPage(lang, page, catalogData) {
   return `${head}
 <body class="features-hub">
   <a href="#main-content" class="skip-to-content">${escapeHtml(page.skipToContent || SKIP_LABELS[lang] || 'Skip to main content')}</a>
-  <main id="main-content" class="catalog-root" data-catalog-root>
+  <main id="main-content" class="catalog-root" data-catalog-root data-catalog-ready-label="${escapeAttr(page.catalogReadyLabel)}" data-catalog-results-label="${escapeAttr(page.resultsLabel)}">
     ${hero}
     ${toolbar}
     <div class="catalog-layout">

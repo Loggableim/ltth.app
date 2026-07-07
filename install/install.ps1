@@ -22,6 +22,7 @@ $ErrorActionPreference = 'Stop'
 $LTTHRepoOwner = if ($env:LTTH_REPO_OWNER) { $env:LTTH_REPO_OWNER } else { 'Loggableim' }
 $LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth.app' }
 $LTTHRepoBranch = if ($env:LTTH_REPO_BRANCH) { $env:LTTH_REPO_BRANCH } else { 'ltth.app' }
+$LTTHBranchRefSpec = "+refs/heads/$LTTHRepoBranch:refs/remotes/origin/$LTTHRepoBranch"
 $LTTHVersion   = if ($env:LTTH_VERSION) { $env:LTTH_VERSION } else { 'latest' }
 $script:LTTHInstallMode = if ($LTTHVersion -eq 'latest') { 'latest' } else { 'pinned' }
 $script:LTTHVersion = $LTTHVersion
@@ -354,7 +355,7 @@ function Download-Source {
         Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
         try {
-            Invoke-Git -Arguments @('fetch', '--tags', '--prune', 'origin', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+            Invoke-Git -Arguments @('fetch', '--tags', '--prune', 'origin', $LTTHBranchRefSpec) -WorkingDirectory $LTTHDir
         } catch {
             Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
         }

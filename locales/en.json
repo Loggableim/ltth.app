@@ -2,16 +2,16 @@
   "home": {
     "meta": {
       "canonical": "https://ltth.app/?lang=en",
-      "title": "PupCid's Little TikTool Helper - Professional TikTok LIVE Streaming Solution",
-      "description": "The professional streaming solution for TikTok LIVE streamers. Real-time events, Text-to-Speech with 580+ voices across 7 engines, alerts, soundboard with 100,000+ MyInstants sounds, goals, flows, plugin system and OBS integration. Free and open source."
+      "title": "ltth.app - Freemium TikTok LIVE Streaming Suite",
+      "description": "The freemium TikTok LIVE solution with real-time events, Text-to-Speech, alerts, soundboard, flows, plugin system and OBS integration. The local app stays separate from the app store login."
     },
     "hero": {
-      "subtitle": "PupCid's Little TikTool Helper is the ultimate tool for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically and automate your stream with powerful flows. Modular plugin system, OBS integration, VRChat OSC support and much more. All completely local, free and open source.",
-      "featuresCta": "View All Apps",
+      "subtitle": "ltth.app is the freemium solution for TikTok LIVE streamers. Process real-time events, use Text-to-Speech with 75+ voices, create customizable alerts, play sounds automatically and automate your stream with powerful flows. Modular plugin system, OBS integration, VRChat OSC support and much more. The local app stays separate from the app store login.",
+      "featuresCta": "View all apps",
       "featuresHref": "/features-en.html",
       "stat1": {
-        "value": "100%",
-        "label": "Free & Open Source"
+        "value": "Freemium",
+        "label": "Model"
       },
       "stat2": {
         "value": "Local",
@@ -70,8 +70,8 @@
         "desc": "Multiple databases for different streaming setups. Profile switching, backup function and separate configurations for different stream formats."
       },
       "card10": {
-        "title": "Local by design",
-        "desc": "The core runs locally on your computer. The app store requires a login, but the local app stays separate. Open source and transparent."
+        "title": "Local with Store Login",
+        "desc": "The core runs locally on your computer. The app store requires a login; the local app stays separate."
       },
       "card11": {
         "title": "Plugin System",
@@ -142,14 +142,14 @@
     },
     "dev": {
       "title": "For Developers & Power Users",
-      "subtitle": "Open source, fully documented, extensible",
+      "subtitle": "Freemium, proprietary, documented",
       "feature1": {
         "title": "REST API & WebSocket",
         "desc": "Complete API documentation. Express routes, Socket.io events, Plugin API."
       },
       "feature2": {
-        "title": "Open Source (MIT)",
-        "desc": "Fully open source. Transparent code, community-driven, fork-friendly."
+        "title": "Proprietary Code",
+        "desc": "Proprietary, documented, and extensible."
       },
       "feature3": {
         "title": "Comprehensive Documentation",
@@ -218,15 +218,15 @@
       "subtitle": "Join TikTok LIVE streamers worldwide",
       "stars": {
         "title": "⭐ GitHub Stars",
-        "desc": "Open Source Community on GitHub"
+        "desc": "Community and Support on GitHub"
       },
       "plugins": {
         "title": "30+ Plugins",
         "desc": "Pre-installed plugins, unlimited expandability"
       },
       "free": {
-        "title": "100% Free",
-        "desc": "Completely free, no hidden costs"
+        "title": "Store Login",
+        "desc": "The local app stays separate; the app store requires an account."
       }
     },
     "devCta": {
@@ -236,24 +236,24 @@
     },
     "support": {
       "title": "❤️ Support the Project",
-      "subtitle": "ltth.app is 100% free and open source. You can support the project in various ways:",
+      "subtitle": "ltth.app is freemium and proprietary. You can support ongoing development in several ways:",
       "star": {
-        "title": "🔧 GitHub Star",
+        "title": "⭐ GitHub Star",
         "desc": "Give the project a star on GitHub"
       },
       "feedback": {
         "title": "💬 Give Feedback",
-        "desc": "Share your experiences and suggestions for improvement"
+        "desc": "Share your experience and improvement ideas"
       },
       "contribute": {
-        "title": "🔧 Contribute",
-        "desc": "Contribute code or create your own plugins"
+        "title": "🧪 Test Beta Releases",
+        "desc": "Try new releases and report issues"
       },
-      "thanks": "Every form of support helps to further develop ltth.app and keep it free for all streamers. Thank you! 🙏"
+      "thanks": "Every bit of support helps ltth.app keep moving forward. Thank you! 🙏"
     },
     "cta": {
-      "title": "Ready for Professional TikTok LIVE Streaming?",
-      "desc": "Join the growing community that has already taken their streams to the next level with PupCid's Little TikTool Helper. 100% free, open source and local.",
+      "title": "Ready for professional TikTok LIVE streaming?",
+      "desc": "Discover the freemium TikTok LIVE suite with local tools, clear deep-dive pages, and direct links to the apps.",
       "docsCta": "Read Documentation",
       "available": "Available for Windows"
     }
@@ -353,7 +353,7 @@
   "features.span.4": "Features",
   "features.span.5": "⚙️",
   "features.feature.hero.title": "Features Übersicht",
-  "features.feature.hero.subtitle": "Entdecke alle leistungsstarken Features von PupCid's Little TikTool Helper – von KI-gestütztem Chat-Management bis hin zu professionellen Game-Engines für dein TikTok LIVE.",
+  "features.feature.hero.subtitle": "Discover all powerful features of ltth.app - from AI-assisted chat management to professional game engines for your TikTok LIVE.",
   "features.a.8": "Jetzt Herunterladen",
   "features.a.9": "Dokumentation",
   "features.section.title": "Alle Features",
@@ -381,14 +381,14 @@
   "features.span.32": "🎯",
   "features.span.33": "🎰",
   "features.h2.34": "Bereit loszulegen?",
-  "features.p.35": "Lade PupCid's Little TikTool Helper kostenlos herunter und transformiere dein TikTok LIVE.",
-  "features.a.36": "Kostenlos Herunterladen",
+  "features.p.35": "Discover ltth.app and start with the freemium app.",
+  "features.a.36": "Download",
   "features.a.37": "🚀 Launcher ansehen",
   "docs.a.1": "Skip to main content",
   "docs.h3.2": "Erste Schritte",
   "docs.a.3": "Einführung",
   "docs.a.4": "Installation & Setup",
-  "docs.a.5": "Cloud Launcher",
+  "docs.a.5": "Windows Launcher",
   "docs.a.6": "Quick Start",
   "docs.a.7": "Konfiguration",
   "docs.h3.8": "Features",
@@ -410,22 +410,22 @@
   "docs.h1.24": "Willkommen bei PupCid's Little TikTool Helper",
   "docs.p.25": "Diese Dokumentation hilft dir, das Tool optimal zu nutzen und alle Features kennenzulernen.",
   "docs.h2.26": "Was ist ltth.app?",
-  "docs.p.27": "PupCid's Little TikTool Helperist ein professionelles Open-Source-Tool für TikTok LIVE-Streaming mit umfangreichen Features für Content-Creator. Das Tool bietet eine vollständige Integration von TikTok LIVE-Events in OBS Studio mit Overlays, Alerts, Text-to-Speech, Soundboard und Event-Automatisierung.",
+  "docs.p.27": "ltth.app is a freemium streaming suite for TikTok LIVE with extensive features for content creators. The tool offers full integration of TikTok LIVE events into OBS Studio with overlays, alerts, text-to-speech, soundboard and event automation.",
   "docs.h2.28": "Hauptfunktionen",
   "docs.h2.29": "Für wen ist das Tool?",
   "docs.h1.30": "Installation & Setup",
   "docs.p.31": "Die Installation von PupCid's Little TikTool Helper ist einfach und schnell.",
   "docs.h2.32": "Systemanforderungen",
-  "docs.h2.33": "Installation mit Cloud Launcher (empfohlen)",
-  "docs.p.34": "DerCloud Launcherist die einfachste und empfohlene Installationsmethode für Windows:",
-  "docs.a.35": "ltth.app/downloads/launcher.exe",
+  "docs.h2.33": "Installation with Windows Launcher (recommended)",
+  "docs.p.34": "The Windows Launcher is the easiest and recommended installation method for Windows:",
+  "docs.a.35": "Windows Launcher",
   "docs.p.36": "Vorteile:Auto-Updates, Version-Management, Rollback-Funktion, keine manuellen Node.js-Installationen nötig.",
   "docs.h2.37": "Manuelle Installation (für Entwickler)",
-  "docs.h1.38": "Cloud Launcher",
-  "docs.p.39": "Der LTTH Cloud Launcher ist die empfohlene Installationsmethode für Windows.",
+  "docs.h1.38": "Windows Launcher",
+  "docs.p.39": "The LTTH Windows Launcher is the recommended installation method for Windows.",
   "docs.h2.40": "Features",
   "docs.h2.41": "Technische Details",
-  "docs.a.42": "https://ltth.app/downloads/launcher.exe",
+  "docs.a.42": "Windows Launcher",
   "docs.h2.43": "Rollback",
   "docs.p.44": "Um zu einer vorherigen Version zurückzukehren:",
   "docs.p.45": "Der Launcher wechselt sofort zur ausgewählten Version, ohne deine Konfiguration zu verlieren.",
@@ -446,7 +446,7 @@
   "docs.h2.60": "Backup & Restore",
   "docs.p.61": "Sichere deine Konfiguration regelmäßig:",
   "docs.h1.62": "TikTok LIVE Verbindung",
-  "docs.p.63": "Echtzeit-Verbindung zu deinem TikTok LIVE-Stream ohne Login-Daten.",
+  "docs.p.63": "Real-time connection to your TikTok LIVE stream. You do not need login data for the local app.",
   "docs.h2.64": "Verbindung herstellen",
   "docs.h2.65": "Empfangene Events",
   "docs.h2.66": "Event-Anzeige",
@@ -458,8 +458,8 @@
   "docs.h1.72": "Text-to-Speech (TTS)",
   "docs.p.73": "Professionelles TTS-System mit über 100 Stimmen für Chat-Nachrichten und Alerts.",
   "docs.h2.74": "Verfügbare Stimmen",
-  "docs.h3.75": "TikTok Voices (Kostenlos)",
-  "docs.p.76": "75+ TikTok-Stimmen ohne API-Key:",
+  "docs.h3.75": "TikTok Voices",
+  "docs.p.76": "75+ voices across 7 engines (TikTok voices, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow):",
   "docs.h3.77": "Google Cloud Voices (Premium)",
   "docs.p.78": "30+ Google Cloud-Stimmen mit höchster Qualität (API-Key erforderlich)",
   "docs.h2.79": "Auto-TTS für Chat",
@@ -706,8 +706,8 @@
   "community.a.10": "Paws United beitreten",
   "community.section.subtitle": "Für ein freundliches und produktives Miteinander",
   "community.h3.12": "GitHub",
-  "community.p.13": "Trage zum Code bei, melde Bugs, schlage Features vor und diskutiere mit anderen Entwicklern über Verbesserungen.",
-  "community.a.14": "Repository besuchen",
+  "community.p.13": "Report bugs, share requests and discuss improvements with other streamers.",
+  "community.a.14": "Visit project page",
   "community.a.15": "Discussions",
   "community.h3.16": "Discord Server",
   "community.p.17": "Chatte in Echtzeit mit anderen Streamern, erhalte schnelle Hilfe und teile deine Stream-Highlights.",
@@ -721,9 +721,9 @@
   "community.h3.25": "Feature vorschlagen",
   "community.p.26": "Deine Ideen sind gefragt!",
   "community.a.27": "Feature Request",
-  "community.h3.28": "Code beitragen",
-  "community.p.29": "Fork, Code, Pull Request - so einfach!",
-  "community.a.30": "Repository",
+  "community.h3.28": "Share feedback",
+  "community.p.29": "Report bugs, share requests and help improve the app.",
+  "community.a.30": "GitHub",
   "community.h3.31": "Plugin entwickeln",
   "community.p.32": "Erstelle eigene Erweiterungen!",
   "community.a.33": "Plugin Docs",
@@ -732,41 +732,41 @@
   "community.a.36": "Zur GitHub Community",
   "community.a.37": "ltth.app Herunterladen",
   "faq.a.1": "Skip to main content",
-  "faq.hero.title": "Frequently AskedQuestions",
+  "faq.hero.title": "Frequently Asked ",
   "faq.span.3": "Questions",
-  "faq.hero.description": "Find answers to common questions about ltth.app",
+  "faq.hero.description": "Answers about licensing, login, installation, and support for ltth.app.",
   "faq.h2.5": "🚀 Erste Schritte",
-  "faq.h3.6": "💰Ist PupCid's Little TikTool Helper kostenlos?",
+  "faq.h3.6": "💰 How much does ltth.app cost?",
   "faq.span.7": "💰",
-  "faq.p.8": "Ja, komplett kostenlos!Das Tool ist 100% kostenlos und Open Source (MIT-Lizenz). Es gibt keine versteckten Kosten, Premium-Tiers oder Feature-Einschränkungen. Alle Funktionen sind für jeden frei verfügbar.",
-  "faq.h3.9": "☁️Was ist der Cloud Launcher?",
-  "faq.span.10": "☁️",
-  "faq.p.11": "Der Cloud Launcher ist eine kleine Windows-Anwendung (~7 MB), die LTTH automatisch herunterlädt, installiert und auf dem neuesten Stand hält. Er bietet automatische Updates, Rollback zu vorherigen Versionen und ein integriertes Version-Management. Alle Daten werden in%LOCALAPPDATA%\\LTTH\\gespeichert.",
+  "faq.p.8": "ltth.app is a freemium product. The intro price is 5 €/month or 1.50 €/month with annual billing as a promotion until October 1, 2026. After that, prices are 10 €/month or 99 €/year. Anyone who subscribes before the change keeps the lower plan as long as the subscription stays active.",
+  "faq.h3.9": "What is the Windows Launcher?",
+  "faq.span.10": "",
+  "faq.p.11": "The Windows Launcher is a small Windows app (~7 MB) that automatically downloads, installs, and keeps LTTH up to date. It offers automatic updates, rollback to previous versions, and built-in version management. All data is stored in %LOCALAPPDATA%\\LTTH\\.",
   "faq.h3.12": "⚠️Warum erscheint eine SmartScreen-Warnung?",
   "faq.span.13": "⚠️",
-  "faq.p.14": "Der Launcher ist eine neue Anwendung, die noch nicht code-signiert ist. Das ist normal für Open-Source-Projekte. Klicke „Weitere Informationen\" → „Trotzdem ausführen\". Die Datei ist sicher und der Quellcode ist auf GitHub einsehbar.",
-  "faq.h3.15": "🍎Gibt es LTTH für macOS oder Linux?",
+  "faq.p.14": "The launcher is a new app that is not code-signed yet. That is normal for unsigned applications. Click \"More info\" ? \"Run anyway\". The file is safe and the current version is available on GitHub.",
+  "faq.h3.15": "?? Does LTTH support macOS or Linux?",
   "faq.span.16": "🍎",
-  "faq.p.17": "Der Cloud Launcher ist derzeit nur für Windows verfügbar. macOS- und Linux-Support für den Launcher ist in Planung. LTTH selbst läuft auf allen Plattformen, aber die automatische Installation über den Launcher gibt es vorerst nur für Windows.",
-  "faq.h3.18": "💻Welche Betriebssysteme werden unterstützt?",
+  "faq.p.17": "The Windows Launcher is currently only available for Windows. macOS and Linux support is planned. LTTH itself runs on all platforms, but automatic installation via the launcher is currently Windows only.",
+  "faq.h3.18": "?? Which operating systems are supported?",
   "faq.span.19": "💻",
-  "faq.p.20": "DerCloud LauncherunterstütztWindows 10 und Windows 11.Die automatische Installation über den Launcher ist die empfohlene Methode für Windows-Nutzer. SieheDownload-Seitefür Details.",
+  "faq.p.20": "The Windows Launcher supports Windows 10 and Windows 11. Automatic installation via the launcher is the recommended method for Windows users. See the download page for details.",
   "faq.a.21": "Download-Seite",
   "faq.h3.22": "📦Wie installiere ich das Tool?",
   "faq.span.23": "📦",
-  "faq.p.24": "Empfohlen:Lade denCloud Launcherherunter und führe ihn aus. Der Launcher installiert LTTH automatisch und hält es aktuell.Weitere Details findest du auf derDownload-Seite.",
-  "faq.a.25": "Cloud Launcher",
+  "faq.p.24": "Recommended: download the Windows Launcher and run it. The launcher installs LTTH automatically and keeps it up to date. See the download page for more details.",
+  "faq.a.25": "Windows Launcher",
   "faq.a.26": "Download-Seite",
-  "faq.h3.27": "🔑Muss ich Login-Daten eingeben?",
+  "faq.h3.27": "🔑 Do I need an account?",
   "faq.span.28": "🔑",
-  "faq.p.29": "Nein, keine Login-Daten erforderlich!Du benötigst nur deinen TikTok-Username (ohne @). Keine Passwörter, keine OAuth, keine Account-Verbindung. Das Tool liest nur öffentlich verfügbare LIVE-Stream-Daten.",
+  "faq.p.29": "For the local app, no. For the app store, yes. You do not need login data for local use, but the app store requires an account.",
   "faq.h3.30": "🚀Was bedeutet \"Beta-Version\"? Ist das Tool stabil?",
   "faq.span.31": "🚀",
   "faq.p.32": "Ja, das Tool ist produktionsreif und voll funktionsfähig!\"Beta\" bedeutet, dass aktiv neue Features entwickelt werden und wir Feedback sammeln. Alle Hauptfunktionen (TTS, Alerts, Soundboard, Plugins, OBS-Integration) funktionieren zuverlässig. Gelegentliche Bugs können auftreten - melde sie einfach aufGitHubund wir beheben sie schnell!",
   "faq.a.33": "GitHub",
   "faq.h3.34": "👥Wie kann ich zur Community beitragen?",
   "faq.span.35": "👥",
-  "faq.p.36": "Es gibt viele Möglichkeiten:•GitHub Stargeben und das Projekt weiterempfehlen•Bugs meldenund Features vorschlagen•Code beitragenvia Pull Requests•Eigene Pluginsentwickeln und teilen•Anderen helfenin GitHub DiscussionsBesuche dieCommunity-Seitefür mehr Infos!",
+  "faq.p.36": "There are many ways:<br/>• <strong>GitHub Star</strong> the project and recommend it to others<br/>• <strong>Report bugs</strong> and suggest features<br/>• <strong>Share feedback</strong> and improvement ideas<br/>• <strong>Create your own plugins</strong> and share them<br/>• <strong>Help others</strong> in GitHub Discussions<br/>Visit the <a data-i18n=\"faq.a.37\" href=\"/community.html\" style=\"color: var(--color-primary); text-decoration: underline;\">community page</a> for more info!",
   "faq.a.37": "Community-Seite",
   "faq.h2.38": "⚙️ Technisches",
   "faq.h3.39": "🎥Funktioniert das Tool mit OBS?",
@@ -778,7 +778,7 @@
   "faq.p.45": "Der Launcher bringt alle erforderlichen Komponenten mit. Du musst dich um nichts kümmern.",
   "faq.h3.46": "🔒Werden meine Daten in die Cloud hochgeladen?",
   "faq.span.47": "🔒",
-  "faq.p.48": "Nein, alles bleibt lokal!Alle Daten bleiben auf deinem Computer. Keine Cloud-Anbindung, keine Datensammlung, kein Tracking. 100% lokal und privat. Optional ist Cloud-Sync für Configs geplant (opt-in mit voller Kontrolle).",
+  "faq.p.48": "The local app processes data on your computer. The app store requires a login, but local usage stays separate.",
   "faq.h2.49": "🔧 Problemlösung",
   "faq.h3.50": "❌TikTok-Verbindung schlägt fehl - was tun?",
   "faq.span.51": "❌",
@@ -805,7 +805,7 @@
   "faq.h2.72": "📜 Legal & Community",
   "faq.h3.73": "⚖️Verstößt das Tool gegen TikTok's Terms of Service?",
   "faq.span.74": "⚖️",
-  "faq.p.75": "Nein.Das Tool liest nur öffentlich verfügbare TikTok LIVE-Daten ohne Login. Es ist vergleichbar mit StreamElements, Streamlabs etc. für Twitch. Keine Account-Manipulation, nur Lesen von öffentlichen Events. Kein TOS-Verstoß.",
+  "faq.p.75": "For the local app, no. The app store does require an account. The local app only reads publicly available TikTok LIVE data.",
   "faq.h3.76": "🐛Wie kann ich Bugs melden oder Features vorschlagen?",
   "faq.span.77": "🐛",
   "faq.p.78": "Öffne ein Issue auf GitHub:GitHub IssuesBug-Report:Beschreibe das Problem, Steps to Reproduce, ScreenshotsFeature-Request:Erkläre den Use-Case und warum es hilfreich wäreWir freuen uns über Feedback! Das Tool ist in Beta und dein Input hilft enorm.",
@@ -871,12 +871,12 @@
   "impressum.a.7": "rainer@dominik.in",
   "impressum.a.8": "GitHub Issues",
   "impressum.h2.9": "Lizenzinformationen",
-  "impressum.p.10": "PupCid's Little TikTool Helperist freie Software und wird unter derGNU General Public License (GPL)veröffentlicht.",
-  "impressum.p.11": "Sie können diese Software unter den Bedingungen der GNU General Public License, \n                        wie von der Free Software Foundation veröffentlicht, weitergeben und/oder modifizieren; \n                        entweder gemäß Version 3 der Lizenz oder (nach Ihrer Wahl) jeder späteren Version.",
-  "impressum.p.12": "Die vollständige Lizenz finden Sie unter:https://www.gnu.org/licenses/gpl-3.0.html",
-  "impressum.a.13": "https://www.gnu.org/licenses/gpl-3.0.html",
-  "impressum.p.14": "Der Quellcode ist verfügbar auf:https://github.com/Loggableim/ltth.app",
-  "impressum.a.15": "https://github.com/Loggableim/ltth.app",
+  "impressum.p.10": "PupCid's Little TikTool Helper is proprietary software offered in a freemium model.",
+  "impressum.p.11": "The current prices and terms are listed in the FAQ.",
+  "impressum.p.12": "More information about the license and pricing model can be found here:",
+  "impressum.a.13": "FAQ",
+  "impressum.p.14": "For support and reports, please use:",
+  "impressum.a.15": "GitHub Issues",
   "impressum.h2.16": "Haftungsausschluss",
   "impressum.h3.17": "Haftung für Inhalte",
   "impressum.p.18": "Die Inhalte dieser Website wurden mit größtmöglicher Sorgfalt erstellt. \n                        Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. \n                        Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich.",
@@ -908,7 +908,7 @@
   "support-the-developement.span.3": "Entwicklung",
   "support-the-developement.hero.description": "Wenn dir PupCid's Little TikTool Helper gefällt, unterstütze die weitere Entwicklung mit einer Spende.",
   "support-the-developement.h2.5": "Vielen Dank für deine Unterstützung!",
-  "support-the-developement.p.6": "PupCid's Little TikTool Helper ist ein kostenloses Open-Source-Tool, das ich in meiner Freizeit entwickle. \n                        Deine Spende hilft mir, die Entwicklung fortzusetzen, neue Features hinzuzufügen und das Tool zu verbessern.",
+  "support-the-developement.p.6": "ltth.app is a freemium tool that I develop in my free time. Your support helps me continue development, add new features and improve the app.",
   "support-the-developement.h3.7": "Deine Spende ermöglicht:",
   "support-the-developement.h3.8": "Spende via PayPal",
   "support-the-developement.p.9": "Jeder Betrag hilft! 🙏",
@@ -929,19 +929,19 @@
   },
   "community": {
     "hero": {
-      "title": "Community - Stronger together streaming",
-      "description": "Become part of a growing community of TikTok LIVE streamers, developers and"
+      "title": "Community - Talk around ltth.app",
+      "description": "Become part of a growing community of TikTok LIVE streamers, creators and developers. Share experiences, ask questions and give feedback on ltth.app."
     },
     "feature": {
       "description": "Chat with other streamers"
     },
     "section": {
-      "title": "Community Guidelines",
-      "subtitle": "For a friendly and productive togetherness"
+      "title": "Community overview",
+      "subtitle": "Exchange, bugs and feature ideas around ltth.app"
     },
     "cta": {
       "title": "Ready to become part of the community?",
-      "description": "Join, share your experiences and help make ltth.app even better!"
+      "description": "Join in, share your experiences and help make ltth.app even better."
     },
     "span": {
       "3": "Community"
@@ -1063,7 +1063,7 @@
   "support-the-developement": {
     "hero": {
       "title": "Support the Development",
-      "description": "Help us keep ltth.app free and open source"
+      "description": "If you like ltth.app, support ongoing development with a donation or in other ways."
     }
   }
 }

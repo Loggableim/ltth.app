@@ -1,12 +1,12 @@
 {
   "home": {
     "hero": {
-      "subtitle": "PupCid's Little TikTool Helper est l'outil ultime pour les streamers TikTok LIVE. Traitez les événements en temps réel, utilisez la synthèse vocale avec plus de 75 voix, créez des alertes personnalisables, jouez des sons automatiquement et automatisez votre stream avec des flux puissants. Système de plugins modulaire, intégration OBS, support VRChat OSC et bien plus encore. Entièrement local, gratuit et open source.",
+      "subtitle": "ltth.app est la solution freemium pour les streamers TikTok LIVE. Traitez les événements en temps réel, utilisez la synthèse vocale avec plus de 75 voix, créez des alertes personnalisables, jouez des sons automatiquement et automatisez votre stream avec des flows puissants. Système de plugins modulaire, intégration OBS, support OSC pour VRChat et bien plus encore. L’application locale reste séparée de la connexion à la boutique d’apps.",
       "featuresCta": "Voir toutes les apps",
       "featuresHref": "/features-fr.html",
       "stat1": {
-        "value": "100%",
-        "label": "Gratuit & Open Source"
+        "value": "Freemium",
+        "label": "Modèle"
       },
       "stat2": {
         "value": "Local",
@@ -63,8 +63,8 @@
         "desc": "Plusieurs bases de données pour différentes configurations de streaming. Changement de profil, fonction de sauvegarde et configurations séparées pour différents formats de stream."
       },
       "card10": {
-        "title": "Local par conception",
-        "desc": "Le c?ur fonctionne localement sur votre ordinateur. La boutique d'apps n?cessite une connexion, mais l'application locale reste s?par?e. Open source et transparente."
+        "title": "Local avec connexion",
+        "desc": "Le c?ur s?ex?cute localement sur votre ordinateur. La boutique n?cessite un compte ; l?application locale reste s?par?e."
       },
       "card11": {
         "title": "Système de Plugins",
@@ -131,14 +131,14 @@
     },
     "dev": {
       "title": "Pour les Développeurs et Utilisateurs Avancés",
-      "subtitle": "Open source, entièrement documenté, extensible",
+      "subtitle": "Freemium, propri?taire, document?",
       "feature1": {
         "title": "API REST et WebSocket",
         "desc": "Documentation API complète. Routes Express, événements Socket.io, API Plugin."
       },
       "feature2": {
-        "title": "Open Source (MIT)",
-        "desc": "Entièrement open source. Code transparent, piloté par la communauté, facile à forker."
+        "title": "Code propri?taire",
+        "desc": "Propri?taire, document? et extensible."
       },
       "feature3": {
         "title": "Documentation Complète",
@@ -207,15 +207,15 @@
       "subtitle": "Rejoignez les streamers TikTok LIVE du monde entier",
       "stars": {
         "title": "⭐ Étoiles GitHub",
-        "desc": "Communauté Open Source sur GitHub"
+        "desc": "Communaut? et support sur GitHub"
       },
       "plugins": {
         "title": "Plus de 30 Plugins",
         "desc": "Plugins préinstallés, extensibilité illimitée"
       },
       "free": {
-        "title": "100% Gratuit",
-        "desc": "Entièrement gratuit, sans coûts cachés"
+        "title": "Connexion requise",
+        "desc": "L?application locale reste s?par?e ; la boutique n?cessite un compte."
       }
     },
     "devCta": {
@@ -225,29 +225,52 @@
     },
     "support": {
       "title": "❤️ Soutenez le Projet",
-      "subtitle": "ltth.app est 100% gratuit et open source. Vous pouvez soutenir le projet de différentes manières :",
+      "subtitle": "ltth.app est freemium et propriétaire. Vous pouvez soutenir le développement continu de plusieurs façons :",
       "star": {
-        "title": "🔧 Étoile GitHub",
-        "desc": "Donnez une étoile au projet sur GitHub"
+        "title": "⭐ Étoile GitHub",
+        "desc": "Ajoutez une étoile au projet sur GitHub"
       },
       "feedback": {
-        "title": "💬 Donner son Avis",
-        "desc": "Partagez vos expériences et suggestions d'amélioration"
+        "title": "💬 Donner un retour",
+        "desc": "Partagez votre expérience et vos idées d’amélioration"
       },
       "contribute": {
-        "title": "🔧 Contribuer",
-        "desc": "Contribuez au code ou créez vos propres plugins"
+        "title": "🧪 Tester la bêta",
+        "desc": "Testez les nouvelles versions et signalez les problèmes"
       },
-      "thanks": "Chaque forme de soutien aide à développer davantage ltth.app et à le garder gratuit pour tous les streamers. Merci ! 🙏"
+      "thanks": "Chaque forme de soutien aide ltth.app à continuer d’avancer. Merci ! 🙏"
     },
     "cta": {
-      "title": "Prêt pour le Streaming TikTok LIVE Professionnel ?",
-      "desc": "Rejoignez la communauté grandissante qui a déjà fait passer ses streams au niveau supérieur avec PupCid's Little TikTool Helper. 100% gratuit, open source et local.",
+      "title": "Prêt pour du streaming TikTok LIVE professionnel ?",
+      "desc": "D?couvrez la suite freemium TikTok LIVE avec des outils locaux, des pages d?taill?es claires et des liens directs vers les apps.",
       "docsCta": "Lire la Documentation",
       "available": "Disponible pour Windows"
+    },
+    "meta": {
+      "title": "ltth.app - Suite freemium pour TikTok LIVE",
+      "description": "La solution freemium pour TikTok LIVE avec événements en temps réel, synthèse vocale, alertes, soundboard, flows, système de plugins et intégration OBS. L’application locale reste séparée de la connexion à la boutique d’apps."
     }
   },
   "common": {
     "new": "NOUVEAU"
-  }
+  },
+  "features.a.36": "T?l?charger",
+  "docs.h3.75": "TikTok Voices",
+  "faq.h3.9": "?? Qu?est-ce que le Windows Launcher ?",
+  "faq.p.11": "Le Windows Launcher est une petite application Windows (~7 MB) qui t?l?charge, installe et maintient LTTH ? jour automatiquement. Il propose des mises ? jour automatiques, le retour aux versions pr?c?dentes et une gestion de version int?gr?e. Toutes les donn?es sont stock?es dans %LOCALAPPDATA%\\LTTH\\.",
+  "faq.p.14": "Le launcher est une nouvelle application qui n?est pas encore sign?e. C?est normal pour les applications non sign?es. Cliquez sur \"Plus d?informations\" ? \"Ex?cuter quand m?me\". Le fichier est s?r et la version actuelle est disponible sur GitHub.",
+  "faq.h3.15": "?? LTTH prend-il en charge macOS ou Linux ?",
+  "faq.p.17": "Le Windows Launcher est actuellement disponible uniquement pour Windows. La prise en charge de macOS et Linux est pr?vue. LTTH fonctionne sur toutes les plateformes, mais l?installation automatique via le launcher n?est pour l?instant disponible que sous Windows.",
+  "faq.h3.18": "?? Quels syst?mes d?exploitation sont pris en charge ?",
+  "faq.p.20": "Le Windows Launcher prend en charge Windows 10 et Windows 11. L?installation automatique via le launcher est la m?thode recommand?e pour les utilisateurs Windows. Consultez la page de t?l?chargement pour plus de d?tails.",
+  "faq.p.24": "Recommand? : t?l?chargez le Windows Launcher et ex?cutez-le. Le launcher installe LTTH automatiquement et le maintient ? jour. Vous trouverez plus de d?tails sur la page de t?l?chargement.",
+  "faq.a.25": "Windows Launcher",
+  "faq.p.29": "Pour l?application locale, non. Pour la boutique d?apps, oui. Vous n?avez pas besoin d?identifiants pour l?utilisation locale, mais la boutique n?cessite un compte.",
+  "faq.p.48": "L?application locale traite les donn?es sur votre ordinateur. La boutique d?apps n?cessite une connexion, mais l?utilisation locale reste s?par?e.",
+  "faq.p.75": "Pour l?application locale, non. La boutique d?apps n?cessite un compte. L?application locale ne lit que des donn?es TikTok LIVE publiques.",
+  "docs.a.5": "Windows Launcher",
+  "docs.h2.33": "Installation avec Windows Launcher (recommand?e)",
+  "docs.p.34": "Le Windows Launcher est la m?thode d'installation la plus simple et recommand?e pour Windows :",
+  "docs.h1.38": "Windows Launcher",
+  "docs.p.39": "Le Windows Launcher LTTH est la m?thode d'installation recommand?e pour Windows."
 }

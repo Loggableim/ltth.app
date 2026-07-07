@@ -9,9 +9,12 @@
     const clearButton = root.querySelector('[data-catalog-clear]');
     const totalCountEl = root.querySelector('[data-catalog-total]');
     const resultCountEl = root.querySelector('[data-catalog-results]');
+    const resultLabelEl = root.querySelector('[data-catalog-results-label]');
     const emptyState = root.querySelector('[data-catalog-empty]');
     const sections = Array.from(root.querySelectorAll('[data-catalog-section]'));
     const cards = Array.from(root.querySelectorAll('[data-catalog-entry]'));
+    const readyLabel = root.getAttribute('data-catalog-ready-label') || 'Catalog ready';
+    const resultsLabel = root.getAttribute('data-catalog-results-label') || 'results';
 
     function sync() {
       const query = (searchInput?.value || '').trim().toLowerCase();
@@ -38,6 +41,10 @@
       });
 
       if (resultCountEl) resultCountEl.textContent = String(visibleCards);
+      if (resultCountEl) resultCountEl.hidden = query.length === 0;
+      if (resultLabelEl) {
+        resultLabelEl.textContent = query.length === 0 ? readyLabel : resultsLabel;
+      }
       if (totalCountEl) totalCountEl.textContent = String(cards.length);
       if (emptyState) emptyState.hidden = visibleCards !== 0;
       if (clearButton) clearButton.hidden = query.length === 0;

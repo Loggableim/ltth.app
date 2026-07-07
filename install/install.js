@@ -34,6 +34,7 @@ const cfg = {
     quiet: process.env.LTTH_QUIET === '1'
 };
 const useLatestBranch = cfg.version === 'latest';
+const branchRefSpec = `+refs/heads/${cfg.branch}:refs/remotes/origin/${cfg.branch}`;
 
 function defaultInstallDir() {
     const home = os.homedir();
@@ -134,7 +135,7 @@ async function downloadSource() {
     if (fs.existsSync(gitDir)) {
         log('Bestehende Installation gefunden -- aktualisiere...');
         try {
-            await exec('git', ['-C', cfg.dir, 'fetch', '--tags', '--prune', 'origin', cfg.branch]);
+            await exec('git', ['-C', cfg.dir, 'fetch', '--tags', '--prune', 'origin', branchRefSpec]);
         } catch {
             warn('Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur...');
         }

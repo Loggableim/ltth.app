@@ -119,7 +119,7 @@ const pluginDescriptions = {
     fr: 'Change les scènes OBS via cadeaux ou commandes de chat; prend en charge les flux Spout, caméras 1-5. Parfait pour les configurations multi-caméras dynamiques avec changement de scène automatisé.'
   },
   'openshock': {
-    en: 'Complete OpenShock API integration for TikTok Live events with event mapping, pattern system, safety layer, queue management, and professional overlay support.',
+    en: 'Complete Hybridshock API integration for TikTok Live events with event mapping, pattern system, safety layer, queue management, and professional overlay support.',
     de: 'Vollständige OpenShock-API-Integration für TikTok-Live-Events mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professioneller Overlay-Unterstützung.',
     es: 'Integración completa de API de OpenShock para eventos en vivo de TikTok con mapeo de eventos, sistema de patrones, capa de seguridad, gestión de colas y soporte de overlay profesional.',
     fr: 'Intégration API OpenShock complète pour événements TikTok Live avec mappage d\'événements, système de patterns, couche de sécurité, gestion de file d\'attente et support d\'overlay professionnel.'

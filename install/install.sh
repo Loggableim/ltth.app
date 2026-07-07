@@ -26,6 +26,7 @@ if [ "$LTTH_VERSION" = "latest" ]; then
     LTTH_INSTALL_MODE="latest"
 fi
 LTTH_REPO_BRANCH="${LTTH_REPO_BRANCH:-ltth.app}"
+LTTH_BRANCH_REFSPEC="+refs/heads/${LTTH_REPO_BRANCH}:refs/remotes/origin/${LTTH_REPO_BRANCH}"
 LTTH_DIR="${LTTH_DIR:-$HOME/.local/share/ltth}"
 LTTH_PORT="${LTTH_PORT:-3000}"
 LTTH_NO_BROWSER="${LTTH_NO_BROWSER:-0}"
@@ -128,7 +129,7 @@ download_source() {
     log "Klone Repository nach ${LTTH_DIR}..."
     if [ -d "$LTTH_DIR/.git" ]; then
         log "Bestehende Installation gefunden - aktualisiere..."
-        if ! git -C "$LTTH_DIR" fetch --tags --prune origin "$LTTH_REPO_BRANCH"; then
+        if ! git -C "$LTTH_DIR" fetch --tags --prune origin "$LTTH_BRANCH_REFSPEC"; then
             warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
         fi
         if [ "$LTTH_INSTALL_MODE" = "latest" ]; then

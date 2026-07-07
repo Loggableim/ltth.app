@@ -293,8 +293,9 @@ pre code {
 }
 
 .logo-icon--header {
-    width: 64px;
-    height: 64px;
+    width: min(180px, 18vw);
+    height: auto;
+    max-height: 52px;
 }
 
 .logo-icon--footer {
@@ -2431,6 +2432,11 @@ section {
 }
 
 @media (max-width: 768px) {
+    .logo-icon--header {
+        width: min(140px, 34vw) !important;
+        max-height: 40px !important;
+    }
+
     .logo-showcase {
         padding: var(--space-6) 0;
     }
