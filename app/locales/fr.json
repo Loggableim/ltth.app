@@ -830,6 +830,8 @@
     "overlay": "📺 Overlay",
     "copy_overlay_url": "📋 Copier l'URL de l'Overlay",
     "open_in_new_tab": "🔗 Ouvrir dans un Nouvel Onglet",
+    "close_tab": "🔒 Fermer l'onglet",
+    "overlay_popup_blocked": "Impossible d'ouvrir la fenêtre de l'overlay. Veuillez autoriser les fenêtres contextuelles.",
     "test_firework": "Tester Feu d'Artifice",
     "tab_settings": "Paramètres",
     "tab_presets": "Préréglages",

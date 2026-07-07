@@ -28,6 +28,10 @@
     "min_target_fps": "Minimum Target FPS",
     "frame_skip_info": "Frame Skip wird aktiviert wenn FPS unter diesen Wert fällt",
     "enable_frame_skip": "Frame Skip aktivieren",
+    "copy_overlay_url": "📋 Overlay-URL kopieren",
+    "open_in_new_tab": "🔗 In neuem Tab öffnen",
+    "close_tab": "🔒 Tab schließen",
+    "overlay_popup_blocked": "Konnte das Overlay-Fenster nicht öffnen. Bitte Pop-ups erlauben.",
     "presets": {
       "title": "Voreinstellungen",
       "description": "Wählen Sie eine Voreinstellung basierend auf Ihrer System-Performance. Nutzen Sie den Benchmark, um die optimale Einstellung zu finden.",

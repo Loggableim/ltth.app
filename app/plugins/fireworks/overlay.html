@@ -777,6 +777,10 @@
     </div>
 
     <script>
+        const OVERLAY_PREVIEW_STATE_KEY = 'fireworks-overlay-preview-state';
+        const OVERLAY_PREVIEW_WINDOW_NAME = 'fireworks-overlay-preview';
+        let overlayPreviewHeartbeat = null;
+
         window.FIREWORKS_USE_WORKER = Boolean(
             typeof OffscreenCanvas !== 'undefined' &&
             HTMLCanvasElement.prototype.transferControlToOffscreen &&
@@ -790,6 +794,43 @@
             document.getElementById('fireworks-container')?.style.setProperty('background-color', color, 'important');
             document.getElementById('fireworks-canvas')?.style.setProperty('background-color', color, 'important');
         }
+
+        function publishOverlayPreviewState(open) {
+            try {
+                if (open) {
+                    localStorage.setItem(OVERLAY_PREVIEW_STATE_KEY, JSON.stringify({
+                        open: true,
+                        updatedAt: Date.now()
+                    }));
+                } else {
+                    localStorage.removeItem(OVERLAY_PREVIEW_STATE_KEY);
+                }
+            } catch (error) {}
+        }
+
+        function startOverlayPreviewHeartbeat() {
+            window.name = OVERLAY_PREVIEW_WINDOW_NAME;
+            publishOverlayPreviewState(true);
+
+            if (overlayPreviewHeartbeat) return;
+
+            overlayPreviewHeartbeat = window.setInterval(() => {
+                publishOverlayPreviewState(true);
+            }, 2000);
+        }
+
+        function stopOverlayPreviewHeartbeat() {
+            if (overlayPreviewHeartbeat) {
+                clearInterval(overlayPreviewHeartbeat);
+                overlayPreviewHeartbeat = null;
+            }
+
+            publishOverlayPreviewState(false);
+        }
+
+        startOverlayPreviewHeartbeat();
+        window.addEventListener('beforeunload', stopOverlayPreviewHeartbeat);
+        window.addEventListener('pagehide', stopOverlayPreviewHeartbeat);
     </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/plugins/fireworks/gpu/particle-system-soa.js"></script>

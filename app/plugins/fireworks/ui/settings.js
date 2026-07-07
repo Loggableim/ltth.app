@@ -6,6 +6,13 @@
 // State
 let config = {};
 let socket = null;
+let overlayPreviewWindow = null;
+let overlayPreviewStateTimer = null;
+
+const OVERLAY_PREVIEW_WINDOW_NAME = 'fireworks-overlay-preview';
+const OVERLAY_PREVIEW_STATE_KEY = 'fireworks-overlay-preview-state';
+const OVERLAY_PREVIEW_STALE_MS = 5000;
+const OVERLAY_PREVIEW_HEARTBEAT_MS = 2000;
 
 // Benchmark configuration constants
 const BENCHMARK_CONFIG = {
@@ -29,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Listen for language changes from main app
         window.i18n.onChange(() => {
             window.i18n.updateDOM();
+            syncOverlayPreviewButtons();
         });
     }
     
@@ -50,10 +58,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize benchmark
     initializeBenchmark();
     updateOverviewSummary();
+    syncOverlayPreviewButtons();
     window.addEventListener('focus', updateOverviewSummary);
+    window.addEventListener('focus', syncOverlayPreviewButtons);
+    window.addEventListener('storage', (event) => {
+        if (event.key === OVERLAY_PREVIEW_STATE_KEY) {
+            syncOverlayPreviewButtons();
+        }
+    });
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             updateOverviewSummary();
+            syncOverlayPreviewButtons();
         }
     });
     try {
@@ -62,6 +78,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             attributeFilter: ['data-theme']
         });
     } catch (error) {}
+    overlayPreviewStateTimer = window.setInterval(syncOverlayPreviewButtons, OVERLAY_PREVIEW_HEARTBEAT_MS);
+    window.addEventListener('beforeunload', () => {
+        if (overlayPreviewStateTimer) {
+            clearInterval(overlayPreviewStateTimer);
+            overlayPreviewStateTimer = null;
+        }
+    });
     
     console.log('[Fireworks Settings] Initialized');
 });
@@ -489,6 +512,161 @@ function setChipState(id, value, enabled = null) {
     }
 }
 
+function readOverlayPreviewState() {
+    try {
+        const raw = localStorage.getItem(OVERLAY_PREVIEW_STATE_KEY);
+        if (!raw) return { open: false };
+
+        const state = JSON.parse(raw);
+        if (!state || !state.open) return { open: false };
+
+        const updatedAt = Number(state.updatedAt || 0);
+        if (!updatedAt || Date.now() - updatedAt > OVERLAY_PREVIEW_STALE_MS) {
+            return { open: false };
+        }
+
+        return { open: true, updatedAt };
+    } catch (error) {
+        return { open: false };
+    }
+}
+
+function writeOverlayPreviewState(open) {
+    try {
+        if (open) {
+            localStorage.setItem(OVERLAY_PREVIEW_STATE_KEY, JSON.stringify({
+                open: true,
+                updatedAt: Date.now()
+            }));
+        } else {
+            localStorage.removeItem(OVERLAY_PREVIEW_STATE_KEY);
+        }
+    } catch (error) {}
+}
+
+function getOverlayPreviewWindow() {
+    if (overlayPreviewWindow && overlayPreviewWindow.closed) {
+        overlayPreviewWindow = null;
+    }
+
+    return overlayPreviewWindow;
+}
+
+function isOverlayPreviewOpen() {
+    return Boolean(getOverlayPreviewWindow()) || readOverlayPreviewState().open;
+}
+
+function syncOverlayPreviewButton(buttonId, open, labelKey, labelText) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+
+    const label = button.querySelector('[data-overlay-label]');
+    if (label) {
+        label.dataset.i18n = labelKey;
+        label.textContent = labelText;
+    }
+
+    if (buttonId === 'open-overlay-hero') {
+        button.classList.toggle('btn-primary', !open);
+        button.classList.toggle('btn-danger', open);
+    } else if (buttonId === 'open-overlay') {
+        button.classList.toggle('bg-white/10', !open);
+        button.classList.toggle('hover:bg-white/20', !open);
+        button.classList.toggle('bg-red-500/20', open);
+        button.classList.toggle('hover:bg-red-500/30', open);
+        button.classList.toggle('text-red-100', open);
+        button.classList.toggle('border', open);
+        button.classList.toggle('border-red-400/30', open);
+    }
+
+    button.setAttribute('aria-label', labelText);
+    button.setAttribute('title', labelText);
+}
+
+function resolveOverlayLabel(labelKey, fallbackText) {
+    if (!window.i18n || typeof window.i18n.t !== 'function') {
+        return fallbackText;
+    }
+
+    const translated = String(window.i18n.t(labelKey) || '').trim();
+    if (!translated || translated === labelKey) {
+        return fallbackText;
+    }
+
+    if (translated.startsWith('??')) {
+        const cleaned = translated.replace(/^\?\?\s*/, '').trim();
+        return cleaned || fallbackText;
+    }
+
+    return translated;
+}
+
+function syncOverlayPreviewButtons() {
+    const open = isOverlayPreviewOpen();
+    const labelKey = open ? 'fireworks.close_tab' : 'fireworks.open_in_new_tab';
+    const labelText = resolveOverlayLabel(labelKey, open ? 'Close Tab' : 'Open in New Tab');
+
+    syncOverlayPreviewButton('open-overlay-hero', open, labelKey, labelText);
+    syncOverlayPreviewButton('open-overlay', open, labelKey, labelText);
+}
+
+function openOverlayPreview() {
+    const currentWindow = getOverlayPreviewWindow();
+    if (currentWindow) {
+        try {
+            currentWindow.focus();
+        } catch (error) {}
+        return;
+    }
+
+    const popup = window.open('/fireworks/overlay', OVERLAY_PREVIEW_WINDOW_NAME);
+    if (!popup) {
+        const message = resolveOverlayLabel('fireworks.overlay_popup_blocked', 'Could not open overlay window. Please allow pop-ups.');
+        showToast(message, 'error');
+        syncOverlayPreviewButtons();
+        return;
+    }
+
+    overlayPreviewWindow = popup;
+    try {
+        popup.opener = null;
+    } catch (error) {}
+    writeOverlayPreviewState(true);
+    syncOverlayPreviewButtons();
+
+    try {
+        popup.focus();
+    } catch (error) {}
+}
+
+function closeOverlayPreview() {
+    let previewWindow = getOverlayPreviewWindow();
+
+    if (!previewWindow && readOverlayPreviewState().open) {
+        try {
+            previewWindow = window.open('', OVERLAY_PREVIEW_WINDOW_NAME);
+        } catch (error) {}
+    }
+
+    if (previewWindow && !previewWindow.closed) {
+        try {
+            previewWindow.close();
+        } catch (error) {}
+    }
+
+    overlayPreviewWindow = null;
+    writeOverlayPreviewState(false);
+    syncOverlayPreviewButtons();
+}
+
+function toggleOverlayPreview() {
+    if (isOverlayPreviewOpen()) {
+        closeOverlayPreview();
+    } else {
+        openOverlayPreview();
+    }
+}
+
 function updateOverviewSummary() {
     const theme = formatThemeLabel(readCurrentTheme());
     const resolutionPreset = config.resolutionPreset || '1080p';
@@ -876,12 +1054,14 @@ function setupEventListeners() {
         });
     });
     
-    document.getElementById('open-overlay').addEventListener('click', () => {
-        window.open('/fireworks/overlay', '_blank');
+    document.getElementById('open-overlay').addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleOverlayPreview();
     });
 
-    document.getElementById('open-overlay-hero')?.addEventListener('click', () => {
-        window.open('/fireworks/overlay', '_blank', 'noopener,noreferrer');
+    document.getElementById('open-overlay-hero')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleOverlayPreview();
     });
     
     // Add color button

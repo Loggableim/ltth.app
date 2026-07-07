@@ -941,6 +941,8 @@
     "overlay": "📺 Overlay",
     "copy_overlay_url": "📋 Overlay-URL kopieren",
     "open_in_new_tab": "🔗 In neuem Tab öffnen",
+    "close_tab": "🔒 Tab schließen",
+    "overlay_popup_blocked": "Konnte das Overlay-Fenster nicht öffnen. Bitte Pop-ups erlauben.",
     "test_firework": "Feuerwerk testen",
     "subtitle": "GPU-beschleunigte Feuerwerkseffekte",
     "tab_settings": "Einstellungen",
