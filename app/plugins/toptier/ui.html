@@ -2289,15 +2289,30 @@
     const subvalue = document.getElementById('status-session-subvalue');
     const durationText = document.getElementById('stat-session');
     const durationHint = document.getElementById('stat-session-hint');
-    const elapsed = state.sessionStartedAt ? formatDuration(Date.now() - state.sessionStartedAt) : '00:00:00';
-    const stream = state.currentSession?.streamUsername || '-';
-    const sessionId = state.currentSession?.sessionId || '-';
+    const hasActiveSession = !!(state.currentSession && state.currentSession.sessionId && state.sessionStartedAt);
+    const elapsed = hasActiveSession ? formatDuration(Date.now() - state.sessionStartedAt) : '--:--:--';
+    const stream = hasActiveSession ? state.currentSession?.streamUsername || '-' : '-';
+    const sessionId = hasActiveSession ? state.currentSession?.sessionId || '-' : '-';
 
-    if (chip) chip.dataset.status = state.socketConnected ? 'connected' : 'warning';
+    if (chip) chip.dataset.status = hasActiveSession ? 'connected' : (state.socketConnected ? 'warning' : 'disconnected');
     if (value) value.textContent = elapsed;
-    if (subvalue) subvalue.textContent = stream !== '-' ? `@${stream}` : `Session ${sessionId.slice(0, 8)}`;
+    if (subvalue) subvalue.textContent = hasActiveSession ? (stream !== '-' ? `@${stream}` : `Session ${sessionId.slice(0, 8)}`) : 'No active stream';
     if (durationText) durationText.textContent = elapsed;
-    if (durationHint) durationHint.textContent = state.currentSession?.streamUsername ? `Start ${formatClock(new Date(state.sessionStartedAt || Date.now()))}` : 'Start unknown';
+    if (durationHint) durationHint.textContent = hasActiveSession ? `Start ${formatClock(new Date(state.sessionStartedAt || Date.now()))}` : 'Waiting for live stream';
+  }
+
+  function clearSessionState() {
+    state.currentSession = null;
+    state.sessionStartedAt = null;
+
+    const sessionIdEl = document.getElementById('current-session-id');
+    const streamEl = document.getElementById('current-stream-username');
+    const keyEl = document.getElementById('current-stream-key');
+    if (sessionIdEl) sessionIdEl.value = '-';
+    if (streamEl) streamEl.value = '-';
+    if (keyEl) keyEl.value = '-';
+
+    updateSessionChip();
   }
 
   function updateStatusOverview() {
@@ -2348,6 +2363,10 @@
 
   function syncSession(data, forceFresh = false) {
     if (!data) return;
+    if (data.active === false || !data.sessionId) {
+      clearSessionState();
+      return;
+    }
     const sessionId = data.sessionId || null;
     const streamUsername = data.streamUsername || null;
     const streamKey = data.streamKey || null;
@@ -2367,7 +2386,7 @@
     const sessionChip = document.querySelector('#status-session .tt-status-chip__value');
     const sessionChipSub = document.querySelector('#status-session .tt-status-chip__subvalue');
     if (sessionChip) sessionChip.textContent = formatDuration(Date.now() - (state.sessionStartedAt || Date.now()));
-    if (sessionChipSub) sessionChipSub.textContent = streamUsername ? `@${streamUsername}` : sessionId ? `Session ${sessionId.slice(0, 8)}` : 'Start unknown';
+    if (sessionChipSub) sessionChipSub.textContent = streamUsername ? `@${streamUsername}` : `Session ${sessionId.slice(0, 8)}`;
 
     updateSessionChip();
   }
@@ -3027,9 +3046,7 @@
   });
 
   socket.on('toptier:session-end', data => {
-    if (data && data.sessionId && state.currentSession && state.currentSession.sessionId === data.sessionId) {
-      state.sessionStartedAt = null;
-    }
+    clearSessionState();
     addSessionEventFeed('end');
   });
 

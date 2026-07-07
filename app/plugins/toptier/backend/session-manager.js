@@ -20,6 +20,15 @@ class SessionManager {
   }
 
   /**
+   * Returns whether the TikTok adapter currently has an active live stream.
+   * @returns {boolean}
+   * @private
+   */
+  _isLiveStreamActive() {
+    return !!(this.api.tiktok && typeof this.api.tiktok.isActive === 'function' && this.api.tiktok.isActive());
+  }
+
+  /**
    * Start a new leaderboard session with a fresh UUID.
    * @param {string} [streamUsername] - The TikTok username of the stream
    * @param {string|null} [streamKey] - Stable live-stream identity when available
@@ -53,6 +62,43 @@ class SessionManager {
       if (!this._sessionId) this._sessionId = this.startNewSession();
     }
     return this._sessionId;
+  }
+
+  /**
+   * Returns the current session only when the live stream is active.
+   * If no stream is live, the UI should not treat any session as active.
+   * @returns {{ active: boolean, sessionId: string|null, streamUsername: string|null, streamKey: string|null }}
+   */
+  getLiveSessionState() {
+    const streamActive = this._isLiveStreamActive();
+    if (!streamActive) {
+      return {
+        active: false,
+        sessionId: null,
+        streamUsername: null,
+        streamKey: null
+      };
+    }
+
+    const sessionId = this._sessionId || this.api.getConfig('currentSessionId') || null;
+    const streamUsername = this._streamUsername || this.api.getConfig('currentStreamUsername') || null;
+    const streamKey = this._streamKey || this.api.getConfig('currentStreamKey') || null;
+
+    if (!sessionId) {
+      return {
+        active: false,
+        sessionId: null,
+        streamUsername: null,
+        streamKey: null
+      };
+    }
+
+    return {
+      active: true,
+      sessionId,
+      streamUsername,
+      streamKey
+    };
   }
 
   /**

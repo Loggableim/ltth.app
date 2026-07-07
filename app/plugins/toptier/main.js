@@ -100,9 +100,13 @@ class TopTierPlugin {
         if (!['likes', 'gifts'].includes(boardType)) return res.status(400).json({ success: false, error: 'Invalid board type' });
         const config = this.api.getConfig('toptier_config') || {};
         const limit = (boardType === 'likes' ? (config.likesBoard && config.likesBoard.displayCount) : (config.giftsBoard && config.giftsBoard.displayCount)) || 10;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, board: [], sessionId: null, active: false });
+        }
+        const sessionId = liveSession.sessionId;
         const board = this.dbHandler.getBoard(boardType, sessionId, limit);
-        res.json({ success: true, board, sessionId });
+        res.json({ success: true, board, sessionId, active: true });
       } catch (err) {
         this.api.log(`[TopTier] GET /board error: ${err.message}`, 'error');
         res.status(500).json({ success: false, error: err.message });
@@ -113,7 +117,11 @@ class TopTierPlugin {
     this.api.registerRoute('POST', '/reset/:boardType', (req, res) => {
       try {
         const { boardType } = req.params;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, active: false, sessionId: null });
+        }
+        const sessionId = liveSession.sessionId;
         if (boardType === 'all') {
           this.dbHandler.resetBoard('likes', sessionId);
           this.dbHandler.resetBoard('gifts', sessionId);
@@ -124,7 +132,7 @@ class TopTierPlugin {
           this.dbHandler.resetBoard(boardType, sessionId);
           this.api.emit('toptier:update', { board: boardType, entries: [], sessionId });
         }
-        res.json({ success: true });
+        res.json({ success: true, active: true, sessionId });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -171,11 +179,10 @@ class TopTierPlugin {
     // GET /api/plugins/toptier/session/current
     this.api.registerRoute('GET', '/session/current', (req, res) => {
       try {
+        const liveSession = this.sessionManager.getLiveSessionState();
         res.json({
           success: true,
-          sessionId: this.sessionManager.getCurrentSessionId(),
-          streamUsername: this.sessionManager.getCurrentStreamUsername(),
-          streamKey: this.sessionManager.getCurrentStreamKey()
+          ...liveSession
         });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -187,9 +194,13 @@ class TopTierPlugin {
       try {
         const { boardType } = req.params;
         if (!['likes', 'gifts'].includes(boardType)) return res.status(400).json({ success: false, error: 'Invalid board type' });
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          return res.json({ success: true, active: false, log: [] });
+        }
+        const sessionId = liveSession.sessionId;
         const log = this.dbHandler.getDecayLog(boardType, sessionId, 50);
-        res.json({ success: true, log });
+        res.json({ success: true, active: true, log });
       } catch (err) {
         res.status(500).json({ success: false, error: err.message });
       }
@@ -223,9 +234,14 @@ class TopTierPlugin {
         if (!['likes', 'gifts'].includes(boardType)) return;
         const config = this.api.getConfig('toptier_config') || {};
         const limit = (boardType === 'likes' ? (config.likesBoard && config.likesBoard.displayCount) : (config.giftsBoard && config.giftsBoard.displayCount)) || 10;
-        const sessionId = this.sessionManager.getCurrentSessionId();
+        const liveSession = this.sessionManager.getLiveSessionState();
+        if (!liveSession.active) {
+          socket.emit('toptier:update', { board: boardType, entries: [], sessionId: null, active: false });
+          return;
+        }
+        const sessionId = liveSession.sessionId;
         const board = this.dbHandler.getBoard(boardType, sessionId, limit);
-        socket.emit('toptier:update', { board: boardType, entries: board, sessionId });
+        socket.emit('toptier:update', { board: boardType, entries: board, sessionId, active: true });
       } catch (err) {
         this.api.log(`[TopTier] Socket get-board error: ${err.message}`, 'error');
       }
