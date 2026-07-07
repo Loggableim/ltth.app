@@ -25,6 +25,7 @@ const AutoDJ = require('./lib/auto-dj');
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
 const PRECACHE_KILL_TIMEOUT_MS = 1500;
+const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
 
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -178,6 +179,14 @@ class MusicBotPlugin extends EventEmitter {
     this._fallbackIndex = 0;
     this._ioEmitOriginal = null;
     this._ttsDuckingHandlers = null;
+    this._mpvInstallStatus = {
+      state: 'idle',
+      message: '',
+      command: null,
+      updatedAt: null
+    };
+    this._mpvInstallChild = null;
+    this._mpvInstallTimer = null;
   }
 
   async init() {
@@ -314,21 +323,35 @@ class MusicBotPlugin extends EventEmitter {
 
   async _ensureMpv() {
     const execFileAsync = promisify(execFile);
-    const mpvPath = this.config.playback.mpvPath || 'mpv';
+    const configuredMpvPath = this.config.playback.mpvPath || 'mpv';
+    const candidates = await this._getMpvPathCandidates(configuredMpvPath);
 
-    try {
-      await execFileAsync(mpvPath, ['--version'], { timeout: 5000 });
-      this.api.log('[music-bot] mpv found and ready', 'debug');
-      this._mpvAvailable = true;
-    } catch (err) {
-      this._mpvAvailable = false;
-      this.api.log(
-        `[music-bot] mpv not found at "${mpvPath}". Music playback is disabled. ` +
-        'Install mpv (https://mpv.io/installation/) and restart LTTH, ' +
-        'or set the correct path in Music Bot settings.',
-        'warn'
-      );
+    for (const candidate of candidates) {
+      try {
+        await execFileAsync(candidate, ['--version'], { timeout: 5000 });
+        this.api.log(`[music-bot] mpv found and ready at "${candidate}"`, 'debug');
+        this._mpvAvailable = true;
+        if (candidate !== configuredMpvPath && candidate !== 'mpv') {
+          this.config.playback.mpvPath = candidate;
+          if (this.playbackEngine) {
+            this.playbackEngine.config = this.config.playback;
+          }
+          await this.api.setConfig('config', this.config);
+          this.api.log(`[music-bot] Stored detected mpv path "${candidate}"`, 'info');
+        }
+        return;
+      } catch (_err) {
+        // Try the next likely location before reporting setup failure.
+      }
     }
+
+    this._mpvAvailable = false;
+    this.api.log(
+      `[music-bot] mpv not found at "${configuredMpvPath}". Music playback is disabled. ` +
+      'Install mpv (https://mpv.io/installation/) and restart LTTH, ' +
+      'or set the correct path in Music Bot settings.',
+      'warn'
+    );
   }
 
   _getSetupIssues() {
@@ -352,10 +375,14 @@ class MusicBotPlugin extends EventEmitter {
         id: 'mpv-missing',
         severity: 'error',
         title: 'mpv Media Player nicht gefunden',
+        oneClickInstall: true,
+        installAction: 'mpv',
+        installButtonLabel: this._mpvInstallStatus.state === 'installing' ? 'Installation laeuft...' : 'MPV installieren',
+        installStatus: this._mpvInstallStatus,
         description: 'Der Music Bot braucht mpv (https://mpv.io) für die Audio-Wiedergabe. ' +
           'Ohne mpv wird keine Musik abgespielt.',
         installInstructions: [
-          'Windows: https://mpv.io/installation/ oder scoop install mpv',
+          'Windows: winget, scoop oder choco',
           'Linux: sudo apt install mpv',
           'macOS: brew install mpv',
           'Pfad in Music Bot Einstellungen → Playback → mpv Pfad setzen'
@@ -370,8 +397,284 @@ class MusicBotPlugin extends EventEmitter {
     this.io.emit('music-bot:setup-status', {
       ytdlpAvailable: this._ytdlpAvailable || false,
       mpvAvailable: this._mpvAvailable || false,
+      mpvInstallStatus: this._mpvInstallStatus,
       issues
     });
+  }
+
+  async _resolveExecutable(name) {
+    const execFileAsync = promisify(execFile);
+    const command = process.platform === 'win32' ? 'where' : 'sh';
+    const args = process.platform === 'win32' ? [name] : ['-lc', `command -v ${name}`];
+
+    try {
+      const { stdout } = await execFileAsync(command, args, { timeout: 5000 });
+      const firstMatch = String(stdout || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find(Boolean);
+      return firstMatch || name;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async _findExecutable(name) {
+    return Boolean(await this._resolveExecutable(name));
+  }
+
+  async _getMpvPathCandidates(configuredMpvPath) {
+    const candidates = [];
+    const add = (candidate) => {
+      if (!candidate || candidates.includes(candidate)) return;
+      candidates.push(candidate);
+    };
+
+    add(configuredMpvPath || 'mpv');
+
+    const resolvedMpv = await this._resolveExecutable('mpv');
+    add(resolvedMpv);
+
+    if (process.platform === 'win32') {
+      const userProfile = process.env.USERPROFILE || '';
+      const localAppData = process.env.LOCALAPPDATA || '';
+      const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+      const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+      [
+        'C:\\ProgramData\\chocolatey\\bin\\mpv.exe',
+        path.join(userProfile, 'scoop', 'shims', 'mpv.exe'),
+        'C:\\ProgramData\\scoop\\shims\\mpv.exe',
+        path.join(programFiles, 'mpv', 'mpv.exe'),
+        path.join(programFilesX86, 'mpv', 'mpv.exe')
+      ].forEach(add);
+
+      const wingetPackagesDir = path.join(localAppData, 'Microsoft', 'WinGet', 'Packages');
+      try {
+        const entries = await fsp.readdir(wingetPackagesDir, { withFileTypes: true });
+        entries
+          .filter((entry) => entry.isDirectory() && entry.name.toLowerCase().includes('mpv'))
+          .forEach((entry) => add(path.join(wingetPackagesDir, entry.name, 'mpv.exe')));
+      } catch (_error) {
+        // WinGet is not installed or has not installed mpv for this user.
+      }
+    }
+
+    return candidates;
+  }
+
+  _appendInstallOutput(current, chunk) {
+    const next = `${current || ''}${chunk || ''}`;
+    return next.length > 6000 ? next.slice(next.length - 6000) : next;
+  }
+
+  _summarizeMpvInstallFailure(output, code) {
+    const text = String(output || '').replace(/\s+/g, ' ').trim();
+    const lockMatch = text.match(/Unable to obtain lock file access on '([^']+)'/i);
+    if (lockMatch) {
+      return `Chocolatey konnte die Installation wegen einer gesperrten Lockdatei nicht abschliessen: ${lockMatch[1]}. Schliesse andere Chocolatey-Installationen oder entferne die Lockdatei und klicke erneut auf Installieren.`;
+    }
+    if (/do you want to continue|not running from an elevated|non.?elevated/i.test(text)) {
+      return 'Chocolatey wartet auf eine Administrator-/Bestaetigungsabfrage. Klicke erneut auf Installieren und bestaetige den Windows-Administrator-Dialog.';
+    }
+    if (/access is denied|permission|administrator|elevat/i.test(text)) {
+      return 'Der Paketmanager hat fehlende Rechte gemeldet. Starte LTTH als Administrator oder installiere mpv manuell und klicke danach erneut auf Aktualisieren/Installieren.';
+    }
+    if (/not recognized|not found|no such file/i.test(text)) {
+      return 'Der Paketmanager konnte den Installationsbefehl nicht ausfuehren. Installiere winget, scoop oder choco oder setze den mpv Pfad manuell.';
+    }
+    if (text) {
+      return `mpv Installation fehlgeschlagen (Exit-Code ${code ?? 'unbekannt'}): ${text.slice(-900)}`;
+    }
+    return `mpv Installation beendet, aber mpv wurde nicht gefunden (Exit-Code ${code ?? 'unbekannt'}).`;
+  }
+
+  _buildWindowsElevatedCommand(executablePath, args = []) {
+    const quotePs = (value) => `'${String(value).replace(/'/g, "''")}'`;
+    const argumentList = args.map(quotePs).join(',');
+    return {
+      executable: 'powershell.exe',
+      args: [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        `Start-Process -FilePath ${quotePs(executablePath)} -ArgumentList @(${argumentList}) -Verb RunAs -Wait`
+      ]
+    };
+  }
+
+  async _getMpvInstallCommand() {
+    if (process.platform === 'win32') {
+      const wingetPath = await this._resolveExecutable('winget');
+      if (wingetPath) {
+        return {
+          executable: wingetPath,
+          args: ['install', '--id', 'shinchiro.mpv', '-e', '--accept-package-agreements', '--accept-source-agreements'],
+          label: 'winget install shinchiro.mpv'
+        };
+      }
+
+      const scoopPath = await this._resolveExecutable('scoop');
+      if (scoopPath) {
+        return { executable: scoopPath, args: ['install', 'mpv'], label: 'scoop install mpv' };
+      }
+
+      const chocoPath = await this._resolveExecutable('choco');
+      if (chocoPath) {
+        const elevated = this._buildWindowsElevatedCommand(chocoPath, ['install', 'mpv', '-y', '--no-progress']);
+        return {
+          ...elevated,
+          label: 'choco install mpv (Administrator)',
+          opensWindow: true
+        };
+      }
+
+      return null;
+    }
+
+    if (process.platform === 'darwin') {
+      if (await this._findExecutable('brew')) {
+        return { executable: 'brew', args: ['install', 'mpv'], label: 'brew install mpv' };
+      }
+      return null;
+    }
+
+    const linuxCandidates = [
+      { manager: 'apt-get', executable: 'sudo', args: ['apt-get', 'install', '-y', 'mpv'], label: 'sudo apt-get install -y mpv' },
+      { manager: 'dnf', executable: 'sudo', args: ['dnf', 'install', '-y', 'mpv'], label: 'sudo dnf install -y mpv' },
+      { manager: 'pacman', executable: 'sudo', args: ['pacman', '-S', '--noconfirm', 'mpv'], label: 'sudo pacman -S --noconfirm mpv' },
+      { manager: 'zypper', executable: 'sudo', args: ['zypper', '--non-interactive', 'install', 'mpv'], label: 'sudo zypper --non-interactive install mpv' }
+    ];
+
+    for (const candidate of linuxCandidates) {
+      if (await this._findExecutable(candidate.manager) && await this._findExecutable(candidate.executable)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  async _startMpvInstall() {
+    if (this._mpvAvailable) {
+      this._mpvInstallStatus = {
+        state: 'installed',
+        message: 'mpv ist bereits verfuegbar.',
+        command: null,
+        updatedAt: new Date().toISOString()
+      };
+      return this._mpvInstallStatus;
+    }
+
+    if (this._mpvInstallStatus.state === 'installing') {
+      const startedAt = Date.parse(this._mpvInstallStatus.updatedAt || '');
+      if (Number.isFinite(startedAt) && Date.now() - startedAt > MPV_INSTALL_TIMEOUT_MS) {
+        this._mpvInstallStatus = {
+          state: 'failed',
+          message: 'mpv Installation wurde abgebrochen: Der Installer hat zu lange nicht geantwortet. Bitte klicke erneut und bestaetige den Windows-Administrator-Dialog.',
+          command: this._mpvInstallStatus.command,
+          updatedAt: new Date().toISOString()
+        };
+        this._emitSetupStatus();
+      } else {
+        return this._mpvInstallStatus;
+      }
+    }
+
+    if (this._mpvInstallTimer) {
+      clearTimeout(this._mpvInstallTimer);
+      this._mpvInstallTimer = null;
+    }
+    if (this._mpvInstallChild) {
+      return this._mpvInstallStatus;
+    }
+
+    const installCommand = await this._getMpvInstallCommand();
+    if (!installCommand) {
+      this._mpvInstallStatus = {
+        state: 'unavailable',
+        message: 'Kein unterstuetzter Paketmanager gefunden. Installiere winget, scoop, choco, brew oder apt/dnf/pacman/zypper und versuche es erneut.',
+        command: null,
+        updatedAt: new Date().toISOString()
+      };
+      return this._mpvInstallStatus;
+    }
+
+    this._mpvInstallStatus = {
+      state: 'installing',
+      message: installCommand.opensWindow
+        ? 'Windows oeffnet jetzt einen Administrator-Dialog fuer die mpv Installation. Bitte bestaetigen; danach wird automatisch erneut geprueft.'
+        : 'mpv Installation wurde gestartet. Je nach System kann ein Installer- oder Rechte-Dialog erscheinen.',
+      command: installCommand.label,
+      updatedAt: new Date().toISOString()
+    };
+    this._emitSetupStatus();
+
+    this.api.log(`[music-bot] Starting one-click mpv install via ${installCommand.label}`, 'info');
+
+    const child = spawn(installCommand.executable, installCommand.args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: !installCommand.opensWindow
+    });
+    this._mpvInstallChild = child;
+
+    let installOutput = '';
+    let settled = false;
+    const settleInstall = async (state, message, code = null) => {
+      if (settled) return;
+      settled = true;
+      if (this._mpvInstallTimer) {
+        clearTimeout(this._mpvInstallTimer);
+        this._mpvInstallTimer = null;
+      }
+      this._mpvInstallChild = null;
+      await this._ensureMpv();
+      const installed = this._mpvAvailable === true;
+      this._mpvInstallStatus = {
+        state: installed ? 'installed' : state,
+        message: installed ? 'mpv wurde installiert und ist bereit.' : message,
+        command: installCommand.label,
+        updatedAt: new Date().toISOString()
+      };
+      this.api.log(
+        `[music-bot] mpv install finished with code ${code ?? 'unbekannt'}; available=${installed}`,
+        installed ? 'info' : 'warn'
+      );
+      this._emitSetupStatus();
+    };
+
+    this._mpvInstallTimer = setTimeout(() => {
+      try {
+        child.kill();
+      } catch (_error) {}
+      settleInstall(
+        'failed',
+        'mpv Installation wurde abgebrochen: Der Installer hat zu lange nicht geantwortet. Bitte klicke erneut und bestaetige den Windows-Administrator-Dialog.',
+        'timeout'
+      ).catch((error) => {
+        this.api.log(`[music-bot] Failed to settle timed-out mpv install: ${error.message}`, 'error');
+      });
+    }, MPV_INSTALL_TIMEOUT_MS);
+
+    child.stdout?.on('data', (chunk) => {
+      installOutput = this._appendInstallOutput(installOutput, chunk.toString());
+    });
+    child.stderr?.on('data', (chunk) => {
+      installOutput = this._appendInstallOutput(installOutput, chunk.toString());
+    });
+
+    child.on('error', (error) => {
+      this.api.log(`[music-bot] mpv install failed to start: ${error.message}`, 'error');
+      settleInstall('failed', `mpv Installation konnte nicht gestartet werden: ${error.message}`).catch((settleError) => {
+        this.api.log(`[music-bot] Failed to settle mpv install start error: ${settleError.message}`, 'error');
+      });
+    });
+
+    child.on('close', async (code) => {
+      await settleInstall('failed', this._summarizeMpvInstallFailure(installOutput, code), code);
+    });
+
+    return this._mpvInstallStatus;
   }
 
   _mergeDeep(target, source) {
@@ -593,8 +896,38 @@ class MusicBotPlugin extends EventEmitter {
         success: true,
         ytdlpAvailable: this._ytdlpAvailable || false,
         mpvAvailable: this._mpvAvailable || false,
+        mpvInstallStatus: this._mpvInstallStatus,
         issues: this._getSetupIssues()
       });
+    });
+
+    this.api.registerRoute('post', '/api/plugins/music-bot/install/mpv', async (req, res) => {
+      try {
+        await this._ensureMpv();
+        const status = await this._startMpvInstall();
+        res.json({
+          success: status.state !== 'failed' && status.state !== 'unavailable',
+          pending: status.state === 'installing',
+          installed: status.state === 'installed',
+          mpvAvailable: this._mpvAvailable || false,
+          installStatus: status,
+          issues: this._getSetupIssues()
+        });
+      } catch (error) {
+        this._mpvInstallStatus = {
+          state: 'failed',
+          message: error.message,
+          command: null,
+          updatedAt: new Date().toISOString()
+        };
+        this.api.log(`[music-bot] mpv one-click install failed: ${error.message}`, 'error');
+        res.status(500).json({
+          success: false,
+          error: error.message,
+          installStatus: this._mpvInstallStatus,
+          issues: this._getSetupIssues()
+        });
+      }
     });
 
     this.api.registerRoute('get', '/api/plugins/music-bot/resolve', async (req, res) => {

@@ -10,11 +10,11 @@
     (function () {
       const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
       const logoByTheme = {
-        day: '/ltthicon.png',
-        night: '/ltthicon.png',
-        contrast: '/ltthicon.png',
-        'vision-impaired': '/ltthicon.png',
-        cid: '/ltthicon.png'
+        day: '/plugins/music-bot/assets/musicbotlogo.png',
+        night: '/plugins/music-bot/assets/musicbotlogo.png',
+        contrast: '/plugins/music-bot/assets/musicbotlogo.png',
+        'vision-impaired': '/plugins/music-bot/assets/musicbotlogo.png',
+        cid: '/plugins/music-bot/assets/musicbotlogo.png'
       };
 
       function readTheme() {
@@ -76,11 +76,25 @@
   <body>
   <div class="container">
     <header class="header">
-      <div class="header-brand">
-        <img class="header-logo" data-brand-logo src="/ltthicon.png" alt="LTTH">
-        <p class="subtitle">Viewer-controlled Song Requests via TikTok Chat</p>
+      <div class="hero-art" aria-hidden="true">
+        <img class="hero-icon" src="/plugins/music-bot/assets/soundbot.png" alt="">
       </div>
-      <div class="status" id="playback-state">Idle</div>
+      <div class="header-brand">
+        <div class="hero-title-row">
+          <h1>Musik Bot</h1>
+          <div class="status" id="playback-state">Idle</div>
+        </div>
+        <p class="subtitle">Viewer-gesteuerte Musikwiedergabe via TikTok Chat</p>
+        <div class="hero-metrics" aria-label="Music Bot Status">
+          <span class="metric-chip"><strong>MPV Status</strong><em id="hero-mpv-status">Wird geprueft</em></span>
+          <span class="metric-chip"><strong>Warteschlange</strong><em><span id="hero-queue-count">0</span> Titel</em></span>
+          <span class="metric-chip"><strong>Auto-DJ</strong><em id="hero-autodj-status">Aus</em></span>
+        </div>
+      </div>
+      <div class="header-logo-panel" aria-label="LTTH Music Bot">
+        <img class="header-logo" data-brand-logo src="/plugins/music-bot/assets/musicbotlogo.png" alt="LTTH Music Bot">
+      </div>
+      <a href="/plugins/music-bot/ui" target="_blank" class="btn ghost open-tab-btn" rel="noopener">In neuem Tab oeffnen</a>
     </header>
 
     <section id="musicbot-onboarding" class="onboarding-panel" hidden>
@@ -116,6 +130,106 @@
       <div id="setup-issues-list"></div>
     </div>
 
+    <section class="musicbot-stage tab-content active" data-tab-content="player">
+      <section class="card player-card">
+        <div class="card-header">
+          <div>
+            <p class="section-kicker">Aktuelle Wiedergabe</p>
+            <h2>Player &amp; Suche</h2>
+            <p class="text-secondary">YouTube-Link einfuegen oder Stichwort suchen</p>
+          </div>
+          <div class="pill" id="preview-source">YouTube</div>
+        </div>
+
+        <div class="player-search-bar">
+          <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
+          <button id="search-btn" class="btn ghost" type="button">Suchen</button>
+          <button id="request-btn" class="btn primary" type="button">Song anfordern</button>
+        </div>
+        <div id="search-feedback" class="feedback"></div>
+
+        <div class="player-main">
+          <div class="player-embed-wrapper">
+            <div class="player-frame" id="player-frame-box">
+              <div class="player-placeholder" id="player-placeholder">
+                <span>YouTube-Link einfuegen oder oben suchen</span>
+              </div>
+              <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+          <div class="player-info">
+            <div id="now-playing" class="now-playing empty">
+              <p>Aktuell laeuft nichts.</p>
+            </div>
+            <div class="np-progress-wrapper" id="np-progress-wrapper" style="display:none">
+              <div class="np-progress-bar">
+                <div class="np-progress-fill" id="np-progress-fill"></div>
+              </div>
+              <div class="np-time">
+                <span id="np-elapsed">0:00</span>
+                <span id="np-duration">0:00</span>
+              </div>
+            </div>
+            <div class="player-controls">
+              <button id="pause-btn" class="btn icon-btn ghost" title="Pause" aria-label="Pause">Pause</button>
+              <button id="resume-btn" class="btn icon-btn primary" title="Resume" aria-label="Resume">Resume</button>
+              <button id="skip-btn" class="btn icon-btn ghost" title="Skip" aria-label="Skip">Skip</button>
+              <button id="clear-btn" class="btn danger">Queue leeren</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-bottom">
+          <div class="player-sliders">
+            <div class="slider-group">
+              <label for="master-volume-input">Master Volume</label>
+              <div class="slider-row">
+                <input type="range" id="master-volume-input" min="0" max="100" value="100">
+                <span id="master-volume-value">100</span>
+              </div>
+            </div>
+            <div class="slider-group">
+              <label for="volume-input">Source Volume</label>
+              <div class="slider-row">
+                <input type="range" id="volume-input" min="0" max="100" value="50">
+                <span id="volume-value">50</span>
+              </div>
+            </div>
+            <div class="slider-group">
+              <label for="crossfade-input">Crossfade (Sek.)</label>
+              <div class="slider-row">
+                <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
+                <span id="crossfade-value">3s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="request-feedback" class="feedback"></div>
+        <form id="request-form" style="display:none">
+          <input type="text" id="request-input">
+        </form>
+      </section>
+
+      <section class="card queue-side-card" id="queue-panel">
+        <div class="card-header">
+          <div>
+            <p class="section-kicker">Warteschlange</p>
+            <h2>Queue</h2>
+            <p class="text-secondary">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
+          </div>
+          <span id="queue-length" class="pill">0</span>
+        </div>
+        <div id="queue-list" class="list empty">
+          <div class="queue-empty-state">
+            <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
+            <strong>Die Warteschlange ist leer</strong>
+            <p>Sei der/die Erste und fordere einen Song an.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+
     <nav class="tab-bar" id="tab-bar">
       <button class="tab active" data-tab="player">Player</button>
       <button class="tab" data-tab="queue">Queue</button>
@@ -126,82 +240,6 @@
       <button class="tab" data-tab="overlay">Overlay</button>
       <button class="tab" data-tab="history">History</button>
     </nav>
-
-    <section class="card player-card tab-content active" data-tab-content="player">
-      <div class="card-header">
-        <div>
-          <h2>Player &amp; Suche</h2>
-          <p class="text-secondary">YouTube-Link einfuegen oder Stichwort suchen</p>
-        </div>
-        <div class="pill" id="preview-source">YouTube</div>
-      </div>
-
-      <div class="player-search-bar">
-        <input type="text" id="search-input" placeholder="YouTube-Link einfuegen oder Suchwort eingeben..." autocomplete="off">
-        <button id="search-btn" class="btn ghost" type="button">Suchen</button>
-        <button id="request-btn" class="btn primary" type="button">Zur Queue</button>
-      </div>
-      <div id="search-feedback" class="feedback"></div>
-
-      <div class="player-embed-wrapper">
-        <div class="player-frame" id="player-frame-box">
-          <div class="player-placeholder" id="player-placeholder">
-            <span>YouTube-Link einfuegen oder oben suchen</span>
-          </div>
-          <iframe id="preview-frame" title="YouTube Vorschau" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-      </div>
-
-      <div id="now-playing" class="now-playing empty">
-        <p>Aktuell laeuft nichts.</p>
-      </div>
-      <div class="np-progress-wrapper" id="np-progress-wrapper" style="display:none">
-        <div class="np-progress-bar">
-          <div class="np-progress-fill" id="np-progress-fill"></div>
-        </div>
-        <div class="np-time">
-          <span id="np-elapsed">0:00</span>
-          <span id="np-duration">0:00</span>
-        </div>
-      </div>
-
-      <div class="player-bottom">
-        <div class="player-sliders">
-          <div class="slider-group">
-            <label for="master-volume-input">Master Volume</label>
-            <div class="slider-row">
-              <input type="range" id="master-volume-input" min="0" max="100" value="100">
-              <span id="master-volume-value">100</span>
-            </div>
-          </div>
-          <div class="slider-group">
-            <label for="volume-input">Source Volume</label>
-            <div class="slider-row">
-              <input type="range" id="volume-input" min="0" max="100" value="50">
-              <span id="volume-value">50</span>
-            </div>
-          </div>
-          <div class="slider-group">
-            <label for="crossfade-input">Crossfade (Sek.)</label>
-            <div class="slider-row">
-              <input type="range" id="crossfade-input" min="0" max="10" value="3" step="1">
-              <span id="crossfade-value">3s</span>
-            </div>
-          </div>
-        </div>
-        <div class="player-controls">
-          <button id="pause-btn" class="btn ghost">Pause</button>
-          <button id="resume-btn" class="btn">Resume</button>
-          <button id="skip-btn" class="btn danger">Skip</button>
-          <button id="clear-btn" class="btn ghost">Queue leeren</button>
-        </div>
-      </div>
-
-      <div id="request-feedback" class="feedback"></div>
-      <form id="request-form" style="display:none">
-        <input type="text" id="request-input">
-      </form>
-    </section>
 
     <section class="card tab-content" data-tab-content="settings">
       <div class="card-header">
@@ -473,19 +511,6 @@
       </div>
       <div class="actions">
         <button id="alias-save" class="btn primary">Aliases speichern</button>
-      </div>
-    </section>
-
-    <section class="card tab-content" data-tab-content="queue">
-      <div class="card-header">
-        <div>
-          <h2>Queue</h2>
-          <p class="text-secondary">Aktuelle Warteschlange (Drag &amp; Drop zum Sortieren)</p>
-        </div>
-        <span id="queue-length" class="pill">0</span>
-      </div>
-      <div id="queue-list" class="list empty">
-        <p>Keine Songs in der Queue.</p>
       </div>
     </section>
 

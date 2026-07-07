@@ -13,6 +13,7 @@
 
   function setActiveTab(target) {
     if (!target) return;
+    const contentTarget = target === 'queue' ? 'player' : target;
     document.querySelectorAll('.tab').forEach((t) => {
       const isActive = t.getAttribute('data-tab') === target;
       t.classList.toggle('active', isActive);
@@ -20,10 +21,13 @@
       if (isActive) t.setAttribute('tabindex', '0');
     });
     document.querySelectorAll('.tab-content').forEach((c) => {
-      const isActive = c.getAttribute('data-tab-content') === target;
+      const isActive = c.getAttribute('data-tab-content') === contentTarget;
       c.classList.toggle('active', isActive);
       c.setAttribute('aria-hidden', isActive ? 'false' : 'true');
     });
+    if (target === 'queue') {
+      document.getElementById('queue-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
 
   // ── Tab switching ──
@@ -36,7 +40,7 @@
     const isActive = tab.classList.contains('active');
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    tab.setAttribute('aria-controls', `tab-content-${target}`);
+    tab.setAttribute('aria-controls', `tab-content-${target === 'queue' ? 'player' : target}`);
     tab.setAttribute('tabindex', isActive ? '0' : '-1');
     tab.addEventListener('click', () => {
       setActiveTab(target);
@@ -67,6 +71,9 @@
   const nowPlayingEl = document.getElementById('now-playing');
   const queueListEl = document.getElementById('queue-list');
   const queueLengthEl = document.getElementById('queue-length');
+  const heroQueueCount = document.getElementById('hero-queue-count');
+  const heroMpvStatus = document.getElementById('hero-mpv-status');
+  const heroAutodjStatus = document.getElementById('hero-autodj-status');
   const historyListEl = document.getElementById('history-list');
   const requestFeedback = document.getElementById('request-feedback');
   const searchInput = document.getElementById('search-input');
@@ -166,6 +173,8 @@
   };
   let currentSetupIssues = [];
   let currentOnboarding = { completed: false, completedAt: null };
+  let mpvInstallPollTimer = null;
+  let mpvInstallPollAttempts = 0;
 
   // Client-side YouTube ID extraction (no server call needed for direct links)
   function extractYouTubeId(url) {
@@ -261,6 +270,10 @@
   function renderSetupIssues(issues = []) {
     if (!setupIssuesBanner || !setupIssuesList) return;
     const list = Array.isArray(issues) ? issues : [];
+    if (heroMpvStatus) {
+      const mpvIssue = list.find((issue) => String(issue?.title || '').toLowerCase().includes('mpv'));
+      heroMpvStatus.textContent = mpvIssue ? 'Nicht installiert' : 'Bereit';
+    }
     if (!list.length) {
       setupIssuesBanner.style.display = 'none';
       setupIssuesList.innerHTML = '';
@@ -275,16 +288,122 @@
         const instructionsHtml = instructions.length
           ? `<ul>${instructions.map((instr) => `<li><code>${escapeHtml(instr)}</code></li>`).join('')}</ul>`
           : '';
+        const installStatus = issue?.installStatus;
+        const installStatusHtml = installStatus?.message
+          ? `<p class="setup-install-status ${escapeHtml(installStatus.state || 'info')}">${escapeHtml(installStatus.message)}${installStatus.command ? ` <code>${escapeHtml(installStatus.command)}</code>` : ''}</p>`
+          : '';
+        const installButtonHtml = issue?.oneClickInstall && issue?.installAction === 'mpv'
+          ? `<div class="setup-issue-actions">
+              <button class="btn primary small" type="button" data-setup-action="install-mpv" ${installStatus?.state === 'installing' ? 'disabled' : ''}>
+                ${escapeHtml(issue.installButtonLabel || 'Installieren')}
+              </button>
+            </div>`
+          : '';
         return `
           <div class="setup-issue ${issue?.severity === 'error' ? 'error' : 'warning'}">
             <strong>${icon} ${escapeHtml(issue?.title || 'Setup-Hinweis')}</strong><br>
             <span style="font-size:0.9em;">${escapeHtml(issue?.description || '')}</span>
+            ${installButtonHtml}
+            ${installStatusHtml}
             ${instructionsHtml}
           </div>
         `;
       })
       .join('');
   }
+
+  function getMpvStatusFromPayload(payload = {}) {
+    if (payload.mpvInstallStatus) return payload.mpvInstallStatus;
+    const mpvIssue = Array.isArray(payload.issues)
+      ? payload.issues.find((issue) => issue?.installAction === 'mpv' || String(issue?.title || '').toLowerCase().includes('mpv'))
+      : null;
+    return mpvIssue?.installStatus || null;
+  }
+
+  function applySetupStatus(payload = {}) {
+    currentSetupIssues = Array.isArray(payload?.issues) ? payload.issues : [];
+    renderSetupIssues(currentSetupIssues);
+    renderOnboarding(currentOnboarding, currentSetupIssues);
+    return getMpvStatusFromPayload(payload);
+  }
+
+  function stopMpvInstallPolling() {
+    if (mpvInstallPollTimer) {
+      clearInterval(mpvInstallPollTimer);
+      mpvInstallPollTimer = null;
+    }
+    mpvInstallPollAttempts = 0;
+  }
+
+  async function pollMpvInstallStatus() {
+    mpvInstallPollAttempts += 1;
+    const setupStatus = await get('/setup-status');
+    const installStatus = applySetupStatus(setupStatus);
+
+    if (setupStatus?.mpvAvailable || installStatus?.state === 'installed') {
+      stopMpvInstallPolling();
+      showToast('success', 'MPV Installation', 'mpv wurde gefunden und ist bereit.');
+      return;
+    }
+
+    if (installStatus?.state === 'failed' || installStatus?.state === 'unavailable') {
+      stopMpvInstallPolling();
+      showToast('error', 'MPV Installation', installStatus.message || 'Installation fehlgeschlagen.');
+      return;
+    }
+
+    if (mpvInstallPollAttempts >= 130) {
+      stopMpvInstallPolling();
+      showToast('warn', 'MPV Installation', 'Die Installation laeuft ungewoehnlich lange. Pruefe den Paketmanager oder setze den mpv Pfad manuell.');
+    }
+  }
+
+  function startMpvInstallPolling() {
+    stopMpvInstallPolling();
+    mpvInstallPollTimer = setInterval(() => {
+      pollMpvInstallStatus().catch((error) => {
+        stopMpvInstallPolling();
+        showToast('error', 'MPV Installation', error?.message || 'Status konnte nicht geprueft werden.');
+      });
+    }, 3000);
+    pollMpvInstallStatus().catch(() => {});
+  }
+
+  async function installMpvFromSetup(button) {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Installiere...';
+    }
+
+    const result = await post('/install/mpv');
+    const status = result?.installStatus || {};
+    if (Array.isArray(result?.issues)) {
+      applySetupStatus(result);
+    }
+
+    if (result?.mpvAvailable || status.state === 'installed') {
+      showToast('success', 'MPV Installation', status.message || 'mpv ist bereit.');
+      return;
+    }
+
+    if (status.state === 'installing' || result?.pending) {
+      showToast('info', 'MPV Installation', status.message || 'Installation wurde gestartet. Status wird automatisch geprueft.');
+      startMpvInstallPolling();
+      return;
+    }
+
+    showToast('error', 'MPV Installation', result?.error || status.message || 'Installation konnte nicht gestartet werden.');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'MPV installieren';
+    }
+  }
+
+  setupIssuesList?.addEventListener('click', (event) => {
+    const actionButton = event.target.closest('[data-setup-action="install-mpv"]');
+    if (!actionButton) return;
+    installMpvFromSetup(actionButton);
+  });
 
   async function completeOnboarding() {
     if (!onboardingComplete) return;
@@ -753,9 +872,10 @@
     showToast(payload?.type || 'info', payload?.title || 'Music Bot', payload?.message || '');
   });
   socket.on('music-bot:setup-status', (payload) => {
-    currentSetupIssues = Array.isArray(payload?.issues) ? payload.issues : [];
-    renderSetupIssues(currentSetupIssues);
-    renderOnboarding(currentOnboarding, currentSetupIssues);
+    const installStatus = applySetupStatus(payload);
+    if (payload?.mpvAvailable || ['installed', 'failed', 'unavailable'].includes(installStatus?.state)) {
+      stopMpvInstallPolling();
+    }
   });
   socket.on('music-bot:onboarding-updated', (payload) => {
     renderOnboarding(payload || { completed: true }, currentSetupIssues);
@@ -913,9 +1033,7 @@
 
     const setupStatus = await get('/setup-status');
     if (setupStatus?.issues) {
-      currentSetupIssues = setupStatus.issues;
-      renderSetupIssues(currentSetupIssues);
-      renderOnboarding(configData?.config?.onboarding || {}, currentSetupIssues);
+      applySetupStatus(setupStatus);
     }
 
     await refreshAutoDjStatus();
@@ -999,9 +1117,16 @@
 
   function renderQueue(queue = [], length = 0) {
     queueLengthEl.textContent = length ?? queue.length;
+    if (heroQueueCount) heroQueueCount.textContent = length ?? queue.length;
     if (!queue || queue.length === 0) {
       queueListEl.classList.add('empty');
-      queueListEl.innerHTML = '<p>Keine Songs in der Queue.</p>';
+      queueListEl.innerHTML = `
+        <div class="queue-empty-state">
+          <img src="/plugins/music-bot/assets/soundbot.png" alt="" aria-hidden="true">
+          <strong>Die Warteschlange ist leer</strong>
+          <p>Sei der/die Erste und fordere einen Song an.</p>
+        </div>
+      `;
       return;
     }
     queueListEl.classList.remove('empty');
@@ -1202,6 +1327,7 @@
     autoDjMaxConsecutive.value = status.maxConsecutiveAutoDJ || 1;
     autoDjAnnounce.checked = Boolean(status.announceAutoDJ);
     autoDjStatus.textContent = status.enabled ? 'Aktiv' : 'Deaktiviert';
+    if (heroAutodjStatus) heroAutodjStatus.textContent = status.enabled ? 'Ein' : 'Aus';
   }
 
   function parseList(value = '', keepNewLinesOnly = false) {
@@ -1359,7 +1485,7 @@
         giftCatalogStatus.textContent = 'Geschenkekatalog wird geladen...';
       }
 
-      const res = await fetch('/api/gift-catalog-manager/catalog?all=1');
+      const res = await fetch('/api/gift-catalog');
       const data = await res.json();
       const previousSelection = new Set(giftCatalogSelectedValues);
 
@@ -1409,7 +1535,7 @@
     }
   }
 
-  async function refreshGiftCatalog() {
+  async function refreshGiftCatalogLegacyUnused() {
     if (!giftCatalogList) return;
     try {
       const res = await fetch('/api/gift-catalog-manager/catalog');
