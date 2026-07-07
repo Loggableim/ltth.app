@@ -6,7 +6,7 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 
 | Betriebssystem | Befehl |
 |---|---|
-| 🪟 Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 \| iex` |
+| 🪟 Windows (PowerShell) | `iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))` |
 | 🍎 macOS (Terminal)     | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
 | 🐧 Linux (Bash)         | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh \| bash` |
 | 🌐 Beliebiges OS (Node) | `curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js \| node` |
@@ -21,6 +21,8 @@ PupCid's Little TikTool Helper (LTTH) installieren mit einem einzigen Befehl —
 Auf Windows legt der Installer zusaetzlich Desktop- und Startmenue-Verknuepfungen an.
 
 Der Windows-One-Liner fordert bei der ersten Ausfuehrung Admin-Freigabe an und installiert fehlende Abhaengigkeiten automatisch nach. Wenn `winget` fehlt, nutzt er die offiziellen Installer von Git for Windows und Node.js als Fallback. Waehren langer Schritte zeigt der Windows-Installer einen rotierenden Status-Indikator und Download-Fortschritt an, damit er nicht wie eingefroren wirkt.
+
+Der Windows-Befehl trimmt eine moegliche UTF-8-BOM aus dem Raw-Download, damit PowerShell den ersten Token sauber auswertet.
 
 Der Bash-One-Liner installiert fehlendes Git automatisch nach und zieht Node.js auf eine aktuelle LTS-Version nach; auf macOS wird Homebrew bei Bedarf automatisch eingerichtet.
 
@@ -56,7 +58,7 @@ LTTH_DIR=/opt/ltth curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.
 LTTH_PORT=8080 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash
 
 # PowerShell (Windows)
-$env:LTTH_PORT=8080; iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
+$env:LTTH_PORT=8080; iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))
 ```
 
 ## Updates
@@ -77,7 +79,7 @@ npm install
 
 ```bash
 # Windows (PowerShell)
-iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1 | iex
+iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.ps1).Content.TrimStart([char]0xFEFF))
 
 # Linux/macOS
 curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/uninstall.sh | bash

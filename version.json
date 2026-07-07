@@ -6,7 +6,7 @@
   "downloadNote": "Version 1.3.21 synchronizes the app, website, and launcher release metadata.",
   "downloadUrl": "https://github.com/Loggableim/ltth.app/releases/tag/v1.3.21",
   "oneLineInstaller": {
-    "windows": "iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex",
+    "windows": "iex ((iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1).Content.TrimStart([char]0xFEFF))",
     "macos": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
     "linux": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.sh | bash",
     "universal": "curl -fsSL https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.js | node"
@@ -24,7 +24,8 @@
       "changes": [
         "IMPROVED: App, website, and launcher version metadata synchronized to 1.3.21",
         "IMPROVED: Public release labels and installer references updated to the new release",
-        "IMPROVED: Launcher Windows resource metadata refreshed for the 1.3.21 release"
+        "IMPROVED: Launcher Windows resource metadata refreshed for the 1.3.21 release",
+        "FIXED: Windows one-line installer trims a leading UTF-8 BOM from raw GitHub responses before executing PowerShell"
       ]
     },
     "1.3.16": {
