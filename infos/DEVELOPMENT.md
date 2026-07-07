@@ -4,7 +4,7 @@ This guide is for the current local snapshot.
 
 ## Prerequisites
 
-- Node.js `>=18.0.0 <25.0.0`
+- Node.js `18.x`, `20.x`, `22.x` oder `24.x` LTS
 - npm
 - Go, only for launcher work
 - OBS Studio, optional for overlay testing

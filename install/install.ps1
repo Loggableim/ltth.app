@@ -28,6 +28,7 @@ $LTTHNoBrowser = if ($env:LTTH_NO_BROWSER)  { $env:LTTH_NO_BROWSER  } else { '0'
 $LTTHNoLauncher = if ($env:LTTH_NO_LAUNCHER) { $env:LTTH_NO_LAUNCHER } else { '0' }
 $LTTHQuiet     = if ($env:LTTH_QUIET)       { $env:LTTH_QUIET       } else { '0' }
 $LTTHNoPause   = if ($env:LTTH_NO_PAUSE)    { $env:LTTH_NO_PAUSE    } else { '0' }
+$script:LTTHNodePath = $null
 $script:LTTHInstallerLog = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-installer-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
 
 # ---------- Hilfsfunktionen ----------
@@ -53,6 +54,128 @@ function Ok($msg)   { Write-InstallerLine -Line "[OK] $msg" -Color Green }
 function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always $true }
 function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
 function Fail($msg) { throw $msg }
+
+function Test-SupportedNodeMajor {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$Major
+    )
+
+    return ($Major -ge 18 -and $Major -lt 25 -and ($Major % 2 -eq 0))
+}
+
+function Get-NodeVersionInfo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$NodePath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($NodePath) -or -not (Test-Path -LiteralPath $NodePath)) {
+        return $null
+    }
+
+    try {
+        $versionText = & $NodePath --version
+        if ([string]::IsNullOrWhiteSpace($versionText)) {
+            return $null
+        }
+
+        $major = [int]($versionText -replace '^v(\d+)\..*', '$1')
+        if (-not (Test-SupportedNodeMajor -Major $major)) {
+            return $null
+        }
+
+        return [pscustomobject]@{
+            Path = $NodePath
+            Version = $versionText
+            Major = $major
+        }
+    } catch {
+        return $null
+    }
+}
+
+function Get-PreferredNodeInfo {
+    $candidates = New-Object System.Collections.Generic.List[string]
+
+    $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+    if ($nodeCommand) {
+        foreach ($candidate in @($nodeCommand.Source, $nodeCommand.Path, $nodeCommand.Definition)) {
+            if (-not [string]::IsNullOrWhiteSpace($candidate) -and $candidate -match 'node(\.exe)?$') {
+                $candidates.Add($candidate)
+            }
+        }
+    }
+
+    foreach ($basePath in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+        if (-not [string]::IsNullOrWhiteSpace($basePath)) {
+            $candidates.Add((Join-Path $basePath 'nodejs\node.exe'))
+        }
+    }
+
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        try {
+            $normalized = [System.IO.Path]::GetFullPath($candidate)
+        } catch {
+            $normalized = $candidate
+        }
+
+        if ($seen.ContainsKey($normalized)) {
+            continue
+        }
+        $seen[$normalized] = $true
+
+        $info = Get-NodeVersionInfo -NodePath $normalized
+        if ($info) {
+            return $info
+        }
+    }
+
+    return $null
+}
+
+function Set-PreferredNodeEnvironment {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$NodeInfo
+    )
+
+    $script:LTTHNodePath = $NodeInfo.Path
+    $nodeDir = Split-Path -Parent $NodeInfo.Path
+    if (-not [string]::IsNullOrWhiteSpace($nodeDir)) {
+        $env:Path = "$nodeDir;$env:Path"
+    }
+}
+
+function Get-NpmExecutable {
+    param(
+        [string]$NodePath
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($NodePath)) {
+        $nodeDir = Split-Path -Parent $NodePath
+        foreach ($candidate in @(
+            (Join-Path $nodeDir 'npm.cmd')
+        )) {
+            if (Test-Path -LiteralPath $candidate) {
+                return $candidate
+            }
+        }
+    }
+
+    $npmCommand = Get-Command npm -ErrorAction SilentlyContinue
+    if ($npmCommand -and $npmCommand.Source -like '*.ps1') {
+        $npmCmdPath = Join-Path (Split-Path $npmCommand.Source) 'npm.cmd'
+        if (Test-Path $npmCmdPath) {
+            return $npmCmdPath
+        }
+    }
+    if ($npmCommand -and $npmCommand.Source -and $npmCommand.Source -notlike '*.ps1') {
+        return $npmCommand.Source
+    }
+    return 'npm.cmd'
+}
 
 function Pause-On-Error {
     if ($LTTHNoPause -eq '1') { return }
@@ -156,30 +279,46 @@ function Ensure-Git {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Err "Git ist nicht installiert."
         Err "Bitte installiere Git: https://git-scm.com/download/win"
-        Err "Oder verwende den LTTH Cloud Launcher: https://ltth.app/downloads/launcher.exe"
+        Err "Oder verwende den LTTH Windows Launcher: https://ltth.app/downloads/launcher.exe"
         Fail "Git ist nicht installiert."
     }
 }
 
 # ---------- Node.js pruefen / installieren ----------
 function Ensure-Node {
-    if (Get-Command node -ErrorAction SilentlyContinue) {
-        $v = node --version
-        $major = [int]($v -replace '^v(\d+)\..*', '$1')
-        if ($major -ge 18 -and $major -lt 25) {
-            Ok "Node.js $v gefunden"
-            return
-        }
-        Warn "Node.js $v ausserhalb des unterstuetzten Bereichs (>=18 <25)"
+    $nodeInfo = Get-PreferredNodeInfo
+    if ($nodeInfo) {
+        Set-PreferredNodeEnvironment -NodeInfo $nodeInfo
+        Ok "Node.js $($nodeInfo.Version) gefunden"
+        return
     }
 
-    Log "Installiere Node.js LTS 22 via winget..."
+    $installedNode = Get-Command node -ErrorAction SilentlyContinue
+    if ($installedNode) {
+        $installedVersion = & $installedNode.Source --version
+        Warn "Node.js $installedVersion ist zwar installiert, aber LTTH braucht ein LTS-Build (18/20/22/24)."
+    }
+
+    Log "Installiere Node.js LTS via winget..."
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-        $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
-        if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-            Fail "Node.js konnte nicht automatisch installiert werden. Bitte manuell installieren: https://nodejs.org/"
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+        $pathParts = @()
+        if (-not [string]::IsNullOrWhiteSpace($machinePath)) {
+            $pathParts += $machinePath
         }
+        if (-not [string]::IsNullOrWhiteSpace($userPath)) {
+            $pathParts += $userPath
+        }
+        $env:Path = ($pathParts -join ';')
+
+        $nodeInfo = Get-PreferredNodeInfo
+        if (-not $nodeInfo) {
+            Fail "Node.js konnte nicht automatisch auf ein LTS-Build aktualisiert werden. Bitte Node.js 18/20/22/24 LTS manuell installieren: https://nodejs.org/"
+        }
+        Set-PreferredNodeEnvironment -NodeInfo $nodeInfo
+        Ok "Node.js $($nodeInfo.Version) gefunden"
     } else {
         Fail "winget fehlt. Bitte installiere Node.js manuell: https://nodejs.org/"
     }
@@ -295,21 +434,7 @@ function Install-Deps {
     Push-Location $appDir
     try {
         $npmArgs = @('install', '--no-audit', '--no-fund', '--loglevel=error')
-        $npmCommand = Get-Command npm -ErrorAction SilentlyContinue
-        $npmExecutable = $null
-
-        if ($npmCommand -and $npmCommand.Source -like '*.ps1') {
-            $npmCmdPath = Join-Path (Split-Path $npmCommand.Source) 'npm.cmd'
-            if (Test-Path $npmCmdPath) {
-                $npmExecutable = $npmCmdPath
-            }
-        }
-        if ($npmCommand -and $npmCommand.Source -and $npmCommand.Source -notlike '*.ps1') {
-            $npmExecutable = $npmCommand.Source
-        }
-        if (-not $npmExecutable) {
-            $npmExecutable = 'npm.cmd'
-        }
+        $npmExecutable = Get-NpmExecutable -NodePath $script:LTTHNodePath
 
         $npmLogBase = Join-Path $LTTHDir ("ltth-npm-" + [guid]::NewGuid().ToString('N'))
         $stdoutLog = "$npmLogBase.out.log"
@@ -357,7 +482,7 @@ function Install-Launcher {
         }
 
         if ((-not (Test-Path $launcherPath)) -or $launcherMatchesDownloads) {
-            Log "Lade LTTH Cloud Launcher herunter..."
+            Log "Lade LTTH Windows Launcher herunter..."
             Invoke-WebRequest -UseBasicParsing -Uri $launcherUrl -OutFile $launcherPath -TimeoutSec 60
         }
 
@@ -379,10 +504,89 @@ function Install-Launcher {
     }
 }
 
+function Get-ShortcutIconPath {
+    foreach ($candidate in @(
+        (Join-Path $LTTHDir 'build-src\icon.ico'),
+        (Join-Path $LTTHDir 'icon.ico'),
+        (Join-Path $LTTHDir 'app\public\favicon.ico')
+    )) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Get-ShortcutConfig {
+    param(
+        [string]$LauncherPath
+    )
+
+    $description = "PupCid's Little TikTool Helper"
+    $iconPath = Get-ShortcutIconPath
+
+    if (-not [string]::IsNullOrWhiteSpace($LauncherPath) -and (Test-Path -LiteralPath $LauncherPath)) {
+        return [pscustomobject]@{
+            TargetPath = $LauncherPath
+            Arguments = ''
+            WorkingDirectory = $LTTHDir
+            IconLocation = if ($iconPath) { $iconPath } else { $LauncherPath }
+            Description = $description
+        }
+    }
+
+    $nodePath = $script:LTTHNodePath
+    if ([string]::IsNullOrWhiteSpace($nodePath)) {
+        $nodeInfo = Get-PreferredNodeInfo
+        if ($nodeInfo) {
+            $nodePath = $nodeInfo.Path
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($nodePath)) {
+        return $null
+    }
+
+    return [pscustomobject]@{
+        TargetPath = $nodePath
+        Arguments = 'launch.js'
+        WorkingDirectory = (Join-Path $LTTHDir 'app')
+        IconLocation = if ($iconPath) { $iconPath } else { $nodePath }
+        Description = $description
+    }
+}
+
+function Create-WindowsShortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ShortcutPath,
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$ShortcutConfig
+    )
+
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ShortcutPath) | Out-Null
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($ShortcutPath)
+    $shortcut.TargetPath = $ShortcutConfig.TargetPath
+    $shortcut.WorkingDirectory = $ShortcutConfig.WorkingDirectory
+    if (-not [string]::IsNullOrWhiteSpace($ShortcutConfig.Arguments)) {
+        $shortcut.Arguments = $ShortcutConfig.Arguments
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ShortcutConfig.IconLocation)) {
+        $shortcut.IconLocation = $ShortcutConfig.IconLocation
+    }
+    $shortcut.Description = $ShortcutConfig.Description
+    $shortcut.Save()
+
+    return $ShortcutPath
+}
+
 function Create-DesktopShortcut {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$LauncherPath
+        [pscustomobject]$ShortcutConfig
     )
 
     try {
@@ -390,21 +594,43 @@ function Create-DesktopShortcut {
         if ([string]::IsNullOrWhiteSpace($desktopPath)) {
             $desktopPath = Join-Path $env:USERPROFILE 'Desktop'
         }
-        New-Item -ItemType Directory -Force -Path $desktopPath | Out-Null
+        if ([string]::IsNullOrWhiteSpace($desktopPath)) {
+            throw "Desktop path could not be resolved."
+        }
 
         $shortcutPath = Join-Path $desktopPath 'LTTH.lnk'
-        $shell = New-Object -ComObject WScript.Shell
-        $shortcut = $shell.CreateShortcut($shortcutPath)
-        $shortcut.TargetPath = $LauncherPath
-        $shortcut.WorkingDirectory = $LTTHDir
-        $shortcut.IconLocation = $LauncherPath
-        $shortcut.Description = "PupCid's Little TikTool Helper"
-        $shortcut.Save()
+        $createdPath = Create-WindowsShortcut -ShortcutPath $shortcutPath -ShortcutConfig $ShortcutConfig
 
-        Ok "Desktop-Verknuepfung erstellt: $shortcutPath"
-        return $shortcutPath
+        Ok "Desktop-Verknuepfung erstellt: $createdPath"
+        return $createdPath
     } catch {
         Warn "Desktop-Verknuepfung konnte nicht erstellt werden: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Create-StartMenuShortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$ShortcutConfig
+    )
+
+    try {
+        $startMenuPath = [Environment]::GetFolderPath('Programs')
+        if ([string]::IsNullOrWhiteSpace($startMenuPath)) {
+            $startMenuPath = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
+        }
+        if ([string]::IsNullOrWhiteSpace($startMenuPath)) {
+            throw "Start menu path could not be resolved."
+        }
+
+        $shortcutPath = Join-Path $startMenuPath 'LTTH.lnk'
+        $createdPath = Create-WindowsShortcut -ShortcutPath $shortcutPath -ShortcutConfig $ShortcutConfig
+
+        Ok "Startmenueeintrag erstellt: $createdPath"
+        return $createdPath
+    } catch {
+        Warn "Startmenueeintrag konnte nicht erstellt werden: $($_.Exception.Message)"
         return $null
     }
 }
@@ -421,7 +647,7 @@ function Start-Launcher {
     }
 
     try {
-        Log "Starte LTTH Cloud Launcher..."
+        Log "Starte LTTH Windows Launcher..."
         $p = Start-Process -FilePath $LauncherPath `
                            -WorkingDirectory $LTTHDir `
                            -WindowStyle Normal `
@@ -443,7 +669,8 @@ function Start-App {
 
     Push-Location $appDir
     try {
-        $p = Start-Process -FilePath 'node' `
+        $nodeExecutable = if (-not [string]::IsNullOrWhiteSpace($script:LTTHNodePath)) { $script:LTTHNodePath } else { 'node' }
+        $p = Start-Process -FilePath $nodeExecutable `
                            -ArgumentList 'launch.js' `
                            -WorkingDirectory $appDir `
                            -RedirectStandardOutput $logFile `
@@ -489,11 +716,17 @@ function Main {
     Download-Source
     Install-Deps
     $launcherPath = Install-Launcher
-    $shortcutPath = $null
+    $shortcutConfig = Get-ShortcutConfig -LauncherPath $launcherPath
+    $desktopShortcutPath = $null
+    $startMenuShortcutPath = $null
     $launcherStarted = $false
 
+    if ($shortcutConfig) {
+        $desktopShortcutPath = Create-DesktopShortcut -ShortcutConfig $shortcutConfig
+        $startMenuShortcutPath = Create-StartMenuShortcut -ShortcutConfig $shortcutConfig
+    }
+
     if ($launcherPath) {
-        $shortcutPath = Create-DesktopShortcut -LauncherPath $launcherPath
         $launcherStarted = Start-Launcher -LauncherPath $launcherPath
     }
 
@@ -508,9 +741,14 @@ function Main {
     if ($launcherPath) {
         Write-Host "  Launcher:   $launcherPath"
     }
-    if ($shortcutPath) {
-        Write-Host "  Desktop:    $shortcutPath"
-        Write-Host "  Starten:    Doppelklick auf die Desktop-Verknuepfung 'LTTH'"
+    if ($desktopShortcutPath) {
+        Write-Host "  Desktop:    $desktopShortcutPath"
+    }
+    if ($startMenuShortcutPath) {
+        Write-Host "  Startmenue: $startMenuShortcutPath"
+    }
+    if ($desktopShortcutPath -or $startMenuShortcutPath) {
+        Write-Host "  Starten:    Doppelklick auf die Desktop-Verknuepfung 'LTTH' oder den Startmenueeintrag"
     }
     Write-Host "  App-Ordner: $LTTHDir"
     Write-Host "  Dashboard:  http://localhost:$LTTHPort/dashboard.html"
