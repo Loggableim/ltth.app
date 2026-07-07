@@ -59,6 +59,53 @@ function Warn($msg) { Write-InstallerLine -Line "[!] $msg" -Color Yellow -Always
 function Err($msg)  { Write-InstallerLine -Line "[X] $msg" -Color Red -Always $true }
 function Fail($msg) { throw $msg }
 
+function Get-InstallerBannerText {
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $localBanner = Join-Path $PSScriptRoot 'banner.txt'
+        if (Test-Path -LiteralPath $localBanner) {
+            try {
+                return Get-Content -Raw -Encoding UTF8 -LiteralPath $localBanner
+            } catch {
+                # Fall back to the remote raw asset below.
+            }
+        }
+    }
+
+    $bannerUri = "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/install/banner.txt"
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    $handler.AllowAutoRedirect = $true
+    $client = New-Object System.Net.Http.HttpClient($handler)
+    $client.Timeout = [TimeSpan]::FromSeconds(10)
+    $client.DefaultRequestHeaders.UserAgent.ParseAdd('ltth-installer')
+
+    try {
+        return $client.GetStringAsync($bannerUri).GetAwaiter().GetResult()
+    } catch {
+        return $null
+    } finally {
+        if ($null -ne $client) {
+            $client.Dispose()
+        }
+        if ($null -ne $handler) {
+            $handler.Dispose()
+        }
+    }
+}
+
+function Write-InstallerBanner {
+    if ($LTTHQuiet -eq '1' -or -not [Environment]::UserInteractive) {
+        return
+    }
+
+    $banner = Get-InstallerBannerText
+    if ([string]::IsNullOrWhiteSpace($banner)) {
+        return
+    }
+
+    Write-Host $banner -ForegroundColor Cyan
+    Write-Host ""
+}
+
 function Wait-ProcessWithSpinner {
     param(
         [Parameter(Mandatory = $true)]
@@ -1203,6 +1250,7 @@ function Open-Browser {
 # ---------- Hauptprogramm ----------
 function Main {
     Write-Host ""
+    Write-InstallerBanner
     Write-Host "  ============================================================" -ForegroundColor Magenta
     Write-Host "   PupCid's Little TikTool Helper -- One-Line Installer (Win)" -ForegroundColor Magenta
     Write-Host "  ============================================================" -ForegroundColor Magenta
