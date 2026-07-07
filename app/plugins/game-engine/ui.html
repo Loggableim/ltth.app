@@ -617,7 +617,6 @@
       margin-bottom: 15px;
     }
 
-    /* Theme Toggle Styles (Feature #1) */
     .header-container {
       display: flex;
       justify-content: space-between;
@@ -639,53 +638,6 @@
     .header-left p {
       color: var(--color-text-secondary);
       font-size: 14px;
-    }
-
-    .theme-toggle-container {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--color-bg-card);
-      padding: 8px 15px;
-      border-radius: 20px;
-      border: 1px solid var(--color-border);
-    }
-
-    .theme-toggle-label {
-      font-size: 13px;
-      color: var(--color-text-secondary);
-      white-space: nowrap;
-    }
-
-    .theme-toggle-btn {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      color: var(--color-text-primary);
-      padding: 6px 12px;
-      border-radius: 15px;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      white-space: nowrap;
-    }
-
-    .theme-toggle-btn:hover {
-      background: var(--color-bg-hover);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .theme-toggle-btn.active {
-      background: var(--brand-primary);
-      border-color: var(--brand-primary);
-      color: white;
-    }
-
-    .theme-icon {
-      font-size: 16px;
     }
 
     /* Toggle Switch Styles */
@@ -837,9 +789,11 @@
       position: sticky;
       top: 20px;
       max-height: calc(100vh - 40px);
-      overflow: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
+      flex-wrap: nowrap;
       gap: 14px;
       padding: 18px;
       border-radius: 28px;
@@ -1050,7 +1004,7 @@
       box-shadow: 0 0 0 4px rgba(18, 161, 22, 0.12);
     }
 
-    button:not(.tab):not(.theme-toggle-btn) {
+    button:not(.tab) {
       min-height: 44px;
       padding: 0.82rem 1.05rem;
       border-radius: 14px;
@@ -1063,7 +1017,7 @@
       box-shadow: var(--shadow-sm);
     }
 
-    button:not(.tab):not(.theme-toggle-btn):hover {
+    button:not(.tab):hover {
       transform: translateY(-1px);
       box-shadow: var(--shadow-lg);
     }
@@ -1083,41 +1037,6 @@
       background: linear-gradient(135deg, var(--color-accent-danger) 0%, #b91c1c 100%) !important;
       color: #ffffff !important;
       border-color: rgba(239, 68, 68, 0.45) !important;
-    }
-
-    .theme-toggle-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding: 10px;
-      border-radius: 999px;
-      border: 1px solid var(--color-border);
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .theme-toggle-label {
-      padding: 0 0.25rem 0 0.15rem;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--color-text-muted);
-    }
-
-    .theme-toggle-btn {
-      min-height: 40px;
-      padding: 0.65rem 0.95rem;
-      border-radius: 999px;
-      border: 1px solid var(--color-border);
-      background: var(--color-bg-secondary);
-      color: var(--color-text-primary);
-    }
-
-    .theme-toggle-btn.active {
-      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
-      border-color: var(--brand-primary);
-      color: #ffffff;
     }
 
     .status-bar {
@@ -1141,8 +1060,12 @@
     }
 
     #tab-active-game {
-      display: grid;
+      display: none;
       gap: 18px;
+    }
+
+    #tab-active-game.active {
+      display: grid;
     }
 
     #tab-active-game #no-game,
@@ -1258,12 +1181,6 @@
           <h1>Admin Panel</h1>
           <p>Interaktive Spiele für TikTok LIVE Streams</p>
         </div>
-      </div>
-      <div class="theme-toggle-container">
-        <span class="theme-toggle-label">Theme:</span>
-        <button class="theme-toggle-btn" id="theme-night" data-theme="night"><span>Night</span></button>
-        <button class="theme-toggle-btn" id="theme-day" data-theme="day"><span>Day</span></button>
-        <button class="theme-toggle-btn" id="theme-contrast" data-theme="contrast"><span>Contrast</span></button><button class="theme-toggle-btn" id="theme-vision" data-theme="vision-impaired"><span>Vision Impaired</span></button><button class="theme-toggle-btn" id="theme-cid" data-theme="cid"><span>Cid</span></button>
       </div>
     </div>
 
@@ -4211,29 +4128,14 @@
   <script>
     const socket = io();
     let currentSessionId = null;
-    let gameEngineThemeManager = null; // Local theme manager for game engine
 
-    // Initialize theme and language switcher
+    // Initialize language switcher
     // Note: i18n is auto-initialized by i18n-client.js
     (async function initApp() {
       try {
         // Wait for i18n to be ready (it auto-initializes via i18n-client.js)
         if (window.i18n && !window.i18n.initialized) {
           await window.i18n.init();
-        }
-        
-        // Initialize theme manager (automatically applies saved theme)
-        if (typeof ThemeManager !== 'undefined') {
-          window.themeManager = new ThemeManager();
-        }
-        
-        // Initialize game engine specific theme manager (Feature #1)
-        if (typeof ThemeManager !== 'undefined') {
-          gameEngineThemeManager = new ThemeManager();
-          gameEngineThemeManager.init();
-          
-          // Set up theme toggle buttons
-          setupThemeToggle();
         }
         
         // Initialize language switcher (automatically sets up UI)
@@ -4247,39 +4149,6 @@
       }
     })();
 
-    // Setup theme toggle buttons (Feature #1)
-    function setupThemeToggle() {
-      const themeButtons = document.querySelectorAll('.theme-toggle-btn');
-      
-      // Update button states based on current theme
-      function updateThemeButtons(theme) {
-        themeButtons.forEach(btn => {
-          if (btn.dataset.theme === theme) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        });
-      }
-      
-      // Set initial state
-      updateThemeButtons(gameEngineThemeManager.getCurrentTheme());
-      
-      // Add click handlers
-      themeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const theme = btn.dataset.theme;
-          gameEngineThemeManager.setTheme(theme);
-          updateThemeButtons(theme);
-        });
-      });
-      
-      // Listen for theme changes from other sources
-      window.addEventListener('theme-changed', (e) => {
-        updateThemeButtons(e.detail.theme);
-      });
-    }
-
     // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -4289,7 +4158,8 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
         tab.classList.add('active');
-        document.getElementById(`tab-${tabName}`).classList.add('active');
+        const targetTab = document.getElementById(`tab-${tabName}`);
+        if (targetTab) targetTab.classList.add('active');
       });
     });
 
