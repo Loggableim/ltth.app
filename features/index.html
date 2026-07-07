@@ -1,618 +1,2153 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta content="Alle Features von PupCid's Little TikTool Helper im Überblick: Brain Engine, TTS, Overlays, OSC/VRChat, Flow Engine, Soundboard, Multi-Cam, Security, Game Engine und Plugin System." name="description"/>
-<title>Features Übersicht – PupCid's Little TikTool Helper</title>
-<link href="/assets/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
-<link href="/assets/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
-<link href="/assets/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
-<link href="/manifest.json" rel="manifest"/>
-<meta content="#12a116" name="theme-color"/>
-<meta content="website" property="og:type"/>
-<meta content="Features Übersicht – PupCid's Little TikTool Helper" property="og:title"/>
-<meta content="Alle Features von PupCid's Little TikTool Helper im Überblick: Brain Engine, TTS, Overlays, OSC/VRChat, Flow Engine, Soundboard, Multi-Cam, Security, Game Engine und Plugin System." property="og:description"/>
-<meta content="https://ltth.app/features/" property="og:url"/>
-<meta content="https://ltth.app/assets/og-image.png" property="og:image"/>
-<link href="https://ltth.app/features/" rel="canonical"/>
-<link href="/css/main.css" rel="stylesheet"/>
-<link href="/css/layout.css" rel="stylesheet"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alle Apps ansehen - ltth.app</title>
+  <meta name="description" content="Alle Apps und Features mit Screenshots, Nutzen und Deep-Dive-Links.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#12a116">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Alle Apps ansehen - ltth.app">
+  <meta property="og:description" content="Alle Apps und Features mit Screenshots, Nutzen und Deep-Dive-Links.">
+  <meta property="og:url" content="https://ltth.app/features/">
+  <meta property="og:image" content="https://ltth.app/screenshots/features/dashboard-main.png">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="es_ES">
+  <meta property="og:locale:alternate" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Alle Apps ansehen - ltth.app">
+  <meta name="twitter:description" content="Alle Apps und Features mit Screenshots, Nutzen und Deep-Dive-Links.">
+  <meta name="twitter:image" content="https://ltth.app/screenshots/features/dashboard-main.png">
+  <link rel="canonical" href="https://ltth.app/features/">
+  <link rel="alternate" hreflang="de" href="https://ltth.app/features/">
+  <link rel="alternate" hreflang="en" href="https://ltth.app/features-en.html">
+  <link rel="alternate" hreflang="es" href="https://ltth.app/features-es.html">
+  <link rel="alternate" hreflang="fr" href="https://ltth.app/features-fr.html">
+  <link rel="alternate" hreflang="x-default" href="https://ltth.app/features/">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/features-hub.css">
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var lang = params.get('lang');
+      var targets = { en: '/features-en.html', es: '/features-es.html', fr: '/features-fr.html' };
+      if ((window.location.pathname === '/features/' || window.location.pathname === '/features' || window.location.pathname === '/features/index.html') && lang && targets[lang]) {
+        window.location.replace(targets[lang]);
+      }
+    })();
+  </script>
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "name": "Alle Apps ansehen - ltth.app",
+      "description": "Alle Apps und Features mit Screenshots, Nutzen und Deep-Dive-Links.",
+      "url": "https://ltth.app/features/",
+      "inLanguage": "de",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "ltth.app",
+        "url": "https://ltth.app"
+      }
+    },
+    {
+      "@type": "ItemList",
+      "name": "App-Katalog von ltth.app",
+      "description": "Alle Apps und Features von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links.",
+      "inLanguage": "de",
+      "itemListOrder": "https://schema.org/ItemListOrderAscending",
+      "numberOfItems": 45,
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "url": "https://ltth.app/features/plugin-advanced-timer.html",
+          "name": "Advanced Timer",
+          "description": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt für Subathons, Challenges, Stream-Zeitpläne und Ziele."
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "url": "https://ltth.app/features/alerts.html",
+          "name": "Alert System",
+          "description": "Alert System – Vollständig anpassbare Alerts für Gifts, Follows, Shares, Likes und Subscriptions mit Sound, Text und Bild/GIF-Kombinationen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "url": "https://ltth.app/features/animazingpal.html",
+          "name": "AnimazingPal Brain Engine",
+          "description": "Mehrplattform-Integration für VTuber-Avatar-Steuerung über TikTok LIVE Events. Unterstützt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerten Antworten."
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "url": "https://ltth.app/features/api-bridge.html",
+          "name": "API Bridge",
+          "description": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming für Drittanbieter-Integrationen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "url": "https://ltth.app/features/auto-updater.html",
+          "name": "Auto-Update System",
+          "description": "Auto-Update System – Automatische Update-Prüfung, One-Click Patch-Anwendung, Versions-Management, Rollback-Support und Update-Benachrichtigungen für LTTH."
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "url": "https://ltth.app/features/plugin-chatango.html",
+          "name": "Chatango",
+          "description": "Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "url": "https://ltth.app/features/plugin-clarity-hud.html",
+          "name": "ClarityHUD",
+          "description": "Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 8,
+          "url": "https://ltth.app/features/plugin-config-import.html",
+          "name": "Config Import – Backup & Restore",
+          "description": "Vollständiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von älteren Installationen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 9,
+          "url": "https://ltth.app/features/chat-commands.html",
+          "name": "Custom Chat Commands",
+          "description": "Custom Chat Commands – Eigene !Befehle für TikTok LIVE definieren, Flows auslösen, Cooldowns verwalten, Berechtigungsstufen und Command-Aliasse festlegen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 10,
+          "url": "https://ltth.app/features/plugin-data-source.html",
+          "name": "Data Source Manager",
+          "description": "Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle. Der Data Source Manager ermöglicht die Auswahl und Umschaltung von Datenquellen zur Laufzeit."
+        },
+        {
+          "@type": "ListItem",
+          "position": 11,
+          "url": "https://ltth.app/features/flow-engine.html",
+          "name": "Flow Engine",
+          "description": "Flow Engine – Visueller Flow-Editor mit Event-Triggern, Bedingungen, Schleifen und einer umfangreichen Action-Library für komplexe TikTok LIVE Automatisierungen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 12,
+          "url": "https://ltth.app/features/game-engine.html",
+          "name": "Game Engine",
+          "description": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, Hybridshock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework."
+        },
+        {
+          "@type": "ListItem",
+          "position": 13,
+          "url": "https://ltth.app/features/plugin-gcce.html",
+          "name": "GCCE",
+          "description": "Universeller Chat-Befehls-Interpreter und Framework für alle Plugins. Bietet zentralisierte Befehlsanalyse, Berechtigungsverwaltung und erweiterbares Befehlsregistrierungssystem."
+        },
+        {
+          "@type": "ListItem",
+          "position": 14,
+          "url": "https://ltth.app/features/plugin-gcce-hud.html",
+          "name": "GCCE HUD",
+          "description": "GCCE HUD zeigt Live-Status, Cooldowns und aktive Spielaktionen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 15,
+          "url": "https://ltth.app/features/plugin-gift-milestone.html",
+          "name": "Gift Milestone",
+          "description": "Feiern Sie Münz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. Löst spezielle Feierlichkeiten aus, wenn kumulative Geschenk-Münzen konfigurierte Schwellenwerte mit Overlay-Unterstützung erreichen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 16,
+          "url": "https://ltth.app/features/goals.html",
+          "name": "Goals System",
+          "description": "Komplettes Live-Ziele-System mit Münz-, Likes-, Follower- und benutzerdefinierten Zieltypen. Echtzeit-Tracking mit Event-API und anpassbaren Overlays für Zuschauer-Engagement."
+        },
+        {
+          "@type": "ListItem",
+          "position": 17,
+          "url": "https://ltth.app/features/plugin-openshock.html",
+          "name": "Hybridshock",
+          "description": "Hybridshock für TikTok-Live-Events - unterstützt PiShock und haptische Belohnungs-Workflows. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstützung."
+        },
+        {
+          "@type": "ListItem",
+          "position": 18,
+          "url": "https://ltth.app/features/interactive-story.html",
+          "name": "Interactive Story Generator",
+          "description": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie."
+        },
+        {
+          "@type": "ListItem",
+          "position": 19,
+          "url": "https://ltth.app/features/plugin-lastevent-spotlight.html",
+          "name": "LastEvent Spotlight",
+          "description": "Moderne Live-Overlays für Follower-, Like-, Chat-, Share-, Geschenk-, Abo-, Top-Gift- und Rotations-Spotlight-Ansichten."
+        },
+        {
+          "@type": "ListItem",
+          "position": 20,
+          "url": "https://ltth.app/features/plugin-leaderboard.html",
+          "name": "Leaderboard",
+          "description": "Vereintes Viewer-XP-Bundle, das Gift-Milestone-Feiern, das Echtzeit-Gifter-Leaderboard und Viewer-Profil-Analysen kombiniert."
+        },
+        {
+          "@type": "ListItem",
+          "position": 21,
+          "url": "https://ltth.app/features/stt-ticker.html",
+          "name": "Live-Untertitel-Overlay",
+          "description": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
+        },
+        {
+          "@type": "ListItem",
+          "position": 22,
+          "url": "https://ltth.app/features/plugin-minecraft-connect.html",
+          "name": "Minecraft Connect",
+          "description": "Minecraft Connect verbindet TikTok-Events mit in-game Aktionen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 23,
+          "url": "https://ltth.app/features/multicam.html",
+          "name": "Multi-Cam Switcher",
+          "description": "Wechselt OBS-Szenen über Geschenke oder Chat-Befehle; unterstützt Spout-Feeds, Kameras 1-5. Perfekt für dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel. [Working Beta]"
+        },
+        {
+          "@type": "ListItem",
+          "position": 24,
+          "url": "https://ltth.app/features/dashboard.html",
+          "name": "Multi-Tab Dashboard",
+          "description": "Multi-Tab Dashboard – Zentrales Steuerungszentrum mit Live-Viewer-Stats, Chat-Feed, Event-Log, Quick Actions, OBS-Integration und Plugin-Verwaltung für TikTok LIVE."
+        },
+        {
+          "@type": "ListItem",
+          "position": 25,
+          "url": "https://ltth.app/features/plugin-music-bot.html",
+          "name": "Music Bot",
+          "description": "Music Bot steuert Songanfragen und Queue-Verhalten ueber Chat-Ereignisse."
+        },
+        {
+          "@type": "ListItem",
+          "position": 26,
+          "url": "https://ltth.app/features/osc-bridge.html",
+          "name": "OSC / VRChat Bridge",
+          "description": "Produktionsreife OSC-Bridge fuer VRChat. Verbindet TikTok-Events, IFTTT-Aktionen, GCCE-Befehle und VRChat-Avatar-Parameter ueber validierte OSC-Nachrichten."
+        },
+        {
+          "@type": "ListItem",
+          "position": 27,
+          "url": "https://ltth.app/features/overlays.html",
+          "name": "Overlays & HUD",
+          "description": "Overlays & HUD – OBS Overlays: WebGPU Emoji Rain, Fireworks, Flame Overlay, Weather Engine (13 Effekte), Goals HUD, Talking Heads und Alert System für TikTok LIVE Streamer."
+        },
+        {
+          "@type": "ListItem",
+          "position": 28,
+          "url": "https://ltth.app/features/plugin-system.html",
+          "name": "Plugin System",
+          "description": "Plugin System â€“ 30+ eingebaute Plugins, Hot-Reload, JavaScript API fÃ¼r eigene Plugins und nahtlose Admin-UI Integration fÃ¼r PupCid's Little TikTool Helper."
+        },
+        {
+          "@type": "ListItem",
+          "position": 29,
+          "url": "https://ltth.app/features/plugin-quiz-show.html",
+          "name": "Quiz Show",
+          "description": "Interaktives Quiz-Show-Plugin fuer TikTok-Livestreams mit Kategorie-Voting, Duel-Modus, Achievements, Seasons, Chat-Integration, Jokern und hochwertigen Overlays."
+        },
+        {
+          "@type": "ListItem",
+          "position": 30,
+          "url": "https://ltth.app/features/security.html",
+          "name": "Security & Privacy",
+          "description": "Security & Privacy – CORS-Konfiguration, CSP, Input-Validatoren, Rate Limiting und 100% lokale Verarbeitung ohne Cloud für PupCid's Little TikTool Helper."
+        },
+        {
+          "@type": "ListItem",
+          "position": 31,
+          "url": "https://ltth.app/features/sidekick.html",
+          "name": "Sidekick – Intelligenter Stream-Assistent",
+          "description": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik."
+        },
+        {
+          "@type": "ListItem",
+          "position": 32,
+          "url": "https://ltth.app/features/slot-machine.html",
+          "name": "Slot Machine",
+          "description": "Slot Machine – 3-Reel-Engine mit Multi-Machine-Support, eigenen Sound-Uploads, Superfan-Erkennung und vollständig anpassbarem Design für TikTok LIVE."
+        },
+        {
+          "@type": "ListItem",
+          "position": 33,
+          "url": "https://ltth.app/features/soundboard.html",
+          "name": "Soundboard",
+          "description": "Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration für TikTok-Events. Bietet anpassbare Sound-Mappings, Lautstärkeregelung und Queue-Priorisierung."
+        },
+        {
+          "@type": "ListItem",
+          "position": 34,
+          "url": "https://ltth.app/features/plugin-stream-alchemy.html",
+          "name": "Stream Alchemy",
+          "description": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung."
+        },
+        {
+          "@type": "ListItem",
+          "position": 35,
+          "url": "https://ltth.app/features/talking-heads.html",
+          "name": "Talking Heads",
+          "description": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+        },
+        {
+          "@type": "ListItem",
+          "position": 36,
+          "url": "https://ltth.app/features/tts.html",
+          "name": "Text-to-Speech Engine",
+          "description": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management."
+        },
+        {
+          "@type": "ListItem",
+          "position": 37,
+          "url": "https://ltth.app/features/plugin-thermal-printer.html",
+          "name": "Thermal Printer",
+          "description": "Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). Unterstützt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen."
+        },
+        {
+          "@type": "ListItem",
+          "position": 38,
+          "url": "https://ltth.app/features/tikfinity-api.html",
+          "name": "TikFinity API Integration",
+          "description": "TikFinity API Integration – Erweiterte Event-Behandlung via TikFinity, bidirektionaler Datenfluss, Webhook-Support und Echtzeit-Sync für TikTok LIVE Streams."
+        },
+        {
+          "@type": "ListItem",
+          "position": 39,
+          "url": "https://ltth.app/features/flame-overlay.html",
+          "name": "TikTok Visual Effects Overlay",
+          "description": "Broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. TikTok LIVE Trigger reagieren auf Gifts, Follows, Likes, Shares, Subscribes und Chat-Farbbefehle mit gestuften Base-, Accent- und Impact-Reaktionen. Benanntes Preset-System, Flow-Integration und leistungsstarker Kawase Bloom. Enthält Flames, Partikel-Burst, Energie-Wellen und elektrische Blitze. Unterstützt Auflösungen bis 4K mit vollständig anpassbaren Farben, Intensität, Geschwindigkeit und präziser Rahmenpositionierung. Transparenter Hintergrund für nahtlose OBS-Integration."
+        },
+        {
+          "@type": "ListItem",
+          "position": 40,
+          "url": "https://ltth.app/features/toptier.html",
+          "name": "Top Tier Plugin",
+          "description": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat – Top Tier Plugin. Version 2.0.0, Overlay. Permissions: tiktok-events, database."
+        },
+        {
+          "@type": "ListItem",
+          "position": 41,
+          "url": "https://ltth.app/features/vdoninja.html",
+          "name": "VDO.Ninja Multi-Guest Integration",
+          "description": "VDO.Ninja-Integration für Multi-Guest-Streaming. Verwaltet Räume, Gäste, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups mit nahtloser Gast-Integration."
+        },
+        {
+          "@type": "ListItem",
+          "position": 42,
+          "url": "https://ltth.app/features/viewer-xp.html",
+          "name": "Viewer XP System",
+          "description": "Viewer XP System – XP-Tracking pro Viewer, Level-System mit Overlays, Bestenlisten und OBS Overlay-Integration für TikTok LIVE."
+        },
+        {
+          "@type": "ListItem",
+          "position": 43,
+          "url": "https://ltth.app/features/plugin-vulkan-rockets.html",
+          "name": "Vulkan Rockets",
+          "description": "Vulkan Rockets erzeugt visuelle Effekte bei definierten Ausloesern."
+        },
+        {
+          "@type": "ListItem",
+          "position": 44,
+          "url": "https://ltth.app/features/plugin-weather-overlay.html",
+          "name": "Weather Overlay",
+          "description": "Professionelles Wettereffekt-Plugin mit 13 Stream-Overlay-Effekten, Community-Gamification, Presets, Sequenzen, Audio, Event-Triggern, Qualitaetssteuerung und Layering pro Effekt."
+        },
+        {
+          "@type": "ListItem",
+          "position": 45,
+          "url": "https://ltth.app/features/emoji-rain.html",
+          "name": "WebGPU Emoji Rain",
+          "description": "GPU-beschleunigter Emoji-Regen-Effekt mit WebGPU Instanced Rendering."
+        }
+      ]
+    }
+  ]
+}
+  </script>
 </head>
-<body>
-<a class="skip-to-content" data-i18n="features.a.1" href="#main-content">Skip to main content</a>
-<main id="main-content">
-<!-- breadcrumb -->
-<section style="padding: 2rem 0 0;">
-<div class="container">
-<nav aria-label="Breadcrumb" class="breadcrumb">
-<a data-i18n="features.a.2" href="/">Home</a>
-<span class="breadcrumb-sep" data-i18n="features.span.3">›</span>
-<span class="breadcrumb-current" data-i18n="features.span.4">Features</span>
-</nav>
-</div>
-</section>
-<!-- hero -->
-<section class="feature-hero">
-<div class="container">
-<span class="feature-hero-icon" data-i18n="features.span.5">⚙️</span>
-<h1 class="feature-hero-title" data-i18n="features.feature.hero.title">Features Übersicht</h1>
-<p class="feature-hero-subtitle" data-i18n="features.feature.hero.subtitle">Entdecke alle leistungsstarken Features von PupCid's Little TikTool Helper – von KI-gestütztem Chat-Management bis hin zu professionellen Game-Engines für dein TikTok LIVE.</p>
-<div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-<a class="btn btn-primary btn-large" data-i18n="features.a.8" href="/download.html">Jetzt Herunterladen</a>
-<a class="btn btn-secondary btn-large" data-i18n="features.a.9" href="/docs.html">Dokumentation</a>
-</div>
-</div>
-</section>
-<!-- feature cards grid -->
-<section class="features-preview">
-<div class="container">
-<h2 class="section-title" data-i18n="features.section.title">Alle Features</h2>
-<div class="feature-cards-grid">
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/animazingpal.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.12">🧠</span>
-<div class="feature-card-title">AnimazingPal Brain Engine</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">KI-gestütztes Chat-Management mit Batch Processing, Relevance Detection und automatischen Antworten für lebendige Streams.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">KI</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Chat</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Automation</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/tts.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.15">🎙️</span>
-<div class="feature-card-title">TTS Engine</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">580+ Stimmen über 7 Engines (TikTok, Google, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Queue-Management, Spracherkennung und per-User Voice Settings.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">TTS</span>
-<span class="feature-tag" data-i18n="features.feature.tag">TikTok</span>
-<span class="feature-tag" data-i18n="features.feature.tag">ElevenLabs</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/overlays.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.16">🎨</span>
-<div class="feature-card-title">Overlays &amp; HUD</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">OBS Overlays, animiertes Goals HUD, WebGPU Emoji Rain, Talking Heads, Fireworks und 13 Wettereffekte.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">OBS</span>
-<span class="feature-tag" data-i18n="features.feature.tag">WebGPU</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Alerts</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/osc-bridge.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.17">🥽</span>
-<div class="feature-card-title">OSC / VRChat</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">VRChat Integration, OSC Parameter Control, Avatar-Animationen via Chat und Gifts, Chatbox-Mirroring, Expression Menu und GCCE/Flow-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">VRChat</span>
-<span class="feature-tag" data-i18n="features.feature.tag">OSC</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/flow-engine.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.18">⚡</span>
-<div class="feature-card-title">Flow Engine</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Visueller Flow-Editor mit Event-Triggern, Bedingungen, Schleifen und einer umfangreichen Action-Library für komplexe Automatisierungen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Flows</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Events</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Automation</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/soundboard.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.19">🔊</span>
-<div class="feature-card-title">Soundboard</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">100.000+ MyInstants Sounds, Gift-spezifische Sound-Mappings, Event-Sounds für Follow/Subscribe/Share, Like-Threshold und Queue-Management.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Sounds</span>
-<span class="feature-tag" data-i18n="features.feature.tag">MyInstants</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Gift-Mapping</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/multicam.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.20">📷</span>
-<div class="feature-card-title">Multi-Cam Switcher</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Automatisches Kamera-Switching basierend auf TikTok-Events, OBS Szenen-Wechsel via WebSocket und manuelle Overrides.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Kamera</span>
-<span class="feature-tag" data-i18n="features.feature.tag">OBS</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Switcher</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/security.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.21">🔒</span>
-<div class="feature-card-title">Security &amp; Privacy</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">CORS-Konfiguration, Content Security Policy, Input-Validatoren, Rate Limiting und 100% lokale Verarbeitung ohne Cloud.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">CORS</span>
-<span class="feature-tag" data-i18n="features.feature.tag">CSP</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Lokal</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/game-engine.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.22">🎰</span>
-<div class="feature-card-title">Game Engine</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">6 interaktive Spiele: Slot Machine, Wheel of Fortune, Plinko, Connect 4, Chess und Live Arena – alle mit TikTok Gift-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Games</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Overlays</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Tokens</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/plugin-system.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.23">🔌</span>
-<div class="feature-card-title">Plugin System</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">30+ eingebaute Plugins, Hot-Reload ohne Neustart, JavaScript API für eigene Plugins und nahtlose Admin-UI Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Plugins</span>
-<span class="feature-tag" data-i18n="features.feature.tag">API</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Hot-Reload</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/vdoninja.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.24">📡</span>
-<div class="feature-card-title">VDO.Ninja Multi-Guest</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Professionelle Multi-Gast-Streams mit Raum-Management, 20+ API-Routen, Socket.io-Events und Flow-Automation-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Multi-Guest</span>
-<span class="feature-tag" data-i18n="features.feature.tag">WebRTC</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Flows</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/viewer-xp.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.25">⭐</span>
-<div class="feature-card-title">Viewer XP System</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">XP-Tracking pro Viewer, Level-System mit OBS Overlays, Bestenlisten und Statistiken. Watch-Time XP mit Offline-Schutz.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">XP</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Levels</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Leaderboard</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/emoji-rain.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.26">🌧️</span>
-<div class="feature-card-title">WebGPU Emoji Rain</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Hardwarebeschleunigte Partikeleffekte ausgelöst durch TikTok Gifts, Likes und Follows. Tausende Emojis – reibungslos per WebGPU.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">WebGPU</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Partikel</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/dashboard.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.27">📊</span>
-<div class="feature-card-title">Multi-Tab Dashboard</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Zentrales Steuerungszentrum mit Live-Viewer-Stats, Chat-Feed, Event-Log, Quick Actions und OBS-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Dashboard</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Stats</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/auto-updater.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.28">🔄</span>
-<div class="feature-card-title">Auto-Update System</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Automatische Update-Prüfung, One-Click Patch-Anwendung, Versions-Management und Rollback-Support.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Updates</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Rollback</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/chat-commands.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.29">💬</span>
-<div class="feature-card-title">Custom Chat Commands</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Eigene !Befehle definieren, Flows aus dem Chat auslösen, Cooldowns verwalten und Berechtigungsstufen festlegen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Chat</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Befehle</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/tikfinity-api.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.30">🔗</span>
-<div class="feature-card-title">TikFinity API Integration</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Erweiterte Event-Behandlung via TikFinity, bidirektionaler Datenfluss, Webhook-Support und Echtzeit-Sync.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">TikFinity</span>
-<span class="feature-tag" data-i18n="features.feature.tag">API</span>
-<span class="feature-tag feature-tag-new" data-i18n="features.feature.tag">NEU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/alerts.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.31">🔔</span>
-<div class="feature-card-title">Alert System</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Vollständig anpassbare Alerts für Gifts, Follows, Shares, Likes und Subscriptions mit Sound, Text und Bild/GIF-Kombinationen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Alerts</span>
-<span class="feature-tag" data-i18n="features.feature.tag">OBS</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Events</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/goals.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.32">🎯</span>
-<div class="feature-card-title">Goals System</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">Unbegrenzte Ziel-Tracker für Coins, Likes, Followers und Custom Goals mit 6 OBS Templates, 8 Animationen und Flow-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Goals</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Tracking</span>
-<span class="feature-tag" data-i18n="features.feature.tag">OBS</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" data-i18n="features.feature.card.link" href="/features/slot-machine.html">
-<div class="feature-card-item">
-<span class="feature-card-icon" data-i18n="features.span.33">🎰</span>
-<div class="feature-card-title">Slot Machine</div>
-<p class="feature-card-desc" data-i18n="features.feature.card.desc">3-Reel-Slot-Machine mit Multi-Machine-Support, Custom-Sounds, Superfan-Erkennung und vollständig konfigurierbarem Design.</p>
-<div class="feature-card-tags">
-<span class="feature-tag" data-i18n="features.feature.tag">Spiel</span>
-<span class="feature-tag" data-i18n="features.feature.tag">Interaktiv</span>
-<span class="feature-tag" data-i18n="features.feature.tag">OBS</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/api-bridge.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🔗</span>
-<div class="feature-card-title">API Bridge</div>
-<p class="feature-card-desc">REST API Endpunkte und WebSocket Event-Streaming für Drittanbieter-Integrationen. Externe Anwendungen können das Tool via HTTP steuern.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">API</span>
-<span class="feature-tag">REST</span>
-<span class="feature-tag">WebSocket</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-config-import.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">💾</span>
-<div class="feature-card-title">Config Backup &amp; Restore</div>
-<p class="feature-card-desc">Vollständiges Backup- und Wiederherstellungssystem. Export aller Einstellungen als ZIP, Import mit Konflikt-Vorschau und Migration von älteren Installationen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Backup</span>
-<span class="feature-tag">Restore</span>
-<span class="feature-tag">Migration</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-data-source.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">📊</span>
-<div class="feature-card-title">Data Source Manager</div>
-<p class="feature-card-desc">Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle. Umschaltung zur Laufzeit ohne Neustart.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Eulerstream</span>
-<span class="feature-tag">TikFinity</span>
-<span class="feature-tag">Datenquelle</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/flame-overlay.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🔥</span>
-<div class="feature-card-title">Flame Overlay</div>
-<p class="feature-card-desc">WebGL-Effekt-Overlay mit 4 Modi (Flames, Particle Burst, Energy Waves, Lightning). TikTok LIVE Trigger, Kawase Bloom, 4K Support und Flow-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">WebGL</span>
-<span class="feature-tag">4K</span>
-<span class="feature-tag">Effekte</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/interactive-story.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">📖</span>
-<div class="feature-card-title">Interactive Story Generator</div>
-<p class="feature-card-desc">KI-gestützte Story-Generierung mit LLM, Bildgenerierung, Multi-Voice-TTS, Chat-Voting und adaptiven OBS-Overlays.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">KI</span>
-<span class="feature-tag">Story</span>
-<span class="feature-tag">Voting</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/sidekick.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🤖</span>
-<div class="feature-card-title">Sidekick</div>
-<p class="feature-card-desc">Intelligenter Stream-Assistent mit AnimazingPal/Fish.audio Delegation, Event-Analyse, User-Memory mit Verfall und Relevance-Scoring.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">KI</span>
-<span class="feature-tag">Assistant</span>
-<span class="feature-tag">Fish.audio</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/stt-ticker.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">📝</span>
-<div class="feature-card-title">STT Ticker</div>
-<p class="feature-card-desc">Live-Untertitel-Overlay mit 3 ASR-Providern (Fish.audio, Deepgram Nova-2, ElevenLabs). VAD, Spracherkennung und Halluzinations-Filter.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">STT</span>
-<span class="feature-tag">Untertitel</span>
-<span class="feature-tag">Deepgram</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/talking-heads.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🗣️</span>
-<div class="feature-card-title">Talking Heads</div>
-<p class="feature-card-desc">KI-generierte 2D-Avatare aus TikTok-Profilbildern mit 5-Frame Sprite-Animation, TTS-Synchronisation und OBS-Integration.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Avatare</span>
-<span class="feature-tag">KI</span>
-<span class="feature-tag">OBS</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/toptier.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🏆</span>
-<div class="feature-card-title">Top Tier</div>
-<p class="feature-card-desc">Live Like &amp; Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Leaderboard</span>
-<span class="feature-tag">Likes</span>
-<span class="feature-tag">Gifts</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-advanced-timer.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">⏱️</span>
-<div class="feature-card-title">Advanced Timer</div>
-<p class="feature-card-desc">Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays für Subathons und Challenges.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Timer</span>
-<span class="feature-tag">Subathon</span>
-<span class="feature-tag">Overlay</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-chatango.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">💬</span>
-<div class="feature-card-title">Chatango Integration</div>
-<p class="feature-card-desc">Chatango Chat-Räume in deinen Stream integrieren. Konfigurierbare Chat-Widgets, Appearance-Anpassung und Chat-Events für Flows.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Chatango</span>
-<span class="feature-tag">Chat</span>
-<span class="feature-tag">Widget</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-clarity-hud.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">👁️</span>
-<div class="feature-card-title">ClarityHUD</div>
-<p class="feature-card-desc">Ultra-minimalistische, VR-optimierte HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in VR.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">HUD</span>
-<span class="feature-tag">VR</span>
-<span class="feature-tag">Minimal</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-gcce.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🎛️</span>
-<div class="feature-card-title">GCCE</div>
-<p class="feature-card-desc">Global Chat Command Engine – universeller Chat-Command-Interpreter für alle Plugins. Zentrale Command-Parserung und Permission-Management.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Commands</span>
-<span class="feature-tag">Framework</span>
-<span class="feature-tag">Permissions</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-gcce-hud.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🖥️</span>
-<div class="feature-card-title">GCCE HUD</div>
-<p class="feature-card-desc">HUD-Overlay für den GCCE Command-Engine. Zeigt aktive Commands, Cooldowns und Permission-Status im OBS-Stream an.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">HUD</span>
-<span class="feature-tag">GCCE</span>
-<span class="feature-tag">Overlay</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-gift-milestone.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🎁</span>
-<div class="feature-card-title">Gift Milestone</div>
-<p class="feature-card-desc">Feiere Coin-Meilensteine mit Custom-Animationen (GIF, MP4) und Audio. Trigger bei konfigurierbaren Schwellwerten mit Overlay-Support.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Milestone</span>
-<span class="feature-tag">Animation</span>
-<span class="feature-tag">Coins</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-lastevent-spotlight.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">💡</span>
-<div class="feature-card-title">LastEvent Spotlight</div>
-<p class="feature-card-desc">Live-Overlays zeigen den letzten aktiven User für jeden Event-Typ (Follower, Like, Chatter, Share, Gifter, Subscriber).</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Spotlight</span>
-<span class="feature-tag">Events</span>
-<span class="feature-tag">Overlay</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-leaderboard.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">📊</span>
-<div class="feature-card-title">Leaderboard</div>
-<p class="feature-card-desc">Real-Time Gifter-Leaderboard und Milestone-Celebration in einem Plugin. Merge von Viewer-Leaderboard und Gift-Milestone.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Leaderboard</span>
-<span class="feature-tag">Gifts</span>
-<span class="feature-tag">Real-Time</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-minecraft-connect.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">⛏️</span>
-<div class="feature-card-title">Minecraft Connect</div>
-<p class="feature-card-desc">Bidirektionale Integration zwischen TikTok LIVE und Minecraft (Java Edition). WebSocket-Bridge für Custom-Events und In-Game-Interaktionen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Minecraft</span>
-<span class="feature-tag">WebSocket</span>
-<span class="feature-tag">Bridge</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-music-bot.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🎵</span>
-<div class="feature-card-title">Music Bot</div>
-<p class="feature-card-desc">Viewer-gesteuerter Music Bot für TikTok LIVE. Chat-Commands für Song-Requests via YouTube/SoundCloud, Skip-Votes und Superfan-Only-Requests.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Music</span>
-<span class="feature-tag">YouTube</span>
-<span class="feature-tag">Requests</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-openshock.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">⚡</span>
-<div class="feature-card-title">OpenShock</div>
-<p class="feature-card-desc">Integration mit OpenShock für haptisches Feedback. Gifts und Events lösen Vibrationen oder Impulse aus – für interaktive Streams.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">OpenShock</span>
-<span class="feature-tag">Haptic</span>
-<span class="feature-tag">Gifts</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-quiz-show.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">❓</span>
-<div class="feature-card-title">Quiz Show</div>
-<p class="feature-card-desc">Interaktive Quiz-Show für TikTok LIVE. Zuschauer beantworten Fragen per Chat, Punkte-System, Timer und OBS-Overlay.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Quiz</span>
-<span class="feature-tag">Game</span>
-<span class="feature-tag">Chat</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-stream-alchemy.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">⚗️</span>
-<div class="feature-card-title">Stream Alchemy</div>
-<p class="feature-card-desc">Erweiterte Event-Transformation und Routing-Engine. Konfigurierbare Event-Pipelines mit Filtern, Mappings und Custom-Aktionen.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Events</span>
-<span class="feature-tag">Routing</span>
-<span class="feature-tag">Transform</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-thermal-printer.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🖨️</span>
-<div class="feature-card-title">Thermal Printer</div>
-<p class="feature-card-desc">Integration mit Thermodruckern. Drucke Chat-Nachrichten, Gifts oder Events physisch aus – für IRL-Streams und Special-Effekte.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Printer</span>
-<span class="feature-tag">IRL</span>
-<span class="feature-tag">Physical</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-vulkan-rockets.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🎆</span>
-<div class="feature-card-title">Fireworks (Vulkan Rockets)</div>
-<p class="feature-card-desc">GPU-beschleunigtes Feuerwerk mit Gift-Triggern, Combo-Streaks, Eskalationssystem und WebGL/Canvas Fallback. Audio-Effekte und Goal-Finales.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Fireworks</span>
-<span class="feature-tag">WebGL</span>
-<span class="feature-tag">GPU</span>
-</div>
-</div>
-</a>
-<a class="feature-card-link" href="/features/plugin-weather-overlay.html">
-<div class="feature-card-item">
-<span class="feature-card-icon">🌦️</span>
-<div class="feature-card-title">Weather Control</div>
-<p class="feature-card-desc">13 prozedurale Wettereffekte: Rain, Snow, Storm, Fog, Thunder, Sunbeam, Aurora, Fireflies, Meteors, Sakura und mehr. Community Gamification.</p>
-<div class="feature-card-tags">
-<span class="feature-tag">Weather</span>
-<span class="feature-tag">13 Effekte</span>
-<span class="feature-tag">Procedural</span>
-</div>
-</div>
-</a>
-</div>
-</div>
-</section>
-<!-- CTA -->
-<section class="cta-section" style="padding: 4rem 0;">
-<div class="container" style="text-align:center;">
-<h2 data-i18n="features.h2.34" style="font-size:clamp(1.5rem,3vw,2.5rem); font-weight:800; margin-bottom:1rem;">Bereit loszulegen?</h2>
-<p data-i18n="features.p.35" style="color:var(--color-text-secondary); margin-bottom:2rem; font-size:1.1rem;">Lade PupCid's Little TikTool Helper kostenlos herunter und transformiere dein TikTok LIVE.</p>
-<div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-<a class="btn btn-primary btn-large" data-i18n="features.a.36" href="/download.html">Kostenlos Herunterladen</a>
-<a class="btn btn-secondary btn-large" data-i18n="features.a.37" href="/launcher.html">🚀 Launcher ansehen</a>
-</div>
-</div>
-</section>
-</main>
-<script src="/js/main.js"></script>
-<script src="/js/i18n.js"></script>
-<script src="/js/layout.js"></script>
-<script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (window.LTTHLayout) await LTTHLayout.init();
-            if (window.I18n) I18n.init(window.__ltthLang || 'de');
-        });
-    </script>
+<body class="features-hub">
+  <a href="#main-content" class="skip-to-content">Zum Hauptinhalt springen</a>
+  <main id="main-content" class="catalog-root" data-catalog-root data-catalog-ready-label="Katalog bereit" data-catalog-results-label="Treffer">
+    
+  <section class="catalog-hero">
+    <div class="catalog-hero__inner">
+      <div class="catalog-hero__copy">
+        <p class="catalog-eyebrow">Katalog</p>
+        <h1>Alle Apps auf einen Blick</h1>
+        <p class="catalog-hero__lead">Entdecke die Apps und Features mit echten Screenshots, Nutzen und passenden Deep-Dive-Links.</p>
+        <div class="catalog-stats" aria-label="App-Katalog von ltth.app">
+          <div class="catalog-stat">
+            <strong>Alle Apps</strong>
+            <span>im Katalog</span>
+          </div>
+          <div class="catalog-stat">
+            <strong>1-5</strong>
+            <span>Screenshots pro Eintrag</span>
+          </div>
+          <div class="catalog-stat">
+            <strong>DE/EN/ES/FR</strong>
+            <span>Sprachen</span>
+          </div>
+        </div>
+        <div class="catalog-actions">
+          <a class="btn btn-primary btn-large" href="/download.html">Jetzt herunterladen</a>
+          <a class="btn btn-secondary btn-large" href="/docs.html">Dokumentation</a>
+          <a class="btn btn-secondary btn-large" href="/">Zur Startseite</a>
+        </div>
+      </div>
+      <div class="catalog-hero__panel">
+        <h2>App-Katalog von ltth.app</h2>
+        <p>Alle Apps und Features von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links.</p>
+        <ul class="catalog-hero__notes">
+          <li>Alle Apps im Katalog</li>
+          <li>Screenshots pro Eintrag</li>
+          <li>Sprachen: DE / EN / ES / FR</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+    
+  <section class="catalog-toolbar">
+    <div class="catalog-toolbar__inner">
+      <form class="catalog-search" role="search">
+        <label class="sr-only" for="catalog-search-input">Suche</label>
+        <input id="catalog-search-input" type="search" data-catalog-search-input aria-label="Suche" placeholder="Katalog durchsuchen">
+        <button type="button" class="btn btn-secondary" data-catalog-clear hidden>Suche zurücksetzen</button>
+      </form>
+      <p class="catalog-results" aria-live="polite"><strong data-catalog-results hidden>45</strong> <span data-catalog-results-label>Katalog bereit</span></p>
+      <nav class="catalog-jump" aria-label="Mobil springen zu">
+        <a href="#ai">KI &amp; Intelligenz</a>
+      <a href="#audio">Audio &amp; Stimme</a>
+      <a href="#visual">Visuell &amp; Overlay</a>
+      <a href="#games">Gaming &amp; Interaktion</a>
+      <a href="#system">System &amp; Erweiterung</a>
+      <a href="#connections">Verbindungen &amp; Integrationen</a>
+      </nav>
+    </div>
+  </section>
+    <div class="catalog-layout">
+      
+    <aside class="catalog-toc">
+      <h2>Kategorien</h2>
+      <p>Alle Apps und Features von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links.</p>
+      <ul class="catalog-toc__list">
+        
+        <li>
+          <a href="#ai">
+            <span>KI &amp; Intelligenz</span>
+            <span class="catalog-toc__count">4</span>
+          </a>
+        </li>
+        <li>
+          <a href="#audio">
+            <span>Audio &amp; Stimme</span>
+            <span class="catalog-toc__count">4</span>
+          </a>
+        </li>
+        <li>
+          <a href="#visual">
+            <span>Visuell &amp; Overlay</span>
+            <span class="catalog-toc__count">14</span>
+          </a>
+        </li>
+        <li>
+          <a href="#games">
+            <span>Gaming &amp; Interaktion</span>
+            <span class="catalog-toc__count">3</span>
+          </a>
+        </li>
+        <li>
+          <a href="#system">
+            <span>System &amp; Erweiterung</span>
+            <span class="catalog-toc__count">12</span>
+          </a>
+        </li>
+        <li>
+          <a href="#connections">
+            <span>Verbindungen &amp; Integrationen</span>
+            <span class="catalog-toc__count">8</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+      <div class="catalog-content">
+        
+    <section id="ai" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">KI &amp; Intelligenz</p>
+        <h2>KI &amp; Intelligenz</h2>
+        <p class="catalog-section__summary">KI-gestützte Assistenten, Avatar-Logik und adaptive Story-Flows für Streams mit mehr Reaktionstiefe.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar.</span>
+          <span class="catalog-pill">Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>4</span> / <span data-catalog-section-total>4</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-animazingpal" class="catalog-entry" data-catalog-entry data-search-index="animazingpal animazingpal brain engine mehrplattform-integration für vtuber-avatar-steuerung über tiktok live events. unterstützt animaze, vtube studio und vseeface mit ki-brain engine, langzeit-gedächtnis, persönlichkeits-system und gpt-gesteuerten antworten. ki &amp; intelligenz ki-gestützte assistenten, avatar-logik und adaptive story-flows für streams mit mehr reaktionstiefe. macht reaktionen, personas und narrative abläufe direkt steuerbar. für vtuber, stream-assistenten und interaktive live-erlebnisse. animazingpal brain engine - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">KI &amp; Intelligenz</p>
+              <h3>AnimazingPal Brain Engine</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/animazingpal.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Mehrplattform-Integration für VTuber-Avatar-Steuerung über TikTok LIVE Events. Unterstützt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerten Antworten.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/animazingpal.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/animazingpal.png" alt="AnimazingPal Brain Engine - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-interactive-story" class="catalog-entry" data-catalog-entry data-search-index="interactive-story interactive story generator ki-gestützte interaktive story-generierung mit chat-voting, bildgenerierung, multi-voice-tts und adaptiven obs-overlays. erstelle fesselnde geschichten mit deinem publikum mithilfe von llm-technologie. ki &amp; intelligenz ki-gestützte assistenten, avatar-logik und adaptive story-flows für streams mit mehr reaktionstiefe. macht reaktionen, personas und narrative abläufe direkt steuerbar. für vtuber, stream-assistenten und interaktive live-erlebnisse. interactive story generator - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">KI &amp; Intelligenz</p>
+              <h3>Interactive Story Generator</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/interactive-story.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/interactive-story.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/interactive-story.png" alt="Interactive Story Generator - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-sidekick" class="catalog-entry" data-catalog-entry data-search-index="sidekick sidekick – intelligenter stream-assistent intelligenter stream-assistent, der sprache und avatar-reaktionen über animazingpal und fish.audio delegiert. bietet event-analyse, automatische antworten, benutzer-gedächtnis mit verfall, nachrichten-batching, relevanz-scoring und umfassende stream-analytik. ki &amp; intelligenz ki-gestützte assistenten, avatar-logik und adaptive story-flows für streams mit mehr reaktionstiefe. macht reaktionen, personas und narrative abläufe direkt steuerbar. für vtuber, stream-assistenten und interaktive live-erlebnisse. sidekick – intelligenter stream-assistent - dashboard-ansicht dashboard-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">KI &amp; Intelligenz</p>
+              <h3>Sidekick – Intelligenter Stream-Assistent</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/sidekick.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/sidekick.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/sidekick-dashboard.png" alt="Sidekick – Intelligenter Stream-Assistent - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-talking-heads" class="catalog-entry" data-catalog-entry data-search-index="talking-heads talking heads ki-generierte 2d-avatare mit synchronisierten animationen für tiktok-nutzer, die per tts sprechen. mit rollenbasierter aktivierung, mehreren stil-vorlagen und obs-integration. ki &amp; intelligenz ki-gestützte assistenten, avatar-logik und adaptive story-flows für streams mit mehr reaktionstiefe. macht reaktionen, personas und narrative abläufe direkt steuerbar. für vtuber, stream-assistenten und interaktive live-erlebnisse. talking heads - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">KI &amp; Intelligenz</p>
+              <h3>Talking Heads</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/talking-heads.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Reaktionen, Personas und narrative Abläufe direkt steuerbar.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VTuber, Stream-Assistenten und interaktive Live-Erlebnisse.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/talking-heads.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/talking-heads.png" alt="Talking Heads - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+
+    <section id="audio" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">Audio &amp; Stimme</p>
+        <h2>Audio &amp; Stimme</h2>
+        <p class="catalog-section__summary">Sprach- und Soundfunktionen, die Eingaben in hörbare, sofort nutzbare Stream-Momente verwandeln.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow.</span>
+          <span class="catalog-pill">Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>4</span> / <span data-catalog-section-total>4</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-stt-ticker" class="catalog-entry" data-catalog-entry data-search-index="stt-ticker live-untertitel-overlay live-untertitel-overlay für hörgeschädigte zuschauer. transkribiert host-sprache via fish.audio asr und zeigt sie als konfigurierbaren ticker in obs an. audio &amp; stimme sprach- und soundfunktionen, die eingaben in hörbare, sofort nutzbare stream-momente verwandeln. bringt sprache, stimme und sound ohne umwege in den live-flow. für tts, soundboard, untertitel und musikgesteuerte interaktion. live-untertitel-overlay - nachtansicht nachtansicht live-untertitel-overlay - barrierefreie ansicht barrierefreie ansicht live-untertitel-overlay - overlay-ansicht overlay-ansicht live-untertitel-overlay - capture-ansicht capture-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Audio &amp; Stimme</p>
+              <h3>Live-Untertitel-Overlay</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/stt-ticker.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">4 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/stt-ticker.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/stt-ticker-night.png" alt="Live-Untertitel-Overlay - Nachtansicht" loading="lazy" decoding="async">
+        <figcaption>Nachtansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/stt-ticker-vision-impaired.png" alt="Live-Untertitel-Overlay - Barrierefreie Ansicht" loading="lazy" decoding="async">
+        <figcaption>Barrierefreie Ansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/stt-ticker-overlay-url.png" alt="Live-Untertitel-Overlay - Overlay-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Overlay-Ansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/stt-ticker-capture-obs-url.png" alt="Live-Untertitel-Overlay - Capture-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Capture-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-music-bot" class="catalog-entry" data-catalog-entry data-search-index="plugin-music-bot music bot music bot steuert songanfragen und queue-verhalten ueber chat-ereignisse. audio &amp; stimme sprach- und soundfunktionen, die eingaben in hörbare, sofort nutzbare stream-momente verwandeln. bringt sprache, stimme und sound ohne umwege in den live-flow. für tts, soundboard, untertitel und musikgesteuerte interaktion. music bot - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Audio &amp; Stimme</p>
+              <h3>Music Bot</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-music-bot.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Music Bot steuert Songanfragen und Queue-Verhalten ueber Chat-Ereignisse.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-music-bot.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/music-bot.png" alt="Music Bot - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-soundboard" class="catalog-entry" data-catalog-entry data-search-index="soundboard soundboard geschenkspezifische sounds, audio-queue-management und myinstants-integration für tiktok-events. bietet anpassbare sound-mappings, lautstärkeregelung und queue-priorisierung. audio &amp; stimme sprach- und soundfunktionen, die eingaben in hörbare, sofort nutzbare stream-momente verwandeln. bringt sprache, stimme und sound ohne umwege in den live-flow. für tts, soundboard, untertitel und musikgesteuerte interaktion. soundboard - übersicht übersicht soundboard - detailansicht detailansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Audio &amp; Stimme</p>
+              <h3>Soundboard</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/soundboard.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration für TikTok-Events. Bietet anpassbare Sound-Mappings, Lautstärkeregelung und Queue-Priorisierung.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/soundboard.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/soundboard.png" alt="Soundboard - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/soundboard-detail.png" alt="Soundboard - Detailansicht" loading="lazy" decoding="async">
+        <figcaption>Detailansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-tts" class="catalog-entry" data-catalog-entry data-search-index="tts text-to-speech engine enterprise-grade-tts-plugin mit multi-engine-unterstützung (tiktok, google cloud, speechify, elevenlabs, openai, fish.audio, siliconflow), berechtigungssystem, spracherkennung, caching und queue-management. audio &amp; stimme sprach- und soundfunktionen, die eingaben in hörbare, sofort nutzbare stream-momente verwandeln. bringt sprache, stimme und sound ohne umwege in den live-flow. für tts, soundboard, untertitel und musikgesteuerte interaktion. text-to-speech engine - übersicht übersicht text-to-speech engine - admin-ansicht admin-ansicht text-to-speech engine - einstellungen einstellungen">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Audio &amp; Stimme</p>
+              <h3>Text-to-Speech Engine</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/tts.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Bringt Sprache, Stimme und Sound ohne Umwege in den Live-Flow.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für TTS, Soundboard, Untertitel und musikgesteuerte Interaktion.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">3 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/tts.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/tts.png" alt="Text-to-Speech Engine - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/tts-admin.png" alt="Text-to-Speech Engine - Admin-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Admin-Ansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/tts-settings.png" alt="Text-to-Speech Engine - Einstellungen" loading="lazy" decoding="async">
+        <figcaption>Einstellungen</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+
+    <section id="visual" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">Visuell &amp; Overlay</p>
+        <h2>Visuell &amp; Overlay</h2>
+        <p class="catalog-section__summary">Overlays, Effekte und Statusanzeigen, die den Stream sichtbar strukturieren.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Macht Events, Ziele und Status direkt im Bild verständlich.</span>
+          <span class="catalog-pill">Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>14</span> / <span data-catalog-section-total>14</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-alerts" class="catalog-entry" data-catalog-entry data-search-index="alerts alert system alert system – vollständig anpassbare alerts für gifts, follows, shares, likes und subscriptions mit sound, text und bild/gif-kombinationen. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. alert system - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Alert System</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/alerts.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Alert System – Vollständig anpassbare Alerts für Gifts, Follows, Shares, Likes und Subscriptions mit Sound, Text und Bild/GIF-Kombinationen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/alerts.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/alerts.png" alt="Alert System - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-clarity-hud" class="catalog-entry" data-catalog-entry data-search-index="plugin-clarity-hud clarityhud ultra-minimalistische, vr-optimierte und barrierefreie hud-overlays für chat und activity-feeds. entwickelt für klarheit und lesbarkeit in virtual-reality-umgebungen. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. clarityhud - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>ClarityHUD</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-clarity-hud.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-clarity-hud.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/clarityhud.png" alt="ClarityHUD - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-gcce-hud" class="catalog-entry" data-catalog-entry data-search-index="plugin-gcce-hud gcce hud gcce hud zeigt live-status, cooldowns und aktive spielaktionen. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. gcce hud - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>GCCE HUD</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-gcce-hud.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">GCCE HUD zeigt Live-Status, Cooldowns und aktive Spielaktionen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-gcce-hud.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/gcce-hud.png" alt="GCCE HUD - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-gift-milestone" class="catalog-entry" data-catalog-entry data-search-index="plugin-gift-milestone gift milestone feiern sie münz-meilensteine mit benutzerdefinierten animationen (gif, mp4) und audio. löst spezielle feierlichkeiten aus, wenn kumulative geschenk-münzen konfigurierte schwellenwerte mit overlay-unterstützung erreichen. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. gift milestone - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Gift Milestone</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-gift-milestone.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Feiern Sie Münz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. Löst spezielle Feierlichkeiten aus, wenn kumulative Geschenk-Münzen konfigurierte Schwellenwerte mit Overlay-Unterstützung erreichen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-gift-milestone.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/gift-milestone.png" alt="Gift Milestone - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-goals" class="catalog-entry" data-catalog-entry data-search-index="goals goals system komplettes live-ziele-system mit münz-, likes-, follower- und benutzerdefinierten zieltypen. echtzeit-tracking mit event-api und anpassbaren overlays für zuschauer-engagement. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. goals system - overlay-ansicht overlay-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Goals System</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/goals.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Komplettes Live-Ziele-System mit Münz-, Likes-, Follower- und benutzerdefinierten Zieltypen. Echtzeit-Tracking mit Event-API und anpassbaren Overlays für Zuschauer-Engagement.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/goals.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/goals-overlay.png" alt="Goals System - Overlay-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Overlay-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-lastevent-spotlight" class="catalog-entry" data-catalog-entry data-search-index="plugin-lastevent-spotlight lastevent spotlight moderne live-overlays für follower-, like-, chat-, share-, geschenk-, abo-, top-gift- und rotations-spotlight-ansichten. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. lastevent spotlight - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>LastEvent Spotlight</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-lastevent-spotlight.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Moderne Live-Overlays für Follower-, Like-, Chat-, Share-, Geschenk-, Abo-, Top-Gift- und Rotations-Spotlight-Ansichten.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-lastevent-spotlight.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/lastevent.png" alt="LastEvent Spotlight - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-leaderboard" class="catalog-entry" data-catalog-entry data-search-index="plugin-leaderboard leaderboard vereintes viewer-xp-bundle, das gift-milestone-feiern, das echtzeit-gifter-leaderboard und viewer-profil-analysen kombiniert. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. leaderboard - nachtansicht nachtansicht leaderboard - kontrastansicht kontrastansicht leaderboard - barrierefreie ansicht barrierefreie ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Leaderboard</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-leaderboard.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Vereintes Viewer-XP-Bundle, das Gift-Milestone-Feiern, das Echtzeit-Gifter-Leaderboard und Viewer-Profil-Analysen kombiniert.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">3 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-leaderboard.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/viewer-profiles-night.png" alt="Leaderboard - Nachtansicht" loading="lazy" decoding="async">
+        <figcaption>Nachtansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/viewer-profiles-contrast.png" alt="Leaderboard - Kontrastansicht" loading="lazy" decoding="async">
+        <figcaption>Kontrastansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/viewer-profiles-vision-impaired.png" alt="Leaderboard - Barrierefreie Ansicht" loading="lazy" decoding="async">
+        <figcaption>Barrierefreie Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-overlays" class="catalog-entry" data-catalog-entry data-search-index="overlays overlays &amp; hud overlays &amp; hud – obs overlays: webgpu emoji rain, fireworks, flame overlay, weather engine (13 effekte), goals hud, talking heads und alert system für tiktok live streamer. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. overlays &amp; hud - dashboard-ansicht dashboard-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Overlays &amp; HUD</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/overlays.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Overlays &amp; HUD – OBS Overlays: WebGPU Emoji Rain, Fireworks, Flame Overlay, Weather Engine (13 Effekte), Goals HUD, Talking Heads und Alert System für TikTok LIVE Streamer.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/overlays.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/webgpu-emoji-rain-dashboard.png" alt="Overlays &amp; HUD - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-flame-overlay" class="catalog-entry" data-catalog-entry data-search-index="flame-overlay tiktok visual effects overlay broadcast-sicheres webgl-effekt-overlay mit 4 rollenbasierten visuellen modi, echtzeit-vorschau und rahmen-positionierung. tiktok live trigger reagieren auf gifts, follows, likes, shares, subscribes und chat-farbbefehle mit gestuften base-, accent- und impact-reaktionen. benanntes preset-system, flow-integration und leistungsstarker kawase bloom. enthält flames, partikel-burst, energie-wellen und elektrische blitze. unterstützt auflösungen bis 4k mit vollständig anpassbaren farben, intensität, geschwindigkeit und präziser rahmenpositionierung. transparenter hintergrund für nahtlose obs-integration. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. tiktok visual effects overlay - nachtansicht nachtansicht tiktok visual effects overlay - barrierefreie ansicht barrierefreie ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>TikTok Visual Effects Overlay</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/flame-overlay.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. TikTok LIVE Trigger reagieren auf Gifts, Follows, Likes, Shares, Subscribes und Chat-Farbbefehle mit gestuften Base-, Accent- und Impact-Reaktionen. Benanntes Preset-System, Flow-Integration und leistungsstarker Kawase Bloom. Enthält Flames, Partikel-Burst, Energie-Wellen und elektrische Blitze. Unterstützt Auflösungen bis 4K mit vollständig anpassbaren Farben, Intensität, Geschwindigkeit und präziser Rahmenpositionierung. Transparenter Hintergrund für nahtlose OBS-Integration.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/flame-overlay.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/flame-overlay-night.png" alt="TikTok Visual Effects Overlay - Nachtansicht" loading="lazy" decoding="async">
+        <figcaption>Nachtansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/flame-overlay-vision-impaired.png" alt="TikTok Visual Effects Overlay - Barrierefreie Ansicht" loading="lazy" decoding="async">
+        <figcaption>Barrierefreie Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-toptier" class="catalog-entry" data-catalog-entry data-search-index="toptier top tier plugin live like &amp; gift leaderboard mit decay-mechanik, rang-animationen, combined-view und overlay-varianten für hochformat und querformat – top tier plugin. version 2.0.0, overlay. permissions: tiktok-events, database. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. top tier plugin - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Top Tier Plugin</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/toptier.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Live Like &amp; Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat – Top Tier Plugin. Version 2.0.0, Overlay. Permissions: tiktok-events, database.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/toptier.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/toptier.png" alt="Top Tier Plugin - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-viewer-xp" class="catalog-entry" data-catalog-entry data-search-index="viewer-xp viewer xp system viewer xp system – xp-tracking pro viewer, level-system mit overlays, bestenlisten und obs overlay-integration für tiktok live. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. viewer xp system - übersicht übersicht viewer xp system - leaderboard-ansicht leaderboard-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Viewer XP System</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/viewer-xp.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Viewer XP System – XP-Tracking pro Viewer, Level-System mit Overlays, Bestenlisten und OBS Overlay-Integration für TikTok LIVE.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/viewer-xp.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/viewer-xp.png" alt="Viewer XP System - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/viewer-xp-leaderboard.png" alt="Viewer XP System - Leaderboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Leaderboard-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-vulkan-rockets" class="catalog-entry" data-catalog-entry data-search-index="plugin-vulkan-rockets vulkan rockets vulkan rockets erzeugt visuelle effekte bei definierten ausloesern. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. vulkan rockets - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Vulkan Rockets</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-vulkan-rockets.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Vulkan Rockets erzeugt visuelle Effekte bei definierten Ausloesern.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-vulkan-rockets.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/fireworks.png" alt="Vulkan Rockets - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-weather-overlay" class="catalog-entry" data-catalog-entry data-search-index="plugin-weather-overlay weather overlay professionelles wettereffekt-plugin mit 13 stream-overlay-effekten, community-gamification, presets, sequenzen, audio, event-triggern, qualitaetssteuerung und layering pro effekt. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. weather overlay - overlay-ansicht overlay-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>Weather Overlay</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-weather-overlay.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Professionelles Wettereffekt-Plugin mit 13 Stream-Overlay-Effekten, Community-Gamification, Presets, Sequenzen, Audio, Event-Triggern, Qualitaetssteuerung und Layering pro Effekt.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-weather-overlay.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/overlays.png" alt="Weather Overlay - Overlay-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Overlay-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-emoji-rain" class="catalog-entry" data-catalog-entry data-search-index="emoji-rain webgpu emoji rain gpu-beschleunigter emoji-regen-effekt mit webgpu instanced rendering. visuell &amp; overlay overlays, effekte und statusanzeigen, die den stream sichtbar strukturieren. macht events, ziele und status direkt im bild verständlich. für obs, huds, animationen und sichtbare reaktionen auf zuschaueraktionen. webgpu emoji rain - dashboard-ansicht dashboard-ansicht webgpu emoji rain - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Visuell &amp; Overlay</p>
+              <h3>WebGPU Emoji Rain</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/emoji-rain.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">GPU-beschleunigter Emoji-Regen-Effekt mit WebGPU Instanced Rendering.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Events, Ziele und Status direkt im Bild verständlich.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für OBS, HUDs, Animationen und sichtbare Reaktionen auf Zuschaueraktionen.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/emoji-rain.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/webgpu-emoji-rain-dashboard.png" alt="WebGPU Emoji Rain - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/emoji-rain.png" alt="WebGPU Emoji Rain - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+
+    <section id="games" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">Gaming &amp; Interaktion</p>
+        <h2>Gaming &amp; Interaktion</h2>
+        <p class="catalog-section__summary">Spielbare Formate, bei denen Chat, Gifts und Regeln direkt in Unterhaltung umgewandelt werden.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Macht Zuschaueraktionen zu spielbaren Momenten mit klaren Regeln.</span>
+          <span class="catalog-pill">Für Quiz, Slots, Game-Engines und interaktive Challenges.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>3</span> / <span data-catalog-section-total>3</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-game-engine" class="catalog-entry" data-catalog-entry data-search-index="game-engine game engine interaktive spielmaschine für tiktok live streams. spiele wie vier gewinnt, schach, plinko, glücksrad, slot machine und live arena mit zuschauern über chat-befehle, live-aktivität und geschenke. bietet konfigurierbare odds-profile, hybridshock-belohnungsintegration, anpassbare overlays, kompaktes hud, xp-belohnungen, siegesserien, sound-effekte und erweiterbares spiel-framework. gaming &amp; interaktion spielbare formate, bei denen chat, gifts und regeln direkt in unterhaltung umgewandelt werden. macht zuschaueraktionen zu spielbaren momenten mit klaren regeln. für quiz, slots, game-engines und interaktive challenges. game engine - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Gaming &amp; Interaktion</p>
+              <h3>Game Engine</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/game-engine.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, Hybridshock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Zuschaueraktionen zu spielbaren Momenten mit klaren Regeln.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Quiz, Slots, Game-Engines und interaktive Challenges.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/game-engine.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/game-engine.png" alt="Game Engine - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-quiz-show" class="catalog-entry" data-catalog-entry data-search-index="plugin-quiz-show quiz show interaktives quiz-show-plugin fuer tiktok-livestreams mit kategorie-voting, duel-modus, achievements, seasons, chat-integration, jokern und hochwertigen overlays. gaming &amp; interaktion spielbare formate, bei denen chat, gifts und regeln direkt in unterhaltung umgewandelt werden. macht zuschaueraktionen zu spielbaren momenten mit klaren regeln. für quiz, slots, game-engines und interaktive challenges. quiz show - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Gaming &amp; Interaktion</p>
+              <h3>Quiz Show</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-quiz-show.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Interaktives Quiz-Show-Plugin fuer TikTok-Livestreams mit Kategorie-Voting, Duel-Modus, Achievements, Seasons, Chat-Integration, Jokern und hochwertigen Overlays.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Zuschaueraktionen zu spielbaren Momenten mit klaren Regeln.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Quiz, Slots, Game-Engines und interaktive Challenges.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-quiz-show.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/quiz-show.png" alt="Quiz Show - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-slot-machine" class="catalog-entry" data-catalog-entry data-search-index="slot-machine slot machine slot machine – 3-reel-engine mit multi-machine-support, eigenen sound-uploads, superfan-erkennung und vollständig anpassbarem design für tiktok live. gaming &amp; interaktion spielbare formate, bei denen chat, gifts und regeln direkt in unterhaltung umgewandelt werden. macht zuschaueraktionen zu spielbaren momenten mit klaren regeln. für quiz, slots, game-engines und interaktive challenges. slot machine - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Gaming &amp; Interaktion</p>
+              <h3>Slot Machine</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/slot-machine.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Slot Machine – 3-Reel-Engine mit Multi-Machine-Support, eigenen Sound-Uploads, Superfan-Erkennung und vollständig anpassbarem Design für TikTok LIVE.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Macht Zuschaueraktionen zu spielbaren Momenten mit klaren Regeln.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Quiz, Slots, Game-Engines und interaktive Challenges.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/slot-machine.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/slot-machine.png" alt="Slot Machine - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+
+    <section id="system" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">System &amp; Erweiterung</p>
+        <h2>System &amp; Erweiterung</h2>
+        <p class="catalog-section__summary">Werkzeuge für Betrieb, Automation, Updates und die Architektur hinter dem Stream-Setup.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</span>
+          <span class="catalog-pill">Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>12</span> / <span data-catalog-section-total>12</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-plugin-advanced-timer" class="catalog-entry" data-catalog-entry data-search-index="plugin-advanced-timer advanced timer professionelles multi-timer-system mit event-triggern, automatisierung, zuschauer-interaktion und anpassbaren overlays. perfekt für subathons, challenges, stream-zeitpläne und ziele. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. advanced timer - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Advanced Timer</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-advanced-timer.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt für Subathons, Challenges, Stream-Zeitpläne und Ziele.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-advanced-timer.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/advanced-timer.png" alt="Advanced Timer - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-api-bridge" class="catalog-entry" data-catalog-entry data-search-index="api-bridge api bridge ermöglicht externen anwendungen die steuerung des tools via http und websocket. bietet rest-api-endpunkte und echtzeit-event-streaming für drittanbieter-integrationen. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. api bridge - admin-ansicht admin-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>API Bridge</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/api-bridge.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming für Drittanbieter-Integrationen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/api-bridge.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/api-bridge-admin.png" alt="API Bridge - Admin-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Admin-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-auto-updater" class="catalog-entry" data-catalog-entry data-search-index="auto-updater auto-update system auto-update system – automatische update-prüfung, one-click patch-anwendung, versions-management, rollback-support und update-benachrichtigungen für ltth. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. auto-update system - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Auto-Update System</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/auto-updater.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Auto-Update System – Automatische Update-Prüfung, One-Click Patch-Anwendung, Versions-Management, Rollback-Support und Update-Benachrichtigungen für LTTH.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/auto-updater.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/auto-updater.png" alt="Auto-Update System - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-config-import" class="catalog-entry" data-catalog-entry data-search-index="plugin-config-import config import – backup &amp; restore vollständiges konfigurations-backup- und wiederherstellungssystem. exportieren sie alle einstellungen in ein zip-archiv, importieren sie aus einem backup, zeigen sie konflikte in der vorschau an und migrieren sie von älteren installationen. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. config import – backup &amp; restore - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Config Import – Backup &amp; Restore</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-config-import.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Vollständiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von älteren Installationen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-config-import.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/config-import.png" alt="Config Import – Backup &amp; Restore - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-chat-commands" class="catalog-entry" data-catalog-entry data-search-index="chat-commands custom chat commands custom chat commands – eigene !befehle für tiktok live definieren, flows auslösen, cooldowns verwalten, berechtigungsstufen und command-aliasse festlegen. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. custom chat commands - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Custom Chat Commands</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/chat-commands.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Custom Chat Commands – Eigene !Befehle für TikTok LIVE definieren, Flows auslösen, Cooldowns verwalten, Berechtigungsstufen und Command-Aliasse festlegen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/chat-commands.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/chat-commands.png" alt="Custom Chat Commands - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-data-source" class="catalog-entry" data-catalog-entry data-search-index="plugin-data-source data source manager wähle zwischen eulerstream und tikfinity als tiktok-datenquelle. der data source manager ermöglicht die auswahl und umschaltung von datenquellen zur laufzeit. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. data source manager - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Data Source Manager</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-data-source.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle. Der Data Source Manager ermöglicht die Auswahl und Umschaltung von Datenquellen zur Laufzeit.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-data-source.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/data-source.png" alt="Data Source Manager - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-flow-engine" class="catalog-entry" data-catalog-entry data-search-index="flow-engine flow engine flow engine – visueller flow-editor mit event-triggern, bedingungen, schleifen und einer umfangreichen action-library für komplexe tiktok live automatisierungen. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. flow engine - editoransicht editoransicht flow engine - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Flow Engine</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/flow-engine.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Flow Engine – Visueller Flow-Editor mit Event-Triggern, Bedingungen, Schleifen und einer umfangreichen Action-Library für komplexe TikTok LIVE Automatisierungen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/flow-engine.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/flows-editor.png" alt="Flow Engine - Editoransicht" loading="lazy" decoding="async">
+        <figcaption>Editoransicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/flows.png" alt="Flow Engine - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-gcce" class="catalog-entry" data-catalog-entry data-search-index="plugin-gcce gcce universeller chat-befehls-interpreter und framework für alle plugins. bietet zentralisierte befehlsanalyse, berechtigungsverwaltung und erweiterbares befehlsregistrierungssystem. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. gcce - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>GCCE</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-gcce.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Universeller Chat-Befehls-Interpreter und Framework für alle Plugins. Bietet zentralisierte Befehlsanalyse, Berechtigungsverwaltung und erweiterbares Befehlsregistrierungssystem.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-gcce.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/gcce.png" alt="GCCE - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-dashboard" class="catalog-entry" data-catalog-entry data-search-index="dashboard multi-tab dashboard multi-tab dashboard – zentrales steuerungszentrum mit live-viewer-stats, chat-feed, event-log, quick actions, obs-integration und plugin-verwaltung für tiktok live. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. multi-tab dashboard - dashboard-ansicht dashboard-ansicht multi-tab dashboard - dashboard-ansicht dashboard-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Multi-Tab Dashboard</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/dashboard.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Multi-Tab Dashboard – Zentrales Steuerungszentrum mit Live-Viewer-Stats, Chat-Feed, Event-Log, Quick Actions, OBS-Integration und Plugin-Verwaltung für TikTok LIVE.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/dashboard.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/dashboard.png" alt="Multi-Tab Dashboard - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/dashboard-main.png" alt="Multi-Tab Dashboard - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-system" class="catalog-entry" data-catalog-entry data-search-index="plugin-system plugin system plugin system â€“ 30+ eingebaute plugins, hot-reload, javascript api fã¼r eigene plugins und nahtlose admin-ui integration fã¼r pupcid&#39;s little tiktool helper. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. plugin system - übersicht übersicht plugin system - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Plugin System</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-system.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Plugin System â€“ 30+ eingebaute Plugins, Hot-Reload, JavaScript API fÃ¼r eigene Plugins und nahtlose Admin-UI Integration fÃ¼r PupCid&#39;s Little TikTool Helper.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-system.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/plugins.png" alt="Plugin System - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/plugin-system.png" alt="Plugin System - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-security" class="catalog-entry" data-catalog-entry data-search-index="security security &amp; privacy security &amp; privacy – cors-konfiguration, csp, input-validatoren, rate limiting und 100% lokale verarbeitung ohne cloud für pupcid&#39;s little tiktool helper. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. security &amp; privacy - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Security &amp; Privacy</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/security.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Security &amp; Privacy – CORS-Konfiguration, CSP, Input-Validatoren, Rate Limiting und 100% lokale Verarbeitung ohne Cloud für PupCid&#39;s Little TikTool Helper.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/security.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/security.png" alt="Security &amp; Privacy - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-stream-alchemy" class="catalog-entry" data-catalog-entry data-search-index="plugin-stream-alchemy stream alchemy verwandeln sie tiktok-geschenke in virtuelle rpg-items mit crafting-mechaniken und ki-generierten icons. bietet inventarsystem, item-crafting und rezept-verwaltung. system &amp; erweiterung werkzeuge für betrieb, automation, updates und die architektur hinter dem stream-setup. hält dein setup wartbar, erweiterbar und ohne reibung am laufen. für plugin-verwaltung, event-routing, updates und safety-schichten. stream alchemy - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">System &amp; Erweiterung</p>
+              <h3>Stream Alchemy</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-stream-alchemy.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Hält dein Setup wartbar, erweiterbar und ohne Reibung am Laufen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für Plugin-Verwaltung, Event-Routing, Updates und Safety-Schichten.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-stream-alchemy.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/animazingpal.png" alt="Stream Alchemy - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+
+    <section id="connections" class="catalog-section" data-catalog-section>
+      <div class="catalog-section__head">
+        <p class="catalog-section__eyebrow">Verbindungen &amp; Integrationen</p>
+        <h2>Verbindungen &amp; Integrationen</h2>
+        <p class="catalog-section__summary">Integrationen, die LTTH mit externen Plattformen, Geräten und Protokollen verbinden.</p>
+        <div class="catalog-section__meta">
+          <span class="catalog-pill">Erweitert den Stream um echte Verbindungen nach außen.</span>
+          <span class="catalog-pill">Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</span>
+          <span class="catalog-pill catalog-section__count"><span data-catalog-section-count>8</span> / <span data-catalog-section-total>8</span></span>
+        </div>
+      </div>
+      <div class="catalog-entries">
+        
+      <article id="feature-plugin-chatango" class="catalog-entry" data-catalog-entry data-search-index="plugin-chatango chatango integriert chatango-chaträume in ihren stream. konfigurieren sie einbettbare chat-widgets, passen sie das aussehen an und erhalten sie chat-nachrichten als events für flows und automatisierungen. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. chatango - dashboard-ansicht dashboard-ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>Chatango</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-chatango.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-chatango.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/plugin-chatango-dashboard.png" alt="Chatango - Dashboard-Ansicht" loading="lazy" decoding="async">
+        <figcaption>Dashboard-Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-openshock" class="catalog-entry" data-catalog-entry data-search-index="plugin-openshock hybridshock hybridshock für tiktok-live-events - unterstützt pishock und haptische belohnungs-workflows. mit event-mapping, pattern-steuerung, safety-layer, queue-management und overlay-unterstützung. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. hybridshock - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>Hybridshock</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-openshock.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Hybridshock für TikTok-Live-Events - unterstützt PiShock und haptische Belohnungs-Workflows. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstützung.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-openshock.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/osc-bridge.png" alt="Hybridshock - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-minecraft-connect" class="catalog-entry" data-catalog-entry data-search-index="plugin-minecraft-connect minecraft connect minecraft connect verbindet tiktok-events mit in-game aktionen. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. minecraft connect - nachtansicht nachtansicht minecraft connect - barrierefreie ansicht barrierefreie ansicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>Minecraft Connect</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-minecraft-connect.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Minecraft Connect verbindet TikTok-Events mit in-game Aktionen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">2 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-minecraft-connect.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/plugin-minecraft-connect-night.png" alt="Minecraft Connect - Nachtansicht" loading="lazy" decoding="async">
+        <figcaption>Nachtansicht</figcaption>
+      </figure>
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/plugin-minecraft-connect-vision.png" alt="Minecraft Connect - Barrierefreie Ansicht" loading="lazy" decoding="async">
+        <figcaption>Barrierefreie Ansicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-multicam" class="catalog-entry" data-catalog-entry data-search-index="multicam multi-cam switcher wechselt obs-szenen über geschenke oder chat-befehle; unterstützt spout-feeds, kameras 1-5. perfekt für dynamische multi-kamera-setups mit automatisiertem szenenwechsel. [working beta] verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. multi-cam switcher - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>Multi-Cam Switcher</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/multicam.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Wechselt OBS-Szenen über Geschenke oder Chat-Befehle; unterstützt Spout-Feeds, Kameras 1-5. Perfekt für dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel. [Working Beta]</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/multicam.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/multicam.png" alt="Multi-Cam Switcher - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-osc-bridge" class="catalog-entry" data-catalog-entry data-search-index="osc-bridge osc / vrchat bridge produktionsreife osc-bridge fuer vrchat. verbindet tiktok-events, ifttt-aktionen, gcce-befehle und vrchat-avatar-parameter ueber validierte osc-nachrichten. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. osc / vrchat bridge - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>OSC / VRChat Bridge</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/osc-bridge.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Produktionsreife OSC-Bridge fuer VRChat. Verbindet TikTok-Events, IFTTT-Aktionen, GCCE-Befehle und VRChat-Avatar-Parameter ueber validierte OSC-Nachrichten.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/osc-bridge.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/osc-bridge.png" alt="OSC / VRChat Bridge - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-plugin-thermal-printer" class="catalog-entry" data-catalog-entry data-search-index="plugin-thermal-printer thermal printer druckt tiktok-live-events (chat, geschenke, follows) physisch auf einem thermodrucker (esc/pos). unterstützt usb- und netzwerkdrucker mit anpassbaren druckvorlagen. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. thermal printer - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>Thermal Printer</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/plugin-thermal-printer.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). Unterstützt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/plugin-thermal-printer.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/thermal-printer.png" alt="Thermal Printer - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-tikfinity-api" class="catalog-entry" data-catalog-entry data-search-index="tikfinity-api tikfinity api integration tikfinity api integration – erweiterte event-behandlung via tikfinity, bidirektionaler datenfluss, webhook-support und echtzeit-sync für tiktok live streams. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. tikfinity api integration - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>TikFinity API Integration</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/tikfinity-api.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">TikFinity API Integration – Erweiterte Event-Behandlung via TikFinity, bidirektionaler Datenfluss, Webhook-Support und Echtzeit-Sync für TikTok LIVE Streams.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/tikfinity-api.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/tikfinity-api.png" alt="TikFinity API Integration - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      <article id="feature-vdoninja" class="catalog-entry" data-catalog-entry data-search-index="vdoninja vdo.ninja multi-guest integration vdo.ninja-integration für multi-guest-streaming. verwaltet räume, gäste, layouts und audio-kontrollen für professionelle multi-cam-setups mit nahtloser gast-integration. verbindungen &amp; integrationen integrationen, die ltth mit externen plattformen, geräten und protokollen verbinden. erweitert den stream um echte verbindungen nach außen. für vrchat, vdo.ninja, tikfinity, hardware und spezial-workflows. vdo.ninja multi-guest integration - übersicht übersicht">
+        <div class="catalog-entry__body">
+          <div class="catalog-entry__header">
+            <div>
+              <p class="catalog-entry__kicker">Verbindungen &amp; Integrationen</p>
+              <h3>VDO.Ninja Multi-Guest Integration</h3>
+            </div>
+            <a class="catalog-entry__link" href="/features/vdoninja.html">Deep Dive</a>
+          </div>
+          <p class="catalog-entry__description">VDO.Ninja-Integration für Multi-Guest-Streaming. Verwaltet Räume, Gäste, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups mit nahtloser Gast-Integration.</p>
+          <dl class="catalog-entry__meta">
+            <div>
+              <dt>Nutzen</dt>
+              <dd>Erweitert den Stream um echte Verbindungen nach außen.</dd>
+            </div>
+            <div>
+              <dt>Einsatzkontext</dt>
+              <dd>Für VRChat, VDO.Ninja, TikFinity, Hardware und Spezial-Workflows.</dd>
+            </div>
+          </dl>
+          <div class="catalog-entry__footer">
+            <span class="catalog-entry__count">1 Screenshots</span>
+            <a class="catalog-entry__link" href="/features/vdoninja.html">Deep Dive</a>
+          </div>
+        </div>
+        <div class="catalog-entry__gallery">
+          
+      <figure class="catalog-shot">
+        <img src="/screenshots/features/vdoninja.png" alt="VDO.Ninja Multi-Guest Integration - Übersicht" loading="lazy" decoding="async">
+        <figcaption>Übersicht</figcaption>
+      </figure>
+        </div>
+      </article>
+      </div>
+    </section>
+      </div>
+    </div>
+    <p class="catalog-empty" data-catalog-empty hidden>Keine Treffer</p>
+  </main>
+  <script src="/js/main.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/features-hub.js"></script>
+  <script src="/js/layout.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.LTTHLayout) await LTTHLayout.init();
+      if (window.I18n) I18n.init(window.__ltthLang || 'de');
+    });
+  </script>
 </body>
 </html>

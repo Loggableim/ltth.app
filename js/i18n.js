@@ -6,11 +6,17 @@
     let currentLang = 'de';
     
     function get(key) {
+        if (Object.prototype.hasOwnProperty.call(translations, key) && typeof translations[key] === 'string') {
+            return translations[key];
+        }
         const parts = key.split('.');
         let obj = translations;
         for (const part of parts) {
             if (obj == null || typeof obj !== 'object') return key;
             obj = obj[part];
+        }
+        if ((obj == null || typeof obj !== 'string') && Object.prototype.hasOwnProperty.call(translations, key) && typeof translations[key] === 'string') {
+            return translations[key];
         }
         return (obj != null && typeof obj === 'string') ? obj : key;
     }

@@ -3,7 +3,7 @@
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
 #  Verwendung (PowerShell):
-#    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/main/install/install.ps1 | iex
+#    iwr -useb https://raw.githubusercontent.com/Loggableim/ltth.app/ltth.app/install/install.ps1 | iex
 #
 #  Optionale Umgebungsvariablen:
 #    $env:LTTH_VERSION     - zu installierende Version (Default: latest)
@@ -13,6 +13,7 @@
 #    $env:LTTH_NO_LAUNCHER - Launcher nach Installation nicht starten
 #    $env:LTTH_QUIET       - Reduzierte Ausgabe
 #    $env:LTTH_NO_PAUSE    - Bei Fehler nicht auf Enter warten
+#    $env:LTTH_REPO_BRANCH - Git-Branch fuer die Installation (Default: ltth.app)
 # ==============================================================================
 
 $ErrorActionPreference = 'Stop'
@@ -20,7 +21,10 @@ $ErrorActionPreference = 'Stop'
 # ---------- Konfiguration ----------
 $LTTHRepoOwner = if ($env:LTTH_REPO_OWNER) { $env:LTTH_REPO_OWNER } else { 'Loggableim' }
 $LTTHRepoName  = if ($env:LTTH_REPO_NAME)  { $env:LTTH_REPO_NAME  } else { 'ltth.app' }
+$LTTHRepoBranch = if ($env:LTTH_REPO_BRANCH) { $env:LTTH_REPO_BRANCH } else { 'ltth.app' }
+$LTTHBranchRefSpec = "+refs/heads/$LTTHRepoBranch:refs/remotes/origin/$LTTHRepoBranch"
 $LTTHVersion   = if ($env:LTTH_VERSION) { $env:LTTH_VERSION } else { 'latest' }
+$script:LTTHInstallMode = if ($LTTHVersion -eq 'latest') { 'latest' } else { 'pinned' }
 $script:LTTHVersion = $LTTHVersion
 $LTTHDir       = if ($env:LTTH_DIR)         { $env:LTTH_DIR         } else { Join-Path $env:LOCALAPPDATA 'LTTH' }
 $LTTHPort      = if ($env:LTTH_PORT)        { $env:LTTH_PORT        } else { '3000' }
@@ -237,41 +241,31 @@ function Invoke-Git {
 
 # ---------- Version ermitteln ----------
 function Resolve-Version {
-    if ($LTTHVersion -eq 'latest') {
-        Log "Ermittle neueste Version von GitHub..."
-        $resolved = $false
-
+    if ($script:LTTHInstallMode -eq 'latest') {
+        Log "Ermittle neueste Version vom Branch $LTTHRepoBranch..."
         try {
-            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/releases/latest" -TimeoutSec 15 -ErrorAction Stop
-            if ($release -and $release.tag_name) {
-                $LTTHVersion = $release.tag_name -replace '^v', ''
-                $resolved = $true
+            $versionInfo = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/version.json" -TimeoutSec 15 -ErrorAction Stop
+            $resolvedVersion = $null
+            if ($versionInfo -and $versionInfo.downloadVersion) {
+                $resolvedVersion = $versionInfo.downloadVersion
+            } elseif ($versionInfo -and $versionInfo.version) {
+                $resolvedVersion = $versionInfo.version
             }
-        } catch { }
 
-        if (-not $resolved) {
-            Warn "Kein GitHub Release gefunden; verwende neuesten Tag..."
-            try {
-                $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$LTTHRepoOwner/$LTTHRepoName/tags?per_page=1" -TimeoutSec 15 -ErrorAction Stop
-                if ($null -eq $tags -or @($tags).Count -eq 0) {
-                    throw "Keine Tags gefunden."
-                }
-                $LTTHVersion = $tags[0].name -replace '^v', ''
-                $resolved = $true
-            } catch {
-                Fail "Konnte neueste Version nicht ermitteln: $_"
+            if ([string]::IsNullOrWhiteSpace($resolvedVersion)) {
+                throw "version.json liefert keine installierbare Version."
             }
-        }
 
-        if (-not $resolved) {
-            Fail "Konnte neueste Version nicht ermitteln."
+            $LTTHVersion = $resolvedVersion
+            Ok "Neueste Version aus Branch ${LTTHRepoBranch}: v$LTTHVersion"
+        } catch {
+            Fail "Konnte version.json von Branch $LTTHRepoBranch nicht laden: $($_.Exception.Message)"
         }
-
-        $script:LTTHVersion = $LTTHVersion
-        Ok "Neueste Version: v$LTTHVersion"
     } else {
         Ok "Verwende angegebene Version: v$LTTHVersion"
     }
+
+    $script:LTTHVersion = $LTTHVersion
 }
 
 # ---------- Git pruefen ----------
@@ -344,7 +338,7 @@ function Repair-LauncherFile {
         Warn "Falscher downloads/launcher.exe im Root erkannt; repariere launcher.exe..."
         $tmpLauncher = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-launcher-" + [guid]::NewGuid().ToString('N') + ".exe")
         try {
-            Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/main/launcher.exe" -OutFile $tmpLauncher -TimeoutSec 60
+            Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/launcher.exe" -OutFile $tmpLauncher -TimeoutSec 60
             Move-Item -LiteralPath $tmpLauncher -Destination $launcherPath -Force
         } finally {
             Remove-Item -LiteralPath $tmpLauncher -Force -ErrorAction SilentlyContinue
@@ -361,35 +355,47 @@ function Download-Source {
         Repair-LauncherFile
         Log "Bestehende Installation gefunden -- aktualisiere..."
         try {
-            Invoke-Git -Arguments @('fetch', '--tags', '--prune') -WorkingDirectory $LTTHDir
+            Invoke-Git -Arguments @('fetch', '--tags', '--prune', 'origin', $LTTHBranchRefSpec) -WorkingDirectory $LTTHDir
         } catch {
             Warn "Git Fetch fehlgeschlagen, verwende vorhandene lokale Branch-Struktur..."
         }
-        $tagCheckedOut = $false
-        try {
-            Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
-            Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-            $tagCheckedOut = $true
-        } catch {
-        }
-        if (-not $tagCheckedOut) {
+        if ($script:LTTHInstallMode -eq 'latest') {
             try {
-                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
-                Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
-                $tagCheckedOut = $true
+                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
             } catch {
+                try {
+                    Invoke-Git -Arguments @('checkout', '--quiet', '-B', $LTTHRepoBranch, "origin/$LTTHRepoBranch") -WorkingDirectory $LTTHDir
+                } catch {
+                    Fail "Konnte Branch $LTTHRepoBranch nicht auschecken: $($_.Exception.Message)"
+                }
             }
-        }
-        if (-not $tagCheckedOut) {
+        } else {
+            $tagCheckedOut = $false
             try {
+                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
                 Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
                 $tagCheckedOut = $true
             } catch {
             }
-        }
-        if (-not $tagCheckedOut) {
-            Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch main..."
-            Invoke-Git -Arguments @('checkout', '--quiet', 'main') -WorkingDirectory $LTTHDir
+            if (-not $tagCheckedOut) {
+                try {
+                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                    Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+                    $tagCheckedOut = $true
+                } catch {
+                }
+            }
+            if (-not $tagCheckedOut) {
+                try {
+                    Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
+                    $tagCheckedOut = $true
+                } catch {
+                }
+            }
+            if (-not $tagCheckedOut) {
+                Warn "Gewuenschte Version nicht gefunden, nutze Standard-Branch $LTTHRepoBranch..."
+                Invoke-Git -Arguments @('checkout', '--quiet', $LTTHRepoBranch) -WorkingDirectory $LTTHDir
+            }
         }
     } else {
         Log "Klone Repository nach $LTTHDir..."
@@ -399,30 +405,23 @@ function Download-Source {
         }
         New-Item -ItemType Directory -Force -Path $LTTHDir | Out-Null
         try {
-            Invoke-Git -Arguments @('clone', '--depth', '1', $repoUrl, $LTTHDir)
+            Invoke-Git -Arguments @('clone', '--depth', '1', '--branch', $LTTHRepoBranch, '--single-branch', $repoUrl, $LTTHDir)
 
-            try {
-                Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
-                Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
-            } catch {
+            if ($script:LTTHInstallMode -ne 'latest') {
                 try {
-                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
-                    Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+                    Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/v${LTTHVersion}:refs/tags/v${LTTHVersion}") -WorkingDirectory $LTTHDir
+                    Invoke-Git -Arguments @('checkout', '--quiet', "v$LTTHVersion") -WorkingDirectory $LTTHDir
                 } catch {
-                    Warn "Tag nicht verfuegbar, nutze Standard-Branch..."
+                    try {
+                        Invoke-Git -Arguments @('fetch', '--depth', '1', 'origin', "refs/tags/${LTTHVersion}:refs/tags/${LTTHVersion}") -WorkingDirectory $LTTHDir
+                        Invoke-Git -Arguments @('checkout', '--quiet', "$LTTHVersion") -WorkingDirectory $LTTHDir
+                    } catch {
+                        Warn "Tag nicht verfuegbar, nutze Branch $LTTHRepoBranch..."
+                    }
                 }
             }
         } catch {
-            Warn "Tag-basiertes Klonen fehlgeschlagen, klone main..."
-            if (Test-Path $LTTHDir) {
-                Warn "Zielverzeichnis fuer Haupt-Branch bereinigen..."
-                Remove-Item -Path $LTTHDir -Recurse -Force
-            }
-            try {
-                Invoke-Git -Arguments @('clone', '--depth', '1', $repoUrl, $LTTHDir)
-            } catch {
-                Fail "Repository konnte nicht geklont werden: $($_.Exception.Message)"
-            }
+            Fail "Repository konnte nicht vom Branch $LTTHRepoBranch geklont werden: $($_.Exception.Message)"
         }
     }
     Ok "Quellcode bereit in $LTTHDir"
@@ -473,7 +472,7 @@ function Install-Deps {
 function Install-Launcher {
     $launcherPath = Join-Path $LTTHDir 'launcher.exe'
     $downloadLauncherPath = Join-Path $LTTHDir 'downloads\launcher.exe'
-    $launcherUrl = 'https://github.com/Loggableim/ltth.app/raw/main/launcher.exe'
+    $launcherUrl = "https://github.com/Loggableim/ltth.app/raw/$LTTHRepoBranch/launcher.exe"
 
     try {
         $launcherMatchesDownloads = $false

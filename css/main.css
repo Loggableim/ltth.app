@@ -1,5 +1,5 @@
 /* ===================================
-   PupCid's Little TikTool Helper - ltth.app
+   LTTH - ltth.app
    Complete Branding & Design System
    =================================== */
 
@@ -292,6 +292,17 @@ pre code {
     object-fit: contain;
 }
 
+.logo-icon--header {
+    width: min(180px, 18vw);
+    height: auto;
+    max-height: 52px;
+}
+
+.logo-icon--footer {
+    width: min(240px, 100%);
+    height: auto;
+}
+
 .logo-icon img {
     width: 100%;
     height: 100%;
@@ -300,7 +311,11 @@ pre code {
 
 .logo-text {
     font-family: var(--font-display);
-    display: none; /* Hide logo text to show only icon */
+    display: inline-block;
+    font-size: var(--text-sm);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text);
 }
 
 /* Mascot Styles */
@@ -2398,46 +2413,30 @@ section {
 }
 
 .logo-showcase-wrapper {
-    max-width: 600px;
+    max-width: 720px;
     margin: 0 auto;
     text-align: center;
 }
 
 .showcase-logo {
-    width: 100%;
+    width: min(720px, 100%);
     height: auto;
     max-width: 100%;
-    display: none;
-}
-
-/* Show daymode logo in light theme */
-.showcase-logo.logo-light {
     display: block;
 }
 
-.showcase-logo.logo-dark {
-    display: none;
-}
-
-/* Show nightmode logo in dark theme */
-[data-theme="dark"] .showcase-logo.logo-light {
-    display: none;
-}
-
-[data-theme="dark"] .showcase-logo.logo-dark {
-    display: block;
-}
-
-/* Show nightmode logo in high-contrast mode (if implemented) */
-[data-theme="high-contrast"] .showcase-logo.logo-light {
-    display: none;
-}
-
-[data-theme="high-contrast"] .showcase-logo.logo-dark {
-    display: block;
+[data-theme="dark"] .showcase-logo,
+[data-theme="high-contrast"] .showcase-logo,
+[data-theme="vision-impaired"] .showcase-logo {
+    filter: drop-shadow(0 0 18px rgba(18, 161, 22, 0.45));
 }
 
 @media (max-width: 768px) {
+    .logo-icon--header {
+        width: min(140px, 34vw) !important;
+        max-height: 40px !important;
+    }
+
     .logo-showcase {
         padding: var(--space-6) 0;
     }

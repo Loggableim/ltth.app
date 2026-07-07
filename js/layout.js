@@ -38,7 +38,9 @@
         try {
             // Always use absolute path relative to origin (works in deep subdirectories)
             const absoluteUrl = url.startsWith('/') ? url : '/' + url;
-            const response = await fetch(absoluteUrl);
+            // Bypass stale browser cache so header/footer updates show up immediately
+            // after a deploy or local rebuild.
+            const response = await fetch(absoluteUrl, { cache: 'reload' });
             if (!response.ok) throw new Error('Failed to load ' + absoluteUrl);
             return await response.text();
         } catch(e) {
