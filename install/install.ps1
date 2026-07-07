@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 #  LTTH One-Line Installer (Windows PowerShell)
 #  PupCid's Little TikTool Helper -- https://ltth.app
 #
@@ -78,55 +78,60 @@ function Ensure-SystemNetHttp {
     }
 }
 
-function Get-InstallerBannerText {
-    if (-not (Ensure-SystemNetHttp)) {
-        return $null
+function ConvertTo-CommandLineArgument {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Argument
+    )
+
+    if ([string]::IsNullOrEmpty($Argument)) {
+        return '""'
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
-        $localBanner = Join-Path $PSScriptRoot 'banner.txt'
-        if (Test-Path -LiteralPath $localBanner) {
-            try {
-                return Get-Content -Raw -Encoding UTF8 -LiteralPath $localBanner
-            } catch {
-                # Fall back to the remote raw asset below.
-            }
-        }
+    if ($Argument -notmatch '[\s"]') {
+        return $Argument
     }
 
-    $bannerUri = "https://raw.githubusercontent.com/$LTTHRepoOwner/$LTTHRepoName/$LTTHRepoBranch/install/banner.txt"
-    $handler = New-Object System.Net.Http.HttpClientHandler
-    $handler.AllowAutoRedirect = $true
-    $client = New-Object System.Net.Http.HttpClient($handler)
-    $client.Timeout = [TimeSpan]::FromSeconds(10)
-    $client.DefaultRequestHeaders.UserAgent.ParseAdd('ltth-installer')
+    $builder = New-Object System.Text.StringBuilder
+    [void]$builder.Append('"')
+    $backslashes = 0
 
-    try {
-        return $client.GetStringAsync($bannerUri).GetAwaiter().GetResult()
-    } catch {
-        return $null
-    } finally {
-        if ($null -ne $client) {
-            $client.Dispose()
+    foreach ($char in $Argument.ToCharArray()) {
+        if ($char -eq '\') {
+            $backslashes++
+            continue
         }
-        if ($null -ne $handler) {
-            $handler.Dispose()
+
+        if ($char -eq '"') {
+            [void]$builder.Append(('\' * ($backslashes * 2 + 1)))
+            [void]$builder.Append('"')
+            $backslashes = 0
+            continue
         }
+
+        if ($backslashes -gt 0) {
+            [void]$builder.Append(('\' * $backslashes))
+            $backslashes = 0
+        }
+
+        [void]$builder.Append($char)
     }
+
+    if ($backslashes -gt 0) {
+        [void]$builder.Append(('\' * ($backslashes * 2)))
+    }
+
+    [void]$builder.Append('"')
+    return $builder.ToString()
 }
 
-function Write-InstallerBanner {
-    if ($LTTHQuiet -eq '1' -or -not [Environment]::UserInteractive) {
-        return
-    }
+function Join-CommandLineArguments {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
 
-    $banner = Get-InstallerBannerText
-    if ([string]::IsNullOrWhiteSpace($banner)) {
-        return
-    }
-
-    Write-Host $banner -ForegroundColor Cyan
-    Write-Host ""
+    return ($Arguments | ForEach-Object { ConvertTo-CommandLineArgument -Argument $_ }) -join ' '
 }
 
 function Wait-ProcessWithSpinner {
@@ -699,24 +704,41 @@ function Invoke-Git {
     $gitLogBase = Join-Path ([System.IO.Path]::GetTempPath()) ("ltth-git-" + [guid]::NewGuid().ToString('N'))
     $stdoutLog = "$gitLogBase.out.log"
     $stderrLog = "$gitLogBase.err.log"
+    $stdout = ''
+    $stderr = ''
+    $proc = $null
 
     try {
-        $proc = Start-Process -FilePath 'git' `
-                              -ArgumentList $Arguments `
-                              -WorkingDirectory $WorkingDirectory `
-                              -RedirectStandardOutput $stdoutLog `
-                              -RedirectStandardError $stderrLog `
-                              -NoNewWindow `
-                              -PassThru
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = 'git'
+        $startInfo.Arguments = Join-CommandLineArguments -Arguments $Arguments
+        $startInfo.WorkingDirectory = $WorkingDirectory
+        $startInfo.UseShellExecute = $false
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $startInfo.CreateNoWindow = $true
+
+        $proc = [System.Diagnostics.Process]::Start($startInfo)
         Wait-ProcessWithSpinner -Process $proc -Activity ("git " + ($Arguments -join ' ')) -Detail $WorkingDirectory
+
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+
+        if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+            Set-Content -LiteralPath $stdoutLog -Value $stdout -Encoding UTF8
+        }
+        if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+            Set-Content -LiteralPath $stderrLog -Value $stderr -Encoding UTF8
+        }
     } catch {
         throw "Git konnte nicht gestartet werden: $($_.Exception.Message)"
     }
 
     try {
         if ($proc.ExitCode -ne 0) {
-            $stdoutRaw = if (Test-Path $stdoutLog) { Get-Content -Path $stdoutLog -Raw } else { '' }
-            $stderrRaw = if (Test-Path $stderrLog) { Get-Content -Path $stderrLog -Raw } else { '' }
+            $stdoutRaw = if (-not [string]::IsNullOrWhiteSpace($stdout)) { $stdout } elseif (Test-Path $stdoutLog) { Get-Content -Path $stdoutLog -Raw } else { '' }
+            $stderrRaw = if (-not [string]::IsNullOrWhiteSpace($stderr)) { $stderr } elseif (Test-Path $stderrLog) { Get-Content -Path $stderrLog -Raw } else { '' }
             $stdout = if ($null -ne $stdoutRaw) { $stdoutRaw.Trim() } else { '' }
             $stderr = if ($null -ne $stderrRaw) { $stderrRaw.Trim() } else { '' }
             $details = @($stderr, $stdout) | Where-Object { $_ }
@@ -728,6 +750,9 @@ function Invoke-Git {
             throw ("git {0} fehlgeschlagen (ExitCode {1})" -f ($Arguments -join ' '), $proc.ExitCode)
         }
     } finally {
+        if ($null -ne $proc) {
+            $proc.Dispose()
+        }
         Remove-Item -LiteralPath $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
     }
 }
@@ -1019,17 +1044,34 @@ function Install-Deps {
         $npmLogBase = Join-Path $LTTHDir ("ltth-npm-" + [guid]::NewGuid().ToString('N'))
         $stdoutLog = "$npmLogBase.out.log"
         $stderrLog = "$npmLogBase.err.log"
+        $npmStdout = ''
+        $npmStderr = ''
+        $process = $null
 
         try {
-            $process = Start-Process -FilePath $npmExecutable `
-                -ArgumentList $npmArgs `
-                -WorkingDirectory $appDir `
-                -RedirectStandardOutput $stdoutLog `
-                -RedirectStandardError $stderrLog `
-                -WindowStyle Hidden `
-                -PassThru
+            $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+            $startInfo.FileName = $npmExecutable
+            $startInfo.Arguments = Join-CommandLineArguments -Arguments $npmArgs
+            $startInfo.WorkingDirectory = $appDir
+            $startInfo.UseShellExecute = $false
+            $startInfo.RedirectStandardOutput = $true
+            $startInfo.RedirectStandardError = $true
+            $startInfo.CreateNoWindow = $true
 
-            Wait-ProcessWithSpinner -Process $process -Activity 'npm install wird ausgeführt'
+            $process = [System.Diagnostics.Process]::Start($startInfo)
+
+            Wait-ProcessWithSpinner -Process $process -Activity 'npm install wird ausgefuehrt'
+
+            $npmStdout = $process.StandardOutput.ReadToEnd()
+            $npmStderr = $process.StandardError.ReadToEnd()
+            $process.WaitForExit()
+
+            if (-not [string]::IsNullOrWhiteSpace($npmStdout)) {
+                Set-Content -LiteralPath $stdoutLog -Value $npmStdout -Encoding UTF8
+            }
+            if (-not [string]::IsNullOrWhiteSpace($npmStderr)) {
+                Set-Content -LiteralPath $stderrLog -Value $npmStderr -Encoding UTF8
+            }
             $npmExitCode = $process.ExitCode
         } catch {
             Fail "npm konnte nicht gestartet werden: $($_.Exception.Message)"
@@ -1048,6 +1090,9 @@ function Install-Deps {
 
         Remove-Item -Path $stdoutLog, $stderrLog -Force -ErrorAction SilentlyContinue
     } finally {
+        if ($null -ne $process) {
+            $process.Dispose()
+        }
         Pop-Location
     }
     Ok "Abhaengigkeiten installiert"
@@ -1290,7 +1335,6 @@ function Open-Browser {
 # ---------- Hauptprogramm ----------
 function Main {
     Write-Host ""
-    Write-InstallerBanner
     Write-Host "  ============================================================" -ForegroundColor Magenta
     Write-Host "   PupCid's Little TikTool Helper -- One-Line Installer (Win)" -ForegroundColor Magenta
     Write-Host "  ============================================================" -ForegroundColor Magenta
