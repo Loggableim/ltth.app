@@ -14,9 +14,9 @@
       },
       "description": {
         "en": "Professional multi-timer system with event triggers, automation, viewer interaction, and customizable overlays. Perfect for subathons, challenges, stream schedules, and goals.",
-        "de": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt fÃ¼r Subathons, Challenges, Stream-ZeitplÃ¤ne und Ziele.",
-        "es": "Visual FX Frame es un overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real, reacciones por capas a eventos de TikTok LIVE, creador de reglas para cat????logo de regalos, sistema de presets, integraci????n con flows y Kawase bloom. Compatible con resoluciones de hasta 4K con colores, intensidad, velocidad y posicionamiento de marco totalmente configurables. Fondo transparente para una integraci????n perfecta con OBS.",
-        "fr": "Visual FX Frame est un overlay d'effets WebGL s????r pour le broadcast avec 4 modes visuels bas????s sur des r????les, aper????u en temps r????el, r????actions TikTok LIVE en couches, constructeur de r????gles de catalogue de cadeaux, syst????me de pr????r????glages, int????gration flow et Kawase bloom. Compatible jusqu'???? 4K avec couleurs, intensit????, vitesse et positionnement de cadre enti????rement configurables. Fond transparent pour une int????gration OBS fluide."
+        "de": "Professionelles Multi-Timer-System mit Event-Triggern, Automatisierung, Zuschauer-Interaktion und anpassbaren Overlays. Perfekt für Subathons, Challenges, Stream-Zeitpläne und Ziele.",
+        "es": "Sistema profesional de múltiples temporizadores con activadores de eventos, automatización, interacción con espectadores y overlays personalizables. Perfecto para subathons, desafíos, horarios de transmisión y objetivos.",
+        "fr": "Système professionnel de minuteries multiples avec déclencheurs d'événements, automatisation, interaction avec les spectateurs et overlays personnalisables. Parfait pour les subathons, défis, plannings de stream et objectifs."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -41,9 +41,9 @@
       },
       "description": {
         "en": "Multi-platform VTuber avatar control via TikTok LIVE events. Supports Animaze, VTube Studio, and VSeeFace with an AI Brain Engine, long-term memory, personality system, and GPT-powered intelligent responses.",
-        "de": "Mehrplattform-Integration fÃ¼r VTuber-Avatar-Steuerung Ã¼ber TikTok LIVE Events. UnterstÃ¼tzt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-GedÃ¤chtnis, PersÃ¶nlichkeits-System und GPT-gesteuerten Antworten.",
-        "es": "Control de avatar VTuber multiplataforma a travÃ©s de eventos de TikTok LIVE. Compatible con Animaze, VTube Studio y VSeeFace con un Motor de Cerebro IA, memoria a largo plazo, sistema de personalidades y respuestas inteligentes con GPT.",
-        "fr": "ContrÃ´le d'avatar VTuber multiplateforme via les Ã©vÃ©nements TikTok LIVE. Compatible avec Animaze, VTube Studio et VSeeFace avec un moteur IA, mÃ©moire Ã  long terme, systÃ¨me de personnalitÃ©s et rÃ©ponses intelligentes GPT."
+        "de": "Mehrplattform-Integration für VTuber-Avatar-Steuerung über TikTok LIVE Events. Unterstützt Animaze, VTube Studio und VSeeFace mit KI-Brain Engine, Langzeit-Gedächtnis, Persönlichkeits-System und GPT-gesteuerten Antworten.",
+        "es": "Control de avatar VTuber multiplataforma a través de eventos de TikTok LIVE. Compatible con Animaze, VTube Studio y VSeeFace con un Motor de Cerebro IA, memoria a largo plazo, sistema de personalidades y respuestas inteligentes con GPT.",
+        "fr": "Contrôle d'avatar VTuber multiplateforme via les événements TikTok LIVE. Compatible avec Animaze, VTube Studio et VSeeFace avec un moteur IA, mémoire à long terme, système de personnalités et réponses intelligentes GPT."
       },
       "version": "1.4.0",
       "author": "copilot",
@@ -73,9 +73,9 @@
       },
       "description": {
         "en": "Enables external applications to control the tool via HTTP and WebSocket. Provides REST API endpoints and real-time event streaming for third-party integrations.",
-        "de": "ErmÃ¶glicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming fÃ¼r Drittanbieter-Integrationen.",
+        "de": "Ermöglicht externen Anwendungen die Steuerung des Tools via HTTP und WebSocket. Bietet REST-API-Endpunkte und Echtzeit-Event-Streaming für Drittanbieter-Integrationen.",
         "es": "Permite que aplicaciones externas controlen la herramienta mediante HTTP y WebSocket. Proporciona endpoints de API REST y streaming de eventos en tiempo real para integraciones de terceros.",
-        "fr": "Permet aux applications externes de contrÃ´ler l'outil via HTTP et WebSocket. Fournit des endpoints API REST et streaming d'Ã©vÃ©nements en temps rÃ©el pour les intÃ©grations tierces."
+        "fr": "Permet aux applications externes de contrôler l'outil via HTTP et WebSocket. Fournit des endpoints API REST et streaming d'événements en temps réel pour les intégrations tierces."
       },
       "version": "1.0.0",
       "author": "copilot",
@@ -100,9 +100,9 @@
       },
       "description": {
         "en": "Integrates Chatango chat rooms into your stream. Configure embeddable chat widgets, customize appearance, and receive chat messages as events for use in flows and automations.",
-        "de": "Integriert Chatango-ChatrÃ¤ume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events fÃ¼r Flows und Automatisierungen.",
-        "es": "Integra salas de chat de Chatango en tu transmisiÃ³n. Configura widgets de chat insertables, personaliza la apariencia y recibe mensajes de chat como eventos para usar en flujos y automatizaciones.",
-        "fr": "IntÃ¨gre les salons de chat Chatango dans votre stream. Configurez des widgets de chat intÃ©grables, personnalisez l'apparence et recevez les messages de chat comme Ã©vÃ©nements pour les flux et automatisations."
+        "de": "Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen.",
+        "es": "Integra salas de chat de Chatango en tu transmisión. Configura widgets de chat insertables, personaliza la apariencia y recibe mensajes de chat como eventos para usar en flujos y automatizaciones.",
+        "fr": "Intègre les salons de chat Chatango dans votre stream. Configurez des widgets de chat intégrables, personnalisez l'apparence et recevez les messages de chat comme événements pour les flux et automatisations."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -129,9 +129,9 @@
       },
       "description": {
         "en": "Ultra-minimalistic, VR-optimized and accessible HUD overlays for chat and activity feeds. Designed for clarity and readability in virtual reality environments.",
-        "de": "Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays fÃ¼r Chat und Activity-Feeds. Entwickelt fÃ¼r Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen.",
-        "es": "Overlays HUD ultra minimalistas, optimizados para VR y accesibles para chat y feeds de actividad. DiseÃ±ados para claridad y legibilidad en entornos de realidad virtual.",
-        "fr": "Overlays HUD ultra-minimalistes, optimisÃ©s VR et accessibles pour chat et flux d'activitÃ©. ConÃ§us pour la clartÃ© et la lisibilitÃ© dans les environnements de rÃ©alitÃ© virtuelle."
+        "de": "Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen.",
+        "es": "Overlays HUD ultra minimalistas, optimizados para VR y accesibles para chat y feeds de actividad. Diseñados para claridad y legibilidad en entornos de realidad virtual.",
+        "fr": "Overlays HUD ultra-minimalistes, optimisés VR et accessibles pour chat et flux d'activité. Conçus pour la clarté et la lisibilité dans les environnements de réalité virtuelle."
       },
       "version": "1.1.0",
       "author": "Plugin System",
@@ -156,9 +156,9 @@
       },
       "description": {
         "en": "Live battle game where viewers compete by sending TikTok gifts to collect coins. Features team battles, multiplier events, historical rankings, badges, and customizable overlays.",
-        "de": "Live-Battle-Spiel, bei dem Zuschauer durch TikTok-Geschenke MÃ¼nzen sammeln. Bietet Team-Battles, Multiplikator-Events, historische Rankings, Badges und anpassbare Overlays.",
-        "es": "Juego de batalla en vivo donde los espectadores compiten enviando regalos de TikTok para recolectar monedas. Incluye batallas por equipos, eventos multiplicadores, rankings histÃ³ricos, insignias y overlays personalizables.",
-        "fr": "Jeu de bataille en direct oÃ¹ les spectateurs rivalisent en envoyant des cadeaux TikTok pour collecter des piÃ¨ces. Comprend des batailles d'Ã©quipe, Ã©vÃ©nements multiplicateurs, classements historiques, badges et overlays personnalisables."
+        "de": "Live-Battle-Spiel, bei dem Zuschauer durch TikTok-Geschenke Münzen sammeln. Bietet Team-Battles, Multiplikator-Events, historische Rankings, Badges und anpassbare Overlays.",
+        "es": "Juego de batalla en vivo donde los espectadores compiten enviando regalos de TikTok para recolectar monedas. Incluye batallas por equipos, eventos multiplicadores, rankings históricos, insignias y overlays personalizables.",
+        "fr": "Jeu de bataille en direct où les spectateurs rivalisent en envoyant des cadeaux TikTok pour collecter des pièces. Comprend des batailles d'équipe, événements multiplicateurs, classements historiques, badges et overlays personnalisables."
       },
       "version": "1.1.0",
       "author": "Pup Cid",
@@ -185,9 +185,9 @@
       },
       "description": {
         "en": "Full configuration backup and restore system. Export all settings to a ZIP archive, import from a backup, preview conflicts, and migrate from legacy installations.",
-        "de": "VollstÃ¤ndiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von Ã¤lteren Installationen.",
-        "es": "Sistema completo de copia de seguridad y restauraciÃ³n de configuraciÃ³n. Exporte todos los ajustes a un archivo ZIP, importe desde una copia de seguridad, previsualice conflictos y migre desde instalaciones antiguas.",
-        "fr": "SystÃ¨me complet de sauvegarde et restauration de configuration. Exportez tous les paramÃ¨tres dans une archive ZIP, importez depuis une sauvegarde, prÃ©visualisez les conflits et migrez depuis d'anciennes installations."
+        "de": "Vollständiges Konfigurations-Backup- und Wiederherstellungssystem. Exportieren Sie alle Einstellungen in ein ZIP-Archiv, importieren Sie aus einem Backup, zeigen Sie Konflikte in der Vorschau an und migrieren Sie von älteren Installationen.",
+        "es": "Sistema completo de copia de seguridad y restauración de configuración. Exporte todos los ajustes a un archivo ZIP, importe desde una copia de seguridad, previsualice conflictos y migre desde instalaciones antiguas.",
+        "fr": "Système complet de sauvegarde et restauration de configuration. Exportez tous les paramètres dans une archive ZIP, importez depuis une sauvegarde, prévisualisez les conflits et migrez depuis d'anciennes installations."
       },
       "version": "2.0.0",
       "author": "Pup Cid",
@@ -211,7 +211,7 @@
         "en": "Data Source Manager"
       },
       "description": {
-        "en": "WÃ¤hle zwischen Eulerstream und TikFinity als TikTok-Datenquelle."
+        "en": "Wähle zwischen Eulerstream und TikFinity als TikTok-Datenquelle."
       },
       "version": "1.0.0",
       "author": "PupCid",
@@ -235,7 +235,7 @@
         "en": "Fireworks Superplugin (Stable)"
       },
       "description": {
-        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, interactive triggers, validated runtime settings, and streamer-safe backpressure for low-FPS or high-load OBS sessions."
+        "en": "GPU-accelerated fireworks effects with gift-specific displays, combo systems, and interactive triggers. Features WebGL/WebGPU rendering with Canvas 2D fallback for maximum compatibility."
       },
       "version": "2.0.0",
       "author": "Pup Cid",
@@ -261,10 +261,10 @@
         "en": "Visual FX Frame"
       },
       "description": {
-        "en": "Visual FX Frame is a broadcast-safe WebGL effects overlay with 4 role-based visual modes, real-time preview, layered TikTok LIVE trigger reactions, a gift catalog rule builder, preset system, flow integration, and Kawase bloom. Supports up to 4K resolution with fully configurable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration.",
-        "de": "Visual FX Frame ist ein broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau, gestuften TikTok-LIVE-Trigger-Reaktionen, Geschenkekatalog-Regelbuilder, Preset-System, Flow-Integration und Kawase Bloom. Unterstuetzt Aufloesungen bis 4K mit vollstaendig anpassbaren Farben, Intensitaet, Geschwindigkeit und praeziser Rahmenpositionierung. Transparenter Hintergrund fuer nahtlose OBS-Integration.",
-        "es": "Visual FX Frame es un overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real, reacciones por capas a eventos de TikTok LIVE, creador de reglas para catalogo de regalos, sistema de presets, integracion con flows y Kawase bloom. Compatible con resoluciones de hasta 4K con colores, intensidad, velocidad y posicionamiento de marco totalmente configurables. Fondo transparente para una integracion perfecta con OBS.",
-        "fr": "Visual FX Frame est un overlay d'effets WebGL sur pour le broadcast avec 4 modes visuels bases sur des roles, apercu en temps reel, reactions TikTok LIVE en couches, constructeur de regles de catalogue de cadeaux, systeme de pre-reglages, integration flow et Kawase bloom. Compatible jusqu'a 4K avec couleurs, intensite, vitesse et positionnement de cadre entierement configurables. Fond transparent pour une integration OBS fluide."
+        "en": "Broadcast-safe WebGL effects overlay featuring 4 role-based visual modes with real-time preview and frame positioning. TikTok LIVE triggers react to gifts, follows, likes, shares, subscribes and chat color commands with layered base, accent and impact reactions. Named config preset system, flow integration, and high-performance Kawase bloom. Includes Flames, Particle Burst, Energy Waves, and Electric Lightning. Supports resolutions up to 4K with fully customizable colors, intensity, speed, and precise frame positioning. Transparent background for seamless OBS integration.",
+        "de": "Broadcast-sicheres WebGL-Effekt-Overlay mit 4 rollenbasierten visuellen Modi, Echtzeit-Vorschau und Rahmen-Positionierung. TikTok LIVE Trigger reagieren auf Gifts, Follows, Likes, Shares, Subscribes und Chat-Farbbefehle mit gestuften Base-, Accent- und Impact-Reaktionen. Benanntes Preset-System, Flow-Integration und leistungsstarker Kawase Bloom. Enthält Flames, Partikel-Burst, Energie-Wellen und elektrische Blitze. Unterstützt Auflösungen bis 4K mit vollständig anpassbaren Farben, Intensität, Geschwindigkeit und präziser Rahmenpositionierung. Transparenter Hintergrund für nahtlose OBS-Integration.",
+        "es": "Overlay de efectos WebGL seguro para broadcast con 4 modos visuales basados en rol, vista previa en tiempo real y posicionamiento de marco. Los disparadores de TikTok LIVE reaccionan a regalos, follows, likes, compartidos, suscripciones y comandos de color en chat con respuestas escalonadas de base, acento e impacto. Incluye sistema de presets con nombre, integración de flows y Kawase bloom de alto rendimiento.",
+        "fr": "Overlay d'effets WebGL sûr pour le broadcast avec 4 modes visuels basés sur des rôles, aperçu en temps réel et positionnement de cadre. Les déclencheurs TikTok LIVE réagissent aux cadeaux, follows, likes, partages, abonnements et commandes de couleur du chat avec des réponses en couches base, accent et impact. Comprend un système de préréglages nommés, l'intégration flow et un Kawase bloom haute performance."
       },
       "version": "3.0.0",
       "author": "Pup Cid",
@@ -291,9 +291,9 @@
       },
       "description": {
         "en": "Interactive game engine for TikTok LIVE streams. Play games like Connect4, Chess, Plinko, Wheel of Fortune, Slot Machine, and Live Arena with viewers using chat commands, live activity, and gifts. Features configurable odds profiles, OpenShock reward integration, customizable overlays, compact HUD, XP rewards, win streaks, sound effects, and extensible game framework.",
-        "de": "Interaktive Spielmaschine fÃ¼r TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, GlÃ¼cksrad, Slot Machine und Live Arena mit Zuschauern Ã¼ber Chat-Befehle, Live-AktivitÃ¤t und Geschenke. Bietet konfigurierbare Odds-Profile, OpenShock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.",
-        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega juegos como Connect4, Ajedrez, Plinko, Ruleta de la Fortuna y MÃ¡quina Tragaperras con espectadores usando comandos de chat y regalos. Incluye perfiles de probabilidades configurables, integraciÃ³n de recompensas OpenShock, overlays personalizables, HUD compacto, recompensas de XP y framework de juegos extensible.",
-        "fr": "Moteur de jeux interactif pour les diffusions en direct TikTok. Jouez Ã  des jeux comme Connect4, Ã‰checs, Plinko, Roue de la Fortune et Machine Ã  Sous avec les spectateurs en utilisant des commandes de chat et des cadeaux. Comprend des profils de probabilitÃ©s configurables, intÃ©gration de rÃ©compenses OpenShock, des overlays personnalisables, HUD compact, des rÃ©compenses XP et un framework de jeux extensible."
+        "de": "Interaktive Spielmaschine für TikTok LIVE Streams. Spiele wie Vier Gewinnt, Schach, Plinko, Glücksrad, Slot Machine und Live Arena mit Zuschauern über Chat-Befehle, Live-Aktivität und Geschenke. Bietet konfigurierbare Odds-Profile, OpenShock-Belohnungsintegration, anpassbare Overlays, kompaktes HUD, XP-Belohnungen, Siegesserien, Sound-Effekte und erweiterbares Spiel-Framework.",
+        "es": "Motor de juegos interactivo para transmisiones en vivo de TikTok. Juega juegos como Connect4, Ajedrez, Plinko, Ruleta de la Fortuna y Máquina Tragaperras con espectadores usando comandos de chat y regalos. Incluye perfiles de probabilidades configurables, integración de recompensas OpenShock, overlays personalizables, HUD compacto, recompensas de XP y framework de juegos extensible.",
+        "fr": "Moteur de jeux interactif pour les diffusions en direct TikTok. Jouez à des jeux comme Connect4, Échecs, Plinko, Roue de la Fortune et Machine à Sous avec les spectateurs en utilisant des commandes de chat et des cadeaux. Comprend des profils de probabilités configurables, intégration de récompenses OpenShock, des overlays personnalisables, HUD compact, des récompenses XP et un framework de jeux extensible."
       },
       "version": "1.3.0",
       "author": "Pup Cid",
@@ -318,9 +318,9 @@
       },
       "description": {
         "en": "Universal chat command interpreter and framework for all plugins. Provides centralized command parsing, permission management, and extensible command registration system.",
-        "de": "Universeller Chat-Befehls-Interpreter und Framework fÃ¼r alle Plugins. Bietet zentralisierte Befehlsanalyse, Berechtigungsverwaltung und erweiterbares Befehlsregistrierungssystem.",
-        "es": "IntÃ©rprete universal de comandos de chat y framework para todos los plugins. Proporciona anÃ¡lisis centralizado de comandos, gestiÃ³n de permisos y sistema extensible de registro de comandos.",
-        "fr": "InterprÃ©teur universel de commandes de chat et framework pour tous les plugins. Fournit analyse centralisÃ©e des commandes, gestion des permissions et systÃ¨me extensible d'enregistrement de commandes."
+        "de": "Universeller Chat-Befehls-Interpreter und Framework für alle Plugins. Bietet zentralisierte Befehlsanalyse, Berechtigungsverwaltung und erweiterbares Befehlsregistrierungssystem.",
+        "es": "Intérprete universal de comandos de chat y framework para todos los plugins. Proporciona análisis centralizado de comandos, gestión de permisos y sistema extensible de registro de comandos.",
+        "fr": "Interpréteur universel de commandes de chat et framework pour tous les plugins. Fournit analyse centralisée des commandes, gestion des permissions et système extensible d'enregistrement de commandes."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -345,9 +345,9 @@
       },
       "description": {
         "en": "Celebrate coin milestones with custom animations (GIF, MP4) and audio. Triggers special celebrations when cumulative gift coins reach configured thresholds with overlay support.",
-        "de": "Feiern Sie MÃ¼nz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. LÃ¶st spezielle Feierlichkeiten aus, wenn kumulative Geschenk-MÃ¼nzen konfigurierte Schwellenwerte mit Overlay-UnterstÃ¼tzung erreichen.",
+        "de": "Feiern Sie Münz-Meilensteine mit benutzerdefinierten Animationen (GIF, MP4) und Audio. Löst spezielle Feierlichkeiten aus, wenn kumulative Geschenk-Münzen konfigurierte Schwellenwerte mit Overlay-Unterstützung erreichen.",
         "es": "Celebra hitos de monedas con animaciones personalizadas (GIF, MP4) y audio. Activa celebraciones especiales cuando las monedas de regalo acumuladas alcanzan umbrales configurados con soporte de overlay.",
-        "fr": "CÃ©lÃ©brez les jalons de piÃ¨ces avec animations personnalisÃ©es (GIF, MP4) et audio. DÃ©clenche des cÃ©lÃ©brations spÃ©ciales lorsque les piÃ¨ces de cadeaux cumulÃ©es atteignent les seuils configurÃ©s avec support d'overlay."
+        "fr": "Célébrez les jalons de pièces avec animations personnalisées (GIF, MP4) et audio. Déclenche des célébrations spéciales lorsque les pièces de cadeaux cumulées atteignent les seuils configurés avec support d'overlay."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -372,9 +372,9 @@
       },
       "description": {
         "en": "Complete Live Goals system with Coin, Likes, Follower, and Custom goal types. Real-time tracking with Event API and customizable overlays for viewer engagement.",
-        "de": "Komplettes Live-Ziele-System mit MÃ¼nz-, Likes-, Follower- und benutzerdefinierten Zieltypen. Echtzeit-Tracking mit Event-API und anpassbaren Overlays fÃ¼r Zuschauer-Engagement.",
-        "es": "Sistema completo de objetivos en vivo con tipos de objetivos de monedas, likes, seguidores y personalizados. Seguimiento en tiempo real con API de eventos y overlays personalizables para la participaciÃ³n del espectador.",
-        "fr": "SystÃ¨me complet d'objectifs en direct avec types d'objectifs PiÃ¨ces, Likes, AbonnÃ©s et personnalisÃ©s. Suivi en temps rÃ©el avec API d'Ã©vÃ©nements et overlays personnalisables pour l'engagement des spectateurs."
+        "de": "Komplettes Live-Ziele-System mit Münz-, Likes-, Follower- und benutzerdefinierten Zieltypen. Echtzeit-Tracking mit Event-API und anpassbaren Overlays für Zuschauer-Engagement.",
+        "es": "Sistema completo de objetivos en vivo con tipos de objetivos de monedas, likes, seguidores y personalizados. Seguimiento en tiempo real con API de eventos y overlays personalizables para la participación del espectador.",
+        "fr": "Système complet d'objectifs en direct avec types d'objectifs Pièces, Likes, Abonnés et personnalisés. Suivi en temps réel avec API d'événements et overlays personnalisables pour l'engagement des spectateurs."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -401,9 +401,9 @@
       },
       "description": {
         "en": "AI-powered interactive story generation with chat voting, image generation, multi-voice TTS, and adaptive OBS overlays. Create engaging stories with your audience using LLM technology.",
-        "de": "KI-gest�tzte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie.",
-        "es": "Generaci�n de historias interactivas impulsada por IA con votaci�n por chat, generaci�n de im�genes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnolog�a LLM.",
-        "fr": "G�n�ration d'histoires interactives aliment�e par l'IA avec vote par chat, g�n�ration d'images, TTS multi-voix et overlays adaptatifs OBS. Cr�ez des histoires captivantes avec votre public gr�ce � la technologie LLM."
+        "de": "KI-gestützte interaktive Story-Generierung mit Chat-Voting, Bildgenerierung, Multi-Voice-TTS und adaptiven OBS-Overlays. Erstelle fesselnde Geschichten mit deinem Publikum mithilfe von LLM-Technologie.",
+        "es": "Generación de historias interactivas impulsada por IA con votación por chat, generación de imágenes, TTS multi-voz y overlays adaptativos para OBS. Crea historias cautivadoras con tu audiencia usando tecnología LLM.",
+        "fr": "Génération d'histoires interactives alimentée par l'IA avec vote par chat, génération d'images, TTS multi-voix et overlays adaptatifs OBS. Créez des histoires captivantes avec votre public grâce à la technologie LLM."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -432,10 +432,10 @@
         "en": "Spotlight"
       },
       "description": {
-        "en": "Modern live overlays for recent viewers and event activity across OBS, LIVE Studio, and streaming dashboards.",
-        "de": "Moderne Live-Overlays für aktuelle Zuschauer und Event-Aktivität in OBS, LIVE Studio und Streaming-Dashboards.",
-        "es": "Overlays en vivo modernos para espectadores recientes y actividad de eventos en OBS, LIVE Studio y paneles de streaming.",
-        "fr": "Overlays en direct modernes pour les spectateurs récents et l'activité d'événements dans OBS, LIVE Studio et les tableaux de bord de stream."
+        "en": "Modern live overlays for follower, like, chat, share, gift, subscriber, top gift, and rotation spotlight views.",
+        "de": "Moderne Live-Overlays für Follower-, Like-, Chat-, Share-, Geschenk-, Abo-, Top-Gift- und Rotations-Spotlight-Ansichten.",
+        "es": "Overlays en vivo modernos para vistas Spotlight de seguidores, me gusta, chat, compartir, regalo, suscriptor, mejor regalo y rotación.",
+        "fr": "Overlays en direct modernes pour les vues Spotlight de follower, like, chat, partage, cadeau, abonné, top cadeau et rotation."
       },
       "version": "1.1.5",
       "author": "Plugin System",
@@ -463,10 +463,10 @@
         "en": "Milestone Leaderboard"
       },
       "description": {
-        "en": "Mega plugin that merges Gift Milestone celebrations with the real-time gifter leaderboard overlay.",
-        "de": "Mega-Plugin, das die Gift-Milestone-Feiern mit dem Echtzeit-Gifter-Leaderboard-Overlay kombiniert.",
-        "es": "Mega plugin que combina las celebraciones de Gift Milestone con el overlay del leaderboard de donadores en tiempo real.",
-        "fr": "Mega plugin qui fusionne les cÃ©lÃ©brations Gift Milestone avec lâ€™overlay de classement des donateurs en temps rÃ©el."
+        "en": "Unified Viewer XP bundle that combines gift milestone celebrations, the real-time gifter leaderboard, and viewer profile analytics.",
+        "de": "Vereintes Viewer-XP-Bundle, das Gift-Milestone-Feiern, das Echtzeit-Gifter-Leaderboard und Viewer-Profil-Analysen kombiniert.",
+        "es": "Paquete unificado de Viewer XP que combina celebraciones de hitos de regalos, el leaderboard de donadores en tiempo real y analisis de perfiles de espectadores.",
+        "fr": "Bundle Viewer XP unifie qui combine les celebrations de jalons de cadeaux, le classement des donateurs en temps reel et l'analyse des profils de spectateurs."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -491,9 +491,9 @@
       },
       "description": {
         "en": "Switches OBS scenes via gifts or chat commands; supports Spout feeds, cameras 1-5. Perfect for dynamic multi-camera setups with automated scene switching. [Working Beta]",
-        "de": "Wechselt OBS-Szenen Ã¼ber Geschenke oder Chat-Befehle; unterstÃ¼tzt Spout-Feeds, Kameras 1-5. Perfekt fÃ¼r dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel. [Working Beta]",
-        "es": "Cambia escenas de OBS mediante regalos o comandos de chat; admite feeds Spout, cÃ¡maras 1-5. Perfecto para configuraciones dinÃ¡micas de mÃºltiples cÃ¡maras con cambio de escena automatizado. [Working Beta]",
-        "fr": "Change les scÃ¨nes OBS via cadeaux ou commandes de chat; prend en charge les flux Spout, camÃ©ras 1-5. Parfait pour les configurations multi-camÃ©ras dynamiques avec changement de scÃ¨ne automatisÃ©. [Working Beta]"
+        "de": "Wechselt OBS-Szenen über Geschenke oder Chat-Befehle; unterstützt Spout-Feeds, Kameras 1-5. Perfekt für dynamische Multi-Kamera-Setups mit automatisiertem Szenenwechsel. [Working Beta]",
+        "es": "Cambia escenas de OBS mediante regalos o comandos de chat; admite feeds Spout, cámaras 1-5. Perfecto para configuraciones dinámicas de múltiples cámaras con cambio de escena automatizado. [Working Beta]",
+        "fr": "Change les scènes OBS via cadeaux ou commandes de chat; prend en charge les flux Spout, caméras 1-5. Parfait pour les configurations multi-caméras dynamiques avec changement de scène automatisé. [Working Beta]"
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -541,10 +541,10 @@
         "en": "OpenShock & PiShock Integration"
       },
       "description": {
-        "en": "Complete Shock Device integration for TikTok Live events â€“ supports OpenShock and PiShock. With event mapping, pattern system, safety layer, queue management, and professional overlay support.",
-        "de": "VollstÃ¤ndige Shock-Device-Integration fÃ¼r TikTok-Live-Events â€“ unterstÃ¼tzt OpenShock und PiShock. Mit Event-Mapping, Pattern-System, Safety-Layer, Queue-Management und professioneller Overlay-UnterstÃ¼tzung.",
-        "es": "IntegraciÃ³n completa de dispositivos Shock para eventos en vivo de TikTok â€“ compatible con OpenShock y PiShock. Con mapeo de eventos, sistema de patrones, capa de seguridad, gestiÃ³n de colas y soporte de overlay profesional.",
-        "fr": "IntÃ©gration complÃ¨te de dispositifs Shock pour Ã©vÃ©nements TikTok Live â€“ compatible OpenShock et PiShock. Avec mappage d'Ã©vÃ©nements, systÃ¨me de patterns, couche de sÃ©curitÃ©, gestion de file d'attente et support d'overlay professionnel."
+        "en": "Hybrid Shock for TikTok Live events - supports OpenShock and PiShock. Includes event mapping, pattern control, safety layers, queue management, and overlay support.",
+        "de": "Hybrid Shock fur TikTok-Live-Events - unterstutzt OpenShock und PiShock. Mit Event-Mapping, Pattern-Steuerung, Safety-Layer, Queue-Management und Overlay-Unterstutzung.",
+        "es": "Hybrid Shock para eventos en vivo de TikTok - compatible con OpenShock y PiShock. Incluye mapeo de eventos, control de patrones, capas de seguridad, gestion de colas y soporte de overlay.",
+        "fr": "Hybrid Shock pour les evenements TikTok Live - prend en charge OpenShock et PiShock. Inclut le mappage d'evenements, le controle des patterns, les couches de securite, la gestion de file d'attente et le support d'overlay."
       },
       "version": "1.1.0",
       "author": "ltth.app Team",
@@ -631,9 +631,9 @@
       },
       "description": {
         "en": "Intelligent stream assistant that delegates speech and avatar responses through AnimazingPal and Fish.audio. Features event analysis, automatic responses, user memory with decay, message batching, relevance scoring, and comprehensive stream analytics.",
-        "de": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen Ã¼ber AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-GedÃ¤chtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik.",
-        "es": "Asistente de stream inteligente que delega voz y respuestas de avatar mediante AnimazingPal y Fish.audio. Incluye anÃ¡lisis de eventos, respuestas automÃ¡ticas, memoria de usuarios con decaimiento, agrupaciÃ³n de mensajes, puntuaciÃ³n de relevancia y anÃ¡lisis completo de streams.",
-        "fr": "Assistant de stream intelligent qui dÃ©lÃ¨gue la voix et les rÃ©ponses d'avatar via AnimazingPal et Fish.audio. Comprend l'analyse d'Ã©vÃ©nements, les rÃ©ponses automatiques, la mÃ©moire utilisateur avec dÃ©clin, le regroupement de messages, le scoring de pertinence et l'analytique complÃ¨te de streams."
+        "de": "Intelligenter Stream-Assistent, der Sprache und Avatar-Reaktionen über AnimazingPal und Fish.audio delegiert. Bietet Event-Analyse, automatische Antworten, Benutzer-Gedächtnis mit Verfall, Nachrichten-Batching, Relevanz-Scoring und umfassende Stream-Analytik.",
+        "es": "Asistente de stream inteligente que delega voz y respuestas de avatar mediante AnimazingPal y Fish.audio. Incluye análisis de eventos, respuestas automáticas, memoria de usuarios con decaimiento, agrupación de mensajes, puntuación de relevancia y análisis completo de streams.",
+        "fr": "Assistant de stream intelligent qui délègue la voix et les réponses d'avatar via AnimazingPal et Fish.audio. Comprend l'analyse d'événements, les réponses automatiques, la mémoire utilisateur avec déclin, le regroupement de messages, le scoring de pertinence et l'analytique complète de streams."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -663,9 +663,9 @@
       },
       "description": {
         "en": "Gift-specific sounds, audio queue management, and MyInstants integration for TikTok events. Features customizable sound mappings, volume control, and queue prioritization.",
-        "de": "Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration fÃ¼r TikTok-Events. Bietet anpassbare Sound-Mappings, LautstÃ¤rkeregelung und Queue-Priorisierung.",
-        "es": "Sonidos especÃ­ficos de regalos, gestiÃ³n de cola de audio e integraciÃ³n de MyInstants para eventos de TikTok. Presenta mapeos de sonido personalizables, control de volumen y priorizaciÃ³n de cola.",
-        "fr": "Sons spÃ©cifiques aux cadeaux, gestion de file d'attente audio et intÃ©gration MyInstants pour Ã©vÃ©nements TikTok. Comprend mappages de sons personnalisables, contrÃ´le du volume et priorisation de file d'attente."
+        "de": "Geschenkspezifische Sounds, Audio-Queue-Management und MyInstants-Integration für TikTok-Events. Bietet anpassbare Sound-Mappings, Lautstärkeregelung und Queue-Priorisierung.",
+        "es": "Sonidos específicos de regalos, gestión de cola de audio e integración de MyInstants para eventos de TikTok. Presenta mapeos de sonido personalizables, control de volumen y priorización de cola.",
+        "fr": "Sons spécifiques aux cadeaux, gestion de file d'attente audio et intégration MyInstants pour événements TikTok. Comprend mappages de sons personnalisables, contrôle du volume et priorisation de file d'attente."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -694,8 +694,8 @@
       "description": {
         "en": "Transform TikTok gifts into virtual RPG items with crafting mechanics and AI-generated icons. Features inventory system, item crafting, and recipe management.",
         "de": "Verwandeln Sie TikTok-Geschenke in virtuelle RPG-Items mit Crafting-Mechaniken und KI-generierten Icons. Bietet Inventarsystem, Item-Crafting und Rezept-Verwaltung.",
-        "es": "Transforma regalos de TikTok en objetos RPG virtuales con mecÃ¡nicas de elaboraciÃ³n e iconos generados por IA. Presenta sistema de inventario, elaboraciÃ³n de objetos y gestiÃ³n de recetas.",
-        "fr": "Transforme les cadeaux TikTok en objets RPG virtuels avec mÃ©caniques d'artisanat et icÃ´nes gÃ©nÃ©rÃ©es par IA. Comprend systÃ¨me d'inventaire, fabrication d'objets et gestion de recettes."
+        "es": "Transforma regalos de TikTok en objetos RPG virtuales con mecánicas de elaboración e iconos generados por IA. Presenta sistema de inventario, elaboración de objetos y gestión de recetas.",
+        "fr": "Transforme les cadeaux TikTok en objets RPG virtuels avec mécaniques d'artisanat et icônes générées par IA. Comprend système d'inventaire, fabrication d'objets et gestion de recettes."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -759,7 +759,7 @@
       },
       "description": {
         "en": "Live caption overlay for hearing-impaired viewers. Transcribes host speech via Fish.audio ASR and displays it as a configurable ticker in OBS.",
-        "de": "Live-Untertitel-Overlay fÃ¼r hÃ¶rgeschÃ¤digte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
+        "de": "Live-Untertitel-Overlay für hörgeschädigte Zuschauer. Transkribiert Host-Sprache via Fish.audio ASR und zeigt sie als konfigurierbaren Ticker in OBS an."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -787,7 +787,7 @@
       },
       "description": {
         "en": "AI-generated 2D avatars with synchronized animations for TikTok users speaking via TTS. Features role-based activation, multiple style templates, and OBS integration.",
-        "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen fÃ¼r TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
+        "de": "KI-generierte 2D-Avatare mit synchronisierten Animationen für TikTok-Nutzer, die per TTS sprechen. Mit rollenbasierter Aktivierung, mehreren Stil-Vorlagen und OBS-Integration."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -812,9 +812,9 @@
       },
       "description": {
         "en": "Prints TikTok Live events (chat, gifts, follows) physically on a thermal printer (ESC/POS). Supports USB and network printers with customizable print templates.",
-        "de": "Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). UnterstÃ¼tzt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen.",
-        "es": "Imprime eventos en vivo de TikTok (chat, regalos, seguimientos) fÃ­sicamente en una impresora tÃ©rmica (ESC/POS). Admite impresoras USB y de red con plantillas de impresiÃ³n personalizables.",
-        "fr": "Imprime les Ã©vÃ©nements TikTok Live (chat, cadeaux, abonnements) physiquement sur une imprimante thermique (ESC/POS). Prend en charge les imprimantes USB et rÃ©seau avec modÃ¨les d'impression personnalisables."
+        "de": "Druckt TikTok-Live-Events (Chat, Geschenke, Follows) physisch auf einem Thermodrucker (ESC/POS). Unterstützt USB- und Netzwerkdrucker mit anpassbaren Druckvorlagen.",
+        "es": "Imprime eventos en vivo de TikTok (chat, regalos, seguimientos) físicamente en una impresora térmica (ESC/POS). Admite impresoras USB y de red con plantillas de impresión personalizables.",
+        "fr": "Imprime les événements TikTok Live (chat, cadeaux, abonnements) physiquement sur une imprimante thermique (ESC/POS). Prend en charge les imprimantes USB et réseau avec modèles d'impression personnalisables."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -838,7 +838,7 @@
         "en": "Top Tier"
       },
       "description": {
-        "en": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten fÃ¼r Hochformat und Querformat."
+        "en": "Live Like & Gift Leaderboard mit Decay-Mechanik, Rang-Animationen, Combined-View und Overlay-Varianten für Hochformat und Querformat."
       },
       "version": "2.0.0",
       "author": "PupCid",
@@ -867,9 +867,9 @@
       },
       "description": {
         "en": "Enterprise-grade TTS plugin with multi-engine support (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), permission system, language detection, caching, and queue management.",
-        "de": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-UnterstÃ¼tzung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.",
-        "es": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), sistema de permisos, detecciÃ³n de idioma, almacenamiento en cachÃ© y gestiÃ³n de colas.",
-        "fr": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), systÃ¨me de permissions, dÃ©tection de langue, mise en cache et gestion de file d'attente."
+        "de": "Enterprise-Grade-TTS-Plugin mit Multi-Engine-Unterstützung (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), Berechtigungssystem, Spracherkennung, Caching und Queue-Management.",
+        "es": "Plugin TTS de nivel empresarial con soporte multi-motor (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), sistema de permisos, detección de idioma, almacenamiento en caché y gestión de colas.",
+        "fr": "Plugin TTS de niveau entreprise avec support multi-moteur (TikTok, Google Cloud, Speechify, ElevenLabs, OpenAI, Fish.audio, SiliconFlow), système de permissions, détection de langue, mise en cache et gestion de file d'attente."
       },
       "version": "2.0.0",
       "author": "Pup Cid",
@@ -896,9 +896,9 @@
       },
       "description": {
         "en": "VDO.Ninja integration for multi-guest streaming. Manages rooms, guests, layouts, and audio controls for professional multi-cam setups with seamless guest integration.",
-        "de": "VDO.Ninja-Integration fÃ¼r Multi-Guest-Streaming. Verwaltet RÃ¤ume, GÃ¤ste, Layouts und Audio-Kontrollen fÃ¼r professionelle Multi-Cam-Setups mit nahtloser Gast-Integration.",
-        "es": "IntegraciÃ³n de VDO.Ninja para transmisiÃ³n con mÃºltiples invitados. Gestiona salas, invitados, diseÃ±os y controles de audio para configuraciones multi-cÃ¡mara profesionales con integraciÃ³n fluida de invitados.",
-        "fr": "IntÃ©gration VDO.Ninja pour streaming multi-invitÃ©s. GÃ¨re les salles, invitÃ©s, dispositions et contrÃ´les audio pour configurations multi-camÃ©ras professionnelles avec intÃ©gration transparente des invitÃ©s."
+        "de": "VDO.Ninja-Integration für Multi-Guest-Streaming. Verwaltet Räume, Gäste, Layouts und Audio-Kontrollen für professionelle Multi-Cam-Setups mit nahtloser Gast-Integration.",
+        "es": "Integración de VDO.Ninja para transmisión con múltiples invitados. Gestiona salas, invitados, diseños y controles de audio para configuraciones multi-cámara profesionales con integración fluida de invitados.",
+        "fr": "Intégration VDO.Ninja pour streaming multi-invités. Gère les salles, invités, dispositions et contrôles audio pour configurations multi-caméras professionnelles avec intégration transparente des invités."
       },
       "version": "1.0.0",
       "author": "Pup Cid",
@@ -922,10 +922,10 @@
         "en": "Viewer XP"
       },
       "description": {
-        "en": "Comprehensive Viewer XP System with integrated Gifter Leaderboard. All XP tracking, leveling, badges, and gifter rankings in one plugin. v2.1.0 adds rate limiting, anti-spam, full event logging, and opt-out system.",
-        "de": "Umfassendes Zuschauer-XP-System mit integrierter Gifter-Bestenliste. Alle XP-Tracking-, Leveling-, Badge- und Gifter-Ranking-Funktionen in einem Plugin. v2.1.0 fÃ¼gt Rate Limiting, Anti-Spam, vollstÃ¤ndiges Event-Logging und Opt-Out hinzu.",
-        "es": "Sistema integral de XP de espectadores con tabla de clasificaciÃ³n de donantes integrada. Todas las funciones de seguimiento de XP, nivelaciÃ³n, insignias y clasificaciÃ³n de donantes en un solo plugin.",
-        "fr": "SystÃ¨me complet d'XP des spectateurs avec classement des donateurs intÃ©grÃ©. Toutes les fonctionnalitÃ©s de suivi XP, de mise Ã  niveau, de badges et de classement des donateurs dans un seul plugin."
+        "en": "Unified Viewer XP, Viewer Profiles analytics, and Gifter Leaderboard plugin. Includes XP tracking, leveling, badges, profile management, VIP and birthday tracking, heatmaps, event logging, opt-out support, and gifter rankings in one bundle.",
+        "de": "Vereint Zuschauer-XP, Viewer-Profile-Analyse und Gifter-Bestenliste. Enthält XP-Tracking, Leveling, Badges, Profilverwaltung, VIP- und Geburtstags-Tracking, Heatmaps, Event-Logging, Opt-Out-Support und Gifter-Rankings in einem Paket.",
+        "es": "Plugin unificado de XP de espectadores, análisis de perfiles de espectadores y tabla de clasificación de donantes. Incluye seguimiento de XP, nivelación, insignias, gestión de perfiles, VIP y cumpleaños, mapas de calor, registros de eventos, compatibilidad con opt-out y rankings de donantes en un solo paquete.",
+        "fr": "Plugin unifié pour l'XP des spectateurs, l'analyse des profils de spectateurs et le classement des donateurs. Inclut le suivi de l'XP, la progression, les badges, la gestion des profils, le suivi VIP et des anniversaires, les cartes thermiques, le journal d'événements, la prise en charge de l'opt-out et les classements des donateurs dans un seul bundle."
       },
       "version": "2.1.0",
       "author": "Pup Cid",
@@ -950,9 +950,9 @@
       },
       "description": {
         "en": "Comprehensive viewer tracking and analytics system with VIP management, birthday tracking, activity heatmaps, and detailed profile management. Track coins, watchtime, interactions, and more.",
-        "de": "Umfassendes Zuschauer-Tracking- und Analysesystem mit VIP-Verwaltung, Geburtstags-Tracking, AktivitÃ¤ts-Heatmaps und detaillierter Profilverwaltung. Verfolgen Sie MÃ¼nzen, Watchtime, Interaktionen und mehr.",
-        "es": "Sistema integral de seguimiento y anÃ¡lisis de espectadores con gestiÃ³n VIP, seguimiento de cumpleaÃ±os, mapas de calor de actividad y gestiÃ³n detallada de perfiles.",
-        "fr": "SystÃ¨me complet de suivi et d'analyse des spectateurs avec gestion VIP, suivi des anniversaires, cartes thermiques d'activitÃ© et gestion dÃ©taillÃ©e des profils."
+        "de": "Umfassendes Zuschauer-Tracking- und Analysesystem mit VIP-Verwaltung, Geburtstags-Tracking, Aktivitäts-Heatmaps und detaillierter Profilverwaltung. Verfolgen Sie Münzen, Watchtime, Interaktionen und mehr.",
+        "es": "Sistema integral de seguimiento y análisis de espectadores con gestión VIP, seguimiento de cumpleaños, mapas de calor de actividad y gestión detallada de perfiles.",
+        "fr": "Système complet de suivi et d'analyse des spectateurs avec gestion VIP, suivi des anniversaires, cartes thermiques d'activité et gestion détaillée des profils."
       },
       "version": "1.1.0",
       "author": "Pup Cid",
@@ -1009,7 +1009,7 @@
         "en": "GPU-accelerated emoji rain effect using WebGPU instanced rendering.",
         "de": "GPU-beschleunigter Emoji-Regen-Effekt mit WebGPU Instanced Rendering.",
         "es": "Efecto de lluvia de emojis acelerado por GPU usando renderizado instanciado WebGPU.",
-        "fr": "Effet de pluie d'Ã©mojis accÃ©lÃ©rÃ© par GPU utilisant le rendu instanciÃ© WebGPU."
+        "fr": "Effet de pluie d'émojis accéléré par GPU utilisant le rendu instancié WebGPU."
       },
       "version": "2.0.0",
       "author": "Pup Cid",

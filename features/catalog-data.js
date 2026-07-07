@@ -3,13 +3,12 @@
 module.exports = {
   pageCopy: {
     de: {
-      title: 'Alle Apps ansehen – ltth.app',
+      title: 'Alle Apps ansehen - ltth.app',
       description:
-        'Ein scannbarer Katalog mit allen 45 Apps und Features, echten Screenshots, Nutzen, Einsatzkontext und Deep-Dive-Links.',
-      eyebrow: 'Discovery Hub',
-      heading: 'Alle Apps in einem scannbaren Katalog',
-      intro:
-        'Die Seite bleibt die kanonische Unterseite, ordnet die Features redaktionell und führt direkt zu den Detailseiten.',
+        'Alle 45 Apps und Features mit Screenshots, Nutzen und Deep-Dive-Links.',
+      eyebrow: 'Katalog',
+      heading: 'Alle Apps auf einen Blick',
+      intro: 'Entdecke 45 Apps und Features mit echten Screenshots, Nutzen und passenden Deep-Dive-Links.',
       searchLabel: 'Suche',
       searchPlaceholder: 'In 45 Apps suchen',
       tocLabel: 'Kategorien',
@@ -25,18 +24,16 @@ module.exports = {
       ctaHome: 'Zur Startseite',
       ctaApps: 'Alle Apps ansehen',
       noResults: 'Keine Treffer',
-      itemListName: 'Features-Katalog von ltth.app',
-      itemListDescription:
-        'Alle 45 Features und Apps von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links.',
+      itemListName: 'App-Katalog von ltth.app',
+      itemListDescription: 'Alle 45 Apps und Features von ltth.app mit Screenshots, Beschreibungen und Deep-Dive-Links.',
     },
     en: {
-      title: 'View all apps – ltth.app',
+      title: 'View all apps - ltth.app',
       description:
-        'A scannable catalog with all 45 apps and features, real screenshots, benefits, use context, and deep-dive links.',
-      eyebrow: 'Discovery Hub',
-      heading: 'All apps in one scannable catalog',
-      intro:
-        'This page remains the canonical subpage, organizes the features editorially, and links straight to the deep dives.',
+        'All 45 apps and features with screenshots, benefits, and deep-dive links.',
+      eyebrow: 'Catalog',
+      heading: 'All apps at a glance',
+      intro: 'Explore 45 apps and features with real screenshots, benefits, and deep-dive links.',
       searchLabel: 'Search',
       searchPlaceholder: 'Search 45 apps',
       tocLabel: 'Categories',
@@ -57,13 +54,12 @@ module.exports = {
         'All 45 ltth.app features and apps with screenshots, descriptions, and deep-dive links.',
     },
     es: {
-      title: 'Ver todas las apps – ltth.app',
+      title: 'Ver todas las apps - ltth.app',
       description:
-        'Un catálogo escaneable con las 45 apps y funciones, capturas reales, beneficios, contexto de uso y enlaces a los deep dives.',
-      eyebrow: 'Discovery Hub',
-      heading: 'Todas las apps en un catálogo escaneable',
-      intro:
-        'Esta página sigue siendo la subpágina canónica, organiza las funciones de forma editorial y enlaza directamente a los deep dives.',
+        'Las 45 apps y funciones con capturas, beneficios y enlaces a los deep dives.',
+      eyebrow: 'Catálogo',
+      heading: 'Todas las apps de un vistazo',
+      intro: 'Explora 45 apps y funciones con capturas reales, beneficios y enlaces a los deep dives.',
       searchLabel: 'Buscar',
       searchPlaceholder: 'Buscar en 45 apps',
       tocLabel: 'Categorías',
@@ -79,18 +75,16 @@ module.exports = {
       ctaHome: 'Volver al inicio',
       ctaApps: 'Ver todas las apps',
       noResults: 'No se encontraron resultados',
-      itemListName: 'Catálogo de funciones de ltth.app',
-      itemListDescription:
-        'Las 45 funciones y apps de ltth.app con capturas, descripciones y enlaces a los deep dives.',
+      itemListName: 'Catálogo de apps de ltth.app',
+      itemListDescription: 'Las 45 funciones y apps de ltth.app con capturas, descripciones y enlaces a los deep dives.',
     },
     fr: {
-      title: 'Voir toutes les apps – ltth.app',
+      title: 'Voir toutes les apps - ltth.app',
       description:
-        'Un catalogue parcourable avec les 45 apps et fonctionnalités, de vraies captures, les bénéfices, le contexte d’usage et des liens vers les deep dives.',
-      eyebrow: 'Discovery Hub',
-      heading: 'Toutes les apps dans un catalogue parcourable',
-      intro:
-        'Cette page reste la sous-page canonique, organise les fonctionnalités de façon éditoriale et renvoie directement vers les deep dives.',
+        'Les 45 apps et fonctionnalités avec captures, bénéfices et liens vers les deep dives.',
+      eyebrow: 'Catalogue',
+      heading: 'Toutes les apps en un coup d’oeil',
+      intro: 'Explorez 45 apps et fonctionnalités avec de vraies captures, les bénéfices et des liens vers les deep dives.',
       searchLabel: 'Rechercher',
       searchPlaceholder: 'Rechercher dans 45 apps',
       tocLabel: 'Catégories',
@@ -107,8 +101,7 @@ module.exports = {
       ctaApps: 'Voir toutes les apps',
       noResults: 'Aucun résultat',
       itemListName: 'Catalogue de fonctionnalités ltth.app',
-      itemListDescription:
-        'Les 45 fonctionnalités et apps de ltth.app avec captures, descriptions et liens vers les deep dives.',
+      itemListDescription: 'Les 45 fonctionnalités et apps de ltth.app avec captures, descriptions et liens vers les deep dives.',
     },
   },
   categories: [
