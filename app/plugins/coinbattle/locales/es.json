@@ -11,10 +11,6 @@
       "settings": "Configuración",
       "history": "Historial",
       "leaderboard": "Clasificación"
-    },
-    "actions": {
-      "openTab": "Abrir en nueva pestaña",
-      "closeTab": "Cerrar pestaña"
     }
   },
   "match": {

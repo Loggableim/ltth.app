@@ -192,23 +192,6 @@ html[data-theme="day"] .header-logo {
   max-width: 52ch;
 }
 
-.header-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.header-tab-toggle {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.header-tab-toggle-label {
-  display: inline-block;
-}
-
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1100,10 +1083,6 @@ html[data-theme="vision-impaired"] .form-select {
     text-align: left;
   }
 
-  .header-actions {
-    justify-content: flex-start;
-  }
-
   #control-tab,
   #leaderboard-tab,
   #settings-tab {
@@ -1155,11 +1134,6 @@ html[data-theme="vision-impaired"] .form-select {
 
   .header-copy-text {
     text-align: left;
-  }
-
-  .header-tab-toggle {
-    width: 100%;
-    justify-content: center;
   }
 
   .tabs {

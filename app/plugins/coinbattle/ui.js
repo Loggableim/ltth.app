@@ -76,36 +76,11 @@
     return readAppLanguage() || normalizeLanguage(fallback) || 'en';
   }
 
-  function isStandaloneView() {
-    try {
-      return !window.parent || window.parent === window;
-    } catch (error) {
-      return true;
-    }
-  }
-
   function getTranslationValue(key) {
     return key.split('.').reduce((value, part) => {
       if (!value || typeof value !== 'object') return undefined;
       return value[part];
     }, translations);
-  }
-
-  function updateHeaderTabAction() {
-    const button = document.getElementById('coinbattle-tab-toggle');
-    if (!button) return;
-
-    const label = isStandaloneView()
-      ? (getTranslationValue('ui.actions.closeTab') || 'Tab schließen')
-      : (getTranslationValue('ui.actions.openTab') || 'Open in New Tab');
-
-    const labelNode = button.querySelector('.header-tab-toggle-label');
-    if (labelNode) {
-      labelNode.textContent = label;
-    }
-
-    button.setAttribute('aria-label', label);
-    button.setAttribute('title', label);
   }
 
   function applyTranslations() {
@@ -130,7 +105,6 @@
     const title = getTranslationValue('ui.title') || 'CoinBattle';
     document.title = `${title} - Admin Panel`;
 
-    updateHeaderTabAction();
   }
 
   const overlayResolutionPresets = {
@@ -317,11 +291,6 @@
       btnSaveSeason.addEventListener('click', saveSeason);
     }
 
-    const btnOpenInTab = document.getElementById('coinbattle-tab-toggle');
-    if (btnOpenInTab) {
-      btnOpenInTab.addEventListener('click', handleTabAction);
-    }
-    
     // Post-match duration sliders
     document.getElementById('setting-postmatch-lb-duration').addEventListener('input', (e) => {
       document.getElementById('lb-duration-value').textContent = e.target.value;
@@ -363,15 +332,6 @@
         });
       }
     } catch (error) {}
-  }
-
-  function handleTabAction() {
-    if (isStandaloneView()) {
-      window.close();
-      return;
-    }
-
-    window.open(window.location.href, '_blank', 'noopener,noreferrer');
   }
 
   /**

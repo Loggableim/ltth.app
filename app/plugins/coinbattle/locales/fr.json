@@ -11,10 +11,6 @@
       "settings": "Paramètres",
       "history": "Historique",
       "leaderboard": "Classement"
-    },
-    "actions": {
-      "openTab": "Ouvrir dans un nouvel onglet",
-      "closeTab": "Fermer l'onglet"
     }
   },
   "match": {
