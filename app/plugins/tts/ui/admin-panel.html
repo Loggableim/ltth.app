@@ -708,11 +708,11 @@
         }
 
         .tts-hero {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) minmax(360px, 440px) minmax(240px, 1fr);
+            align-items: center;
             gap: 22px;
-            padding: 20px 24px 18px;
+            padding: 18px 24px 16px;
             margin-bottom: 14px;
             border: 1px solid var(--tts-border);
             border-radius: 28px;
@@ -721,27 +721,36 @@
         }
 
         .tts-hero-brand {
-            min-width: 0;
-            display: grid;
-            gap: 12px;
-            justify-items: start;
-            align-content: start;
-        }
-
-        .tts-hero-logo {
-            width: min(440px, 100%);
-            max-height: 108px;
-            object-fit: contain;
-            display: block;
-            margin-top: -2px;
-            filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.26));
+            display: contents;
         }
 
         .tts-hero-copy {
+            min-width: 0;
             display: grid;
             gap: 6px;
-            min-width: 0;
+            justify-items: start;
+            align-content: start;
             max-width: 72ch;
+            grid-column: 1;
+        }
+
+        .tts-hero-logo-stage {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tts-hero-logo {
+            width: min(460px, 100%);
+            max-height: 116px;
+            object-fit: contain;
+            display: block;
+            margin-top: 0;
+            filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.26));
+            grid-column: 2;
+            justify-self: center;
+            align-self: center;
         }
 
         .tts-hero-kicker {
@@ -847,7 +856,9 @@
             align-items: flex-end;
             gap: 10px;
             flex-shrink: 0;
-            padding-top: 4px;
+            justify-self: end;
+            align-self: center;
+            grid-column: 3;
         }
 
         .tts-save-btn {
@@ -869,6 +880,31 @@
             font-size: 0.82rem;
             color: var(--tts-muted);
             text-align: right;
+            max-width: 34ch;
+        }
+
+        @media (max-width: 1280px) {
+            .tts-hero {
+                grid-template-columns: minmax(0, 1fr);
+                justify-items: start;
+            }
+
+            .tts-hero-brand,
+            .tts-hero-copy,
+            .tts-hero-logo,
+            .tts-hero-actions {
+                grid-column: auto;
+            }
+
+            .tts-hero-logo-stage,
+            .tts-hero-actions {
+                justify-self: start;
+                align-self: start;
+            }
+
+            .tts-inline-status {
+                text-align: left;
+            }
         }
 
         .tts-summary-grid {
