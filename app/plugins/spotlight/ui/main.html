@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotlight</title>
+  <link rel="stylesheet" href="/css/themes.css">
+  <script>
+    (function() {
+      const VALID_THEMES = new Set(['day', 'night', 'contrast', 'vision-impaired', 'cid']);
+
+      function readTheme() {
+        try {
+          const savedTheme = localStorage.getItem('dashboard-theme');
+          if (VALID_THEMES.has(savedTheme)) return savedTheme;
+        } catch (error) {}
+        return 'night';
+      }
+
+      function syncTheme() {
+        document.documentElement.setAttribute('data-theme', readTheme());
+      }
+
+      syncTheme();
+
+      window.addEventListener('storage', (event) => {
+        if (event && event.key === 'dashboard-theme') {
+          syncTheme();
+        }
+      });
+
+      window.addEventListener('focus', syncTheme);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncTheme();
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+          });
+        }
+      } catch (error) {}
+    })();
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/i18n-client.js"></script>
+  <style>
+    :root {
+      --spotlight-bg: #0a1220;
+      --spotlight-surface: rgba(12, 18, 31, 0.88);
+      --spotlight-surface-strong: rgba(11, 17, 28, 0.96);
+      --spotlight-surface-soft: rgba(17, 24, 39, 0.66);
+      --spotlight-border: rgba(148, 163, 184, 0.18);
+      --spotlight-text: #eff6ff;
+      --spotlight-muted: #94a3b8;
+      --spotlight-accent: #22c55e;
+      --spotlight-accent-2: #f59e0b;
+      --spotlight-shadow: 0 26px 78px rgba(2, 6, 23, 0.38);
+    }
+
+    html[data-theme="day"] {
+      --spotlight-bg: #f5f7fb;
+      --spotlight-surface: rgba(255, 255, 255, 0.86);
+      --spotlight-surface-strong: rgba(255, 255, 255, 0.96);
+      --spotlight-surface-soft: rgba(248, 250, 252, 0.92);
+      --spotlight-border: rgba(15, 23, 42, 0.1);
+      --spotlight-text: #0f172a;
+      --spotlight-muted: #475569;
+      --spotlight-accent: #0f766e;
+      --spotlight-accent-2: #ca8a04;
+      --spotlight-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+    }
+
+    html[data-theme="night"],
+    html:not([data-theme]) {
+      --spotlight-bg: #08111d;
+      --spotlight-surface: rgba(13, 20, 35, 0.88);
+      --spotlight-surface-strong: rgba(10, 16, 28, 0.98);
+      --spotlight-surface-soft: rgba(18, 27, 45, 0.7);
+      --spotlight-border: rgba(148, 163, 184, 0.18);
+      --spotlight-text: #eef2ff;
+      --spotlight-muted: #94a3b8;
+      --spotlight-accent: #22c55e;
+      --spotlight-accent-2: #f59e0b;
+    }
+
+    html[data-theme="cid"] {
+      --spotlight-bg: #020602;
+      --spotlight-surface: rgba(5, 14, 7, 0.9);
+      --spotlight-surface-strong: rgba(6, 17, 9, 0.98);
+      --spotlight-surface-soft: rgba(10, 26, 15, 0.72);
+      --spotlight-border: rgba(74, 222, 128, 0.24);
+      --spotlight-text: #effff0;
+      --spotlight-muted: #c8e6cc;
+      --spotlight-accent: #4ade80;
+      --spotlight-accent-2: #86efac;
+      --spotlight-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] {
+      --spotlight-bg: #000000;
+      --spotlight-surface: rgba(0, 0, 0, 0.98);
+      --spotlight-surface-strong: rgba(0, 0, 0, 1);
+      --spotlight-surface-soft: rgba(17, 17, 17, 1);
+      --spotlight-border: #facc15;
+      --spotlight-text: #ffffff;
+      --spotlight-muted: #f8fafc;
+      --spotlight-accent: #facc15;
+      --spotlight-accent-2: #f97316;
+      --spotlight-shadow: none;
+    }
+
+    html[data-theme="contrast"] {
+      --spotlight-bg: #040404;
+      --spotlight-surface: rgba(8, 8, 8, 0.96);
+      --spotlight-surface-strong: rgba(0, 0, 0, 1);
+      --spotlight-surface-soft: rgba(15, 15, 15, 1);
+      --spotlight-border: #e2e8f0;
+      --spotlight-text: #ffffff;
+      --spotlight-muted: #e2e8f0;
+      --spotlight-accent: #22d3ee;
+      --spotlight-accent-2: #facc15;
+      --spotlight-shadow: none;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      color: var(--spotlight-text);
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, color-mix(in srgb, var(--spotlight-accent) 20%, transparent) 0, transparent 34%),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--spotlight-accent-2) 16%, transparent) 0, transparent 32%),
+        linear-gradient(180deg, color-mix(in srgb, var(--spotlight-bg) 92%, #000 8%) 0%, var(--spotlight-bg) 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.02), transparent 28%),
+        linear-gradient(240deg, rgba(255, 255, 255, 0.015), transparent 22%);
+      opacity: 0.7;
+    }
+
+    .spotlight-shell {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 1760px);
+      margin: 0 auto;
+      padding: clamp(1rem, 1.6vw, 2rem);
+    }
+
+    .spotlight-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+      grid-template-areas: "stats brand";
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .spotlight-panel {
+      border: 1px solid var(--spotlight-border);
+      border-radius: 28px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--spotlight-surface) 92%, transparent) 0%, var(--spotlight-surface-strong) 100%);
+      box-shadow: var(--spotlight-shadow);
+      overflow: hidden;
+    }
+
+    .spotlight-brand {
+      grid-area: brand;
+      display: grid;
+      gap: 0.95rem;
+      padding: clamp(1rem, 1.35vw, 1.25rem);
+    }
+
+    .spotlight-brand__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .spotlight-brand__logo {
+      width: min(100%, 300px);
+      max-height: 90px;
+      object-fit: contain;
+      margin-left: auto;
+      filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.25));
+    }
+
+    .spotlight-brand__copy {
+      min-width: 0;
+    }
+
+    .spotlight-brand__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0 0 0.5rem;
+      padding: 0.32rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--spotlight-accent) 32%, var(--spotlight-border));
+      background: color-mix(in srgb, var(--spotlight-accent) 12%, transparent);
+      color: var(--spotlight-accent);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .spotlight-brand h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3.7vw, 3.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--spotlight-text);
+    }
+
+    .spotlight-brand p {
+      margin: 0;
+      max-width: 50rem;
+      color: var(--spotlight-muted);
+      font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+      line-height: 1.65;
+    }
+
+    .spotlight-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .spotlight-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.52rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid var(--spotlight-border);
+      background: var(--spotlight-surface-soft);
+      color: var(--spotlight-text);
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .spotlight-chip strong {
+      color: var(--spotlight-accent);
+    }
+
+    .spotlight-stats {
+      grid-area: stats;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 0.9rem;
+      padding: 1.15rem;
+    }
+
+    .spotlight-stat {
+      padding: 1.15rem;
+      border-radius: 22px;
+      min-height: 172px;
+      border: 1px solid var(--spotlight-border);
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--spotlight-surface-soft) 84%, transparent) 0%, color-mix(in srgb, var(--spotlight-surface) 94%, transparent) 100%);
+    }
+
+    .spotlight-stat__label {
+      margin: 0 0 0.35rem;
+      color: var(--spotlight-muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .spotlight-stat__value {
+      margin: 0;
+      color: var(--spotlight-text);
+      font-size: clamp(1.1rem, 1.12vw, 1.3rem);
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .spotlight-stat__value strong {
+      color: var(--spotlight-accent);
+    }
+
+    .spotlight-section {
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .overlay-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .overlay-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.1rem;
+      border: 1px solid var(--spotlight-border);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--spotlight-surface) 90%, transparent) 0%, color-mix(in srgb, var(--spotlight-surface-strong) 98%, transparent) 100%);
+      box-shadow: var(--spotlight-shadow);
+      overflow: hidden;
+    }
+
+    .overlay-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 4px;
+      background: linear-gradient(90deg, var(--overlay-accent), color-mix(in srgb, var(--overlay-accent) 35%, white));
+    }
+
+    .overlay-card__top {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .overlay-card__headline {
+      min-width: 0;
+    }
+
+    .overlay-card__eyebrow {
+      display: inline-flex;
+      margin: 0 0 0.45rem;
+      color: var(--overlay-accent);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .overlay-card h3 {
+      margin: 0;
+      color: var(--spotlight-text);
+      font-size: 1.22rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .overlay-card p {
+      margin: 0.45rem 0 0;
+      color: var(--spotlight-muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .overlay-card__pill {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.36rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--overlay-accent) 35%, var(--spotlight-border));
+      background: color-mix(in srgb, var(--overlay-accent) 12%, transparent);
+      color: var(--spotlight-text);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .overlay-card__label {
+      margin-bottom: 0.35rem;
+      color: var(--spotlight-muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .url-container {
+      display: grid;
+      gap: 0.7rem;
+      padding: 0.95rem 1rem;
+      border: 1px solid var(--spotlight-border);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--spotlight-surface-soft) 92%, transparent);
+    }
+
+    .url-container code {
+      display: block;
+      color: var(--spotlight-text);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      word-break: break-all;
+      white-space: normal;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      min-height: 2.7rem;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 0.15s ease, border-color 0.15s ease, filter 0.15s ease, background 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--overlay-accent, var(--spotlight-accent)) 65%, white);
+      outline-offset: 2px;
+    }
+
+    .btn-sm {
+      min-height: 2.45rem;
+      padding: 0.62rem 0.9rem;
+      font-size: 0.82rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--spotlight-accent) 0%, color-mix(in srgb, var(--spotlight-accent) 68%, white) 100%);
+      color: #05140b;
+    }
+
+    .btn-secondary {
+      border-color: var(--spotlight-border);
+      background: color-mix(in srgb, var(--spotlight-surface-soft) 82%, transparent);
+      color: var(--spotlight-text);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--spotlight-accent-2) 0%, color-mix(in srgb, var(--spotlight-accent-2) 64%, white) 100%);
+      color: #0b1020;
+    }
+
+    .btn-ghost {
+      border-color: var(--spotlight-border);
+      background: transparent;
+      color: var(--spotlight-text);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: color-mix(in srgb, var(--spotlight-bg) 78%, black 22%);
+      backdrop-filter: blur(18px);
+      overflow: auto;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-content {
+      width: min(96vw, 1240px);
+      max-height: 92vh;
+      margin: 1.5rem auto;
+      display: flex;
+      flex-direction: column;
+      border-radius: 26px;
+      border: 1px solid var(--spotlight-border);
+      background: var(--spotlight-surface-strong);
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    .modal-header,
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.1rem 1.3rem;
+      border-color: var(--spotlight-border);
+    }
+
+    .modal-header {
+      border-bottom: 1px solid var(--spotlight-border);
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--spotlight-border);
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: var(--spotlight-text);
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-weight: 800;
+    }
+
+    .modal-body {
+      padding: 1.2rem 1.3rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .close {
+      color: var(--spotlight-muted);
+      cursor: pointer;
+      line-height: 1;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .close:hover {
+      color: var(--spotlight-text);
+    }
+
+    .settings-section {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--spotlight-border);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--spotlight-surface) 88%, transparent);
+    }
+
+    .settings-section h4 {
+      margin: 0 0 0.95rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--overlay-accent, var(--spotlight-accent)) 32%, var(--spotlight-border));
+      color: var(--spotlight-text);
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      color: var(--spotlight-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.8rem 0.9rem;
+      border-radius: 14px;
+      border: 1px solid var(--spotlight-border);
+      background: color-mix(in srgb, var(--spotlight-surface-soft) 88%, transparent);
+      color: var(--spotlight-text);
+      font: inherit;
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: color-mix(in srgb, var(--spotlight-muted) 88%, transparent);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: 2px solid color-mix(in srgb, var(--spotlight-accent) 60%, white);
+      outline-offset: 2px;
+      border-color: color-mix(in srgb, var(--spotlight-accent) 55%, var(--spotlight-border));
+    }
+
+    .form-group input[type="checkbox"] {
+      width: auto;
+      accent-color: var(--spotlight-accent);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.75rem;
+      color: var(--spotlight-text);
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.92rem;
+      color: var(--spotlight-text);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .preview-container {
+      width: 100%;
+      border: 1px solid var(--spotlight-border);
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--spotlight-bg);
+    }
+
+    .preview-frame {
+      width: 100%;
+      height: min(66vh, 760px);
+      border: none;
+      display: block;
+      background: var(--spotlight-bg);
+    }
+
+    .toast {
+      position: fixed;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      z-index: 2000;
+      max-width: min(92vw, 560px);
+      padding: 0.95rem 1.1rem;
+      border-radius: 16px;
+      border: 1px solid var(--spotlight-border);
+      background: var(--spotlight-surface-strong);
+      color: var(--spotlight-text);
+      box-shadow: var(--spotlight-shadow);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast[data-variant="success"] {
+      background: color-mix(in srgb, var(--spotlight-accent) 18%, var(--spotlight-surface-strong));
+    }
+
+    .toast[data-variant="error"] {
+      background: color-mix(in srgb, #ef4444 20%, var(--spotlight-surface-strong));
+    }
+
+    .toast[data-variant="info"] {
+      background: color-mix(in srgb, var(--spotlight-accent-2) 16%, var(--spotlight-surface-strong));
+    }
+
+    html[data-theme="vision-impaired"] .spotlight-panel,
+    html[data-theme="vision-impaired"] .overlay-card,
+    html[data-theme="vision-impaired"] .settings-section,
+    html[data-theme="vision-impaired"] .modal-content,
+    html[data-theme="vision-impaired"] .preview-container,
+    html[data-theme="vision-impaired"] .toast {
+      border-width: 2px;
+      box-shadow: none;
+    }
+
+    html[data-theme="vision-impaired"] .btn,
+    html[data-theme="vision-impaired"] .spotlight-chip,
+    html[data-theme="vision-impaired"] .spotlight-stat,
+    html[data-theme="vision-impaired"] .overlay-card__pill {
+      border-width: 2px;
+    }
+
+    html[data-theme="cid"] .spotlight-brand__eyebrow,
+    html[data-theme="cid"] .spotlight-chip strong,
+    html[data-theme="cid"] .overlay-card__eyebrow,
+    html[data-theme="cid"] .overlay-card__pill {
+      color: #4ade80;
+    }
+
+    @media (max-width: 1180px) {
+      .spotlight-hero {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "brand"
+          "stats";
+      }
+
+      .spotlight-brand__header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .spotlight-brand__logo {
+        max-height: 88px;
+        margin-left: 0;
+        justify-self: start;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .spotlight-shell {
+        padding: 0.8rem;
+      }
+
+      .spotlight-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .spotlight-brand__logo {
+        width: min(100%, 280px);
+        max-height: 82px;
+      }
+
+      .overlay-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .overlay-card__top {
+        flex-direction: column;
+      }
+
+      .button-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .modal-content {
+        width: min(100vw - 1rem, 1240px);
+        margin: 0.5rem auto;
+        max-height: calc(100vh - 1rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="spotlight-shell">
+    <section class="spotlight-hero">
+      <div class="spotlight-panel spotlight-brand">
+        <div class="spotlight-brand__header">
+          <div class="spotlight-brand__copy">
+            <div class="spotlight-brand__eyebrow">Live overlay studio</div>
+            <h1>Spotlight</h1>
+            <p>Modern live overlays for recent TikTok activity. Copy URLs, preview modes, test event flows, and fine-tune the appearance without losing any of the existing overlay features.</p>
+          </div>
+          <img src="/plugins/spotlight/assets/spotlight-logo-v1.1.4.png" alt="Spotlight" class="spotlight-brand__logo">
+        </div>
+
+        <div class="spotlight-chips">
+          <span class="spotlight-chip"><strong id="overlay-count">9</strong> overlay modes</span>
+          <span class="spotlight-chip">Copy and preview URLs</span>
+          <span class="spotlight-chip">Theme-aware UI</span>
+          <span class="spotlight-chip">Wide-screen optimized</span>
+        </div>
+      </div>
+
+      <div class="spotlight-panel spotlight-stats">
+        <div class="spotlight-stat">
+          <p class="spotlight-stat__label">Modes</p>
+          <p class="spotlight-stat__value">Follower, Like, Chat, Share, Gift, Subscriber, Top Gift, Gift Streak, Rotation</p>
+        </div>
+        <div class="spotlight-stat">
+          <p class="spotlight-stat__label">Workflow</p>
+          <p class="spotlight-stat__value"><strong>Copy</strong>, <strong>Preview</strong>, <strong>Test</strong>, then save settings</p>
+        </div>
+        <div class="spotlight-stat">
+          <p class="spotlight-stat__label">Compatibility</p>
+          <p class="spotlight-stat__value">Day, night, cid, vision-impaired, and contrast themes</p>
+        </div>
+        <div class="spotlight-stat">
+          <p class="spotlight-stat__label">Layout</p>
+          <p class="spotlight-stat__value">Built for broad desktop screens and embed workflows</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="spotlight-section">
+      <div class="overlay-grid" id="overlay-grid">
+        <!-- Will be populated by JavaScript -->
+      </div>
+    </section>
+  </main>
+
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings: <span id="modal-title-type"></span></h2>
+        <span class="close" id="close-settings-modal">&times;</span>
+      </div>
+      <div class="modal-body" id="settings-form-container"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-settings-btn">Cancel</button>
+        <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="preview-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Preview: <span id="preview-title-type"></span></h2>
+        <span class="close" id="close-preview-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="preview-container">
+          <iframe id="preview-frame" class="preview-frame" src=""></iframe>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="close-preview-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/plugins/spotlight/ui/main.js"></script>
+</body>
+</html>

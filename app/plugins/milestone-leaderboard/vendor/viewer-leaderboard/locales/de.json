@@ -1,0 +1,62 @@
+{
+  "viewer_xp": {
+    "title": "Zuschauer-XP-System",
+    "subtitle": "Gamification & Belohnungen",
+    "config": {
+      "title": "Konfiguration",
+      "enabled": "XP-System aktivieren",
+      "xp_per_minute": "XP pro Minute Zuschauer",
+      "xp_on_chat": "XP bei Chat-Nachricht",
+      "xp_on_gift": "XP bei Geschenk",
+      "xp_on_follow": "XP bei Follow",
+      "level_curve": "Level-Kurve",
+      "save": "Einstellungen speichern"
+    },
+    "leaderboard": {
+      "title": "Bestenliste",
+      "rank": "Rang",
+      "username": "Benutzername",
+      "level": "Level",
+      "xp": "XP",
+      "reset": "Bestenliste zurücksetzen"
+    },
+    "overlay": {
+      "title": "Overlay",
+      "url": "Overlay-URL",
+      "copy": "URL kopieren",
+      "open": "Overlay öffnen",
+      "show_top": "Zeige Top",
+      "users": "Benutzer"
+    },
+    "rewards": {
+      "title": "Level-Belohnungen",
+      "add": "Belohnung hinzufügen",
+      "level": "Level",
+      "reward": "Belohnungsbeschreibung"
+    },
+    "chat_commands": {
+      "enabled": "Chat-Befehle aktivieren",
+      "description": "Erlaube Chat-Befehle über GCCE für XP-Abfragen",
+      "xp": {
+        "name": "xp",
+        "description": "Zeige deinen aktuellen XP-Stand, Level und Fortschritt an",
+        "syntax": "/xp [benutzername]"
+      },
+      "rank": {
+        "name": "rank",
+        "description": "Zeige deinen Rang in der Bestenliste",
+        "syntax": "/rank [benutzername]"
+      },
+      "top": {
+        "name": "top",
+        "description": "Zeige die Top-Zuschauer der Bestenliste",
+        "syntax": "/top [anzahl]"
+      },
+      "leaderboard": {
+        "name": "leaderboard",
+        "description": "Zeige die vollständige Bestenliste im HUD-Overlay",
+        "syntax": "/leaderboard [anzahl]"
+      }
+    }
+  }
+}

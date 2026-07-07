@@ -75,6 +75,11 @@ naked/
 naked.zip
 tmp_*
 tmp-*
+.tmp_*
+.playwright-cli/
+output/
+app/output/
+artifacts/
 
 # Workspace runtime files
 .ltth_port

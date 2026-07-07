@@ -1,0 +1,24 @@
+{
+  "id": "spotlight",
+  "name": "Spotlight",
+  "version": "1.1.5",
+  "description": "Modern live overlays for recent viewers and event activity across OBS, LIVE Studio, and streaming dashboards.",
+  "author": "Plugin System",
+  "icon": "/plugins/spotlight/assets/spotlight-icon.png",
+  "logo": "/plugins/spotlight/assets/spotlight-logo-v1.1.4.png",
+  "entry": "main.js",
+  "enabled": true,
+  "devStatus": "development-beta",
+  "permissions": [
+    "socket.io",
+    "routes",
+    "tiktok-events",
+    "database"
+  ],
+  "descriptions": {
+    "en": "Modern live overlays for follower, like, chat, share, gift, subscriber, top gift, and rotation spotlight views.",
+    "de": "Moderne Live-Overlays fÃ¼r Follower-, Like-, Chat-, Share-, Geschenk-, Abo-, Top-Gift- und Rotations-Spotlight-Ansichten.",
+    "es": "Overlays en vivo modernos para vistas Spotlight de seguidor, like, chat, compartir, regalo, suscriptor, mejor regalo y rotaciÃ³n.",
+    "fr": "Overlays en direct modernes pour les vues Spotlight de follower, like, chat, partage, cadeau, abonnÃ©, top cadeau et rotation."
+  }
+}

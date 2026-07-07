@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard Overlay</title>
+    <link rel="stylesheet" href="/leaderboard/style.css">
+    <link rel="stylesheet" href="/leaderboard/theme.css" id="theme-stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="session">
+                <span class="tab-icon">🔥</span>
+                Current Session
+            </button>
+            <button class="tab-btn" data-tab="alltime">
+                <span class="tab-icon">👑</span>
+                All Time Champions
+            </button>
+        </div>
+
+        <!-- Session Leaderboard -->
+        <div class="leaderboard-panel active" id="session-panel">
+            <div class="panel-header">
+                <h2>🔥 Current Session Top Gifters</h2>
+                <div class="session-info" id="session-info">
+                    Session started: <span id="session-start-time">-</span>
+                </div>
+            </div>
+            <div class="leaderboard-list" id="session-list">
+                <div class="empty-state">
+                    <div class="empty-icon">🎁</div>
+                    <p>Waiting for gifts...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- All-Time Leaderboard -->
+        <div class="leaderboard-panel" id="alltime-panel">
+            <div class="panel-header">
+                <h2>👑 All Time Champions</h2>
+            </div>
+            <div class="leaderboard-list" id="alltime-list">
+                <div class="empty-state">
+                    <div class="empty-icon">🏆</div>
+                    <p>No champions yet...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/leaderboard/script.js"></script>
+</body>
+</html>
